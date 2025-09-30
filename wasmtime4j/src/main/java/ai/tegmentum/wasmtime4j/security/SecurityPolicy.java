@@ -1,47 +1,38 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.time.Duration;
-import java.util.Set;
-
 /**
- * Security policy configuration.
+ * Security policy interface for WebAssembly components.
  *
  * @since 1.0.0
  */
 public interface SecurityPolicy {
 
   /**
-   * Checks if signatures are required.
+   * Gets the policy name.
    *
-   * @return true if required
+   * @return the policy name
    */
-  boolean requireSignatures();
+  String getPolicyName();
 
   /**
-   * Checks if certificate chains are enforced.
+   * Checks if the policy is enabled.
    *
-   * @return true if enforced
+   * @return true if the policy is enabled
    */
-  boolean enforceCertificateChains();
+  boolean isEnabled();
 
   /**
-   * Gets allowed signature algorithms.
+   * Gets the policy configuration.
    *
-   * @return allowed algorithms
+   * @return the policy configuration as a string
    */
-  Set<SignatureAlgorithm> getAllowedSignatureAlgorithms();
+  String getConfiguration();
 
   /**
-   * Gets maximum signature age.
+   * Checks if the access request is allowed.
    *
-   * @return max age
+   * @param request the access request to check
+   * @return true if access is allowed
    */
-  Duration getMaxSignatureAge();
-
-  /**
-   * Checks if self-signed certificates are allowed.
-   *
-   * @return true if allowed
-   */
-  boolean allowSelfSigned();
+  boolean checkAccess(AccessRequest request);
 }

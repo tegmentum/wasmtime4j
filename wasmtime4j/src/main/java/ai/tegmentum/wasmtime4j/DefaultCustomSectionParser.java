@@ -14,19 +14,19 @@ import java.util.Set;
  * Default implementation of CustomSectionParser.
  *
  * <p>This implementation provides parsing support for standard WebAssembly custom sections
- * including "name", "producers", and "target_features" sections, as well as generic parsing
- * for arbitrary custom sections.
+ * including "name", "producers", and "target_features" sections, as well as generic parsing for
+ * arbitrary custom sections.
  *
  * @since 1.0.0
  */
-final class DefaultCustomSectionParser implements CustomSectionParser {
+public final class DefaultCustomSectionParser implements CustomSectionParser {
 
-  private static final Set<CustomSectionType> SUPPORTED_TYPES = Set.of(
-      CustomSectionType.NAME,
-      CustomSectionType.PRODUCERS,
-      CustomSectionType.TARGET_FEATURES,
-      CustomSectionType.UNKNOWN
-  );
+  private static final Set<CustomSectionType> SUPPORTED_TYPES =
+      Set.of(
+          CustomSectionType.NAME,
+          CustomSectionType.PRODUCERS,
+          CustomSectionType.TARGET_FEATURES,
+          CustomSectionType.UNKNOWN);
 
   @Override
   public Optional<CustomSection> parseCustomSection(final String name, final byte[] data) {
@@ -58,7 +58,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
       while (buffer.hasRemaining()) {
         final int subsectionType = readUnsignedByte(buffer);
-        final int subsectionSize = readULEB128(buffer);
+        final int subsectionSize = readUleb128(buffer);
 
         if (subsectionSize < 0 || subsectionSize > buffer.remaining()) {
           break; // Invalid subsection
@@ -66,7 +66,8 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
         final byte[] subsectionData = new byte[subsectionSize];
         buffer.get(subsectionData);
-        final ByteBuffer subsectionBuffer = ByteBuffer.wrap(subsectionData).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer subsectionBuffer =
+            ByteBuffer.wrap(subsectionData).order(ByteOrder.LITTLE_ENDIAN);
 
         switch (subsectionType) {
           case 0: // Module name
@@ -121,7 +122,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
       final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
       final ProducersSection.Builder builder = ProducersSection.builder();
 
-      final int fieldCount = readULEB128(buffer);
+      final int fieldCount = readUleb128(buffer);
       for (int i = 0; i < fieldCount && buffer.hasRemaining(); i++) {
         final String fieldName = readString(buffer);
         final List<ProducersSection.ProducerEntry> entries = readProducerEntries(buffer);
@@ -158,7 +159,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
       final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
       final TargetFeaturesSection.Builder builder = TargetFeaturesSection.builder();
 
-      final int featureCount = readULEB128(buffer);
+      final int featureCount = readUleb128(buffer);
       for (int i = 0; i < featureCount && buffer.hasRemaining(); i++) {
         final int prefix = readUnsignedByte(buffer);
         final String featureName = readString(buffer);
@@ -249,9 +250,8 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
   }
 
   @Override
-  public Optional<CustomSection> createCustomSection(final String name,
-                                                     final CustomSectionType type,
-                                                     final Object structuredData) {
+  public Optional<CustomSection> createCustomSection(
+      final String name, final CustomSectionType type, final Object structuredData) {
     if (name == null) {
       throw new IllegalArgumentException("Section name cannot be null");
     }
@@ -278,7 +278,8 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
           break;
         case TARGET_FEATURES:
           if (structuredData instanceof TargetFeaturesSection) {
-            data = serializeTargetFeaturesSection((TargetFeaturesSection) structuredData).orElse(null);
+            data =
+                serializeTargetFeaturesSection((TargetFeaturesSection) structuredData).orElse(null);
           }
           break;
         default:
@@ -382,7 +383,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
       }
 
       final byte[] fieldsData = combineByteArrays(fields);
-      final byte[] fieldCount = writeULEB128(fields.size());
+      final byte[] fieldCount = writeUleb128(fields.size());
 
       return Optional.of(combineByteArrays(List.of(fieldCount, fieldsData)));
     } catch (final Exception e) {
@@ -391,7 +392,8 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
   }
 
   @Override
-  public Optional<byte[]> serializeTargetFeaturesSection(final TargetFeaturesSection targetFeaturesSection) {
+  public Optional<byte[]> serializeTargetFeaturesSection(
+      final TargetFeaturesSection targetFeaturesSection) {
     if (targetFeaturesSection == null) {
       throw new IllegalArgumentException("Target features section cannot be null");
     }
@@ -415,15 +417,13 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
             continue; // Skip unknown status
         }
 
-        final byte[] featureData = combineByteArrays(List.of(
-            new byte[]{prefix},
-            writeString(feature.getName())
-        ));
+        final byte[] featureData =
+            combineByteArrays(List.of(new byte[] {prefix}, writeString(feature.getName())));
         features.add(featureData);
       }
 
       final byte[] featuresData = combineByteArrays(features);
-      final byte[] featureCount = writeULEB128(features.size());
+      final byte[] featureCount = writeUleb128(features.size());
 
       return Optional.of(combineByteArrays(List.of(featureCount, featuresData)));
     } catch (final Exception e) {
@@ -437,7 +437,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
     return buffer.get() & 0xFF;
   }
 
-  private int readULEB128(final ByteBuffer buffer) {
+  private int readUleb128(final ByteBuffer buffer) {
     int result = 0;
     int shift = 0;
     byte b;
@@ -452,7 +452,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
   }
 
   private String readString(final ByteBuffer buffer) {
-    final int length = readULEB128(buffer);
+    final int length = readUleb128(buffer);
     final byte[] bytes = new byte[length];
     buffer.get(bytes);
     return new String(bytes, StandardCharsets.UTF_8);
@@ -460,10 +460,10 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
   private Map<Integer, String> readNameMap(final ByteBuffer buffer) {
     final Map<Integer, String> nameMap = new HashMap<>();
-    final int count = readULEB128(buffer);
+    final int count = readUleb128(buffer);
 
     for (int i = 0; i < count && buffer.hasRemaining(); i++) {
-      final int index = readULEB128(buffer);
+      final int index = readUleb128(buffer);
       final String name = readString(buffer);
       nameMap.put(index, name);
     }
@@ -473,10 +473,10 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
   private Map<Integer, Map<Integer, String>> readLocalNameMap(final ByteBuffer buffer) {
     final Map<Integer, Map<Integer, String>> localNameMap = new HashMap<>();
-    final int functionCount = readULEB128(buffer);
+    final int functionCount = readUleb128(buffer);
 
     for (int i = 0; i < functionCount && buffer.hasRemaining(); i++) {
-      final int functionIndex = readULEB128(buffer);
+      final int functionIndex = readUleb128(buffer);
       final Map<Integer, String> locals = readNameMap(buffer);
       localNameMap.put(functionIndex, locals);
     }
@@ -486,7 +486,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
   private List<ProducersSection.ProducerEntry> readProducerEntries(final ByteBuffer buffer) {
     final List<ProducersSection.ProducerEntry> entries = new ArrayList<>();
-    final int entryCount = readULEB128(buffer);
+    final int entryCount = readUleb128(buffer);
 
     for (int i = 0; i < entryCount && buffer.hasRemaining(); i++) {
       final String name = readString(buffer);
@@ -499,7 +499,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
   // Helper methods for writing binary data
 
-  private byte[] writeULEB128(final int value) {
+  private byte[] writeUleb128(final int value) {
     final List<Byte> bytes = new ArrayList<>();
     int remaining = value;
 
@@ -507,7 +507,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
       byte b = (byte) (remaining & 0x7F);
       remaining >>>= 7;
       if (remaining != 0) {
-        b |= 0x80;
+        b |= (byte) 0x80;
       }
       bytes.add(b);
     } while (remaining != 0);
@@ -521,7 +521,7 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
 
   private byte[] writeString(final String str) {
     final byte[] strBytes = str.getBytes(StandardCharsets.UTF_8);
-    final byte[] lengthBytes = writeULEB128(strBytes.length);
+    final byte[] lengthBytes = writeUleb128(strBytes.length);
     return combineByteArrays(List.of(lengthBytes, strBytes));
   }
 
@@ -529,14 +529,12 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
     final List<byte[]> entries = new ArrayList<>();
 
     for (final Map.Entry<Integer, String> entry : nameMap.entrySet()) {
-      entries.add(combineByteArrays(List.of(
-          writeULEB128(entry.getKey()),
-          writeString(entry.getValue())
-      )));
+      entries.add(
+          combineByteArrays(List.of(writeUleb128(entry.getKey()), writeString(entry.getValue()))));
     }
 
     final byte[] entriesData = combineByteArrays(entries);
-    final byte[] count = writeULEB128(nameMap.size());
+    final byte[] count = writeUleb128(nameMap.size());
 
     return combineByteArrays(List.of(count, entriesData));
   }
@@ -545,41 +543,37 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
     final List<byte[]> functions = new ArrayList<>();
 
     for (final Map.Entry<Integer, Map<Integer, String>> entry : localNameMap.entrySet()) {
-      functions.add(combineByteArrays(List.of(
-          writeULEB128(entry.getKey()),
-          writeNameMap(entry.getValue())
-      )));
+      functions.add(
+          combineByteArrays(List.of(writeUleb128(entry.getKey()), writeNameMap(entry.getValue()))));
     }
 
     final byte[] functionsData = combineByteArrays(functions);
-    final byte[] count = writeULEB128(localNameMap.size());
+    final byte[] count = writeUleb128(localNameMap.size());
 
     return combineByteArrays(List.of(count, functionsData));
   }
 
-  private byte[] writeProducerField(final String fieldName, final List<ProducersSection.ProducerEntry> entries) {
+  private byte[] writeProducerField(
+      final String fieldName, final List<ProducersSection.ProducerEntry> entries) {
     final List<byte[]> entryData = new ArrayList<>();
 
     for (final ProducersSection.ProducerEntry entry : entries) {
-      entryData.add(combineByteArrays(List.of(
-          writeString(entry.getName()),
-          writeString(entry.getVersion() != null ? entry.getVersion() : "")
-      )));
+      entryData.add(
+          combineByteArrays(
+              List.of(
+                  writeString(entry.getName()),
+                  writeString(entry.getVersion() != null ? entry.getVersion() : ""))));
     }
 
     final byte[] entriesData = combineByteArrays(entryData);
-    final byte[] entryCount = writeULEB128(entries.size());
+    final byte[] entryCount = writeUleb128(entries.size());
 
-    return combineByteArrays(List.of(
-        writeString(fieldName),
-        entryCount,
-        entriesData
-    ));
+    return combineByteArrays(List.of(writeString(fieldName), entryCount, entriesData));
   }
 
   private byte[] createSubsection(final int type, final byte[] data) {
-    final byte[] typeBytes = new byte[]{(byte) type};
-    final byte[] sizeBytes = writeULEB128(data.length);
+    final byte[] typeBytes = new byte[] {(byte) type};
+    final byte[] sizeBytes = writeUleb128(data.length);
     return combineByteArrays(List.of(typeBytes, sizeBytes, data));
   }
 
@@ -596,8 +590,8 @@ final class DefaultCustomSectionParser implements CustomSectionParser {
     return result;
   }
 
-  private void validateUnknownSection(final String name, final byte[] data,
-                                     final CustomSectionValidationResult.Builder builder) {
+  private void validateUnknownSection(
+      final String name, final byte[] data, final CustomSectionValidationResult.Builder builder) {
     // Basic validation for unknown sections
     if (data.length > CustomSectionSecurity.MAX_CUSTOM_SECTION_SIZE) {
       builder.addError(name, "Section size exceeds maximum allowed size");

@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.InstanceState;
 import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -440,7 +439,8 @@ class JniInstanceTest {
     final JniInstance instance = new JniInstance(VALID_HANDLE, mockModule, mockStore);
 
     // Test that setImports throws UnsupportedOperationException
-    assertThrows(UnsupportedOperationException.class,
+    assertThrows(
+        UnsupportedOperationException.class,
         () -> instance.setImports(java.util.Collections.emptyMap()));
   }
 

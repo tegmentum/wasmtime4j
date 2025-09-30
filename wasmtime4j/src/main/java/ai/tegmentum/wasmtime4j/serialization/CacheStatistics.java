@@ -19,8 +19,8 @@ package ai.tegmentum.wasmtime4j.serialization;
 /**
  * Comprehensive statistics for the module serialization cache.
  *
- * <p>This class provides detailed metrics about cache performance including hit ratios,
- * storage utilization, and performance indicators for optimization and monitoring.
+ * <p>This class provides detailed metrics about cache performance including hit ratios, storage
+ * utilization, and performance indicators for optimization and monitoring.
  *
  * @since 1.0.0
  */
@@ -49,10 +49,16 @@ public final class CacheStatistics {
    * @param diskCacheSizeBytes size of disk cache in bytes
    * @param memoryCacheSizeBytes size of memory cache in bytes
    */
-  public CacheStatistics(final long memoryHits, final long diskHits, final long distributedHits,
-                        final long misses, final long evictions, final double hitRatio,
-                        final long memoryCacheEntries, final long diskCacheSizeBytes,
-                        final long memoryCacheSizeBytes) {
+  public CacheStatistics(
+      final long memoryHits,
+      final long diskHits,
+      final long distributedHits,
+      final long misses,
+      final long evictions,
+      final double hitRatio,
+      final long memoryCacheEntries,
+      final long diskCacheSizeBytes,
+      final long memoryCacheSizeBytes) {
     this.memoryHits = memoryHits;
     this.diskHits = diskHits;
     this.distributedHits = distributedHits;
@@ -142,8 +148,8 @@ public final class CacheStatistics {
   @Override
   public String toString() {
     return String.format(
-        "CacheStatistics{hitRatio=%.2f%%, hits=%d (memory=%d, disk=%d, distributed=%d), " +
-        "misses=%d, evictions=%d, entries=%d, size=%.1fMB (memory=%.1fMB, disk=%.1fMB)}",
+        "CacheStatistics{hitRatio=%.2f%%, hits=%d (memory=%d, disk=%d, distributed=%d), "
+            + "misses=%d, evictions=%d, entries=%d, size=%.1fMB (memory=%.1fMB, disk=%.1fMB)}",
         hitRatio * 100,
         getTotalHits(),
         memoryHits,
@@ -154,7 +160,6 @@ public final class CacheStatistics {
         memoryCacheEntries,
         getTotalCacheSizeMB(),
         getMemoryCacheSizeMB(),
-        getDiskCacheSizeMB()
-    );
+        getDiskCacheSizeMB());
   }
 }

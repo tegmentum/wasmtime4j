@@ -69,9 +69,7 @@ public interface ReferenceSafetyResult {
    */
   List<DangerousReferencePattern> getDangerousPatterns();
 
-  /**
-   * Information about a reference safety violation.
-   */
+  /** Information about a reference safety violation. */
   interface SafetyViolation {
     /** Gets the violation ID. */
     long getViolationId();
@@ -101,9 +99,7 @@ public interface ReferenceSafetyResult {
     List<String> getSuggestedFixes();
   }
 
-  /**
-   * Types of reference safety violations.
-   */
+  /** Types of reference safety violations. */
   enum ViolationType {
     /** Type cast violation. */
     TYPE_CAST_VIOLATION,
@@ -125,9 +121,7 @@ public interface ReferenceSafetyResult {
     CROSS_MODULE_VIOLATION
   }
 
-  /**
-   * Severity levels for safety violations.
-   */
+  /** Severity levels for safety violations. */
   enum ViolationSeverity {
     /** Information level - not a serious problem. */
     INFO,
@@ -139,9 +133,7 @@ public interface ReferenceSafetyResult {
     CRITICAL
   }
 
-  /**
-   * A dangerous reference pattern that may lead to safety issues.
-   */
+  /** A dangerous reference pattern that may lead to safety issues. */
   interface DangerousReferencePattern {
     /** Gets the pattern name. */
     String getPatternName();
@@ -162,9 +154,7 @@ public interface ReferenceSafetyResult {
     List<String> getMitigationStrategies();
   }
 
-  /**
-   * Risk levels for dangerous patterns.
-   */
+  /** Risk levels for dangerous patterns. */
   enum RiskLevel {
     /** Low risk pattern. */
     LOW,
@@ -176,9 +166,7 @@ public interface ReferenceSafetyResult {
     CRITICAL
   }
 
-  /**
-   * A recommendation for improving reference safety.
-   */
+  /** A recommendation for improving reference safety. */
   interface SafetyRecommendation {
     /** Gets the recommendation type. */
     RecommendationType getType();
@@ -199,9 +187,7 @@ public interface ReferenceSafetyResult {
     RecommendationPriority getPriority();
   }
 
-  /**
-   * Types of safety recommendations.
-   */
+  /** Types of safety recommendations. */
   enum RecommendationType {
     /** Add type validation. */
     ADD_TYPE_VALIDATION,
@@ -219,9 +205,7 @@ public interface ReferenceSafetyResult {
     USE_SAFER_PATTERNS
   }
 
-  /**
-   * Implementation difficulty levels.
-   */
+  /** Implementation difficulty levels. */
   enum ImplementationDifficulty {
     /** Easy to implement. */
     EASY,
@@ -233,9 +217,7 @@ public interface ReferenceSafetyResult {
     VERY_DIFFICULT
   }
 
-  /**
-   * Priority levels for recommendations.
-   */
+  /** Priority levels for recommendations. */
   enum RecommendationPriority {
     /** Critical priority. */
     CRITICAL,

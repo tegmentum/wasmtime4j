@@ -6,9 +6,9 @@ import java.util.Set;
 /**
  * Represents a WebAssembly "target_features" custom section.
  *
- * <p>The target features section specifies WebAssembly features required by the module and
- * provides compatibility information for runtime engines. This helps engines determine if they
- * can safely execute the module.
+ * <p>The target features section specifies WebAssembly features required by the module and provides
+ * compatibility information for runtime engines. This helps engines determine if they can safely
+ * execute the module.
  *
  * @since 1.0.0
  */
@@ -17,9 +17,10 @@ public final class TargetFeaturesSection {
   private final List<FeatureEntry> features;
 
   private TargetFeaturesSection(final Builder builder) {
-    this.features = builder.features == null
-        ? java.util.Collections.emptyList()
-        : java.util.Collections.unmodifiableList(builder.features);
+    this.features =
+        builder.features == null
+            ? java.util.Collections.emptyList()
+            : java.util.Collections.unmodifiableList(builder.features);
   }
 
   /**
@@ -39,9 +40,9 @@ public final class TargetFeaturesSection {
   public List<FeatureEntry> getRequiredFeatures() {
     return features.stream()
         .filter(FeatureEntry::isRequired)
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   /**
@@ -52,9 +53,9 @@ public final class TargetFeaturesSection {
   public List<FeatureEntry> getOptionalFeatures() {
     return features.stream()
         .filter(feature -> !feature.isRequired())
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   /**
@@ -65,9 +66,9 @@ public final class TargetFeaturesSection {
   public List<FeatureEntry> getUsedFeatures() {
     return features.stream()
         .filter(FeatureEntry::isUsed)
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   /**
@@ -78,9 +79,9 @@ public final class TargetFeaturesSection {
   public List<FeatureEntry> getDisabledFeatures() {
     return features.stream()
         .filter(FeatureEntry::isDisabled)
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   /**
@@ -91,9 +92,9 @@ public final class TargetFeaturesSection {
   public Set<String> getFeatureNames() {
     return features.stream()
         .map(FeatureEntry::getName)
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toSet(),
-            java.util.Collections::unmodifiableSet));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toSet(), java.util.Collections::unmodifiableSet));
   }
 
   /**
@@ -108,8 +109,7 @@ public final class TargetFeaturesSection {
       throw new IllegalArgumentException("Feature name cannot be null");
     }
 
-    return features.stream()
-        .anyMatch(feature -> featureName.equals(feature.getName()));
+    return features.stream().anyMatch(feature -> featureName.equals(feature.getName()));
   }
 
   /**
@@ -172,9 +172,7 @@ public final class TargetFeaturesSection {
       throw new IllegalArgumentException("Feature name cannot be null");
     }
 
-    return features.stream()
-        .filter(feature -> featureName.equals(feature.getName()))
-        .findFirst();
+    return features.stream().filter(feature -> featureName.equals(feature.getName())).findFirst();
   }
 
   /**
@@ -213,15 +211,17 @@ public final class TargetFeaturesSection {
       throw new IllegalArgumentException("Supported features cannot be null");
     }
 
-    final List<String> missingRequired = getRequiredFeatures().stream()
-        .map(FeatureEntry::getName)
-        .filter(name -> !supportedFeatures.contains(name))
-        .collect(java.util.stream.Collectors.toList());
+    final List<String> missingRequired =
+        getRequiredFeatures().stream()
+            .map(FeatureEntry::getName)
+            .filter(name -> !supportedFeatures.contains(name))
+            .collect(java.util.stream.Collectors.toList());
 
-    final List<String> unsupportedUsed = getUsedFeatures().stream()
-        .map(FeatureEntry::getName)
-        .filter(name -> !supportedFeatures.contains(name))
-        .collect(java.util.stream.Collectors.toList());
+    final List<String> unsupportedUsed =
+        getUsedFeatures().stream()
+            .map(FeatureEntry::getName)
+            .filter(name -> !supportedFeatures.contains(name))
+            .collect(java.util.stream.Collectors.toList());
 
     return new FeatureCompatibilityResult(missingRequired, unsupportedUsed);
   }
@@ -235,9 +235,7 @@ public final class TargetFeaturesSection {
     return new Builder();
   }
 
-  /**
-   * Builder for constructing TargetFeaturesSection instances.
-   */
+  /** Builder for constructing TargetFeaturesSection instances. */
   public static final class Builder {
     private List<FeatureEntry> features;
 
@@ -315,9 +313,7 @@ public final class TargetFeaturesSection {
     }
   }
 
-  /**
-   * Represents a single feature entry in the target features section.
-   */
+  /** Represents a single feature entry in the target features section. */
   public static final class FeatureEntry {
     private final String name;
     private final FeatureStatus status;
@@ -441,33 +437,37 @@ public final class TargetFeaturesSection {
     }
   }
 
-  /**
-   * Status of a WebAssembly feature.
-   */
+  /** Status of a WebAssembly feature. */
   public enum FeatureStatus {
-    /** Feature is required for the module to work */
+    /** Feature is required for the module to work. */
     REQUIRED,
-    /** Feature is used by the module */
+    /** Feature is used by the module. */
     USED,
-    /** Feature is explicitly disabled */
+    /** Feature is explicitly disabled. */
     DISABLED
   }
 
-  /**
-   * Result of feature compatibility validation.
-   */
+  /** Result of feature compatibility validation. */
   public static final class FeatureCompatibilityResult {
     private final List<String> missingRequiredFeatures;
     private final List<String> unsupportedUsedFeatures;
 
-    public FeatureCompatibilityResult(final List<String> missingRequiredFeatures,
-                                      final List<String> unsupportedUsedFeatures) {
-      this.missingRequiredFeatures = missingRequiredFeatures == null
-          ? java.util.Collections.emptyList()
-          : java.util.Collections.unmodifiableList(missingRequiredFeatures);
-      this.unsupportedUsedFeatures = unsupportedUsedFeatures == null
-          ? java.util.Collections.emptyList()
-          : java.util.Collections.unmodifiableList(unsupportedUsedFeatures);
+    /**
+     * Creates a new feature compatibility result.
+     *
+     * @param missingRequiredFeatures list of required features that are missing
+     * @param unsupportedUsedFeatures list of used features that are unsupported
+     */
+    public FeatureCompatibilityResult(
+        final List<String> missingRequiredFeatures, final List<String> unsupportedUsedFeatures) {
+      this.missingRequiredFeatures =
+          missingRequiredFeatures == null
+              ? java.util.Collections.emptyList()
+              : java.util.Collections.unmodifiableList(missingRequiredFeatures);
+      this.unsupportedUsedFeatures =
+          unsupportedUsedFeatures == null
+              ? java.util.Collections.emptyList()
+              : java.util.Collections.unmodifiableList(unsupportedUsedFeatures);
     }
 
     /**

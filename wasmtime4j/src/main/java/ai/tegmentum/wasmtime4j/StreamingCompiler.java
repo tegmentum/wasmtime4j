@@ -1,11 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.reactive.Publisher;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
-import java.util.function.Consumer;
 
 /**
  * Interface for streaming WebAssembly module compilation.
@@ -23,8 +21,7 @@ public interface StreamingCompiler extends AutoCloseable {
    * Begins streaming compilation of WebAssembly bytecode.
    *
    * <p>This method initiates progressive compilation as data becomes available. The compilation
-   * process can begin before all data is received, enabling faster time-to-ready for large
-   * modules.
+   * process can begin before all data is received, enabling faster time-to-ready for large modules.
    *
    * @param input the input stream containing WebAssembly bytecode
    * @param config streaming compilation configuration
@@ -36,8 +33,8 @@ public interface StreamingCompiler extends AutoCloseable {
   /**
    * Begins streaming compilation from a reactive stream publisher.
    *
-   * <p>This method supports reactive streams pattern with backpressure control, allowing the
-   * caller to control the flow of data to the compiler.
+   * <p>This method supports reactive streams pattern with backpressure control, allowing the caller
+   * to control the flow of data to the compiler.
    *
    * @param publisher the publisher of WebAssembly bytecode chunks
    * @param config streaming compilation configuration
@@ -45,7 +42,7 @@ public interface StreamingCompiler extends AutoCloseable {
    * @throws IllegalArgumentException if publisher or config is null
    */
   CompletableFuture<Module> compileStreaming(
-      Flow.Publisher<ByteBuffer> publisher, StreamingConfig config);
+      Publisher<ByteBuffer> publisher, StreamingConfig config);
 
   /**
    * Begins streaming compilation with manual data feeding.
@@ -125,8 +122,8 @@ public interface StreamingCompiler extends AutoCloseable {
   /**
    * Closes the streaming compiler and releases associated resources.
    *
-   * <p>This method cancels any ongoing streaming operations and cleans up internal resources.
-   * After closing, the compiler should not be used.
+   * <p>This method cancels any ongoing streaming operations and cleans up internal resources. After
+   * closing, the compiler should not be used.
    */
   @Override
   void close();

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -19,7 +18,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Optional;
@@ -48,9 +46,7 @@ final class PerformanceBaselineIT {
   private static final int WARMUP_ITERATIONS = 100;
   private static final int MEASUREMENT_ITERATIONS = 1000;
 
-  /**
-   * Establishes performance baselines for core WebAssembly operations.
-   */
+  /** Establishes performance baselines for core WebAssembly operations. */
   @Test
   @DisplayName("Should establish performance baselines for core WebAssembly operations")
   void shouldEstablishPerformanceBaselinesForCoreWebAssemblyOperations() throws Exception {
@@ -86,9 +82,7 @@ final class PerformanceBaselineIT {
     LOGGER.info("Core operations performance baseline: SUCCESS");
   }
 
-  /**
-   * Measures function call performance with different parameter counts and types.
-   */
+  /** Measures function call performance with different parameter counts and types. */
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 2, 4, 8})
   @DisplayName("Should measure function call performance by parameter count")
@@ -118,9 +112,7 @@ final class PerformanceBaselineIT {
     LOGGER.info("Function call performance measurement: SUCCESS");
   }
 
-  /**
-   * Measures memory operation performance including reads, writes, and allocations.
-   */
+  /** Measures memory operation performance including reads, writes, and allocations. */
   @Test
   @DisplayName("Should measure memory operation performance")
   void shouldMeasureMemoryOperationPerformance() throws Exception {
@@ -146,9 +138,7 @@ final class PerformanceBaselineIT {
     LOGGER.info("Memory operations performance baseline: SUCCESS");
   }
 
-  /**
-   * Measures concurrent performance to establish baseline for multi-threaded workloads.
-   */
+  /** Measures concurrent performance to establish baseline for multi-threaded workloads. */
   @ParameterizedTest
   @ValueSource(ints = {2, 4, 8})
   @DisplayName("Should measure concurrent execution performance")
@@ -161,7 +151,8 @@ final class PerformanceBaselineIT {
 
     LOGGER.info("Concurrent execution performance (threads: " + threadCount + "):");
     LOGGER.info("  Total throughput: " + baseline.getTotalThroughputOpsPerSec() + " ops/sec");
-    LOGGER.info("  Per-thread throughput: " + baseline.getPerThreadThroughputOpsPerSec() + " ops/sec");
+    LOGGER.info(
+        "  Per-thread throughput: " + baseline.getPerThreadThroughputOpsPerSec() + " ops/sec");
     LOGGER.info("  Contention overhead: " + baseline.getContentionOverheadPercent() + "%");
     LOGGER.info("  Scaling efficiency: " + baseline.getScalingEfficiencyPercent() + "%");
 
@@ -181,9 +172,7 @@ final class PerformanceBaselineIT {
     LOGGER.info("Concurrent execution performance measurement: SUCCESS");
   }
 
-  /**
-   * Measures end-to-end workflow performance from module loading to result retrieval.
-   */
+  /** Measures end-to-end workflow performance from module loading to result retrieval. */
   @Test
   @DisplayName("Should measure end-to-end workflow performance")
   void shouldMeasureEndToEndWorkflowPerformance() throws Exception {
@@ -215,9 +204,7 @@ final class PerformanceBaselineIT {
     LOGGER.info("End-to-end workflow performance baseline: SUCCESS");
   }
 
-  /**
-   * Generates a comprehensive performance report with all baseline measurements.
-   */
+  /** Generates a comprehensive performance report with all baseline measurements. */
   @Test
   @DisplayName("Should generate comprehensive performance baseline report")
   void shouldGenerateComprehensivePerformanceBaselineReport() throws Exception {
@@ -245,7 +232,8 @@ final class PerformanceBaselineIT {
 
   /** Loads test WebAssembly module for performance testing. */
   private byte[] loadTestWasmModule() throws IOException {
-    final Path resourcePath = Paths.get("src/test/resources/wasm/custom-tests/add.wasm").toAbsolutePath();
+    final Path resourcePath =
+        Paths.get("src/test/resources/wasm/custom-tests/add.wasm").toAbsolutePath();
 
     if (Files.exists(resourcePath)) {
       return Files.readAllBytes(resourcePath);
@@ -258,12 +246,47 @@ final class PerformanceBaselineIT {
   private byte[] createPerformanceTestWasmModule() {
     // Simple WASM module with add function for performance testing
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // WASM magic
-      0x01, 0x00, 0x00, 0x00, // Version
-      0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // Type: (i32,i32)->i32
-      0x03, 0x02, 0x01, 0x00, // Function section
-      0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // Export "add"
-      0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b // Code
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version
+      0x01,
+      0x07,
+      0x01,
+      0x60,
+      0x02,
+      0x7f,
+      0x7f,
+      0x01,
+      0x7f, // Type: (i32,i32)->i32
+      0x03,
+      0x02,
+      0x01,
+      0x00, // Function section
+      0x07,
+      0x07,
+      0x01,
+      0x03,
+      0x61,
+      0x64,
+      0x64,
+      0x00,
+      0x00, // Export "add"
+      0x0a,
+      0x09,
+      0x01,
+      0x07,
+      0x00,
+      0x20,
+      0x00,
+      0x20,
+      0x01,
+      0x6a,
+      0x0b // Code
     };
   }
 
@@ -335,7 +358,7 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         // Warmup
         for (int i = 0; i < WARMUP_ITERATIONS / 10; i++) {
@@ -359,7 +382,7 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
 
@@ -385,11 +408,12 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
         final Instance instance = runtime.instantiate(module);
-        final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+        final WasmFunction addFunction =
+            instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
 
         // Warmup
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
@@ -414,16 +438,18 @@ final class PerformanceBaselineIT {
   /** Function call performance benchmarker. */
   private final class FunctionCallBenchmarker {
 
-    public FunctionCallBaseline measureFunctionCallPerformance(final int paramCount) throws Exception {
+    public FunctionCallBaseline measureFunctionCallPerformance(final int paramCount)
+        throws Exception {
       final List<Long> measurements = new ArrayList<>();
       final byte[] wasmBytes = createFunctionWithParams(paramCount);
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
         final Instance instance = runtime.instantiate(module);
-        final WasmFunction function = instance.getFunction("test").orElseThrow(() -> new AssertionError("No test function"));
+        final WasmFunction function =
+            instance.getFunction("test").orElseThrow(() -> new AssertionError("No test function"));
 
         final WasmValue[] args = createArgs(paramCount);
 
@@ -442,7 +468,8 @@ final class PerformanceBaselineIT {
         }
         final Duration testDuration = Duration.between(testStart, Instant.now());
 
-        final LongSummaryStatistics stats = measurements.stream().mapToLong(Long::longValue).summaryStatistics();
+        final LongSummaryStatistics stats =
+            measurements.stream().mapToLong(Long::longValue).summaryStatistics();
         final double throughput = MEASUREMENT_ITERATIONS / (testDuration.toMillis() / 1000.0);
 
         return new FunctionCallBaseline(
@@ -463,7 +490,8 @@ final class PerformanceBaselineIT {
     }
 
     private WasmValue[] createArgs(final int paramCount) {
-      final WasmValue[] args = new WasmValue[Math.min(paramCount, 2)]; // Limit to what our test module supports
+      final WasmValue[] args =
+          new WasmValue[Math.min(paramCount, 2)]; // Limit to what our test module supports
       for (int i = 0; i < args.length; i++) {
         args[i] = WasmValue.i32(i + 1);
       }
@@ -494,7 +522,7 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
         final Instance instance = runtime.instantiate(module);
@@ -518,10 +546,11 @@ final class PerformanceBaselineIT {
           }
         } else {
           // Fallback measurement with function calls as memory proxy
-          final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+          final WasmFunction addFunction =
+              instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
           for (int i = 0; i < MEASUREMENT_ITERATIONS / 10; i++) {
             final long start = System.nanoTime();
-            addFunction.call(new WasmValue[]{WasmValue.i32(1), WasmValue.i32(2)});
+            addFunction.call(new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)});
             final long end = System.nanoTime();
             measurements.add(end - start);
           }
@@ -538,7 +567,7 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
 
@@ -566,7 +595,7 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
 
@@ -594,7 +623,8 @@ final class PerformanceBaselineIT {
   /** Concurrent performance benchmarker. */
   private final class ConcurrentPerformanceBenchmarker {
 
-    public ConcurrentPerformanceBaseline measureConcurrentPerformance(final int threadCount) throws Exception {
+    public ConcurrentPerformanceBaseline measureConcurrentPerformance(final int threadCount)
+        throws Exception {
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
       final List<CompletableFuture<ThreadPerformanceResult>> futures = new ArrayList<>();
 
@@ -605,13 +635,16 @@ final class PerformanceBaselineIT {
 
         // Start concurrent workers
         for (int i = 0; i < threadCount; i++) {
-          futures.add(CompletableFuture.supplyAsync(() -> {
-            try {
-              return measureThreadPerformance(runtime, wasmBytes);
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            }
-          }, executor));
+          futures.add(
+              CompletableFuture.supplyAsync(
+                  () -> {
+                    try {
+                      return measureThreadPerformance(runtime, wasmBytes);
+                    } catch (final Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                  },
+                  executor));
         }
 
         // Wait for completion
@@ -623,13 +656,17 @@ final class PerformanceBaselineIT {
         final Duration totalTime = Duration.between(testStart, Instant.now());
 
         // Calculate metrics
-        final double totalThroughput = results.stream().mapToDouble(ThreadPerformanceResult::getThroughput).sum();
+        final double totalThroughput =
+            results.stream().mapToDouble(ThreadPerformanceResult::getThroughput).sum();
         final double perThreadThroughput = totalThroughput / threadCount;
         final double expectedTotalThroughput = results.get(0).getThroughput() * threadCount;
         final double scalingEfficiency = (totalThroughput / expectedTotalThroughput) * 100.0;
-        final double contentionOverhead = Math.max(0, (expectedTotalThroughput - totalThroughput) / expectedTotalThroughput * 100.0);
+        final double contentionOverhead =
+            Math.max(
+                0, (expectedTotalThroughput - totalThroughput) / expectedTotalThroughput * 100.0);
 
-        return new ConcurrentPerformanceBaseline(totalThroughput, perThreadThroughput, contentionOverhead, scalingEfficiency);
+        return new ConcurrentPerformanceBaseline(
+            totalThroughput, perThreadThroughput, contentionOverhead, scalingEfficiency);
 
       } finally {
         executor.shutdown();
@@ -637,7 +674,8 @@ final class PerformanceBaselineIT {
       }
     }
 
-    private ThreadPerformanceResult measureThreadPerformance(final WasmRuntime runtime, final byte[] wasmBytes) throws Exception {
+    private ThreadPerformanceResult measureThreadPerformance(
+        final WasmRuntime runtime, final byte[] wasmBytes) throws Exception {
       final int operations = MEASUREMENT_ITERATIONS / 10;
       final Instant start = Instant.now();
 
@@ -646,8 +684,9 @@ final class PerformanceBaselineIT {
 
         for (int i = 0; i < operations; i++) {
           final Instance instance = runtime.instantiate(module);
-          final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
-          addFunction.call(new WasmValue[]{WasmValue.i32(i), WasmValue.i32(i + 1)});
+          final WasmFunction addFunction =
+              instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+          addFunction.call(new WasmValue[] {WasmValue.i32(i), WasmValue.i32(i + 1)});
         }
       }
 
@@ -666,7 +705,8 @@ final class PerformanceBaselineIT {
       final WorkflowMeasurement warmExecution = measureWarmExecution();
       final WorkflowMeasurement cleanup = measureCleanup();
 
-      final double totalTime = coldStart.getDurationMs() + warmExecution.getDurationMs() + cleanup.getDurationMs();
+      final double totalTime =
+          coldStart.getDurationMs() + warmExecution.getDurationMs() + cleanup.getDurationMs();
       final double memoryEfficiency = calculateMemoryEfficiency(coldStart, warmExecution, cleanup);
 
       return new WorkflowPerformanceBaseline(
@@ -688,8 +728,9 @@ final class PerformanceBaselineIT {
           final Module module = runtime.compileModule(engine, wasmBytes);
           final Instance instance = runtime.instantiate(module);
 
-          final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
-          addFunction.call(new WasmValue[]{WasmValue.i32(10), WasmValue.i32(20)});
+          final WasmFunction addFunction =
+              instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+          addFunction.call(new WasmValue[] {WasmValue.i32(10), WasmValue.i32(20)});
         }
       }
 
@@ -703,15 +744,16 @@ final class PerformanceBaselineIT {
       final byte[] wasmBytes = loadTestWasmModule();
 
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, wasmBytes);
         final Instance instance = runtime.instantiate(module);
-        final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+        final WasmFunction addFunction =
+            instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
 
         // Warmup
         for (int i = 0; i < 10; i++) {
-          addFunction.call(new WasmValue[]{WasmValue.i32(i), WasmValue.i32(i + 1)});
+          addFunction.call(new WasmValue[] {WasmValue.i32(i), WasmValue.i32(i + 1)});
         }
 
         // Measure
@@ -719,7 +761,7 @@ final class PerformanceBaselineIT {
         final Instant start = Instant.now();
 
         for (int i = 0; i < 100; i++) {
-          addFunction.call(new WasmValue[]{WasmValue.i32(i), WasmValue.i32(i + 1)});
+          addFunction.call(new WasmValue[] {WasmValue.i32(i), WasmValue.i32(i + 1)});
         }
 
         final Duration elapsed = Duration.between(start, Instant.now());
@@ -744,9 +786,10 @@ final class PerformanceBaselineIT {
     }
 
     private double calculateMemoryEfficiency(final WorkflowMeasurement... measurements) {
-      final long totalMemoryUsed = java.util.Arrays.stream(measurements)
-          .mapToLong(WorkflowMeasurement::getMemoryUsage)
-          .sum();
+      final long totalMemoryUsed =
+          java.util.Arrays.stream(measurements)
+              .mapToLong(WorkflowMeasurement::getMemoryUsage)
+              .sum();
 
       // Simple efficiency calculation
       if (totalMemoryUsed <= 0) {
@@ -754,9 +797,10 @@ final class PerformanceBaselineIT {
       }
 
       // Calculate efficiency based on memory usage relative to execution time
-      final double totalTime = java.util.Arrays.stream(measurements)
-          .mapToDouble(WorkflowMeasurement::getDurationMs)
-          .sum();
+      final double totalTime =
+          java.util.Arrays.stream(measurements)
+              .mapToDouble(WorkflowMeasurement::getDurationMs)
+              .sum();
 
       final double memoryPerMs = totalMemoryUsed / Math.max(1, totalTime);
       return Math.max(0, Math.min(100, 100.0 - (memoryPerMs / 1024 / 1024))); // Arbitrary scale
@@ -786,18 +830,22 @@ final class PerformanceBaselineIT {
       final MemoryOperationBenchmarker memBenchmarker = new MemoryOperationBenchmarker();
       final MemoryOperationBaseline memOps = memBenchmarker.measureMemoryOperations();
 
-      final ConcurrentPerformanceBenchmarker concBenchmarker = new ConcurrentPerformanceBenchmarker();
+      final ConcurrentPerformanceBenchmarker concBenchmarker =
+          new ConcurrentPerformanceBenchmarker();
       final List<ConcurrentPerformanceBaseline> concBaselines = new ArrayList<>();
       for (int threads = 2; threads <= 8; threads *= 2) {
         concBaselines.add(concBenchmarker.measureConcurrentPerformance(threads));
       }
 
-      final WorkflowPerformanceBenchmarker workflowBenchmarker = new WorkflowPerformanceBenchmarker();
+      final WorkflowPerformanceBenchmarker workflowBenchmarker =
+          new WorkflowPerformanceBenchmarker();
       final WorkflowPerformanceBaseline workflow = workflowBenchmarker.measureWorkflowPerformance();
 
-      final double overallScore = calculateOverallPerformanceScore(coreOps, funcBaselines, memOps, concBaselines, workflow);
+      final double overallScore =
+          calculateOverallPerformanceScore(coreOps, funcBaselines, memOps, concBaselines, workflow);
 
-      return new PerformanceReport(coreOps, funcBaselines, memOps, concBaselines, workflow, overallScore);
+      return new PerformanceReport(
+          coreOps, funcBaselines, memOps, concBaselines, workflow, overallScore);
     }
 
     private double calculateOverallPerformanceScore(
@@ -841,15 +889,17 @@ final class PerformanceBaselineIT {
     private final double standardDeviation;
 
     public PerformanceStats(final List<Long> measurements) {
-      final LongSummaryStatistics stats = measurements.stream().mapToLong(Long::longValue).summaryStatistics();
+      final LongSummaryStatistics stats =
+          measurements.stream().mapToLong(Long::longValue).summaryStatistics();
       this.averageNanos = stats.getAverage();
       this.minNanos = stats.getMin();
       this.maxNanos = stats.getMax();
 
-      final double variance = measurements.stream()
-          .mapToDouble(measurement -> Math.pow(measurement - averageNanos, 2))
-          .average()
-          .orElse(0.0);
+      final double variance =
+          measurements.stream()
+              .mapToDouble(measurement -> Math.pow(measurement - averageNanos, 2))
+              .average()
+              .orElse(0.0);
       this.standardDeviation = Math.sqrt(variance);
     }
 
@@ -871,7 +921,8 @@ final class PerformanceBaselineIT {
 
     @Override
     public String toString() {
-      return String.format("avg=%.0fns, min=%dns, max=%dns, stddev=%.0fns",
+      return String.format(
+          "avg=%.0fns, min=%dns, max=%dns, stddev=%.0fns",
           averageNanos, minNanos, maxNanos, standardDeviation);
     }
   }
@@ -1139,47 +1190,90 @@ final class PerformanceBaselineIT {
 
     public String generateFormattedReport() {
       final StringBuilder report = new StringBuilder();
-      report.append("================================================================================\n");
+      report.append(
+          "================================================================================\n");
       report.append("COMPREHENSIVE PERFORMANCE BASELINE REPORT\n");
-      report.append("================================================================================\n\n");
+      report.append(
+          "================================================================================\n\n");
 
-      report.append("Overall Performance Score: ").append(String.format("%.1f/100", overallPerformanceScore)).append("\n\n");
+      report
+          .append("Overall Performance Score: ")
+          .append(String.format("%.1f/100", overallPerformanceScore))
+          .append("\n\n");
 
       report.append("Core Operations:\n");
-      report.append("  Runtime Creation: ").append(coreOperationsBaseline.getRuntimeCreationStats()).append("\n");
-      report.append("  Engine Creation: ").append(coreOperationsBaseline.getEngineCreationStats()).append("\n");
-      report.append("  Module Compilation: ").append(coreOperationsBaseline.getModuleCompilationStats()).append("\n");
-      report.append("  Instance Creation: ").append(coreOperationsBaseline.getInstanceCreationStats()).append("\n");
-      report.append("  Function Calls: ").append(coreOperationsBaseline.getFunctionCallStats()).append("\n\n");
+      report
+          .append("  Runtime Creation: ")
+          .append(coreOperationsBaseline.getRuntimeCreationStats())
+          .append("\n");
+      report
+          .append("  Engine Creation: ")
+          .append(coreOperationsBaseline.getEngineCreationStats())
+          .append("\n");
+      report
+          .append("  Module Compilation: ")
+          .append(coreOperationsBaseline.getModuleCompilationStats())
+          .append("\n");
+      report
+          .append("  Instance Creation: ")
+          .append(coreOperationsBaseline.getInstanceCreationStats())
+          .append("\n");
+      report
+          .append("  Function Calls: ")
+          .append(coreOperationsBaseline.getFunctionCallStats())
+          .append("\n\n");
 
       report.append("Function Call Performance:\n");
       for (int i = 0; i < functionCallBaselines.size(); i++) {
         final FunctionCallBaseline baseline = functionCallBaselines.get(i);
-        report.append(String.format("  %d parameters: avg=%.0fns, throughput=%.0f ops/sec\n",
-            i * 2, baseline.getAverageLatencyNanos(), baseline.getThroughputOpsPerSec()));
+        report.append(
+            String.format(
+                "  %d parameters: avg=%.0fns, throughput=%.0f ops/sec\n",
+                i * 2, baseline.getAverageLatencyNanos(), baseline.getThroughputOpsPerSec()));
       }
       report.append("\n");
 
       report.append("Memory Operations:\n");
-      report.append("  Access: ").append(memoryOperationBaseline.getMemoryAccessStats()).append("\n");
-      report.append("  Allocation: ").append(memoryOperationBaseline.getMemoryAllocationStats()).append("\n");
-      report.append("  Cleanup: ").append(memoryOperationBaseline.getMemoryCleanupStats()).append("\n\n");
+      report
+          .append("  Access: ")
+          .append(memoryOperationBaseline.getMemoryAccessStats())
+          .append("\n");
+      report
+          .append("  Allocation: ")
+          .append(memoryOperationBaseline.getMemoryAllocationStats())
+          .append("\n");
+      report
+          .append("  Cleanup: ")
+          .append(memoryOperationBaseline.getMemoryCleanupStats())
+          .append("\n\n");
 
       report.append("Concurrent Performance:\n");
       for (int i = 0; i < concurrentPerformanceBaselines.size(); i++) {
         final ConcurrentPerformanceBaseline baseline = concurrentPerformanceBaselines.get(i);
         final int threads = (int) Math.pow(2, i + 1);
-        report.append(String.format("  %d threads: %.0f ops/sec total, %.1f%% scaling efficiency\n",
-            threads, baseline.getTotalThroughputOpsPerSec(), baseline.getScalingEfficiencyPercent()));
+        report.append(
+            String.format(
+                "  %d threads: %.0f ops/sec total, %.1f%% scaling efficiency\n",
+                threads,
+                baseline.getTotalThroughputOpsPerSec(),
+                baseline.getScalingEfficiencyPercent()));
       }
       report.append("\n");
 
       report.append("Workflow Performance:\n");
-      report.append(String.format("  Cold start: %.1fms\n", workflowPerformanceBaseline.getColdStartTimeMs()));
-      report.append(String.format("  Warm execution: %.1fms\n", workflowPerformanceBaseline.getWarmExecutionTimeMs()));
-      report.append(String.format("  Memory efficiency: %.1f%%\n", workflowPerformanceBaseline.getMemoryEfficiencyPercent()));
+      report.append(
+          String.format(
+              "  Cold start: %.1fms\n", workflowPerformanceBaseline.getColdStartTimeMs()));
+      report.append(
+          String.format(
+              "  Warm execution: %.1fms\n", workflowPerformanceBaseline.getWarmExecutionTimeMs()));
+      report.append(
+          String.format(
+              "  Memory efficiency: %.1f%%\n",
+              workflowPerformanceBaseline.getMemoryEfficiencyPercent()));
 
-      report.append("\n================================================================================\n");
+      report.append(
+          "\n================================================================================\n");
 
       return report.toString();
     }

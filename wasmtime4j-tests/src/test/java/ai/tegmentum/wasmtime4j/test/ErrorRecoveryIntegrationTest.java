@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,51 +31,83 @@ import org.junit.jupiter.params.provider.EnumSource;
  * Integration test framework for comprehensive error recovery testing.
  *
  * <p>This test class validates the complete error recovery pipeline across different error
- * scenarios, runtime states, and recovery strategies. It ensures that the WebAssembly runtime
- * can gracefully handle errors and continue operating correctly after various failure modes.
+ * scenarios, runtime states, and recovery strategies. It ensures that the WebAssembly runtime can
+ * gracefully handle errors and continue operating correctly after various failure modes.
  */
 @DisplayName("Error Recovery Integration Test Framework")
 class ErrorRecoveryIntegrationTest {
 
   /** Valid WebAssembly module that returns a constant value. */
   private static final byte[] VALID_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x06, // Section size
     0x01, // 1 function body
     0x04, // Body size
     0x00, // No locals
-    0x41, 0x2A, // i32.const 42
+    0x41,
+    0x2A, // i32.const 42
     0x0B // End instruction
   };
 
   /** WebAssembly module with unreachable instruction. */
   private static final byte[] TRAP_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'r', 'a', 'p', // Export name "trap"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'r',
+    'a',
+    'p', // Export name "trap"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x05, // Section size
     0x01, // 1 function body
@@ -89,26 +119,47 @@ class ErrorRecoveryIntegrationTest {
 
   /** WebAssembly module with division by zero. */
   private static final byte[] DIVISION_BY_ZERO_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x0A, // Section size
     0x01, // 1 export
-    0x06, 'd', 'i', 'v', 'z', 'e', 'r', 'o', // Export name "divzero"
-    0x00, 0x00, // Function export with index 0
+    0x06,
+    'd',
+    'i',
+    'v',
+    'z',
+    'e',
+    'r',
+    'o', // Export name "divzero"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x09, // Section size
     0x01, // 1 function body
     0x07, // Body size
     0x00, // No locals
-    0x41, 0x01, // i32.const 1
-    0x41, 0x00, // i32.const 0
+    0x41,
+    0x01, // i32.const 1
+    0x41,
+    0x00, // i32.const 0
     0x6D, // i32.div_s
     0x0B // End instruction
   };
@@ -116,9 +167,7 @@ class ErrorRecoveryIntegrationTest {
   /** Invalid WebAssembly module. */
   private static final byte[] INVALID_MODULE = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
-  /**
-   * Error recovery strategy for testing.
-   */
+  /** Error recovery strategy for testing. */
   private enum RecoveryStrategy {
     /** Continue with the same runtime after error. */
     CONTINUE_SAME_RUNTIME,
@@ -132,9 +181,7 @@ class ErrorRecoveryIntegrationTest {
     RESET_STORE
   }
 
-  /**
-   * Recovery test scenario.
-   */
+  /** Recovery test scenario. */
   private static class RecoveryScenario {
     final String name;
     final byte[] errorModule;
@@ -246,14 +293,13 @@ class ErrorRecoveryIntegrationTest {
       }
 
       // Test recovery
-      Module recoveryModule = recoveryRuntime.compileModule(recoveryEngine, scenario.recoveryModule);
+      Module recoveryModule =
+          recoveryRuntime.compileModule(recoveryEngine, scenario.recoveryModule);
       Instance recoveryInstance = recoveryRuntime.instantiateModule(recoveryStore, recoveryModule);
 
       Object result = recoveryInstance.getExportedFunction(scenario.recoveryFunction).call();
       assertEquals(
-          scenario.expectedResult,
-          result,
-          "Recovery should work correctly: " + scenario.name);
+          scenario.expectedResult, result, "Recovery should work correctly: " + scenario.name);
 
       // Cleanup additional runtimes
       if (scenario.strategy == RecoveryStrategy.NEW_RUNTIME && recoveryRuntime != runtime) {
@@ -386,15 +432,14 @@ class ErrorRecoveryIntegrationTest {
             });
       }
 
-      assertTrue(latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
+      assertTrue(
+          latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
       executor.shutdown();
 
       // Verify results
       int expectedErrors = threadCount * operationsPerThread;
       assertEquals(
-          expectedErrors,
-          totalErrors.get(),
-          "All error operations should have thrown exceptions");
+          expectedErrors, totalErrors.get(), "All error operations should have thrown exceptions");
 
       assertTrue(
           successfulRecoveries.get() >= expectedErrors * 0.9,
@@ -455,7 +500,8 @@ class ErrorRecoveryIntegrationTest {
 
       // Final recovery
       Object result4 = validInstance.getExportedFunction("test").call();
-      assertEquals(42, result4, "Original module should still work after multiple compilation errors");
+      assertEquals(
+          42, result4, "Original module should still work after multiple compilation errors");
 
       assertTrue(runtime.isValid(), "Runtime should remain valid after compilation errors");
     }
@@ -557,8 +603,7 @@ class ErrorRecoveryIntegrationTest {
 
         // Verify runtime state consistency
         assertTrue(
-            runtime.isValid(),
-            "Runtime should remain valid throughout iteration " + iteration);
+            runtime.isValid(), "Runtime should remain valid throughout iteration " + iteration);
       }
     }
   }

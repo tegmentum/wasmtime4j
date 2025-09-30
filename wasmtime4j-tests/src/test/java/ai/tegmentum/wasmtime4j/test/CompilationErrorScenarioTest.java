@@ -115,22 +115,49 @@ class CompilationErrorScenarioTest {
 
       // Valid header + malformed section
       byte[] malformedSection1 = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Valid header
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Valid header
         0x01, // Section type (type section)
-        0xFF, 0xFF, 0xFF, 0xFF, 0x0F // Invalid LEB128 size (too large)
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0x0F // Invalid LEB128 size (too large)
       };
 
       byte[] malformedSection2 = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Valid header
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Valid header
         0x99, // Invalid section type
-        0x01, 0x00 // Size = 1, content = 0
+        0x01,
+        0x00 // Size = 1, content = 0
       };
 
       byte[] malformedSection3 = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Valid header
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Valid header
         0x01, // Section type (type section)
         0x05, // Size = 5
-        0x01, 0x02 // Only 2 bytes of content when 5 expected
+        0x01,
+        0x02 // Only 2 bytes of content when 5 expected
       };
 
       byte[][] malformedSections = {malformedSection1, malformedSection2, malformedSection3};
@@ -260,12 +287,13 @@ class CompilationErrorScenarioTest {
             });
       }
 
-      assertTrue(latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
+      assertTrue(
+          latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
       executor.shutdown();
 
-      assertTrue(exceptionCount.get() >= threadCount / 2, "Most threads should throw WasmException");
       assertTrue(
-          unexpectedExceptionCount.get() == 0, "No unexpected exceptions should occur");
+          exceptionCount.get() >= threadCount / 2, "Most threads should throw WasmException");
+      assertTrue(unexpectedExceptionCount.get() == 0, "No unexpected exceptions should occur");
     }
   }
 

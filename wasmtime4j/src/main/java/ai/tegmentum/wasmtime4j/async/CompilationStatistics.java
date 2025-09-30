@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.async;
 /**
  * Detailed statistics about WebAssembly module compilation.
  *
- * <p>These statistics provide insight into resource usage and
- * performance characteristics of the compilation process.
+ * <p>These statistics provide insight into resource usage and performance characteristics of the
+ * compilation process.
  *
  * @since 1.0.0
  */
@@ -57,8 +57,7 @@ public final class CompilationStatistics {
    * @return basic statistics
    */
   public static CompilationStatistics basic(final long bytesProcessed) {
-    return new CompilationStatistics(
-        bytesProcessed, 0, 1, 0L, 0L, 0.0, 0, "cranelift");
+    return new CompilationStatistics(bytesProcessed, 0, 1, 0L, 0L, 0.0, 0, "cranelift");
   }
 
   /**
@@ -155,7 +154,10 @@ public final class CompilationStatistics {
   public String toString() {
     return String.format(
         "CompilationStatistics{bytes=%d, functions=%d, threads=%d, backend='%s', efficiency=%.2f}",
-        bytesProcessed, functionsCompiled, parallelThreadsUsed, compilerBackend,
+        bytesProcessed,
+        functionsCompiled,
+        parallelThreadsUsed,
+        compilerBackend,
         getParallelizationEfficiency());
   }
 }

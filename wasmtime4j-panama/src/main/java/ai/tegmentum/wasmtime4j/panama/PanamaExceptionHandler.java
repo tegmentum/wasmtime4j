@@ -20,9 +20,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmExceptionHandlingException;
 import ai.tegmentum.wasmtime4j.gc.GcRuntime;
-import ai.tegmentum.wasmtime4j.gc.GcValue;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaArena;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaGcBridge;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
@@ -46,6 +44,7 @@ import java.util.logging.Logger;
  * integrates with both the native Rust implementation and the WebAssembly GC foundation.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Type-safe exception handling using Panama FFI
  *   <li>Memory-safe arena-based resource management
@@ -77,51 +76,67 @@ public final class PanamaExceptionHandler implements AutoCloseable {
       final SymbolLookup lookup = SymbolLookup.loaderLookup();
       final Linker linker = Linker.nativeLinker();
 
-      CREATE_HANDLER = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_handler_create").orElseThrow(),
-          FunctionDescriptor.of(
-              ValueLayout.ADDRESS,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT,
-              ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.JAVA_BOOLEAN));
+      CREATE_HANDLER =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_handler_create").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.JAVA_BOOLEAN));
 
-      CREATE_EXCEPTION_TAG = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_tag_create").orElseThrow(),
-          FunctionDescriptor.of(
-              ValueLayout.JAVA_LONG,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.JAVA_LONG, ValueLayout.JAVA_BOOLEAN));
+      CREATE_EXCEPTION_TAG =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_tag_create").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.JAVA_BOOLEAN));
 
-      THROW_EXCEPTION = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_throw").orElseThrow(),
-          FunctionDescriptor.ofVoid(
-              ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS,
-              ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+      THROW_EXCEPTION =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_throw").orElseThrow(),
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.JAVA_LONG,
+                  ValueLayout.ADDRESS));
 
-      REGISTER_EXCEPTION_HANDLER = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_register_handler").orElseThrow(),
-          FunctionDescriptor.ofVoid(
-              ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+      REGISTER_EXCEPTION_HANDLER =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_register_handler").orElseThrow(),
+              FunctionDescriptor.ofVoid(
+                  ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-      CAPTURE_STACK_TRACE = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_capture_stack_trace").orElseThrow(),
-          FunctionDescriptor.of(
-              ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+      CAPTURE_STACK_TRACE =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_capture_stack_trace").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
-      PERFORM_UNWINDING = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_perform_unwinding").orElseThrow(),
-          FunctionDescriptor.of(
-              ValueLayout.JAVA_BOOLEAN,
-              ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+      PERFORM_UNWINDING =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_perform_unwinding").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
-      CLOSE_HANDLER = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_handler_close").orElseThrow(),
-          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      CLOSE_HANDLER =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_handler_close").orElseThrow(),
+              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-      FREE_STRING = linker.downcallHandle(
-          lookup.find("wasmtime4j_exception_free_string").orElseThrow(),
-          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      FREE_STRING =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_exception_free_string").orElseThrow(),
+              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
       LOGGER.info("Loaded Panama FFI bindings for exception handling");
     } catch (final Exception e) {
@@ -156,31 +171,42 @@ public final class PanamaExceptionHandler implements AutoCloseable {
     this.handlerCallbacks = new ConcurrentHashMap<>();
 
     try {
-      this.nativeHandle = (MemorySegment) CREATE_HANDLER.invokeExact(
-          config.enableNestedTryCatch,
-          config.enableExceptionUnwinding,
-          config.maxUnwindDepth,
-          config.validateExceptionTypes,
-          config.enableStackTraces,
-          config.enableExceptionPropagation,
-          config.enableGcIntegration);
+      this.nativeHandle =
+          (MemorySegment)
+              CREATE_HANDLER.invokeExact(
+                  config.enableNestedTryCatch,
+                  config.enableExceptionUnwinding,
+                  config.maxUnwindDepth,
+                  config.validateExceptionTypes,
+                  config.enableStackTraces,
+                  config.enableExceptionPropagation,
+                  config.enableGcIntegration);
 
       if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
-        throw new WasmExceptionHandlingException("Failed to create native exception handler",
+        throw new WasmExceptionHandlingException(
+            "Failed to create native exception handler",
             WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED);
       }
 
-      LOGGER.fine("Created Panama exception handler with ID: " + handlerId
-          + ", native handle: " + nativeHandle.address());
+      LOGGER.fine(
+          "Created Panama exception handler with ID: "
+              + handlerId
+              + ", native handle: "
+              + nativeHandle.address());
     } catch (final WasmExceptionHandlingException e) {
       arena.close();
       throw e;
     } catch (final Throwable t) {
       arena.close();
-      throw new WasmExceptionHandlingException("Failed to create Panama exception handler",
-          t, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.NATIVE_LIBRARY_ERROR,
-          null, WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
-          null, null, 0);
+      throw new WasmExceptionHandlingException(
+          "Failed to create Panama exception handler",
+          t,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.NATIVE_LIBRARY_ERROR,
+          null,
+          WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
+          null,
+          null,
+          0);
     }
   }
 
@@ -196,9 +222,7 @@ public final class PanamaExceptionHandler implements AutoCloseable {
    * @throws IllegalStateException if handler is closed
    */
   public WasmExceptionHandlingException.ExceptionTag createExceptionTag(
-      final String name,
-      final List<WasmValueType> parameterTypes,
-      final boolean isGcAware) {
+      final String name, final List<WasmValueType> parameterTypes, final boolean isGcAware) {
     validateNotClosed();
     PanamaValidation.validateNotNull(name, "Exception tag name");
     PanamaValidation.validateNotEmpty(name.trim(), "Exception tag name");
@@ -219,20 +243,18 @@ public final class PanamaExceptionHandler implements AutoCloseable {
     try (final Arena tempArena = Arena.ofConfined()) {
       // Allocate memory for name and parameter types
       final MemorySegment nameSegment = tempArena.allocateFrom(trimmedName);
-      final MemorySegment typesSegment = tempArena.allocateArray(ValueLayout.JAVA_BYTE,
-          parameterTypes.size());
+      final MemorySegment typesSegment =
+          tempArena.allocateArray(ValueLayout.JAVA_BYTE, parameterTypes.size());
 
       // Copy parameter types to native memory
       for (int i = 0; i < parameterTypes.size(); i++) {
         typesSegment.setAtIndex(ValueLayout.JAVA_BYTE, i, (byte) parameterTypes.get(i).ordinal());
       }
 
-      final long tagHandle = (long) CREATE_EXCEPTION_TAG.invokeExact(
-          nativeHandle,
-          nameSegment,
-          typesSegment,
-          (long) parameterTypes.size(),
-          isGcAware);
+      final long tagHandle =
+          (long)
+              CREATE_EXCEPTION_TAG.invokeExact(
+                  nativeHandle, nameSegment, typesSegment, (long) parameterTypes.size(), isGcAware);
 
       if (tagHandle == 0) {
         throw new WasmExceptionHandlingException.TagCreationException(
@@ -240,13 +262,18 @@ public final class PanamaExceptionHandler implements AutoCloseable {
       }
 
       final WasmExceptionHandlingException.ExceptionTag tag =
-          new WasmExceptionHandlingException.ExceptionTag(trimmedName, parameterTypes,
-              tagHandle, isGcAware);
+          new WasmExceptionHandlingException.ExceptionTag(
+              trimmedName, parameterTypes, tagHandle, isGcAware);
 
       tagCache.put(tagHandle, tag);
 
-      LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle
-          + ", GC-aware: " + isGcAware);
+      LOGGER.fine(
+          "Created exception tag '"
+              + trimmedName
+              + "' with handle: "
+              + tagHandle
+              + ", GC-aware: "
+              + isGcAware);
       return tag;
     } catch (final WasmExceptionHandlingException e) {
       throw e;
@@ -296,15 +323,20 @@ public final class PanamaExceptionHandler implements AutoCloseable {
         try {
           PanamaGcBridge.releaseGcHandles(gcRuntime, gcHandlesSegment);
         } catch (final Exception gcE) {
-          LOGGER.warning("Failed to release GC handles during exception cleanup: "
-              + gcE.getMessage());
+          LOGGER.warning(
+              "Failed to release GC handles during exception cleanup: " + gcE.getMessage());
         }
       }
 
-      throw new WasmExceptionHandlingException("Failed to throw WebAssembly exception",
-          t, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN, null,
+      throw new WasmExceptionHandlingException(
+          "Failed to throw WebAssembly exception",
+          t,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
+          null,
           WasmExceptionHandlingException.ExceptionErrorCode.PROPAGATION_FAILED,
-          payload, null, 0);
+          payload,
+          null,
+          0);
     }
   }
 
@@ -336,10 +368,15 @@ public final class PanamaExceptionHandler implements AutoCloseable {
       LOGGER.fine("Registered exception handler for tag: " + tag.getName());
     } catch (final Throwable t) {
       handlerCallbacks.remove(tag.getNativeHandle());
-      throw new WasmExceptionHandlingException("Failed to register exception handler",
-          t, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN, null,
+      throw new WasmExceptionHandlingException(
+          "Failed to register exception handler",
+          t,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
+          null,
           WasmExceptionHandlingException.ExceptionErrorCode.HANDLER_REGISTRATION_FAILED,
-          null, null, 0);
+          null,
+          null,
+          0);
     }
   }
 
@@ -360,8 +397,8 @@ public final class PanamaExceptionHandler implements AutoCloseable {
     }
 
     try {
-      final boolean shouldContinue = (boolean) PERFORM_UNWINDING.invokeExact(nativeHandle,
-          currentDepth);
+      final boolean shouldContinue =
+          (boolean) PERFORM_UNWINDING.invokeExact(nativeHandle, currentDepth);
       LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
       return shouldContinue;
     } catch (final Throwable t) {
@@ -383,8 +420,8 @@ public final class PanamaExceptionHandler implements AutoCloseable {
     PanamaValidation.validateNotNull(tag, "Exception tag");
 
     try {
-      final MemorySegment traceSegment = (MemorySegment) CAPTURE_STACK_TRACE.invokeExact(
-          nativeHandle, tag.getNativeHandle());
+      final MemorySegment traceSegment =
+          (MemorySegment) CAPTURE_STACK_TRACE.invokeExact(nativeHandle, tag.getNativeHandle());
 
       if (traceSegment == null || traceSegment.equals(MemorySegment.NULL)) {
         return null;
@@ -399,8 +436,8 @@ public final class PanamaExceptionHandler implements AutoCloseable {
         FREE_STRING.invokeExact(traceSegment);
       }
     } catch (final Throwable t) {
-      LOGGER.warning("Failed to capture stack trace for tag " + tag.getName()
-          + ": " + t.getMessage());
+      LOGGER.warning(
+          "Failed to capture stack trace for tag " + tag.getName() + ": " + t.getMessage());
       return null; // Return null instead of throwing for optional feature
     }
   }
@@ -473,8 +510,11 @@ public final class PanamaExceptionHandler implements AutoCloseable {
 
     if (values.size() != expectedTypes.size()) {
       throw new WasmExceptionHandlingException.PayloadValidationException(
-          "Exception payload size (" + values.size()
-              + ") doesn't match tag parameter count (" + expectedTypes.size() + ")",
+          "Exception payload size ("
+              + values.size()
+              + ") doesn't match tag parameter count ("
+              + expectedTypes.size()
+              + ")",
           payload);
     }
 
@@ -484,8 +524,13 @@ public final class PanamaExceptionHandler implements AutoCloseable {
 
       if (!expectedType.equals(actualType)) {
         throw new WasmExceptionHandlingException.PayloadValidationException(
-            "Exception payload parameter " + i + " type mismatch. "
-                + "Expected: " + expectedType + ", Actual: " + actualType,
+            "Exception payload parameter "
+                + i
+                + " type mismatch. "
+                + "Expected: "
+                + expectedType
+                + ", Actual: "
+                + actualType,
             payload);
       }
     }
@@ -529,8 +574,8 @@ public final class PanamaExceptionHandler implements AutoCloseable {
    * @param payload the payload to serialize
    * @return the serialized payload data
    */
-  private MemorySegment serializePayload(final Arena tempArena,
-      final WasmExceptionHandlingException.ExceptionPayload payload) {
+  private MemorySegment serializePayload(
+      final Arena tempArena, final WasmExceptionHandlingException.ExceptionPayload payload) {
     // This would use the ExceptionMarshaling utility
     // For now, return empty segment as placeholder
     return tempArena.allocateArray(ValueLayout.JAVA_BYTE, 0);
@@ -662,8 +707,13 @@ public final class PanamaExceptionHandler implements AutoCloseable {
 
     @Override
     public int hashCode() {
-      return Objects.hash(enableNestedTryCatch, enableExceptionUnwinding, maxUnwindDepth,
-          validateExceptionTypes, enableStackTraces, enableExceptionPropagation,
+      return Objects.hash(
+          enableNestedTryCatch,
+          enableExceptionUnwinding,
+          maxUnwindDepth,
+          validateExceptionTypes,
+          enableStackTraces,
+          enableExceptionPropagation,
           enableGcIntegration);
     }
   }
@@ -678,7 +728,8 @@ public final class PanamaExceptionHandler implements AutoCloseable {
      * @param payload the exception payload
      * @return true to continue execution, false to re-throw
      */
-    boolean handle(WasmExceptionHandlingException.ExceptionTag tag,
+    boolean handle(
+        WasmExceptionHandlingException.ExceptionTag tag,
         WasmExceptionHandlingException.ExceptionPayload payload);
   }
 }

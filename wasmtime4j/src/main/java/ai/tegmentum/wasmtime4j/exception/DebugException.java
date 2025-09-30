@@ -3,13 +3,14 @@ package ai.tegmentum.wasmtime4j.exception;
 /**
  * Exception for WebAssembly debugging-related errors.
  *
- * <p>This exception is thrown when debugging operations fail, including
- * breakpoint management, step execution, variable inspection, and debug
- * session management.
+ * <p>This exception is thrown when debugging operations fail, including breakpoint management, step
+ * execution, variable inspection, and debug session management.
  *
  * @since 1.0.0
  */
 public class DebugException extends WasmException {
+
+  private static final long serialVersionUID = 1L;
 
   private final DebugErrorType errorType;
   private final String debugContext;
@@ -51,10 +52,11 @@ public class DebugException extends WasmException {
    * @param errorType the debug error type
    * @param debugContext additional debug context information
    */
-  public DebugException(final String message,
-                        final Throwable cause,
-                        final DebugErrorType errorType,
-                        final String debugContext) {
+  public DebugException(
+      final String message,
+      final Throwable cause,
+      final DebugErrorType errorType,
+      final String debugContext) {
     super(message, cause);
     this.errorType = errorType != null ? errorType : DebugErrorType.UNKNOWN;
     this.debugContext = debugContext;
@@ -101,50 +103,48 @@ public class DebugException extends WasmException {
     return sb.toString();
   }
 
-  /**
-   * Enumeration of debug error types.
-   */
+  /** Enumeration of debug error types. */
   public enum DebugErrorType {
-    /** Unknown or unspecified debug error */
+    /** Unknown or unspecified debug error. */
     UNKNOWN,
 
-    /** Breakpoint operation failed */
+    /** Breakpoint operation failed. */
     BREAKPOINT_ERROR,
 
-    /** Step execution failed */
+    /** Step execution failed. */
     STEP_ERROR,
 
-    /** Variable inspection failed */
+    /** Variable inspection failed. */
     VARIABLE_INSPECTION_ERROR,
 
-    /** Stack frame access failed */
+    /** Stack frame access failed. */
     STACK_FRAME_ERROR,
 
-    /** Debug session management error */
+    /** Debug session management error. */
     SESSION_ERROR,
 
-    /** Source mapping error */
+    /** Source mapping error. */
     SOURCE_MAPPING_ERROR,
 
-    /** Symbol lookup error */
+    /** Symbol lookup error. */
     SYMBOL_ERROR,
 
-    /** Watch expression error */
+    /** Watch expression error. */
     WATCH_ERROR,
 
-    /** Debug target connection error */
+    /** Debug target connection error. */
     CONNECTION_ERROR,
 
-    /** Invalid debug state */
+    /** Invalid debug state. */
     INVALID_STATE,
 
-    /** Debug protocol error */
+    /** Debug protocol error. */
     PROTOCOL_ERROR,
 
-    /** Debugging not supported */
+    /** Debugging not supported. */
     NOT_SUPPORTED,
 
-    /** Debug timeout */
+    /** Debug timeout. */
     TIMEOUT
   }
 }

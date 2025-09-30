@@ -8,8 +8,8 @@ import java.util.Objects;
 /**
  * Result of import validation for a set of WebAssembly modules.
  *
- * <p>This class provides detailed information about import compatibility,
- * missing imports, type mismatches, and other validation issues.
+ * <p>This class provides detailed information about import compatibility, missing imports, type
+ * mismatches, and other validation issues.
  *
  * @since 1.0.0
  */
@@ -40,10 +40,9 @@ public final class ImportValidation {
       final int validImports,
       final Duration validationTime) {
     this.valid = valid;
-    this.issues = Collections.unmodifiableList(
-        Objects.requireNonNull(issues, "issues"));
-    this.validatedImports = Collections.unmodifiableList(
-        Objects.requireNonNull(validatedImports, "validatedImports"));
+    this.issues = Collections.unmodifiableList(Objects.requireNonNull(issues, "issues"));
+    this.validatedImports =
+        Collections.unmodifiableList(Objects.requireNonNull(validatedImports, "validatedImports"));
     this.totalImports = totalImports;
     this.validImports = validImports;
     this.validationTime = Objects.requireNonNull(validationTime, "validationTime");
@@ -123,9 +122,7 @@ public final class ImportValidation {
    */
   public List<ImportIssue> getIssuesBySeverity(final ImportIssue.Severity severity) {
     Objects.requireNonNull(severity, "severity");
-    return issues.stream()
-        .filter(issue -> issue.getSeverity() == severity)
-        .toList();
+    return issues.stream().filter(issue -> issue.getSeverity() == severity).toList();
   }
 
   /**
@@ -134,21 +131,15 @@ public final class ImportValidation {
    * @return true if there are critical issues, false otherwise
    */
   public boolean hasCriticalIssues() {
-    return issues.stream()
-        .anyMatch(issue -> issue.getSeverity() == ImportIssue.Severity.CRITICAL);
+    return issues.stream().anyMatch(issue -> issue.getSeverity() == ImportIssue.Severity.CRITICAL);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "ImportValidation{valid=%s, imports=%d, validImports=%d (%.1f%%), " +
-        "issues=%d, validationTime=%s}",
-        valid,
-        totalImports,
-        validImports,
-        getValidationRate(),
-        issues.size(),
-        validationTime);
+        "ImportValidation{valid=%s, imports=%d, validImports=%d (%.1f%%), "
+            + "issues=%d, validationTime=%s}",
+        valid, totalImports, validImports, getValidationRate(), issues.size(), validationTime);
   }
 
   @Override
@@ -170,6 +161,7 @@ public final class ImportValidation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(valid, issues, validatedImports, totalImports, validImports, validationTime);
+    return Objects.hash(
+        valid, issues, validatedImports, totalImports, validImports, validationTime);
   }
 }

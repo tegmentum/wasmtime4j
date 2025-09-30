@@ -210,6 +210,20 @@ public final class MemoryOptimizer {
     private final long gcCount;
     private final String[] recommendations;
 
+    /**
+     * Creates new memory metrics.
+     *
+     * @param heapUsed used heap memory in bytes
+     * @param heapMax maximum heap memory in bytes
+     * @param nonHeapUsed used non-heap memory in bytes
+     * @param nonHeapMax maximum non-heap memory in bytes
+     * @param nativeMemory native memory usage in bytes
+     * @param memoryPressure memory pressure ratio (0.0 to 1.0)
+     * @param state current memory state
+     * @param gcTime total garbage collection time in milliseconds
+     * @param gcCount total garbage collection count
+     * @param recommendations array of memory optimization recommendations
+     */
     public MemoryMetrics(
         final long heapUsed,
         final long heapMax,

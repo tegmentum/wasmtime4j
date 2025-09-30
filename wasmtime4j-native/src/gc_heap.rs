@@ -19,7 +19,7 @@
 //! validation and defensive checks on top of Wasmtime's guarantees.
 
 use wasmtime::*;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::time::{Duration, Instant};
 use crate::error::{WasmtimeError, WasmtimeResult};

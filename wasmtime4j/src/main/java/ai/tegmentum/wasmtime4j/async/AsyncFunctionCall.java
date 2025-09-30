@@ -7,8 +7,8 @@ import java.util.concurrent.Executor;
 /**
  * Represents an asynchronous WebAssembly function call.
  *
- * <p>This class encapsulates all the information needed to execute a function
- * asynchronously, including function name, arguments, timeout, and execution options.
+ * <p>This class encapsulates all the information needed to execute a function asynchronously,
+ * including function name, arguments, timeout, and execution options.
  *
  * @since 1.0.0
  */
@@ -58,8 +58,7 @@ public final class AsyncFunctionCall {
    * @return new async function call
    */
   public static AsyncFunctionCall of(final String functionName, final WasmValue... args) {
-    return new AsyncFunctionCall(
-        functionName, args, null, null, false, null, 0);
+    return new AsyncFunctionCall(functionName, args, null, null, false, null, 0);
   }
 
   /**
@@ -72,8 +71,7 @@ public final class AsyncFunctionCall {
    */
   public static AsyncFunctionCall withTimeout(
       final String functionName, final Duration timeout, final WasmValue... args) {
-    return new AsyncFunctionCall(
-        functionName, args, timeout, null, false, null, 0);
+    return new AsyncFunctionCall(functionName, args, timeout, null, false, null, 0);
   }
 
   /**
@@ -86,8 +84,7 @@ public final class AsyncFunctionCall {
    */
   public static AsyncFunctionCall withExecutor(
       final String functionName, final Executor executor, final WasmValue... args) {
-    return new AsyncFunctionCall(
-        functionName, args, null, executor, false, null, 0);
+    return new AsyncFunctionCall(functionName, args, null, executor, false, null, 0);
   }
 
   /**
@@ -97,10 +94,8 @@ public final class AsyncFunctionCall {
    * @param args function arguments
    * @return new async function call with caching
    */
-  public static AsyncFunctionCall withCaching(
-      final String functionName, final WasmValue... args) {
-    return new AsyncFunctionCall(
-        functionName, args, null, null, true, null, 0);
+  public static AsyncFunctionCall withCaching(final String functionName, final WasmValue... args) {
+    return new AsyncFunctionCall(functionName, args, null, null, true, null, 0);
   }
 
   /**
@@ -113,8 +108,7 @@ public final class AsyncFunctionCall {
    */
   public static AsyncFunctionCall withPriority(
       final String functionName, final int priority, final WasmValue... args) {
-    return new AsyncFunctionCall(
-        functionName, args, null, null, false, null, priority);
+    return new AsyncFunctionCall(functionName, args, null, null, false, null, priority);
   }
 
   /**
@@ -224,9 +218,7 @@ public final class AsyncFunctionCall {
         functionName, args.length, timeout, priority, enableCaching);
   }
 
-  /**
-   * Builder for AsyncFunctionCall instances.
-   */
+  /** Builder for AsyncFunctionCall instances. */
   public static final class Builder {
     private final String functionName;
     private WasmValue[] args = new WasmValue[0];

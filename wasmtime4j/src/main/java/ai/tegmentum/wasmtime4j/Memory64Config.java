@@ -288,8 +288,12 @@ public final class Memory64Config {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
 
     final Memory64Config that = (Memory64Config) obj;
     return minimumPages == that.minimumPages

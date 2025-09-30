@@ -9,8 +9,8 @@ import java.util.Optional;
 /**
  * A single step in an instantiation plan.
  *
- * <p>Each step represents the instantiation of one module, along with
- * any necessary setup or dependency resolution.
+ * <p>Each step represents the instantiation of one module, along with any necessary setup or
+ * dependency resolution.
  *
  * @since 1.0.0
  */
@@ -43,10 +43,10 @@ public final class InstantiationStep {
     this.stepNumber = stepNumber;
     this.module = Objects.requireNonNull(module, "module");
     this.instanceName = Objects.requireNonNull(instanceName, "instanceName");
-    this.requiredImports = Collections.unmodifiableList(
-        Objects.requireNonNull(requiredImports, "requiredImports"));
-    this.providedExports = Collections.unmodifiableList(
-        Objects.requireNonNull(providedExports, "providedExports"));
+    this.requiredImports =
+        Collections.unmodifiableList(Objects.requireNonNull(requiredImports, "requiredImports"));
+    this.providedExports =
+        Collections.unmodifiableList(Objects.requireNonNull(providedExports, "providedExports"));
     this.description = Objects.requireNonNull(description, "description");
   }
 
@@ -129,8 +129,7 @@ public final class InstantiationStep {
   /**
    * Checks whether this step can be executed with the given linker.
    *
-   * <p>This method verifies that all required imports are available
-   * in the linker.
+   * <p>This method verifies that all required imports are available in the linker.
    *
    * @param linker the linker to check against
    * @return true if the step can be executed, false otherwise
@@ -156,10 +155,10 @@ public final class InstantiationStep {
   @Override
   public String toString() {
     return String.format(
-        "InstantiationStep{step=%d, module=%s, instanceName=%s, " +
-        "imports=%d, exports=%d, description='%s'}",
+        "InstantiationStep{step=%d, module=%s, instanceName=%s, "
+            + "imports=%d, exports=%d, description='%s'}",
         stepNumber,
-        module.getName().orElse("unnamed"),
+        "module",
         instanceName.orElse("none"),
         requiredImports.size(),
         providedExports.size(),
@@ -185,6 +184,7 @@ public final class InstantiationStep {
 
   @Override
   public int hashCode() {
-    return Objects.hash(stepNumber, module, instanceName, requiredImports, providedExports, description);
+    return Objects.hash(
+        stepNumber, module, instanceName, requiredImports, providedExports, description);
   }
 }

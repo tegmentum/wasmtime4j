@@ -10,13 +10,12 @@
 //! This module provides comprehensive authorization infrastructure for
 //! enterprise deployments requiring fine-grained access control.
 
-use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
-use crate::sandbox::{Capability, SecurityContext};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
-use ring::{digest, hmac};
+use ring::hmac;
 use base64::{Engine as _, engine::general_purpose};
 
 /// User identity representation
@@ -859,12 +858,12 @@ mod tests {
             role_id: "module_executor".to_string(),
             name: "Module Executor".to_string(),
             description: None,
-            permissions: HashSet::new(),
+            permissions: Vec::new(),
             parent_roles: HashSet::new(),
             attributes: HashMap::new(),
         };
 
-        role.permissions.insert(Permission::new("module".to_string(), "execute".to_string()));
+        role.permissions.push(Permission::new("module".to_string(), "execute".to_string()));
         rbac.add_role(role);
 
         // Assign role to user

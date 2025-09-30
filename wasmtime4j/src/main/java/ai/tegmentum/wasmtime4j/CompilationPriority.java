@@ -35,8 +35,8 @@ public enum CompilationPriority {
   /**
    * Critical priority compilation.
    *
-   * <p>Uses maximum available resources and preempts lower priority compilations. Use sparingly
-   * for truly time-critical compilation scenarios.
+   * <p>Uses maximum available resources and preempts lower priority compilations. Use sparingly for
+   * truly time-critical compilation scenarios.
    */
   CRITICAL
 }

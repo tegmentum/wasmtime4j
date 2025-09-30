@@ -81,6 +81,15 @@ public final class MetricsCollector {
     private final Map<String, String> labels;
     private final String unit;
 
+    /**
+     * Creates a new MetricData.
+     *
+     * @param name the metric name
+     * @param category the metric category
+     * @param type the metric type
+     * @param value the metric value
+     * @param unit the value unit
+     */
     public MetricData(
         final String name,
         final MetricCategory category,
@@ -142,12 +151,19 @@ public final class MetricsCollector {
     private final ConcurrentHashMap<String, LongAdder> buckets = new ConcurrentHashMap<>();
     private final double[] percentileBounds;
 
+    /**
+     * Creates a new HistogramMetric.
+     *
+     * @param name the histogram name
+     * @param percentileBounds the percentile boundaries for buckets
+     */
     public HistogramMetric(final String name, final double[] percentileBounds) {
       this.name = name;
       this.percentileBounds = percentileBounds != null ? percentileBounds : new double[0];
       initializeBuckets();
     }
 
+    /** Initializes the histogram buckets based on percentile bounds. */
     private void initializeBuckets() {
       for (final double bound : percentileBounds) {
         buckets.put(String.valueOf(bound), new LongAdder());
@@ -155,6 +171,11 @@ public final class MetricsCollector {
       buckets.put("+Inf", new LongAdder());
     }
 
+    /**
+     * Observes a value in the histogram.
+     *
+     * @param value the value to observe
+     */
     public synchronized void observe(final double value) {
       count.increment();
       sum.add((long) (value * 1000)); // Store as millis for precision
@@ -196,6 +217,11 @@ public final class MetricsCollector {
       return maxValue == Long.MIN_VALUE ? 0.0 : maxValue / 1000.0;
     }
 
+    /**
+     * Gets the current bucket counts.
+     *
+     * @return a map of bucket bounds to counts
+     */
     public Map<String, Long> getBuckets() {
       final Map<String, Long> result = new ConcurrentHashMap<>();
       for (final Map.Entry<String, LongAdder> entry : buckets.entrySet()) {
@@ -214,6 +240,11 @@ public final class MetricsCollector {
     private final HistogramMetric histogram;
     private final AtomicReference<Instant> lastUpdate = new AtomicReference<>(Instant.now());
 
+    /**
+     * Creates a new TimerMetric.
+     *
+     * @param name the timer name
+     */
     public TimerMetric(final String name) {
       // Standard duration buckets in milliseconds
       final double[] buckets = {
@@ -222,6 +253,11 @@ public final class MetricsCollector {
       this.histogram = new HistogramMetric(name, buckets);
     }
 
+    /**
+     * Records a duration measurement.
+     *
+     * @param duration the duration to record
+     */
     public void record(final Duration duration) {
       final double durationMs = duration.toNanos() / 1_000_000.0;
       histogram.observe(durationMs);
@@ -281,10 +317,20 @@ public final class MetricsCollector {
       lastEvent.set(Instant.now());
     }
 
+    /**
+     * Gets the total number of events recorded.
+     *
+     * @return the total event count
+     */
     public long getTotalEvents() {
       return totalEvents.sum();
     }
 
+    /**
+     * Gets the events per second rate.
+     *
+     * @return the events per second rate
+     */
     public double getEventsPerSecond() {
       final long events = getTotalEvents();
       final Duration duration = Duration.between(startTime.get(), Instant.now());

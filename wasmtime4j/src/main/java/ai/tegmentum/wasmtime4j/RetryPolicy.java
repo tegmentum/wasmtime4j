@@ -26,16 +26,16 @@ public enum RetryPolicy {
   /**
    * Exponential backoff retry with increasing intervals.
    *
-   * <p>Retries with exponentially increasing delays (e.g., 1s, 2s, 4s, 8s, ...).
-   * This is the recommended policy for most applications.
+   * <p>Retries with exponentially increasing delays (e.g., 1s, 2s, 4s, 8s, ...). This is the
+   * recommended policy for most applications.
    */
   EXPONENTIAL_BACKOFF,
 
   /**
    * Exponential backoff with jitter to avoid thundering herd.
    *
-   * <p>Similar to exponential backoff but adds random jitter to prevent multiple clients
-   * from retrying simultaneously.
+   * <p>Similar to exponential backoff but adds random jitter to prevent multiple clients from
+   * retrying simultaneously.
    */
   EXPONENTIAL_BACKOFF_WITH_JITTER,
 

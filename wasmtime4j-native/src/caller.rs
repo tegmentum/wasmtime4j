@@ -70,7 +70,7 @@ impl CallerContext {
     where
         T: Clone + Send + Sync + 'static,
     {
-        let mut exports = Vec::new();
+        let exports = Vec::new();
 
         // Note: Direct instance access not available in this Wasmtime version
         // Using empty exports for now - should be populated by actual instance data

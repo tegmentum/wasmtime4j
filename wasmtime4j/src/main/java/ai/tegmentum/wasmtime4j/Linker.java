@@ -180,8 +180,8 @@ public interface Linker<T> extends Closeable {
   /**
    * Checks if a specific import has been defined in this linker.
    *
-   * <p>This method can be used to verify that required imports have been
-   * registered before attempting module instantiation.
+   * <p>This method can be used to verify that required imports have been registered before
+   * attempting module instantiation.
    *
    * @param moduleName the module name of the import
    * @param name the name of the import
@@ -194,9 +194,9 @@ public interface Linker<T> extends Closeable {
   /**
    * Resolves and validates dependencies for a set of modules.
    *
-   * <p>This method analyzes the import/export relationships between modules and
-   * determines the optimal instantiation order. It also validates that all
-   * dependencies can be satisfied and detects circular dependencies.
+   * <p>This method analyzes the import/export relationships between modules and determines the
+   * optimal instantiation order. It also validates that all dependencies can be satisfied and
+   * detects circular dependencies.
    *
    * @param modules the modules to analyze for dependencies
    * @return a dependency resolution result with instantiation order and validation details
@@ -210,11 +210,12 @@ public interface Linker<T> extends Closeable {
    * Validates that all imports for the given modules can be satisfied by this linker.
    *
    * <p>This method performs comprehensive validation including:
+   *
    * <ul>
-   *   <li>Type compatibility checking for all imports</li>
-   *   <li>Availability verification for all required imports</li>
-   *   <li>Cross-module dependency validation</li>
-   *   <li>Host function signature validation</li>
+   *   <li>Type compatibility checking for all imports
+   *   <li>Availability verification for all required imports
+   *   <li>Cross-module dependency validation
+   *   <li>Host function signature validation
    * </ul>
    *
    * @param modules the modules to validate imports for
@@ -227,8 +228,8 @@ public interface Linker<T> extends Closeable {
   /**
    * Gets detailed information about all imports currently defined in this linker.
    *
-   * <p>This provides comprehensive metadata about registered functions, memories,
-   * tables, globals, and instances that are available for import resolution.
+   * <p>This provides comprehensive metadata about registered functions, memories, tables, globals,
+   * and instances that are available for import resolution.
    *
    * @return an unmodifiable list of import information
    * @since 1.0.0
@@ -238,9 +239,9 @@ public interface Linker<T> extends Closeable {
   /**
    * Creates an instantiation plan for multiple interdependent modules.
    *
-   * <p>This method analyzes the dependency relationships and creates an optimized
-   * plan for instantiating all modules in the correct order. The plan can be
-   * executed incrementally and provides detailed progress tracking.
+   * <p>This method analyzes the dependency relationships and creates an optimized plan for
+   * instantiating all modules in the correct order. The plan can be executed incrementally and
+   * provides detailed progress tracking.
    *
    * @param modules the modules to create an instantiation plan for
    * @return an instantiation plan with ordered steps and dependency information

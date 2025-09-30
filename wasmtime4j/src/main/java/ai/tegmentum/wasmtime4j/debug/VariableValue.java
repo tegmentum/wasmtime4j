@@ -1,60 +1,83 @@
 package ai.tegmentum.wasmtime4j.debug;
 
-import ai.tegmentum.wasmtime4j.WasmValue;
-import java.util.Objects;
-
 /**
- * Represents a variable value with type information for debugging.
+ * Variable value interface for WebAssembly components.
+ *
+ * @since 1.0.0
  */
-public final class VariableValue {
-    private final String name;
-    private final WasmValue value;
-    private final String typeName;
-    private final VariableScope scope;
+public interface VariableValue {
 
-    public VariableValue(final String name, final WasmValue value,
-                        final String typeName, final VariableScope scope) {
-        this.name = Objects.requireNonNull(name, "Name cannot be null");
-        this.value = Objects.requireNonNull(value, "Value cannot be null");
-        this.typeName = typeName;
-        this.scope = Objects.requireNonNull(scope, "Scope cannot be null");
-    }
+  /**
+   * Gets the value as string.
+   *
+   * @return string representation
+   */
+  String asString();
 
-    // Getters
-    public String getName() { return name; }
-    public WasmValue getValue() { return value; }
-    public String getTypeName() { return typeName; }
-    public VariableScope getScope() { return scope; }
+  /**
+   * Gets the value as integer.
+   *
+   * @return integer value
+   */
+  int asInt();
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof VariableValue)) return false;
-        final VariableValue that = (VariableValue) o;
-        return Objects.equals(name, that.name) &&
-               Objects.equals(value, that.value) &&
-               Objects.equals(typeName, that.typeName) &&
-               scope == that.scope;
-    }
+  /**
+   * Gets the value as long.
+   *
+   * @return long value
+   */
+  long asLong();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, value, typeName, scope);
-    }
+  /**
+   * Gets the value as float.
+   *
+   * @return float value
+   */
+  float asFloat();
 
-    @Override
-    public String toString() {
-        return String.format("VariableValue{name='%s', value=%s, type='%s', scope=%s}",
-                           name, value, typeName, scope);
-    }
+  /**
+   * Gets the value as double.
+   *
+   * @return double value
+   */
+  double asDouble();
 
-    /**
-     * Variable scope enumeration.
-     */
-    public enum VariableScope {
-        LOCAL,
-        PARAMETER,
-        GLOBAL,
-        STATIC
-    }
+  /**
+   * Gets the value as boolean.
+   *
+   * @return boolean value
+   */
+  boolean asBoolean();
+
+  /**
+   * Gets the raw value.
+   *
+   * @return raw value object
+   */
+  Object getRawValue();
+
+  /**
+   * Gets the value type.
+   *
+   * @return value type
+   */
+  ValueType getValueType();
+
+  /** Value type enumeration. */
+  enum ValueType {
+    /** Integer type. */
+    INTEGER,
+    /** Long type. */
+    LONG,
+    /** Float type. */
+    FLOAT,
+    /** Double type. */
+    DOUBLE,
+    /** Boolean type. */
+    BOOLEAN,
+    /** String type. */
+    STRING,
+    /** Object type. */
+    OBJECT
+  }
 }

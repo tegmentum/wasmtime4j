@@ -3,10 +3,9 @@
 //! This module provides comprehensive NUMA (Non-Uniform Memory Access) topology detection,
 //! memory binding, CPU affinity management, and cross-socket optimization strategies.
 
-use std::collections::{HashMap, HashSet};
-use std::ffi::{CStr, CString};
+use std::collections::HashMap;
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::BufRead;
 use std::path::Path;
 use crate::error::{WasmtimeError, WasmtimeResult};
 

@@ -48,9 +48,7 @@ final class RealWebAssemblyModuleIT {
 
   private static final String WASM_TEST_DIR = "src/test/resources/wasm/custom-tests";
 
-  /**
-   * Tests the simple add module to validate basic arithmetic operations.
-   */
+  /** Tests the simple add module to validate basic arithmetic operations. */
   @Test
   @DisplayName("Should execute add module correctly")
   void shouldExecuteAddModuleCorrectly() throws Exception {
@@ -86,9 +84,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("Add module test: SUCCESS");
   }
 
-  /**
-   * Tests the functions module to validate multiple function exports and complex operations.
-   */
+  /** Tests the functions module to validate multiple function exports and complex operations. */
   @Test
   @DisplayName("Should execute functions module correctly")
   void shouldExecuteFunctionsModuleCorrectly() throws Exception {
@@ -106,9 +102,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("  Total functions tested: " + result.getTotalFunctionsTested());
 
     // Validate functions module
-    assertThat(result.isAddFunctionWorking())
-        .withFailMessage("Add function not working")
-        .isTrue();
+    assertThat(result.isAddFunctionWorking()).withFailMessage("Add function not working").isTrue();
 
     assertThat(result.isMultiplyFunctionWorking())
         .withFailMessage("Multiply function not working")
@@ -129,9 +123,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("Functions module test: SUCCESS");
   }
 
-  /**
-   * Tests the memory module to validate linear memory operations.
-   */
+  /** Tests the memory module to validate linear memory operations. */
   @Test
   @DisplayName("Should execute memory module correctly")
   void shouldExecuteMemoryModuleCorrectly() throws Exception {
@@ -165,16 +157,12 @@ final class RealWebAssemblyModuleIT {
         .withFailMessage("Memory integrity not maintained")
         .isTrue();
 
-    assertThat(result.getMemoryPages())
-        .withFailMessage("Unexpected memory size")
-        .isGreaterThan(0);
+    assertThat(result.getMemoryPages()).withFailMessage("Unexpected memory size").isGreaterThan(0);
 
     LOGGER.info("Memory module test: SUCCESS");
   }
 
-  /**
-   * Tests table module functionality if available.
-   */
+  /** Tests table module functionality if available. */
   @Test
   @DisplayName("Should execute table module correctly")
   void shouldExecuteTableModuleCorrectly() throws Exception {
@@ -201,9 +189,7 @@ final class RealWebAssemblyModuleIT {
     }
   }
 
-  /**
-   * Tests all available modules with stress testing to validate stability.
-   */
+  /** Tests all available modules with stress testing to validate stability. */
   @ParameterizedTest
   @ValueSource(strings = {"add.wasm", "functions.wasm", "memory.wasm"})
   @DisplayName("Should handle stress testing with real modules")
@@ -237,9 +223,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("Stress test for " + moduleName + ": SUCCESS");
   }
 
-  /**
-   * Tests concurrent execution of multiple real WebAssembly modules.
-   */
+  /** Tests concurrent execution of multiple real WebAssembly modules. */
   @Test
   @DisplayName("Should handle concurrent execution of multiple real modules")
   void shouldHandleConcurrentExecutionOfMultipleRealModules() throws Exception {
@@ -276,9 +260,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("Concurrent real module execution test: SUCCESS");
   }
 
-  /**
-   * Tests error handling with malformed or corrupted WebAssembly modules.
-   */
+  /** Tests error handling with malformed or corrupted WebAssembly modules. */
   @Test
   @DisplayName("Should handle malformed modules gracefully")
   void shouldHandleMalformedModulesGracefully() throws Exception {
@@ -310,9 +292,7 @@ final class RealWebAssemblyModuleIT {
     LOGGER.info("Malformed module error handling test: SUCCESS");
   }
 
-  /**
-   * Tests compatibility with various WebAssembly specification versions and features.
-   */
+  /** Tests compatibility with various WebAssembly specification versions and features. */
   @Test
   @DisplayName("Should maintain compatibility across WebAssembly features")
   void shouldMaintainCompatibilityAcrossWebAssemblyFeatures() throws Exception {
@@ -383,13 +363,14 @@ final class RealWebAssemblyModuleIT {
 
     public AddModuleTestResult validateAddModule(final byte[] moduleBytes) throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, moduleBytes);
 
         try (final Store store = runtime.createStore(engine)) {
           final Instance instance = runtime.instantiate(module);
-          final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+          final WasmFunction addFunction =
+              instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
 
           // Test basic addition
           final boolean basicAddition = testBasicAddition(addFunction);
@@ -492,9 +473,10 @@ final class RealWebAssemblyModuleIT {
   /** Validator for the functions module. */
   private final class FunctionsModuleValidator {
 
-    public FunctionsModuleTestResult validateFunctionsModule(final byte[] moduleBytes) throws Exception {
+    public FunctionsModuleTestResult validateFunctionsModule(final byte[] moduleBytes)
+        throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, moduleBytes);
 
@@ -582,7 +564,7 @@ final class RealWebAssemblyModuleIT {
 
     public MemoryModuleTestResult validateMemoryModule(final byte[] moduleBytes) throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, moduleBytes);
 
@@ -673,7 +655,7 @@ final class RealWebAssemblyModuleIT {
 
     public TableModuleTestResult validateTableModule(final byte[] moduleBytes) throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final Module module = runtime.compileModule(engine, moduleBytes);
 
@@ -703,7 +685,8 @@ final class RealWebAssemblyModuleIT {
   /** Stress tester for WebAssembly modules. */
   private final class ModuleStressTester {
 
-    public StressTestResult performStressTest(final byte[] moduleBytes, final String moduleName) throws Exception {
+    public StressTestResult performStressTest(final byte[] moduleBytes, final String moduleName)
+        throws Exception {
       final long startMemory = getCurrentMemoryUsage();
       final Instant startTime = Instant.now();
       int operations = 0;
@@ -741,13 +724,16 @@ final class RealWebAssemblyModuleIT {
 
       final long endMemory = getCurrentMemoryUsage();
       final double successRate = (double) successes / operations * 100.0;
-      final double avgOperationTime = operationTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
+      final double avgOperationTime =
+          operationTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
       final double memoryIncrease = (endMemory - startMemory) / 1024.0 / 1024.0;
 
-      return new StressTestResult(operations, successRate, avgOperationTime, memoryIncrease, errors);
+      return new StressTestResult(
+          operations, successRate, avgOperationTime, memoryIncrease, errors);
     }
 
-    private void executeModuleFunctions(final Instance instance, final int iteration) throws Exception {
+    private void executeModuleFunctions(final Instance instance, final int iteration)
+        throws Exception {
       // Execute functions based on what's available
       final Optional<WasmFunction> addFunction = instance.getFunction("add");
       if (addFunction.isPresent()) {
@@ -777,7 +763,8 @@ final class RealWebAssemblyModuleIT {
   /** Concurrent executor for multiple modules. */
   private final class ConcurrentModuleExecutor {
 
-    public ConcurrentExecutionResult executeConcurrently(final Map<String, byte[]> modules) throws Exception {
+    public ConcurrentExecutionResult executeConcurrently(final Map<String, byte[]> modules)
+        throws Exception {
       final int threadCount = 4;
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
       final List<CompletableFuture<ModuleExecutionResult>> futures = new ArrayList<>();
@@ -786,13 +773,16 @@ final class RealWebAssemblyModuleIT {
         final Instant startTime = Instant.now();
 
         for (final Map.Entry<String, byte[]> entry : modules.entrySet()) {
-          futures.add(CompletableFuture.supplyAsync(() -> {
-            try {
-              return executeModuleConcurrently(entry.getKey(), entry.getValue());
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            }
-          }, executor));
+          futures.add(
+              CompletableFuture.supplyAsync(
+                  () -> {
+                    try {
+                      return executeModuleConcurrently(entry.getKey(), entry.getValue());
+                    } catch (final Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                  },
+                  executor));
         }
 
         // Collect results
@@ -805,18 +795,24 @@ final class RealWebAssemblyModuleIT {
 
         // Calculate metrics
         final int modulesTested = results.size();
-        final int totalOperations = results.stream().mapToInt(ModuleExecutionResult::getOperations).sum();
-        final int totalSuccesses = results.stream().mapToInt(ModuleExecutionResult::getSuccesses).sum();
+        final int totalOperations =
+            results.stream().mapToInt(ModuleExecutionResult::getOperations).sum();
+        final int totalSuccesses =
+            results.stream().mapToInt(ModuleExecutionResult::getSuccesses).sum();
         final double successRate = (double) totalSuccesses / totalOperations * 100.0;
 
         // Simple efficiency calculation
-        final double theoreticalTime = results.stream().mapToDouble(ModuleExecutionResult::getExecutionTime).max().orElse(0);
+        final double theoreticalTime =
+            results.stream().mapToDouble(ModuleExecutionResult::getExecutionTime).max().orElse(0);
         final double actualTime = totalTime.toMillis();
-        final double efficiency = theoreticalTime > 0 ? Math.min(100, (theoreticalTime / actualTime) * 100) : 100;
+        final double efficiency =
+            theoreticalTime > 0 ? Math.min(100, (theoreticalTime / actualTime) * 100) : 100;
 
-        final int contentionIncidents = results.stream().mapToInt(ModuleExecutionResult::getErrors).sum();
+        final int contentionIncidents =
+            results.stream().mapToInt(ModuleExecutionResult::getErrors).sum();
 
-        return new ConcurrentExecutionResult(modulesTested, totalOperations, successRate, efficiency, contentionIncidents);
+        return new ConcurrentExecutionResult(
+            modulesTested, totalOperations, successRate, efficiency, contentionIncidents);
 
       } finally {
         executor.shutdown();
@@ -824,7 +820,8 @@ final class RealWebAssemblyModuleIT {
       }
     }
 
-    private ModuleExecutionResult executeModuleConcurrently(final String moduleName, final byte[] moduleBytes) throws Exception {
+    private ModuleExecutionResult executeModuleConcurrently(
+        final String moduleName, final byte[] moduleBytes) throws Exception {
       final Instant start = Instant.now();
       int operations = 0;
       int successes = 0;
@@ -873,12 +870,16 @@ final class RealWebAssemblyModuleIT {
       final boolean errorRecovery = testErrorRecovery();
 
       return new ErrorHandlingResult(
-          invalidBytecode, truncatedModule, invalidFunctionCalls, memoryBoundsViolations, errorRecovery);
+          invalidBytecode,
+          truncatedModule,
+          invalidFunctionCalls,
+          memoryBoundsViolations,
+          errorRecovery);
     }
 
     private boolean testInvalidBytecode() {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final byte[] invalidWasm = {0x00, 0x01, 0x02, 0x03}; // Invalid WASM
         assertThatThrownBy(() -> runtime.compileModule(engine, invalidWasm))
@@ -892,7 +893,7 @@ final class RealWebAssemblyModuleIT {
 
     private boolean testTruncatedModule() {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         final byte[] truncatedWasm = {0x00, 0x61, 0x73, 0x6d, 0x01}; // Incomplete WASM
         assertThatThrownBy(() -> runtime.compileModule(engine, truncatedWasm))
@@ -909,7 +910,7 @@ final class RealWebAssemblyModuleIT {
         final byte[] moduleBytes = loadWasmModule("add.wasm");
 
         try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-             final Engine engine = runtime.createEngine()) {
+            final Engine engine = runtime.createEngine()) {
 
           final Module module = runtime.compileModule(engine, moduleBytes);
 
@@ -935,7 +936,7 @@ final class RealWebAssemblyModuleIT {
 
     private boolean testErrorRecovery() {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-           final Engine engine = runtime.createEngine()) {
+          final Engine engine = runtime.createEngine()) {
 
         // Try invalid operation first
         try {
@@ -966,9 +967,11 @@ final class RealWebAssemblyModuleIT {
       final boolean functionCalls = testFunctionCallsCompatibility();
       final boolean exportImport = testExportImportCompatibility();
 
-      final double overallCompatibility = calculateOverallCompatibility(basicOps, memoryOps, functionCalls, exportImport);
+      final double overallCompatibility =
+          calculateOverallCompatibility(basicOps, memoryOps, functionCalls, exportImport);
 
-      return new CompatibilityResult(basicOps, memoryOps, functionCalls, exportImport, overallCompatibility);
+      return new CompatibilityResult(
+          basicOps, memoryOps, functionCalls, exportImport, overallCompatibility);
     }
 
     private boolean testBasicOperationsCompatibility() throws Exception {
@@ -976,11 +979,12 @@ final class RealWebAssemblyModuleIT {
         final byte[] moduleBytes = loadWasmModule("add.wasm");
 
         try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-             final Engine engine = runtime.createEngine()) {
+            final Engine engine = runtime.createEngine()) {
 
           final Module module = runtime.compileModule(engine, moduleBytes);
           final Instance instance = runtime.instantiate(module);
-          final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+          final WasmFunction addFunction =
+              instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
 
           final WasmValue[] args = {WasmValue.i32(5), WasmValue.i32(3)};
           final WasmValue[] result = addFunction.call(args);
@@ -996,7 +1000,7 @@ final class RealWebAssemblyModuleIT {
         final byte[] moduleBytes = loadWasmModule("memory.wasm");
 
         try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-             final Engine engine = runtime.createEngine()) {
+            final Engine engine = runtime.createEngine()) {
 
           final Module module = runtime.compileModule(engine, moduleBytes);
           final Instance instance = runtime.instantiate(module);
@@ -1012,14 +1016,14 @@ final class RealWebAssemblyModuleIT {
         final byte[] moduleBytes = loadWasmModule("functions.wasm");
 
         try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-             final Engine engine = runtime.createEngine()) {
+            final Engine engine = runtime.createEngine()) {
 
           final Module module = runtime.compileModule(engine, moduleBytes);
           final Instance instance = runtime.instantiate(module);
 
-          return instance.getFunction("add").isPresent() &&
-                 instance.getFunction("multiply").isPresent() &&
-                 instance.getFunction("factorial").isPresent();
+          return instance.getFunction("add").isPresent()
+              && instance.getFunction("multiply").isPresent()
+              && instance.getFunction("factorial").isPresent();
         }
       } catch (final Exception e) {
         return false;
@@ -1032,7 +1036,7 @@ final class RealWebAssemblyModuleIT {
         final byte[] moduleBytes = loadWasmModule("add.wasm");
 
         try (final WasmRuntime runtime = WasmRuntimeFactory.create();
-             final Engine engine = runtime.createEngine()) {
+            final Engine engine = runtime.createEngine()) {
 
           final Module module = runtime.compileModule(engine, moduleBytes);
           final Instance instance = runtime.instantiate(module);
@@ -1060,7 +1064,11 @@ final class RealWebAssemblyModuleIT {
     private final double performanceOpsPerSec;
     private final double accuracyPercent;
 
-    public AddModuleTestResult(final boolean basicAdditionWorking, final boolean edgeCasesWorking, final double performanceOpsPerSec, final double accuracyPercent) {
+    public AddModuleTestResult(
+        final boolean basicAdditionWorking,
+        final boolean edgeCasesWorking,
+        final double performanceOpsPerSec,
+        final double accuracyPercent) {
       this.basicAdditionWorking = basicAdditionWorking;
       this.edgeCasesWorking = edgeCasesWorking;
       this.performanceOpsPerSec = performanceOpsPerSec;
@@ -1091,7 +1099,12 @@ final class RealWebAssemblyModuleIT {
     private final boolean complexCalculationsWorking;
     private final int totalFunctionsTested;
 
-    public FunctionsModuleTestResult(final boolean addFunctionWorking, final boolean multiplyFunctionWorking, final boolean factorialFunctionWorking, final boolean complexCalculationsWorking, final int totalFunctionsTested) {
+    public FunctionsModuleTestResult(
+        final boolean addFunctionWorking,
+        final boolean multiplyFunctionWorking,
+        final boolean factorialFunctionWorking,
+        final boolean complexCalculationsWorking,
+        final int totalFunctionsTested) {
       this.addFunctionWorking = addFunctionWorking;
       this.multiplyFunctionWorking = multiplyFunctionWorking;
       this.factorialFunctionWorking = factorialFunctionWorking;
@@ -1127,7 +1140,12 @@ final class RealWebAssemblyModuleIT {
     private final boolean memoryIntegrityMaintained;
     private final int memoryPages;
 
-    public MemoryModuleTestResult(final boolean memoryExportAvailable, final boolean loadFunctionWorking, final boolean storeFunctionWorking, final boolean memoryIntegrityMaintained, final int memoryPages) {
+    public MemoryModuleTestResult(
+        final boolean memoryExportAvailable,
+        final boolean loadFunctionWorking,
+        final boolean storeFunctionWorking,
+        final boolean memoryIntegrityMaintained,
+        final int memoryPages) {
       this.memoryExportAvailable = memoryExportAvailable;
       this.loadFunctionWorking = loadFunctionWorking;
       this.storeFunctionWorking = storeFunctionWorking;
@@ -1160,7 +1178,8 @@ final class RealWebAssemblyModuleIT {
     private final boolean tableOperationsWorking;
     private final boolean functionReferencesWorking;
 
-    public TableModuleTestResult(final boolean tableOperationsWorking, final boolean functionReferencesWorking) {
+    public TableModuleTestResult(
+        final boolean tableOperationsWorking, final boolean functionReferencesWorking) {
       this.tableOperationsWorking = tableOperationsWorking;
       this.functionReferencesWorking = functionReferencesWorking;
     }
@@ -1181,7 +1200,12 @@ final class RealWebAssemblyModuleIT {
     private final double memoryUsageIncreaseMB;
     private final int errorCount;
 
-    public StressTestResult(final int operationsCompleted, final double successRatePercent, final double averageOperationTimeNanos, final double memoryUsageIncreaseMB, final int errorCount) {
+    public StressTestResult(
+        final int operationsCompleted,
+        final double successRatePercent,
+        final double averageOperationTimeNanos,
+        final double memoryUsageIncreaseMB,
+        final int errorCount) {
       this.operationsCompleted = operationsCompleted;
       this.successRatePercent = successRatePercent;
       this.averageOperationTimeNanos = averageOperationTimeNanos;
@@ -1216,7 +1240,8 @@ final class RealWebAssemblyModuleIT {
     private final int errors;
     private final double executionTime;
 
-    public ModuleExecutionResult(final int operations, final int successes, final int errors, final double executionTime) {
+    public ModuleExecutionResult(
+        final int operations, final int successes, final int errors, final double executionTime) {
       this.operations = operations;
       this.successes = successes;
       this.errors = errors;
@@ -1247,7 +1272,12 @@ final class RealWebAssemblyModuleIT {
     private final double concurrencyEfficiencyPercent;
     private final int resourceContentionIncidents;
 
-    public ConcurrentExecutionResult(final int modulesTested, final int totalOperations, final double successRatePercent, final double concurrencyEfficiencyPercent, final int resourceContentionIncidents) {
+    public ConcurrentExecutionResult(
+        final int modulesTested,
+        final int totalOperations,
+        final double successRatePercent,
+        final double concurrencyEfficiencyPercent,
+        final int resourceContentionIncidents) {
       this.modulesTested = modulesTested;
       this.totalOperations = totalOperations;
       this.successRatePercent = successRatePercent;
@@ -1283,7 +1313,12 @@ final class RealWebAssemblyModuleIT {
     private final boolean memoryBoundsViolationsHandled;
     private final boolean errorRecoveryWorking;
 
-    public ErrorHandlingResult(final boolean invalidBytecodeHandled, final boolean truncatedModuleHandled, final boolean invalidFunctionCallsHandled, final boolean memoryBoundsViolationsHandled, final boolean errorRecoveryWorking) {
+    public ErrorHandlingResult(
+        final boolean invalidBytecodeHandled,
+        final boolean truncatedModuleHandled,
+        final boolean invalidFunctionCallsHandled,
+        final boolean memoryBoundsViolationsHandled,
+        final boolean errorRecoveryWorking) {
       this.invalidBytecodeHandled = invalidBytecodeHandled;
       this.truncatedModuleHandled = truncatedModuleHandled;
       this.invalidFunctionCallsHandled = invalidFunctionCallsHandled;
@@ -1319,7 +1354,12 @@ final class RealWebAssemblyModuleIT {
     private final boolean exportImportCompatible;
     private final double overallCompatibilityPercent;
 
-    public CompatibilityResult(final boolean basicOperationsCompatible, final boolean memoryOperationsCompatible, final boolean functionCallsCompatible, final boolean exportImportCompatible, final double overallCompatibilityPercent) {
+    public CompatibilityResult(
+        final boolean basicOperationsCompatible,
+        final boolean memoryOperationsCompatible,
+        final boolean functionCallsCompatible,
+        final boolean exportImportCompatible,
+        final double overallCompatibilityPercent) {
       this.basicOperationsCompatible = basicOperationsCompatible;
       this.memoryOperationsCompatible = memoryOperationsCompatible;
       this.functionCallsCompatible = functionCallsCompatible;

@@ -41,8 +41,8 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   /**
    * Instantiates the WebAssembly module with the given store.
    *
-   * <p>This method creates a new instance of the WebAssembly module using the provided store.
-   * The instantiation is optimized due to the pre-compiled and prepared module state.
+   * <p>This method creates a new instance of the WebAssembly module using the provided store. The
+   * instantiation is optimized due to the pre-compiled and prepared module state.
    *
    * @param store the store to create the instance in
    * @return a CompletableFuture that completes with the new instance
@@ -52,13 +52,14 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   public CompletableFuture<Instance> instantiate(final Store<?> store) {
     JniValidation.requireNonNull(store, "store");
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiateSync(store);
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to instantiate module", e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiateSync(store);
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to instantiate module", e);
+          }
+        });
   }
 
   /**
@@ -100,13 +101,14 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiateSync(store, linker);
-      } catch (final WasmException e) {
-        throw new RuntimeException("Failed to instantiate module with linker", e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiateSync(store, linker);
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to instantiate module with linker", e);
+          }
+        });
   }
 
   /**
@@ -129,7 +131,8 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
       // Use linker for instantiation
       return linker.instantiate(store, module);
     } catch (final Exception e) {
-      throw new WasmException("Failed to instantiate streaming module with linker: " + e.getMessage(), e);
+      throw new WasmException(
+          "Failed to instantiate streaming module with linker: " + e.getMessage(), e);
     }
   }
 
@@ -156,8 +159,8 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   /**
    * Checks if the module is ready for instantiation.
    *
-   * <p>For streaming instantiators, this typically returns true since the module
-   * has already been compiled and prepared.
+   * <p>For streaming instantiators, this typically returns true since the module has already been
+   * compiled and prepared.
    *
    * @return true if ready for instantiation
    */
@@ -217,10 +220,15 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   @Override
   public String toString() {
     return "JniStreamingInstantiator{"
-        + "module=" + module
-        + ", config=" + config
-        + ", ready=" + isReady()
-        + ", estimatedMemory=" + getEstimatedMemoryUsage() / (1024 * 1024) + "MB"
+        + "module="
+        + module
+        + ", config="
+        + config
+        + ", ready="
+        + isReady()
+        + ", estimatedMemory="
+        + getEstimatedMemoryUsage() / (1024 * 1024)
+        + "MB"
         + '}';
   }
 }

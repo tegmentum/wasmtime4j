@@ -14,17 +14,16 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::{Arc, RwLock, Mutex};
 use std::fs::{File, OpenOptions};
 use std::io::{Write, BufWriter};
-use crate::ErrorCode;
-use ring::{digest, signature, rand, hmac};
+use ring::{digest, signature, hmac};
 use ring::signature::{Ed25519KeyPair, KeyPair, UnparsedPublicKey, VerificationAlgorithm};
 use ring::rand::SystemRandom;
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::Digest;
 use chrono::{DateTime, Utc};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -791,7 +790,7 @@ impl<'de> Deserialize<'de> for TrustStore {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::{Deserialize, MapAccess, Visitor};
+        use serde::de::{MapAccess, Visitor};
         use std::fmt;
 
         struct TrustStoreVisitor;

@@ -23,8 +23,8 @@ import java.util.Set;
 /**
  * Configuration for component hot-swapping operations.
  *
- * <p>This configuration controls how component hot-swapping is performed, including
- * safety checks, rollback strategies, and state preservation options.
+ * <p>This configuration controls how component hot-swapping is performed, including safety checks,
+ * rollback strategies, and state preservation options.
  *
  * @since 1.0.0
  */
@@ -186,15 +186,14 @@ public final class ComponentSwapConfig {
         .build();
   }
 
-  /**
-   * Builder for ComponentSwapConfig.
-   */
+  /** Builder for ComponentSwapConfig. */
   public static final class Builder {
     private SwapStrategy strategy = SwapStrategy.ROLLING_UPDATE;
     private Duration maxSwapTime = Duration.ofMinutes(1);
     private boolean preserveState = true;
     private RollbackStrategy rollbackStrategy = RollbackStrategy.AUTOMATIC;
-    private Set<StatePreservationScope> stateScopes = Set.of(StatePreservationScope.COMPONENT_STATE);
+    private Set<StatePreservationScope> stateScopes =
+        Set.of(StatePreservationScope.COMPONENT_STATE);
     private Map<String, Object> swapParameters = Map.of();
     private boolean enableGracefulShutdown = true;
     private Duration gracefulShutdownTimeout = Duration.ofSeconds(30);
@@ -258,67 +257,59 @@ public final class ComponentSwapConfig {
     }
   }
 
-  /**
-   * Hot-swap strategies.
-   */
+  /** Hot-swap strategies. */
   public enum SwapStrategy {
-    /** Direct replacement without intermediate states */
+    /** Direct replacement without intermediate states. */
     DIRECT_REPLACEMENT,
-    /** Blue-green deployment with complete switchover */
+    /** Blue-green deployment with complete switchover. */
     BLUE_GREEN,
-    /** Rolling update with gradual replacement */
+    /** Rolling update with gradual replacement. */
     ROLLING_UPDATE,
-    /** Canary deployment with gradual traffic shifting */
+    /** Canary deployment with gradual traffic shifting. */
     CANARY,
-    /** A/B testing with controlled rollout */
+    /** A/B testing with controlled rollout. */
     AB_TESTING
   }
 
-  /**
-   * Rollback strategies.
-   */
+  /** Rollback strategies. */
   public enum RollbackStrategy {
-    /** No automatic rollback */
+    /** No automatic rollback. */
     NONE,
-    /** Manual rollback only */
+    /** Manual rollback only. */
     MANUAL,
-    /** Automatic rollback on failure */
+    /** Automatic rollback on failure. */
     AUTOMATIC,
-    /** Automatic rollback with health checks */
+    /** Automatic rollback with health checks. */
     AUTOMATIC_WITH_HEALTH_CHECKS
   }
 
-  /**
-   * State preservation scopes.
-   */
+  /** State preservation scopes. */
   public enum StatePreservationScope {
-    /** Preserve component instance state */
+    /** Preserve component instance state. */
     COMPONENT_STATE,
-    /** Preserve shared resource state */
+    /** Preserve shared resource state. */
     SHARED_RESOURCES,
-    /** Preserve connection state */
+    /** Preserve connection state. */
     CONNECTIONS,
-    /** Preserve cached data */
+    /** Preserve cached data. */
     CACHE,
-    /** Preserve configuration */
+    /** Preserve configuration. */
     CONFIGURATION,
-    /** Preserve all state */
+    /** Preserve all state. */
     ALL
   }
 
-  /**
-   * Compatibility check levels.
-   */
+  /** Compatibility check levels. */
   public enum CompatibilityCheckLevel {
-    /** No compatibility checking */
+    /** No compatibility checking. */
     NONE,
-    /** Basic interface compatibility */
+    /** Basic interface compatibility. */
     BASIC,
-    /** Moderate compatibility with version checks */
+    /** Moderate compatibility with version checks. */
     MODERATE,
-    /** Strict compatibility validation */
+    /** Strict compatibility validation. */
     STRICT,
-    /** Complete compatibility including behavior verification */
+    /** Complete compatibility including behavior verification. */
     COMPLETE
   }
 }

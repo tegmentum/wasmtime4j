@@ -23,8 +23,6 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.gc.GcRuntime;
 import ai.tegmentum.wasmtime4j.gc.GcValue;
-import ai.tegmentum.wasmtime4j.gc.StructInstance;
-import ai.tegmentum.wasmtime4j.gc.ArrayInstance;
 import ai.tegmentum.wasmtime4j.jni.JniExceptionHandler;
 import ai.tegmentum.wasmtime4j.panama.PanamaExceptionHandler;
 import java.util.List;
@@ -42,8 +40,8 @@ import org.junit.jupiter.api.condition.JRE;
  * Integration test suite for GC-aware exception handling.
  *
  * <p>This test suite validates the integration between the WebAssembly exception handling
- * foundation (Task #309) and the WebAssembly GC foundation (Task #308), ensuring proper
- * handling of exception payloads containing GC references.
+ * foundation (Task #309) and the WebAssembly GC foundation (Task #308), ensuring proper handling of
+ * exception payloads containing GC references.
  *
  * @since 1.0.0
  */
@@ -62,13 +60,14 @@ class GcAwareExceptionHandlingTest {
   void setUp() {
     // Initialize GC runtime with comprehensive configuration
     try {
-      gcRuntime = GcRuntime.builder()
-          .enableGcProfiling(true)
-          .enableMemoryLeakDetection(true)
-          .enableReferenceCounting(true)
-          .enableWeakReferences(true)
-          .gcHeapSizeLimit(64 * 1024 * 1024) // 64MB
-          .build();
+      gcRuntime =
+          GcRuntime.builder()
+              .enableGcProfiling(true)
+              .enableMemoryLeakDetection(true)
+              .enableReferenceCounting(true)
+              .enableWeakReferences(true)
+              .gcHeapSizeLimit(64 * 1024 * 1024) // 64MB
+              .build();
     } catch (final Exception e) {
       LOGGER.warning("Failed to initialize GC runtime, tests will be skipped: " + e.getMessage());
       gcRuntime = null;
@@ -115,15 +114,11 @@ class GcAwareExceptionHandlingTest {
   @Test
   @DisplayName("GC-aware exception tags should require GC runtime")
   void testGcAwareExceptionTagRequiresGcRuntime() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     // Test successful creation with GC runtime
-    final List<WasmValueType> gcTypes = List.of(
-        WasmValueType.EXTERNREF,
-        WasmValueType.FUNCREF,
-        WasmValueType.I32
-    );
+    final List<WasmValueType> gcTypes =
+        List.of(WasmValueType.EXTERNREF, WasmValueType.FUNCREF, WasmValueType.I32);
 
     final WasmExceptionHandlingException.ExceptionTag gcTag =
         jniHandler.createExceptionTag("gc_aware_tag", gcTypes, true);
@@ -134,21 +129,19 @@ class GcAwareExceptionHandlingTest {
 
     // Test creation without GC runtime should fail
     final JniExceptionHandler.ExceptionHandlingConfig noGcConfig =
-        JniExceptionHandler.ExceptionHandlingConfig.builder()
-            .enableGcIntegration(false)
-            .build();
+        JniExceptionHandler.ExceptionHandlingConfig.builder().enableGcIntegration(false).build();
 
     try (final JniExceptionHandler noGcHandler = new JniExceptionHandler(noGcConfig, null)) {
-      assertThrows(IllegalArgumentException.class, () ->
-          noGcHandler.createExceptionTag("no_gc_tag", gcTypes, true));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> noGcHandler.createExceptionTag("no_gc_tag", gcTypes, true));
     }
   }
 
   @Test
   @DisplayName("Exception payloads with GC values should be properly validated")
   void testGcValuePayloadValidation() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     final List<WasmValueType> gcTypes = List.of(WasmValueType.EXTERNREF, WasmValueType.I64);
     final WasmExceptionHandlingException.ExceptionTag gcTag =
@@ -156,10 +149,10 @@ class GcAwareExceptionHandlingTest {
 
     // Create mock GC values (in real implementation, these would be actual GC objects)
     final List<GcValue> gcValues = createMockGcValues();
-    final List<WasmValue> wasmValues = List.of(
-        WasmValue.createExternRef(null), // Would reference actual GC object
-        WasmValue.createI64(12345L)
-    );
+    final List<WasmValue> wasmValues =
+        List.of(
+            WasmValue.createExternRef(null), // Would reference actual GC object
+            WasmValue.createI64(12345L));
 
     // Test valid GC-aware payload
     final WasmExceptionHandlingException.ExceptionPayload gcPayload =
@@ -173,19 +166,20 @@ class GcAwareExceptionHandlingTest {
     final WasmExceptionHandlingException.ExceptionTag nonGcTag =
         jniHandler.createExceptionTag("non_gc_tag", gcTypes, false);
 
-    assertThrows(WasmExceptionHandlingException.PayloadValidationException.class, () ->
-        new WasmExceptionHandlingException.ExceptionPayload(nonGcTag, wasmValues, gcValues));
+    assertThrows(
+        WasmExceptionHandlingException.PayloadValidationException.class,
+        () -> new WasmExceptionHandlingException.ExceptionPayload(nonGcTag, wasmValues, gcValues));
 
     // Test GC tag without GC values should fail validation
-    assertThrows(WasmExceptionHandlingException.PayloadValidationException.class, () ->
-        new WasmExceptionHandlingException.ExceptionPayload(gcTag, wasmValues, List.of()));
+    assertThrows(
+        WasmExceptionHandlingException.PayloadValidationException.class,
+        () -> new WasmExceptionHandlingException.ExceptionPayload(gcTag, wasmValues, List.of()));
   }
 
   @Test
   @DisplayName("GC references should be properly managed during exception propagation")
   void testGcReferenceManagementDuringPropagation() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     final List<WasmValueType> gcTypes = List.of(WasmValueType.EXTERNREF);
     final WasmExceptionHandlingException.ExceptionTag gcTag =
@@ -195,25 +189,27 @@ class GcAwareExceptionHandlingTest {
     final boolean[] gcReferencesPreserved = {false};
 
     // Register exception handler that checks GC reference preservation
-    jniHandler.registerExceptionHandler(gcTag, (tag, payload) -> {
-      try {
-        assertEquals(gcTag, tag);
-        assertTrue(payload.hasGcValues());
+    jniHandler.registerExceptionHandler(
+        gcTag,
+        (tag, payload) -> {
+          try {
+            assertEquals(gcTag, tag);
+            assertTrue(payload.hasGcValues());
 
-        // Verify GC references are still valid
-        final List<GcValue> gcValues = payload.getGcValues();
-        assertFalse(gcValues.isEmpty());
+            // Verify GC references are still valid
+            final List<GcValue> gcValues = payload.getGcValues();
+            assertFalse(gcValues.isEmpty());
 
-        // In a real implementation, we would validate that GC objects are still accessible
-        gcReferencesPreserved[0] = true;
-        return true; // Continue execution
-      } catch (final Exception e) {
-        LOGGER.severe("Exception in GC reference test handler: " + e.getMessage());
-        return false;
-      } finally {
-        handlerLatch.countDown();
-      }
-    });
+            // In a real implementation, we would validate that GC objects are still accessible
+            gcReferencesPreserved[0] = true;
+            return true; // Continue execution
+          } catch (final Exception e) {
+            LOGGER.severe("Exception in GC reference test handler: " + e.getMessage());
+            return false;
+          } finally {
+            handlerLatch.countDown();
+          }
+        });
 
     // Create and throw exception with GC references
     final List<GcValue> gcValues = createMockGcValues();
@@ -223,10 +219,11 @@ class GcAwareExceptionHandlingTest {
 
     // In a real implementation, this would trigger native exception throwing
     // For testing, we simulate the exception handling process
-    assertDoesNotThrow(() -> {
-      // Simulate exception propagation
-      assertTrue(jniHandler.performUnwinding(0));
-    });
+    assertDoesNotThrow(
+        () -> {
+          // Simulate exception propagation
+          assertTrue(jniHandler.performUnwinding(0));
+        });
 
     // Verify GC references were handled properly
     assertDoesNotThrow(() -> handlerLatch.await(5, TimeUnit.SECONDS));
@@ -236,8 +233,7 @@ class GcAwareExceptionHandlingTest {
   @Test
   @DisplayName("GC memory leaks should be detected during exception handling")
   void testGcMemoryLeakDetectionDuringExceptionHandling() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     // Get initial GC stats
     final var initialStats = gcRuntime.getGcStats();
@@ -277,27 +273,25 @@ class GcAwareExceptionHandlingTest {
   @Test
   @DisplayName("Struct and Array instances should work in exception payloads")
   void testStructAndArrayInstancesInExceptionPayloads() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
-    final List<WasmValueType> structArrayTypes = List.of(
-        WasmValueType.EXTERNREF, // For struct instance
-        WasmValueType.EXTERNREF  // For array instance
-    );
+    final List<WasmValueType> structArrayTypes =
+        List.of(
+            WasmValueType.EXTERNREF, // For struct instance
+            WasmValueType.EXTERNREF // For array instance
+            );
 
     final WasmExceptionHandlingException.ExceptionTag structArrayTag =
         jniHandler.createExceptionTag("struct_array_tag", structArrayTypes, true);
 
     // Create mock struct and array instances
-    final List<GcValue> gcValues = List.of(
-        createMockStructInstance(),
-        createMockArrayInstance()
-    );
+    final List<GcValue> gcValues = List.of(createMockStructInstance(), createMockArrayInstance());
 
-    final List<WasmValue> wasmValues = List.of(
-        WasmValue.createExternRef(null), // Reference to struct
-        WasmValue.createExternRef(null)  // Reference to array
-    );
+    final List<WasmValue> wasmValues =
+        List.of(
+            WasmValue.createExternRef(null), // Reference to struct
+            WasmValue.createExternRef(null) // Reference to array
+            );
 
     final WasmExceptionHandlingException.ExceptionPayload structArrayPayload =
         new WasmExceptionHandlingException.ExceptionPayload(structArrayTag, wasmValues, gcValues);
@@ -315,8 +309,8 @@ class GcAwareExceptionHandlingTest {
   @EnabledOnJre(JRE.JAVA_23)
   @DisplayName("Panama FFI should handle GC-aware exceptions on Java 23+")
   void testPanamaGcAwareExceptionHandling() {
-    assumeTrue(panamaHandler != null && gcRuntime != null,
-        "Panama handler and GC runtime not available");
+    assumeTrue(
+        panamaHandler != null && gcRuntime != null, "Panama handler and GC runtime not available");
 
     final List<WasmValueType> gcTypes = List.of(WasmValueType.EXTERNREF, WasmValueType.FUNCREF);
     final WasmExceptionHandlingException.ExceptionTag panamaGcTag =
@@ -327,10 +321,8 @@ class GcAwareExceptionHandlingTest {
 
     // Test Panama-specific GC reference handling
     final List<GcValue> gcValues = createMockGcValues();
-    final List<WasmValue> wasmValues = List.of(
-        WasmValue.createExternRef(null),
-        WasmValue.createFuncRef(null)
-    );
+    final List<WasmValue> wasmValues =
+        List.of(WasmValue.createExternRef(null), WasmValue.createFuncRef(null));
 
     final WasmExceptionHandlingException.ExceptionPayload panamaGcPayload =
         new WasmExceptionHandlingException.ExceptionPayload(panamaGcTag, wasmValues, gcValues);
@@ -339,10 +331,11 @@ class GcAwareExceptionHandlingTest {
     assertTrue(panamaGcPayload.hasGcValues());
 
     // Test Panama memory management
-    assertDoesNotThrow(() -> {
-      final String stackTrace = panamaHandler.captureStackTrace(panamaGcTag);
-      // Stack trace may be null but should not throw
-    });
+    assertDoesNotThrow(
+        () -> {
+          final String stackTrace = panamaHandler.captureStackTrace(panamaGcTag);
+          // Stack trace may be null but should not throw
+        });
 
     assertTrue(panamaHandler.performUnwinding(0));
   }
@@ -350,8 +343,7 @@ class GcAwareExceptionHandlingTest {
   @Test
   @DisplayName("Cross-language GC reference mapping should work correctly")
   void testCrossLanguageGcReferenceMapping() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     final List<WasmValueType> mappingTypes = List.of(WasmValueType.EXTERNREF);
     final WasmExceptionHandlingException.ExceptionTag mappingTag =
@@ -365,13 +357,13 @@ class GcAwareExceptionHandlingTest {
     // Test cross-language mapping exception
     final WasmExceptionHandlingException.CrossLanguageMappingException mappingException =
         new WasmExceptionHandlingException.CrossLanguageMappingException(
-            "Failed to map GC references between WebAssembly and Java",
-            mappingPayload);
+            "Failed to map GC references between WebAssembly and Java", mappingPayload);
 
     assertNotNull(mappingException);
     assertTrue(mappingException.involvesGcReferences());
     assertEquals(mappingPayload, mappingException.getExceptionPayload());
-    assertEquals(WasmExceptionHandlingException.ExceptionErrorCode.CROSS_LANGUAGE_MAPPING_FAILED,
+    assertEquals(
+        WasmExceptionHandlingException.ExceptionErrorCode.CROSS_LANGUAGE_MAPPING_FAILED,
         mappingException.getExceptionErrorCode());
   }
 
@@ -382,9 +374,7 @@ class GcAwareExceptionHandlingTest {
 
     // Create a temporary exception handler with GC integration
     final JniExceptionHandler.ExceptionHandlingConfig tempConfig =
-        JniExceptionHandler.ExceptionHandlingConfig.builder()
-            .enableGcIntegration(true)
-            .build();
+        JniExceptionHandler.ExceptionHandlingConfig.builder().enableGcIntegration(true).build();
 
     try (final JniExceptionHandler tempHandler = new JniExceptionHandler(tempConfig, gcRuntime)) {
       // Create GC-aware exception tag
@@ -416,8 +406,8 @@ class GcAwareExceptionHandlingTest {
   }
 
   /**
-   * Creates mock GC values for testing purposes.
-   * In a real implementation, these would be actual GC-managed objects.
+   * Creates mock GC values for testing purposes. In a real implementation, these would be actual
+   * GC-managed objects.
    */
   private List<GcValue> createMockGcValues() {
     // Return empty list as placeholder - real implementation would create actual GC values
@@ -425,8 +415,8 @@ class GcAwareExceptionHandlingTest {
   }
 
   /**
-   * Creates a mock struct instance for testing purposes.
-   * In a real implementation, this would be an actual StructInstance from the GC runtime.
+   * Creates a mock struct instance for testing purposes. In a real implementation, this would be an
+   * actual StructInstance from the GC runtime.
    */
   private GcValue createMockStructInstance() {
     // Return null as placeholder - real implementation would create actual StructInstance
@@ -434,8 +424,8 @@ class GcAwareExceptionHandlingTest {
   }
 
   /**
-   * Creates a mock array instance for testing purposes.
-   * In a real implementation, this would be an actual ArrayInstance from the GC runtime.
+   * Creates a mock array instance for testing purposes. In a real implementation, this would be an
+   * actual ArrayInstance from the GC runtime.
    */
   private GcValue createMockArrayInstance() {
     // Return null as placeholder - real implementation would create actual ArrayInstance

@@ -216,7 +216,9 @@ public final class WitInterfaceParser {
 
     for (final String fieldDef : fieldDefs) {
       final String trimmed = fieldDef.trim();
-      if (trimmed.isEmpty()) continue;
+      if (trimmed.isEmpty()) {
+        continue;
+      }
 
       final String[] parts = trimmed.split(":");
       if (parts.length != 2) {
@@ -247,7 +249,9 @@ public final class WitInterfaceParser {
 
     for (final String caseDef : caseDefs) {
       final String trimmed = caseDef.trim();
-      if (trimmed.isEmpty()) continue;
+      if (trimmed.isEmpty()) {
+        continue;
+      }
 
       if (trimmed.contains("(")) {
         // Case with payload
@@ -397,7 +401,9 @@ public final class WitInterfaceParser {
     final String[] paramDefs = parametersText.split(",");
     for (final String paramDef : paramDefs) {
       final String trimmed = paramDef.trim();
-      if (trimmed.isEmpty()) continue;
+      if (trimmed.isEmpty()) {
+        continue;
+      }
 
       final String[] parts = trimmed.split(":");
       if (parts.length != 2) {
@@ -510,6 +516,15 @@ public final class WitInterfaceParser {
     private final boolean isAsync;
     private final Optional<String> documentation;
 
+    /**
+     * Creates a new WIT function definition.
+     *
+     * @param name the function name
+     * @param parameters the function parameters
+     * @param returnTypes the function return types
+     * @param isAsync whether the function is asynchronous
+     * @param documentation optional documentation for the function
+     */
     public WitFunction(
         final String name,
         final List<WitParameter> parameters,
@@ -551,6 +566,14 @@ public final class WitInterfaceParser {
     private final boolean isOptional;
     private final Optional<String> documentation;
 
+    /**
+     * Creates a new WIT function parameter.
+     *
+     * @param name the parameter name
+     * @param type the parameter type
+     * @param isOptional whether the parameter is optional
+     * @param documentation optional documentation for the parameter
+     */
     public WitParameter(
         final String name,
         final WitType type,

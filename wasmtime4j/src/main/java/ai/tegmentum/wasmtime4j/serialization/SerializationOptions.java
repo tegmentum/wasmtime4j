@@ -24,8 +24,8 @@ import java.util.Objects;
 /**
  * Configuration options for WebAssembly module serialization operations.
  *
- * <p>This class provides fine-grained control over serialization behavior including
- * performance optimizations, security settings, and metadata preservation options.
+ * <p>This class provides fine-grained control over serialization behavior including performance
+ * optimizations, security settings, and metadata preservation options.
  *
  * @since 1.0.0
  */
@@ -271,8 +271,8 @@ public final class SerializationOptions {
   @Override
   public String toString() {
     return String.format(
-        "SerializationOptions{checksum=%s, debug=%s, compression=%d, streaming=%s, " +
-        "buffer=%dKB, encryption=%s, integrity=%s}",
+        "SerializationOptions{checksum=%s, debug=%s, compression=%d, streaming=%s, "
+            + "buffer=%dKB, encryption=%s, integrity=%s}",
         includeChecksum,
         preserveDebugInfo,
         compressionLevel,
@@ -282,9 +282,7 @@ public final class SerializationOptions {
         verifyIntegrity);
   }
 
-  /**
-   * Builder for creating SerializationOptions instances.
-   */
+  /** Builder for creating SerializationOptions instances. */
   public static final class Builder {
     // Default values
     private boolean includeChecksum = true;
@@ -338,8 +336,15 @@ public final class SerializationOptions {
       return this;
     }
 
+    /**
+     * Sets the compression level for serialization.
+     *
+     * @param level compression level (0-9, where 0 is no compression and 9 is maximum)
+     * @return this builder
+     */
     public Builder setCompressionLevel(final int level) {
-      this.compressionLevel = requireInRange(level, 0, 9, "Compression level must be between 0 and 9");
+      this.compressionLevel =
+          requireInRange(level, 0, 9, "Compression level must be between 0 and 9");
       return this;
     }
 
@@ -348,8 +353,15 @@ public final class SerializationOptions {
       return this;
     }
 
+    /**
+     * Sets the threshold for streaming serialization.
+     *
+     * @param threshold size threshold in bytes for enabling streaming
+     * @return this builder
+     */
     public Builder setStreamingThreshold(final long threshold) {
-      this.streamingThreshold = requireNonNegative(threshold, "Streaming threshold must be non-negative");
+      this.streamingThreshold =
+          requireNonNegative(threshold, "Streaming threshold must be non-negative");
       return this;
     }
 
@@ -358,8 +370,15 @@ public final class SerializationOptions {
       return this;
     }
 
+    /**
+     * Sets the encryption algorithm for serialization.
+     *
+     * @param algorithm encryption algorithm to use
+     * @return this builder
+     */
     public Builder setEncryptionAlgorithm(final String algorithm) {
-      this.encryptionAlgorithm = Objects.requireNonNull(algorithm, "Encryption algorithm cannot be null");
+      this.encryptionAlgorithm =
+          Objects.requireNonNull(algorithm, "Encryption algorithm cannot be null");
       return this;
     }
 
@@ -388,12 +407,25 @@ public final class SerializationOptions {
       return this;
     }
 
+    /**
+     * Adds custom metadata to the serialization options.
+     *
+     * @param key metadata key
+     * @param value metadata value
+     * @return this builder
+     */
     public Builder addCustomMetadata(final String key, final String value) {
       Objects.requireNonNull(key, "Metadata key cannot be null");
       this.customMetadata.put(key, value);
       return this;
     }
 
+    /**
+     * Sets the custom metadata map, replacing any existing metadata.
+     *
+     * @param metadata metadata map to set
+     * @return this builder
+     */
     public Builder setCustomMetadata(final Map<String, String> metadata) {
       this.customMetadata.clear();
       if (metadata != null) {
@@ -417,6 +449,12 @@ public final class SerializationOptions {
       return this;
     }
 
+    /**
+     * Builds the serialization options with current configuration.
+     *
+     * @return configured serialization options
+     * @throws IllegalArgumentException if configuration is invalid
+     */
     public SerializationOptions build() {
       // Validation
       if (encryptSerialization && encryptionKey == null) {
@@ -440,9 +478,11 @@ public final class SerializationOptions {
       return value;
     }
 
-    private static int requireInRange(final int value, final int min, final int max, final String message) {
+    private static int requireInRange(
+        final int value, final int min, final int max, final String message) {
       if (value < min || value > max) {
-        throw new IllegalArgumentException(message + " (was: " + value + ", expected: " + min + "-" + max + ")");
+        throw new IllegalArgumentException(
+            message + " (was: " + value + ", expected: " + min + "-" + max + ")");
       }
       return value;
     }

@@ -9,9 +9,9 @@ import java.util.Objects;
 /**
  * A plan for instantiating multiple interdependent WebAssembly modules.
  *
- * <p>An instantiation plan provides an ordered sequence of steps for creating
- * module instances while respecting dependency relationships. The plan can be
- * executed incrementally with progress tracking.
+ * <p>An instantiation plan provides an ordered sequence of steps for creating module instances
+ * while respecting dependency relationships. The plan can be executed incrementally with progress
+ * tracking.
  *
  * @since 1.0.0
  */
@@ -35,9 +35,9 @@ public final class InstantiationPlan {
       final DependencyResolution dependencyResolution,
       final Duration planningTime,
       final boolean executable) {
-    this.steps = Collections.unmodifiableList(
-        Objects.requireNonNull(steps, "steps"));
-    this.dependencyResolution = Objects.requireNonNull(dependencyResolution, "dependencyResolution");
+    this.steps = Collections.unmodifiableList(Objects.requireNonNull(steps, "steps"));
+    this.dependencyResolution =
+        Objects.requireNonNull(dependencyResolution, "dependencyResolution");
     this.planningTime = Objects.requireNonNull(planningTime, "planningTime");
     this.executable = executable;
   }
@@ -72,8 +72,8 @@ public final class InstantiationPlan {
   /**
    * Checks whether this plan can be executed successfully.
    *
-   * <p>A plan is executable if all dependencies can be resolved and there
-   * are no circular dependencies or other blocking issues.
+   * <p>A plan is executable if all dependencies can be resolved and there are no circular
+   * dependencies or other blocking issues.
    *
    * @return true if the plan is executable, false otherwise
    */
@@ -93,8 +93,8 @@ public final class InstantiationPlan {
   /**
    * Executes the instantiation plan using the given linker and store.
    *
-   * <p>This method executes all steps in order, creating instances for
-   * each module according to the dependency resolution.
+   * <p>This method executes all steps in order, creating instances for each module according to the
+   * dependency resolution.
    *
    * @param linker the linker to use for instantiation
    * @param store the store to create instances in
@@ -129,8 +129,8 @@ public final class InstantiationPlan {
   /**
    * Validates that the plan is still valid against the current linker state.
    *
-   * <p>This method checks that all required imports are still available
-   * and that no conflicting definitions have been added.
+   * <p>This method checks that all required imports are still available and that no conflicting
+   * definitions have been added.
    *
    * @param linker the linker to validate against
    * @return true if the plan is still valid, false otherwise
@@ -151,8 +151,8 @@ public final class InstantiationPlan {
   @Override
   public String toString() {
     return String.format(
-        "InstantiationPlan{steps=%d, executable=%s, planningTime=%s, " +
-        "totalModules=%d, resolutionSuccessful=%s}",
+        "InstantiationPlan{steps=%d, executable=%s, planningTime=%s, "
+            + "totalModules=%d, resolutionSuccessful=%s}",
         steps.size(),
         executable,
         planningTime,

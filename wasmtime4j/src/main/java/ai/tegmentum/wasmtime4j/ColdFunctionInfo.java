@@ -6,9 +6,8 @@ import java.util.Objects;
 /**
  * Information about a cold (infrequently called) function.
  *
- * <p>Contains metrics and analysis data for functions that are called
- * infrequently during execution, which may be candidates for different
- * optimization strategies.
+ * <p>Contains metrics and analysis data for functions that are called infrequently during
+ * execution, which may be candidates for different optimization strategies.
  *
  * @since 1.0.0
  */
@@ -23,14 +22,15 @@ public final class ColdFunctionInfo {
   private final boolean isCandidate;
   private final String reason;
 
-  private ColdFunctionInfo(final String functionName,
-                           final long totalCallCount,
-                           final Duration totalExecutionTime,
-                           final Duration averageExecutionTime,
-                           final double callFrequency,
-                           final long lastCallTimestamp,
-                           final boolean isCandidate,
-                           final String reason) {
+  private ColdFunctionInfo(
+      final String functionName,
+      final long totalCallCount,
+      final Duration totalExecutionTime,
+      final Duration averageExecutionTime,
+      final double callFrequency,
+      final long lastCallTimestamp,
+      final boolean isCandidate,
+      final String reason) {
     this.functionName = Objects.requireNonNull(functionName);
     this.totalCallCount = totalCallCount;
     this.totalExecutionTime = Objects.requireNonNull(totalExecutionTime);
@@ -61,16 +61,26 @@ public final class ColdFunctionInfo {
    * @param reason the reason for being cold
    * @return cold function info
    */
-  public static ColdFunctionInfo candidate(final String functionName,
-                                           final long totalCallCount,
-                                           final Duration totalExecutionTime,
-                                           final double callFrequency,
-                                           final String reason) {
-    final Duration avgTime = totalCallCount > 0 ?
-        Duration.ofNanos(totalExecutionTime.toNanos() / totalCallCount) : Duration.ZERO;
+  public static ColdFunctionInfo candidate(
+      final String functionName,
+      final long totalCallCount,
+      final Duration totalExecutionTime,
+      final double callFrequency,
+      final String reason) {
+    final Duration avgTime =
+        totalCallCount > 0
+            ? Duration.ofNanos(totalExecutionTime.toNanos() / totalCallCount)
+            : Duration.ZERO;
 
-    return new ColdFunctionInfo(functionName, totalCallCount, totalExecutionTime, avgTime,
-                                callFrequency, System.nanoTime(), true, reason);
+    return new ColdFunctionInfo(
+        functionName,
+        totalCallCount,
+        totalExecutionTime,
+        avgTime,
+        callFrequency,
+        System.nanoTime(),
+        true,
+        reason);
   }
 
   /**
@@ -152,13 +162,13 @@ public final class ColdFunctionInfo {
    * @return percentage of total time (0-100)
    */
   public double getTimePercentage(final Duration totalProgramTime) {
-    if (totalProgramTime.isZero()) return 0.0;
+    if (totalProgramTime.isZero()) {
+      return 0.0;
+    }
     return (double) totalExecutionTime.toNanos() / totalProgramTime.toNanos() * 100.0;
   }
 
-  /**
-   * Builder for cold function information.
-   */
+  /** Builder for cold function information. */
   public static final class Builder {
     private final String functionName;
     private long totalCallCount = 0;
@@ -208,16 +218,28 @@ public final class ColdFunctionInfo {
       return this;
     }
 
+    /**
+     * Builds the cold function info instance.
+     *
+     * @return the configured cold function info
+     */
     public ColdFunctionInfo build() {
-      return new ColdFunctionInfo(functionName, totalCallCount, totalExecutionTime,
-                                  averageExecutionTime, callFrequency, lastCallTimestamp,
-                                  isCandidate, reason);
+      return new ColdFunctionInfo(
+          functionName,
+          totalCallCount,
+          totalExecutionTime,
+          averageExecutionTime,
+          callFrequency,
+          lastCallTimestamp,
+          isCandidate,
+          reason);
     }
   }
 
   @Override
   public String toString() {
-    return String.format("ColdFunctionInfo{name='%s', calls=%d, totalTime=%s, frequency=%.2f/s, candidate=%s}",
+    return String.format(
+        "ColdFunctionInfo{name='%s', calls=%d, totalTime=%s, frequency=%.2f/s, candidate=%s}",
         functionName, totalCallCount, totalExecutionTime, callFrequency, isCandidate);
   }
 }

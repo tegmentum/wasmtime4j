@@ -106,14 +106,24 @@ public final class DisasterRecoverySystem {
 
   /** System component that can be backed up and restored. */
   public static final class RecoverableComponent implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String componentId;
     private final String componentName;
     private final byte[] componentData;
-    private final Map<String, Object> metadata;
+    private final transient Map<String, Object> metadata;
     private final Instant backupTimestamp;
     private final long dataSize;
     private final String checksum;
 
+    /**
+     * Creates a new RecoverableComponent.
+     *
+     * @param componentId the unique component identifier
+     * @param componentName the component name
+     * @param componentData the component data
+     * @param metadata the component metadata
+     */
     public RecoverableComponent(
         final String componentId,
         final String componentName,
@@ -188,6 +198,15 @@ public final class DisasterRecoverySystem {
     private final int priority;
     private final boolean autoExecute;
 
+    /**
+     * Creates a new DisasterRecoveryPlan.
+     *
+     * @param planId the unique plan identifier
+     * @param disasterType the type of disaster this plan addresses
+     * @param primaryStrategy the primary recovery strategy
+     * @param fallbackStrategy the fallback recovery strategy
+     * @param recoveryTimeObjective the maximum acceptable downtime
+     */
     public DisasterRecoveryPlan(
         final String planId,
         final DisasterType disasterType,
@@ -264,6 +283,13 @@ public final class DisasterRecoverySystem {
     private final Map<String, Object> executionMetrics;
     private volatile Duration actualRecoveryTime;
 
+    /**
+     * Creates a new RecoveryExecution.
+     *
+     * @param executionId the unique execution identifier
+     * @param disasterType the type of disaster being recovered from
+     * @param strategy the recovery strategy being executed
+     */
     public RecoveryExecution(
         final String executionId,
         final DisasterType disasterType,
@@ -313,6 +339,12 @@ public final class DisasterRecoverySystem {
       return actualRecoveryTime;
     }
 
+    /**
+     * Completes the recovery execution with the given status.
+     *
+     * @param success whether the recovery was successful
+     * @param message the status message
+     */
     public void complete(final boolean success, final String message) {
       this.endTime = Instant.now();
       this.successful = success;
@@ -340,8 +372,7 @@ public final class DisasterRecoverySystem {
   /** System state tracking. */
   private final AtomicBoolean disasterRecoveryEnabled = new AtomicBoolean(true);
 
-  private final AtomicReference<DisasterType> currentDisasterType =
-      new AtomicReference<>(null);
+  private final AtomicReference<DisasterType> currentDisasterType = new AtomicReference<>(null);
   private final AtomicReference<RecoveryExecution> activeRecovery = new AtomicReference<>(null);
   private final AtomicLong totalBackups = new AtomicLong(0);
   private final AtomicLong totalRecoveries = new AtomicLong(0);
@@ -582,8 +613,7 @@ public final class DisasterRecoverySystem {
   }
 
   /** Performs the actual disaster recovery process. */
-  private void performRecovery(
-      final DisasterRecoveryPlan plan, final RecoveryExecution execution) {
+  private void performRecovery(final DisasterRecoveryPlan plan, final RecoveryExecution execution) {
     try {
       execution.updateMetric("plan_id", plan.getPlanId());
       execution.updateMetric("rto_target", plan.getRecoveryTimeObjective().toMillis());
@@ -603,8 +633,7 @@ public final class DisasterRecoverySystem {
       if (!recoverySuccessful && plan.getFallbackStrategy() != null) {
         LOGGER.warning("Primary recovery failed - attempting fallback strategy");
         try {
-          recoverySuccessful =
-              executeRecoveryStrategy(plan.getFallbackStrategy(), plan, execution);
+          recoverySuccessful = executeRecoveryStrategy(plan.getFallbackStrategy(), plan, execution);
           execution.updateMetric("fallback_strategy_success", recoverySuccessful);
         } catch (final Exception e) {
           LOGGER.severe("Fallback recovery strategy failed: " + e.getMessage());
@@ -740,8 +769,7 @@ public final class DisasterRecoverySystem {
         if (component != null) {
           // Additional validation for cold restore
           if (component.validateIntegrity()
-              && component.getBackupTimestamp().isAfter(
-                  Instant.now().minus(Duration.ofDays(1)))) {
+              && component.getBackupTimestamp().isAfter(Instant.now().minus(Duration.ofDays(1)))) {
             restoredComponents++;
           }
         }
@@ -839,7 +867,7 @@ public final class DisasterRecoverySystem {
     try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final GZIPOutputStream gzipOut = new GZIPOutputStream(baos)) {
       gzipOut.write(data);
-      gzipOut.close();
+      gzipOut.finish();
       return baos.toByteArray();
     }
   }
@@ -864,8 +892,7 @@ public final class DisasterRecoverySystem {
   private void persistBackupToDisk(final RecoverableComponent component) {
     try {
       Files.createDirectories(backupStoragePath);
-      final Path backupFile =
-          backupStoragePath.resolve(component.getComponentId() + "_backup.ser");
+      final Path backupFile = backupStoragePath.resolve(component.getComponentId() + "_backup.ser");
 
       try (final java.io.FileOutputStream fos = new java.io.FileOutputStream(backupFile.toFile());
           final ObjectOutputStream oos = new ObjectOutputStream(fos)) {
@@ -878,6 +905,7 @@ public final class DisasterRecoverySystem {
   }
 
   /** Loads backup from disk storage. */
+  @SuppressWarnings("unchecked")
   private RecoverableComponent loadBackupFromDisk(final String componentId) {
     try {
       final Path backupFile = backupStoragePath.resolve(componentId + "_backup.ser");
@@ -899,16 +927,13 @@ public final class DisasterRecoverySystem {
   /** Starts background processing for disaster recovery. */
   private void startBackgroundProcessing() {
     // Backup monitoring and cleanup
-    executorService.scheduleAtFixedRate(
-        this::performBackupMaintenance, 30, 60, TimeUnit.MINUTES);
+    executorService.scheduleAtFixedRate(this::performBackupMaintenance, 30, 60, TimeUnit.MINUTES);
 
     // Health monitoring for disaster detection
-    executorService.scheduleAtFixedRate(
-        this::performDisasterDetection, 1, 5, TimeUnit.MINUTES);
+    executorService.scheduleAtFixedRate(this::performDisasterDetection, 1, 5, TimeUnit.MINUTES);
 
     // Recovery progress monitoring
-    executorService.scheduleAtFixedRate(
-        this::monitorActiveRecovery, 30, 30, TimeUnit.SECONDS);
+    executorService.scheduleAtFixedRate(this::monitorActiveRecovery, 30, 30, TimeUnit.SECONDS);
   }
 
   /** Performs backup maintenance and cleanup. */
@@ -919,33 +944,38 @@ public final class DisasterRecoverySystem {
           new java.util.concurrent.atomic.AtomicInteger(0);
 
       // Clean old backups from memory
-      backupRepository.entrySet().removeIf(entry -> {
-        if (entry.getValue().getBackupTimestamp().isBefore(cutoff)) {
-          cleanedBackups.incrementAndGet();
-          return true;
-        }
-        return false;
-      });
+      backupRepository
+          .entrySet()
+          .removeIf(
+              entry -> {
+                if (entry.getValue().getBackupTimestamp().isBefore(cutoff)) {
+                  cleanedBackups.incrementAndGet();
+                  return true;
+                }
+                return false;
+              });
 
       // Clean old backup files from disk
       if (Files.exists(backupStoragePath)) {
         Files.list(backupStoragePath)
             .filter(path -> path.toString().endsWith("_backup.ser"))
-            .filter(path -> {
-              try {
-                return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
-              } catch (final IOException e) {
-                return false;
-              }
-            })
-            .forEach(path -> {
-              try {
-                Files.delete(path);
-                cleanedBackups.incrementAndGet();
-              } catch (final IOException e) {
-                LOGGER.warning("Failed to delete old backup file: " + path);
-              }
-            });
+            .filter(
+                path -> {
+                  try {
+                    return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
+                  } catch (final IOException e) {
+                    return false;
+                  }
+                })
+            .forEach(
+                path -> {
+                  try {
+                    Files.delete(path);
+                    cleanedBackups.incrementAndGet();
+                  } catch (final IOException e) {
+                    LOGGER.warning("Failed to delete old backup file: " + path);
+                  }
+                });
       }
 
       if (cleanedBackups.get() > 0) {
@@ -978,9 +1008,10 @@ public final class DisasterRecoverySystem {
 
       // Check for data corruption indicators
       final int corruptedBackups =
-          (int) backupRepository.values().stream()
-              .filter(component -> !component.validateIntegrity())
-              .count();
+          (int)
+              backupRepository.values().stream()
+                  .filter(component -> !component.validateIntegrity())
+                  .count();
 
       if (corruptedBackups > backupRepository.size() * 0.1) {
         LOGGER.severe("DISASTER DETECTED: Data corruption in " + corruptedBackups + " backups");
@@ -1048,15 +1079,16 @@ public final class DisasterRecoverySystem {
     sb.append(String.format("Backup Repository Size: %d\n", backupRepository.size()));
 
     final DisasterType currentDisaster = currentDisasterType.get();
-    sb.append(String.format("Current Disaster: %s\n",
-        currentDisaster != null ? currentDisaster : "None"));
+    sb.append(
+        String.format(
+            "Current Disaster: %s\n", currentDisaster != null ? currentDisaster : "None"));
 
     final RecoveryExecution activeExecution = activeRecovery.get();
     if (activeExecution != null) {
-      final Duration elapsed =
-          Duration.between(activeExecution.getStartTime(), Instant.now());
-      sb.append(String.format("Active Recovery: %s [%s elapsed]\n",
-          activeExecution.getExecutionId(), elapsed));
+      final Duration elapsed = Duration.between(activeExecution.getStartTime(), Instant.now());
+      sb.append(
+          String.format(
+              "Active Recovery: %s [%s elapsed]\n", activeExecution.getExecutionId(), elapsed));
     } else {
       sb.append("Active Recovery: None\n");
     }

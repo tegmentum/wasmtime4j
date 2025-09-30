@@ -9,10 +9,8 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use wasmtime::{Store, StoreContext, StoreContextMut, Config, Engine as WasmtimeEngine};
+use std::time::{Duration, Instant};
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::store::StoreData;
 use once_cell::sync::Lazy;
 
 /// Global execution controller managing all execution contexts

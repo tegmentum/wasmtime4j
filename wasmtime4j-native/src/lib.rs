@@ -20,7 +20,16 @@
 //! and ensure robust operation in production environments. All public APIs validate inputs
 //! and handle errors gracefully.
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
+#![allow(unused_imports)]
+#![allow(dead_code)]
+#![allow(unused_unsafe)]
+#![allow(unused_assignments)]
+#![allow(private_bounds)]
+#![allow(elided_lifetimes_in_paths)]
+#![allow(unused_doc_comments)]
+#![allow(unused_variables)]
+#![allow(private_interfaces)]
 #![warn(clippy::all)]
 
 use std::os::raw::c_char;

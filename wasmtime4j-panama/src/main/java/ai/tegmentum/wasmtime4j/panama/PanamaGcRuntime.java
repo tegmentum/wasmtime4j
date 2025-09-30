@@ -1231,159 +1231,201 @@ public final class PanamaGcRuntime implements GcRuntime {
 
   @Override
   public StructInstance refCastStruct(final GcObject object, final StructType targetStructType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public ArrayInstance refCastArray(final GcObject object, final ArrayType targetArrayType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public boolean refTestStruct(final GcObject object, final StructType targetStructType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public boolean refTestArray(final GcObject object, final ArrayType targetArrayType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcReferenceType getRuntimeType(final GcObject object) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public Optional<GcObject> refCastNullable(final GcObject object, final GcReferenceType targetType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public Optional<GcObject> refCastNullable(
+      final GcObject object, final GcReferenceType targetType) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public StructInstance createPackedStruct(final StructType structType, final List<GcValue> fieldValues,
-                                          final Map<Integer, Integer> customAlignment) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public StructInstance createPackedStruct(
+      final StructType structType,
+      final List<GcValue> fieldValues,
+      final Map<Integer, Integer> customAlignment) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public ArrayInstance createVariableLengthArray(final ArrayType arrayType, final int baseLength,
-                                                final List<GcValue> flexibleElements) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public ArrayInstance createVariableLengthArray(
+      final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public ArrayInstance createNestedArray(final ArrayType arrayType, final List<GcObject> nestedElements) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public ArrayInstance createNestedArray(
+      final ArrayType arrayType, final List<GcObject> nestedElements) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public void copyArrayElements(final ArrayInstance sourceArray, final int sourceIndex,
-                               final ArrayInstance destArray, final int destIndex, final int length) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public void copyArrayElements(
+      final ArrayInstance sourceArray,
+      final int sourceIndex,
+      final ArrayInstance destArray,
+      final int destIndex,
+      final int length) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public void fillArrayElements(final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public void fillArrayElements(
+      final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public int registerRecursiveType(final String typeName, final Object typeDefinition) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public Map<String, Integer> createTypeHierarchy(final Object baseType, final List<Object> derivedTypes) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public Map<String, Integer> createTypeHierarchy(
+      final Object baseType, final List<Object> derivedTypes) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcStats collectGarbageIncremental(final long maxPauseMillis) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcStats collectGarbageConcurrent() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public void configureGcStrategy(final String strategy, final Map<String, Object> parameters) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public boolean monitorGcPressure(final double pressureThreshold) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public WeakGcReference createWeakReference(final GcObject object, final Runnable finalizationCallback) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+  public WeakGcReference createWeakReference(
+      final GcObject object, final Runnable finalizationCallback) {
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public void registerFinalizationCallback(final GcObject object, final Runnable callback) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public int runFinalization() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public Object extractHostObject(final GcObject gcObject) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public Object createSharingBridge(final List<GcObject> objects) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcHeapInspection inspectHeap() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public ObjectLifecycleTracker trackObjectLifecycles(final List<GcObject> objects) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public MemoryLeakAnalysis detectMemoryLeaks() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcProfiler startProfiling() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public ReferenceSafetyResult validateReferenceSafety(final List<GcObject> rootObjects) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public MemoryCorruptionAnalysis detectMemoryCorruption() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public GcInvariantValidation validateInvariants() {
-    throw new UnsupportedOperationException("Advanced GC features not yet implemented in Panama runtime");
+    throw new UnsupportedOperationException(
+        "Advanced GC features not yet implemented in Panama runtime");
   }
 }

@@ -698,13 +698,13 @@ public final class ComplexPanamaTypeConverter {
 
   /** Enumeration of memory layout strategies. */
   private enum MemoryLayoutStrategy {
-    /** Direct MemorySegment mapping (zero-copy) */
+    /** Direct MemorySegment mapping (zero-copy). */
     DIRECT_SEGMENT,
-    /** Structured layout with type information */
+    /** Structured layout with type information. */
     STRUCTURED_LAYOUT,
-    /** Serialized binary blob */
+    /** Serialized binary blob. */
     SERIALIZED_BLOB,
-    /** Hybrid approach with structured header */
+    /** Hybrid approach with structured header. */
     HYBRID_LAYOUT
   }
 

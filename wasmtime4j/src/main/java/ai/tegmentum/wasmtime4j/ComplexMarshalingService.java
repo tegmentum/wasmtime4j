@@ -85,11 +85,15 @@ public final class ComplexMarshalingService {
       // Determine optimal marshaling strategy
       final MarshalingStrategy strategy = selectMarshalingStrategy(object);
 
-      return switch (strategy) {
-        case VALUE_BASED -> marshalAsValue(object);
-        case MEMORY_BASED -> marshalAsMemory(object);
-        case HYBRID -> marshalAsHybrid(object);
-      };
+      if (strategy == MarshalingStrategy.VALUE_BASED) {
+        return marshalAsValue(object);
+      } else if (strategy == MarshalingStrategy.MEMORY_BASED) {
+        return marshalAsMemory(object);
+      } else if (strategy == MarshalingStrategy.HYBRID) {
+        return marshalAsHybrid(object);
+      } else {
+        throw new IllegalArgumentException("Unknown marshaling strategy: " + strategy);
+      }
 
     } catch (Exception e) {
       throw new WasmException("Failed to marshal object: " + object.getClass().getName(), e);
@@ -652,11 +656,11 @@ public final class ComplexMarshalingService {
 
   /** Enumeration of marshaling strategies. */
   private enum MarshalingStrategy {
-    /** Marshal as direct parameter values */
+    /** Marshal as direct parameter values. */
     VALUE_BASED,
-    /** Marshal through shared memory */
+    /** Marshal through shared memory. */
     MEMORY_BASED,
-    /** Hybrid approach with metadata and memory */
+    /** Hybrid approach with metadata and memory. */
     HYBRID
   }
 

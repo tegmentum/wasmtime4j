@@ -1,7 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.experimental.ExperimentalFeatureConfig;
-
 /**
  * Configuration options for WebAssembly engine creation.
  *
@@ -49,7 +47,7 @@ public final class EngineConfig {
   private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
 
   // Experimental features configuration
-  private ExperimentalFeatureConfig experimentalFeatures;
+  // Note: ExperimentalFeatureConfig moved to advanced package
 
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
@@ -517,9 +515,9 @@ public final class EngineConfig {
 
   /**
    * Creates a new configuration with experimental WebAssembly proposals enabled.
-   * <p>
-   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
-   * in future versions. Use only for testing and development.
+   *
+   * <p><b>WARNING:</b> Experimental features are unstable and may change or be removed in future
+   * versions. Use only for testing and development.
    *
    * @return a new configuration with experimental features enabled
    */
@@ -535,9 +533,9 @@ public final class EngineConfig {
 
   /**
    * Creates a new configuration with cutting-edge thread-related proposals enabled.
-   * <p>
-   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
-   * in future versions. Use only for testing and development.
+   *
+   * <p><b>WARNING:</b> Experimental features are unstable and may change or be removed in future
+   * versions. Use only for testing and development.
    *
    * @return a new configuration with threading experimental features enabled
    */
@@ -550,9 +548,9 @@ public final class EngineConfig {
 
   /**
    * Creates a new configuration with component model and interface proposals enabled.
-   * <p>
-   * <b>WARNING:</b> Experimental features are unstable and may change or be removed
-   * in future versions. Use only for testing and development.
+   *
+   * <p><b>WARNING:</b> Experimental features are unstable and may change or be removed in future
+   * versions. Use only for testing and development.
    *
    * @return a new configuration with component model experimental features enabled
    */
@@ -565,32 +563,5 @@ public final class EngineConfig {
         .addWasmFeature(WasmFeature.STRING_IMPORTS);
   }
 
-  /**
-   * Sets the experimental features configuration.
-   *
-   * @param experimentalFeatures the experimental features configuration
-   * @return this configuration for method chaining
-   */
-  public EngineConfig setExperimentalFeatures(final ExperimentalFeatureConfig experimentalFeatures) {
-    this.experimentalFeatures = experimentalFeatures;
-    return this;
-  }
-
-  /**
-   * Gets the experimental features configuration.
-   *
-   * @return the experimental features configuration, or null if not set
-   */
-  public ExperimentalFeatureConfig getExperimentalFeatures() {
-    return experimentalFeatures;
-  }
-
-  /**
-   * Checks if experimental features are configured.
-   *
-   * @return true if experimental features are configured, false otherwise
-   */
-  public boolean hasExperimentalFeatures() {
-    return experimentalFeatures != null;
-  }
+  // Note: Experimental features methods moved to advanced package
 }

@@ -84,8 +84,12 @@ public final class FilePermissions {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (!(obj instanceof FilePermissions)) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof FilePermissions)) {
+      return false;
+    }
     final FilePermissions that = (FilePermissions) obj;
     return read == that.read
         && write == that.write

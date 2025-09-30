@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime};
 use std::thread;
 use std::os::raw::c_char;
 
@@ -1280,13 +1280,13 @@ impl FlameGraphCollector {
 /// Integration with existing PerformanceProfiler
 impl PerformanceProfiler {
     /// Adds flame graph collection capability to the existing profiler
-    pub fn with_flame_graph_collection(mut config: ProfilerConfig) -> Result<(Self, Arc<FlameGraphCollector>), String> {
+    pub fn with_flame_graph_collection(config: ProfilerConfig) -> Result<(Self, Arc<FlameGraphCollector>), String> {
         let flame_collector = Arc::new(FlameGraphCollector::new(
             config.max_memory_allocations, // Reuse memory limit for stack samples
             config.sampling_interval
         ));
 
-        let mut profiler = Self::new(config)?;
+        let profiler = Self::new(config)?;
         Ok((profiler, flame_collector))
     }
 }

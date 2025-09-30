@@ -19,10 +19,10 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of experimental WASI process and system operations.
  *
- * <p>This class provides experimental process and system capabilities as defined in WASI Preview
- * 2, including enhanced process sandboxing, resource usage monitoring, inter-process
- * communication, and system service integration. These features enable sophisticated process
- * management in WASM applications.
+ * <p>This class provides experimental process and system capabilities as defined in WASI Preview 2,
+ * including enhanced process sandboxing, resource usage monitoring, inter-process communication,
+ * and system service integration. These features enable sophisticated process management in WASM
+ * applications.
  *
  * <p>Key features:
  *
@@ -68,7 +68,7 @@ public final class WasiExperimentalProcess {
   private final Map<Long, ResourceMonitorInfo> resourceMonitors = new ConcurrentHashMap<>();
 
   /** IPC handles tracking. */
-  private final Map<Long, IPCHandleInfo> ipcHandles = new ConcurrentHashMap<>();
+  private final Map<Long, IpcHandleInfo> ipcHandles = new ConcurrentHashMap<>();
 
   /** System services tracking. */
   private final Map<String, SystemServiceInfo> systemServices = new ConcurrentHashMap<>();
@@ -297,11 +297,11 @@ public final class WasiExperimentalProcess {
    * @return CompletableFuture that resolves to the IPC handle
    * @throws WasiException if IPC creation fails
    */
-  public CompletableFuture<Long> createIPCChannelAsync(
+  public CompletableFuture<Long> createIpcChannelAsync(
       final long sourceProcessHandle,
       final long targetProcessHandle,
-      final IPCChannelType channelType,
-      final IPCChannelConfig channelConfig) {
+      final IpcChannelType channelType,
+      final IpcChannelConfig channelConfig) {
     JniValidation.requireNonNull(channelType, "channelType");
     JniValidation.requireNonNull(channelConfig, "channelConfig");
 
@@ -328,8 +328,8 @@ public final class WasiExperimentalProcess {
           try {
             final long ipcHandle = processHandleGenerator.getAndIncrement();
 
-            final IPCCreationResult result =
-                nativeCreateIPCChannel(
+            final IpcCreationResult result =
+                nativeCreateIpcChannel(
                     wasiContext.getNativeHandle(),
                     ipcHandle,
                     sourceProcessHandle,
@@ -349,14 +349,14 @@ public final class WasiExperimentalProcess {
             }
 
             // Track IPC handle
-            final IPCHandleInfo ipcInfo =
-                new IPCHandleInfo(
+            final IpcHandleInfo ipcInfo =
+                new IpcHandleInfo(
                     ipcHandle,
                     sourceProcessHandle,
                     targetProcessHandle,
                     channelType,
                     channelConfig,
-                    IPCState.CONNECTED,
+                    IpcState.CONNECTED,
                     System.currentTimeMillis());
             ipcHandles.put(ipcHandle, ipcInfo);
 
@@ -445,7 +445,8 @@ public final class WasiExperimentalProcess {
             LOGGER.info(
                 () ->
                     String.format(
-                        "Registered system service: name=%s, id=%s", serviceName, result.serviceId));
+                        "Registered system service: name=%s, id=%s",
+                        serviceName, result.serviceId));
 
             return result.serviceId;
 
@@ -506,8 +507,7 @@ public final class WasiExperimentalProcess {
                       result.registeredAt));
             }
 
-            LOGGER.fine(
-                () -> String.format("Discovered %d services", discoveredServices.size()));
+            LOGGER.fine(() -> String.format("Discovered %d services", discoveredServices.size()));
 
             return discoveredServices;
 
@@ -647,10 +647,10 @@ public final class WasiExperimentalProcess {
     }
 
     // Close all IPC channels
-    for (final IPCHandleInfo ipc : ipcHandles.values()) {
-      if (ipc.state == IPCState.CONNECTED) {
+    for (final IpcHandleInfo ipc : ipcHandles.values()) {
+      if (ipc.state == IpcState.CONNECTED) {
         try {
-          nativeCloseIPCChannel(wasiContext.getNativeHandle(), ipc.handle);
+          nativeCloseIpcChannel(wasiContext.getNativeHandle(), ipc.handle);
         } catch (final Exception e) {
           LOGGER.log(Level.WARNING, "Error closing IPC channel during shutdown", e);
         }
@@ -705,7 +705,7 @@ public final class WasiExperimentalProcess {
       long networkThresholdBytesPerSecond,
       boolean enableDetailedStats);
 
-  private static native IPCCreationResult nativeCreateIPCChannel(
+  private static native IpcCreationResult nativeCreateIpcChannel(
       long contextHandle,
       long ipcHandle,
       long sourceProcessHandle,
@@ -737,10 +737,9 @@ public final class WasiExperimentalProcess {
 
   private static native int nativeStopResourceMonitor(long contextHandle, long monitorHandle);
 
-  private static native int nativeCloseIPCChannel(long contextHandle, long ipcHandle);
+  private static native int nativeCloseIpcChannel(long contextHandle, long ipcHandle);
 
-  private static native int nativeUnregisterSystemService(
-      long contextHandle, String serviceName);
+  private static native int nativeUnregisterSystemService(long contextHandle, String serviceName);
 
   /** Process state enumeration. */
   public enum ProcessState {
@@ -759,7 +758,7 @@ public final class WasiExperimentalProcess {
   }
 
   /** IPC channel type enumeration. */
-  public enum IPCChannelType {
+  public enum IpcChannelType {
     PIPE,
     SHARED_MEMORY,
     MESSAGE_QUEUE,
@@ -767,7 +766,7 @@ public final class WasiExperimentalProcess {
   }
 
   /** IPC state enumeration. */
-  public enum IPCState {
+  public enum IpcState {
     CONNECTING,
     CONNECTED,
     DISCONNECTED,
@@ -811,6 +810,15 @@ public final class WasiExperimentalProcess {
     public final boolean allowFileSystemAccess;
     public final boolean allowProcessControl;
 
+    /**
+     * Constructs a sandbox configuration.
+     *
+     * @param sandboxType the type of sandbox
+     * @param capabilities the sandbox capabilities
+     * @param allowNetworking whether networking is allowed
+     * @param allowFileSystemAccess whether file system access is allowed
+     * @param allowProcessControl whether process control is allowed
+     */
     public SandboxConfig(
         final SandboxType sandboxType,
         final SandboxCapabilities capabilities,
@@ -846,6 +854,15 @@ public final class WasiExperimentalProcess {
     public final int maxProcesses;
     public final long timeoutSeconds;
 
+    /**
+     * Constructs process resource limits.
+     *
+     * @param maxMemoryBytes maximum memory in bytes
+     * @param maxCpuPercent maximum CPU percentage
+     * @param maxFileDescriptors maximum file descriptors
+     * @param maxProcesses maximum processes
+     * @param timeoutSeconds timeout in seconds
+     */
     public ProcessResourceLimits(
         final long maxMemoryBytes,
         final int maxCpuPercent,
@@ -859,6 +876,11 @@ public final class WasiExperimentalProcess {
       this.timeoutSeconds = Math.max(0, timeoutSeconds);
     }
 
+    /**
+     * Creates default process resource limits.
+     *
+     * @return default ProcessResourceLimits instance
+     */
     public static ProcessResourceLimits defaultLimits() {
       return new ProcessResourceLimits(512 * 1024 * 1024, 50, 256, 10, 300);
     }
@@ -880,7 +902,8 @@ public final class WasiExperimentalProcess {
         final long ioThresholdBytesPerSecond,
         final long networkThresholdBytesPerSecond,
         final boolean enableDetailedStats) {
-      this.intervalSeconds = Math.max(1, Math.min(MAX_MONITORING_INTERVAL_SECONDS, intervalSeconds));
+      this.intervalSeconds =
+          Math.max(1, Math.min(MAX_MONITORING_INTERVAL_SECONDS, intervalSeconds));
       this.memoryThresholdBytes = Math.max(0, memoryThresholdBytes);
       this.cpuThresholdPercent = Math.max(0, Math.min(100, cpuThresholdPercent));
       this.ioThresholdBytesPerSecond = Math.max(0, ioThresholdBytesPerSecond);
@@ -890,13 +913,21 @@ public final class WasiExperimentalProcess {
   }
 
   /** IPC channel configuration. */
-  public static final class IPCChannelConfig {
+  public static final class IpcChannelConfig {
     public final int bufferSize;
     public final int maxMessages;
     public final boolean bidirectional;
     public final boolean persistent;
 
-    public IPCChannelConfig(
+    /**
+     * Constructs IPC channel configuration.
+     *
+     * @param bufferSize buffer size in bytes
+     * @param maxMessages maximum number of messages
+     * @param bidirectional whether the channel is bidirectional
+     * @param persistent whether the channel is persistent
+     */
+    public IpcChannelConfig(
         final int bufferSize,
         final int maxMessages,
         final boolean bidirectional,
@@ -907,8 +938,13 @@ public final class WasiExperimentalProcess {
       this.persistent = persistent;
     }
 
-    public static IPCChannelConfig defaultConfig() {
-      return new IPCChannelConfig(64 * 1024, 1000, true, false);
+    /**
+     * Creates default IPC channel configuration.
+     *
+     * @return default IpcChannelConfig instance
+     */
+    public static IpcChannelConfig defaultConfig() {
+      return new IpcChannelConfig(64 * 1024, 1000, true, false);
     }
   }
 
@@ -921,6 +957,16 @@ public final class WasiExperimentalProcess {
     public final int port;
     public final boolean secure;
 
+    /**
+     * Constructs system service metadata.
+     *
+     * @param version service version
+     * @param description service description
+     * @param capabilities service capabilities
+     * @param endpoints service endpoints
+     * @param port service port
+     * @param secure whether the service is secure
+     */
     public SystemServiceMetadata(
         final String version,
         final String description,
@@ -983,6 +1029,16 @@ public final class WasiExperimentalProcess {
     public final double currentValue;
     public final Instant timestamp;
 
+    /**
+     * Constructs a resource usage alert.
+     *
+     * @param processHandle process handle
+     * @param alertType type of alert
+     * @param message alert message
+     * @param thresholdValue threshold value
+     * @param currentValue current value
+     * @param timestamp timestamp of alert
+     */
     public ResourceUsageAlert(
         final long processHandle,
         final String alertType,
@@ -1006,6 +1062,14 @@ public final class WasiExperimentalProcess {
     public final byte[] data;
     public final String clientId;
 
+    /**
+     * Constructs a service request.
+     *
+     * @param operation service operation
+     * @param parameters operation parameters
+     * @param data request data
+     * @param clientId client identifier
+     */
     public ServiceRequest(
         final String operation,
         final Map<String, String> parameters,
@@ -1075,22 +1139,33 @@ public final class WasiExperimentalProcess {
   }
 
   /** IPC handle information. */
-  private static final class IPCHandleInfo {
+  private static final class IpcHandleInfo {
     public final long handle;
     public final long sourceProcessHandle;
     public final long targetProcessHandle;
-    public final IPCChannelType channelType;
-    public final IPCChannelConfig config;
-    public volatile IPCState state;
+    public final IpcChannelType channelType;
+    public final IpcChannelConfig config;
+    public volatile IpcState state;
     public final long createdAt;
 
-    public IPCHandleInfo(
+    /**
+     * Constructs IPC handle information.
+     *
+     * @param handle IPC handle
+     * @param sourceProcessHandle source process handle
+     * @param targetProcessHandle target process handle
+     * @param channelType channel type
+     * @param config channel configuration
+     * @param state channel state
+     * @param createdAt creation timestamp
+     */
+    public IpcHandleInfo(
         final long handle,
         final long sourceProcessHandle,
         final long targetProcessHandle,
-        final IPCChannelType channelType,
-        final IPCChannelConfig config,
-        final IPCState state,
+        final IpcChannelType channelType,
+        final IpcChannelConfig config,
+        final IpcState state,
         final long createdAt) {
       this.handle = handle;
       this.sourceProcessHandle = sourceProcessHandle;
@@ -1148,11 +1223,11 @@ public final class WasiExperimentalProcess {
     }
   }
 
-  private static final class IPCCreationResult {
+  private static final class IpcCreationResult {
     public final int errorCode;
     public final String channelIdentifier;
 
-    public IPCCreationResult(final int errorCode, final String channelIdentifier) {
+    public IpcCreationResult(final int errorCode, final String channelIdentifier) {
       this.errorCode = errorCode;
       this.channelIdentifier = channelIdentifier;
     }

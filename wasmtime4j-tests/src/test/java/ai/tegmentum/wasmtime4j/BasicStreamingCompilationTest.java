@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Timeout;
 /**
  * Basic tests for streaming WebAssembly compilation functionality.
  *
- * <p>These tests verify the core streaming compilation functionality that has been implemented
- * in Task #306, including basic compilation, progress tracking, and manual feeding.
+ * <p>These tests verify the core streaming compilation functionality that has been implemented in
+ * Task #306, including basic compilation, progress tracking, and manual feeding.
  */
 @Timeout(30) // Global timeout for all tests
 class BasicStreamingCompilationTest {
@@ -129,7 +129,8 @@ class BasicStreamingCompilationTest {
       Module module = future.get(10, TimeUnit.SECONDS);
 
       assertNotNull(module, "Compiled module should not be null");
-      assertEquals(testWasmModule.length, handle.getBytesFeeded(), "Should track bytes fed correctly");
+      assertEquals(
+          testWasmModule.length, handle.getBytesFeeded(), "Should track bytes fed correctly");
 
       module.close();
       handle.close();
@@ -172,16 +173,17 @@ class BasicStreamingCompilationTest {
 
       // Either cancellation succeeds or compilation completes quickly
       // Both are acceptable outcomes
-      assertDoesNotThrow(() -> {
-        try {
-          Module module = future.get(5, TimeUnit.SECONDS);
-          if (module != null) {
-            module.close();
-          }
-        } catch (Exception e) {
-          // Expected if cancelled
-        }
-      });
+      assertDoesNotThrow(
+          () -> {
+            try {
+              Module module = future.get(5, TimeUnit.SECONDS);
+              if (module != null) {
+                module.close();
+              }
+            } catch (Exception e) {
+              // Expected if cancelled
+            }
+          });
     }
   }
 
@@ -240,11 +242,30 @@ class BasicStreamingCompilationTest {
     // Create a simple but valid WebAssembly module for testing
     // This is a minimal module with just the header and basic structure
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6D, // WASM magic
-      0x01, 0x00, 0x00, 0x00, // WASM version
-      0x01, 0x04, 0x01, 0x60, 0x00, 0x00, // Type section: () -> ()
-      0x03, 0x02, 0x01, 0x00, // Function section: func 0 has type 0
-      0x0A, 0x04, 0x01, 0x02, 0x00, 0x0B // Code section: func 0 body is empty
+      0x00,
+      0x61,
+      0x73,
+      0x6D, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // WASM version
+      0x01,
+      0x04,
+      0x01,
+      0x60,
+      0x00,
+      0x00, // Type section: () -> ()
+      0x03,
+      0x02,
+      0x01,
+      0x00, // Function section: func 0 has type 0
+      0x0A,
+      0x04,
+      0x01,
+      0x02,
+      0x00,
+      0x0B // Code section: func 0 body is empty
     };
   }
 }

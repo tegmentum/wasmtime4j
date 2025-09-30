@@ -533,6 +533,15 @@ public enum PerformanceProfile {
     private final int securityLevel;
     private final int powerEfficiency;
 
+    /**
+     * Creates new performance characteristics.
+     *
+     * @param performanceScore overall performance score (0-100)
+     * @param memoryEfficiency memory efficiency score (0-100)
+     * @param compilationSpeed compilation speed score (0-100)
+     * @param securityLevel security level score (0-100)
+     * @param powerEfficiency power efficiency score (0-100)
+     */
     public PerformanceCharacteristics(
         final int performanceScore,
         final int memoryEfficiency,

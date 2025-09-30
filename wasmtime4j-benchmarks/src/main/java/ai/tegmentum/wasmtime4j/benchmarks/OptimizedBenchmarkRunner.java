@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -105,8 +104,8 @@ public final class OptimizedBenchmarkRunner {
           true, // Compilation caching
           true, // Instance caching
           true, // Batch operations
-          true  // GC optimizations
-      );
+          true // GC optimizations
+          );
     }
 
     /**
@@ -123,8 +122,8 @@ public final class OptimizedBenchmarkRunner {
           false, // No compilation caching
           false, // No instance caching
           false, // No batch operations
-          false  // No GC optimizations
-      );
+          false // No GC optimizations
+          );
     }
 
     public ComprehensiveBenchmarkExecutor.BenchmarkConfiguration getBaseConfig() {
@@ -261,10 +260,12 @@ public final class OptimizedBenchmarkRunner {
 
     // Collect optimization statistics
     final String optimizationStatistics = PerformanceOptimizationUtils.getPerformanceStatistics();
-    final String optimizationRecommendations = PerformanceOptimizationUtils.getOptimizationRecommendations();
+    final String optimizationRecommendations =
+        PerformanceOptimizationUtils.getOptimizationRecommendations();
 
     // Calculate performance improvement (requires baseline for comparison)
-    final double performanceImprovement = calculatePerformanceImprovement(baseResult, optimizedExecutionTime);
+    final double performanceImprovement =
+        calculatePerformanceImprovement(baseResult, optimizedExecutionTime);
 
     LOGGER.info("Optimized benchmark execution completed in " + optimizedExecutionTime + "ms");
     LOGGER.info("Optimization statistics:\n" + optimizationStatistics);
@@ -300,23 +301,25 @@ public final class OptimizedBenchmarkRunner {
     LOGGER.info("Executing fully optimized run...");
     final OptimizedBenchmarkConfiguration optimizedConfig =
         OptimizedBenchmarkConfiguration.createFullyOptimized();
-    final OptimizedBenchmarkResult optimizedResult =
-        executeOptimizedBenchmarks(optimizedConfig);
+    final OptimizedBenchmarkResult optimizedResult = executeOptimizedBenchmarks(optimizedConfig);
     results.add(optimizedResult);
 
     // Log comparative results
     final double improvementPercentage =
-        ((double) unoptimizedResult.getOptimizedExecutionTime() - optimizedResult.getOptimizedExecutionTime())
-        / unoptimizedResult.getOptimizedExecutionTime() * 100;
+        ((double) unoptimizedResult.getOptimizedExecutionTime()
+                - optimizedResult.getOptimizedExecutionTime())
+            / unoptimizedResult.getOptimizedExecutionTime()
+            * 100;
 
-    LOGGER.info(String.format(
-        "Comparative Analysis Results:\n" +
-        "  Unoptimized execution time: %dms\n" +
-        "  Optimized execution time: %dms\n" +
-        "  Performance improvement: %.2f%%",
-        unoptimizedResult.getOptimizedExecutionTime(),
-        optimizedResult.getOptimizedExecutionTime(),
-        improvementPercentage));
+    LOGGER.info(
+        String.format(
+            "Comparative Analysis Results:\n"
+                + "  Unoptimized execution time: %dms\n"
+                + "  Optimized execution time: %dms\n"
+                + "  Performance improvement: %.2f%%",
+            unoptimizedResult.getOptimizedExecutionTime(),
+            optimizedResult.getOptimizedExecutionTime(),
+            improvementPercentage));
 
     return results;
   }
@@ -328,7 +331,8 @@ public final class OptimizedBenchmarkRunner {
    */
   public OptimizedBenchmarkResult establishOptimizedBaselines() {
     LOGGER.info("Establishing performance baselines with optimizations enabled");
-    final OptimizedBenchmarkConfiguration config = OptimizedBenchmarkConfiguration.createFullyOptimized();
+    final OptimizedBenchmarkConfiguration config =
+        OptimizedBenchmarkConfiguration.createFullyOptimized();
     return executeOptimizedBenchmarks(config);
   }
 
@@ -345,7 +349,8 @@ public final class OptimizedBenchmarkRunner {
       Files.createDirectories(outputDirectory);
 
       final String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-      final Path reportPath = outputDirectory.resolve("performance-optimization-report-" + timestamp + ".html");
+      final Path reportPath =
+          outputDirectory.resolve("performance-optimization-report-" + timestamp + ".html");
 
       final StringBuilder report = new StringBuilder();
       report.append("<!DOCTYPE html>\n");
@@ -354,10 +359,12 @@ public final class OptimizedBenchmarkRunner {
       report.append("<style>\n");
       report.append("body { font-family: Arial, sans-serif; margin: 20px; }\n");
       report.append("h1, h2 { color: #333; }\n");
-      report.append(".metric { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }\n");
+      report.append(
+          ".metric { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }\n");
       report.append(".improvement { color: green; font-weight: bold; }\n");
       report.append(".degradation { color: red; font-weight: bold; }\n");
-      report.append("pre { background: #f0f0f0; padding: 10px; border-radius: 5px; overflow-x: auto; }\n");
+      report.append(
+          "pre { background: #f0f0f0; padding: 10px; border-radius: 5px; overflow-x: auto; }\n");
       report.append("</style>\n");
       report.append("</head>\n<body>\n");
 
@@ -366,38 +373,59 @@ public final class OptimizedBenchmarkRunner {
 
       for (int i = 0; i < results.size(); i++) {
         final OptimizedBenchmarkResult result = results.get(i);
-        report.append("<h2>Configuration ").append(i + 1).append(": ").append(result.getConfiguration()).append("</h2>\n");
+        report
+            .append("<h2>Configuration ")
+            .append(i + 1)
+            .append(": ")
+            .append(result.getConfiguration())
+            .append("</h2>\n");
 
         report.append("<div class='metric'>\n");
         report.append("<h3>Execution Results</h3>\n");
-        report.append("<p>Execution Time: ").append(result.getOptimizedExecutionTime()).append("ms</p>\n");
+        report
+            .append("<p>Execution Time: ")
+            .append(result.getOptimizedExecutionTime())
+            .append("ms</p>\n");
         report.append("<p>Success: ").append(result.getBaseResult().isSuccess()).append("</p>\n");
         if (result.getBaseResult().getMeasurements() != null) {
-          report.append("<p>Measurements: ").append(result.getBaseResult().getMeasurements().size()).append("</p>\n");
+          report
+              .append("<p>Measurements: ")
+              .append(result.getBaseResult().getMeasurements().size())
+              .append("</p>\n");
         }
         report.append("</div>\n");
 
         report.append("<div class='metric'>\n");
         report.append("<h3>Optimization Statistics</h3>\n");
-        report.append("<pre>").append(escapeHtml(result.getOptimizationStatistics())).append("</pre>\n");
+        report
+            .append("<pre>")
+            .append(escapeHtml(result.getOptimizationStatistics()))
+            .append("</pre>\n");
         report.append("</div>\n");
 
         report.append("<div class='metric'>\n");
         report.append("<h3>Optimization Recommendations</h3>\n");
-        report.append("<pre>").append(escapeHtml(result.getOptimizationRecommendations())).append("</pre>\n");
+        report
+            .append("<pre>")
+            .append(escapeHtml(result.getOptimizationRecommendations()))
+            .append("</pre>\n");
         report.append("</div>\n");
       }
 
       if (results.size() >= 2) {
         final double improvementPercentage =
-            ((double) results.get(0).getOptimizedExecutionTime() - results.get(1).getOptimizedExecutionTime())
-            / results.get(0).getOptimizedExecutionTime() * 100;
+            ((double) results.get(0).getOptimizedExecutionTime()
+                    - results.get(1).getOptimizedExecutionTime())
+                / results.get(0).getOptimizedExecutionTime()
+                * 100;
 
         report.append("<div class='metric'>\n");
         report.append("<h3>Comparative Analysis</h3>\n");
         final String improvementClass = improvementPercentage > 0 ? "improvement" : "degradation";
         report.append("<p class='").append(improvementClass).append("'>");
-        report.append("Performance Improvement: ").append(String.format("%.2f%%", improvementPercentage));
+        report
+            .append("Performance Improvement: ")
+            .append(String.format("%.2f%%", improvementPercentage));
         report.append("</p>\n");
         report.append("</div>\n");
       }
@@ -451,10 +479,10 @@ public final class OptimizedBenchmarkRunner {
 
   private String escapeHtml(final String text) {
     return text.replace("&", "&amp;")
-               .replace("<", "<")
-               .replace(">", ">")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;");
+        .replace("<", "<")
+        .replace(">", ">")
+        .replace("\"", "&quot;")
+        .replace("'", "&#x27;");
   }
 
   /**
@@ -481,13 +509,15 @@ public final class OptimizedBenchmarkRunner {
         case "optimized":
           final OptimizedBenchmarkResult optimizedResult = runner.establishOptimizedBaselines();
           System.out.println("Optimized benchmark execution completed");
-          System.out.println("Execution time: " + optimizedResult.getOptimizedExecutionTime() + "ms");
+          System.out.println(
+              "Execution time: " + optimizedResult.getOptimizedExecutionTime() + "ms");
           System.out.println("\nOptimization Statistics:");
           System.out.println(optimizedResult.getOptimizationStatistics());
           break;
 
         case "comparative":
-          final List<OptimizedBenchmarkResult> comparativeResults = runner.executeComparativeAnalysis();
+          final List<OptimizedBenchmarkResult> comparativeResults =
+              runner.executeComparativeAnalysis();
           System.out.println("Comparative analysis completed");
 
           final Path reportDir = benchmarksDir.resolve("optimization-reports");
@@ -498,7 +528,9 @@ public final class OptimizedBenchmarkRunner {
         case "baseline":
           final OptimizedBenchmarkResult baselineResult = runner.establishOptimizedBaselines();
           System.out.println("Optimized baseline establishment completed");
-          System.out.println("Performance improvement: " + String.format("%.2f%%", baselineResult.getPerformanceImprovement()));
+          System.out.println(
+              "Performance improvement: "
+                  + String.format("%.2f%%", baselineResult.getPerformanceImprovement()));
           break;
 
         default:

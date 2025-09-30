@@ -8,15 +8,13 @@
 //! and subject to significant change.
 
 use jni::JNIEnv;
-use jni::objects::{JClass, JString, JObject};
-use jni::sys::{jlong, jint, jboolean, jstring};
-use std::ffi::{CString, CStr};
+use jni::objects::{JClass, JString};
+use jni::sys::{jlong, jint, jstring};
 use std::ptr;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::WasmtimeError;
 use crate::experimental_features::core as exp_core;
 use crate::advanced_experimental::core as adv_core;
-use crate::validate_ptr_not_null;
 
 /// Create experimental features configuration
 #[no_mangle]
@@ -288,7 +286,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 /// Get profiling results
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperimentalFeatures_nativeGetProfilingResults(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) -> jstring {

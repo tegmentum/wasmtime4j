@@ -6,9 +6,8 @@ import java.util.List;
 /**
  * Represents a WebAssembly function instance.
  *
- * <p>WebAssembly functions can be called from Java code, allowing for interoperation
- * between Java and WebAssembly. Functions have a signature consisting of parameter
- * types and return types.
+ * <p>WebAssembly functions can be called from Java code, allowing for interoperation between Java
+ * and WebAssembly. Functions have a signature consisting of parameter types and return types.
  *
  * @param <T> the type of user-defined data associated with the store
  * @since 1.0.0
@@ -29,7 +28,8 @@ public interface Function<T> {
    *
    * @param args the arguments to pass to the function
    * @return the single return value from the function call, or null if void
-   * @throws WasmException if the function call fails, arguments are invalid, or function returns multiple values
+   * @throws WasmException if the function call fails, arguments are invalid, or function returns
+   *     multiple values
    */
   Object callSingle(final Object... args) throws WasmException;
 
@@ -82,9 +82,7 @@ public interface Function<T> {
    */
   int getReturnCount();
 
-  /**
-   * Represents the signature of a WebAssembly function.
-   */
+  /** Represents the signature of a WebAssembly function. */
   interface FunctionSignature {
     /**
      * Gets the parameter types.
@@ -109,23 +107,21 @@ public interface Function<T> {
     boolean matches(final FunctionSignature other);
   }
 
-  /**
-   * Enumeration of WebAssembly value types.
-   */
+  /** Enumeration of WebAssembly value types. */
   enum ValueType {
-    /** 32-bit integer */
+    /** 32-bit integer. */
     I32,
-    /** 64-bit integer */
+    /** 64-bit integer. */
     I64,
-    /** 32-bit float */
+    /** 32-bit float. */
     F32,
-    /** 64-bit float */
+    /** 64-bit float. */
     F64,
-    /** 128-bit vector */
+    /** 128-bit vector. */
     V128,
-    /** Function reference */
+    /** Function reference. */
     FUNCREF,
-    /** External reference */
+    /** External reference. */
     EXTERNREF
   }
 }

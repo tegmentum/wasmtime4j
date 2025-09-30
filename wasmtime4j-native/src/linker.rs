@@ -4,13 +4,11 @@
 //! binding imports, and resolving module dependencies before instantiation.
 
 use std::sync::{Arc, Mutex};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::time::Instant;
 use wasmtime::{
     Linker as WasmtimeLinker,
     FuncType,
-    Val,
-    Caller,
     ImportType as WasmtimeImportType,
     ExternType,
 };
@@ -20,8 +18,6 @@ use crate::module::Module;
 use crate::instance::Instance;
 use crate::hostfunc::HostFunction;
 use crate::memory::Memory as WasmMemory;
-use crate::table::Table as WasmTable;
-use crate::global::Global as WasmGlobal;
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime linker with comprehensive host binding support
@@ -351,7 +347,7 @@ impl Linker {
             });
         }
 
-        let mut linker = self.inner.lock()
+        let linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
@@ -499,7 +495,7 @@ impl Linker {
             });
         }
 
-        let mut linker = self.inner.lock()
+        let linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
@@ -929,7 +925,7 @@ impl Drop for Linker {
 //
 
 use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Linker core functions for interface implementations

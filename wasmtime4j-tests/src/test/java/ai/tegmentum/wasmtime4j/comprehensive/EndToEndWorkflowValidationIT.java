@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -23,11 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -211,9 +205,7 @@ final class EndToEndWorkflowValidationIT {
     }
   }
 
-  /**
-   * Tests WASI integration as part of the complete workflow validation.
-   */
+  /** Tests WASI integration as part of the complete workflow validation. */
   @Test
   @DisplayName("Should integrate WASI operations successfully")
   void shouldIntegrateWasiOperationsSuccessfully() throws Exception {
@@ -270,12 +262,9 @@ final class EndToEndWorkflowValidationIT {
           final double operationsPerSecond = operationCount / (elapsed.toMillis() / 1000.0);
           final double microsecondsPerOperation = elapsed.toNanos() / 1000.0 / operationCount;
 
-          LOGGER.info(
-              String.format(
-                  "Performance results for %d operations:", operationCount));
+          LOGGER.info(String.format("Performance results for %d operations:", operationCount));
           LOGGER.info(String.format("  Total time: %d ms", elapsed.toMillis()));
-          LOGGER.info(
-              String.format("  Operations per second: %.2f", operationsPerSecond));
+          LOGGER.info(String.format("  Operations per second: %.2f", operationsPerSecond));
           LOGGER.info(
               String.format("  Microseconds per operation: %.2f", microsecondsPerOperation));
 
@@ -366,9 +355,7 @@ final class EndToEndWorkflowValidationIT {
     LOGGER.info("Resource cleanup test: SUCCESS");
   }
 
-  /**
-   * Tests comprehensive error scenarios to validate error handling and recovery.
-   */
+  /** Tests comprehensive error scenarios to validate error handling and recovery. */
   @Test
   @DisplayName("Should handle error scenarios gracefully")
   void shouldHandleErrorScenariosGracefully() throws Exception {
@@ -426,21 +413,45 @@ final class EndToEndWorkflowValidationIT {
     // Simple WASM module that exports an "add" function: (i32, i32) -> i32
     // This is a minimal valid WASM module with an add function
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // WASM magic number
-      0x01, 0x00, 0x00, 0x00, // Version
-      0x01, 0x07, // Type section
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic number
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version
+      0x01,
+      0x07, // Type section
       0x01, // 1 type
-      0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // (i32, i32) -> i32
-      0x03, 0x02, // Function section
-      0x01, 0x00, // 1 function, type 0
-      0x07, 0x07, // Export section
+      0x60,
+      0x02,
+      0x7f,
+      0x7f,
+      0x01,
+      0x7f, // (i32, i32) -> i32
+      0x03,
+      0x02, // Function section
+      0x01,
+      0x00, // 1 function, type 0
+      0x07,
+      0x07, // Export section
       0x01, // 1 export
-      0x03, 0x61, 0x64, 0x64, // "add"
-      0x00, 0x00, // function 0
-      0x0a, 0x09, // Code section
-      0x01, 0x07, 0x00, // 1 function, 7 bytes
-      0x20, 0x00, // local.get 0
-      0x20, 0x01, // local.get 1
+      0x03,
+      0x61,
+      0x64,
+      0x64, // "add"
+      0x00,
+      0x00, // function 0
+      0x0a,
+      0x09, // Code section
+      0x01,
+      0x07,
+      0x00, // 1 function, 7 bytes
+      0x20,
+      0x00, // local.get 0
+      0x20,
+      0x01, // local.get 1
       0x6a, // i32.add
       0x0b // end
     };
@@ -496,7 +507,8 @@ final class EndToEndWorkflowValidationIT {
         if (actual != expected) {
           throw new AssertionError(
               String.format(
-                  "Thread %d, Op %d: Expected %d, got %d", threadId, operationId, expected, actual));
+                  "Thread %d, Op %d: Expected %d, got %d",
+                  threadId, operationId, expected, actual));
         }
       }
     }

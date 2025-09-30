@@ -10,27 +10,29 @@ package ai.tegmentum.wasmtime4j.exception;
  */
 public class MarshalingException extends WasmException {
 
+  private static final long serialVersionUID = 1L;
+
   /** Enumeration of marshaling operation types for better error classification. */
   public enum OperationType {
-    /** Object serialization operation */
+    /** Object serialization operation. */
     SERIALIZATION,
-    /** Object deserialization operation */
+    /** Object deserialization operation. */
     DESERIALIZATION,
-    /** Type conversion operation */
+    /** Type conversion operation. */
     TYPE_CONVERSION,
-    /** Memory allocation operation */
+    /** Memory allocation operation. */
     MEMORY_ALLOCATION,
-    /** Memory layout operation */
+    /** Memory layout operation. */
     MEMORY_LAYOUT,
-    /** Array marshaling operation */
+    /** Array marshaling operation. */
     ARRAY_MARSHALING,
-    /** Collection marshaling operation */
+    /** Collection marshaling operation. */
     COLLECTION_MARSHALING,
-    /** Object graph traversal operation */
+    /** Object graph traversal operation. */
     OBJECT_GRAPH_TRAVERSAL,
-    /** Circular reference detection */
+    /** Circular reference detection. */
     CIRCULAR_REFERENCE_DETECTION,
-    /** Strategy selection operation */
+    /** Strategy selection operation. */
     STRATEGY_SELECTION
   }
 
@@ -287,13 +289,25 @@ public class MarshalingException extends WasmException {
    * @return true if the operation might succeed with different parameters
    */
   public boolean isRecoverable() {
-    return switch (operationType) {
-      case MEMORY_ALLOCATION, OBJECT_GRAPH_TRAVERSAL, STRATEGY_SELECTION -> true;
-      case CIRCULAR_REFERENCE_DETECTION -> true; // Can disable detection
-      case TYPE_CONVERSION, SERIALIZATION, DESERIALIZATION -> false; // Generally not recoverable
-      case ARRAY_MARSHALING, COLLECTION_MARSHALING -> true; // Can use different strategy
-      case MEMORY_LAYOUT -> false; // Layout issues are typically not recoverable
-    };
+    switch (operationType) {
+      case MEMORY_ALLOCATION:
+      case OBJECT_GRAPH_TRAVERSAL:
+      case STRATEGY_SELECTION:
+        return true;
+      case CIRCULAR_REFERENCE_DETECTION:
+        return true; // Can disable detection
+      case TYPE_CONVERSION:
+      case SERIALIZATION:
+      case DESERIALIZATION:
+        return false; // Generally not recoverable
+      case ARRAY_MARSHALING:
+      case COLLECTION_MARSHALING:
+        return true; // Can use different strategy
+      case MEMORY_LAYOUT:
+        return false; // Layout issues are typically not recoverable
+      default:
+        throw new IllegalArgumentException("Unknown operation type: " + operationType);
+    }
   }
 
   /**

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -331,13 +330,47 @@ final class RealWorldMemoryLeakDetectionIT {
   private byte[] createFallbackWasmModule() {
     // Simple WASM module with add function
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // WASM magic
-      0x01, 0x00, 0x00, 0x00, // Version
-      0x01, 0x07, // Type section
-      0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // (i32, i32) -> i32
-      0x03, 0x02, 0x01, 0x00, // Function section
-      0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // Export section
-      0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b // Code section
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version
+      0x01,
+      0x07, // Type section
+      0x01,
+      0x60,
+      0x02,
+      0x7f,
+      0x7f,
+      0x01,
+      0x7f, // (i32, i32) -> i32
+      0x03,
+      0x02,
+      0x01,
+      0x00, // Function section
+      0x07,
+      0x07,
+      0x01,
+      0x03,
+      0x61,
+      0x64,
+      0x64,
+      0x00,
+      0x00, // Export section
+      0x0a,
+      0x09,
+      0x01,
+      0x07,
+      0x00,
+      0x20,
+      0x00,
+      0x20,
+      0x01,
+      0x6a,
+      0x0b // Code section
     };
   }
 
@@ -512,8 +545,7 @@ final class RealWorldMemoryLeakDetectionIT {
     public void recordMemorySnapshot(final String label) {
       final MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
       snapshots.add(
-          new MemorySnapshot(
-              label, Instant.now(), heapUsage.getUsed(), heapUsage.getCommitted()));
+          new MemorySnapshot(label, Instant.now(), heapUsage.getUsed(), heapUsage.getCommitted()));
     }
 
     public MemoryLeakAnalysis performLeakAnalysis() {
@@ -534,8 +566,7 @@ final class RealWorldMemoryLeakDetectionIT {
               : 0.0;
 
       // Calculate memory efficiency (average used / committed)
-      final double avgUsed =
-          snapshots.stream().mapToLong(s -> s.heapUsed).average().orElse(0.0);
+      final double avgUsed = snapshots.stream().mapToLong(s -> s.heapUsed).average().orElse(0.0);
       final double avgCommitted =
           snapshots.stream().mapToLong(s -> s.heapCommitted).average().orElse(1.0);
       final double efficiency = (avgUsed / avgCommitted) * 100.0;
@@ -569,7 +600,10 @@ final class RealWorldMemoryLeakDetectionIT {
     final long heapCommitted;
 
     public MemorySnapshot(
-        final String label, final Instant timestamp, final long heapUsed, final long heapCommitted) {
+        final String label,
+        final Instant timestamp,
+        final long heapUsed,
+        final long heapCommitted) {
       this.label = label;
       this.timestamp = timestamp;
       this.heapUsed = heapUsed;
@@ -672,8 +706,7 @@ final class RealWorldMemoryLeakDetectionIT {
           (finalMemory - initialMemory) / 1024.0 / 1024.0 / preAllocations.size();
 
       // Calculate peak memory
-      final long peakMemory =
-          postAllocations.stream().mapToLong(Long::longValue).max().orElse(0);
+      final long peakMemory = postAllocations.stream().mapToLong(Long::longValue).max().orElse(0);
       final double peakMemoryMB = peakMemory / 1024.0 / 1024.0;
 
       return new ModuleMemoryPattern(
@@ -775,8 +808,7 @@ final class RealWorldMemoryLeakDetectionIT {
         return 0.0;
       }
 
-      final double mean =
-          memorySnapshots.stream().mapToLong(Long::longValue).average().orElse(0.0);
+      final double mean = memorySnapshots.stream().mapToLong(Long::longValue).average().orElse(0.0);
       final double variance =
           memorySnapshots.stream()
               .mapToDouble(mem -> Math.pow(mem - mean, 2))

@@ -6,29 +6,41 @@ import java.util.Set;
 /**
  * Security and validation utilities for WebAssembly custom sections.
  *
- * <p>This class provides comprehensive security validation for custom sections to prevent
- * malicious content from affecting the runtime or host environment.
+ * <p>This class provides comprehensive security validation for custom sections to prevent malicious
+ * content from affecting the runtime or host environment.
  *
  * @since 1.0.0
  */
 public final class CustomSectionSecurity {
 
-  /** Maximum allowed size for a single custom section (16MB) */
+  /** Maximum allowed size for a single custom section (16MB). */
   public static final int MAX_CUSTOM_SECTION_SIZE = 16 * 1024 * 1024;
 
-  /** Maximum allowed total size for all custom sections (64MB) */
+  /** Maximum allowed total size for all custom sections (64MB). */
   public static final long MAX_TOTAL_CUSTOM_SECTIONS_SIZE = 64L * 1024 * 1024;
 
-  /** Maximum allowed number of custom sections */
+  /** Maximum allowed number of custom sections. */
   public static final int MAX_CUSTOM_SECTION_COUNT = 1000;
 
-  /** Maximum allowed length for custom section names */
+  /** Maximum allowed length for custom section names. */
   public static final int MAX_SECTION_NAME_LENGTH = 256;
 
-  private static final Set<String> SUSPICIOUS_SECTION_NAMES = java.util.Set.of(
-      "eval", "script", "code", "exec", "shell", "cmd", "run",
-      ".exe", ".dll", ".so", ".dylib", "javascript", "php", "python"
-  );
+  private static final Set<String> SUSPICIOUS_SECTION_NAMES =
+      java.util.Set.of(
+          "eval",
+          "script",
+          "code",
+          "exec",
+          "shell",
+          "cmd",
+          "run",
+          ".exe",
+          ".dll",
+          ".so",
+          ".dylib",
+          "javascript",
+          "php",
+          "python");
 
   private CustomSectionSecurity() {
     // Utility class
@@ -50,8 +62,10 @@ public final class CustomSectionSecurity {
 
     // Validate section size
     if (section.getSize() > MAX_CUSTOM_SECTION_SIZE) {
-      builder.addError(section.getName(),
-          String.format("Section size %d exceeds maximum allowed size %d",
+      builder.addError(
+          section.getName(),
+          String.format(
+              "Section size %d exceeds maximum allowed size %d",
               section.getSize(), MAX_CUSTOM_SECTION_SIZE));
     }
 
@@ -80,19 +94,21 @@ public final class CustomSectionSecurity {
 
     // Validate section count
     if (sections.size() > MAX_CUSTOM_SECTION_COUNT) {
-      builder.addError("*",
-          String.format("Number of custom sections %d exceeds maximum allowed count %d",
+      builder.addError(
+          "*",
+          String.format(
+              "Number of custom sections %d exceeds maximum allowed count %d",
               sections.size(), MAX_CUSTOM_SECTION_COUNT));
     }
 
     // Validate total size
-    final long totalSize = sections.stream()
-        .mapToLong(CustomSection::getSize)
-        .sum();
+    final long totalSize = sections.stream().mapToLong(CustomSection::getSize).sum();
 
     if (totalSize > MAX_TOTAL_CUSTOM_SECTIONS_SIZE) {
-      builder.addError("*",
-          String.format("Total custom sections size %d exceeds maximum allowed size %d",
+      builder.addError(
+          "*",
+          String.format(
+              "Total custom sections size %d exceeds maximum allowed size %d",
               totalSize, MAX_TOTAL_CUSTOM_SECTIONS_SIZE));
     }
 
@@ -145,8 +161,7 @@ public final class CustomSectionSecurity {
 
     final String lowerName = sectionName.toLowerCase();
 
-    return SUSPICIOUS_SECTION_NAMES.stream()
-        .anyMatch(lowerName::contains);
+    return SUSPICIOUS_SECTION_NAMES.stream().anyMatch(lowerName::contains);
   }
 
   /**
@@ -164,24 +179,29 @@ public final class CustomSectionSecurity {
     // Check for executable file headers
     if (data.length >= 4) {
       // Check for common executable formats
-      if (startsWithMagic(data, new byte[]{0x4D, 0x5A}) || // PE/EXE
-          startsWithMagic(data, new byte[]{0x7F, 0x45, 0x4C, 0x46}) || // ELF
-          startsWithMagic(data, new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE}) || // Mach-O
-          startsWithMagic(data, new byte[]{(byte) 0xCE, (byte) 0xFA, (byte) 0xED, (byte) 0xFE})) { // Mach-O
+      if (startsWithMagic(data, new byte[] {0x4D, 0x5A})
+          || // PE/EXE
+          startsWithMagic(data, new byte[] {0x7F, 0x45, 0x4C, 0x46})
+          || // ELF
+          startsWithMagic(data, new byte[] {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})
+          || // Mach-O
+          startsWithMagic(
+              data, new byte[] {(byte) 0xCE, (byte) 0xFA, (byte) 0xED, (byte) 0xFE})) { // Mach-O
         return true;
       }
     }
 
     // Check for script-like content
-    final String dataStr = new String(data, 0, Math.min(data.length, 1024), java.nio.charset.StandardCharsets.UTF_8);
+    final String dataStr =
+        new String(data, 0, Math.min(data.length, 1024), java.nio.charset.StandardCharsets.UTF_8);
     final String lowerData = dataStr.toLowerCase();
 
-    return lowerData.contains("eval(") ||
-        lowerData.contains("exec(") ||
-        lowerData.contains("system(") ||
-        lowerData.contains("shell_exec") ||
-        lowerData.contains("<script") ||
-        lowerData.contains("javascript:");
+    return lowerData.contains("eval(")
+        || lowerData.contains("exec(")
+        || lowerData.contains("system(")
+        || lowerData.contains("shell_exec")
+        || lowerData.contains("<script")
+        || lowerData.contains("javascript:");
   }
 
   /**
@@ -193,11 +213,13 @@ public final class CustomSectionSecurity {
     return new SecurityConfig();
   }
 
-  private static void validateSectionName(final String name,
-                                          final CustomSectionValidationResult.Builder builder) {
+  private static void validateSectionName(
+      final String name, final CustomSectionValidationResult.Builder builder) {
     if (name.length() > MAX_SECTION_NAME_LENGTH) {
-      builder.addError(name,
-          String.format("Section name length %d exceeds maximum allowed length %d",
+      builder.addError(
+          name,
+          String.format(
+              "Section name length %d exceeds maximum allowed length %d",
               name.length(), MAX_SECTION_NAME_LENGTH));
     }
 
@@ -211,8 +233,8 @@ public final class CustomSectionSecurity {
     }
   }
 
-  private static void validateSectionContent(final CustomSection section,
-                                            final CustomSectionValidationResult.Builder builder) {
+  private static void validateSectionContent(
+      final CustomSection section, final CustomSectionValidationResult.Builder builder) {
     if (section.isEmpty()) {
       builder.addWarning(section.getName(), "Section is empty");
       return;
@@ -232,8 +254,8 @@ public final class CustomSectionSecurity {
     }
   }
 
-  private static void validateDuplicateNames(final List<CustomSection> sections,
-                                            final CustomSectionValidationResult.Builder builder) {
+  private static void validateDuplicateNames(
+      final List<CustomSection> sections, final CustomSectionValidationResult.Builder builder) {
     final java.util.Map<String, Integer> nameCounts = new java.util.HashMap<>();
 
     for (final CustomSection section : sections) {
@@ -242,7 +264,8 @@ public final class CustomSectionSecurity {
 
     for (final java.util.Map.Entry<String, Integer> entry : nameCounts.entrySet()) {
       if (entry.getValue() > 1) {
-        builder.addWarning(entry.getKey(),
+        builder.addWarning(
+            entry.getKey(),
             String.format("Section name appears %d times (duplicated)", entry.getValue()));
       }
     }
@@ -263,9 +286,9 @@ public final class CustomSectionSecurity {
   }
 
   private static boolean isTextBasedSection(final CustomSectionType type) {
-    return type == CustomSectionType.NAME ||
-        type == CustomSectionType.PRODUCERS ||
-        type == CustomSectionType.SOURCE_MAP;
+    return type == CustomSectionType.NAME
+        || type == CustomSectionType.PRODUCERS
+        || type == CustomSectionType.SOURCE_MAP;
   }
 
   private static byte[] sanitizeData(final byte[] data) {
@@ -274,15 +297,13 @@ public final class CustomSectionSecurity {
     return data;
   }
 
-  private static <T> List<T> combineIssues(final CustomSectionValidationResult.Builder builder,
-                                          final List<T> newIssues) {
+  private static <T> List<T> combineIssues(
+      final CustomSectionValidationResult.Builder builder, final List<T> newIssues) {
     // This is a helper method - in practice the builder would handle combining issues
     return newIssues;
   }
 
-  /**
-   * Security configuration for custom section handling.
-   */
+  /** Security configuration for custom section handling. */
   public static final class SecurityConfig {
     private boolean strictValidation = true;
     private boolean allowSuspiciousNames = false;

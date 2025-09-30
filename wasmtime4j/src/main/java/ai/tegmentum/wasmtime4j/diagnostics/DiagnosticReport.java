@@ -10,8 +10,8 @@ import java.util.Map;
  * Comprehensive diagnostic report containing results from various diagnostic tests.
  *
  * <p>This class aggregates diagnostic information from environment checks, runtime validation,
- * performance tests, and error scenario testing to provide a complete picture of the
- * WebAssembly system health and capability.
+ * performance tests, and error scenario testing to provide a complete picture of the WebAssembly
+ * system health and capability.
  *
  * @since 1.0.0
  */
@@ -293,36 +293,38 @@ public final class DiagnosticReport {
     // Environment Information
     report.append("--- Environment Information ---\n");
     if (environmentInfo != null) {
-      environmentInfo.forEach((key, value) ->
-          report.append(String.format("%-20s: %s\n", key, value)));
+      environmentInfo.forEach(
+          (key, value) -> report.append(String.format("%-20s: %s\n", key, value)));
     }
     report.append("\n");
 
     // Runtime Information
     report.append("--- Runtime Information ---\n");
     if (runtimeInfo != null) {
-      runtimeInfo.forEach((key, value) ->
-          report.append(String.format("%-20s: %s\n", key, value)));
+      runtimeInfo.forEach((key, value) -> report.append(String.format("%-20s: %s\n", key, value)));
     }
     report.append("\n");
 
     // Memory Information
     report.append("--- Memory Information ---\n");
     if (memoryInfo != null) {
-      memoryInfo.forEach((key, value) -> {
-        if (value instanceof Number) {
-          final long bytes = ((Number) value).longValue();
-          report.append(String.format("%-20s: %s (%d bytes)\n", key, formatMemory(bytes), bytes));
-        } else {
-          report.append(String.format("%-20s: %s\n", key, value));
-        }
-      });
+      memoryInfo.forEach(
+          (key, value) -> {
+            if (value instanceof Number) {
+              final long bytes = ((Number) value).longValue();
+              report.append(
+                  String.format("%-20s: %s (%d bytes)\n", key, formatMemory(bytes), bytes));
+            } else {
+              report.append(String.format("%-20s: %s\n", key, value));
+            }
+          });
     }
     report.append("\n");
 
     // Test Results
     report.append("--- Test Results ---\n");
-    report.append(String.format("Module Validation : %s\n", formatTestResult(moduleValidationResult)));
+    report.append(
+        String.format("Module Validation : %s\n", formatTestResult(moduleValidationResult)));
     report.append(String.format("Error Handling    : %s\n", formatTestResult(errorHandlingResult)));
     report.append(String.format("Performance       : %s\n", formatTestResult(performanceResult)));
     report.append("\n");
@@ -342,8 +344,12 @@ public final class DiagnosticReport {
       for (final DiagnosticError error : errors) {
         report.append("✗ ").append(error.getMessage()).append("\n");
         if (error.getThrowable() != null) {
-          report.append("  Exception: ").append(error.getThrowable().getClass().getSimpleName())
-              .append(": ").append(error.getThrowable().getMessage()).append("\n");
+          report
+              .append("  Exception: ")
+              .append(error.getThrowable().getClass().getSimpleName())
+              .append(": ")
+              .append(error.getThrowable().getMessage())
+              .append("\n");
         }
       }
       report.append("\n");
@@ -424,9 +430,7 @@ public final class DiagnosticReport {
     }
   }
 
-  /**
-   * Represents an error encountered during diagnostics.
-   */
+  /** Represents an error encountered during diagnostics. */
   public static final class DiagnosticError {
     private final String message;
     private final Throwable throwable;
@@ -445,9 +449,7 @@ public final class DiagnosticReport {
     }
   }
 
-  /**
-   * Represents a warning encountered during diagnostics.
-   */
+  /** Represents a warning encountered during diagnostics. */
   public static final class DiagnosticWarning {
     private final String message;
 

@@ -5,8 +5,8 @@ import java.util.Objects;
 /**
  * Represents a dependency relationship between two WebAssembly modules.
  *
- * <p>A dependency edge indicates that one module (the dependent) requires
- * functionality from another module (the dependency) through imports.
+ * <p>A dependency edge indicates that one module (the dependent) requires functionality from
+ * another module (the dependency) through imports.
  *
  * @since 1.0.0
  */
@@ -104,20 +104,14 @@ public final class DependencyEdge {
    * @return a string in the format "dependent -> dependency (importModule::importName)"
    */
   public String getDependencyString() {
-    return String.format("%s -> %s (%s::%s)",
-        dependent.getName().orElse("unnamed"),
-        dependency.getName().orElse("unnamed"),
-        importModule,
-        importName);
+    return String.format("%s -> %s (%s::%s)", "module", "module", importModule, importName);
   }
 
   @Override
   public String toString() {
     return String.format(
         "DependencyEdge{%s, type=%s, resolved=%s}",
-        getDependencyString(),
-        dependencyType,
-        resolved);
+        getDependencyString(), dependencyType, resolved);
   }
 
   @Override
@@ -142,19 +136,17 @@ public final class DependencyEdge {
     return Objects.hash(dependent, dependency, importModule, importName, dependencyType, resolved);
   }
 
-  /**
-   * Types of dependencies between WebAssembly modules.
-   */
+  /** Types of dependencies between WebAssembly modules. */
   public enum DependencyType {
-    /** Function import dependency */
+    /** Function import dependency. */
     FUNCTION,
-    /** Memory import dependency */
+    /** Memory import dependency. */
     MEMORY,
-    /** Table import dependency */
+    /** Table import dependency. */
     TABLE,
-    /** Global import dependency */
+    /** Global import dependency. */
     GLOBAL,
-    /** Instance import dependency (all exports from another module) */
+    /** Instance import dependency (all exports from another module). */
     INSTANCE
   }
 }

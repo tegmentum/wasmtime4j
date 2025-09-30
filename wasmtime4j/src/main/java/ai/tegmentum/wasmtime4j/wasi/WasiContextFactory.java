@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+
 /**
  * Factory for creating WASI contexts based on configuration.
  *
@@ -176,9 +178,42 @@ public final class WasiContextFactory {
       this.delegate = delegate;
     }
 
-    @Override
     public WasiConfig getConfig() {
       return delegate.getConfig();
+    }
+
+    @Override
+    public WasiComponent createComponent(final byte[] wasmBytes) throws WasmException {
+      // WasiPreview2Context doesn't have createComponent directly
+      // This would need to be implemented using Preview 2 resource operations
+      throw new UnsupportedOperationException(
+          "Component creation not directly available in WASI Preview 2 wrapper. Use Preview 2"
+              + " resource operations instead.");
+    }
+
+    @Override
+    public boolean isValid() {
+      // WasiPreview2Context doesn't have isValid(), so we check if it's not closed
+      try {
+        return delegate.getConfig() != null;
+      } catch (Exception e) {
+        return false;
+      }
+    }
+
+    @Override
+    public WasiFilesystem getFilesystem() throws WasmException {
+      // WasiPreview2Context doesn't expose filesystem directly
+      // This is a compatibility method for the unified interface
+      throw new UnsupportedOperationException(
+          "Direct filesystem access not available in WASI Preview 2. Use resource-based operations"
+              + " instead.");
+    }
+
+    @Override
+    public WasiRuntimeInfo getRuntimeInfo() {
+      // WasiPreview2Context doesn't have getRuntimeInfo(), so we return a basic implementation
+      return new WasiRuntimeInfo(WasiRuntimeType.PANAMA, "Preview 2", "wasmtime4j-preview2");
     }
 
     @Override

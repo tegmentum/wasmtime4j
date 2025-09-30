@@ -38,32 +38,32 @@ public enum ModuleSerializationFormat {
   /**
    * Compact binary format with GZIP compression.
    *
-   * <p>Optimized for maximum compression ratio. Best for long-term storage or network
-   * transmission where bandwidth is limited.
+   * <p>Optimized for maximum compression ratio. Best for long-term storage or network transmission
+   * where bandwidth is limited.
    */
   COMPACT_BINARY_GZIP("compact-binary-gzip", "cbgz", true, true, true),
 
   /**
    * Raw binary format without compression.
    *
-   * <p>Optimized for maximum serialization/deserialization speed. Best for in-memory caching
-   * or scenarios where CPU is more constrained than storage.
+   * <p>Optimized for maximum serialization/deserialization speed. Best for in-memory caching or
+   * scenarios where CPU is more constrained than storage.
    */
   RAW_BINARY("raw-binary", "bin", false, false, false),
 
   /**
    * Streaming binary format for incremental serialization.
    *
-   * <p>Supports progressive serialization and deserialization of large modules. Best for
-   * scenarios with memory constraints or very large modules.
+   * <p>Supports progressive serialization and deserialization of large modules. Best for scenarios
+   * with memory constraints or very large modules.
    */
   STREAMING_BINARY("streaming-binary", "stream", true, false, false),
 
   /**
    * Memory-mapped format optimized for zero-copy operations.
    *
-   * <p>Uses memory-mapped files for direct access without loading entire module into memory.
-   * Best for very large modules or scenarios requiring minimal memory footprint.
+   * <p>Uses memory-mapped files for direct access without loading entire module into memory. Best
+   * for very large modules or scenarios requiring minimal memory footprint.
    */
   MEMORY_MAPPED("memory-mapped", "mmap", false, false, false);
 
@@ -178,21 +178,19 @@ public enum ModuleSerializationFormat {
     throw new IllegalArgumentException("Unknown serialization format: " + identifier);
   }
 
-  /**
-   * Serialization use cases for format selection.
-   */
+  /** Serialization use cases for format selection. */
   public enum SerializationUseCase {
-    /** In-memory caching for fast access */
+    /** In-memory caching for fast access. */
     MEMORY_CACHE,
-    /** Disk-based caching with moderate compression */
+    /** Disk-based caching with moderate compression. */
     DISK_CACHE,
-    /** Network transmission requiring high compression */
+    /** Network transmission requiring high compression. */
     NETWORK_TRANSMISSION,
-    /** Long-term archival storage */
+    /** Long-term archival storage. */
     LONG_TERM_STORAGE,
-    /** Very large modules requiring streaming */
+    /** Very large modules requiring streaming. */
     LARGE_MODULES,
-    /** Memory-constrained environments */
+    /** Memory-constrained environments. */
     MEMORY_CONSTRAINED
   }
 }

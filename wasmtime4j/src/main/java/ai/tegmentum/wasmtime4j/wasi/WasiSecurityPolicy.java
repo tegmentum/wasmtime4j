@@ -23,7 +23,8 @@ public interface WasiSecurityPolicy {
    *
    * @return a new WasiSecurityPolicyBuilder instance
    */
-  static WasiSecurityPolicyBuilder builder() {
+  static WasiSecurityPolicyBuilder builder()
+      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -53,7 +54,8 @@ public interface WasiSecurityPolicy {
    *
    * @return permissive security policy
    */
-  static WasiSecurityPolicy permissive() {
+  static WasiSecurityPolicy permissive()
+      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     return builder().withPermissiveMode(true).build();
   }
 
@@ -62,7 +64,8 @@ public interface WasiSecurityPolicy {
    *
    * @return restrictive security policy
    */
-  static WasiSecurityPolicy restrictive() {
+  static WasiSecurityPolicy restrictive()
+      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     return builder().withRestrictiveMode(true).build();
   }
 

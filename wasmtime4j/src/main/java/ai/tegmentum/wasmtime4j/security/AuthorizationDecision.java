@@ -1,112 +1,42 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.util.List;
-
 /**
- * Result of an authorization decision.
+ * Authorization decision interface for WebAssembly components.
  *
  * @since 1.0.0
  */
-public abstract class AuthorizationDecision {
+public interface AuthorizationDecision {
 
-  /** Decision result types. */
-  public enum Result {
-    ALLOW,
+  /** Decision result enumeration. */
+  enum Decision {
+    /** Access granted. */
+    PERMIT,
+    /** Access denied. */
     DENY,
-    INDETERMINATE
-  }
-
-  private final Result result;
-  private final String reason;
-
-  protected AuthorizationDecision(final Result result, final String reason) {
-    this.result = result;
-    this.reason = reason;
+    /** Decision cannot be made. */
+    INDETERMINATE,
+    /** Not applicable. */
+    NOT_APPLICABLE
   }
 
   /**
-   * Creates an allow decision.
+   * Gets the authorization decision.
    *
-   * @param reason the reason for allowing
-   * @param permissions the applicable permissions
-   * @return an allow decision
+   * @return the decision
    */
-  public static AuthorizationDecision allow(
-      final String reason, final List<Permission> permissions) {
-    return new Allow(reason, permissions);
-  }
+  Decision getDecision();
 
   /**
-   * Creates a deny decision.
+   * Gets the decision message.
    *
-   * @param reason the reason for denying
-   * @param missingPermissions the missing permissions
-   * @return a deny decision
+   * @return the decision message
    */
-  public static AuthorizationDecision deny(
-      final String reason, final List<Permission> missingPermissions) {
-    return new Deny(reason, missingPermissions);
-  }
+  String getMessage();
 
   /**
-   * Creates an indeterminate decision.
+   * Gets the decision timestamp.
    *
-   * @param reason the reason for indeterminate result
-   * @return an indeterminate decision
+   * @return the timestamp in milliseconds
    */
-  public static AuthorizationDecision indeterminate(final String reason) {
-    return new Indeterminate(reason);
-  }
-
-  public Result getResult() {
-    return result;
-  }
-
-  public String getReason() {
-    return reason;
-  }
-
-  public boolean isAllowed() {
-    return result == Result.ALLOW;
-  }
-
-  public boolean isDenied() {
-    return result == Result.DENY;
-  }
-
-  public boolean isIndeterminate() {
-    return result == Result.INDETERMINATE;
-  }
-
-  private static final class Allow extends AuthorizationDecision {
-    private final List<Permission> permissions;
-
-    Allow(final String reason, final List<Permission> permissions) {
-      super(Result.ALLOW, reason);
-      this.permissions = List.copyOf(permissions);
-    }
-
-    public List<Permission> getPermissions() {
-      return permissions;
-    }
-  }
-
-  private static final class Deny extends AuthorizationDecision {
-    private final List<Permission> missingPermissions;
-
-    Deny(final String reason, final List<Permission> missingPermissions) {
-      super(Result.DENY, reason);
-      this.missingPermissions = List.copyOf(missingPermissions);
-    }
-
-    public List<Permission> getMissingPermissions() {
-      return missingPermissions;
-    }
-  }
-
-  private static final class Indeterminate extends AuthorizationDecision {
-    Indeterminate(final String reason) {
-      super(Result.INDETERMINATE, reason);
-    }
-  }
+  long getTimestamp();
 }

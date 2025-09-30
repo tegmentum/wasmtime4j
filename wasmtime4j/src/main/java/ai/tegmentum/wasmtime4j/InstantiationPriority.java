@@ -12,8 +12,8 @@ public enum InstantiationPriority {
   /**
    * Low priority instantiation.
    *
-   * <p>Uses minimal system resources and runs in the background. Suitable for pre-instantiation
-   * of modules that may be used in the future.
+   * <p>Uses minimal system resources and runs in the background. Suitable for pre-instantiation of
+   * modules that may be used in the future.
    */
   LOW,
 

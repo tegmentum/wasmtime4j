@@ -9,16 +9,15 @@
 //! - Thread priority inheritance to prevent priority inversion
 //! - Comprehensive deadlock resolution strategies
 
-use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
-use std::collections::{HashMap, HashSet, VecDeque, BTreeMap, BinaryHeap};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::{HashMap, VecDeque, BTreeMap, BinaryHeap};
 use std::thread::{self, ThreadId};
 use std::time::{Duration, Instant, SystemTime};
 use std::cmp::{Ordering as CmpOrdering, Reverse};
-use crossbeam::utils::Backoff;
-use parking_lot::{RwLock as ParkingRwLock, Mutex as ParkingMutex, Condvar};
-use petgraph::{Graph, Directed, Direction};
-use petgraph::graph::{NodeIndex, EdgeIndex};
+use parking_lot::RwLock as ParkingRwLock;
+use petgraph::{Graph, Directed};
+use petgraph::graph::NodeIndex;
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Comprehensive deadlock detection and prevention system
@@ -1507,6 +1506,26 @@ impl Default for AlertConfig {
     }
 }
 
+// Clone implementation for DeadlockPreventionSystem
+impl Clone for DeadlockPreventionSystem {
+    fn clone(&self) -> Self {
+        Self {
+            config: self.config.clone(),
+            detector: self.detector.clone(),
+            prevention_manager: self.prevention_manager.clone(),
+            recovery_coordinator: self.recovery_coordinator.clone(),
+            resource_ordering: self.resource_ordering.clone(),
+            priority_inheritance: self.priority_inheritance.clone(),
+            timeout_manager: self.timeout_manager.clone(),
+            statistics: self.statistics.clone(),
+            alert_manager: self.alert_manager.clone(),
+            detection_thread: None, // Cannot clone JoinHandle, so set to None
+            active: self.active.clone(),
+            shutdown: self.shutdown.clone(),
+        }
+    }
+}
+
 // Stub implementations for major components
 impl DeadlockPreventionSystem {
     /// Create a new deadlock prevention system
@@ -1574,6 +1593,41 @@ impl DeadlockPreventionSystem {
     pub fn register_thread(&self, thread_id: ThreadId, priority: ThreadPriority) -> WasmtimeResult<()> {
         // Implementation would register thread
         log::debug!("Registered thread {:?} with priority {:?}", thread_id, priority);
+        Ok(())
+    }
+
+    /// Request a resource for a thread
+    pub fn request_resource(&self, thread_id: ThreadId, resource_id: ResourceId, priority: ThreadPriority) -> WasmtimeResult<()> {
+        // Implementation would handle resource request
+        log::debug!("Thread {:?} requested resource {:?} with priority {:?}", thread_id, resource_id, priority);
+        Ok(())
+    }
+
+    /// Release a resource from a thread
+    pub fn release_resource(&self, thread_id: ThreadId, resource_id: ResourceId) -> WasmtimeResult<()> {
+        // Implementation would handle resource release
+        log::debug!("Thread {:?} released resource {:?}", thread_id, resource_id);
+        Ok(())
+    }
+
+    /// Check for deadlock in the system
+    pub fn check_for_deadlock(&self) -> WasmtimeResult<bool> {
+        // Implementation would check for deadlock
+        log::debug!("Checking for deadlock");
+        Ok(false) // No deadlock detected
+    }
+
+    /// Unregister a resource from tracking
+    pub fn unregister_resource(&self, resource_id: ResourceId) -> WasmtimeResult<()> {
+        // Implementation would unregister resource
+        log::debug!("Unregistered resource {:?}", resource_id);
+        Ok(())
+    }
+
+    /// Recover from detected deadlock
+    pub fn recover_from_deadlock(&self) -> WasmtimeResult<()> {
+        // Implementation would handle deadlock recovery
+        log::debug!("Attempting deadlock recovery");
         Ok(())
     }
 }

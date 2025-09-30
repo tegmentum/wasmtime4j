@@ -1454,7 +1454,8 @@ public final class NativeFunctionBindings {
   public int callerGetFuelRemaining(final MemorySegment callerPtr, final MemorySegment fuelOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(fuelOut, "fuelOut");
-    return callNativeFunction("wasmtime4j_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
+    return callNativeFunction(
+        "wasmtime4j_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
   }
 
   /**
@@ -1478,7 +1479,8 @@ public final class NativeFunctionBindings {
    */
   public int callerSetEpochDeadline(final MemorySegment callerPtr, final long deadline) {
     validatePointer(callerPtr, "callerPtr");
-    return callNativeFunction("wasmtime4j_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
+    return callNativeFunction(
+        "wasmtime4j_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
   }
 
   /**
@@ -1513,11 +1515,13 @@ public final class NativeFunctionBindings {
    * @param memoryOut pointer to store the memory pointer
    * @return 1 if memory found, 0 if not found, negative error code on failure
    */
-  public int callerGetMemory(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment memoryOut) {
+  public int callerGetMemory(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment memoryOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
     validatePointer(memoryOut, "memoryOut");
-    return callNativeFunction("wasmtime4j_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
+    return callNativeFunction(
+        "wasmtime4j_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
   }
 
   /**
@@ -1528,11 +1532,13 @@ public final class NativeFunctionBindings {
    * @param functionOut pointer to store the function pointer
    * @return 1 if function found, 0 if not found, negative error code on failure
    */
-  public int callerGetFunction(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment functionOut) {
+  public int callerGetFunction(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment functionOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
     validatePointer(functionOut, "functionOut");
-    return callNativeFunction("wasmtime4j_caller_get_function", Integer.class, callerPtr, name, functionOut);
+    return callNativeFunction(
+        "wasmtime4j_caller_get_function", Integer.class, callerPtr, name, functionOut);
   }
 
   /**
@@ -1543,11 +1549,13 @@ public final class NativeFunctionBindings {
    * @param globalOut pointer to store the global pointer
    * @return 1 if global found, 0 if not found, negative error code on failure
    */
-  public int callerGetGlobal(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment globalOut) {
+  public int callerGetGlobal(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment globalOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
     validatePointer(globalOut, "globalOut");
-    return callNativeFunction("wasmtime4j_caller_get_global", Integer.class, callerPtr, name, globalOut);
+    return callNativeFunction(
+        "wasmtime4j_caller_get_global", Integer.class, callerPtr, name, globalOut);
   }
 
   /**
@@ -1558,11 +1566,13 @@ public final class NativeFunctionBindings {
    * @param tableOut pointer to store the table pointer
    * @return 1 if table found, 0 if not found, negative error code on failure
    */
-  public int callerGetTable(final MemorySegment callerPtr, final MemorySegment name, final MemorySegment tableOut) {
+  public int callerGetTable(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment tableOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
     validatePointer(tableOut, "tableOut");
-    return callNativeFunction("wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
+    return callNativeFunction(
+        "wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
   }
 
   /** Initializes all function bindings. */
@@ -2062,8 +2072,7 @@ public final class NativeFunctionBindings {
 
     // Additional Engine functions from Task #288
     addFunctionBinding(
-        "wasmtime4j_engine_new",
-        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns engine*
+        "wasmtime4j_engine_new", FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns engine*
 
     addFunctionBinding(
         "wasmtime4j_engine_new_with_config",

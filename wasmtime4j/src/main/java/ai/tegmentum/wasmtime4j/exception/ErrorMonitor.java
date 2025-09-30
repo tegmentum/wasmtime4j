@@ -74,7 +74,7 @@ public final class ErrorMonitor {
       this.errorMessage = errorMessage;
       this.functionContext = functionContext;
       this.isRetryable = isRetryable;
-      this.threadId = Thread.currentThread().getId();
+      this.threadId = Thread.currentThread().threadId();
     }
 
     public Instant getTimestamp() {

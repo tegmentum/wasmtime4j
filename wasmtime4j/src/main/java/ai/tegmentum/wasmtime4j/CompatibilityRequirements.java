@@ -21,8 +21,8 @@ import java.util.Set;
 /**
  * Requirements specification for interface compatibility checking.
  *
- * <p>This class defines the requirements and constraints for finding compatible
- * interface versions, including version ranges, feature requirements, and compatibility levels.
+ * <p>This class defines the requirements and constraints for finding compatible interface versions,
+ * including version ranges, feature requirements, and compatibility levels.
  *
  * @since 1.0.0
  */
@@ -249,9 +249,7 @@ public final class CompatibilityRequirements {
         .build();
   }
 
-  /**
-   * Builder for CompatibilityRequirements.
-   */
+  /** Builder for CompatibilityRequirements. */
   public static final class Builder {
     private VersionRange versionRange = VersionRange.any();
     private Set<String> requiredFeatures = Set.of();
@@ -320,8 +318,10 @@ public final class CompatibilityRequirements {
      * @return this builder
      */
     public Builder minimumCompatibilityLevel(CompatibilityLevel minimumCompatibilityLevel) {
-      this.minimumCompatibilityLevel = minimumCompatibilityLevel != null
-          ? minimumCompatibilityLevel : CompatibilityLevel.PARTIAL;
+      this.minimumCompatibilityLevel =
+          minimumCompatibilityLevel != null
+              ? minimumCompatibilityLevel
+              : CompatibilityLevel.PARTIAL;
       return this;
     }
 
@@ -445,17 +445,18 @@ public final class CompatibilityRequirements {
     }
   }
 
-  /**
-   * Version range specification.
-   */
+  /** Version range specification. */
   public static final class VersionRange {
     private final WitInterfaceVersion minimum;
     private final WitInterfaceVersion maximum;
     private final boolean includeMinimum;
     private final boolean includeMaximum;
 
-    private VersionRange(WitInterfaceVersion minimum, WitInterfaceVersion maximum,
-                         boolean includeMinimum, boolean includeMaximum) {
+    private VersionRange(
+        WitInterfaceVersion minimum,
+        WitInterfaceVersion maximum,
+        boolean includeMinimum,
+        boolean includeMaximum) {
       this.minimum = minimum;
       this.maximum = maximum;
       this.includeMinimum = includeMinimum;
@@ -509,7 +510,9 @@ public final class CompatibilityRequirements {
      * @return true if the version is within this range
      */
     public boolean contains(WitInterfaceVersion version) {
-      if (version == null) return false;
+      if (version == null) {
+        return false;
+      }
 
       if (minimum != null) {
         int cmp = version.compareTo(minimum);
@@ -545,17 +548,15 @@ public final class CompatibilityRequirements {
     }
   }
 
-  /**
-   * Compatibility levels enum.
-   */
+  /** Compatibility levels enum. */
   public enum CompatibilityLevel {
-    /** Full compatibility required */
+    /** Full compatibility required. */
     FULL,
-    /** Partial compatibility acceptable */
+    /** Partial compatibility acceptable. */
     PARTIAL,
-    /** Limited compatibility acceptable */
+    /** Limited compatibility acceptable. */
     LIMITED,
-    /** Any level acceptable (not recommended for production) */
+    /** Any level acceptable (not recommended for production). */
     ANY
   }
 }

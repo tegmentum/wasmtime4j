@@ -5,7 +5,7 @@
 //! ML kernels optimized for different CPU architectures.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::simd::{V128, V256, V512, PlatformCapabilities};
+use crate::simd::PlatformCapabilities;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]

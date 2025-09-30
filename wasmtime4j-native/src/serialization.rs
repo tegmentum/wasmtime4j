@@ -570,8 +570,7 @@ mod tests {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::{CStr, CString};
+use std::os::raw::{c_void, c_int};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Serialization core functions for interface implementations

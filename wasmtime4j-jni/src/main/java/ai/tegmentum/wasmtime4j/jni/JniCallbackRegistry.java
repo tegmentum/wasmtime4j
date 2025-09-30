@@ -220,12 +220,14 @@ public final class JniCallbackRegistry implements CallbackRegistry {
 
     try {
       // Invalidate the handle to prevent further use
-      if (entry.handle instanceof CallbackHandleImpl handleImpl) {
+      if (entry.handle instanceof CallbackHandleImpl) {
+        final CallbackHandleImpl handleImpl = (CallbackHandleImpl) entry.handle;
         handleImpl.invalidate();
       }
 
       // Close the function reference to clean up native resources
-      if (entry.functionReference instanceof JniFunctionReference jniFuncRef) {
+      if (entry.functionReference instanceof JniFunctionReference) {
+        final JniFunctionReference jniFuncRef = (JniFunctionReference) entry.functionReference;
         jniFuncRef.close();
       }
 
@@ -346,7 +348,9 @@ public final class JniCallbackRegistry implements CallbackRegistry {
         // Unregister all callbacks
         for (final CallbackEntry entry : callbacks.values()) {
           try {
-            if (entry.functionReference instanceof JniFunctionReference jniFuncRef) {
+            if (entry.functionReference instanceof JniFunctionReference) {
+              final JniFunctionReference jniFuncRef =
+                  (JniFunctionReference) entry.functionReference;
               jniFuncRef.close();
             }
           } catch (Exception e) {

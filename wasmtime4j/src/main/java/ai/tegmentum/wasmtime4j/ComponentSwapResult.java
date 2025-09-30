@@ -25,8 +25,8 @@ import java.util.Optional;
 /**
  * Result of a component hot-swap operation.
  *
- * <p>This class provides detailed information about the outcome of a hot-swap operation,
- * including timing information, any issues encountered, and state preservation details.
+ * <p>This class provides detailed information about the outcome of a hot-swap operation, including
+ * timing information, any issues encountered, and state preservation details.
  *
  * @since 1.0.0
  */
@@ -193,8 +193,12 @@ public final class ComponentSwapResult {
    */
   public String getSummary() {
     StringBuilder summary = new StringBuilder();
-    summary.append("Component swap ").append(status.toString().toLowerCase())
-           .append(" in ").append(totalTime.toMillis()).append("ms");
+    summary
+        .append("Component swap ")
+        .append(status.toString().toLowerCase())
+        .append(" in ")
+        .append(totalTime.toMillis())
+        .append("ms");
 
     if (!warnings.isEmpty()) {
       summary.append(" with ").append(warnings.size()).append(" warning(s)");
@@ -225,8 +229,11 @@ public final class ComponentSwapResult {
    * @param endTime the end time
    * @return successful swap result
    */
-  public static ComponentSwapResult success(ComponentSimple oldComponent, ComponentSimple newComponent,
-                                            Instant startTime, Instant endTime) {
+  public static ComponentSwapResult success(
+      ComponentSimple oldComponent,
+      ComponentSimple newComponent,
+      Instant startTime,
+      Instant endTime) {
     return builder()
         .status(SwapStatus.SUCCESS)
         .oldComponent(oldComponent)
@@ -247,8 +254,12 @@ public final class ComponentSwapResult {
    * @param error the error that caused failure
    * @return failed swap result
    */
-  public static ComponentSwapResult failure(ComponentSimple oldComponent, ComponentSimple newComponent,
-                                            Instant startTime, Instant endTime, Exception error) {
+  public static ComponentSwapResult failure(
+      ComponentSimple oldComponent,
+      ComponentSimple newComponent,
+      Instant startTime,
+      Instant endTime,
+      Exception error) {
     return builder()
         .status(SwapStatus.FAILED)
         .oldComponent(oldComponent)
@@ -260,9 +271,7 @@ public final class ComponentSwapResult {
         .build();
   }
 
-  /**
-   * Builder for ComponentSwapResult.
-   */
+  /** Builder for ComponentSwapResult. */
   public static final class Builder {
     private SwapStatus status;
     private ComponentSimple oldComponent;
@@ -338,33 +347,30 @@ public final class ComponentSwapResult {
     }
   }
 
-  /**
-   * Hot-swap status values.
-   */
+  /** Hot-swap status values. */
   public enum SwapStatus {
-    /** Swap completed successfully */
+    /** Swap completed successfully. */
     SUCCESS,
-    /** Swap completed with warnings */
+    /** Swap completed with warnings. */
     SUCCESS_WITH_WARNINGS,
-    /** Swap failed */
+    /** Swap failed. */
     FAILED,
-    /** Swap was cancelled */
+    /** Swap was cancelled. */
     CANCELLED,
-    /** Swap was rolled back due to issues */
+    /** Swap was rolled back due to issues. */
     ROLLED_BACK,
-    /** Swap is in progress */
+    /** Swap is in progress. */
     IN_PROGRESS
   }
 
-  /**
-   * Result of state preservation during swap.
-   */
+  /** Result of state preservation during swap. */
   public static final class StatePreservationResult {
     private final boolean successful;
     private final String message;
     private final Map<String, Object> preservedState;
 
-    private StatePreservationResult(boolean successful, String message, Map<String, Object> preservedState) {
+    private StatePreservationResult(
+        boolean successful, String message, Map<String, Object> preservedState) {
       this.successful = successful;
       this.message = message;
       this.preservedState = Map.copyOf(preservedState);

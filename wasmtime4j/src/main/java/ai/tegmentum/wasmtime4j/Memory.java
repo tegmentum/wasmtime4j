@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 /**
  * Represents a WebAssembly linear memory instance.
  *
- * <p>WebAssembly linear memory is a contiguous, mutable array of raw bytes that can be read
- * and written by WebAssembly code. This interface provides access to memory operations while
- * enforcing safety and bounds checking.
+ * <p>WebAssembly linear memory is a contiguous, mutable array of raw bytes that can be read and
+ * written by WebAssembly code. This interface provides access to memory operations while enforcing
+ * safety and bounds checking.
  *
  * @since 1.0.0
  */

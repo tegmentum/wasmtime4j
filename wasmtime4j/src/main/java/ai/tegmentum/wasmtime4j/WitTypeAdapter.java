@@ -7,15 +7,17 @@ import java.util.Optional;
 /**
  * Type adapter for converting between different WIT type definitions during interface evolution.
  *
- * <p>This interface provides comprehensive type adaptation capabilities for WIT interface evolution,
- * enabling safe conversion between different versions of types while maintaining semantic correctness.
+ * <p>This interface provides comprehensive type adaptation capabilities for WIT interface
+ * evolution, enabling safe conversion between different versions of types while maintaining
+ * semantic correctness.
  *
  * <p>Key features:
+ *
  * <ul>
- *   <li>Bidirectional type conversion</li>
- *   <li>Validation of conversion compatibility</li>
- *   <li>Conversion metadata tracking</li>
- *   <li>Error handling for incompatible conversions</li>
+ *   <li>Bidirectional type conversion
+ *   <li>Validation of conversion compatibility
+ *   <li>Conversion metadata tracking
+ *   <li>Error handling for incompatible conversions
  * </ul>
  *
  * @since 1.0.0
@@ -133,14 +135,10 @@ public interface WitTypeAdapter {
    */
   Optional<TypeMappingInfo> getTypeMappingInfo();
 
-  /**
-   * Resets adapter statistics.
-   */
+  /** Resets adapter statistics. */
   void resetStatistics();
 
-  /**
-   * Type of adapter based on the conversion it performs.
-   */
+  /** Type of adapter based on the conversion it performs. */
   enum AdapterType {
     /** Direct type conversion (e.g., u32 -> s32) */
     DIRECT_CONVERSION,
@@ -148,17 +146,15 @@ public interface WitTypeAdapter {
     STRUCTURAL_ADAPTATION,
     /** Wrapper/unwrapper (e.g., option -> direct value) */
     WRAPPER_ADAPTATION,
-    /** List/array conversion */
+    /** List/array conversion. */
     COLLECTION_ADAPTATION,
-    /** Variant/enum conversion */
+    /** Variant/enum conversion. */
     VARIANT_ADAPTATION,
-    /** Custom conversion with user-defined logic */
+    /** Custom conversion with user-defined logic. */
     CUSTOM_CONVERSION
   }
 
-  /**
-   * Result of adapter validation.
-   */
+  /** Result of adapter validation. */
   final class AdapterValidationResult {
     private final boolean valid;
     private final List<String> errors;
@@ -211,8 +207,7 @@ public interface WitTypeAdapter {
      * @return validation result with warnings
      */
     public static AdapterValidationResult withWarnings(
-        final List<String> warnings,
-        final Optional<String> suggestion) {
+        final List<String> warnings, final Optional<String> suggestion) {
       return new AdapterValidationResult(true, List.of(), warnings, suggestion);
     }
 
@@ -263,17 +258,18 @@ public interface WitTypeAdapter {
 
     @Override
     public String toString() {
-      return "AdapterValidationResult{" +
-          "valid=" + valid +
-          ", errors=" + errors.size() +
-          ", warnings=" + warnings.size() +
-          '}';
+      return "AdapterValidationResult{"
+          + "valid="
+          + valid
+          + ", errors="
+          + errors.size()
+          + ", warnings="
+          + warnings.size()
+          + '}';
     }
   }
 
-  /**
-   * Metadata about a type conversion.
-   */
+  /** Metadata about a type conversion. */
   interface ConversionMetadata {
     /**
      * Checks if the conversion is lossy.
@@ -311,9 +307,7 @@ public interface WitTypeAdapter {
     Map<String, Object> getProperties();
   }
 
-  /**
-   * Statistics about adapter usage.
-   */
+  /** Statistics about adapter usage. */
   interface AdapterStatistics {
     /**
      * Gets the total number of forward conversions performed.
@@ -372,9 +366,7 @@ public interface WitTypeAdapter {
     Optional<java.time.Instant> getLastConversionTime();
   }
 
-  /**
-   * Information about type mapping for complex conversions.
-   */
+  /** Information about type mapping for complex conversions. */
   interface TypeMappingInfo {
     /**
      * Gets field mappings for record types.
@@ -412,19 +404,17 @@ public interface WitTypeAdapter {
     Map<String, String> getFieldTransformations();
   }
 
-  /**
-   * Cost estimation for type conversions.
-   */
+  /** Cost estimation for type conversions. */
   enum ConversionCost {
-    /** Very low cost - simple copy or reference */
+    /** Very low cost - simple copy or reference. */
     VERY_LOW,
-    /** Low cost - simple type conversion */
+    /** Low cost - simple type conversion. */
     LOW,
-    /** Medium cost - structural conversion */
+    /** Medium cost - structural conversion. */
     MEDIUM,
-    /** High cost - complex transformation */
+    /** High cost - complex transformation. */
     HIGH,
-    /** Very high cost - expensive operations */
+    /** Very high cost - expensive operations. */
     VERY_HIGH
   }
 }

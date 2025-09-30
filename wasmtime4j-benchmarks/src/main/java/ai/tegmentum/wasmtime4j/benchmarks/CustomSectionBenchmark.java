@@ -1,21 +1,20 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.*;
-import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * Benchmark for WebAssembly custom section operations.
  *
- * <p>This benchmark measures the performance of custom section parsing, validation,
- * and metadata extraction operations.
+ * <p>This benchmark measures the performance of custom section parsing, validation, and metadata
+ * extraction operations.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -63,7 +62,8 @@ public class CustomSectionBenchmark {
 
   @Benchmark
   public void benchmarkManySectionsValidation(final Blackhole bh) {
-    final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(manySections);
+    final CustomSectionValidationResult result =
+        CustomSectionSecurity.validateSecurity(manySections);
     bh.consume(result);
   }
 
@@ -84,7 +84,8 @@ public class CustomSectionBenchmark {
   @Benchmark
   public void benchmarkTargetFeaturesSectionParsing(final Blackhole bh) {
     final byte[] targetFeaturesData = createTargetFeaturesSectionData();
-    final java.util.Optional<TargetFeaturesSection> result = parser.parseTargetFeaturesSection(targetFeaturesData);
+    final java.util.Optional<TargetFeaturesSection> result =
+        parser.parseTargetFeaturesSection(targetFeaturesData);
     bh.consume(result);
   }
 
@@ -96,13 +97,15 @@ public class CustomSectionBenchmark {
 
   @Benchmark
   public void benchmarkProducersSectionSerialization(final Blackhole bh) {
-    final java.util.Optional<byte[]> result = parser.serializeProducersSection(complexProducersSection);
+    final java.util.Optional<byte[]> result =
+        parser.serializeProducersSection(complexProducersSection);
     bh.consume(result);
   }
 
   @Benchmark
   public void benchmarkTargetFeaturesSectionSerialization(final Blackhole bh) {
-    final java.util.Optional<byte[]> result = parser.serializeTargetFeaturesSection(complexTargetFeaturesSection);
+    final java.util.Optional<byte[]> result =
+        parser.serializeTargetFeaturesSection(complexTargetFeaturesSection);
     bh.consume(result);
   }
 
@@ -143,7 +146,8 @@ public class CustomSectionBenchmark {
   @Benchmark
   public void benchmarkSuspiciousPatternDetection(final Blackhole bh) {
     for (final CustomSection section : largeSections) {
-      final boolean suspicious = CustomSectionSecurity.containsSuspiciousPatterns(section.getData());
+      final boolean suspicious =
+          CustomSectionSecurity.containsSuspiciousPatterns(section.getData());
       bh.consume(suspicious);
     }
   }
@@ -151,8 +155,15 @@ public class CustomSectionBenchmark {
   @Benchmark
   public void benchmarkSectionNameClassification(final Blackhole bh) {
     final String[] testNames = {
-        "name", "producers", "target_features", ".debug_info", ".debug_line",
-        "custom_section", "my_data", "application_metadata", "unknown"
+      "name",
+      "producers",
+      "target_features",
+      ".debug_info",
+      ".debug_line",
+      "custom_section",
+      "my_data",
+      "application_metadata",
+      "unknown"
     };
 
     for (final String name : testNames) {
@@ -164,8 +175,13 @@ public class CustomSectionBenchmark {
   private void setupSmallSections() {
     smallSections = new ArrayList<>();
     smallSections.add(new CustomSection("name", createNameSectionData(), CustomSectionType.NAME));
-    smallSections.add(new CustomSection("producers", createProducersSectionData(), CustomSectionType.PRODUCERS));
-    smallSections.add(new CustomSection("target_features", createTargetFeaturesSectionData(), CustomSectionType.TARGET_FEATURES));
+    smallSections.add(
+        new CustomSection("producers", createProducersSectionData(), CustomSectionType.PRODUCERS));
+    smallSections.add(
+        new CustomSection(
+            "target_features",
+            createTargetFeaturesSectionData(),
+            CustomSectionType.TARGET_FEATURES));
   }
 
   private void setupLargeSections() {
@@ -177,7 +193,8 @@ public class CustomSectionBenchmark {
     final byte[] customData = createLargeCustomData();
 
     largeSections.add(new CustomSection("name", largeNameData, CustomSectionType.NAME));
-    largeSections.add(new CustomSection("producers", largeProducersData, CustomSectionType.PRODUCERS));
+    largeSections.add(
+        new CustomSection("producers", largeProducersData, CustomSectionType.PRODUCERS));
     largeSections.add(new CustomSection("custom_large", customData, CustomSectionType.UNKNOWN));
   }
 
@@ -193,7 +210,8 @@ public class CustomSectionBenchmark {
 
     // Add some standard sections
     manySections.add(new CustomSection("name", createNameSectionData(), CustomSectionType.NAME));
-    manySections.add(new CustomSection("producers", createProducersSectionData(), CustomSectionType.PRODUCERS));
+    manySections.add(
+        new CustomSection("producers", createProducersSectionData(), CustomSectionType.PRODUCERS));
   }
 
   private void setupComplexSections() {
@@ -213,12 +231,13 @@ public class CustomSectionBenchmark {
       localNames.put(i, locals);
     }
 
-    complexNameSection = NameSection.builder()
-        .setModuleName("benchmark_module")
-        .setFunctionNames(functionNames)
-        .setLocalNames(localNames)
-        .setTypeNames(typeNames)
-        .build();
+    complexNameSection =
+        NameSection.builder()
+            .setModuleName("benchmark_module")
+            .setFunctionNames(functionNames)
+            .setLocalNames(localNames)
+            .setTypeNames(typeNames)
+            .build();
 
     // Create complex producers section
     final List<ProducersSection.ProducerEntry> languages = new ArrayList<>();
@@ -232,19 +251,18 @@ public class CustomSectionBenchmark {
     tools.add(new ProducersSection.ProducerEntry("wasm-pack", "0.12.0"));
     tools.add(new ProducersSection.ProducerEntry("wasmtime4j", "1.0.0"));
 
-    complexProducersSection = ProducersSection.builder()
-        .setLanguages(languages)
-        .setProcessedBy(tools)
-        .build();
+    complexProducersSection =
+        ProducersSection.builder().setLanguages(languages).setProcessedBy(tools).build();
 
     // Create complex target features section
-    complexTargetFeaturesSection = TargetFeaturesSection.builder()
-        .addRequiredFeature("simd128")
-        .addRequiredFeature("bulk-memory")
-        .addUsedFeature("threads")
-        .addUsedFeature("exception-handling")
-        .addDisabledFeature("tail-call")
-        .build();
+    complexTargetFeaturesSection =
+        TargetFeaturesSection.builder()
+            .addRequiredFeature("simd128")
+            .addRequiredFeature("bulk-memory")
+            .addUsedFeature("threads")
+            .addUsedFeature("exception-handling")
+            .addDisabledFeature("tail-call")
+            .build();
   }
 
   private void setupMetadataObjects() {

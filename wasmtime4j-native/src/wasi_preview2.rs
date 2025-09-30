@@ -12,15 +12,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use std::io;
-use std::path::{Path, PathBuf};
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_int, c_void};
 
-use wasmtime::component::{Component, Instance, Linker, ResourceTable, Val};
-use wasmtime::{AsContextMut, Engine, Store};
-use wasmtime_wasi::preview1::{add_to_linker_async, WasiP1Ctx};
+use wasmtime::component::{Component, Instance, Linker, ResourceTable};
+use wasmtime::{Engine, Store};
 use wasmtime_wasi::WasiCtx;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 use tokio::time::timeout;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -244,7 +241,7 @@ impl Default for WasiPreview2Config {
 impl WasiPreview2Context {
     /// Create a new WASI Preview 2 context
     pub fn new(engine: Engine, config: WasiPreview2Config) -> WasmtimeResult<Self> {
-        let mut linker: Linker<WasiPreview2StoreData> = Linker::new(&engine);
+        let linker: Linker<WasiPreview2StoreData> = Linker::new(&engine);
 
         // TODO: Add proper WASI Preview 2 component model imports
         // For now, commented out to resolve type mismatch - needs component-specific WASI function
@@ -982,7 +979,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_component_compilation() {
-        let engine = Engine::default();
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.async_support(true);
+        let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
@@ -1006,7 +1005,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_stream_operations() {
-        let engine = Engine::default();
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.async_support(true);
+        let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
@@ -1037,7 +1038,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_operation_cancellation() {
-        let engine = Engine::default();
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.async_support(true);
+        let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 

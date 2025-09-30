@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j.evolution;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitEvolutionChange;
 import ai.tegmentum.wasmtime4j.WitEvolutionMetrics;
@@ -10,11 +14,14 @@ import ai.tegmentum.wasmtime4j.WitInterfaceBindings;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.WitInterfaceEvolution;
 import ai.tegmentum.wasmtime4j.WitTypeAdapter;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,25 +31,17 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Comprehensive tests for WIT interface evolution functionality.
  *
  * <p>These tests validate the complete interface evolution system including:
+ *
  * <ul>
- *   <li>Backward compatibility analysis</li>
- *   <li>Type adaptation and conversion</li>
- *   <li>Interface migration scenarios</li>
- *   <li>Version compatibility checking</li>
- *   <li>Error handling and edge cases</li>
+ *   <li>Backward compatibility analysis
+ *   <li>Type adaptation and conversion
+ *   <li>Interface migration scenarios
+ *   <li>Version compatibility checking
+ *   <li>Error handling and edge cases
  * </ul>
  *
  * @since 1.0.0
@@ -77,20 +76,22 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldAnalyzeEvolutionBetweenCompatibleVersions() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("calculator")
-          .withVersion("1.0.0")
-          .withFunction("add", List.of("i32", "i32"), "i32")
-          .withFunction("subtract", List.of("i32", "i32"), "i32")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("calculator")
+              .withVersion("1.0.0")
+              .withFunction("add", List.of("i32", "i32"), "i32")
+              .withFunction("subtract", List.of("i32", "i32"), "i32")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("calculator")
-          .withVersion("1.1.0")
-          .withFunction("add", List.of("i32", "i32"), "i32")
-          .withFunction("subtract", List.of("i32", "i32"), "i32")
-          .withFunction("multiply", List.of("i32", "i32"), "i32") // New function added
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("calculator")
+              .withVersion("1.1.0")
+              .withFunction("add", List.of("i32", "i32"), "i32")
+              .withFunction("subtract", List.of("i32", "i32"), "i32")
+              .withFunction("multiply", List.of("i32", "i32"), "i32") // New function added
+              .build();
 
       // Act
       final WitEvolutionResult result = evolution.evolveInterface(sourceInterface, targetInterface);
@@ -106,7 +107,8 @@ class WitInterfaceEvolutionTest {
       final WitEvolutionChange change = changes.get(0);
       assertEquals(WitEvolutionChange.ChangeType.FUNCTION_ADDED, change.getType());
       assertFalse(change.isBreaking(), "Adding function should not be breaking");
-      assertTrue(change.getDescription().contains("multiply"), "Change should mention the new function");
+      assertTrue(
+          change.getDescription().contains("multiply"), "Change should mention the new function");
 
       final WitEvolutionMetrics metrics = result.getMetrics();
       assertNotNull(metrics, "Metrics should not be null");
@@ -119,19 +121,21 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldDetectBreakingChangesInEvolution() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("calculator")
-          .withVersion("1.0.0")
-          .withFunction("add", List.of("i32", "i32"), "i32")
-          .withFunction("divide", List.of("i32", "i32"), "i32")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("calculator")
+              .withVersion("1.0.0")
+              .withFunction("add", List.of("i32", "i32"), "i32")
+              .withFunction("divide", List.of("i32", "i32"), "i32")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("calculator")
-          .withVersion("2.0.0")
-          .withFunction("add", List.of("f64", "f64"), "f64") // Changed signature
-          // Function "divide" removed
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("calculator")
+              .withVersion("2.0.0")
+              .withFunction("add", List.of("f64", "f64"), "f64") // Changed signature
+              // Function "divide" removed
+              .build();
 
       // Act
       final WitEvolutionResult result = evolution.evolveInterface(sourceInterface, targetInterface);
@@ -144,12 +148,17 @@ class WitInterfaceEvolutionTest {
       final List<WitEvolutionChange> breakingChanges = result.getBreakingChanges();
       assertTrue(breakingChanges.size() >= 2, "Should have at least 2 breaking changes");
 
-      final boolean hasSignatureChange = breakingChanges.stream()
-          .anyMatch(change -> change.getType() == WitEvolutionChange.ChangeType.FUNCTION_SIGNATURE_CHANGED);
+      final boolean hasSignatureChange =
+          breakingChanges.stream()
+              .anyMatch(
+                  change ->
+                      change.getType() == WitEvolutionChange.ChangeType.FUNCTION_SIGNATURE_CHANGED);
       assertTrue(hasSignatureChange, "Should detect function signature change");
 
-      final boolean hasFunctionRemoval = breakingChanges.stream()
-          .anyMatch(change -> change.getType() == WitEvolutionChange.ChangeType.FUNCTION_REMOVED);
+      final boolean hasFunctionRemoval =
+          breakingChanges.stream()
+              .anyMatch(
+                  change -> change.getType() == WitEvolutionChange.ChangeType.FUNCTION_REMOVED);
       assertTrue(hasFunctionRemoval, "Should detect function removal");
 
       final WitEvolutionMetrics metrics = result.getMetrics();
@@ -161,23 +170,28 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldHandleTypeEvolution() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("data-processor")
-          .withVersion("1.0.0")
-          .withType("user-record", "record", Map.of("name", "string", "age", "u32"))
-          .withFunction("process-user", List.of("user-record"), "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("data-processor")
+              .withVersion("1.0.0")
+              .withType("user-record", "record", Map.of("name", "string", "age", "u32"))
+              .withFunction("process-user", List.of("user-record"), "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("data-processor")
-          .withVersion("1.1.0")
-          .withType("user-record", "record", Map.of(
-              "name", "string",
-              "age", "u32",
-              "email", "string" // New field added
-          ))
-          .withFunction("process-user", List.of("user-record"), "string")
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("data-processor")
+              .withVersion("1.1.0")
+              .withType(
+                  "user-record",
+                  "record",
+                  Map.of(
+                      "name", "string",
+                      "age", "u32",
+                      "email", "string" // New field added
+                      ))
+              .withFunction("process-user", List.of("user-record"), "string")
+              .build();
 
       // Act
       final WitEvolutionResult result = evolution.evolveInterface(sourceInterface, targetInterface);
@@ -187,8 +201,9 @@ class WitInterfaceEvolutionTest {
       assertTrue(result.isSuccessful(), "Evolution should be successful");
 
       final List<WitEvolutionChange> changes = result.getChanges();
-      final boolean hasTypeModification = changes.stream()
-          .anyMatch(change -> change.getType() == WitEvolutionChange.ChangeType.TYPE_MODIFIED);
+      final boolean hasTypeModification =
+          changes.stream()
+              .anyMatch(change -> change.getType() == WitEvolutionChange.ChangeType.TYPE_MODIFIED);
       assertTrue(hasTypeModification, "Should detect type modification");
 
       // Check if type adapters were created
@@ -211,26 +226,30 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldValidateBackwardCompatibility() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("api")
-          .withVersion("1.0.0")
-          .withFunction("get-data", List.of(), "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("api")
+              .withVersion("1.0.0")
+              .withFunction("get-data", List.of(), "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("api")
-          .withVersion("1.1.0")
-          .withFunction("get-data", List.of(), "string")
-          .withFunction("get-metadata", List.of(), "string") // New function
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("api")
+              .withVersion("1.1.0")
+              .withFunction("get-data", List.of(), "string")
+              .withFunction("get-metadata", List.of(), "string") // New function
+              .build();
 
       // Act
-      final WitCompatibilityResult result = evolution.checkEvolutionCompatibility(sourceInterface, targetInterface);
+      final WitCompatibilityResult result =
+          evolution.checkEvolutionCompatibility(sourceInterface, targetInterface);
 
       // Assert
       assertNotNull(result, "Compatibility result should not be null");
       assertTrue(result.isCompatible(), "Interfaces should be compatible");
-      assertTrue(result.getSatisfiedImports().contains("get-data"), "Should satisfy existing imports");
+      assertTrue(
+          result.getSatisfiedImports().contains("get-data"), "Should satisfy existing imports");
       assertTrue(result.getUnsatisfiedImports().isEmpty(), "Should not have unsatisfied imports");
     }
 
@@ -239,20 +258,23 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldDetectIncompatibleChanges() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("api")
-          .withVersion("1.0.0")
-          .withFunction("process", List.of("string", "i32"), "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("api")
+              .withVersion("1.0.0")
+              .withFunction("process", List.of("string", "i32"), "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("api")
-          .withVersion("2.0.0")
-          .withFunction("process", List.of("string"), "string") // Removed parameter
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("api")
+              .withVersion("2.0.0")
+              .withFunction("process", List.of("string"), "string") // Removed parameter
+              .build();
 
       // Act
-      final WitCompatibilityResult result = evolution.checkEvolutionCompatibility(sourceInterface, targetInterface);
+      final WitCompatibilityResult result =
+          evolution.checkEvolutionCompatibility(sourceInterface, targetInterface);
 
       // Assert
       assertNotNull(result, "Compatibility result should not be null");
@@ -270,20 +292,23 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldCreateTypeAdaptersForCompatibleTypes() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("converter")
-          .withVersion("1.0.0")
-          .withType("point", "record", Map.of("x", "i32", "y", "i32"))
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("converter")
+              .withVersion("1.0.0")
+              .withType("point", "record", Map.of("x", "i32", "y", "i32"))
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("converter")
-          .withVersion("1.1.0")
-          .withType("point", "record", Map.of("x", "f64", "y", "f64")) // Changed precision
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("converter")
+              .withVersion("1.1.0")
+              .withType("point", "record", Map.of("x", "f64", "y", "f64")) // Changed precision
+              .build();
 
       // Act
-      final Map<String, WitTypeAdapter> adapters = evolution.createTypeAdapters(sourceInterface, targetInterface);
+      final Map<String, WitTypeAdapter> adapters =
+          evolution.createTypeAdapters(sourceInterface, targetInterface);
 
       // Assert
       assertNotNull(adapters, "Adapters map should not be null");
@@ -297,10 +322,11 @@ class WitInterfaceEvolutionTest {
       assertEquals(WitTypeAdapter.AdapterType.STRUCTURAL_ADAPTATION, pointAdapter.getAdapterType());
 
       // Test actual conversion
-      final WasmValue sourcePoint = WasmValue.record(Map.of(
-          "x", WasmValue.i32(10),
-          "y", WasmValue.i32(20)
-      ));
+      final WasmValue sourcePoint =
+          WasmValue.record(
+              Map.of(
+                  "x", WasmValue.i32(10),
+                  "y", WasmValue.i32(20)));
 
       final WasmValue convertedPoint = pointAdapter.convertForward(sourcePoint);
       assertNotNull(convertedPoint, "Converted point should not be null");
@@ -317,27 +343,31 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldValidateConversionCompatibility() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("validator")
-          .withVersion("1.0.0")
-          .withType("number", "u32")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("validator")
+              .withVersion("1.0.0")
+              .withType("number", "u32")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("validator")
-          .withVersion("1.1.0")
-          .withType("number", "i64") // Compatible widening conversion
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("validator")
+              .withVersion("1.1.0")
+              .withType("number", "i64") // Compatible widening conversion
+              .build();
 
       // Act
-      final Map<String, WitTypeAdapter> adapters = evolution.createTypeAdapters(sourceInterface, targetInterface);
+      final Map<String, WitTypeAdapter> adapters =
+          evolution.createTypeAdapters(sourceInterface, targetInterface);
       final WitTypeAdapter numberAdapter = adapters.get("number");
 
       // Assert
       assertNotNull(numberAdapter, "Number adapter should be created");
 
       final WasmValue sourceNumber = WasmValue.u32(42);
-      final WitTypeAdapter.AdapterValidationResult validation = numberAdapter.validateForwardConversion(sourceNumber);
+      final WitTypeAdapter.AdapterValidationResult validation =
+          numberAdapter.validateForwardConversion(sourceNumber);
 
       assertTrue(validation.isValid(), "Conversion should be valid");
       assertTrue(validation.getErrors().isEmpty(), "Should not have errors");
@@ -349,22 +379,27 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldHandleIncompatibleTypeConversions() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("incompatible")
-          .withVersion("1.0.0")
-          .withType("data", "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("incompatible")
+              .withVersion("1.0.0")
+              .withType("data", "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("incompatible")
-          .withVersion("2.0.0")
-          .withType("data", "i32") // Incompatible type change
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("incompatible")
+              .withVersion("2.0.0")
+              .withType("data", "i32") // Incompatible type change
+              .build();
 
       // Act & Assert
-      assertThrows(WasmRuntimeException.class, () -> {
-        evolution.createTypeAdapters(sourceInterface, targetInterface);
-      }, "Should throw exception for incompatible type conversion");
+      assertThrows(
+          WasmRuntimeException.class,
+          () -> {
+            evolution.createTypeAdapters(sourceInterface, targetInterface);
+          },
+          "Should throw exception for incompatible type conversion");
     }
   }
 
@@ -377,26 +412,32 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     void shouldGenerateBindingsForEvolvedInterface() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("service")
-          .withVersion("1.0.0")
-          .withFunction("hello", List.of("string"), "string")
-          .withType("config", "record", Map.of("timeout", "u32"))
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("service")
+              .withVersion("1.0.0")
+              .withFunction("hello", List.of("string"), "string")
+              .withType("config", "record", Map.of("timeout", "u32"))
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("service")
-          .withVersion("1.1.0")
-          .withFunction("hello", List.of("string"), "string")
-          .withFunction("goodbye", List.of("string"), "string") // New function
-          .withType("config", "record", Map.of(
-              "timeout", "u32",
-              "retry_count", "u32" // New field
-          ))
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("service")
+              .withVersion("1.1.0")
+              .withFunction("hello", List.of("string"), "string")
+              .withFunction("goodbye", List.of("string"), "string") // New function
+              .withType(
+                  "config",
+                  "record",
+                  Map.of(
+                      "timeout", "u32",
+                      "retry_count", "u32" // New field
+                      ))
+              .build();
 
       // Act
-      final WitEvolutionResult evolutionResult = evolution.evolveInterface(sourceInterface, targetInterface);
+      final WitEvolutionResult evolutionResult =
+          evolution.evolveInterface(sourceInterface, targetInterface);
       final WitInterfaceBindings bindings = evolution.createEvolutionBindings(evolutionResult);
 
       // Assert
@@ -405,11 +446,13 @@ class WitInterfaceEvolutionTest {
       assertEquals(targetInterface, bindings.getTargetInterface());
 
       // Check function bindings
-      final Map<String, WitInterfaceBindings.FunctionBinding> functionBindings = bindings.getFunctionBindings();
+      final Map<String, WitInterfaceBindings.FunctionBinding> functionBindings =
+          bindings.getFunctionBindings();
       assertTrue(functionBindings.containsKey("hello"), "Should bind existing function");
       assertTrue(bindings.isFunctionBound("hello"), "Hello function should be bound");
 
-      final WitInterfaceBindings.FunctionBinding helloBinding = bindings.getFunctionBinding("hello").orElse(null);
+      final WitInterfaceBindings.FunctionBinding helloBinding =
+          bindings.getFunctionBinding("hello").orElse(null);
       assertNotNull(helloBinding, "Hello binding should exist");
       assertTrue(helloBinding.isDirect(), "Hello binding should be direct");
 
@@ -418,13 +461,17 @@ class WitInterfaceEvolutionTest {
       assertTrue(typeBindings.containsKey("config"), "Should bind config type");
       assertTrue(bindings.isTypeBound("config"), "Config type should be bound");
 
-      final WitInterfaceBindings.TypeBinding configBinding = bindings.getTypeBinding("config").orElse(null);
+      final WitInterfaceBindings.TypeBinding configBinding =
+          bindings.getTypeBinding("config").orElse(null);
       assertNotNull(configBinding, "Config binding should exist");
-      assertFalse(configBinding.isDirect(), "Config binding should not be direct (structure changed)");
+      assertFalse(
+          configBinding.isDirect(), "Config binding should not be direct (structure changed)");
 
       // Check unbound items
       final Set<String> unboundFunctions = bindings.getUnboundFunctions();
-      assertTrue(unboundFunctions.contains("goodbye"), "Goodbye function should be unbound (new function)");
+      assertTrue(
+          unboundFunctions.contains("goodbye"),
+          "Goodbye function should be unbound (new function)");
 
       // Validate bindings
       final WitInterfaceBindings.BindingValidationResult validation = bindings.validateBindings();
@@ -443,19 +490,22 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldInvokeBoundFunctionsWithAdaptation() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("math")
-          .withVersion("1.0.0")
-          .withFunction("square", List.of("i32"), "i32")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("math")
+              .withVersion("1.0.0")
+              .withFunction("square", List.of("i32"), "i32")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("math")
-          .withVersion("1.1.0")
-          .withFunction("square", List.of("f64"), "f64") // Changed to floating point
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("math")
+              .withVersion("1.1.0")
+              .withFunction("square", List.of("f64"), "f64") // Changed to floating point
+              .build();
 
-      final WitEvolutionResult evolutionResult = evolution.evolveInterface(sourceInterface, targetInterface);
+      final WitEvolutionResult evolutionResult =
+          evolution.evolveInterface(sourceInterface, targetInterface);
       final WitInterfaceBindings bindings = evolution.createEvolutionBindings(evolutionResult);
 
       // Act
@@ -477,21 +527,24 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldValidateEvolutionConstraints() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("constrained")
-          .withVersion("1.0.0")
-          .withFunction("critical-function", List.of("string"), "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("constrained")
+              .withVersion("1.0.0")
+              .withFunction("critical-function", List.of("string"), "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("constrained")
-          .withVersion("2.0.0")
-          // Critical function removed - should violate constraints
-          .withFunction("new-function", List.of("string"), "string")
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("constrained")
+              .withVersion("2.0.0")
+              // Critical function removed - should violate constraints
+              .withFunction("new-function", List.of("string"), "string")
+              .build();
 
       // Act
-      final WitEvolutionValidation validation = evolution.validateEvolutionConstraints(sourceInterface, targetInterface);
+      final WitEvolutionValidation validation =
+          evolution.validateEvolutionConstraints(sourceInterface, targetInterface);
 
       // Assert
       assertNotNull(validation, "Validation result should not be null");
@@ -499,14 +552,20 @@ class WitInterfaceEvolutionTest {
       assertTrue(validation.hasViolations(), "Should have constraint violations");
       assertTrue(validation.hasIssues(), "Should have compatibility issues");
 
-      final List<WitEvolutionValidation.ConstraintViolation> violations = validation.getViolations();
+      final List<WitEvolutionValidation.ConstraintViolation> violations =
+          validation.getViolations();
       assertFalse(violations.isEmpty(), "Should have violations");
 
-      final boolean hasRemovalViolation = violations.stream()
-          .anyMatch(v -> v.getType() == WitEvolutionValidation.ViolationType.BACKWARD_COMPATIBILITY_VIOLATION);
+      final boolean hasRemovalViolation =
+          violations.stream()
+              .anyMatch(
+                  v ->
+                      v.getType()
+                          == WitEvolutionValidation.ViolationType.BACKWARD_COMPATIBILITY_VIOLATION);
       assertTrue(hasRemovalViolation, "Should have backward compatibility violation");
 
-      assertTrue(validation.getRiskAssessment() == WitEvolutionValidation.EvolutionRisk.HIGH,
+      assertTrue(
+          validation.getRiskAssessment() == WitEvolutionValidation.EvolutionRisk.HIGH,
           "Risk assessment should be high");
     }
 
@@ -515,21 +574,26 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldHandleInvalidInterfaceDefinitions() {
       // Arrange
-      final WitInterfaceDefinition invalidInterface = interfaceBuilder
-          .withName("") // Invalid empty name
-          .withVersion("1.0.0")
-          .build();
+      final WitInterfaceDefinition invalidInterface =
+          interfaceBuilder
+              .withName("") // Invalid empty name
+              .withVersion("1.0.0")
+              .build();
 
-      final WitInterfaceDefinition validInterface = interfaceBuilder
-          .withName("valid")
-          .withVersion("1.0.0")
-          .withFunction("test", List.of(), "string")
-          .build();
+      final WitInterfaceDefinition validInterface =
+          interfaceBuilder
+              .withName("valid")
+              .withVersion("1.0.0")
+              .withFunction("test", List.of(), "string")
+              .build();
 
       // Act & Assert
-      assertThrows(IllegalArgumentException.class, () -> {
-        evolution.evolveInterface(invalidInterface, validInterface);
-      }, "Should throw exception for invalid interface");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            evolution.evolveInterface(invalidInterface, validInterface);
+          },
+          "Should throw exception for invalid interface");
     }
 
     @Test
@@ -544,11 +608,13 @@ class WitInterfaceEvolutionTest {
       assertFalse(supportedOps.isEmpty(), "Should have some supported operations");
 
       // Verify common operations are supported
-      assertTrue(supportedOps.contains(WitEvolutionOperation.ADD_FUNCTION),
+      assertTrue(
+          supportedOps.contains(WitEvolutionOperation.ADD_FUNCTION),
           "Should support adding functions");
-      assertTrue(supportedOps.contains(WitEvolutionOperation.ADD_TYPE),
-          "Should support adding types");
-      assertTrue(supportedOps.contains(WitEvolutionOperation.MODIFY_TYPE),
+      assertTrue(
+          supportedOps.contains(WitEvolutionOperation.ADD_TYPE), "Should support adding types");
+      assertTrue(
+          supportedOps.contains(WitEvolutionOperation.MODIFY_TYPE),
           "Should support modifying types");
     }
   }
@@ -562,25 +628,27 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldCollectEvolutionMetrics() {
       // Arrange
-      final WitInterfaceDefinition sourceInterface = interfaceBuilder
-          .withName("metrics-test")
-          .withVersion("1.0.0")
-          .withFunction("func1", List.of("i32"), "i32")
-          .withFunction("func2", List.of("string"), "string")
-          .withType("type1", "i32")
-          .withType("type2", "string")
-          .build();
+      final WitInterfaceDefinition sourceInterface =
+          interfaceBuilder
+              .withName("metrics-test")
+              .withVersion("1.0.0")
+              .withFunction("func1", List.of("i32"), "i32")
+              .withFunction("func2", List.of("string"), "string")
+              .withType("type1", "i32")
+              .withType("type2", "string")
+              .build();
 
-      final WitInterfaceDefinition targetInterface = interfaceBuilder
-          .withName("metrics-test")
-          .withVersion("1.1.0")
-          .withFunction("func1", List.of("i32"), "i32")
-          .withFunction("func2", List.of("string"), "string")
-          .withFunction("func3", List.of("f64"), "f64")
-          .withType("type1", "i32")
-          .withType("type2", "string")
-          .withType("type3", "f64")
-          .build();
+      final WitInterfaceDefinition targetInterface =
+          interfaceBuilder
+              .withName("metrics-test")
+              .withVersion("1.1.0")
+              .withFunction("func1", List.of("i32"), "i32")
+              .withFunction("func2", List.of("string"), "string")
+              .withFunction("func3", List.of("f64"), "f64")
+              .withType("type1", "i32")
+              .withType("type2", "string")
+              .withType("type3", "f64")
+              .build();
 
       final Instant startTime = Instant.now();
 
@@ -595,12 +663,14 @@ class WitInterfaceEvolutionTest {
       assertEquals(3, metrics.getTypesAnalyzed(), "Should analyze 3 types");
       assertEquals(3, metrics.getFunctionsAnalyzed(), "Should analyze 3 functions");
       assertTrue(metrics.getAdaptersCreated() >= 0, "Adapters created should be non-negative");
-      assertTrue(metrics.getCompatibilityScore() >= 0.0 && metrics.getCompatibilityScore() <= 1.0,
+      assertTrue(
+          metrics.getCompatibilityScore() >= 0.0 && metrics.getCompatibilityScore() <= 1.0,
           "Compatibility score should be between 0 and 1");
 
       final Duration evolutionDuration = metrics.getEvolutionDuration();
       assertNotNull(evolutionDuration, "Evolution duration should not be null");
-      assertTrue(evolutionDuration.compareTo(Duration.ZERO) >= 0, "Duration should be non-negative");
+      assertTrue(
+          evolutionDuration.compareTo(Duration.ZERO) >= 0, "Duration should be non-negative");
 
       assertTrue(metrics.getMemoryUsed() > 0, "Should use some memory");
       assertTrue(metrics.getEvolutionThroughput() >= 0.0, "Throughput should be non-negative");
@@ -611,13 +681,11 @@ class WitInterfaceEvolutionTest {
     @Timeout(value = 10, unit = TimeUnit.SECONDS)
     void shouldHandleLargeInterfaceEvolutionEfficiently() {
       // Arrange
-      final TestInterfaceBuilder sourceBuilder = interfaceBuilder
-          .withName("large-interface")
-          .withVersion("1.0.0");
+      final TestInterfaceBuilder sourceBuilder =
+          interfaceBuilder.withName("large-interface").withVersion("1.0.0");
 
-      final TestInterfaceBuilder targetBuilder = interfaceBuilder
-          .withName("large-interface")
-          .withVersion("1.1.0");
+      final TestInterfaceBuilder targetBuilder =
+          interfaceBuilder.withName("large-interface").withVersion("1.1.0");
 
       // Add many functions and types to test performance
       for (int i = 0; i < 100; i++) {
@@ -644,7 +712,8 @@ class WitInterfaceEvolutionTest {
 
       // Assert
       final Duration actualDuration = Duration.between(startTime, Instant.now());
-      assertTrue(actualDuration.compareTo(Duration.ofSeconds(5)) < 0,
+      assertTrue(
+          actualDuration.compareTo(Duration.ofSeconds(5)) < 0,
           "Large interface evolution should complete within 5 seconds");
 
       assertTrue(result.isSuccessful(), "Large evolution should be successful");
@@ -657,9 +726,7 @@ class WitInterfaceEvolutionTest {
     }
   }
 
-  /**
-   * Helper class for building test interface definitions.
-   */
+  /** Helper class for building test interface definitions. */
   private static class TestInterfaceBuilder {
     private String name = "test-interface";
     private String version = "1.0.0";
@@ -682,7 +749,8 @@ class WitInterfaceEvolutionTest {
       return this;
     }
 
-    TestInterfaceBuilder withFunction(final String name, final List<String> params, final String returnType) {
+    TestInterfaceBuilder withFunction(
+        final String name, final List<String> params, final String returnType) {
       functions.put(name, new FunctionSpec(name, params, returnType));
       return this;
     }
@@ -692,7 +760,8 @@ class WitInterfaceEvolutionTest {
       return this;
     }
 
-    TestInterfaceBuilder withType(final String name, final String baseType, final Map<String, String> fields) {
+    TestInterfaceBuilder withType(
+        final String name, final String baseType, final Map<String, String> fields) {
       types.put(name, new TypeSpec(name, baseType, fields));
       return this;
     }
@@ -702,12 +771,11 @@ class WitInterfaceEvolutionTest {
     }
 
     private record FunctionSpec(String name, List<String> parameters, String returnType) {}
+
     private record TypeSpec(String name, String baseType, Map<String, String> fields) {}
   }
 
-  /**
-   * Test implementation of WitInterfaceDefinition.
-   */
+  /** Test implementation of WitInterfaceDefinition. */
   private static class TestWitInterfaceDefinition implements WitInterfaceDefinition {
     private final String name;
     private final String version;

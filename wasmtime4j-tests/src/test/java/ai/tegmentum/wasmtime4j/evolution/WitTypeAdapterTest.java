@@ -1,11 +1,15 @@
 package ai.tegmentum.wasmtime4j.evolution;
 
-import ai.tegmentum.wasmtime4j.WitTypeAdapter;
+import static org.junit.jupiter.api.Assertions.*;
+
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WitTypeAdapter;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,22 +19,17 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * Comprehensive tests for WIT type adapter functionality.
  *
  * <p>These tests validate type adaptation scenarios including:
+ *
  * <ul>
- *   <li>Primitive type conversions</li>
- *   <li>Structural type adaptations</li>
- *   <li>Collection type conversions</li>
- *   <li>Variant and enum adaptations</li>
- *   <li>Performance and validation</li>
+ *   <li>Primitive type conversions
+ *   <li>Structural type adaptations
+ *   <li>Collection type conversions
+ *   <li>Variant and enum adaptations
+ *   <li>Performance and validation
  * </ul>
  *
  * @since 1.0.0
@@ -70,7 +69,8 @@ class WitTypeAdapterTest {
       // Assert
       assertNotNull(convertedValue, "Converted value should not be null");
       assertTrue(convertedValue.isI64(), "Converted value should be i64");
-      assertEquals(42L, convertedValue.asI64(), "Converted value should preserve the original value");
+      assertEquals(
+          42L, convertedValue.asI64(), "Converted value should preserve the original value");
 
       // Test reverse conversion
       final WasmValue reversedValue = adapter.convertReverse(convertedValue);
@@ -118,7 +118,8 @@ class WitTypeAdapterTest {
 
       // Assert
       assertTrue(convertedValue.isF64(), "Converted value should be f64");
-      assertEquals(3.14159f, convertedValue.asF64(), 0.0001, "Converted value should preserve precision");
+      assertEquals(
+          3.14159f, convertedValue.asF64(), 0.0001, "Converted value should preserve precision");
 
       assertTrue(adapter.isLossless(), "F32 to F64 conversion should be lossless");
     }
@@ -132,7 +133,8 @@ class WitTypeAdapterTest {
 
       // Act - Valid conversion
       final WasmValue validValue = WasmValue.u32(42);
-      final WitTypeAdapter.AdapterValidationResult validResult = adapter.validateForwardConversion(validValue);
+      final WitTypeAdapter.AdapterValidationResult validResult =
+          adapter.validateForwardConversion(validValue);
 
       // Assert
       assertTrue(validResult.isValid(), "Valid value should pass validation");
@@ -140,7 +142,8 @@ class WitTypeAdapterTest {
 
       // Test invalid type
       final WasmValue invalidValue = WasmValue.f32(3.14f);
-      final WitTypeAdapter.AdapterValidationResult invalidResult = adapter.validateForwardConversion(invalidValue);
+      final WitTypeAdapter.AdapterValidationResult invalidResult =
+          adapter.validateForwardConversion(invalidValue);
 
       assertFalse(invalidResult.isValid(), "Invalid type should fail validation");
       assertFalse(invalidResult.getErrors().isEmpty(), "Invalid type should have errors");
@@ -156,16 +159,17 @@ class WitTypeAdapterTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldAdaptRecordTypesWithFieldAdditions() {
       // Arrange
-      final WitTypeAdapter adapter = createStructuralAdapter(
-          "source-record", Map.of("name", "string", "age", "u32"),
-          "target-record", Map.of("name", "string", "age", "u32", "email", "string")
-      );
+      final WitTypeAdapter adapter =
+          createStructuralAdapter(
+              "source-record", Map.of("name", "string", "age", "u32"),
+              "target-record", Map.of("name", "string", "age", "u32", "email", "string"));
 
       // Act
-      final WasmValue sourceRecord = WasmValue.record(Map.of(
-          "name", WasmValue.string("John"),
-          "age", WasmValue.u32(30)
-      ));
+      final WasmValue sourceRecord =
+          WasmValue.record(
+              Map.of(
+                  "name", WasmValue.string("John"),
+                  "age", WasmValue.u32(30)));
 
       final WasmValue convertedRecord = adapter.convertForward(sourceRecord);
 
@@ -190,16 +194,17 @@ class WitTypeAdapterTest {
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void shouldAdaptRecordTypesWithFieldTypeChanges() {
       // Arrange
-      final WitTypeAdapter adapter = createStructuralAdapter(
-          "coordinates", Map.of("x", "i32", "y", "i32"),
-          "coordinates", Map.of("x", "f64", "y", "f64")
-      );
+      final WitTypeAdapter adapter =
+          createStructuralAdapter(
+              "coordinates", Map.of("x", "i32", "y", "i32"),
+              "coordinates", Map.of("x", "f64", "y", "f64"));
 
       // Act
-      final WasmValue sourceCoords = WasmValue.record(Map.of(
-          "x", WasmValue.i32(10),
-          "y", WasmValue.i32(20)
-      ));
+      final WasmValue sourceCoords =
+          WasmValue.record(
+              Map.of(
+                  "x", WasmValue.i32(10),
+                  "y", WasmValue.i32(20)));
 
       final WasmValue convertedCoords = adapter.convertForward(sourceCoords);
 
@@ -218,19 +223,21 @@ class WitTypeAdapterTest {
     @Timeout(value = 3, unit = TimeUnit.SECONDS)
     void shouldHandleFieldRemovalWithWarnings() {
       // Arrange
-      final WitTypeAdapter adapter = createStructuralAdapter(
-          "full-record", Map.of("name", "string", "age", "u32", "deprecated", "string"),
-          "minimal-record", Map.of("name", "string", "age", "u32")
-      );
+      final WitTypeAdapter adapter =
+          createStructuralAdapter(
+              "full-record", Map.of("name", "string", "age", "u32", "deprecated", "string"),
+              "minimal-record", Map.of("name", "string", "age", "u32"));
 
       // Act
-      final WasmValue sourceRecord = WasmValue.record(Map.of(
-          "name", WasmValue.string("Alice"),
-          "age", WasmValue.u32(25),
-          "deprecated", WasmValue.string("old-value")
-      ));
+      final WasmValue sourceRecord =
+          WasmValue.record(
+              Map.of(
+                  "name", WasmValue.string("Alice"),
+                  "age", WasmValue.u32(25),
+                  "deprecated", WasmValue.string("old-value")));
 
-      final WitTypeAdapter.AdapterValidationResult validation = adapter.validateForwardConversion(sourceRecord);
+      final WitTypeAdapter.AdapterValidationResult validation =
+          adapter.validateForwardConversion(sourceRecord);
 
       // Assert
       assertTrue(validation.isValid(), "Conversion should be valid");
@@ -257,11 +264,8 @@ class WitTypeAdapterTest {
       final WitTypeAdapter adapter = createCollectionAdapter("list<i32>", "list<f64>");
 
       // Act
-      final List<WasmValue> sourceList = List.of(
-          WasmValue.i32(1),
-          WasmValue.i32(2),
-          WasmValue.i32(3)
-      );
+      final List<WasmValue> sourceList =
+          List.of(WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3));
       final WasmValue sourceValue = WasmValue.list(sourceList);
       final WasmValue convertedValue = adapter.convertForward(sourceValue);
 
@@ -272,7 +276,10 @@ class WitTypeAdapterTest {
       assertEquals(3, convertedList.size(), "List size should be preserved");
       for (int i = 0; i < convertedList.size(); i++) {
         assertTrue(convertedList.get(i).isF64(), "List elements should be converted to f64");
-        assertEquals((double) (i + 1), convertedList.get(i).asF64(), 0.001,
+        assertEquals(
+            (double) (i + 1),
+            convertedList.get(i).asF64(),
+            0.001,
             "List element values should be converted correctly");
       }
 
@@ -294,7 +301,8 @@ class WitTypeAdapterTest {
       assertTrue(convertedSome.isOption(), "Converted value should be option");
       assertTrue(convertedSome.asOption().isPresent(), "Converted option should have value");
       assertTrue(convertedSome.asOption().get().isString(), "Converted value should be string");
-      assertEquals("42", convertedSome.asOption().get().asString(), "Value should be string representation");
+      assertEquals(
+          "42", convertedSome.asOption().get().asString(), "Value should be string representation");
 
       // Test with none value
       final WasmValue noneValue = WasmValue.option(null);
@@ -314,10 +322,10 @@ class WitTypeAdapterTest {
     @Timeout(value = 3, unit = TimeUnit.SECONDS)
     void shouldAdaptVariantTypes() {
       // Arrange
-      final WitTypeAdapter adapter = createVariantAdapter(
-          "shape-v1", List.of("circle", "rectangle"),
-          "shape-v2", List.of("circle", "rectangle", "triangle")
-      );
+      final WitTypeAdapter adapter =
+          createVariantAdapter(
+              "shape-v1", List.of("circle", "rectangle"),
+              "shape-v2", List.of("circle", "rectangle", "triangle"));
 
       // Act
       final WasmValue sourceVariant = WasmValue.variant("circle", WasmValue.f32(5.0f));
@@ -336,10 +344,10 @@ class WitTypeAdapterTest {
     @Timeout(value = 2, unit = TimeUnit.SECONDS)
     void shouldAdaptEnumTypesWithValueMapping() {
       // Arrange
-      final WitTypeAdapter adapter = createEnumAdapter(
-          "status-v1", List.of("pending", "completed", "failed"),
-          "status-v2", List.of("queued", "processing", "completed", "failed", "cancelled")
-      );
+      final WitTypeAdapter adapter =
+          createEnumAdapter(
+              "status-v1", List.of("pending", "completed", "failed"),
+              "status-v2", List.of("queued", "processing", "completed", "failed", "cancelled"));
 
       // Act
       final WasmValue sourceEnum = WasmValue.enumValue("completed");
@@ -355,19 +363,23 @@ class WitTypeAdapterTest {
     @Timeout(value = 2, unit = TimeUnit.SECONDS)
     void shouldHandleEnumValueRemovalGracefully() {
       // Arrange
-      final WitTypeAdapter adapter = createEnumAdapter(
-          "priority", List.of("low", "medium", "high", "critical"),
-          "priority", List.of("low", "medium", "high") // "critical" removed
-      );
+      final WitTypeAdapter adapter =
+          createEnumAdapter(
+              "priority", List.of("low", "medium", "high", "critical"),
+              "priority", List.of("low", "medium", "high") // "critical" removed
+              );
 
       // Act - Test mapping of removed value
       final WasmValue removedValue = WasmValue.enumValue("critical");
 
       // This should either throw an exception or map to a default value
       // depending on implementation strategy
-      assertThrows(WasmRuntimeException.class, () -> {
-        adapter.convertForward(removedValue);
-      }, "Should throw exception for removed enum value");
+      assertThrows(
+          WasmRuntimeException.class,
+          () -> {
+            adapter.convertForward(removedValue);
+          },
+          "Should throw exception for removed enum value");
     }
   }
 
@@ -402,8 +414,10 @@ class WitTypeAdapterTest {
       assertEquals(1.0, stats.getSuccessRate(), 0.001, "Success rate should be 100%");
 
       assertTrue(stats.getTotalConversionTime() > 0, "Total conversion time should be positive");
-      assertTrue(stats.getAverageConversionTime() > 0, "Average conversion time should be positive");
-      assertTrue(stats.getLastConversionTime().isPresent(), "Last conversion time should be present");
+      assertTrue(
+          stats.getAverageConversionTime() > 0, "Average conversion time should be positive");
+      assertTrue(
+          stats.getLastConversionTime().isPresent(), "Last conversion time should be present");
     }
 
     @Test
@@ -443,8 +457,10 @@ class WitTypeAdapterTest {
       final WitTypeAdapter adapter = createPrimitiveAdapter("f32", "f64");
 
       // Act
-      final WitTypeAdapter.ConversionMetadata forwardMetadata = adapter.getForwardConversionMetadata();
-      final WitTypeAdapter.ConversionMetadata reverseMetadata = adapter.getReverseConversionMetadata();
+      final WitTypeAdapter.ConversionMetadata forwardMetadata =
+          adapter.getForwardConversionMetadata();
+      final WitTypeAdapter.ConversionMetadata reverseMetadata =
+          adapter.getReverseConversionMetadata();
 
       // Assert
       assertNotNull(forwardMetadata, "Forward metadata should not be null");
@@ -453,7 +469,9 @@ class WitTypeAdapterTest {
       assertFalse(forwardMetadata.isLossy(), "F32 to F64 should not be lossy");
       assertTrue(reverseMetadata.isLossy(), "F64 to F32 should be lossy");
 
-      assertEquals(WitTypeAdapter.ConversionCost.LOW, forwardMetadata.getCost(),
+      assertEquals(
+          WitTypeAdapter.ConversionCost.LOW,
+          forwardMetadata.getCost(),
           "F32 to F64 conversion should be low cost");
 
       assertNotNull(forwardMetadata.getPreconditions(), "Preconditions should not be null");
@@ -466,34 +484,43 @@ class WitTypeAdapterTest {
 
   private WitTypeAdapter createPrimitiveAdapter(final String sourceType, final String targetType) {
     // This would normally create a real adapter - simplified for testing
-    return new TestWitTypeAdapter(sourceType, targetType, WitTypeAdapter.AdapterType.DIRECT_CONVERSION, true);
+    return new TestWitTypeAdapter(
+        sourceType, targetType, WitTypeAdapter.AdapterType.DIRECT_CONVERSION, true);
   }
 
   private WitTypeAdapter createStructuralAdapter(
-      final String sourceTypeName, final Map<String, String> sourceFields,
-      final String targetTypeName, final Map<String, String> targetFields) {
-    return new TestWitTypeAdapter(sourceTypeName, targetTypeName, WitTypeAdapter.AdapterType.STRUCTURAL_ADAPTATION, false);
+      final String sourceTypeName,
+      final Map<String, String> sourceFields,
+      final String targetTypeName,
+      final Map<String, String> targetFields) {
+    return new TestWitTypeAdapter(
+        sourceTypeName, targetTypeName, WitTypeAdapter.AdapterType.STRUCTURAL_ADAPTATION, false);
   }
 
   private WitTypeAdapter createCollectionAdapter(final String sourceType, final String targetType) {
-    return new TestWitTypeAdapter(sourceType, targetType, WitTypeAdapter.AdapterType.COLLECTION_ADAPTATION, true);
+    return new TestWitTypeAdapter(
+        sourceType, targetType, WitTypeAdapter.AdapterType.COLLECTION_ADAPTATION, true);
   }
 
   private WitTypeAdapter createVariantAdapter(
-      final String sourceType, final List<String> sourceCases,
-      final String targetType, final List<String> targetCases) {
-    return new TestWitTypeAdapter(sourceType, targetType, WitTypeAdapter.AdapterType.VARIANT_ADAPTATION, false);
+      final String sourceType,
+      final List<String> sourceCases,
+      final String targetType,
+      final List<String> targetCases) {
+    return new TestWitTypeAdapter(
+        sourceType, targetType, WitTypeAdapter.AdapterType.VARIANT_ADAPTATION, false);
   }
 
   private WitTypeAdapter createEnumAdapter(
-      final String sourceType, final List<String> sourceValues,
-      final String targetType, final List<String> targetValues) {
-    return new TestWitTypeAdapter(sourceType, targetType, WitTypeAdapter.AdapterType.VARIANT_ADAPTATION, false);
+      final String sourceType,
+      final List<String> sourceValues,
+      final String targetType,
+      final List<String> targetValues) {
+    return new TestWitTypeAdapter(
+        sourceType, targetType, WitTypeAdapter.AdapterType.VARIANT_ADAPTATION, false);
   }
 
-  /**
-   * Test implementation of WitTypeAdapter for testing purposes.
-   */
+  /** Test implementation of WitTypeAdapter for testing purposes. */
   private static class TestWitTypeAdapter implements WitTypeAdapter {
     private final String sourceTypeName;
     private final String targetTypeName;
@@ -501,8 +528,11 @@ class WitTypeAdapterTest {
     private final boolean lossless;
     private final TestAdapterStatistics statistics = new TestAdapterStatistics();
 
-    TestWitTypeAdapter(final String sourceTypeName, final String targetTypeName,
-                       final AdapterType adapterType, final boolean lossless) {
+    TestWitTypeAdapter(
+        final String sourceTypeName,
+        final String targetTypeName,
+        final AdapterType adapterType,
+        final boolean lossless) {
       this.sourceTypeName = sourceTypeName;
       this.targetTypeName = targetTypeName;
       this.adapterType = adapterType;
@@ -567,7 +597,8 @@ class WitTypeAdapterTest {
       }
     }
 
-    private WasmValue performConversion(final WasmValue value, final String fromType, final String toType) {
+    private WasmValue performConversion(
+        final WasmValue value, final String fromType, final String toType) {
       // Simplified conversion logic for testing
       if (fromType.equals("i32") && toType.equals("i64")) {
         return WasmValue.i64(value.asI32());

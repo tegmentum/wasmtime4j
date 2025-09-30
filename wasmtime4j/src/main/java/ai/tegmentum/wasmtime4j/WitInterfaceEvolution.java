@@ -21,14 +21,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * WIT interface evolution and versioning system.
  *
- * <p>This system manages the evolution of WIT interfaces over time, providing
- * backward and forward compatibility checking, interface adaptation, and migration support.
- * It enables safe interface changes while maintaining component interoperability.
+ * <p>This system manages the evolution of WIT interfaces over time, providing backward and forward
+ * compatibility checking, interface adaptation, and migration support. It enables safe interface
+ * changes while maintaining component interoperability.
  *
  * @since 1.0.0
  */
@@ -42,7 +41,8 @@ public interface WitInterfaceEvolution {
    * @return evolution analysis result
    * @throws WasmException if analysis fails
    */
-  InterfaceEvolutionAnalysis analyzeEvolution(WitInterfaceVersion fromVersion, WitInterfaceVersion toVersion) throws WasmException;
+  InterfaceEvolutionAnalysis analyzeEvolution(
+      WitInterfaceVersion fromVersion, WitInterfaceVersion toVersion) throws WasmException;
 
   /**
    * Checks backward compatibility between interface versions.
@@ -51,7 +51,8 @@ public interface WitInterfaceEvolution {
    * @param newerVersion the newer interface version
    * @return backward compatibility result
    */
-  BackwardCompatibilityResult checkBackwardCompatibility(WitInterfaceVersion olderVersion, WitInterfaceVersion newerVersion);
+  BackwardCompatibilityResult checkBackwardCompatibility(
+      WitInterfaceVersion olderVersion, WitInterfaceVersion newerVersion);
 
   /**
    * Checks forward compatibility between interface versions.
@@ -60,7 +61,8 @@ public interface WitInterfaceEvolution {
    * @param olderVersion the older interface version
    * @return forward compatibility result
    */
-  ForwardCompatibilityResult checkForwardCompatibility(WitInterfaceVersion newerVersion, WitInterfaceVersion olderVersion);
+  ForwardCompatibilityResult checkForwardCompatibility(
+      WitInterfaceVersion newerVersion, WitInterfaceVersion olderVersion);
 
   /**
    * Creates an interface adapter for bridging between versions.
@@ -71,8 +73,11 @@ public interface WitInterfaceEvolution {
    * @return interface adapter
    * @throws WasmException if adapter creation fails
    */
-  InterfaceAdapter createAdapter(WitInterfaceVersion sourceVersion, WitInterfaceVersion targetVersion,
-                                 AdaptationConfig adaptationConfig) throws WasmException;
+  InterfaceAdapter createAdapter(
+      WitInterfaceVersion sourceVersion,
+      WitInterfaceVersion targetVersion,
+      AdaptationConfig adaptationConfig)
+      throws WasmException;
 
   /**
    * Validates an interface evolution strategy.
@@ -91,9 +96,11 @@ public interface WitInterfaceEvolution {
    * @return interface migration plan
    * @throws WasmException if migration planning fails
    */
-  InterfaceMigrationPlan createMigrationPlan(WitInterfaceDefinition currentInterface,
-                                             WitInterfaceDefinition targetInterface,
-                                             MigrationConfig migrationConfig) throws WasmException;
+  InterfaceMigrationPlan createMigrationPlan(
+      WitInterfaceDefinition currentInterface,
+      WitInterfaceDefinition targetInterface,
+      MigrationConfig migrationConfig)
+      throws WasmException;
 
   /**
    * Executes an interface migration.
@@ -102,7 +109,8 @@ public interface WitInterfaceEvolution {
    * @return migration execution result
    * @throws WasmException if migration execution fails
    */
-  MigrationExecutionResult executeMigration(InterfaceMigrationPlan migrationPlan) throws WasmException;
+  MigrationExecutionResult executeMigration(InterfaceMigrationPlan migrationPlan)
+      throws WasmException;
 
   /**
    * Gets the evolution history of an interface.
@@ -127,7 +135,8 @@ public interface WitInterfaceEvolution {
    * @param deprecationInfo deprecation information
    * @throws WasmException if deprecation fails
    */
-  void deprecateInterfaceVersion(WitInterfaceVersion interfaceVersion, DeprecationInfo deprecationInfo) throws WasmException;
+  void deprecateInterfaceVersion(
+      WitInterfaceVersion interfaceVersion, DeprecationInfo deprecationInfo) throws WasmException;
 
   /**
    * Gets all versions of an interface.
@@ -144,11 +153,10 @@ public interface WitInterfaceEvolution {
    * @param requirements compatibility requirements
    * @return best compatible version, if found
    */
-  Optional<WitInterfaceVersion> findCompatibleVersion(String interfaceName, CompatibilityRequirements requirements);
+  Optional<WitInterfaceVersion> findCompatibleVersion(
+      String interfaceName, CompatibilityRequirements requirements);
 
-  /**
-   * Interface evolution analysis result.
-   */
+  /** Interface evolution analysis result. */
   interface InterfaceEvolutionAnalysis {
     /**
      * Gets the source interface version.
@@ -207,9 +215,7 @@ public interface WitInterfaceEvolution {
     MigrationEffort getEstimatedEffort();
   }
 
-  /**
-   * Backward compatibility analysis result.
-   */
+  /** Backward compatibility analysis result. */
   interface BackwardCompatibilityResult {
     /**
      * Checks if backward compatibility is maintained.
@@ -240,9 +246,7 @@ public interface WitInterfaceEvolution {
     List<String> getSuggestions();
   }
 
-  /**
-   * Forward compatibility analysis result.
-   */
+  /** Forward compatibility analysis result. */
   interface ForwardCompatibilityResult {
     /**
      * Checks if forward compatibility is maintained.
@@ -273,9 +277,7 @@ public interface WitInterfaceEvolution {
     RiskAssessment getRiskAssessment();
   }
 
-  /**
-   * Interface adapter for version bridging.
-   */
+  /** Interface adapter for version bridging. */
   interface InterfaceAdapter {
     /**
      * Gets the source interface version.
@@ -319,9 +321,7 @@ public interface WitInterfaceEvolution {
     AdaptationStatistics getStatistics();
   }
 
-  /**
-   * Interface migration plan.
-   */
+  /** Interface migration plan. */
   interface InterfaceMigrationPlan {
     /**
      * Gets the migration identifier.
@@ -373,9 +373,7 @@ public interface WitInterfaceEvolution {
     List<MigrationStep> getRollbackSteps();
   }
 
-  /**
-   * Migration execution result.
-   */
+  /** Migration execution result. */
   interface MigrationExecutionResult {
     /**
      * Gets the migration plan that was executed.
@@ -441,9 +439,7 @@ public interface WitInterfaceEvolution {
     Map<String, Object> getMetrics();
   }
 
-  /**
-   * Interface evolution history.
-   */
+  /** Interface evolution history. */
   interface InterfaceEvolutionHistory {
     /**
      * Gets the interface name.
@@ -495,206 +491,299 @@ public interface WitInterfaceEvolution {
     List<CompletedMigration> getMigrationHistory();
   }
 
-  /**
-   * Types of interface evolution.
-   */
+  /** Types of interface evolution. */
   enum EvolutionType {
-    /** Major version change with breaking changes */
+    /** Major version change with breaking changes. */
     MAJOR,
-    /** Minor version change with new features */
+    /** Minor version change with new features. */
     MINOR,
-    /** Patch version change with fixes only */
+    /** Patch version change with fixes only. */
     PATCH,
-    /** Custom evolution path */
+    /** Custom evolution path. */
     CUSTOM
   }
 
-  /**
-   * Migration complexity levels.
-   */
+  /** Migration complexity levels. */
   enum MigrationComplexity {
-    /** Simple migration with no breaking changes */
+    /** Simple migration with no breaking changes. */
     SIMPLE,
-    /** Moderate migration with some adaptations needed */
+    /** Moderate migration with some adaptations needed. */
     MODERATE,
-    /** Complex migration with significant changes */
+    /** Complex migration with significant changes. */
     COMPLEX,
-    /** Critical migration requiring careful planning */
+    /** Critical migration requiring careful planning. */
     CRITICAL
   }
 
-  /**
-   * Migration effort estimation.
-   */
+  /** Migration effort estimation. */
   enum MigrationEffort {
-    /** Low effort migration */
+    /** Low effort migration. */
     LOW,
-    /** Medium effort migration */
+    /** Medium effort migration. */
     MEDIUM,
-    /** High effort migration */
+    /** High effort migration. */
     HIGH,
-    /** Very high effort migration */
+    /** Very high effort migration. */
     VERY_HIGH
   }
 
-  /**
-   * Compatibility levels.
-   */
+  /** Compatibility levels. */
   enum CompatibilityLevel {
-    /** Fully compatible */
+    /** Fully compatible. */
     FULL,
-    /** Mostly compatible with minor issues */
+    /** Mostly compatible with minor issues. */
     PARTIAL,
-    /** Limited compatibility requiring adaptations */
+    /** Limited compatibility requiring adaptations. */
     LIMITED,
-    /** No compatibility - breaking changes */
+    /** No compatibility - breaking changes. */
     NONE
   }
 
-  /**
-   * Breaking change information.
-   */
+  /** Breaking change information. */
   interface BreakingChange {
     String getDescription();
+
     ChangeType getType();
+
     String getLocation();
+
     ChangeImpact getImpact();
+
     List<String> getSuggestions();
   }
 
-  /**
-   * Non-breaking change information.
-   */
+  /** Non-breaking change information. */
   interface NonBreakingChange {
     String getDescription();
+
     ChangeType getType();
+
     String getLocation();
+
     ChangeCategory getCategory();
   }
 
-  /**
-   * Required adaptation information.
-   */
+  /** Required adaptation information. */
   interface RequiredAdaptation {
     String getDescription();
+
     AdaptationType getType();
+
     String getFunctionName();
+
     AdaptationComplexity getComplexity();
+
     boolean isAutomatable();
   }
 
-  /**
-   * Compatibility issue information.
-   */
+  /** Compatibility issue information. */
   interface CompatibilityIssue {
     String getDescription();
+
     IssueType getType();
+
     IssueSeverity getSeverity();
+
     String getLocation();
+
     List<String> getResolutions();
   }
 
-  /**
-   * Migration step information.
-   */
+  /** Migration step information. */
   interface MigrationStep {
     String getId();
+
     String getDescription();
+
     MigrationStepType getType();
+
     java.time.Duration getEstimatedDuration();
+
     List<String> getPreconditions();
+
     List<String> getActions();
+
     boolean isRollbackable();
   }
 
-  /**
-   * Migration risk information.
-   */
+  /** Migration risk information. */
   interface MigrationRisk {
     String getDescription();
+
     RiskLevel getLevel();
+
     RiskCategory getCategory();
+
     List<String> getMitigations();
+
     double getProbability();
+
     RiskImpact getImpact();
   }
 
-  /**
-   * Version change information.
-   */
+  /** Version change information. */
   interface VersionChange {
     WitInterfaceVersion getFromVersion();
+
     WitInterfaceVersion getToVersion();
+
     Instant getChangeTime();
+
     String getDescription();
+
     List<String> getChanges();
+
     ChangeType getChangeType();
   }
 
-  /**
-   * Deprecation information.
-   */
+  /** Deprecation information. */
   interface DeprecationInfo {
     Instant getDeprecationDate();
+
     Optional<Instant> getRemovalDate();
+
     String getReason();
+
     Optional<WitInterfaceVersion> getReplacementVersion();
+
     List<String> getMigrationGuidance();
   }
 
-  /**
-   * Deprecation event information.
-   */
+  /** Deprecation event information. */
   interface DeprecationEvent {
     WitInterfaceVersion getVersion();
+
     DeprecationInfo getDeprecationInfo();
+
     Instant getEventTime();
   }
 
-  /**
-   * Completed migration information.
-   */
+  /** Completed migration information. */
   interface CompletedMigration {
     String getMigrationId();
+
     WitInterfaceVersion getFromVersion();
+
     WitInterfaceVersion getToVersion();
+
     Instant getStartTime();
+
     Instant getEndTime();
+
     boolean wasSuccessful();
+
     Optional<String> getErrorMessage();
   }
 
-  /**
-   * Risk assessment information.
-   */
+  /** Risk assessment information. */
   interface RiskAssessment {
     RiskLevel getOverallRisk();
+
     List<String> getRiskFactors();
+
     List<String> getRecommendations();
+
     double getConfidenceLevel();
   }
 
-  /**
-   * Adaptation statistics.
-   */
+  /** Adaptation statistics. */
   interface AdaptationStatistics {
     long getTotalAdaptations();
+
     long getSuccessfulAdaptations();
+
     long getFailedAdaptations();
+
     double getAverageAdaptationTime();
+
     Map<String, Long> getAdaptationsByType();
   }
 
   // Enums for various categorizations
-  enum ChangeType { ADDITION, REMOVAL, MODIFICATION, RENAME }
-  enum ChangeImpact { LOW, MEDIUM, HIGH, CRITICAL }
-  enum ChangeCategory { FEATURE, BUGFIX, IMPROVEMENT, REFACTORING }
-  enum AdaptationType { TYPE_CONVERSION, PARAMETER_MAPPING, RETURN_TRANSFORMATION, INTERFACE_BRIDGING }
-  enum AdaptationComplexity { SIMPLE, MODERATE, COMPLEX }
-  enum IssueType { TYPE_MISMATCH, MISSING_FUNCTION, INCOMPATIBLE_SIGNATURE, VERSION_CONFLICT }
-  enum IssueSeverity { INFO, WARNING, ERROR, CRITICAL }
-  enum MigrationStepType { PREPARATION, TRANSFORMATION, VALIDATION, CLEANUP }
-  enum RiskLevel { LOW, MEDIUM, HIGH, CRITICAL }
-  enum RiskCategory { COMPATIBILITY, PERFORMANCE, SECURITY, OPERATIONAL }
-  enum RiskImpact { MINIMAL, MODERATE, SIGNIFICANT, SEVERE }
+  /** Types of interface changes. */
+  enum ChangeType {
+    ADDITION,
+    REMOVAL,
+    MODIFICATION,
+    RENAME
+  }
+
+  /** Impact levels of interface changes. */
+  enum ChangeImpact {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+  }
+
+  /** Categories of interface changes. */
+  enum ChangeCategory {
+    FEATURE,
+    BUGFIX,
+    IMPROVEMENT,
+    REFACTORING
+  }
+
+  /** Types of adaptation strategies. */
+  enum AdaptationType {
+    TYPE_CONVERSION,
+    PARAMETER_MAPPING,
+    RETURN_TRANSFORMATION,
+    INTERFACE_BRIDGING
+  }
+
+  /** Complexity levels of adaptations. */
+  enum AdaptationComplexity {
+    SIMPLE,
+    MODERATE,
+    COMPLEX
+  }
+
+  /** Types of evolution issues. */
+  enum IssueType {
+    TYPE_MISMATCH,
+    MISSING_FUNCTION,
+    INCOMPATIBLE_SIGNATURE,
+    VERSION_CONFLICT
+  }
+
+  /** Severity levels of evolution issues. */
+  enum IssueSeverity {
+    INFO,
+    WARNING,
+    ERROR,
+    CRITICAL
+  }
+
+  /** Types of migration steps. */
+  enum MigrationStepType {
+    PREPARATION,
+    TRANSFORMATION,
+    VALIDATION,
+    CLEANUP
+  }
+
+  /** Risk levels for interface evolution. */
+  enum RiskLevel {
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
+  }
+
+  /** Categories of evolution risks. */
+  enum RiskCategory {
+    COMPATIBILITY,
+    PERFORMANCE,
+    SECURITY,
+    OPERATIONAL
+  }
+
+  /** Impact levels of evolution risks. */
+  enum RiskImpact {
+    MINIMAL,
+    MODERATE,
+    SIGNIFICANT,
+    SEVERE
+  }
 }

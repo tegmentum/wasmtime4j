@@ -4,13 +4,12 @@
 //! allowing Java code to use advanced memory management features including
 //! huge pages, NUMA awareness, and comprehensive monitoring.
 
-use jni::objects::{JClass, JObject, JString, JByteArray};
-use jni::sys::{jlong, jint, jboolean, jdoubleArray, jobjectArray, jobject};
+use jni::objects::{JClass, JObject, JByteArray};
+use jni::sys::{jlong, jint, jboolean, jobjectArray, jobject};
 use jni::JNIEnv;
-use std::ptr;
 use std::ffi::c_void;
 
-use crate::memory::{PlatformMemoryAllocator, PlatformMemoryConfig, PageSize, PlatformMemoryPoolStats, PlatformMemoryInfo, PlatformMemoryLeak};
+use crate::memory::{PlatformMemoryAllocator, PlatformMemoryConfig, PageSize};
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 
 /// Creates a new platform memory allocator

@@ -209,9 +209,7 @@ public final class WitEvolutionResult {
    * @return list of breaking changes
    */
   public List<WitEvolutionChange> getBreakingChanges() {
-    return changes.stream()
-        .filter(WitEvolutionChange::isBreaking)
-        .toList();
+    return changes.stream().filter(WitEvolutionChange::isBreaking).toList();
   }
 
   /**
@@ -220,9 +218,7 @@ public final class WitEvolutionResult {
    * @return list of non-breaking changes
    */
   public List<WitEvolutionChange> getNonBreakingChanges() {
-    return changes.stream()
-        .filter(change -> !change.isBreaking())
-        .toList();
+    return changes.stream().filter(change -> !change.isBreaking()).toList();
   }
 
   /**
@@ -247,13 +243,19 @@ public final class WitEvolutionResult {
 
   @Override
   public String toString() {
-    return "WitEvolutionResult{" +
-        "sourceInterface=" + sourceInterface.getName() +
-        ", targetInterface=" + targetInterface.getName() +
-        ", successful=" + successful +
-        ", changes=" + changes.size() +
-        ", typeAdapters=" + typeAdapters.size() +
-        ", evolutionTime=" + evolutionTime +
-        '}';
+    return "WitEvolutionResult{"
+        + "sourceInterface="
+        + sourceInterface.getName()
+        + ", targetInterface="
+        + targetInterface.getName()
+        + ", successful="
+        + successful
+        + ", changes="
+        + changes.size()
+        + ", typeAdapters="
+        + typeAdapters.size()
+        + ", evolutionTime="
+        + evolutionTime
+        + '}';
   }
 }

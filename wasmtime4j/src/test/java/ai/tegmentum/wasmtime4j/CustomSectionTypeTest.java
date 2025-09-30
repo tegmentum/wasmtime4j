@@ -1,11 +1,15 @@
 package ai.tegmentum.wasmtime4j;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Tests for CustomSectionType functionality.
- */
+import org.junit.jupiter.api.Test;
+
+/** Tests for CustomSectionType functionality. */
 final class CustomSectionTypeTest {
 
   @Test
@@ -102,44 +106,39 @@ final class CustomSectionTypeTest {
   void testComprehensiveSectionTypeMapping() {
     // Test all standard section types can be recognized
     final String[] testSections = {
-        "name",
-        "producers",
-        "target_features",
-        ".debug_info",
-        ".debug_line",
-        ".debug_abbrev",
-        ".debug_str",
-        ".debug_ranges",
-        ".debug_loc",
-        "sourceMappingURL",
-        "linking",
-        "reloc.CODE",
-        "reloc.DATA"
+      "name",
+      "producers",
+      "target_features",
+      ".debug_info",
+      ".debug_line",
+      ".debug_abbrev",
+      ".debug_str",
+      ".debug_ranges",
+      ".debug_loc",
+      "sourceMappingURL",
+      "linking",
+      "reloc.CODE",
+      "reloc.DATA"
     };
 
     for (final String sectionName : testSections) {
       final CustomSectionType type = CustomSectionType.fromName(sectionName);
-      assertNotEquals(CustomSectionType.UNKNOWN, type,
-          "Section '" + sectionName + "' should be recognized");
-      assertTrue(type.matches(sectionName),
-          "Section type should match its name: " + sectionName);
+      assertNotEquals(
+          CustomSectionType.UNKNOWN, type, "Section '" + sectionName + "' should be recognized");
+      assertTrue(type.matches(sectionName), "Section type should match its name: " + sectionName);
     }
   }
 
   @Test
   void testUnknownSectionHandling() {
     final String[] unknownSections = {
-        "my_custom_section",
-        "application_data",
-        "metadata",
-        "custom",
-        ""
+      "my_custom_section", "application_data", "metadata", "custom", ""
     };
 
     for (final String sectionName : unknownSections) {
       final CustomSectionType type = CustomSectionType.fromName(sectionName);
-      assertEquals(CustomSectionType.UNKNOWN, type,
-          "Section '" + sectionName + "' should be UNKNOWN");
+      assertEquals(
+          CustomSectionType.UNKNOWN, type, "Section '" + sectionName + "' should be UNKNOWN");
     }
   }
 }

@@ -22,8 +22,8 @@ import java.util.List;
 /**
  * Information about a component link.
  *
- * <p>This class provides information about linked components, including
- * the source components, resulting linked component, and link status.
+ * <p>This class provides information about linked components, including the source components,
+ * resulting linked component, and link status.
  *
  * @since 1.0.0
  */
@@ -42,7 +42,8 @@ public final class ComponentLinkInfo {
    * @param linkedComponent the resulting linked component
    * @param active whether the link is currently active
    */
-  public ComponentLinkInfo(final String linkId,
+  public ComponentLinkInfo(
+      final String linkId,
       final List<ComponentSimple> sourceComponents,
       final ComponentSimple linkedComponent,
       final boolean active) {
@@ -99,10 +100,14 @@ public final class ComponentLinkInfo {
 
   @Override
   public String toString() {
-    return "ComponentLinkInfo{" +
-        "linkId='" + linkId + '\'' +
-        ", sourceComponentCount=" + sourceComponents.size() +
-        ", active=" + active +
-        '}';
+    return "ComponentLinkInfo{"
+        + "linkId='"
+        + linkId
+        + '\''
+        + ", sourceComponentCount="
+        + sourceComponents.size()
+        + ", active="
+        + active
+        + '}';
   }
 }

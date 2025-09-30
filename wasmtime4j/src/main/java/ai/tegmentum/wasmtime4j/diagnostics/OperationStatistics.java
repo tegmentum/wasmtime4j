@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.LongAdder;
  * and execution. All operations are thread-safe and designed for high-concurrency access.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * OperationStatistics stats = performanceDiagnostics.getOperationStatistics("Compilation");
  * System.out.println("Average duration: " + stats.getAverageDuration() + "ms");
@@ -213,9 +214,9 @@ public final class OperationStatistics {
   /**
    * Calculates the 95th percentile duration estimate.
    *
-   * <p>This is a simple estimate based on the assumption that durations follow
-   * a normal distribution. For more accurate percentile calculations, consider
-   * using a histogram-based approach.
+   * <p>This is a simple estimate based on the assumption that durations follow a normal
+   * distribution. For more accurate percentile calculations, consider using a histogram-based
+   * approach.
    *
    * @return the estimated 95th percentile duration in milliseconds
    */
@@ -235,9 +236,7 @@ public final class OperationStatistics {
     return avg + (1.645 * estimatedStdDev);
   }
 
-  /**
-   * Resets all statistics to their initial state.
-   */
+  /** Resets all statistics to their initial state. */
   public void reset() {
     operationCount.reset();
     totalDuration.reset();
@@ -269,7 +268,9 @@ public final class OperationStatistics {
     sb.append(", avgDuration=").append(String.format("%.1f", getAverageDuration())).append("ms");
     sb.append(", minDuration=").append(getMinDuration()).append("ms");
     sb.append(", maxDuration=").append(getMaxDuration()).append("ms");
-    sb.append(", avgMemory=").append(String.format("%.1f", getAverageMemoryDelta() / 1024.0)).append("KB");
+    sb.append(", avgMemory=")
+        .append(String.format("%.1f", getAverageMemoryDelta() / 1024.0))
+        .append("KB");
 
     if (hasCpuTimeData()) {
       sb.append(", avgCpuTime=").append(String.format("%.1f", getAverageCpuTime())).append("ms");

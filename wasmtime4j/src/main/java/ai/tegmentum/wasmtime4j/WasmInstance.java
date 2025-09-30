@@ -9,9 +9,9 @@ import java.util.Optional;
 /**
  * Represents an instantiated WebAssembly module.
  *
- * <p>A WasmInstance provides access to the exports of a WebAssembly module,
- * including functions, memories, tables, and globals. Instances should be
- * properly closed when no longer needed to free system resources.
+ * <p>A WasmInstance provides access to the exports of a WebAssembly module, including functions,
+ * memories, tables, and globals. Instances should be properly closed when no longer needed to free
+ * system resources.
  *
  * @since 1.0.0
  */
@@ -24,7 +24,7 @@ public interface WasmInstance extends Closeable {
    * @return the function, or empty if not found
    * @throws WasmException if the export exists but is not a function
    */
-  Optional<Function> getFunction(final String name) throws WasmException;
+  Optional<Function<?>> getFunction(final String name) throws WasmException;
 
   /**
    * Gets an exported memory by name.
@@ -112,23 +112,21 @@ public interface WasmInstance extends Closeable {
   /**
    * Closes this instance and releases its resources.
    *
-   * <p>After calling this method, the instance becomes invalid and should not be used.
-   * Any attempt to use the instance after closing may result in exceptions.
+   * <p>After calling this method, the instance becomes invalid and should not be used. Any attempt
+   * to use the instance after closing may result in exceptions.
    */
   @Override
   void close();
 
-  /**
-   * Enumeration of WebAssembly export types.
-   */
+  /** Enumeration of WebAssembly export types. */
   enum ExportType {
-    /** Function export */
+    /** Function export. */
     FUNCTION,
-    /** Memory export */
+    /** Memory export. */
     MEMORY,
-    /** Table export */
+    /** Table export. */
     TABLE,
-    /** Global export */
+    /** Global export. */
     GLOBAL
   }
 }

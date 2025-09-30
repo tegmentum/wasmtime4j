@@ -5,9 +5,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 /**
  * Represents a WebAssembly global variable instance.
  *
- * <p>WebAssembly globals are values that can be accessed globally by all instances
- * in a module. Globals can be either mutable or immutable, and can store values
- * of various types.
+ * <p>WebAssembly globals are values that can be accessed globally by all instances in a module.
+ * Globals can be either mutable or immutable, and can store values of various types.
  *
  * @since 1.0.0
  */
@@ -87,7 +86,8 @@ public interface Global {
    * Sets the value as an integer.
    *
    * @param value the integer value to set
-   * @throws WasmException if the global is immutable, value type is incompatible, or the operation fails
+   * @throws WasmException if the global is immutable, value type is incompatible, or the operation
+   *     fails
    */
   void setIntValue(final int value) throws WasmException;
 
@@ -95,7 +95,8 @@ public interface Global {
    * Sets the value as a long.
    *
    * @param value the long value to set
-   * @throws WasmException if the global is immutable, value type is incompatible, or the operation fails
+   * @throws WasmException if the global is immutable, value type is incompatible, or the operation
+   *     fails
    */
   void setLongValue(final long value) throws WasmException;
 
@@ -103,7 +104,8 @@ public interface Global {
    * Sets the value as a float.
    *
    * @param value the float value to set
-   * @throws WasmException if the global is immutable, value type is incompatible, or the operation fails
+   * @throws WasmException if the global is immutable, value type is incompatible, or the operation
+   *     fails
    */
   void setFloatValue(final float value) throws WasmException;
 
@@ -111,27 +113,26 @@ public interface Global {
    * Sets the value as a double.
    *
    * @param value the double value to set
-   * @throws WasmException if the global is immutable, value type is incompatible, or the operation fails
+   * @throws WasmException if the global is immutable, value type is incompatible, or the operation
+   *     fails
    */
   void setDoubleValue(final double value) throws WasmException;
 
-  /**
-   * Enumeration of supported global value types.
-   */
+  /** Enumeration of supported global value types. */
   enum GlobalValueType {
-    /** 32-bit integer */
+    /** 32-bit integer. */
     I32,
-    /** 64-bit integer */
+    /** 64-bit integer. */
     I64,
-    /** 32-bit float */
+    /** 32-bit float. */
     F32,
-    /** 64-bit float */
+    /** 64-bit float. */
     F64,
-    /** 128-bit vector */
+    /** 128-bit vector. */
     V128,
-    /** Function reference */
+    /** Function reference. */
     FUNCREF,
-    /** External reference */
+    /** External reference. */
     EXTERNREF
   }
 }

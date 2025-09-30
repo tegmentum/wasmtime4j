@@ -8,8 +8,8 @@ import java.util.Objects;
 /**
  * Metrics collected during WIT interface evolution operations.
  *
- * <p>This class provides comprehensive metrics about interface evolution operations,
- * including performance data, success rates, and detailed analysis results.
+ * <p>This class provides comprehensive metrics about interface evolution operations, including
+ * performance data, success rates, and detailed analysis results.
  *
  * @since 1.0.0
  */
@@ -54,7 +54,8 @@ public final class WitEvolutionMetrics {
       final Instant endTime,
       final boolean successful,
       final Map<String, Object> detailedMetrics) {
-    this.evolutionDuration = Objects.requireNonNull(evolutionDuration, "evolutionDuration must not be null");
+    this.evolutionDuration =
+        Objects.requireNonNull(evolutionDuration, "evolutionDuration must not be null");
     this.typesAnalyzed = Math.max(0, typesAnalyzed);
     this.functionsAnalyzed = Math.max(0, functionsAnalyzed);
     this.adaptersCreated = Math.max(0, adaptersCreated);
@@ -64,7 +65,8 @@ public final class WitEvolutionMetrics {
     this.startTime = Objects.requireNonNull(startTime, "startTime must not be null");
     this.endTime = Objects.requireNonNull(endTime, "endTime must not be null");
     this.successful = successful;
-    this.detailedMetrics = Map.copyOf(Objects.requireNonNull(detailedMetrics, "detailedMetrics must not be null"));
+    this.detailedMetrics =
+        Map.copyOf(Objects.requireNonNull(detailedMetrics, "detailedMetrics must not be null"));
   }
 
   /**
@@ -74,18 +76,7 @@ public final class WitEvolutionMetrics {
    */
   public static WitEvolutionMetrics empty() {
     final Instant now = Instant.now();
-    return new WitEvolutionMetrics(
-        Duration.ZERO,
-        0,
-        0,
-        0,
-        0,
-        0.0,
-        0,
-        now,
-        now,
-        false,
-        Map.of());
+    return new WitEvolutionMetrics(Duration.ZERO, 0, 0, 0, 0, 0.0, 0, now, now, false, Map.of());
   }
 
   /**
@@ -295,41 +286,56 @@ public final class WitEvolutionMetrics {
       return false;
     }
     final WitEvolutionMetrics that = (WitEvolutionMetrics) obj;
-    return typesAnalyzed == that.typesAnalyzed &&
-        functionsAnalyzed == that.functionsAnalyzed &&
-        adaptersCreated == that.adaptersCreated &&
-        validationChecks == that.validationChecks &&
-        Double.compare(that.compatibilityScore, compatibilityScore) == 0 &&
-        memoryUsed == that.memoryUsed &&
-        successful == that.successful &&
-        Objects.equals(evolutionDuration, that.evolutionDuration) &&
-        Objects.equals(startTime, that.startTime) &&
-        Objects.equals(endTime, that.endTime) &&
-        Objects.equals(detailedMetrics, that.detailedMetrics);
+    return typesAnalyzed == that.typesAnalyzed
+        && functionsAnalyzed == that.functionsAnalyzed
+        && adaptersCreated == that.adaptersCreated
+        && validationChecks == that.validationChecks
+        && Double.compare(that.compatibilityScore, compatibilityScore) == 0
+        && memoryUsed == that.memoryUsed
+        && successful == that.successful
+        && Objects.equals(evolutionDuration, that.evolutionDuration)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime)
+        && Objects.equals(detailedMetrics, that.detailedMetrics);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(evolutionDuration, typesAnalyzed, functionsAnalyzed, adaptersCreated,
-        validationChecks, compatibilityScore, memoryUsed, startTime, endTime, successful, detailedMetrics);
+    return Objects.hash(
+        evolutionDuration,
+        typesAnalyzed,
+        functionsAnalyzed,
+        adaptersCreated,
+        validationChecks,
+        compatibilityScore,
+        memoryUsed,
+        startTime,
+        endTime,
+        successful,
+        detailedMetrics);
   }
 
   @Override
   public String toString() {
-    return "WitEvolutionMetrics{" +
-        "evolutionDuration=" + evolutionDuration +
-        ", typesAnalyzed=" + typesAnalyzed +
-        ", functionsAnalyzed=" + functionsAnalyzed +
-        ", adaptersCreated=" + adaptersCreated +
-        ", validationChecks=" + validationChecks +
-        ", compatibilityScore=" + compatibilityScore +
-        ", successful=" + successful +
-        '}';
+    return "WitEvolutionMetrics{"
+        + "evolutionDuration="
+        + evolutionDuration
+        + ", typesAnalyzed="
+        + typesAnalyzed
+        + ", functionsAnalyzed="
+        + functionsAnalyzed
+        + ", adaptersCreated="
+        + adaptersCreated
+        + ", validationChecks="
+        + validationChecks
+        + ", compatibilityScore="
+        + compatibilityScore
+        + ", successful="
+        + successful
+        + '}';
   }
 
-  /**
-   * Builder for WitEvolutionMetrics.
-   */
+  /** Builder for WitEvolutionMetrics. */
   public static final class Builder {
     private Duration evolutionDuration = Duration.ZERO;
     private int typesAnalyzed = 0;

@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.serialization;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -37,9 +36,9 @@ import java.util.logging.Logger;
 /**
  * Content-addressed caching system for serialized WebAssembly modules.
  *
- * <p>This cache provides multi-level storage with memory, disk, and distributed tiers using
- * SHA-256 content addressing for integrity and deduplication. Features include automatic
- * eviction, performance monitoring, and cache warming strategies.
+ * <p>This cache provides multi-level storage with memory, disk, and distributed tiers using SHA-256
+ * content addressing for integrity and deduplication. Features include automatic eviction,
+ * performance monitoring, and cache warming strategies.
  *
  * @since 1.0.0
  */
@@ -90,11 +89,14 @@ public final class ModuleSerializationCache implements AutoCloseable {
     }
 
     // Start background maintenance
-    this.maintenanceExecutor = Executors.newScheduledThreadPool(1, r -> {
-      final Thread t = new Thread(r, "module-cache-maintenance");
-      t.setDaemon(true);
-      return t;
-    });
+    this.maintenanceExecutor =
+        Executors.newScheduledThreadPool(
+            1,
+            r -> {
+              final Thread t = new Thread(r, "module-cache-maintenance");
+              t.setDaemon(true);
+              return t;
+            });
 
     scheduleMaintenanceTasks();
     LOGGER.info("Module serialization cache initialized with configuration: " + config);
@@ -136,7 +138,8 @@ public final class ModuleSerializationCache implements AutoCloseable {
       }
     }
 
-    LOGGER.fine("Stored serialized module with hash: " + contentHash + ", size: " + moduleData.length);
+    LOGGER.fine(
+        "Stored serialized module with hash: " + contentHash + ", size: " + moduleData.length);
     return contentHash;
   }
 
@@ -283,9 +286,7 @@ public final class ModuleSerializationCache implements AutoCloseable {
     return removed;
   }
 
-  /**
-   * Clears all cached modules.
-   */
+  /** Clears all cached modules. */
   public void clear() {
     ensureNotClosed();
 
@@ -296,14 +297,15 @@ public final class ModuleSerializationCache implements AutoCloseable {
     if (diskCacheDirectory != null) {
       try {
         Files.walk(diskCacheDirectory)
-             .filter(Files::isRegularFile)
-             .forEach(file -> {
-               try {
-                 Files.delete(file);
-               } catch (IOException e) {
-                 LOGGER.warning("Failed to delete cache file: " + file + " - " + e.getMessage());
-               }
-             });
+            .filter(Files::isRegularFile)
+            .forEach(
+                file -> {
+                  try {
+                    Files.delete(file);
+                  } catch (IOException e) {
+                    LOGGER.warning("Failed to delete cache file: " + file + " - " + e.getMessage());
+                  }
+                });
       } catch (IOException e) {
         LOGGER.warning("Failed to clear disk cache: " + e.getMessage());
       }
@@ -340,8 +342,7 @@ public final class ModuleSerializationCache implements AutoCloseable {
         hitRatio,
         memoryCache.size(),
         calculateDiskCacheSize(),
-        calculateMemoryCacheSize()
-    );
+        calculateMemoryCacheSize());
   }
 
   /**
@@ -350,26 +351,29 @@ public final class ModuleSerializationCache implements AutoCloseable {
    * @param modules map of content hash to module data
    * @param metadata map of content hash to metadata
    */
-  public void warmCache(final Map<String, byte[]> modules, final Map<String, SerializedModuleMetadata> metadata) {
+  public void warmCache(
+      final Map<String, byte[]> modules, final Map<String, SerializedModuleMetadata> metadata) {
     Objects.requireNonNull(modules, "Modules cannot be null");
     Objects.requireNonNull(metadata, "Metadata cannot be null");
     ensureNotClosed();
 
     LOGGER.info("Warming cache with " + modules.size() + " modules");
 
-    modules.entrySet().parallelStream().forEach(entry -> {
-      final String hash = entry.getKey();
-      final byte[] data = entry.getValue();
-      final SerializedModuleMetadata meta = metadata.get(hash);
+    modules.entrySet().parallelStream()
+        .forEach(
+            entry -> {
+              final String hash = entry.getKey();
+              final byte[] data = entry.getValue();
+              final SerializedModuleMetadata meta = metadata.get(hash);
 
-      if (meta != null) {
-        try {
-          store(data, meta);
-        } catch (IOException e) {
-          LOGGER.warning("Failed to warm cache entry " + hash + ": " + e.getMessage());
-        }
-      }
-    });
+              if (meta != null) {
+                try {
+                  store(data, meta);
+                } catch (IOException e) {
+                  LOGGER.warning("Failed to warm cache entry " + hash + ": " + e.getMessage());
+                }
+              }
+            });
 
     LOGGER.info("Cache warming completed");
   }
@@ -396,7 +400,8 @@ public final class ModuleSerializationCache implements AutoCloseable {
    * @param entry the cache entry
    * @throws IOException if storage fails
    */
-  private void storeInDiskCache(final String contentHash, final CacheEntry entry) throws IOException {
+  private void storeInDiskCache(final String contentHash, final CacheEntry entry)
+      throws IOException {
     final Path cacheFile = getCacheFilePath(contentHash);
     final Path metadataFile = getCacheMetadataPath(contentHash);
 
@@ -452,9 +457,7 @@ public final class ModuleSerializationCache implements AutoCloseable {
     }
   }
 
-  /**
-   * Evicts the least recently used entry from memory cache.
-   */
+  /** Evicts the least recently used entry from memory cache. */
   private void evictLeastRecentlyUsed() {
     String oldestKey = null;
     Instant oldestAccess = Instant.now();
@@ -539,15 +542,16 @@ public final class ModuleSerializationCache implements AutoCloseable {
 
     try {
       return Files.walk(diskCacheDirectory)
-                  .filter(Files::isRegularFile)
-                  .mapToLong(file -> {
-                    try {
-                      return Files.size(file);
-                    } catch (IOException e) {
-                      return 0;
-                    }
-                  })
-                  .sum();
+          .filter(Files::isRegularFile)
+          .mapToLong(
+              file -> {
+                try {
+                  return Files.size(file);
+                } catch (IOException e) {
+                  return 0;
+                }
+              })
+          .sum();
     } catch (IOException e) {
       LOGGER.warning("Failed to calculate disk cache size: " + e.getMessage());
       return 0;
@@ -561,8 +565,8 @@ public final class ModuleSerializationCache implements AutoCloseable {
    */
   private long calculateMemoryCacheSize() {
     return memoryCache.values().stream()
-                     .mapToLong(entry -> entry.getModuleData().length + 1024) // Add overhead estimate
-                     .sum();
+        .mapToLong(entry -> entry.getModuleData().length + 1024) // Add overhead estimate
+        .sum();
   }
 
   /**
@@ -578,8 +582,7 @@ public final class ModuleSerializationCache implements AutoCloseable {
         metadata.getFormat().getIdentifier(),
         metadata.getSerializedSize(),
         metadata.getSha256Hash(),
-        metadata.getSerializationTimestamp().toString()
-    );
+        metadata.getSerializationTimestamp().toString());
   }
 
   /**
@@ -599,22 +602,16 @@ public final class ModuleSerializationCache implements AutoCloseable {
         .build();
   }
 
-  /**
-   * Schedules background maintenance tasks.
-   */
+  /** Schedules background maintenance tasks. */
   private void scheduleMaintenanceTasks() {
     // Cleanup expired entries
-    maintenanceExecutor.scheduleAtFixedRate(this::cleanupExpiredEntries,
-        5, 5, TimeUnit.MINUTES);
+    maintenanceExecutor.scheduleAtFixedRate(this::cleanupExpiredEntries, 5, 5, TimeUnit.MINUTES);
 
     // Log statistics periodically
-    maintenanceExecutor.scheduleAtFixedRate(this::logStatistics,
-        1, 1, TimeUnit.HOURS);
+    maintenanceExecutor.scheduleAtFixedRate(this::logStatistics, 1, 1, TimeUnit.HOURS);
   }
 
-  /**
-   * Cleans up expired cache entries.
-   */
+  /** Cleans up expired cache entries. */
   private void cleanupExpiredEntries() {
     if (closed) {
       return;
@@ -623,29 +620,32 @@ public final class ModuleSerializationCache implements AutoCloseable {
     try {
       // Cleanup memory cache
       final Instant memoryExpiry = Instant.now().minus(config.getMemoryCacheTtl());
-      memoryCache.entrySet().removeIf(entry ->
-          entry.getValue().getCreationTime().isBefore(memoryExpiry));
+      memoryCache
+          .entrySet()
+          .removeIf(entry -> entry.getValue().getCreationTime().isBefore(memoryExpiry));
 
       // Cleanup disk cache
       if (diskCacheDirectory != null && config.getDiskCacheTtl() != null) {
         final Instant diskExpiry = Instant.now().minus(config.getDiskCacheTtl());
 
         Files.walk(diskCacheDirectory)
-             .filter(Files::isRegularFile)
-             .filter(file -> {
-               try {
-                 return Files.getLastModifiedTime(file).toInstant().isBefore(diskExpiry);
-               } catch (IOException e) {
-                 return false;
-               }
-             })
-             .forEach(file -> {
-               try {
-                 Files.delete(file);
-               } catch (IOException e) {
-                 LOGGER.fine("Failed to delete expired cache file: " + file);
-               }
-             });
+            .filter(Files::isRegularFile)
+            .filter(
+                file -> {
+                  try {
+                    return Files.getLastModifiedTime(file).toInstant().isBefore(diskExpiry);
+                  } catch (IOException e) {
+                    return false;
+                  }
+                })
+            .forEach(
+                file -> {
+                  try {
+                    Files.delete(file);
+                  } catch (IOException e) {
+                    LOGGER.fine("Failed to delete expired cache file: " + file);
+                  }
+                });
       }
 
     } catch (Exception e) {
@@ -653,9 +653,7 @@ public final class ModuleSerializationCache implements AutoCloseable {
     }
   }
 
-  /**
-   * Logs cache statistics.
-   */
+  /** Logs cache statistics. */
   private void logStatistics() {
     if (closed) {
       return;
@@ -711,17 +709,24 @@ public final class ModuleSerializationCache implements AutoCloseable {
     }
   }
 
-  /**
-   * Cache entry containing module data and metadata.
-   */
+  /** Cache entry containing module data and metadata. */
   public static final class CacheEntry {
     private final byte[] moduleData;
     private final SerializedModuleMetadata metadata;
     private final Instant creationTime;
     private volatile Instant lastAccessTime;
 
-    public CacheEntry(final byte[] moduleData, final SerializedModuleMetadata metadata,
-                     final Instant creationTime) {
+    /**
+     * Creates a new cache entry.
+     *
+     * @param moduleData the serialized module data
+     * @param metadata the module metadata
+     * @param creationTime the time when the entry was created
+     */
+    public CacheEntry(
+        final byte[] moduleData,
+        final SerializedModuleMetadata metadata,
+        final Instant creationTime) {
       this.moduleData = Objects.requireNonNull(moduleData, "Module data cannot be null").clone();
       this.metadata = Objects.requireNonNull(metadata, "Metadata cannot be null");
       this.creationTime = Objects.requireNonNull(creationTime, "Creation time cannot be null");
@@ -748,6 +753,12 @@ public final class ModuleSerializationCache implements AutoCloseable {
       lastAccessTime = Instant.now();
     }
 
+    /**
+     * Checks if this cache entry has expired based on the given TTL.
+     *
+     * @param ttl the time-to-live duration, null means never expires
+     * @return true if the entry has expired, false otherwise
+     */
     public boolean isExpired(final Duration ttl) {
       if (ttl == null) {
         return false;
@@ -756,15 +767,21 @@ public final class ModuleSerializationCache implements AutoCloseable {
     }
   }
 
-  /**
-   * Interface for distributed cache connectors.
-   */
+  /** Interface for distributed cache connectors. */
   public interface DistributedCacheConnector extends AutoCloseable {
     boolean isAvailable();
+
     void store(String key, CacheEntry entry) throws IOException;
+
     Optional<CacheEntry> retrieve(String key) throws IOException;
+
     boolean contains(String key) throws IOException;
+
     boolean remove(String key) throws IOException;
+
     void clear() throws IOException;
+
+    @Override
+    void close() throws IOException;
   }
 }

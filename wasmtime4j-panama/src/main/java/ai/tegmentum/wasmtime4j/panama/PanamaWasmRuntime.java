@@ -363,13 +363,14 @@ public final class PanamaWasmRuntime implements WasmRuntime {
             resourceManager.allocate(MemoryLayouts.C_SIZE_T);
 
         // Call native deserialization
-        int result = nativeFunctions.serializerDeserialize(
-            serializerPtr,
-            enginePtr,
-            serializedBytesSegment.getSegment(),
-            bytes.length,
-            resultBufferPtr.getSegment(),
-            resultSizePtr.getSegment());
+        int result =
+            nativeFunctions.serializerDeserialize(
+                serializerPtr,
+                enginePtr,
+                serializedBytesSegment.getSegment(),
+                bytes.length,
+                resultBufferPtr.getSegment(),
+                resultSizePtr.getSegment());
 
         if (result != 0) {
           throw new WasmException("Module deserialization failed with error code: " + result);
@@ -377,11 +378,14 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
         // Extract result
         java.lang.foreign.MemorySegment resultBuffer =
-            (java.lang.foreign.MemorySegment) MemoryLayouts.C_POINTER.varHandle().get(resultBufferPtr.getSegment(), 0);
+            (java.lang.foreign.MemorySegment)
+                MemoryLayouts.C_POINTER.varHandle().get(resultBufferPtr.getSegment(), 0);
         long resultSize =
             (Long) MemoryLayouts.C_SIZE_T.varHandle().get(resultSizePtr.getSegment(), 0);
 
-        if (resultBuffer == null || resultBuffer.equals(java.lang.foreign.MemorySegment.NULL) || resultSize == 0) {
+        if (resultBuffer == null
+            || resultBuffer.equals(java.lang.foreign.MemorySegment.NULL)
+            || resultSize == 0) {
           throw new WasmException("Deserialization returned empty result");
         }
 
@@ -420,7 +424,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
    * @throws WasmException if deserialization fails
    */
   @Override
-  public Module deserializeModuleFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+  public Module deserializeModuleFile(final Engine engine, final java.nio.file.Path path)
+      throws WasmException {
     ensureNotClosed();
 
     if (engine == null) {
@@ -636,15 +641,16 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
     try (Arena tempArena = Arena.ofConfined()) {
       // Call native function to create WASI context
-      var wasiHandle = WasmtimeBindings.wasi_preview2_context_new(
-          memoryManager.getMainSegment(),
-          true,  // enable_networking
-          true,  // enable_filesystem
-          true,  // enable_process
-          32,    // max_async_operations
-          30000, // default_timeout_ms
-          true   // enable_component_model
-      );
+      var wasiHandle =
+          WasmtimeBindings.wasi_preview2_context_new(
+              memoryManager.getMainSegment(),
+              true, // enable_networking
+              true, // enable_filesystem
+              true, // enable_process
+              32, // max_async_operations
+              30000, // default_timeout_ms
+              true // enable_component_model
+              );
 
       if (wasiHandle.address() == 0) {
         throw new WasmException("Failed to create WASI context");
@@ -666,14 +672,14 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     try (Arena tempArena = Arena.ofConfined()) {
       // Cast to PanamaEngine to get native handle
       if (!(engine instanceof PanamaEngine)) {
-        throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
 
       PanamaEngine panamaEngine = (PanamaEngine) engine;
-      var linkerHandle = WasmtimeBindings.wasmtime_linker_new(
-          memoryManager.getMainSegment(),
-          panamaEngine.getNativeHandle()
-      );
+      var linkerHandle =
+          WasmtimeBindings.wasmtime_linker_new(
+              memoryManager.getMainSegment(), panamaEngine.getNativeHandle());
 
       if (linkerHandle.address() == 0) {
         throw new WasmException("Failed to create linker");
@@ -686,7 +692,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public void addWasiToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+  public void addWasiToLinker(
+      Linker<ai.tegmentum.wasmtime4j.WasiContext> linker,
+      ai.tegmentum.wasmtime4j.WasiContext context)
+      throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
     }
@@ -698,20 +707,22 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     try (Arena tempArena = Arena.ofConfined()) {
       // Cast to Panama implementations
       if (!(linker instanceof PanamaLinker)) {
-        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Linker must be a PanamaLinker instance for Panama runtime");
       }
       if (!(context instanceof PanamaWasiContextImpl)) {
-        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
       }
 
       PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
       PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
 
-      var result = WasmtimeBindings.wasmtime_linker_define_wasi(
-          memoryManager.getMainSegment(),
-          panamaLinker.getNativeHandle(),
-          panamaContext.getNativeHandle()
-      );
+      var result =
+          WasmtimeBindings.wasmtime_linker_define_wasi(
+              memoryManager.getMainSegment(),
+              panamaLinker.getNativeHandle(),
+              panamaContext.getNativeHandle());
 
       if (result != 0) {
         throw new WasmException("Failed to add WASI imports to linker");
@@ -722,7 +733,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public void addWasiPreview2ToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker, ai.tegmentum.wasmtime4j.WasiContext context) throws WasmException {
+  public void addWasiPreview2ToLinker(
+      Linker<ai.tegmentum.wasmtime4j.WasiContext> linker,
+      ai.tegmentum.wasmtime4j.WasiContext context)
+      throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
     }
@@ -734,20 +748,22 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     try (Arena tempArena = Arena.ofConfined()) {
       // Cast to Panama implementations
       if (!(linker instanceof PanamaLinker)) {
-        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Linker must be a PanamaLinker instance for Panama runtime");
       }
       if (!(context instanceof PanamaWasiContextImpl)) {
-        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "WasiContext must be a PanamaWasiContextImpl instance for Panama runtime");
       }
 
       PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
       PanamaWasiContextImpl panamaContext = (PanamaWasiContextImpl) context;
 
-      var result = WasmtimeBindings.wasi_preview2_add_to_linker(
-          memoryManager.getMainSegment(),
-          panamaLinker.getNativeHandle(),
-          panamaContext.getNativeHandle()
-      );
+      var result =
+          WasmtimeBindings.wasi_preview2_add_to_linker(
+              memoryManager.getMainSegment(),
+              panamaLinker.getNativeHandle(),
+              panamaContext.getNativeHandle());
 
       if (result != 0) {
         throw new WasmException("Failed to add WASI Preview 2 imports to linker");
@@ -758,7 +774,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker) throws WasmException {
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker)
+      throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
     }
@@ -767,15 +784,15 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     try (Arena tempArena = Arena.ofConfined()) {
       // Cast to Panama implementation
       if (!(linker instanceof PanamaLinker)) {
-        throw new IllegalArgumentException("Linker must be a PanamaLinker instance for Panama runtime");
+        throw new IllegalArgumentException(
+            "Linker must be a PanamaLinker instance for Panama runtime");
       }
 
       PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
 
-      var result = WasmtimeBindings.wasmtime_linker_define_component_model(
-          memoryManager.getMainSegment(),
-          panamaLinker.getNativeHandle()
-      );
+      var result =
+          WasmtimeBindings.wasmtime_linker_define_component_model(
+              memoryManager.getMainSegment(), panamaLinker.getNativeHandle());
 
       if (result != 0) {
         throw new WasmException("Failed to add Component Model imports to linker");

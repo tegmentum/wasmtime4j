@@ -9,8 +9,8 @@ import java.util.Set;
 /**
  * Analysis of function call relationships and execution patterns.
  *
- * <p>Provides insights into how functions call each other, execution paths,
- * and potential optimization opportunities based on call graph structure.
+ * <p>Provides insights into how functions call each other, execution paths, and potential
+ * optimization opportunities based on call graph structure.
  *
  * @since 1.0.0
  */
@@ -24,13 +24,14 @@ public final class CallGraphAnalysis {
   private final Duration analysisTime;
   private final CallGraphMetrics metrics;
 
-  private CallGraphAnalysis(final Map<String, FunctionNode> functions,
-                            final List<CallEdge> callEdges,
-                            final Set<String> entryPoints,
-                            final Set<String> leafFunctions,
-                            final int maxCallDepth,
-                            final Duration analysisTime,
-                            final CallGraphMetrics metrics) {
+  private CallGraphAnalysis(
+      final Map<String, FunctionNode> functions,
+      final List<CallEdge> callEdges,
+      final Set<String> entryPoints,
+      final Set<String> leafFunctions,
+      final int maxCallDepth,
+      final Duration analysisTime,
+      final CallGraphMetrics metrics) {
     this.functions = Map.copyOf(functions);
     this.callEdges = List.copyOf(callEdges);
     this.entryPoints = Set.copyOf(entryPoints);
@@ -160,9 +161,8 @@ public final class CallGraphAnalysis {
     return findCallPath(from, to, Set.of());
   }
 
-  private java.util.Optional<List<String>> findCallPath(final String from,
-                                                        final String to,
-                                                        final Set<String> visited) {
+  private java.util.Optional<List<String>> findCallPath(
+      final String from, final String to, final Set<String> visited) {
     if (from.equals(to)) {
       return java.util.Optional.of(List.of(from));
     }
@@ -187,9 +187,7 @@ public final class CallGraphAnalysis {
     return java.util.Optional.empty();
   }
 
-  /**
-   * Builder for call graph analysis.
-   */
+  /** Builder for call graph analysis. */
   public static final class Builder {
     private Map<String, FunctionNode> functions = Map.of();
     private List<CallEdge> callEdges = List.of();
@@ -235,14 +233,12 @@ public final class CallGraphAnalysis {
     }
 
     public CallGraphAnalysis build() {
-      return new CallGraphAnalysis(functions, callEdges, entryPoints, leafFunctions,
-                                   maxCallDepth, analysisTime, metrics);
+      return new CallGraphAnalysis(
+          functions, callEdges, entryPoints, leafFunctions, maxCallDepth, analysisTime, metrics);
     }
   }
 
-  /**
-   * Represents a function in the call graph.
-   */
+  /** Represents a function in the call graph. */
   public static final class FunctionNode {
     private final String name;
     private final long callCount;
@@ -251,12 +247,23 @@ public final class CallGraphAnalysis {
     private final int fanIn;
     private final int fanOut;
 
-    public FunctionNode(final String name,
-                        final long callCount,
-                        final Duration totalTime,
-                        final Duration exclusiveTime,
-                        final int fanIn,
-                        final int fanOut) {
+    /**
+     * Creates a new function node in the call graph.
+     *
+     * @param name function name
+     * @param callCount number of times this function was called
+     * @param totalTime total time spent in this function (including callees)
+     * @param exclusiveTime time spent exclusively in this function
+     * @param fanIn number of functions calling this function
+     * @param fanOut number of functions this function calls
+     */
+    public FunctionNode(
+        final String name,
+        final long callCount,
+        final Duration totalTime,
+        final Duration exclusiveTime,
+        final int fanIn,
+        final int fanOut) {
       this.name = Objects.requireNonNull(name);
       this.callCount = callCount;
       this.totalTime = Objects.requireNonNull(totalTime);
@@ -265,43 +272,75 @@ public final class CallGraphAnalysis {
       this.fanOut = fanOut;
     }
 
-    public String getName() { return name; }
-    public long getCallCount() { return callCount; }
-    public Duration getTotalTime() { return totalTime; }
-    public Duration getExclusiveTime() { return exclusiveTime; }
-    public int getFanIn() { return fanIn; }
-    public int getFanOut() { return fanOut; }
+    public String getName() {
+      return name;
+    }
+
+    public long getCallCount() {
+      return callCount;
+    }
+
+    public Duration getTotalTime() {
+      return totalTime;
+    }
+
+    public Duration getExclusiveTime() {
+      return exclusiveTime;
+    }
+
+    public int getFanIn() {
+      return fanIn;
+    }
+
+    public int getFanOut() {
+      return fanOut;
+    }
 
     @Override
     public String toString() {
-      return String.format("FunctionNode{name='%s', calls=%d, fanIn=%d, fanOut=%d}",
-          name, callCount, fanIn, fanOut);
+      return String.format(
+          "FunctionNode{name='%s', calls=%d, fanIn=%d, fanOut=%d}", name, callCount, fanIn, fanOut);
     }
   }
 
-  /**
-   * Represents a call edge in the graph.
-   */
+  /** Represents a call edge in the graph. */
   public static final class CallEdge {
     private final String caller;
     private final String callee;
     private final long callCount;
     private final Duration totalTime;
 
-    public CallEdge(final String caller,
-                    final String callee,
-                    final long callCount,
-                    final Duration totalTime) {
+    /**
+     * Creates a new call edge in the call graph.
+     *
+     * @param caller name of the calling function
+     * @param callee name of the called function
+     * @param callCount number of calls from caller to callee
+     * @param totalTime total time spent in these calls
+     */
+    public CallEdge(
+        final String caller, final String callee, final long callCount, final Duration totalTime) {
       this.caller = Objects.requireNonNull(caller);
       this.callee = Objects.requireNonNull(callee);
       this.callCount = callCount;
       this.totalTime = Objects.requireNonNull(totalTime);
     }
 
-    public String getCaller() { return caller; }
-    public String getCallee() { return callee; }
-    public long getCallCount() { return callCount; }
-    public Duration getTotalTime() { return totalTime; }
+    public String getCaller() {
+      return caller;
+    }
+
+    public String getCallee() {
+      return callee;
+    }
+
+    public long getCallCount() {
+      return callCount;
+    }
+
+    public Duration getTotalTime() {
+      return totalTime;
+    }
 
     @Override
     public String toString() {
@@ -309,9 +348,7 @@ public final class CallGraphAnalysis {
     }
   }
 
-  /**
-   * Metrics for the call graph.
-   */
+  /** Metrics for the call graph. */
   public static final class CallGraphMetrics {
     private final int totalFunctions;
     private final int totalCallSites;
@@ -319,11 +356,21 @@ public final class CallGraphAnalysis {
     private final int connectedComponents;
     private final double averageFanOut;
 
-    public CallGraphMetrics(final int totalFunctions,
-                            final int totalCallSites,
-                            final int recursiveFunctions,
-                            final int connectedComponents,
-                            final double averageFanOut) {
+    /**
+     * Creates new call graph metrics.
+     *
+     * @param totalFunctions total number of functions in the graph
+     * @param totalCallSites total number of call sites
+     * @param recursiveFunctions number of recursive functions
+     * @param connectedComponents number of connected components
+     * @param averageFanOut average fan-out across all functions
+     */
+    public CallGraphMetrics(
+        final int totalFunctions,
+        final int totalCallSites,
+        final int recursiveFunctions,
+        final int connectedComponents,
+        final double averageFanOut) {
       this.totalFunctions = totalFunctions;
       this.totalCallSites = totalCallSites;
       this.recursiveFunctions = recursiveFunctions;
@@ -331,22 +378,38 @@ public final class CallGraphAnalysis {
       this.averageFanOut = averageFanOut;
     }
 
-    public int getTotalFunctions() { return totalFunctions; }
-    public int getTotalCallSites() { return totalCallSites; }
-    public int getRecursiveFunctions() { return recursiveFunctions; }
-    public int getConnectedComponents() { return connectedComponents; }
-    public double getAverageFanOut() { return averageFanOut; }
+    public int getTotalFunctions() {
+      return totalFunctions;
+    }
+
+    public int getTotalCallSites() {
+      return totalCallSites;
+    }
+
+    public int getRecursiveFunctions() {
+      return recursiveFunctions;
+    }
+
+    public int getConnectedComponents() {
+      return connectedComponents;
+    }
+
+    public double getAverageFanOut() {
+      return averageFanOut;
+    }
 
     @Override
     public String toString() {
-      return String.format("CallGraphMetrics{functions=%d, callSites=%d, recursive=%d, components=%d}",
+      return String.format(
+          "CallGraphMetrics{functions=%d, callSites=%d, recursive=%d, components=%d}",
           totalFunctions, totalCallSites, recursiveFunctions, connectedComponents);
     }
   }
 
   @Override
   public String toString() {
-    return String.format("CallGraphAnalysis{functions=%d, edges=%d, entryPoints=%d, maxDepth=%d}",
+    return String.format(
+        "CallGraphAnalysis{functions=%d, edges=%d, entryPoints=%d, maxDepth=%d}",
         functions.size(), callEdges.size(), entryPoints.size(), maxCallDepth);
   }
 }

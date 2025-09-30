@@ -84,7 +84,7 @@ public final class StructInstance implements GcObject {
 
   @Override
   public WasmValue toWasmValue() {
-    return WasmValue.externref(this);
+    return WasmValue.externRef(this);
   }
 
   /**

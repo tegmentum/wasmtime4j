@@ -1,15 +1,14 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Handle for manual control over streaming WebAssembly instantiation.
  *
- * <p>StreamingInstanceHandle provides fine-grained control over the instantiation process,
- * allowing applications to prioritize specific functions, control memory allocation, and monitor
- * progress in real-time.
+ * <p>StreamingInstanceHandle provides fine-grained control over the instantiation process, allowing
+ * applications to prioritize specific functions, control memory allocation, and monitor progress in
+ * real-time.
  *
  * @since 1.0.0
  */

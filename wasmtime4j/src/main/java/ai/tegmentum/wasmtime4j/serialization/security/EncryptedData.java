@@ -59,8 +59,12 @@ public final class EncryptedData {
    * @param keyId the key identifier used for encryption
    * @throws IllegalArgumentException if required parameters are null
    */
-  public EncryptedData(final byte[] ciphertext, final byte[] iv, final String algorithm,
-                      final byte[] authTag, final String keyId) {
+  public EncryptedData(
+      final byte[] ciphertext,
+      final byte[] iv,
+      final String algorithm,
+      final byte[] authTag,
+      final String keyId) {
     this.ciphertext = Objects.requireNonNull(ciphertext, "Ciphertext cannot be null").clone();
     this.iv = Objects.requireNonNull(iv, "IV cannot be null").clone();
     this.algorithm = Objects.requireNonNull(algorithm, "Algorithm cannot be null");
@@ -144,27 +148,45 @@ public final class EncryptedData {
   /**
    * Creates a serialized representation of this encrypted data.
    *
-   * <p>The serialized format contains all necessary information for decryption
-   * in a portable binary format.
+   * <p>The serialized format contains all necessary information for decryption in a portable binary
+   * format.
    *
    * @return the serialized encrypted data
    */
   public byte[] serialize() {
     // Calculate total size needed
     final byte[] algorithmBytes = algorithm.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    final byte[] keyIdBytes = keyId != null ?
-        keyId.getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
-    final byte[] timestampBytes = encryptionTimestamp.toString()
-        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    final byte[] keyIdBytes =
+        keyId != null ? keyId.getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+    final byte[] timestampBytes =
+        encryptionTimestamp.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
-    final int totalSize = 4 + // version
-                         4 + algorithmBytes.length + algorithmBytes.length + // algorithm
-                         4 + iv.length + iv.length + // IV
-                         4 + ciphertext.length + ciphertext.length + // ciphertext
-                         4 + (authTag != null ? authTag.length : 0) +
-                         (authTag != null ? authTag.length : 0) + // auth tag
-                         4 + keyIdBytes.length + keyIdBytes.length + // key ID
-                         4 + timestampBytes.length + timestampBytes.length; // timestamp
+    final int totalSize =
+        4
+            + // version
+            4
+            + algorithmBytes.length
+            + algorithmBytes.length
+            + // algorithm
+            4
+            + iv.length
+            + iv.length
+            + // IV
+            4
+            + ciphertext.length
+            + ciphertext.length
+            + // ciphertext
+            4
+            + (authTag != null ? authTag.length : 0)
+            + (authTag != null ? authTag.length : 0)
+            + // auth tag
+            4
+            + keyIdBytes.length
+            + keyIdBytes.length
+            + // key ID
+            4
+            + timestampBytes.length
+            + timestampBytes.length; // timestamp
 
     final java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(totalSize);
 
@@ -309,8 +331,8 @@ public final class EncryptedData {
   /**
    * Securely clears the encrypted data from memory.
    *
-   * <p>This method overwrites the internal arrays with zeros to prevent
-   * sensitive data from remaining in memory longer than necessary.
+   * <p>This method overwrites the internal arrays with zeros to prevent sensitive data from
+   * remaining in memory longer than necessary.
    */
   public void clear() {
     Arrays.fill(ciphertext, (byte) 0);
@@ -323,7 +345,8 @@ public final class EncryptedData {
   @Override
   public String toString() {
     return String.format(
-        "EncryptedData{algorithm='%s', size=%d bytes, iv=%d bytes, authenticated=%s, keyId='%s', timestamp=%s}",
+        "EncryptedData{algorithm='%s', size=%d bytes, iv=%d bytes, authenticated=%s, keyId='%s',"
+            + " timestamp=%s}",
         algorithm,
         ciphertext.length,
         iv.length,
@@ -334,15 +357,19 @@ public final class EncryptedData {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
 
     final EncryptedData other = (EncryptedData) obj;
-    return Arrays.equals(ciphertext, other.ciphertext) &&
-           Arrays.equals(iv, other.iv) &&
-           Objects.equals(algorithm, other.algorithm) &&
-           Arrays.equals(authTag, other.authTag) &&
-           Objects.equals(keyId, other.keyId);
+    return Arrays.equals(ciphertext, other.ciphertext)
+        && Arrays.equals(iv, other.iv)
+        && Objects.equals(algorithm, other.algorithm)
+        && Arrays.equals(authTag, other.authTag)
+        && Objects.equals(keyId, other.keyId);
   }
 
   @Override
@@ -353,15 +380,5 @@ public final class EncryptedData {
         algorithm,
         Arrays.hashCode(authTag),
         keyId);
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      // Ensure sensitive data is cleared when object is garbage collected
-      clear();
-    } finally {
-      super.finalize();
-    }
   }
 }

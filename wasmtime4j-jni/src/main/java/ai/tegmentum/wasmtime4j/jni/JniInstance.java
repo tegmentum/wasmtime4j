@@ -4,6 +4,8 @@ import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.InstanceState;
+import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -14,6 +16,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.Collections;
@@ -21,9 +24,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import ai.tegmentum.wasmtime4j.InstanceState;
-import ai.tegmentum.wasmtime4j.InstanceStatistics;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 
 /**
  * JNI implementation of the Instance interface.
@@ -567,8 +567,8 @@ public final class JniInstance extends JniResource implements Instance {
           0, // activeTableElements - would need tracking
           0, // activeGlobals - would need tracking
           0, // fuelConsumed - would need tracking
-          0  // epochTicks - would need tracking
-      );
+          0 // epochTicks - would need tracking
+          );
     } catch (final RuntimeException e) {
       throw new WasmException("Failed to get instance statistics", e);
     }
@@ -749,7 +749,8 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public void setImports(final java.util.Map<String, Object> imports) throws WasmException {
-    throw new UnsupportedOperationException("Setting imports is not supported for instantiated instances");
+    throw new UnsupportedOperationException(
+        "Setting imports is not supported for instantiated instances");
   }
 
   /**
@@ -774,13 +775,20 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static InstanceState convertIntToInstanceState(final int stateValue) {
     switch (stateValue) {
-      case 0: return InstanceState.CREATING;
-      case 1: return InstanceState.CREATED;
-      case 2: return InstanceState.RUNNING;
-      case 3: return InstanceState.SUSPENDED;
-      case 4: return InstanceState.ERROR;
-      case 5: return InstanceState.DISPOSED;
-      case 6: return InstanceState.DESTROYING;
+      case 0:
+        return InstanceState.CREATING;
+      case 1:
+        return InstanceState.CREATED;
+      case 2:
+        return InstanceState.RUNNING;
+      case 3:
+        return InstanceState.SUSPENDED;
+      case 4:
+        return InstanceState.ERROR;
+      case 5:
+        return InstanceState.DISPOSED;
+      case 6:
+        return InstanceState.DESTROYING;
       default:
         LOGGER.warning("Unknown instance state value: " + stateValue);
         return InstanceState.ERROR;
@@ -889,7 +897,8 @@ public final class JniInstance extends JniResource implements Instance {
    * @param params array of 32-bit integer parameters
    * @return the 32-bit integer result
    */
-  private static native int nativeCallI32Function(long instanceHandle, String functionName, int[] params);
+  private static native int nativeCallI32Function(
+      long instanceHandle, String functionName, int[] params);
 
   /**
    * Calls a 32-bit integer function with no parameters.

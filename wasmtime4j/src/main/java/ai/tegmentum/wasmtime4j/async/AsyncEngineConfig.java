@@ -7,8 +7,8 @@ import java.util.concurrent.ForkJoinPool;
 /**
  * Configuration options for asynchronous WebAssembly engine operations.
  *
- * <p>This class provides settings for controlling async compilation behavior,
- * thread pool configuration, and resource limits for parallel operations.
+ * <p>This class provides settings for controlling async compilation behavior, thread pool
+ * configuration, and resource limits for parallel operations.
  *
  * @since 1.0.0
  */

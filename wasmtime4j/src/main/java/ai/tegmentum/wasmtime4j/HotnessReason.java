@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Reasons why a function was identified as hot during analysis.
  *
- * <p>HotnessReason provides context about how and why a function was classified as hot,
- * which can be useful for understanding optimization decisions and debugging performance issues.
+ * <p>HotnessReason provides context about how and why a function was classified as hot, which can
+ * be useful for understanding optimization decisions and debugging performance issues.
  *
  * @since 1.0.0
  */

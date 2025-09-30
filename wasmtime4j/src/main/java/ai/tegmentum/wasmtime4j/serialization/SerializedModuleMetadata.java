@@ -333,9 +333,9 @@ public final class SerializedModuleMetadata {
    */
   private boolean isPlatformArchCompatible(final String current, final String serialized) {
     // Architecture compatibility matrix
-    return current.equals(serialized) ||
-           (current.contains("x86_64") && serialized.contains("amd64")) ||
-           (current.contains("amd64") && serialized.contains("x86_64"));
+    return current.equals(serialized)
+        || (current.contains("x86_64") && serialized.contains("amd64"))
+        || (current.contains("amd64") && serialized.contains("x86_64"));
   }
 
   /**
@@ -350,10 +350,10 @@ public final class SerializedModuleMetadata {
     final String currentLower = current.toLowerCase();
     final String serializedLower = serialized.toLowerCase();
 
-    return currentLower.equals(serializedLower) ||
-           (currentLower.contains("windows") && serializedLower.contains("windows")) ||
-           (currentLower.contains("linux") && serializedLower.contains("linux")) ||
-           (currentLower.contains("mac") && serializedLower.contains("mac"));
+    return currentLower.equals(serializedLower)
+        || (currentLower.contains("windows") && serializedLower.contains("windows"))
+        || (currentLower.contains("linux") && serializedLower.contains("linux"))
+        || (currentLower.contains("mac") && serializedLower.contains("mac"));
   }
 
   /**
@@ -373,8 +373,8 @@ public final class SerializedModuleMetadata {
   @Override
   public String toString() {
     return String.format(
-        "SerializedModuleMetadata{format=%s, size=%d bytes, compression=%.2fx, " +
-        "imports=%d, exports=%d, timestamp=%s}",
+        "SerializedModuleMetadata{format=%s, size=%d bytes, compression=%.2fx, "
+            + "imports=%d, exports=%d, timestamp=%s}",
         format.getIdentifier(),
         serializedSize,
         compressionRatio,
@@ -383,9 +383,7 @@ public final class SerializedModuleMetadata {
         serializationTimestamp);
   }
 
-  /**
-   * Builder for creating SerializedModuleMetadata instances.
-   */
+  /** Builder for creating SerializedModuleMetadata instances. */
   public static final class Builder {
     // Required fields
     private String formatVersion = "1.0";
@@ -454,24 +452,59 @@ public final class SerializedModuleMetadata {
       return this;
     }
 
+    /**
+     * Sets encryption information.
+     *
+     * @param encrypted whether the module is encrypted
+     * @param algorithm encryption algorithm used
+     * @return this builder
+     */
     public Builder setEncrypted(final boolean encrypted, final String algorithm) {
       this.isEncrypted = encrypted;
       this.encryptionAlgorithm = algorithm;
       return this;
     }
 
+    /**
+     * Sets the module name.
+     *
+     * @param name the module name
+     * @return this builder
+     */
     public Builder setModuleName(final String name) {
       this.moduleName = name;
       return this;
     }
 
+    /**
+     * Sets the module version.
+     *
+     * @param version the module version
+     * @return this builder
+     */
     public Builder setModuleVersion(final String version) {
       this.moduleVersion = version;
       return this;
     }
 
-    public Builder setCounts(final int imports, final int exports, final int functions,
-                           final int globals, final int memories, final int tables) {
+    /**
+     * Sets entity counts for the module.
+     *
+     * @param imports number of imports
+     * @param exports number of exports
+     * @param functions number of functions
+     * @param globals number of globals
+     * @param memories number of memories
+     * @param tables number of tables
+     * @return this builder
+     */
+    public Builder setCounts(
+        final int imports,
+        final int exports,
+        final int functions,
+        final int globals,
+        final int memories,
+        final int tables) {
       this.importCount = requireNonNegative(imports, "Import count cannot be negative");
       this.exportCount = requireNonNegative(exports, "Export count cannot be negative");
       this.functionCount = requireNonNegative(functions, "Function count cannot be negative");
@@ -486,38 +519,82 @@ public final class SerializedModuleMetadata {
       return this;
     }
 
+    /**
+     * Sets the compression ratio achieved.
+     *
+     * @param ratio compression ratio (must be positive)
+     * @return this builder
+     */
     public Builder setCompressionRatio(final double ratio) {
       this.compressionRatio = requirePositive(ratio, "Compression ratio must be positive");
       return this;
     }
 
+    /**
+     * Sets performance metrics for serialization.
+     *
+     * @param metrics serialization performance metrics
+     * @return this builder
+     */
     public Builder setPerformanceMetrics(final SerializationPerformanceMetrics metrics) {
       this.performanceMetrics = metrics;
       return this;
     }
 
+    /**
+     * Sets the Wasmtime version used.
+     *
+     * @param version Wasmtime version
+     * @return this builder
+     */
     public Builder setWasmtimeVersion(final String version) {
       this.wasmtimeVersion = version;
       return this;
     }
 
+    /**
+     * Sets the Java version used.
+     *
+     * @param version Java version
+     * @return this builder
+     */
     public Builder setJavaVersion(final String version) {
       this.javaVersion = version;
       return this;
     }
 
+    /**
+     * Sets platform information.
+     *
+     * @param arch platform architecture
+     * @param os operating system
+     * @return this builder
+     */
     public Builder setPlatformInfo(final String arch, final String os) {
       this.platformArch = arch;
       this.platformOs = os;
       return this;
     }
 
+    /**
+     * Adds custom metadata to the serialized module.
+     *
+     * @param key metadata key
+     * @param value metadata value
+     * @return this builder
+     */
     public Builder addCustomMetadata(final String key, final String value) {
       Objects.requireNonNull(key, "Metadata key cannot be null");
       this.customMetadata.put(key, value);
       return this;
     }
 
+    /**
+     * Sets custom metadata, replacing any existing metadata.
+     *
+     * @param metadata metadata map to set
+     * @return this builder
+     */
     public Builder setCustomMetadata(final Map<String, String> metadata) {
       this.customMetadata.clear();
       if (metadata != null) {
@@ -526,13 +603,27 @@ public final class SerializedModuleMetadata {
       return this;
     }
 
-    public Builder setDebugInfo(final boolean sourceMaps, final boolean debugSymbols, final boolean nameSection) {
+    /**
+     * Sets debug information flags.
+     *
+     * @param sourceMaps whether source maps are present
+     * @param debugSymbols whether debug symbols are present
+     * @param nameSection whether name section is present
+     * @return this builder
+     */
+    public Builder setDebugInfo(
+        final boolean sourceMaps, final boolean debugSymbols, final boolean nameSection) {
       this.hasSourceMaps = sourceMaps;
       this.hasDebugSymbols = debugSymbols;
       this.hasNameSection = nameSection;
       return this;
     }
 
+    /**
+     * Builds the serialized module metadata.
+     *
+     * @return configured serialized module metadata
+     */
     public SerializedModuleMetadata build() {
       // Validation
       if (originalSize > 0 && serializedSize > 0) {

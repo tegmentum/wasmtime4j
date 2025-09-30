@@ -8,10 +8,11 @@ import java.util.logging.Level;
  * Configuration for WebAssembly diagnostic and logging behavior.
  *
  * <p>This class provides centralized control over diagnostic features including error logging,
- * performance monitoring, and debug output. Configuration can be modified at runtime and
- * affects all error loggers and diagnostic tools.
+ * performance monitoring, and debug output. Configuration can be modified at runtime and affects
+ * all error loggers and diagnostic tools.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * DiagnosticConfiguration config = DiagnosticConfiguration.getInstance();
  * config.setGlobalLogLevel(Level.FINE);
@@ -306,9 +307,7 @@ public final class DiagnosticConfiguration {
     return size > largeModuleThreshold.get();
   }
 
-  /**
-   * Resets all configuration to default values.
-   */
+  /** Resets all configuration to default values. */
   public void resetToDefaults() {
     performanceMonitoringEnabled.set(false);
     detailedStackTracesEnabled.set(true);
@@ -346,7 +345,6 @@ public final class DiagnosticConfiguration {
         performanceLogLevel.get(),
         slowCompilationThreshold.get(),
         slowRuntimeThreshold.get(),
-        largeModuleThreshold.get()
-    );
+        largeModuleThreshold.get());
   }
 }

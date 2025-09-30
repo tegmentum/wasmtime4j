@@ -173,7 +173,7 @@ public final class ErrorMapper {
         return mapIoError(errorMessage, cause);
 
       case INVALID_PARAMETER_ERROR:
-        return new IllegalArgumentException("Invalid parameter: " + errorMessage, cause);
+        return new WasmException("Invalid parameter: " + errorMessage, cause);
 
       case CONCURRENCY_ERROR:
         return new WasmException("Concurrency error: " + errorMessage, cause);

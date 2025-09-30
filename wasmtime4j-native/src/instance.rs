@@ -102,7 +102,7 @@ pub struct ExportBinding {
 }
 
 /// Parameter value for WebAssembly function calls
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum WasmValue {
     /// 32-bit integer
     I32(i32),
@@ -1307,12 +1307,12 @@ mod tests {
     fn test_export_function_call() {
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
-        
-        let wat = "(module (func (export \"add\") (param i32 i32) (result i32) 
+
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32)
                      local.get 0 local.get 1 i32.add))";
         let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
-        
-        let instance = Instance::new_without_imports(&mut store, &module)
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
         
         // Call the function with type checking
@@ -1383,12 +1383,12 @@ mod tests {
     fn test_type_validation() {
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
-        
-        let wat = "(module (func (export \"add\") (param i32 i32) (result i32) 
+
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32)
                      local.get 0 local.get 1 i32.add))";
         let module = Module::compile_wat(&engine, wat).expect("Failed to create module");
-        
-        let instance = Instance::new_without_imports(&mut store, &module)
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
         
         // Test parameter count mismatch
@@ -1427,7 +1427,7 @@ mod tests {
 //
 
 use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Instance core functions for interface implementations

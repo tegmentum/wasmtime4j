@@ -123,8 +123,8 @@ public final class StreamingConfig {
   /**
    * Checks if incremental caching is enabled.
    *
-   * <p>Incremental caching stores partial compilation results to accelerate subsequent
-   * compilations of similar modules.
+   * <p>Incremental caching stores partial compilation results to accelerate subsequent compilations
+   * of similar modules.
    *
    * @return true if incremental caching is enabled
    */

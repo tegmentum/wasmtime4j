@@ -671,6 +671,7 @@ public final class Memory64Compatibility {
   // Placeholder classes for the various helper types
   // These would be fully implemented in a complete system
 
+  /** Represents memory usage patterns for analysis. */
   public static class MemoryUsagePattern {
     public double getAverageOperationSize() {
       return 1024.0;
@@ -701,11 +702,13 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Provides memory addressing mode recommendations. */
   public static class MemoryRecommendation {
     public static Builder builder() {
       return new Builder();
     }
 
+    /** Builder for creating memory recommendations. */
     public static class Builder {
       public Builder recommendedMode(MemoryAddressingMode mode) {
         return this;
@@ -729,17 +732,20 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Defines memory addressing requirements. */
   public static class MemoryRequirements {
     public boolean requires64BitAddressing() {
       return false;
     }
   }
 
+  /** Represents a plan for migrating to 64-bit memory. */
   public static class MigrationPlan {
     public static Builder builder() {
       return new Builder();
     }
 
+    /** Builder for creating migration plans. */
     public static class Builder {
       public Builder addStep(String step) {
         return this;
@@ -767,6 +773,7 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Enumeration of migration effort levels. */
   public enum MigrationEffort {
     NONE,
     LOW,
@@ -774,6 +781,7 @@ public final class Memory64Compatibility {
     HIGH
   }
 
+  /** Provides runtime information for memory compatibility. */
   public static class RuntimeInfo {
     public boolean supports64BitMemory() {
       return true;
@@ -796,11 +804,13 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Result of compatibility validation checks. */
   public static class CompatibilityValidationResult {
     public static Builder builder() {
       return new Builder();
     }
 
+    /** Builder for creating validation results. */
     public static class Builder {
       private boolean hasErrors = false;
 
@@ -839,11 +849,13 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Provides optimization suggestions for memory usage. */
   public static class OptimizationSuggestions {
     public static Builder builder() {
       return new Builder();
     }
 
+    /** Builder for creating optimization suggestions. */
     public static class Builder {
       public Builder addSuggestion(String suggestion) {
         return this;
@@ -863,6 +875,7 @@ public final class Memory64Compatibility {
     }
   }
 
+  /** Enumeration of optimization impact levels. */
   public enum OptimizationImpact {
     LOW,
     MEDIUM,

@@ -7,8 +7,9 @@ import java.nio.file.Path;
 /**
  * Configuration for WASI standard I/O streams (stdin, stdout, stderr).
  *
- * <p>This class provides various options for configuring how WebAssembly modules
- * access standard input, output, and error streams. Streams can be:
+ * <p>This class provides various options for configuring how WebAssembly modules access standard
+ * input, output, and error streams. Streams can be:
+ *
  * <ul>
  *   <li>Inherited from the host process
  *   <li>Connected to Java streams
@@ -17,6 +18,7 @@ import java.nio.file.Path;
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * // Inherit stdout and stderr from host, null stdin
  * WasiStdioConfig stdout = WasiStdioConfig.inherit();
@@ -42,8 +44,8 @@ public final class WasiStdioConfig {
   /**
    * Creates a configuration that inherits the stream from the host process.
    *
-   * <p>This is typically used for stdout and stderr to display output in the
-   * host console, or for stdin to read from the host console.
+   * <p>This is typically used for stdout and stderr to display output in the host console, or for
+   * stdin to read from the host console.
    *
    * @return a new configuration for inherited stream
    */
@@ -86,8 +88,8 @@ public final class WasiStdioConfig {
   /**
    * Creates a configuration that redirects to a file.
    *
-   * <p>For input streams, the file will be opened for reading.
-   * For output streams, the file will be created or truncated for writing.
+   * <p>For input streams, the file will be opened for reading. For output streams, the file will be
+   * created or truncated for writing.
    *
    * @param filePath the path to the file to use
    * @return a new configuration for file redirection
@@ -103,8 +105,8 @@ public final class WasiStdioConfig {
   /**
    * Creates a configuration that redirects to a file, appending if it exists.
    *
-   * <p>This is only valid for output streams. The file will be opened in append
-   * mode, preserving existing content.
+   * <p>This is only valid for output streams. The file will be opened in append mode, preserving
+   * existing content.
    *
    * @param filePath the path to the file to append to
    * @return a new configuration for file appending
@@ -120,8 +122,8 @@ public final class WasiStdioConfig {
   /**
    * Creates a configuration that nulls the stream.
    *
-   * <p>For input streams, this provides an empty stream (immediate EOF).
-   * For output streams, this discards all output.
+   * <p>For input streams, this provides an empty stream (immediate EOF). For output streams, this
+   * discards all output.
    *
    * @return a new configuration for nulled stream
    */
@@ -142,11 +144,12 @@ public final class WasiStdioConfig {
    * Gets the target object for this configuration.
    *
    * <p>The type of object depends on the configuration type:
+   *
    * <ul>
-   *   <li>INHERIT, NULL: null</li>
-   *   <li>INPUT_STREAM: InputStream</li>
-   *   <li>OUTPUT_STREAM: OutputStream</li>
-   *   <li>FILE, FILE_APPEND: Path</li>
+   *   <li>INHERIT, NULL: null
+   *   <li>INPUT_STREAM: InputStream
+   *   <li>OUTPUT_STREAM: OutputStream
+   *   <li>FILE, FILE_APPEND: Path
    * </ul>
    *
    * @return the target object, or null for inherit/null types
@@ -199,21 +202,19 @@ public final class WasiStdioConfig {
     return "WasiStdioConfig{type=" + type + ", target=" + target + "}";
   }
 
-  /**
-   * Types of WASI stdio configurations.
-   */
+  /** Types of WASI stdio configurations. */
   public enum Type {
-    /** Inherit the stream from the host process */
+    /** Inherit the stream from the host process. */
     INHERIT,
-    /** Connect to a Java InputStream */
+    /** Connect to a Java InputStream. */
     INPUT_STREAM,
-    /** Connect to a Java OutputStream */
+    /** Connect to a Java OutputStream. */
     OUTPUT_STREAM,
-    /** Redirect to a file (create/truncate) */
+    /** Redirect to a file (create/truncate). */
     FILE,
-    /** Redirect to a file (append) */
+    /** Redirect to a file (append). */
     FILE_APPEND,
-    /** Null the stream (empty input, discard output) */
+    /** Null the stream (empty input, discard output). */
     NULL
   }
 }

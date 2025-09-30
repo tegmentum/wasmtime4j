@@ -11,8 +11,8 @@ import java.util.concurrent.Executor;
 /**
  * Execution context for asynchronous WebAssembly function calls.
  *
- * <p>Provides contextual information and control mechanisms for async function execution,
- * including timeout handling, execution metadata, and resource management.
+ * <p>Provides contextual information and control mechanisms for async function execution, including
+ * timeout handling, execution metadata, and resource management.
  *
  * @since 1.0.0
  */
@@ -37,10 +37,11 @@ public final class AsyncExecutionContext {
    * @param executor the executor to use for async operations
    * @param executionId unique identifier for this execution
    */
-  public AsyncExecutionContext(final String functionName,
-                               final Optional<Duration> timeout,
-                               final Executor executor,
-                               final String executionId) {
+  public AsyncExecutionContext(
+      final String functionName,
+      final Optional<Duration> timeout,
+      final Executor executor,
+      final String executionId) {
     this.functionName = Objects.requireNonNull(functionName);
     this.startTime = Instant.now();
     this.timeout = Objects.requireNonNull(timeout);
@@ -141,16 +142,12 @@ public final class AsyncExecutionContext {
     return Optional.ofNullable(error);
   }
 
-  /**
-   * Cancels the execution.
-   */
+  /** Cancels the execution. */
   public void cancel() {
     this.cancelled = true;
   }
 
-  /**
-   * Marks the execution as completed.
-   */
+  /** Marks the execution as completed. */
   public void markCompleted() {
     this.completed = true;
   }
@@ -222,7 +219,9 @@ public final class AsyncExecutionContext {
 
   @Override
   public String toString() {
-    return String.format("AsyncExecutionContext{functionName='%s', executionId='%s', elapsed=%s, cancelled=%s, completed=%s}",
+    return String.format(
+        "AsyncExecutionContext{functionName='%s', executionId='%s', elapsed=%s, cancelled=%s,"
+            + " completed=%s}",
         functionName, executionId, getElapsedTime(), cancelled, completed);
   }
 }

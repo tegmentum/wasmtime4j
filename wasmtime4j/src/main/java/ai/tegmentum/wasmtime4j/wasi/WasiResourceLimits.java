@@ -33,7 +33,8 @@ public interface WasiResourceLimits {
    *
    * @return a new WasiResourceLimitsBuilder instance
    */
-  static WasiResourceLimitsBuilder builder() {
+  static WasiResourceLimitsBuilder builder()
+      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -63,7 +64,8 @@ public interface WasiResourceLimits {
    *
    * @return default resource limits
    */
-  static WasiResourceLimits defaultLimits() {
+  static WasiResourceLimits defaultLimits()
+      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     return builder().build();
   }
 
@@ -75,7 +77,7 @@ public interface WasiResourceLimits {
    *
    * @return unlimited resource limits
    */
-  static WasiResourceLimits unlimited() {
+  static WasiResourceLimits unlimited() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     return builder().withUnlimited(true).build();
   }
 

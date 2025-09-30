@@ -969,8 +969,8 @@ public final class JniModule extends JniResource implements Module {
   /**
    * Serializes this compiled module using the advanced serialization framework.
    *
-   * <p>This method provides comprehensive serialization with optimization, caching,
-   * security features, and performance monitoring.
+   * <p>This method provides comprehensive serialization with optimization, caching, security
+   * features, and performance monitoring.
    *
    * @param format the serialization format (null for auto-selection)
    * @param options the serialization options (null for defaults)
@@ -993,9 +993,11 @@ public final class JniModule extends JniResource implements Module {
       // Determine optimal format and options
       final long moduleSize = getSize();
       final ai.tegmentum.wasmtime4j.serialization.ModuleSerializationFormat targetFormat =
-          format != null ? format :
-          ai.tegmentum.wasmtime4j.serialization.ModuleSerializationFormat.getOptimalFormat(
-              ai.tegmentum.wasmtime4j.serialization.ModuleSerializationFormat.SerializationUseCase.DISK_CACHE);
+          format != null
+              ? format
+              : ai.tegmentum.wasmtime4j.serialization.ModuleSerializationFormat.getOptimalFormat(
+                  ai.tegmentum.wasmtime4j.serialization.ModuleSerializationFormat
+                      .SerializationUseCase.DISK_CACHE);
 
       final ai.tegmentum.wasmtime4j.serialization.SerializationOptions targetOptions =
           options != null ? options : optimizer.optimize(moduleSize, targetFormat);
@@ -1018,8 +1020,8 @@ public final class JniModule extends JniResource implements Module {
   /**
    * Gets raw module data for serialization engine integration.
    *
-   * <p>This method extracts the raw compiled module bytes from the native representation
-   * for use by the advanced serialization engine.
+   * <p>This method extracts the raw compiled module bytes from the native representation for use by
+   * the advanced serialization engine.
    *
    * @return the raw module data
    * @throws JniException if extraction fails
@@ -1039,8 +1041,8 @@ public final class JniModule extends JniResource implements Module {
   /**
    * Deserializes a module from previously serialized bytes using basic format.
    *
-   * <p>This static method creates a module from bytes produced by {@link #serialize()}.
-   * For advanced deserialization with metadata, use {@link #deserializeAdvanced}.
+   * <p>This static method creates a module from bytes produced by {@link #serialize()}. For
+   * advanced deserialization with metadata, use {@link #deserializeAdvanced}.
    *
    * @param engine the engine to associate with the deserialized module
    * @param serializedData the serialized module bytes
@@ -1075,9 +1077,10 @@ public final class JniModule extends JniResource implements Module {
    * @return deserialized module instance
    * @throws JniException if deserialization fails
    */
-  public static JniModule deserializeAdvanced(final JniEngine engine,
-                                             final byte[] serializedData,
-                                             final ai.tegmentum.wasmtime4j.serialization.SerializedModuleMetadata metadata) {
+  public static JniModule deserializeAdvanced(
+      final JniEngine engine,
+      final byte[] serializedData,
+      final ai.tegmentum.wasmtime4j.serialization.SerializedModuleMetadata metadata) {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonEmpty(serializedData, "serializedData");
     JniValidation.requireNonNull(metadata, "metadata");
@@ -1089,7 +1092,8 @@ public final class JniModule extends JniResource implements Module {
           new ai.tegmentum.wasmtime4j.serialization.ModuleSerializationEngine();
 
       // Deserialize using advanced framework
-      final ai.tegmentum.wasmtime4j.Module module = serializationEngine.deserialize(serializedData, metadata);
+      final ai.tegmentum.wasmtime4j.Module module =
+          serializationEngine.deserialize(serializedData, metadata);
 
       // Since we need to return JniModule, we need to handle the integration
       // For now, fallback to basic deserialization with validation
@@ -1123,8 +1127,9 @@ public final class JniModule extends JniResource implements Module {
    * @return the raw module data
    * @throws JniException if extraction fails
    */
-  private static byte[] extractRawModuleData(final byte[] serializedData,
-                                           final ai.tegmentum.wasmtime4j.serialization.SerializedModuleMetadata metadata)
+  private static byte[] extractRawModuleData(
+      final byte[] serializedData,
+      final ai.tegmentum.wasmtime4j.serialization.SerializedModuleMetadata metadata)
       throws JniException {
     // This is a simplified extraction - in a full implementation, this would
     // work with the ModuleSerializationEngine to extract the raw data
@@ -1173,7 +1178,8 @@ public final class JniModule extends JniResource implements Module {
    * @throws IllegalArgumentException if engine or watText is null
    * @since 1.0.0
    */
-  public static JniModule compileWat(final JniEngine engine, final String watText) throws WasmException {
+  public static JniModule compileWat(final JniEngine engine, final String watText)
+      throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonEmpty(watText, "watText");
     NativeMethodBindings.ensureInitialized();
@@ -1474,14 +1480,18 @@ public final class JniModule extends JniResource implements Module {
   }
 
   // Placeholder factory methods - these would need proper implementations
-  private ModuleImport createModuleImport(final String moduleName, final String name,
-                                          final WasmType type, final String signature, final String description) {
+  private ModuleImport createModuleImport(
+      final String moduleName,
+      final String name,
+      final WasmType type,
+      final String signature,
+      final String description) {
     // This is a placeholder - ModuleImport would need to be properly implemented
     return new ModuleImport(moduleName, name, type, signature, description);
   }
 
-  private ModuleExport createModuleExport(final String name, final WasmType type,
-                                          final String signature, final String description) {
+  private ModuleExport createModuleExport(
+      final String name, final WasmType type, final String signature, final String description) {
     // This is a placeholder - ModuleExport would need to be properly implemented
     return new ModuleExport(name, type, signature, description);
   }
@@ -1490,7 +1500,9 @@ public final class JniModule extends JniResource implements Module {
     // This is a placeholder - FuncType would need proper parsing
     return new FuncType() {
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.FUNCTION; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.FUNCTION;
+      }
     };
   }
 
@@ -1498,7 +1510,9 @@ public final class JniModule extends JniResource implements Module {
     // This is a placeholder - MemoryType would need proper parsing
     return new MemoryType() {
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.MEMORY; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.MEMORY;
+      }
     };
   }
 
@@ -1506,7 +1520,9 @@ public final class JniModule extends JniResource implements Module {
     // This is a placeholder - TableType would need proper parsing
     return new TableType() {
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.TABLE; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.TABLE;
+      }
     };
   }
 
@@ -1514,7 +1530,9 @@ public final class JniModule extends JniResource implements Module {
     // This is a placeholder - GlobalType would need proper parsing
     return new GlobalType() {
       @Override
-      public WasmTypeKind getKind() { return WasmTypeKind.GLOBAL; }
+      public WasmTypeKind getKind() {
+        return WasmTypeKind.GLOBAL;
+      }
     };
   }
 

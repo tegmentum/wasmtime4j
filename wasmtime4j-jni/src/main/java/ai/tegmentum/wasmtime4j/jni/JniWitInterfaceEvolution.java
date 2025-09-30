@@ -1,20 +1,13 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitEvolutionMetrics;
-import ai.tegmentum.wasmtime4j.WitEvolutionOperation;
-import ai.tegmentum.wasmtime4j.WitEvolutionResult;
-import ai.tegmentum.wasmtime4j.WitEvolutionValidation;
-import ai.tegmentum.wasmtime4j.WitInterfaceBindings;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.WitInterfaceEvolution;
 import ai.tegmentum.wasmtime4j.WitTypeAdapter;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,22 +28,22 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   private static final Logger LOGGER = Logger.getLogger(JniWitInterfaceEvolution.class.getName());
 
-  /** Native handle for the evolution manager */
+  /** Native handle for the evolution manager. */
   private volatile long evolutionManagerHandle;
 
-  /** Registered interface versions */
+  /** Registered interface versions. */
   private final Map<String, List<WitInterfaceVersion>> versionRegistry = new ConcurrentHashMap<>();
 
-  /** Type adapter registry */
+  /** Type adapter registry. */
   private final Map<String, WitTypeAdapter> adapterRegistry = new ConcurrentHashMap<>();
 
-  /** Evolution metrics */
+  /** Evolution metrics. */
   private final WitEvolutionMetrics.Builder metricsBuilder = WitEvolutionMetrics.builder();
 
-  /** Lock for thread-safe operations */
+  /** Lock for thread-safe operations. */
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-  /** Native library loader */
+  /** Native library loader. */
   private static final JniLibraryLoader LIBRARY_LOADER = JniLibraryLoader.getInstance();
 
   static {
@@ -69,7 +62,8 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
       if (evolutionManagerHandle == 0) {
         throw new WasmRuntimeException("Failed to create native evolution manager");
       }
-      LOGGER.fine("Created JNI WIT interface evolution manager with handle: " + evolutionManagerHandle);
+      LOGGER.fine(
+          "Created JNI WIT interface evolution manager with handle: " + evolutionManagerHandle);
     } catch (final Exception e) {
       throw new WasmRuntimeException("Failed to initialize JNI WIT interface evolution", e);
     }
@@ -77,8 +71,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   @Override
   public InterfaceEvolutionAnalysis analyzeEvolution(
-      final WitInterfaceVersion fromVersion,
-      final WitInterfaceVersion toVersion) {
+      final WitInterfaceVersion fromVersion, final WitInterfaceVersion toVersion) {
     Objects.requireNonNull(fromVersion, "fromVersion must not be null");
     Objects.requireNonNull(toVersion, "toVersion must not be null");
 
@@ -86,12 +79,13 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long analysisHandle = nativeAnalyzeEvolution(
-          evolutionManagerHandle,
-          fromVersion.getVersion(),
-          toVersion.getVersion(),
-          serializeInterface(fromVersion.getInterface()),
-          serializeInterface(toVersion.getInterface()));
+      final long analysisHandle =
+          nativeAnalyzeEvolution(
+              evolutionManagerHandle,
+              fromVersion.getVersion(),
+              toVersion.getVersion(),
+              serializeInterface(fromVersion.getInterface()),
+              serializeInterface(toVersion.getInterface()));
 
       if (analysisHandle == 0) {
         throw new WasmRuntimeException("Failed to analyze interface evolution");
@@ -109,8 +103,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   @Override
   public BackwardCompatibilityResult checkBackwardCompatibility(
-      final WitInterfaceVersion olderVersion,
-      final WitInterfaceVersion newerVersion) {
+      final WitInterfaceVersion olderVersion, final WitInterfaceVersion newerVersion) {
     Objects.requireNonNull(olderVersion, "olderVersion must not be null");
     Objects.requireNonNull(newerVersion, "newerVersion must not be null");
 
@@ -118,12 +111,13 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long compatibilityHandle = nativeCheckBackwardCompatibility(
-          evolutionManagerHandle,
-          olderVersion.getVersion(),
-          newerVersion.getVersion(),
-          serializeInterface(olderVersion.getInterface()),
-          serializeInterface(newerVersion.getInterface()));
+      final long compatibilityHandle =
+          nativeCheckBackwardCompatibility(
+              evolutionManagerHandle,
+              olderVersion.getVersion(),
+              newerVersion.getVersion(),
+              serializeInterface(olderVersion.getInterface()),
+              serializeInterface(newerVersion.getInterface()));
 
       if (compatibilityHandle == 0) {
         throw new WasmRuntimeException("Failed to check backward compatibility");
@@ -141,8 +135,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   @Override
   public ForwardCompatibilityResult checkForwardCompatibility(
-      final WitInterfaceVersion newerVersion,
-      final WitInterfaceVersion olderVersion) {
+      final WitInterfaceVersion newerVersion, final WitInterfaceVersion olderVersion) {
     Objects.requireNonNull(newerVersion, "newerVersion must not be null");
     Objects.requireNonNull(olderVersion, "olderVersion must not be null");
 
@@ -150,12 +143,13 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long compatibilityHandle = nativeCheckForwardCompatibility(
-          evolutionManagerHandle,
-          newerVersion.getVersion(),
-          olderVersion.getVersion(),
-          serializeInterface(newerVersion.getInterface()),
-          serializeInterface(olderVersion.getInterface()));
+      final long compatibilityHandle =
+          nativeCheckForwardCompatibility(
+              evolutionManagerHandle,
+              newerVersion.getVersion(),
+              olderVersion.getVersion(),
+              serializeInterface(newerVersion.getInterface()),
+              serializeInterface(olderVersion.getInterface()));
 
       if (compatibilityHandle == 0) {
         throw new WasmRuntimeException("Failed to check forward compatibility");
@@ -184,13 +178,14 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long adapterHandle = nativeCreateAdapter(
-          evolutionManagerHandle,
-          sourceVersion.getVersion(),
-          targetVersion.getVersion(),
-          serializeInterface(sourceVersion.getInterface()),
-          serializeInterface(targetVersion.getInterface()),
-          serializeAdaptationConfig(adaptationConfig));
+      final long adapterHandle =
+          nativeCreateAdapter(
+              evolutionManagerHandle,
+              sourceVersion.getVersion(),
+              targetVersion.getVersion(),
+              serializeInterface(sourceVersion.getInterface()),
+              serializeInterface(targetVersion.getInterface()),
+              serializeAdaptationConfig(adaptationConfig));
 
       if (adapterHandle == 0) {
         throw new WasmRuntimeException("Failed to create interface adapter");
@@ -215,9 +210,9 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long validationHandle = nativeValidateEvolutionStrategy(
-          evolutionManagerHandle,
-          serializeEvolutionStrategy(strategy));
+      final long validationHandle =
+          nativeValidateEvolutionStrategy(
+              evolutionManagerHandle, serializeEvolutionStrategy(strategy));
 
       if (validationHandle == 0) {
         throw new WasmRuntimeException("Failed to validate evolution strategy");
@@ -246,11 +241,12 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long planHandle = nativeCreateMigrationPlan(
-          evolutionManagerHandle,
-          serializeInterface(currentInterface),
-          serializeInterface(targetInterface),
-          serializeMigrationConfig(migrationConfig));
+      final long planHandle =
+          nativeCreateMigrationPlan(
+              evolutionManagerHandle,
+              serializeInterface(currentInterface),
+              serializeInterface(targetInterface),
+              serializeMigrationConfig(migrationConfig));
 
       if (planHandle == 0) {
         throw new WasmRuntimeException("Failed to create migration plan");
@@ -267,8 +263,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
   }
 
   @Override
-  public MigrationExecutionResult executeMigration(
-      final InterfaceMigrationPlan migrationPlan) {
+  public MigrationExecutionResult executeMigration(final InterfaceMigrationPlan migrationPlan) {
     Objects.requireNonNull(migrationPlan, "migrationPlan must not be null");
 
     lock.writeLock().lock();
@@ -280,9 +275,8 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
       }
 
       final JniInterfaceMigrationPlan jniPlan = (JniInterfaceMigrationPlan) migrationPlan;
-      final long executionHandle = nativeExecuteMigration(
-          evolutionManagerHandle,
-          jniPlan.getHandle());
+      final long executionHandle =
+          nativeExecuteMigration(evolutionManagerHandle, jniPlan.getHandle());
 
       if (executionHandle == 0) {
         throw new WasmRuntimeException("Failed to execute migration");
@@ -309,18 +303,18 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final long historyHandle = nativeGetEvolutionHistory(
-          evolutionManagerHandle,
-          interfaceName);
+      final long historyHandle = nativeGetEvolutionHistory(evolutionManagerHandle, interfaceName);
 
       if (historyHandle == 0) {
-        throw new WasmRuntimeException("Failed to get evolution history for interface: " + interfaceName);
+        throw new WasmRuntimeException(
+            "Failed to get evolution history for interface: " + interfaceName);
       }
 
       return new JniInterfaceEvolutionHistory(historyHandle);
 
     } catch (final Exception e) {
-      LOGGER.log(Level.SEVERE, "Failed to get evolution history for interface: " + interfaceName, e);
+      LOGGER.log(
+          Level.SEVERE, "Failed to get evolution history for interface: " + interfaceName, e);
       throw new WasmRuntimeException("Evolution history retrieval failed", e);
     } finally {
       lock.readLock().unlock();
@@ -335,21 +329,28 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final boolean success = nativeRegisterInterfaceVersion(
-          evolutionManagerHandle,
-          interfaceVersion.getInterfaceName(),
-          interfaceVersion.getVersion(),
-          serializeInterface(interfaceVersion.getInterface()));
+      final boolean success =
+          nativeRegisterInterfaceVersion(
+              evolutionManagerHandle,
+              interfaceVersion.getInterfaceName(),
+              interfaceVersion.getVersion(),
+              serializeInterface(interfaceVersion.getInterface()));
 
       if (!success) {
-        throw new WasmRuntimeException("Failed to register interface version: " + interfaceVersion.getVersion());
+        throw new WasmRuntimeException(
+            "Failed to register interface version: " + interfaceVersion.getVersion());
       }
 
       // Update local registry
-      versionRegistry.computeIfAbsent(interfaceVersion.getInterfaceName(), k -> new java.util.ArrayList<>())
+      versionRegistry
+          .computeIfAbsent(interfaceVersion.getInterfaceName(), k -> new java.util.ArrayList<>())
           .add(interfaceVersion);
 
-      LOGGER.fine("Registered interface version: " + interfaceVersion.getInterfaceName() + "@" + interfaceVersion.getVersion());
+      LOGGER.fine(
+          "Registered interface version: "
+              + interfaceVersion.getInterfaceName()
+              + "@"
+              + interfaceVersion.getVersion());
 
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to register interface version", e);
@@ -361,8 +362,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   @Override
   public void deprecateInterfaceVersion(
-      final WitInterfaceVersion interfaceVersion,
-      final DeprecationInfo deprecationInfo) {
+      final WitInterfaceVersion interfaceVersion, final DeprecationInfo deprecationInfo) {
     Objects.requireNonNull(interfaceVersion, "interfaceVersion must not be null");
     Objects.requireNonNull(deprecationInfo, "deprecationInfo must not be null");
 
@@ -370,17 +370,23 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final boolean success = nativeDeprecateInterfaceVersion(
-          evolutionManagerHandle,
-          interfaceVersion.getInterfaceName(),
-          interfaceVersion.getVersion(),
-          serializeDeprecationInfo(deprecationInfo));
+      final boolean success =
+          nativeDeprecateInterfaceVersion(
+              evolutionManagerHandle,
+              interfaceVersion.getInterfaceName(),
+              interfaceVersion.getVersion(),
+              serializeDeprecationInfo(deprecationInfo));
 
       if (!success) {
-        throw new WasmRuntimeException("Failed to deprecate interface version: " + interfaceVersion.getVersion());
+        throw new WasmRuntimeException(
+            "Failed to deprecate interface version: " + interfaceVersion.getVersion());
       }
 
-      LOGGER.info("Deprecated interface version: " + interfaceVersion.getInterfaceName() + "@" + interfaceVersion.getVersion());
+      LOGGER.info(
+          "Deprecated interface version: "
+              + interfaceVersion.getInterfaceName()
+              + "@"
+              + interfaceVersion.getVersion());
 
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to deprecate interface version", e);
@@ -401,9 +407,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final String[] versions = nativeGetInterfaceVersions(
-          evolutionManagerHandle,
-          interfaceName);
+      final String[] versions = nativeGetInterfaceVersions(evolutionManagerHandle, interfaceName);
 
       if (versions == null) {
         return List.of(); // No versions found
@@ -422,8 +426,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   @Override
   public java.util.Optional<WitInterfaceVersion> findCompatibleVersion(
-      final String interfaceName,
-      final CompatibilityRequirements requirements) {
+      final String interfaceName, final CompatibilityRequirements requirements) {
     Objects.requireNonNull(interfaceName, "interfaceName must not be null");
     Objects.requireNonNull(requirements, "requirements must not be null");
 
@@ -431,10 +434,11 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     try {
       checkNativeHandle();
 
-      final String compatibleVersion = nativeFindCompatibleVersion(
-          evolutionManagerHandle,
-          interfaceName,
-          serializeCompatibilityRequirements(requirements));
+      final String compatibleVersion =
+          nativeFindCompatibleVersion(
+              evolutionManagerHandle,
+              interfaceName,
+              serializeCompatibilityRequirements(requirements));
 
       if (compatibleVersion == null) {
         return java.util.Optional.empty();
@@ -451,9 +455,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
   }
 
-  /**
-   * Closes this evolution manager and releases native resources.
-   */
+  /** Closes this evolution manager and releases native resources. */
   public void close() {
     lock.writeLock().lock();
     try {
@@ -485,10 +487,14 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
         interfaceDefinition.getName(),
         interfaceDefinition.getVersion(),
         interfaceDefinition.getPackageName(),
-        String.join(",", interfaceDefinition.getFunctionNames().stream()
-            .map(name -> "\"" + name + "\"").toList()),
-        String.join(",", interfaceDefinition.getTypeNames().stream()
-            .map(name -> "\"" + name + "\"").toList()));
+        String.join(
+            ",",
+            interfaceDefinition.getFunctionNames().stream()
+                .map(name -> "\"" + name + "\"")
+                .toList()),
+        String.join(
+            ",",
+            interfaceDefinition.getTypeNames().stream().map(name -> "\"" + name + "\"").toList()));
   }
 
   private String serializeAdaptationConfig(final AdaptationConfig config) {
@@ -510,8 +516,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     // Serialize deprecation information
     return String.format(
         "{\"deprecationDate\":\"%s\",\"reason\":\"%s\"}",
-        info.getDeprecationDate().toString(),
-        info.getReason());
+        info.getDeprecationDate().toString(), info.getReason());
   }
 
   private String serializeCompatibilityRequirements(final CompatibilityRequirements requirements) {
@@ -519,7 +524,8 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     return "{}"; // Simplified implementation
   }
 
-  private List<WitInterfaceVersion> convertToInterfaceVersions(final String interfaceName, final String[] versions) {
+  private List<WitInterfaceVersion> convertToInterfaceVersions(
+      final String interfaceName, final String[] versions) {
     // Convert version strings to interface version objects
     return java.util.Arrays.stream(versions)
         .map(version -> createInterfaceVersion(interfaceName, version))
@@ -528,7 +534,8 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
         .toList();
   }
 
-  private java.util.Optional<WitInterfaceVersion> createInterfaceVersion(final String interfaceName, final String version) {
+  private java.util.Optional<WitInterfaceVersion> createInterfaceVersion(
+      final String interfaceName, final String version) {
     // Create interface version from name and version string
     // This is a simplified implementation
     return java.util.Optional.empty(); // Would create actual version object
@@ -536,23 +543,37 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
   // Native method declarations
   private static native long nativeCreateEvolutionManager();
+
   private static native void nativeDestroyEvolutionManager(long handle);
 
   private static native long nativeAnalyzeEvolution(
-      long managerHandle, String fromVersion, String toVersion,
-      String fromInterface, String toInterface);
+      long managerHandle,
+      String fromVersion,
+      String toVersion,
+      String fromInterface,
+      String toInterface);
 
   private static native long nativeCheckBackwardCompatibility(
-      long managerHandle, String olderVersion, String newerVersion,
-      String olderInterface, String newerInterface);
+      long managerHandle,
+      String olderVersion,
+      String newerVersion,
+      String olderInterface,
+      String newerInterface);
 
   private static native long nativeCheckForwardCompatibility(
-      long managerHandle, String newerVersion, String olderVersion,
-      String newerInterface, String olderInterface);
+      long managerHandle,
+      String newerVersion,
+      String olderVersion,
+      String newerInterface,
+      String olderInterface);
 
   private static native long nativeCreateAdapter(
-      long managerHandle, String sourceVersion, String targetVersion,
-      String sourceInterface, String targetInterface, String adaptationConfig);
+      long managerHandle,
+      String sourceVersion,
+      String targetVersion,
+      String sourceInterface,
+      String targetInterface,
+      String adaptationConfig);
 
   private static native long nativeValidateEvolutionStrategy(
       long managerHandle, String evolutionStrategy);
@@ -570,7 +591,8 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
   private static native boolean nativeDeprecateInterfaceVersion(
       long managerHandle, String interfaceName, String version, String deprecationInfo);
 
-  private static native String[] nativeGetInterfaceVersions(long managerHandle, String interfaceName);
+  private static native String[] nativeGetInterfaceVersions(
+      long managerHandle, String interfaceName);
 
   private static native String nativeFindCompatibleVersion(
       long managerHandle, String interfaceName, String requirements);
@@ -587,28 +609,44 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     // Implementation of InterfaceEvolutionAnalysis methods would go here
     @Override
-    public WitInterfaceVersion getSourceVersion() { return null; }
+    public WitInterfaceVersion getSourceVersion() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return null; }
+    public WitInterfaceVersion getTargetVersion() {
+      return null;
+    }
 
     @Override
-    public EvolutionType getEvolutionType() { return EvolutionType.MAJOR; }
+    public EvolutionType getEvolutionType() {
+      return EvolutionType.MAJOR;
+    }
 
     @Override
-    public List<BreakingChange> getBreakingChanges() { return List.of(); }
+    public List<BreakingChange> getBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<NonBreakingChange> getNonBreakingChanges() { return List.of(); }
+    public List<NonBreakingChange> getNonBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<RequiredAdaptation> getRequiredAdaptations() { return List.of(); }
+    public List<RequiredAdaptation> getRequiredAdaptations() {
+      return List.of();
+    }
 
     @Override
-    public MigrationComplexity getMigrationComplexity() { return MigrationComplexity.SIMPLE; }
+    public MigrationComplexity getMigrationComplexity() {
+      return MigrationComplexity.SIMPLE;
+    }
 
     @Override
-    public MigrationEffort getEstimatedEffort() { return MigrationEffort.LOW; }
+    public MigrationEffort getEstimatedEffort() {
+      return MigrationEffort.LOW;
+    }
   }
 
   private static class JniBackwardCompatibilityResult implements BackwardCompatibilityResult {
@@ -619,16 +657,24 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
 
     @Override
-    public boolean isBackwardCompatible() { return true; }
+    public boolean isBackwardCompatible() {
+      return true;
+    }
 
     @Override
-    public List<CompatibilityIssue> getIssues() { return List.of(); }
+    public List<CompatibilityIssue> getIssues() {
+      return List.of();
+    }
 
     @Override
-    public CompatibilityLevel getCompatibilityLevel() { return CompatibilityLevel.FULL; }
+    public CompatibilityLevel getCompatibilityLevel() {
+      return CompatibilityLevel.FULL;
+    }
 
     @Override
-    public List<String> getSuggestions() { return List.of(); }
+    public List<String> getSuggestions() {
+      return List.of();
+    }
   }
 
   private static class JniForwardCompatibilityResult implements ForwardCompatibilityResult {
@@ -639,16 +685,24 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
 
     @Override
-    public boolean isForwardCompatible() { return true; }
+    public boolean isForwardCompatible() {
+      return true;
+    }
 
     @Override
-    public List<CompatibilityIssue> getIssues() { return List.of(); }
+    public List<CompatibilityIssue> getIssues() {
+      return List.of();
+    }
 
     @Override
-    public CompatibilityLevel getCompatibilityLevel() { return CompatibilityLevel.FULL; }
+    public CompatibilityLevel getCompatibilityLevel() {
+      return CompatibilityLevel.FULL;
+    }
 
     @Override
-    public RiskAssessment getRiskAssessment() { return null; }
+    public RiskAssessment getRiskAssessment() {
+      return null;
+    }
   }
 
   private static class JniInterfaceAdapter implements InterfaceAdapter {
@@ -656,30 +710,41 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     private final WitInterfaceVersion sourceVersion;
     private final WitInterfaceVersion targetVersion;
 
-    JniInterfaceAdapter(final long handle, final WitInterfaceVersion sourceVersion, final WitInterfaceVersion targetVersion) {
+    JniInterfaceAdapter(
+        final long handle,
+        final WitInterfaceVersion sourceVersion,
+        final WitInterfaceVersion targetVersion) {
       this.handle = handle;
       this.sourceVersion = sourceVersion;
       this.targetVersion = targetVersion;
     }
 
     @Override
-    public WitInterfaceVersion getSourceVersion() { return sourceVersion; }
+    public WitInterfaceVersion getSourceVersion() {
+      return sourceVersion;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return targetVersion; }
+    public WitInterfaceVersion getTargetVersion() {
+      return targetVersion;
+    }
 
     @Override
-    public ai.tegmentum.wasmtime4j.WasmValue[] adaptCall(final String functionName, final ai.tegmentum.wasmtime4j.WasmValue[] sourceArgs) {
+    public ai.tegmentum.wasmtime4j.WasmValue[] adaptCall(
+        final String functionName, final ai.tegmentum.wasmtime4j.WasmValue[] sourceArgs) {
       return sourceArgs; // Simplified implementation
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.WasmValue adaptReturn(final String functionName, final ai.tegmentum.wasmtime4j.WasmValue targetResult) {
+    public ai.tegmentum.wasmtime4j.WasmValue adaptReturn(
+        final String functionName, final ai.tegmentum.wasmtime4j.WasmValue targetResult) {
       return targetResult; // Simplified implementation
     }
 
     @Override
-    public AdaptationStatistics getStatistics() { return null; }
+    public AdaptationStatistics getStatistics() {
+      return null;
+    }
   }
 
   private static class JniEvolutionValidationResult implements EvolutionValidationResult {
@@ -704,25 +769,39 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
 
     @Override
-    public String getId() { return "migration-" + handle; }
+    public String getId() {
+      return "migration-" + handle;
+    }
 
     @Override
-    public WitInterfaceDefinition getSourceInterface() { return null; }
+    public WitInterfaceDefinition getSourceInterface() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceDefinition getTargetInterface() { return null; }
+    public WitInterfaceDefinition getTargetInterface() {
+      return null;
+    }
 
     @Override
-    public List<MigrationStep> getSteps() { return List.of(); }
+    public List<MigrationStep> getSteps() {
+      return List.of();
+    }
 
     @Override
-    public java.time.Duration getEstimatedDuration() { return java.time.Duration.ZERO; }
+    public java.time.Duration getEstimatedDuration() {
+      return java.time.Duration.ZERO;
+    }
 
     @Override
-    public List<MigrationRisk> getRisks() { return List.of(); }
+    public List<MigrationRisk> getRisks() {
+      return List.of();
+    }
 
     @Override
-    public List<MigrationStep> getRollbackSteps() { return List.of(); }
+    public List<MigrationStep> getRollbackSteps() {
+      return List.of();
+    }
   }
 
   private static class JniMigrationExecutionResult implements MigrationExecutionResult {
@@ -733,31 +812,49 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
 
     @Override
-    public InterfaceMigrationPlan getPlan() { return null; }
+    public InterfaceMigrationPlan getPlan() {
+      return null;
+    }
 
     @Override
-    public boolean isSuccessful() { return true; }
+    public boolean isSuccessful() {
+      return true;
+    }
 
     @Override
-    public java.time.Instant getStartTime() { return java.time.Instant.now(); }
+    public java.time.Instant getStartTime() {
+      return java.time.Instant.now();
+    }
 
     @Override
-    public java.time.Instant getEndTime() { return java.time.Instant.now(); }
+    public java.time.Instant getEndTime() {
+      return java.time.Instant.now();
+    }
 
     @Override
-    public java.time.Duration getActualDuration() { return java.time.Duration.ZERO; }
+    public java.time.Duration getActualDuration() {
+      return java.time.Duration.ZERO;
+    }
 
     @Override
-    public List<MigrationStep> getCompletedSteps() { return List.of(); }
+    public List<MigrationStep> getCompletedSteps() {
+      return List.of();
+    }
 
     @Override
-    public List<MigrationStep> getFailedSteps() { return List.of(); }
+    public List<MigrationStep> getFailedSteps() {
+      return List.of();
+    }
 
     @Override
-    public java.util.Optional<Exception> getError() { return java.util.Optional.empty(); }
+    public java.util.Optional<Exception> getError() {
+      return java.util.Optional.empty();
+    }
 
     @Override
-    public Map<String, Object> getMetrics() { return Map.of(); }
+    public Map<String, Object> getMetrics() {
+      return Map.of();
+    }
   }
 
   private static class JniInterfaceEvolutionHistory implements InterfaceEvolutionHistory {
@@ -768,24 +865,38 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
     }
 
     @Override
-    public String getInterfaceName() { return ""; }
+    public String getInterfaceName() {
+      return "";
+    }
 
     @Override
-    public List<WitInterfaceVersion> getVersionHistory() { return List.of(); }
+    public List<WitInterfaceVersion> getVersionHistory() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getMajorChanges() { return List.of(); }
+    public List<VersionChange> getMajorChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getMinorChanges() { return List.of(); }
+    public List<VersionChange> getMinorChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getPatchChanges() { return List.of(); }
+    public List<VersionChange> getPatchChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<DeprecationEvent> getDeprecationHistory() { return List.of(); }
+    public List<DeprecationEvent> getDeprecationHistory() {
+      return List.of();
+    }
 
     @Override
-    public List<CompletedMigration> getMigrationHistory() { return List.of(); }
+    public List<CompletedMigration> getMigrationHistory() {
+      return List.of();
+    }
   }
 }

@@ -163,7 +163,8 @@ public interface InstantiationProgressListener {
    * @param fieldName the field name of the import
    * @param importType the type of the import
    */
-  default void onImportResolutionStarted(String moduleName, String fieldName, ImportType importType) {
+  default void onImportResolutionStarted(
+      String moduleName, String fieldName, ImportType importType) {
     // Default implementation does nothing
   }
 
@@ -180,9 +181,7 @@ public interface InstantiationProgressListener {
     // Default implementation does nothing
   }
 
-  /**
-   * Called when the start function begins execution.
-   */
+  /** Called when the start function begins execution. */
   default void onStartFunctionExecutionStarted() {
     // Default implementation does nothing
   }
@@ -246,9 +245,7 @@ public interface InstantiationProgressListener {
     // Default implementation does nothing
   }
 
-  /**
-   * Pool event types for streaming instantiation.
-   */
+  /** Pool event types for streaming instantiation. */
   enum PoolEvent {
     /** Pool hit - requested resource was found in pool. */
     HIT,

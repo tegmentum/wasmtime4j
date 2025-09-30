@@ -47,19 +47,34 @@ class CrossPlatformErrorHandlingTest {
 
   /** Simple WebAssembly module that triggers a trap. */
   private static final byte[] TRAP_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'r', 'a', 'p', // Export name "trap"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'r',
+    'a',
+    'p', // Export name "trap"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x05, // Section size
     0x01, // 1 function body
@@ -74,36 +89,65 @@ class CrossPlatformErrorHandlingTest {
 
   /** WebAssembly module with memory for testing memory-related errors. */
   private static final byte[] MEMORY_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x05, // Memory section
     0x03, // Section size
     0x01, // 1 memory
-    0x00, 0x01, // Memory limits: minimum 1 page
+    0x00,
+    0x01, // Memory limits: minimum 1 page
     0x07, // Export section
     0x0D, // Section size
     0x01, // 1 export
-    0x0B, 'o', 'u', 't', '_', 'o', 'f', '_', 'b', 'o', 'u', 'n', 'd', 's', // Export name
-    0x00, 0x00, // Function export with index 0
+    0x0B,
+    'o',
+    'u',
+    't',
+    '_',
+    'o',
+    'f',
+    '_',
+    'b',
+    'o',
+    'u',
+    'n',
+    'd',
+    's', // Export name
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x0A, // Section size
     0x01, // 1 function body
     0x08, // Body size
     0x00, // No locals
-    0x41, (byte) 0x80, (byte) 0x80, 0x04, // i32.const 65536 (out of bounds)
-    0x28, 0x02, 0x00, // i32.load align=2 offset=0
+    0x41,
+    (byte) 0x80,
+    (byte) 0x80,
+    0x04, // i32.const 65536 (out of bounds)
+    0x28,
+    0x02,
+    0x00, // i32.load align=2 offset=0
     0x0B // End instruction
   };
 
-  /**
-   * Platform information for test context.
-   */
+  /** Platform information for test context. */
   private static class PlatformInfo {
     final String osName;
     final String osVersion;
@@ -327,16 +371,14 @@ class CrossPlatformErrorHandlingTest {
     // Verify stack trace is properly preserved across Java versions
     StackTraceElement[] stackTrace = error.getStackTrace();
     assertNotNull(stackTrace, "Stack trace should be available on " + javaVersionDesc);
-    assertTrue(
-        stackTrace.length > 0, "Stack trace should not be empty on " + javaVersionDesc);
+    assertTrue(stackTrace.length > 0, "Stack trace should not be empty on " + javaVersionDesc);
   }
 
   @Test
   @DisplayName("Architecture-specific error handling")
   void testArchitectureSpecificErrorHandling() throws WasmException {
     PlatformInfo platform = new PlatformInfo();
-    String archDescription =
-        platform.architecture + (platform.is64Bit ? " (64-bit)" : " (32-bit)");
+    String archDescription = platform.architecture + (platform.is64Bit ? " (64-bit)" : " (32-bit)");
 
     try (WasmRuntime runtime = WasmRuntimeFactory.create()) {
       Engine engine = runtime.createEngine();
@@ -494,7 +536,8 @@ class CrossPlatformErrorHandlingTest {
             });
       }
 
-      assertTrue(latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
+      assertTrue(
+          latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
       executor.shutdown();
 
       int expectedErrors = threadCount * operationsPerThread;
@@ -586,7 +629,9 @@ class CrossPlatformErrorHandlingTest {
   private RuntimeType getExpectedRuntimeType() {
     // Determine expected runtime type based on Java version
     String javaVersion = System.getProperty("java.version");
-    if (javaVersion.startsWith("1.8") || javaVersion.startsWith("11") || javaVersion.startsWith("17")) {
+    if (javaVersion.startsWith("1.8")
+        || javaVersion.startsWith("11")
+        || javaVersion.startsWith("17")) {
       return RuntimeType.JNI;
     }
     // For Java 21+ we might expect Panama, but could fall back to JNI

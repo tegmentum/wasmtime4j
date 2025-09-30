@@ -170,6 +170,14 @@ public final class ComponentValidationResult {
     private final String location;
     private final ErrorSeverity severity;
 
+    /**
+     * Creates a new validation error.
+     *
+     * @param code error code
+     * @param message error message
+     * @param location location where error occurred
+     * @param severity severity level of the error
+     */
     public ValidationError(
         final String code,
         final String message,
@@ -209,6 +217,13 @@ public final class ComponentValidationResult {
     private final String message;
     private final String location;
 
+    /**
+     * Creates a new validation warning.
+     *
+     * @param code warning code
+     * @param message warning message
+     * @param location location where warning occurred
+     */
     public ValidationWarning(final String code, final String message, final String location) {
       this.code = code;
       this.message = message;
@@ -239,6 +254,12 @@ public final class ComponentValidationResult {
     private final ComponentVersion version;
     private final long timestamp;
 
+    /**
+     * Creates a new validation context.
+     *
+     * @param componentId identifier of the component being validated
+     * @param version version of the component
+     */
     public ValidationContext(final String componentId, final ComponentVersion version) {
       this.componentId = componentId;
       this.version = version;

@@ -1,11 +1,15 @@
 package ai.tegmentum.wasmtime4j;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Tests for CustomSection functionality.
- */
+import org.junit.jupiter.api.Test;
+
+/** Tests for CustomSection functionality. */
 final class CustomSectionTest {
 
   @Test
@@ -34,17 +38,18 @@ final class CustomSectionTest {
   @Test
   void testCustomSectionDefensiveCopy() {
     final byte[] originalData = {0x01, 0x02, 0x03};
-    final CustomSection section = new CustomSection("test", originalData, CustomSectionType.UNKNOWN);
+    final CustomSection section =
+        new CustomSection("test", originalData, CustomSectionType.UNKNOWN);
 
     // Modify original data
-    originalData[0] = 0x99;
+    originalData[0] = (byte) 0x99;
 
     // Section data should not be affected
     final byte[] sectionData = section.getData();
     assertEquals(0x01, sectionData[0]);
 
     // Modify returned data
-    sectionData[1] = 0x88;
+    sectionData[1] = (byte) 0x88;
 
     // Getting data again should return unmodified copy
     final byte[] freshData = section.getData();
@@ -65,16 +70,19 @@ final class CustomSectionTest {
   void testCustomSectionInvalidArguments() {
     final byte[] data = {0x01, 0x02, 0x03};
 
-    assertThrows(IllegalArgumentException.class, () ->
-        new CustomSection(null, data, CustomSectionType.UNKNOWN));
-    assertThrows(IllegalArgumentException.class, () ->
-        new CustomSection("", data, CustomSectionType.UNKNOWN));
-    assertThrows(IllegalArgumentException.class, () ->
-        new CustomSection("  ", data, CustomSectionType.UNKNOWN));
-    assertThrows(IllegalArgumentException.class, () ->
-        new CustomSection("test", null, CustomSectionType.UNKNOWN));
-    assertThrows(IllegalArgumentException.class, () ->
-        new CustomSection("test", data, null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new CustomSection(null, data, CustomSectionType.UNKNOWN));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new CustomSection("", data, CustomSectionType.UNKNOWN));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new CustomSection("  ", data, CustomSectionType.UNKNOWN));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new CustomSection("test", null, CustomSectionType.UNKNOWN));
+    assertThrows(IllegalArgumentException.class, () -> new CustomSection("test", data, null));
   }
 
   @Test

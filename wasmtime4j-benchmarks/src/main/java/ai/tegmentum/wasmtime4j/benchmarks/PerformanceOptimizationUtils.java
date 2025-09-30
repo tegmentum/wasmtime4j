@@ -64,10 +64,12 @@ public final class PerformanceOptimizationUtils {
 
   /** Cache size limits for different operation types. */
   private static final int COMPILATION_CACHE_SIZE = 50;
+
   private static final int INSTANCE_CACHE_SIZE = 20;
 
   /** Performance metrics tracking. */
   private static final AtomicLong CACHE_HITS = new AtomicLong(0);
+
   private static final AtomicLong CACHE_MISSES = new AtomicLong(0);
   private static final AtomicLong BUFFER_POOL_HITS = new AtomicLong(0);
   private static final AtomicLong BUFFER_POOL_MISSES = new AtomicLong(0);
@@ -135,9 +137,7 @@ public final class PerformanceOptimizationUtils {
       }
     }
 
-    /**
-     * Clears the buffer pool.
-     */
+    /** Clears the buffer pool. */
     public void clear() {
       pooledBuffers.clear();
       poolSize.set(0);
@@ -150,8 +150,7 @@ public final class PerformanceOptimizationUtils {
      */
     public String getStats() {
       return String.format(
-          "BufferPool{size=%d, unique_sizes=%d}",
-          poolSize.get(), pooledBuffers.size());
+          "BufferPool{size=%d, unique_sizes=%d}", poolSize.get(), pooledBuffers.size());
     }
   }
 
@@ -215,9 +214,7 @@ public final class PerformanceOptimizationUtils {
       return value;
     }
 
-    /**
-     * Clears the cache.
-     */
+    /** Clears the cache. */
     public void clear() {
       cache.clear();
       currentSize.set(0);
@@ -240,14 +237,10 @@ public final class PerformanceOptimizationUtils {
     }
   }
 
-  /**
-   * Batch operation utilities for reducing native call overhead.
-   */
+  /** Batch operation utilities for reducing native call overhead. */
   public static final class BatchOperations {
 
-    /**
-     * Optimal batch size based on analysis of benchmark patterns.
-     */
+    /** Optimal batch size based on analysis of benchmark patterns. */
     public static final int OPTIMAL_BATCH_SIZE = 10;
 
     /**
@@ -260,8 +253,7 @@ public final class PerformanceOptimizationUtils {
      * @return combined results
      */
     public static <T, R> R executeBatched(
-        final T[] operations,
-        final java.util.function.Function<T[], R> batchProcessor) {
+        final T[] operations, final java.util.function.Function<T[], R> batchProcessor) {
       if (operations == null || operations.length == 0) {
         return null;
       }
@@ -282,9 +274,7 @@ public final class PerformanceOptimizationUtils {
     }
   }
 
-  /**
-   * GC-resistant operation patterns.
-   */
+  /** GC-resistant operation patterns. */
   public static final class GcResistantOperations {
 
     /**
@@ -350,9 +340,7 @@ public final class PerformanceOptimizationUtils {
     return INSTANCE_CACHE;
   }
 
-  /**
-   * Clears all global caches and pools.
-   */
+  /** Clears all global caches and pools. */
   public static void clearAllCaches() {
     GLOBAL_BUFFER_POOL.clear();
     COMPILATION_CACHE.clear();
@@ -374,7 +362,8 @@ public final class PerformanceOptimizationUtils {
     final long totalBufferOps = BUFFER_POOL_HITS.get() + BUFFER_POOL_MISSES.get();
 
     final double cacheHitRate = totalCacheOps > 0 ? (double) CACHE_HITS.get() / totalCacheOps : 0.0;
-    final double bufferHitRate = totalBufferOps > 0 ? (double) BUFFER_POOL_HITS.get() / totalBufferOps : 0.0;
+    final double bufferHitRate =
+        totalBufferOps > 0 ? (double) BUFFER_POOL_HITS.get() / totalBufferOps : 0.0;
 
     return String.format(
         "Performance Statistics:\n"
@@ -383,11 +372,15 @@ public final class PerformanceOptimizationUtils {
             + "  %s\n"
             + "  Compilation Cache: %d/%d entries\n"
             + "  Instance Cache: %d/%d entries",
-        totalCacheOps, cacheHitRate * 100,
-        totalBufferOps, bufferHitRate * 100,
+        totalCacheOps,
+        cacheHitRate * 100,
+        totalBufferOps,
+        bufferHitRate * 100,
         GLOBAL_BUFFER_POOL.getStats(),
-        COMPILATION_CACHE.currentSize.get(), COMPILATION_CACHE.maxSize,
-        INSTANCE_CACHE.currentSize.get(), INSTANCE_CACHE.maxSize);
+        COMPILATION_CACHE.currentSize.get(),
+        COMPILATION_CACHE.maxSize,
+        INSTANCE_CACHE.currentSize.get(),
+        INSTANCE_CACHE.maxSize);
   }
 
   /**
@@ -400,24 +393,33 @@ public final class PerformanceOptimizationUtils {
     final long totalBufferOps = BUFFER_POOL_HITS.get() + BUFFER_POOL_MISSES.get();
 
     final double cacheHitRate = totalCacheOps > 0 ? (double) CACHE_HITS.get() / totalCacheOps : 0.0;
-    final double bufferHitRate = totalBufferOps > 0 ? (double) BUFFER_POOL_HITS.get() / totalBufferOps : 0.0;
+    final double bufferHitRate =
+        totalBufferOps > 0 ? (double) BUFFER_POOL_HITS.get() / totalBufferOps : 0.0;
 
     final StringBuilder recommendations = new StringBuilder();
     recommendations.append("Performance Optimization Recommendations:\n");
 
     if (cacheHitRate < 0.5) {
-      recommendations.append("  ⚠️  Low cache hit rate (").append(String.format("%.1f%%", cacheHitRate * 100))
+      recommendations
+          .append("  ⚠️  Low cache hit rate (")
+          .append(String.format("%.1f%%", cacheHitRate * 100))
           .append(") - Consider increasing cache sizes or improving cache key patterns\n");
     } else if (cacheHitRate > 0.8) {
-      recommendations.append("  ✅ Excellent cache hit rate (").append(String.format("%.1f%%", cacheHitRate * 100))
+      recommendations
+          .append("  ✅ Excellent cache hit rate (")
+          .append(String.format("%.1f%%", cacheHitRate * 100))
           .append(")\n");
     }
 
     if (bufferHitRate < 0.3) {
-      recommendations.append("  ⚠️  Low buffer pool hit rate (").append(String.format("%.1f%%", bufferHitRate * 100))
+      recommendations
+          .append("  ⚠️  Low buffer pool hit rate (")
+          .append(String.format("%.1f%%", bufferHitRate * 100))
           .append(") - Consider using more consistent buffer sizes\n");
     } else if (bufferHitRate > 0.6) {
-      recommendations.append("  ✅ Good buffer pool hit rate (").append(String.format("%.1f%%", bufferHitRate * 100))
+      recommendations
+          .append("  ✅ Good buffer pool hit rate (")
+          .append(String.format("%.1f%%", bufferHitRate * 100))
           .append(")\n");
     }
 

@@ -3,13 +3,14 @@ package ai.tegmentum.wasmtime4j.exception;
 /**
  * Base exception for Wasmtime-specific errors.
  *
- * <p>This exception represents errors that originate from the Wasmtime
- * WebAssembly runtime, including compilation failures, execution errors,
- * and resource management issues.
+ * <p>This exception represents errors that originate from the Wasmtime WebAssembly runtime,
+ * including compilation failures, execution errors, and resource management issues.
  *
  * @since 1.0.0
  */
 public class WasmtimeException extends WasmException {
+
+  private static final long serialVersionUID = 1L;
 
   private final ErrorCode errorCode;
   private final String nativeStackTrace;
@@ -51,10 +52,11 @@ public class WasmtimeException extends WasmException {
    * @param errorCode the Wasmtime error code
    * @param nativeStackTrace the native stack trace from Wasmtime
    */
-  public WasmtimeException(final String message,
-                           final Throwable cause,
-                           final ErrorCode errorCode,
-                           final String nativeStackTrace) {
+  public WasmtimeException(
+      final String message,
+      final Throwable cause,
+      final ErrorCode errorCode,
+      final String nativeStackTrace) {
     super(message, cause);
     this.errorCode = errorCode != null ? errorCode : ErrorCode.UNKNOWN;
     this.nativeStackTrace = nativeStackTrace;
@@ -98,62 +100,60 @@ public class WasmtimeException extends WasmException {
     return sb.toString();
   }
 
-  /**
-   * Enumeration of Wasmtime error codes.
-   */
+  /** Enumeration of Wasmtime error codes. */
   public enum ErrorCode {
-    /** Unknown or unspecified error */
+    /** Unknown or unspecified error. */
     UNKNOWN,
 
-    /** Module compilation failed */
+    /** Module compilation failed. */
     COMPILATION_FAILED,
 
-    /** Module instantiation failed */
+    /** Module instantiation failed. */
     INSTANTIATION_FAILED,
 
-    /** Function call failed */
+    /** Function call failed. */
     FUNCTION_CALL_FAILED,
 
-    /** Memory access violation */
+    /** Memory access violation. */
     MEMORY_ACCESS_VIOLATION,
 
-    /** Stack overflow */
+    /** Stack overflow. */
     STACK_OVERFLOW,
 
-    /** Trap occurred during execution */
+    /** Trap occurred during execution. */
     TRAP,
 
-    /** Resource exhaustion */
+    /** Resource exhaustion. */
     RESOURCE_EXHAUSTED,
 
-    /** Invalid configuration */
+    /** Invalid configuration. */
     INVALID_CONFIGURATION,
 
-    /** Unsupported operation */
+    /** Unsupported operation. */
     UNSUPPORTED_OPERATION,
 
-    /** Native library error */
+    /** Native library error. */
     NATIVE_LIBRARY_ERROR,
 
-    /** Threading error */
+    /** Threading error. */
     THREADING_ERROR,
 
-    /** WASI error */
+    /** WASI error. */
     WASI_ERROR,
 
-    /** Validation error */
+    /** Validation error. */
     VALIDATION_ERROR,
 
-    /** Linking error */
+    /** Linking error. */
     LINKING_ERROR,
 
-    /** Fuel exhausted */
+    /** Fuel exhausted. */
     FUEL_EXHAUSTED,
 
-    /** Timeout */
+    /** Timeout. */
     TIMEOUT,
 
-    /** Interrupted */
+    /** Interrupted. */
     INTERRUPTED
   }
 }

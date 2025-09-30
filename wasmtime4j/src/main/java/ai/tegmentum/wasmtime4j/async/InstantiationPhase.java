@@ -6,8 +6,8 @@ import java.time.Instant;
 /**
  * Represents a phase in WebAssembly instance instantiation.
  *
- * <p>Each instantiation phase has a name, duration, resource usage metrics,
- * and optional details that provide insight into the instantiation process.
+ * <p>Each instantiation phase has a name, duration, resource usage metrics, and optional details
+ * that provide insight into the instantiation process.
  *
  * @since 1.0.0
  */
@@ -62,8 +62,7 @@ public final class InstantiationPhase {
    */
   public static InstantiationPhase successful(final String name, final Duration duration) {
     final Instant now = Instant.now();
-    return new InstantiationPhase(
-        name, duration, now.minus(duration), now, 0L, 0, "", true);
+    return new InstantiationPhase(name, duration, now.minus(duration), now, 0L, 0, "", true);
   }
 
   /**
@@ -241,8 +240,12 @@ public final class InstantiationPhase {
   }
 
   private String formatBytes(final long bytes) {
-    if (bytes < 1024) return bytes + "B";
-    if (bytes < 1024 * 1024) return (bytes / 1024) + "KB";
+    if (bytes < 1024) {
+      return bytes + "B";
+    }
+    if (bytes < 1024 * 1024) {
+      return (bytes / 1024) + "KB";
+    }
     return (bytes / (1024 * 1024)) + "MB";
   }
 }

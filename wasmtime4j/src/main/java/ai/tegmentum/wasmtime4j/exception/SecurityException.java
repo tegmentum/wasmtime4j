@@ -246,7 +246,9 @@ public class SecurityException extends WasmException {
   public String getSecurityViolationDescription() {
     final StringBuilder desc = new StringBuilder("Security violation");
 
-    desc.append(" [context: ").append(securityContext.name().toLowerCase().replace('_', ' ')).append("]");
+    desc.append(" [context: ")
+        .append(securityContext.name().toLowerCase().replace('_', ' '))
+        .append("]");
 
     if (violatedPolicy != null) {
       desc.append(" [policy: ").append(violatedPolicy).append("]");

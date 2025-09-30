@@ -204,8 +204,8 @@ public final class CacheConfiguration {
   @Override
   public String toString() {
     return String.format(
-        "CacheConfiguration{memory=%d entries (%.1f MB, %s TTL), " +
-        "disk=%s (%.1f GB, %s TTL), distributed=%s, maintenance=%s}",
+        "CacheConfiguration{memory=%d entries (%.1f MB, %s TTL), "
+            + "disk=%s (%.1f GB, %s TTL), distributed=%s, maintenance=%s}",
         maxMemoryEntries,
         maxMemoryUsageBytes / (1024.0 * 1024.0),
         memoryCacheTtl,
@@ -216,9 +216,7 @@ public final class CacheConfiguration {
         maintenanceInterval);
   }
 
-  /**
-   * Builder for creating CacheConfiguration instances.
-   */
+  /** Builder for creating CacheConfiguration instances. */
   public static final class Builder {
     // Default values
     private int maxMemoryEntries = 1000;
@@ -256,12 +254,24 @@ public final class CacheConfiguration {
       return this;
     }
 
+    /**
+     * Enables disk cache with specified directory.
+     *
+     * @param directory directory for disk cache
+     * @return this builder
+     */
     public Builder enableDiskCache(final Path directory) {
-      this.diskCacheDirectory = Objects.requireNonNull(directory, "Disk cache directory cannot be null");
+      this.diskCacheDirectory =
+          Objects.requireNonNull(directory, "Disk cache directory cannot be null");
       this.diskCacheEnabled = true;
       return this;
     }
 
+    /**
+     * Disables disk cache.
+     *
+     * @return this builder
+     */
     public Builder disableDiskCache() {
       this.diskCacheDirectory = null;
       this.diskCacheEnabled = false;
@@ -278,20 +288,40 @@ public final class CacheConfiguration {
       return this;
     }
 
-    public Builder enableDistributedCache(final ModuleSerializationCache.DistributedCacheConnector connector) {
-      this.distributedCacheConnector = Objects.requireNonNull(connector, "Distributed cache connector cannot be null");
+    /**
+     * Enables distributed cache with connector.
+     *
+     * @param connector distributed cache connector
+     * @return this builder
+     */
+    public Builder enableDistributedCache(
+        final ModuleSerializationCache.DistributedCacheConnector connector) {
+      this.distributedCacheConnector =
+          Objects.requireNonNull(connector, "Distributed cache connector cannot be null");
       this.distributedCacheEnabled = true;
       return this;
     }
 
+    /**
+     * Disables distributed cache.
+     *
+     * @return this builder
+     */
     public Builder disableDistributedCache() {
       this.distributedCacheConnector = null;
       this.distributedCacheEnabled = false;
       return this;
     }
 
+    /**
+     * Sets distributed cache time-to-live.
+     *
+     * @param ttl time-to-live duration
+     * @return this builder
+     */
     public Builder setDistributedCacheTtl(final Duration ttl) {
-      this.distributedCacheTtl = Objects.requireNonNull(ttl, "Distributed cache TTL cannot be null");
+      this.distributedCacheTtl =
+          Objects.requireNonNull(ttl, "Distributed cache TTL cannot be null");
       return this;
     }
 
@@ -305,8 +335,15 @@ public final class CacheConfiguration {
       return this;
     }
 
+    /**
+     * Sets cache maintenance interval.
+     *
+     * @param interval maintenance interval duration
+     * @return this builder
+     */
     public Builder setMaintenanceInterval(final Duration interval) {
-      this.maintenanceInterval = Objects.requireNonNull(interval, "Maintenance interval cannot be null");
+      this.maintenanceInterval =
+          Objects.requireNonNull(interval, "Maintenance interval cannot be null");
       return this;
     }
 
@@ -315,9 +352,16 @@ public final class CacheConfiguration {
       return this;
     }
 
+    /**
+     * Enables cache entry encryption.
+     *
+     * @param algorithm encryption algorithm to use
+     * @return this builder
+     */
     public Builder enableEncryption(final String algorithm) {
       this.encryptCacheEntries = true;
-      this.encryptionAlgorithm = Objects.requireNonNull(algorithm, "Encryption algorithm cannot be null");
+      this.encryptionAlgorithm =
+          Objects.requireNonNull(algorithm, "Encryption algorithm cannot be null");
       return this;
     }
 

@@ -284,10 +284,15 @@ public final class JniValidation {
    * @param activeConnections the map of active connections
    * @throws JniValidationException if the connection ID is invalid or not found
    */
-  public static void requireValidConnectionId(final long connectionId, final java.util.Map<Long, ?> activeConnections) {
+  public static void requireValidConnectionId(
+      final long connectionId, final java.util.Map<Long, ?> activeConnections) {
     requireNonNull(activeConnections, "activeConnections");
     require(connectionId > 0, "Connection ID must be positive", "connectionId", connectionId);
-    require(activeConnections.containsKey(connectionId), "Connection not found", "connectionId", connectionId);
+    require(
+        activeConnections.containsKey(connectionId),
+        "Connection not found",
+        "connectionId",
+        connectionId);
   }
 
   /**

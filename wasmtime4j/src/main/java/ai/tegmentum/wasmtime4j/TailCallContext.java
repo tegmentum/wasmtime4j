@@ -5,269 +5,131 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 /**
  * Execution context for tail call operations.
  *
- * <p>The tail call context provides access to the runtime facilities needed
- * for proper tail call elimination, including stack frame management,
- * function resolution, and optimization state.
+ * <p>The tail call context provides access to the runtime facilities needed for proper tail call
+ * elimination, including stack frame management, function resolution, and optimization state.
  *
  * @since 1.1.0
  */
 public interface TailCallContext {
 
-    /**
-     * Checks if tail calls are supported in this context.
-     *
-     * @return true if tail calls are supported
-     */
-    boolean supportsTailCalls();
+  /**
+   * Checks if tail calls are supported in this context.
+   *
+   * @return true if tail calls are supported
+   */
+  boolean supportsTailCalls();
 
-    /**
-     * Resolves a function by its index.
-     *
-     * @param functionIndex the function index
-     * @return the function reference, or null if not found
-     * @throws WasmException if function resolution fails
-     */
-    FunctionReference resolveFunction(final int functionIndex) throws WasmException;
+  /**
+   * Resolves a function by its index.
+   *
+   * @param functionIndex the function index
+   * @return the function reference, or null if not found
+   * @throws WasmException if function resolution fails
+   */
+  FunctionReference resolveFunction(final int functionIndex) throws WasmException;
 
-    /**
-     * Resolves an indirect function through a table.
-     *
-     * @param tableIndex the table index
-     * @param functionIndex the function index within the table
-     * @param expectedType the expected function type for validation
-     * @return the function reference, or null if not found
-     * @throws WasmException if function resolution fails
-     */
-    FunctionReference resolveIndirectFunction(final int tableIndex,
-                                            final int functionIndex,
-                                            final FunctionType expectedType) throws WasmException;
+  /**
+   * Resolves an indirect function through a table.
+   *
+   * @param tableIndex the table index
+   * @param functionIndex the function index within the table
+   * @param expectedType the expected function type for validation
+   * @return the function reference, or null if not found
+   * @throws WasmException if function resolution fails
+   */
+  FunctionReference resolveIndirectFunction(
+      final int tableIndex, final int functionIndex, final FunctionType expectedType)
+      throws WasmException;
 
-    /**
-     * Prepares for stack frame replacement in tail call optimization.
-     *
-     * <p>This method sets up the runtime state to reuse the current stack frame
-     * instead of creating a new one for the tail call.
-     */
-    void prepareFrameReplacement();
+  /**
+   * Prepares for stack frame replacement in tail call optimization.
+   *
+   * <p>This method sets up the runtime state to reuse the current stack frame instead of creating a
+   * new one for the tail call.
+   */
+  void prepareFrameReplacement();
 
-    /**
-     * Performs a return operation after a tail call.
-     *
-     * @param results the return values
-     * @throws WasmException if the return operation fails
-     */
-    void performReturn(final WasmValue... results) throws WasmException;
+  /**
+   * Performs a return operation after a tail call.
+   *
+   * @param results the return values
+   * @throws WasmException if the return operation fails
+   */
+  void performReturn(final WasmValue... results) throws WasmException;
 
-    /**
-     * Gets the current function context.
-     *
-     * @return the current function context
-     */
-    FunctionContext getCurrentFunction();
+  /**
+   * Gets the current function context.
+   *
+   * @return the current function context
+   */
+  FunctionContext getCurrentFunction();
 
-    /**
-     * Gets tail call optimization statistics.
-     *
-     * @return optimization statistics
-     */
-    TailCallStatistics getStatistics();
+  /**
+   * Gets tail call optimization statistics.
+   *
+   * @return optimization statistics
+   */
+  TailCallStatistics getStatistics();
 
-    /**
-     * Enables or disables tail call optimization.
-     *
-     * @param enabled true to enable tail call optimization
-     */
-    void setTailCallOptimizationEnabled(final boolean enabled);
+  /**
+   * Enables or disables tail call optimization.
+   *
+   * @param enabled true to enable tail call optimization
+   */
+  void setTailCallOptimizationEnabled(final boolean enabled);
 
-    /**
-     * Checks if tail call optimization is currently enabled.
-     *
-     * @return true if tail call optimization is enabled
-     */
-    boolean isTailCallOptimizationEnabled();
+  /**
+   * Checks if tail call optimization is currently enabled.
+   *
+   * @return true if tail call optimization is enabled
+   */
+  boolean isTailCallOptimizationEnabled();
 
-    /**
-     * Gets the maximum recursion depth before stack overflow.
-     *
-     * @return maximum recursion depth
-     */
-    int getMaxRecursionDepth();
+  /**
+   * Gets the maximum recursion depth before stack overflow.
+   *
+   * @return maximum recursion depth
+   */
+  int getMaxRecursionDepth();
 
-    /**
-     * Sets the maximum recursion depth.
-     *
-     * @param maxDepth the maximum recursion depth
-     */
-    void setMaxRecursionDepth(final int maxDepth);
+  /**
+   * Sets the maximum recursion depth.
+   *
+   * @param maxDepth the maximum recursion depth
+   */
+  void setMaxRecursionDepth(final int maxDepth);
 
-    /**
-     * Statistics for tail call optimization.
-     */
-    interface TailCallStatistics {
-        /** Total number of tail calls attempted. */
-        long getTotalTailCalls();
+  /** Statistics for tail call optimization. */
+  interface TailCallStatistics {
+    /** Total number of tail calls attempted. */
+    long getTotalTailCalls();
 
-        /** Number of successful tail call optimizations. */
-        long getOptimizedTailCalls();
+    /** Number of successful tail call optimizations. */
+    long getOptimizedTailCalls();
 
-        /** Number of tail calls that fell back to regular calls. */
-        long getFallbackTailCalls();
+    /** Number of tail calls that fell back to regular calls. */
+    long getFallbackTailCalls();
 
-        /** Total stack space saved through tail call optimization (bytes). */
-        long getTotalStackSpaceSaved();
+    /** Total stack space saved through tail call optimization (bytes). */
+    long getTotalStackSpaceSaved();
 
-        /** Average stack space saved per optimized tail call (bytes). */
-        double getAverageStackSpaceSaved();
+    /** Average stack space saved per optimized tail call (bytes). */
+    double getAverageStackSpaceSaved();
 
-        /** Most frequently tail-called functions. */
-        TailCallHotSpot[] getHotSpots();
+    /** Most frequently tail-called functions. */
+    TailCallHotSpot[] getHotSpots();
 
-        interface TailCallHotSpot {
-            String getFunctionName();
-            int getFunctionIndex();
-            long getTailCallCount();
-            long getStackSpaceSaved();
-            double getOptimizationRate();
-        }
+    /** Represents a tail call optimization hot spot. */
+    interface TailCallHotSpot {
+      String getFunctionName();
+
+      int getFunctionIndex();
+
+      long getTailCallCount();
+
+      long getStackSpaceSaved();
+
+      double getOptimizationRate();
     }
-
-    /**
-     * Creates a tail call context with default settings.
-     *
-     * @param instance the WebAssembly instance
-     * @return a new tail call context
-     */
-    static TailCallContext create(final WasmInstance instance) {
-        return new DefaultTailCallContext(instance, true, 10000);
-    }
-
-    /**
-     * Creates a tail call context with specific settings.
-     *
-     * @param instance the WebAssembly instance
-     * @param optimizationEnabled whether tail call optimization is enabled
-     * @param maxRecursionDepth the maximum recursion depth
-     * @return a new tail call context
-     */
-    static TailCallContext create(final WasmInstance instance,
-                                 final boolean optimizationEnabled,
-                                 final int maxRecursionDepth) {
-        return new DefaultTailCallContext(instance, optimizationEnabled, maxRecursionDepth);
-    }
-}
-
-/**
- * Default implementation of TailCallContext.
- */
-class DefaultTailCallContext implements TailCallContext {
-    private final WasmInstance instance;
-    private boolean optimizationEnabled;
-    private int maxRecursionDepth;
-    private final TailCallStatisticsImpl statistics;
-    private FunctionContext currentFunction;
-
-    DefaultTailCallContext(final WasmInstance instance,
-                          final boolean optimizationEnabled,
-                          final int maxRecursionDepth) {
-        this.instance = instance;
-        this.optimizationEnabled = optimizationEnabled;
-        this.maxRecursionDepth = maxRecursionDepth;
-        this.statistics = new TailCallStatisticsImpl();
-    }
-
-    @Override
-    public boolean supportsTailCalls() {
-        // Check if the runtime and instance support tail calls
-        return true; // Assume support for now
-    }
-
-    @Override
-    public FunctionReference resolveFunction(final int functionIndex) throws WasmException {
-        // In a real implementation, this would resolve through the instance
-        // For now, return a placeholder
-        return null; // Would be implemented with actual function resolution
-    }
-
-    @Override
-    public FunctionReference resolveIndirectFunction(final int tableIndex,
-                                                   final int functionIndex,
-                                                   final FunctionType expectedType) throws WasmException {
-        // In a real implementation, this would resolve through tables
-        return null; // Would be implemented with actual table resolution
-    }
-
-    @Override
-    public void prepareFrameReplacement() {
-        // Prepare the stack for frame replacement
-        statistics.recordTailCall(true); // Assume optimization succeeded
-    }
-
-    @Override
-    public void performReturn(final WasmValue... results) throws WasmException {
-        // Perform the actual return operation
-        // In a real implementation, this would manipulate the call stack
-    }
-
-    @Override
-    public FunctionContext getCurrentFunction() {
-        return currentFunction;
-    }
-
-    @Override
-    public TailCallStatistics getStatistics() {
-        return statistics;
-    }
-
-    @Override
-    public void setTailCallOptimizationEnabled(final boolean enabled) {
-        this.optimizationEnabled = enabled;
-    }
-
-    @Override
-    public boolean isTailCallOptimizationEnabled() {
-        return optimizationEnabled;
-    }
-
-    @Override
-    public int getMaxRecursionDepth() {
-        return maxRecursionDepth;
-    }
-
-    @Override
-    public void setMaxRecursionDepth(final int maxDepth) {
-        this.maxRecursionDepth = maxDepth;
-    }
-
-    void setCurrentFunction(final FunctionContext function) {
-        this.currentFunction = function;
-    }
-
-    private static class TailCallStatisticsImpl implements TailCallStatistics {
-        private long totalTailCalls = 0;
-        private long optimizedTailCalls = 0;
-        private long totalStackSpaceSaved = 0;
-
-        void recordTailCall(final boolean optimized) {
-            totalTailCalls++;
-            if (optimized) {
-                optimizedTailCalls++;
-                totalStackSpaceSaved += 64; // Assume average 64 bytes saved
-            }
-        }
-
-        @Override public long getTotalTailCalls() { return totalTailCalls; }
-        @Override public long getOptimizedTailCalls() { return optimizedTailCalls; }
-        @Override public long getFallbackTailCalls() { return totalTailCalls - optimizedTailCalls; }
-        @Override public long getTotalStackSpaceSaved() { return totalStackSpaceSaved; }
-
-        @Override
-        public double getAverageStackSpaceSaved() {
-            return optimizedTailCalls > 0 ? (double) totalStackSpaceSaved / optimizedTailCalls : 0.0;
-        }
-
-        @Override
-        public TailCallHotSpot[] getHotSpots() {
-            return new TailCallHotSpot[0]; // Simplified implementation
-        }
-    }
+  }
 }

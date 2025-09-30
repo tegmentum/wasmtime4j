@@ -9,19 +9,18 @@ import ai.tegmentum.wasmtime4j.StreamingFeedHandle;
 import ai.tegmentum.wasmtime4j.StreamingInstantiator;
 import ai.tegmentum.wasmtime4j.StreamingProgressListener;
 import ai.tegmentum.wasmtime4j.StreamingStatistics;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -61,20 +60,23 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
     super(createNativeStreamingCompiler(engine.getNativeHandle()));
     this.engine = JniValidation.requireNonNull(engine, "engine");
     this.progressListeners = new CopyOnWriteArrayList<>();
-    this.executorService = Executors.newCachedThreadPool(r -> {
-      final Thread thread = new Thread(r, "StreamingCompiler-" + System.identityHashCode(this));
-      thread.setDaemon(true);
-      return thread;
-    });
-    LOGGER.fine("Created JNI streaming compiler with handle: 0x" + Long.toHexString(getNativeHandle()));
+    this.executorService =
+        Executors.newCachedThreadPool(
+            r -> {
+              final Thread thread =
+                  new Thread(r, "StreamingCompiler-" + System.identityHashCode(this));
+              thread.setDaemon(true);
+              return thread;
+            });
+    LOGGER.fine(
+        "Created JNI streaming compiler with handle: 0x" + Long.toHexString(getNativeHandle()));
   }
 
   /**
    * Begins streaming compilation of WebAssembly bytecode.
    *
    * <p>This method initiates progressive compilation as data becomes available. The compilation
-   * process can begin before all data is received, enabling faster time-to-ready for large
-   * modules.
+   * process can begin before all data is received, enabling faster time-to-ready for large modules.
    *
    * @param input the input stream containing WebAssembly bytecode
    * @param config streaming compilation configuration
@@ -82,38 +84,41 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
    * @throws IllegalArgumentException if input or config is null
    */
   @Override
-  public CompletableFuture<Module> compileStreaming(final InputStream input, final StreamingConfig config) {
+  public CompletableFuture<Module> compileStreaming(
+      final InputStream input, final StreamingConfig config) {
     JniValidation.requireNonNull(input, "input");
     JniValidation.requireNonNull(config, "config");
     ensureNotClosed();
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        // Feed data in chunks
-        final byte[] buffer = new byte[config.getBufferSize()];
-        int bytesRead;
-        while ((bytesRead = input.read(buffer)) != -1) {
-          if (bytesRead > 0) {
-            nativeFeedChunk(getNativeHandle(), buffer, bytesRead);
-          }
-        }
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            // Feed data in chunks
+            final byte[] buffer = new byte[config.getBufferSize()];
+            int bytesRead;
+            while ((bytesRead = input.read(buffer)) != -1) {
+              if (bytesRead > 0) {
+                nativeFeedChunk(getNativeHandle(), buffer, bytesRead);
+              }
+            }
 
-        // Complete compilation
-        final long moduleHandle = nativeComplete(getNativeHandle());
-        return new JniModule(moduleHandle);
-      } catch (final IOException e) {
-        throw new RuntimeException("Failed to read streaming input", e);
-      } catch (final Exception e) {
-        throw new RuntimeException("Failed to compile streaming module", e);
-      }
-    }, executorService);
+            // Complete compilation
+            final long moduleHandle = nativeComplete(getNativeHandle());
+            return new JniModule(moduleHandle);
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to read streaming input", e);
+          } catch (final Exception e) {
+            throw new RuntimeException("Failed to compile streaming module", e);
+          }
+        },
+        executorService);
   }
 
   /**
    * Begins streaming compilation from a reactive stream publisher.
    *
-   * <p>This method supports reactive streams pattern with backpressure control, allowing the
-   * caller to control the flow of data to the compiler.
+   * <p>This method supports reactive streams pattern with backpressure control, allowing the caller
+   * to control the flow of data to the compiler.
    *
    * @param publisher the publisher of WebAssembly bytecode chunks
    * @param config streaming compilation configuration
@@ -129,42 +134,43 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
 
     final CompletableFuture<Module> future = new CompletableFuture<>();
 
-    publisher.subscribe(new Flow.Subscriber<ByteBuffer>() {
-      private Flow.Subscription subscription;
+    publisher.subscribe(
+        new Flow.Subscriber<ByteBuffer>() {
+          private Flow.Subscription subscription;
 
-      @Override
-      public void onSubscribe(final Flow.Subscription subscription) {
-        this.subscription = subscription;
-        subscription.request(1);
-      }
+          @Override
+          public void onSubscribe(final Flow.Subscription subscription) {
+            this.subscription = subscription;
+            subscription.request(1);
+          }
 
-      @Override
-      public void onNext(final ByteBuffer buffer) {
-        try {
-          final byte[] data = new byte[buffer.remaining()];
-          buffer.get(data);
-          nativeFeedChunk(getNativeHandle(), data, data.length);
-          subscription.request(1);
-        } catch (final Exception e) {
-          future.completeExceptionally(e);
-        }
-      }
+          @Override
+          public void onNext(final ByteBuffer buffer) {
+            try {
+              final byte[] data = new byte[buffer.remaining()];
+              buffer.get(data);
+              nativeFeedChunk(getNativeHandle(), data, data.length);
+              subscription.request(1);
+            } catch (final Exception e) {
+              future.completeExceptionally(e);
+            }
+          }
 
-      @Override
-      public void onError(final Throwable throwable) {
-        future.completeExceptionally(throwable);
-      }
+          @Override
+          public void onError(final Throwable throwable) {
+            future.completeExceptionally(throwable);
+          }
 
-      @Override
-      public void onComplete() {
-        try {
-          final long moduleHandle = nativeComplete(getNativeHandle());
-          future.complete(new JniModule(moduleHandle));
-        } catch (final Exception e) {
-          future.completeExceptionally(e);
-        }
-      }
-    });
+          @Override
+          public void onComplete() {
+            try {
+              final long moduleHandle = nativeComplete(getNativeHandle());
+              future.complete(new JniModule(moduleHandle));
+            } catch (final Exception e) {
+              future.completeExceptionally(e);
+            }
+          }
+        });
 
     return future;
   }
@@ -202,7 +208,9 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
    */
   @Override
   public CompletableFuture<StreamingInstantiator> compileStreamingWithInstantiation(
-      final InputStream input, final StreamingConfig config, final InstantiationConfig instantiationConfig) {
+      final InputStream input,
+      final StreamingConfig config,
+      final InstantiationConfig instantiationConfig) {
     JniValidation.requireNonNull(input, "input");
     JniValidation.requireNonNull(config, "config");
     JniValidation.requireNonNull(instantiationConfig, "instantiationConfig");
@@ -243,8 +251,8 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
           stats[3], // memoryUsage
           stats[4], // peakMemoryUsage
           stats[5], // functionsCompiled
-          stats[6]  // totalFunctions
-      );
+          stats[6] // totalFunctions
+          );
     } catch (final Exception e) {
       LOGGER.warning("Failed to get compilation statistics: " + e.getMessage());
       return JniStreamingStatistics.create(0, 0, 0.0, 0, 0, 0, 0);
@@ -308,7 +316,8 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
 
     if (getNativeHandle() != 0) {
       nativeDestroyStreamingCompiler(getNativeHandle());
-      LOGGER.fine("Destroyed JNI streaming compiler with handle: 0x" + Long.toHexString(getNativeHandle()));
+      LOGGER.fine(
+          "Destroyed JNI streaming compiler with handle: 0x" + Long.toHexString(getNativeHandle()));
     }
   }
 
@@ -319,34 +328,26 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
 
   // Native method declarations
 
-  /**
-   * Feed data chunk to native streaming compiler
-   */
+  /** Feed data chunk to native streaming compiler. */
   void feedChunk(final byte[] data) {
     ensureNotClosed();
     nativeFeedChunk(getNativeHandle(), data, data.length);
   }
 
-  /**
-   * Complete streaming compilation and get module
-   */
+  /** Complete streaming compilation and get module. */
   Module complete() {
     ensureNotClosed();
     final long moduleHandle = nativeComplete(getNativeHandle());
     return new JniModule(moduleHandle);
   }
 
-  /**
-   * Get current progress
-   */
+  /** Get current progress. */
   double getProgress() {
     ensureNotClosed();
     return nativeGetProgress(getNativeHandle());
   }
 
-  /**
-   * Check if compilation is done
-   */
+  /** Check if compilation is done. */
   boolean isDone() {
     if (isClosed()) {
       return true;
@@ -393,7 +394,8 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
    * Gets compilation statistics.
    *
    * @param compilerHandle the native streaming compiler handle
-   * @return array of statistics [bytesProcessed, bytesReceived, progress, memoryUsage, peakMemoryUsage, functionsCompiled, totalFunctions]
+   * @return array of statistics [bytesProcessed, bytesReceived, progress, memoryUsage,
+   *     peakMemoryUsage, functionsCompiled, totalFunctions]
    */
   private static native long[] nativeGetStatistics(long compilerHandle);
 

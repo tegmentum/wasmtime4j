@@ -8,15 +8,11 @@
 //!
 //! WARNING: These features are highly experimental and subject to significant change.
 
-use wasmtime::{Config, Engine, Store, Module, Instance};
+use wasmtime::Config;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use std::collections::HashMap;
-use std::os::raw::{c_void, c_int, c_char};
-use std::ffi::CStr;
+use std::os::raw::{c_void, c_int};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{Duration, Instant};
-use tokio::runtime::Runtime;
 
 /// Advanced profiling configuration
 #[derive(Debug, Clone)]

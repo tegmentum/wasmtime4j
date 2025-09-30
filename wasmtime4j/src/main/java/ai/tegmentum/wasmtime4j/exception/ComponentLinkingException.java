@@ -14,12 +14,14 @@ import java.util.Set;
  */
 public class ComponentLinkingException extends WasmException {
 
+  private static final long serialVersionUID = 1L;
+
   private final LinkingFailureType failureType;
-  private final List<String> involvedComponents;
-  private final Map<String, String> compatibilityIssues;
-  private final Set<String> missingDependencies;
-  private final Set<String> circularDependencies;
-  private final List<String> suggestedResolutions;
+  private final transient List<String> involvedComponents;
+  private final transient Map<String, String> compatibilityIssues;
+  private final transient Set<String> missingDependencies;
+  private final transient Set<String> circularDependencies;
+  private final transient List<String> suggestedResolutions;
 
   /**
    * Creates a new component linking exception with detailed failure information.

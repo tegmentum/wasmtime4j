@@ -8,8 +8,8 @@ package ai.tegmentum.wasmtime4j;
  * externref). Each value maintains its type information for proper validation and conversion.
  *
  * <p>WebAssembly values are immutable and type-safe. Once created, a value's type and content
- * cannot be changed. Type conversions must be explicit and will throw exceptions if attempted
- * with incompatible types.
+ * cannot be changed. Type conversions must be explicit and will throw exceptions if attempted with
+ * incompatible types.
  *
  * <p>Example usage:
  *
@@ -28,8 +28,8 @@ package ai.tegmentum.wasmtime4j;
  * float resultFloat = results[1].asF32();
  * }</pre>
  *
- * <p>All value creation methods perform validation to ensure type safety and correctness
- * according to WebAssembly specifications.
+ * <p>All value creation methods perform validation to ensure type safety and correctness according
+ * to WebAssembly specifications.
  *
  * @since 1.0.0
  */
@@ -426,7 +426,8 @@ public final class WasmValue {
    * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if validation fails
    */
   public static void validateMultiValueWithContext(
-      final WasmValue[] values, final WasmValueType[] expectedTypes, final String operation) {
+      final WasmValue[] values, final WasmValueType[] expectedTypes, final String operation)
+      throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
     if (values == null) {
       throw ai.tegmentum.wasmtime4j.exception.MultiValueException.invalidValueArray(
           operation != null ? operation : "validation");
@@ -458,7 +459,8 @@ public final class WasmValue {
    * @param values the values to check
    * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if limits are exceeded
    */
-  public static void validateMultiValueLimits(final WasmValue[] values) {
+  public static void validateMultiValueLimits(final WasmValue[] values)
+      throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
     if (values != null && values.length > 16) {
       throw ai.tegmentum.wasmtime4j.exception.MultiValueException.limitExceeded(values.length, 16);
     }

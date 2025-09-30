@@ -3,12 +3,14 @@ package ai.tegmentum.wasmtime4j.exception;
 /**
  * Exception thrown during WebAssembly runtime operations.
  *
- * <p>This exception is thrown when an error occurs during the execution
- * of WebAssembly code or when runtime-specific operations fail.
+ * <p>This exception is thrown when an error occurs during the execution of WebAssembly code or when
+ * runtime-specific operations fail.
  *
  * @since 1.0.0
  */
 public class WasmRuntimeException extends WasmException {
+
+  private static final long serialVersionUID = 1L;
 
   /**
    * Constructs a new runtime exception with the specified detail message.

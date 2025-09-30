@@ -10,19 +10,10 @@
 //! JVM crashes and ensure robust error handling. Input validation and null checks are
 //! performed for all parameters.
 
-use jni::objects::{JClass, JObject, JObjectArray, JString, JValue, JValueOwned};
-use jni::sys::{jboolean, jint, jlong, jobject, jstring};
-use jni::{JNIEnv, JavaVM};
-use std::sync::Arc;
-use crate::error::{WasmtimeError, WasmtimeResult};
 // TODO: Re-enable when gc module is available
 // use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
-use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcValue, GcReferenceType, GcTypeConverter};
-use crate::simd::{V256, V512};
-use crate::gc_heap::{GcHeapConfig, ObjectId};
 // TODO: Re-enable when gc_operations module is available
 // use crate::gc_operations::{WasmtimeGcOperations, RealStructOperationResult, RealArrayOperationResult, RealRefOperationResult};
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 // TODO: Re-enable all GC bindings when gc and gc_operations modules are available
 /*

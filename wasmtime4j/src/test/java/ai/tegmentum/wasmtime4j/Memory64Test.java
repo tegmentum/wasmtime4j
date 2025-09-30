@@ -1,6 +1,11 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -215,7 +220,6 @@ class Memory64Test {
     @DisplayName("Test memory support validation")
     void testMemorySupportValidation() {
       MemoryAddressingMode mode32 = MemoryAddressingMode.MEMORY32;
-      MemoryAddressingMode mode64 = MemoryAddressingMode.MEMORY64;
 
       // 32-bit mode limits
       assertTrue(mode32.supportsMemorySize(4_294_967_295L));
@@ -224,6 +228,7 @@ class Memory64Test {
       assertFalse(mode32.supportsPageCount(65537L));
 
       // 64-bit mode should support larger sizes
+      MemoryAddressingMode mode64 = MemoryAddressingMode.MEMORY64;
       assertTrue(mode64.supportsMemorySize(4_294_967_297L));
       assertTrue(mode64.supportsPageCount(100_000L));
 

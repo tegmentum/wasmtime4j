@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.monitoring;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -69,15 +68,24 @@ public final class IntelligentAlertingSystem {
     private final Duration escalationTime;
     private final boolean requiresAcknowledgment;
 
-    AlertSeverity(final int level, final Duration escalationTime, final boolean requiresAcknowledgment) {
+    AlertSeverity(
+        final int level, final Duration escalationTime, final boolean requiresAcknowledgment) {
       this.level = level;
       this.escalationTime = escalationTime;
       this.requiresAcknowledgment = requiresAcknowledgment;
     }
 
-    public int getLevel() { return level; }
-    public Duration getEscalationTime() { return escalationTime; }
-    public boolean requiresAcknowledgment() { return requiresAcknowledgment; }
+    public int getLevel() {
+      return level;
+    }
+
+    public Duration getEscalationTime() {
+      return escalationTime;
+    }
+
+    public boolean requiresAcknowledgment() {
+      return requiresAcknowledgment;
+    }
 
     public boolean isHigherThan(final AlertSeverity other) {
       return this.level > other.level;
@@ -86,19 +94,19 @@ public final class IntelligentAlertingSystem {
 
   /** Alert correlation strategy. */
   public enum CorrelationStrategy {
-    TIME_BASED,     // Correlate alerts within time windows
+    TIME_BASED, // Correlate alerts within time windows
     COMPONENT_BASED, // Correlate alerts from related components
-    PATTERN_BASED,   // Correlate alerts with similar patterns
-    CAUSAL_CHAIN    // Correlate alerts in cause-effect relationships
+    PATTERN_BASED, // Correlate alerts with similar patterns
+    CAUSAL_CHAIN // Correlate alerts in cause-effect relationships
   }
 
   /** Anomaly detection algorithm. */
   public enum AnomalyDetectionAlgorithm {
-    STATISTICAL_THRESHOLD,  // Simple statistical thresholds
-    MOVING_AVERAGE,        // Moving average with deviation
+    STATISTICAL_THRESHOLD, // Simple statistical thresholds
+    MOVING_AVERAGE, // Moving average with deviation
     EXPONENTIAL_SMOOTHING, // Exponential smoothing forecasting
     SEASONAL_DECOMPOSITION, // Seasonal pattern analysis
-    MACHINE_LEARNING       // ML-based anomaly detection
+    MACHINE_LEARNING // ML-based anomaly detection
   }
 
   /** Intelligent alert rule with advanced features. */
@@ -116,6 +124,15 @@ public final class IntelligentAlertingSystem {
     private final boolean adaptiveThresholds;
     private final boolean enabled;
 
+    /**
+     * Creates a new IntelligentAlertRule.
+     *
+     * @param ruleId the unique rule identifier
+     * @param name the rule name
+     * @param description the rule description
+     * @param metricName the metric to monitor
+     * @param algorithm the anomaly detection algorithm
+     */
     public IntelligentAlertRule(
         final String ruleId,
         final String name,
@@ -134,28 +151,65 @@ public final class IntelligentAlertingSystem {
       this.description = description;
       this.metricName = metricName;
       this.algorithm = algorithm;
-      this.algorithmParameters = Map.copyOf(algorithmParameters != null ? algorithmParameters : Map.of());
+      this.algorithmParameters =
+          Map.copyOf(algorithmParameters != null ? algorithmParameters : Map.of());
       this.baseSeverity = baseSeverity;
       this.evaluationWindow = evaluationWindow != null ? evaluationWindow : Duration.ofMinutes(5);
-      this.suppressionWindow = suppressionWindow != null ? suppressionWindow : Duration.ofMinutes(15);
+      this.suppressionWindow =
+          suppressionWindow != null ? suppressionWindow : Duration.ofMinutes(15);
       this.correlationTags = List.copyOf(correlationTags != null ? correlationTags : List.of());
       this.adaptiveThresholds = adaptiveThresholds;
       this.enabled = enabled;
     }
 
     // Getters
-    public String getRuleId() { return ruleId; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public String getMetricName() { return metricName; }
-    public AnomalyDetectionAlgorithm getAlgorithm() { return algorithm; }
-    public Map<String, Object> getAlgorithmParameters() { return algorithmParameters; }
-    public AlertSeverity getBaseSeverity() { return baseSeverity; }
-    public Duration getEvaluationWindow() { return evaluationWindow; }
-    public Duration getSuppressionWindow() { return suppressionWindow; }
-    public List<String> getCorrelationTags() { return correlationTags; }
-    public boolean isAdaptiveThresholds() { return adaptiveThresholds; }
-    public boolean isEnabled() { return enabled; }
+    public String getRuleId() {
+      return ruleId;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public String getMetricName() {
+      return metricName;
+    }
+
+    public AnomalyDetectionAlgorithm getAlgorithm() {
+      return algorithm;
+    }
+
+    public Map<String, Object> getAlgorithmParameters() {
+      return algorithmParameters;
+    }
+
+    public AlertSeverity getBaseSeverity() {
+      return baseSeverity;
+    }
+
+    public Duration getEvaluationWindow() {
+      return evaluationWindow;
+    }
+
+    public Duration getSuppressionWindow() {
+      return suppressionWindow;
+    }
+
+    public List<String> getCorrelationTags() {
+      return correlationTags;
+    }
+
+    public boolean isAdaptiveThresholds() {
+      return adaptiveThresholds;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
   }
 
   /** Correlated alert event with context. */
@@ -177,6 +231,14 @@ public final class IntelligentAlertingSystem {
     private volatile Instant acknowledgmentTime;
     private volatile String acknowledgedBy;
 
+    /**
+     * Creates a new CorrelatedAlert.
+     *
+     * @param alertId the unique alert identifier
+     * @param correlationId the correlation identifier
+     * @param rule the alert rule that triggered this alert
+     * @param metricValue the metric value that triggered the alert
+     */
     public CorrelatedAlert(
         final String alertId,
         final String correlationId,
@@ -205,23 +267,75 @@ public final class IntelligentAlertingSystem {
     }
 
     // Getters
-    public String getAlertId() { return alertId; }
-    public String getCorrelationId() { return correlationId; }
-    public IntelligentAlertRule getRule() { return rule; }
-    public double getMetricValue() { return metricValue; }
-    public double getThreshold() { return threshold; }
-    public double getConfidenceScore() { return confidenceScore; }
-    public AlertSeverity getSeverity() { return severity; }
-    public Instant getTimestamp() { return timestamp; }
-    public Instant getExpiryTime() { return expiryTime; }
-    public Map<String, Object> getContext() { return context; }
-    public List<String> getRelatedAlerts() { return relatedAlerts; }
-    public String getRootCauseAnalysis() { return rootCauseAnalysis; }
-    public boolean isAcknowledged() { return acknowledged; }
-    public boolean isSuppressed() { return suppressed; }
-    public Instant getAcknowledgmentTime() { return acknowledgmentTime; }
-    public String getAcknowledgedBy() { return acknowledgedBy; }
+    public String getAlertId() {
+      return alertId;
+    }
 
+    public String getCorrelationId() {
+      return correlationId;
+    }
+
+    public IntelligentAlertRule getRule() {
+      return rule;
+    }
+
+    public double getMetricValue() {
+      return metricValue;
+    }
+
+    public double getThreshold() {
+      return threshold;
+    }
+
+    public double getConfidenceScore() {
+      return confidenceScore;
+    }
+
+    public AlertSeverity getSeverity() {
+      return severity;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
+
+    public Instant getExpiryTime() {
+      return expiryTime;
+    }
+
+    public Map<String, Object> getContext() {
+      return context;
+    }
+
+    public List<String> getRelatedAlerts() {
+      return relatedAlerts;
+    }
+
+    public String getRootCauseAnalysis() {
+      return rootCauseAnalysis;
+    }
+
+    public boolean isAcknowledged() {
+      return acknowledged;
+    }
+
+    public boolean isSuppressed() {
+      return suppressed;
+    }
+
+    public Instant getAcknowledgmentTime() {
+      return acknowledgmentTime;
+    }
+
+    public String getAcknowledgedBy() {
+      return acknowledgedBy;
+    }
+
+    /**
+     * Acknowledges this alert.
+     *
+     * @param acknowledgedBy the user who acknowledged the alert
+     */
     public void acknowledge(final String acknowledgedBy) {
       this.acknowledged = true;
       this.acknowledgmentTime = Instant.now();
@@ -250,6 +364,13 @@ public final class IntelligentAlertingSystem {
     private final AtomicReference<AlertSeverity> highestSeverity;
     private final Map<String, Object> groupMetadata;
 
+    /**
+     * Creates a new AlertCorrelationGroup.
+     *
+     * @param groupId the unique group identifier
+     * @param strategy the correlation strategy
+     * @param initialAlert the initial alert that starts the group
+     */
     public AlertCorrelationGroup(
         final String groupId,
         final CorrelationStrategy strategy,
@@ -263,6 +384,11 @@ public final class IntelligentAlertingSystem {
       this.groupMetadata = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Adds an alert to this correlation group.
+     *
+     * @param alert the alert to add
+     */
     public void addAlert(final CorrelatedAlert alert) {
       alerts.add(alert);
       if (alert.getSeverity().isHigherThan(highestSeverity.get())) {
@@ -271,13 +397,33 @@ public final class IntelligentAlertingSystem {
     }
 
     // Getters
-    public String getGroupId() { return groupId; }
-    public CorrelationStrategy getStrategy() { return strategy; }
-    public List<CorrelatedAlert> getAlerts() { return List.copyOf(alerts); }
-    public Instant getCreatedAt() { return createdAt; }
-    public AlertSeverity getHighestSeverity() { return highestSeverity.get(); }
-    public Map<String, Object> getGroupMetadata() { return groupMetadata; }
-    public int getAlertCount() { return alerts.size(); }
+    public String getGroupId() {
+      return groupId;
+    }
+
+    public CorrelationStrategy getStrategy() {
+      return strategy;
+    }
+
+    public List<CorrelatedAlert> getAlerts() {
+      return List.copyOf(alerts);
+    }
+
+    public Instant getCreatedAt() {
+      return createdAt;
+    }
+
+    public AlertSeverity getHighestSeverity() {
+      return highestSeverity.get();
+    }
+
+    public Map<String, Object> getGroupMetadata() {
+      return groupMetadata;
+    }
+
+    public int getAlertCount() {
+      return alerts.size();
+    }
 
     public boolean isExpired() {
       return alerts.stream().allMatch(CorrelatedAlert::isExpired);
@@ -292,6 +438,15 @@ public final class IntelligentAlertingSystem {
     private final String explanation;
     private final Map<String, Object> diagnostics;
 
+    /**
+     * Creates a new AnomalyDetectionResult.
+     *
+     * @param isAnomaly whether an anomaly was detected
+     * @param anomalyScore the anomaly score
+     * @param threshold the detection threshold
+     * @param explanation the explanation of the result
+     * @param diagnostics additional diagnostic information
+     */
     public AnomalyDetectionResult(
         final boolean isAnomaly,
         final double anomalyScore,
@@ -306,11 +461,25 @@ public final class IntelligentAlertingSystem {
     }
 
     // Getters
-    public boolean isAnomaly() { return isAnomaly; }
-    public double getAnomalyScore() { return anomalyScore; }
-    public double getThreshold() { return threshold; }
-    public String getExplanation() { return explanation; }
-    public Map<String, Object> getDiagnostics() { return diagnostics; }
+    public boolean isAnomaly() {
+      return isAnomaly;
+    }
+
+    public double getAnomalyScore() {
+      return anomalyScore;
+    }
+
+    public double getThreshold() {
+      return threshold;
+    }
+
+    public String getExplanation() {
+      return explanation;
+    }
+
+    public Map<String, Object> getDiagnostics() {
+      return diagnostics;
+    }
   }
 
   /** Historical metric data for analysis. */
@@ -353,18 +522,26 @@ public final class IntelligentAlertingSystem {
       this.mean = sum / dataPoints.size();
 
       if (dataPoints.size() > 1) {
-        final double variance = dataPoints.stream()
-            .mapToDouble(dp -> Math.pow(dp.value - mean, 2))
-            .sum() / (dataPoints.size() - 1);
+        final double variance =
+            dataPoints.stream().mapToDouble(dp -> Math.pow(dp.value - mean, 2)).sum()
+                / (dataPoints.size() - 1);
         this.standardDeviation = Math.sqrt(variance);
       }
 
       this.lastCalculation = Instant.now();
     }
 
-    double getMean() { return mean; }
-    double getStandardDeviation() { return standardDeviation; }
-    int getDataPointCount() { return dataPoints.size(); }
+    double getMean() {
+      return mean;
+    }
+
+    double getStandardDeviation() {
+      return standardDeviation;
+    }
+
+    int getDataPointCount() {
+      return dataPoints.size();
+    }
 
     List<Double> getRecentValues(final int count) {
       return dataPoints.stream()
@@ -376,10 +553,13 @@ public final class IntelligentAlertingSystem {
   }
 
   // Instance fields
-  private final ConcurrentHashMap<String, IntelligentAlertRule> alertRules = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, IntelligentAlertRule> alertRules =
+      new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, CorrelatedAlert> activeAlerts = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, AlertCorrelationGroup> correlationGroups = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<String, HistoricalMetricData> historicalData = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AlertCorrelationGroup> correlationGroups =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, HistoricalMetricData> historicalData =
+      new ConcurrentHashMap<>();
 
   // Alert listeners and handlers
   private final List<AlertListener> alertListeners = new CopyOnWriteArrayList<>();
@@ -422,64 +602,68 @@ public final class IntelligentAlertingSystem {
   /** Initializes default alert rules with advanced anomaly detection. */
   private void initializeDefaultRules() {
     // Memory usage anomaly detection
-    addAlertRule(new IntelligentAlertRule(
-        "memory_anomaly",
-        "Memory Usage Anomaly",
-        "Detects abnormal memory usage patterns",
-        "heap_memory_usage",
-        AnomalyDetectionAlgorithm.STATISTICAL_THRESHOLD,
-        Map.of("threshold_multiplier", 2.5, "min_data_points", 20),
-        AlertSeverity.HIGH,
-        Duration.ofMinutes(5),
-        Duration.ofMinutes(15),
-        List.of("memory", "performance", "jvm"),
-        true,
-        true));
+    addAlertRule(
+        new IntelligentAlertRule(
+            "memory_anomaly",
+            "Memory Usage Anomaly",
+            "Detects abnormal memory usage patterns",
+            "heap_memory_usage",
+            AnomalyDetectionAlgorithm.STATISTICAL_THRESHOLD,
+            Map.of("threshold_multiplier", 2.5, "min_data_points", 20),
+            AlertSeverity.HIGH,
+            Duration.ofMinutes(5),
+            Duration.ofMinutes(15),
+            List.of("memory", "performance", "jvm"),
+            true,
+            true));
 
     // Error rate spike detection
-    addAlertRule(new IntelligentAlertRule(
-        "error_rate_spike",
-        "Error Rate Spike",
-        "Detects sudden increases in error rates",
-        "error_rate",
-        AnomalyDetectionAlgorithm.EXPONENTIAL_SMOOTHING,
-        Map.of("smoothing_factor", 0.3, "spike_threshold", 3.0),
-        AlertSeverity.CRITICAL,
-        Duration.ofMinutes(2),
-        Duration.ofMinutes(10),
-        List.of("errors", "reliability", "application"),
-        true,
-        true));
+    addAlertRule(
+        new IntelligentAlertRule(
+            "error_rate_spike",
+            "Error Rate Spike",
+            "Detects sudden increases in error rates",
+            "error_rate",
+            AnomalyDetectionAlgorithm.EXPONENTIAL_SMOOTHING,
+            Map.of("smoothing_factor", 0.3, "spike_threshold", 3.0),
+            AlertSeverity.CRITICAL,
+            Duration.ofMinutes(2),
+            Duration.ofMinutes(10),
+            List.of("errors", "reliability", "application"),
+            true,
+            true));
 
     // Performance degradation detection
-    addAlertRule(new IntelligentAlertRule(
-        "performance_degradation",
-        "Performance Degradation",
-        "Detects gradual performance degradation",
-        "response_time_p95",
-        AnomalyDetectionAlgorithm.MOVING_AVERAGE,
-        Map.of("window_size", 30, "deviation_threshold", 1.5),
-        AlertSeverity.MEDIUM,
-        Duration.ofMinutes(10),
-        Duration.ofMinutes(30),
-        List.of("performance", "latency", "user_experience"),
-        true,
-        true));
+    addAlertRule(
+        new IntelligentAlertRule(
+            "performance_degradation",
+            "Performance Degradation",
+            "Detects gradual performance degradation",
+            "response_time_p95",
+            AnomalyDetectionAlgorithm.MOVING_AVERAGE,
+            Map.of("window_size", 30, "deviation_threshold", 1.5),
+            AlertSeverity.MEDIUM,
+            Duration.ofMinutes(10),
+            Duration.ofMinutes(30),
+            List.of("performance", "latency", "user_experience"),
+            true,
+            true));
 
     // Thread deadlock detection
-    addAlertRule(new IntelligentAlertRule(
-        "thread_deadlock",
-        "Thread Deadlock Detection",
-        "Detects thread deadlocks in the JVM",
-        "deadlocked_threads",
-        AnomalyDetectionAlgorithm.STATISTICAL_THRESHOLD,
-        Map.of("threshold", 0.0, "comparison", "greater_than"),
-        AlertSeverity.EMERGENCY,
-        Duration.ofSeconds(30),
-        Duration.ofMinutes(5),
-        List.of("threads", "deadlock", "jvm", "stability"),
-        false,
-        true));
+    addAlertRule(
+        new IntelligentAlertRule(
+            "thread_deadlock",
+            "Thread Deadlock Detection",
+            "Detects thread deadlocks in the JVM",
+            "deadlocked_threads",
+            AnomalyDetectionAlgorithm.STATISTICAL_THRESHOLD,
+            Map.of("threshold", 0.0, "comparison", "greater_than"),
+            AlertSeverity.EMERGENCY,
+            Duration.ofSeconds(30),
+            Duration.ofMinutes(5),
+            List.of("threads", "deadlock", "jvm", "stability"),
+            false,
+            true));
 
     LOGGER.info("Initialized " + alertRules.size() + " default alert rules");
   }
@@ -487,19 +671,14 @@ public final class IntelligentAlertingSystem {
   /** Starts background processing tasks. */
   private void startBackgroundProcessing() {
     // Alert correlation and cleanup
-    backgroundExecutor.scheduleAtFixedRate(
-        this::processAlertCorrelation,
-        30, 60, TimeUnit.SECONDS);
+    backgroundExecutor.scheduleAtFixedRate(this::processAlertCorrelation, 30, 60, TimeUnit.SECONDS);
 
     // Expired alert cleanup
-    backgroundExecutor.scheduleAtFixedRate(
-        this::cleanupExpiredAlerts,
-        300, 300, TimeUnit.SECONDS);
+    backgroundExecutor.scheduleAtFixedRate(this::cleanupExpiredAlerts, 300, 300, TimeUnit.SECONDS);
 
     // Adaptive threshold adjustment
     backgroundExecutor.scheduleAtFixedRate(
-        this::adjustAdaptiveThresholds,
-        600, 600, TimeUnit.SECONDS);
+        this::adjustAdaptiveThresholds, 600, 600, TimeUnit.SECONDS);
   }
 
   /**
@@ -529,20 +708,22 @@ public final class IntelligentAlertingSystem {
    * @param value the metric value
    * @param tags optional metric tags
    */
-  public void evaluateMetric(final String metricName, final double value, final Map<String, String> tags) {
+  public void evaluateMetric(
+      final String metricName, final double value, final Map<String, String> tags) {
     if (!enabled) {
       return;
     }
 
     // Store historical data
-    final HistoricalMetricData historical = historicalData.computeIfAbsent(
-        metricName, k -> new HistoricalMetricData());
+    final HistoricalMetricData historical =
+        historicalData.computeIfAbsent(metricName, k -> new HistoricalMetricData());
     historical.addDataPoint(value);
 
     // Find applicable rules
-    final List<IntelligentAlertRule> applicableRules = alertRules.values().stream()
-        .filter(rule -> rule.isEnabled() && rule.getMetricName().equals(metricName))
-        .collect(Collectors.toList());
+    final List<IntelligentAlertRule> applicableRules =
+        alertRules.values().stream()
+            .filter(rule -> rule.isEnabled() && rule.getMetricName().equals(metricName))
+            .collect(Collectors.toList());
 
     // Evaluate each rule
     for (final IntelligentAlertRule rule : applicableRules) {
@@ -563,13 +744,16 @@ public final class IntelligentAlertingSystem {
 
     // Check if alert is suppressed
     final String suppressionKey = rule.getRuleId() + "_" + rule.getMetricName();
-    final CorrelatedAlert lastAlert = activeAlerts.values().stream()
-        .filter(alert -> alert.getRule().getRuleId().equals(rule.getRuleId()))
-        .max(Comparator.comparing(CorrelatedAlert::getTimestamp))
-        .orElse(null);
+    final CorrelatedAlert lastAlert =
+        activeAlerts.values().stream()
+            .filter(alert -> alert.getRule().getRuleId().equals(rule.getRuleId()))
+            .max(Comparator.comparing(CorrelatedAlert::getTimestamp))
+            .orElse(null);
 
-    if (lastAlert != null &&
-        Duration.between(lastAlert.getTimestamp(), Instant.now()).compareTo(rule.getSuppressionWindow()) < 0) {
+    if (lastAlert != null
+        && Duration.between(lastAlert.getTimestamp(), Instant.now())
+                .compareTo(rule.getSuppressionWindow())
+            < 0) {
       totalAlertsSuppressed.incrementAndGet();
       return;
     }
@@ -579,7 +763,8 @@ public final class IntelligentAlertingSystem {
 
     if (anomalyResult.isAnomaly() && anomalyResult.getAnomalyScore() >= minConfidenceScore) {
       // Calculate alert severity based on anomaly score
-      final AlertSeverity severity = calculateDynamicSeverity(rule.getBaseSeverity(), anomalyResult.getAnomalyScore());
+      final AlertSeverity severity =
+          calculateDynamicSeverity(rule.getBaseSeverity(), anomalyResult.getAnomalyScore());
 
       // Generate alert
       final CorrelatedAlert alert = generateAlert(rule, value, anomalyResult, severity, tags);
@@ -595,16 +780,16 @@ public final class IntelligentAlertingSystem {
       // Notify listeners
       notifyAlertListeners(alert);
 
-      LOGGER.info(String.format("Generated alert: %s [%s] - %s (confidence: %.2f)",
-          alert.getAlertId(), severity, rule.getName(), anomalyResult.getAnomalyScore()));
+      LOGGER.info(
+          String.format(
+              "Generated alert: %s [%s] - %s (confidence: %.2f)",
+              alert.getAlertId(), severity, rule.getName(), anomalyResult.getAnomalyScore()));
     }
   }
 
   /** Detects anomalies based on the configured algorithm. */
   private AnomalyDetectionResult detectAnomaly(
-      final IntelligentAlertRule rule,
-      final double value,
-      final HistoricalMetricData historical) {
+      final IntelligentAlertRule rule, final double value, final HistoricalMetricData historical) {
 
     switch (rule.getAlgorithm()) {
       case STATISTICAL_THRESHOLD:
@@ -620,17 +805,21 @@ public final class IntelligentAlertingSystem {
 
   /** Statistical threshold-based anomaly detection. */
   private AnomalyDetectionResult detectStatisticalAnomaly(
-      final IntelligentAlertRule rule,
-      final double value,
-      final HistoricalMetricData historical) {
+      final IntelligentAlertRule rule, final double value, final HistoricalMetricData historical) {
 
-    final int minDataPoints = (Integer) rule.getAlgorithmParameters().getOrDefault("min_data_points", 20);
+    final int minDataPoints =
+        (Integer) rule.getAlgorithmParameters().getOrDefault("min_data_points", 20);
     if (historical.getDataPointCount() < minDataPoints) {
-      return new AnomalyDetectionResult(false, 0.0, 0.0, "Insufficient historical data",
+      return new AnomalyDetectionResult(
+          false,
+          0.0,
+          0.0,
+          "Insufficient historical data",
           Map.of("data_points", historical.getDataPointCount(), "required", minDataPoints));
     }
 
-    final double thresholdMultiplier = (Double) rule.getAlgorithmParameters().getOrDefault("threshold_multiplier", 2.0);
+    final double thresholdMultiplier =
+        (Double) rule.getAlgorithmParameters().getOrDefault("threshold_multiplier", 2.0);
     final double mean = historical.getMean();
     final double stdDev = historical.getStandardDeviation();
     final double threshold = mean + (thresholdMultiplier * stdDev);
@@ -638,69 +827,80 @@ public final class IntelligentAlertingSystem {
     final boolean isAnomaly = value > threshold;
     final double anomalyScore = isAnomaly ? Math.min(1.0, (value - threshold) / threshold) : 0.0;
 
-    final String explanation = String.format(
-        "Value %.2f vs threshold %.2f (mean=%.2f, stddev=%.2f)",
-        value, threshold, mean, stdDev);
+    final String explanation =
+        String.format(
+            "Value %.2f vs threshold %.2f (mean=%.2f, stddev=%.2f)",
+            value, threshold, mean, stdDev);
 
-    final Map<String, Object> diagnostics = Map.of(
-        "mean", mean,
-        "standard_deviation", stdDev,
-        "threshold", threshold,
-        "z_score", stdDev > 0 ? (value - mean) / stdDev : 0.0);
+    final Map<String, Object> diagnostics =
+        Map.of(
+            "mean", mean,
+            "standard_deviation", stdDev,
+            "threshold", threshold,
+            "z_score", stdDev > 0 ? (value - mean) / stdDev : 0.0);
 
     return new AnomalyDetectionResult(isAnomaly, anomalyScore, threshold, explanation, diagnostics);
   }
 
   /** Moving average-based anomaly detection. */
   private AnomalyDetectionResult detectMovingAverageAnomaly(
-      final IntelligentAlertRule rule,
-      final double value,
-      final HistoricalMetricData historical) {
+      final IntelligentAlertRule rule, final double value, final HistoricalMetricData historical) {
 
     final int windowSize = (Integer) rule.getAlgorithmParameters().getOrDefault("window_size", 20);
-    final double deviationThreshold = (Double) rule.getAlgorithmParameters().getOrDefault("deviation_threshold", 2.0);
+    final double deviationThreshold =
+        (Double) rule.getAlgorithmParameters().getOrDefault("deviation_threshold", 2.0);
 
     final List<Double> recentValues = historical.getRecentValues(windowSize);
     if (recentValues.size() < Math.min(windowSize, 5)) {
-      return new AnomalyDetectionResult(false, 0.0, 0.0, "Insufficient recent data",
+      return new AnomalyDetectionResult(
+          false,
+          0.0,
+          0.0,
+          "Insufficient recent data",
           Map.of("recent_values", recentValues.size(), "required", Math.min(windowSize, 5)));
     }
 
-    final double movingAverage = recentValues.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    final double movingAverage =
+        recentValues.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     final double deviation = Math.abs(value - movingAverage);
-    final double avgDeviation = recentValues.stream()
-        .mapToDouble(v -> Math.abs(v - movingAverage))
-        .average().orElse(0.0);
+    final double avgDeviation =
+        recentValues.stream().mapToDouble(v -> Math.abs(v - movingAverage)).average().orElse(0.0);
 
     final double threshold = movingAverage + (deviationThreshold * avgDeviation);
     final boolean isAnomaly = deviation > deviationThreshold * avgDeviation;
     final double anomalyScore = isAnomaly ? Math.min(1.0, deviation / threshold) : 0.0;
 
-    final String explanation = String.format(
-        "Value %.2f deviates %.2f from moving average %.2f (threshold=%.2f)",
-        value, deviation, movingAverage, threshold);
+    final String explanation =
+        String.format(
+            "Value %.2f deviates %.2f from moving average %.2f (threshold=%.2f)",
+            value, deviation, movingAverage, threshold);
 
-    final Map<String, Object> diagnostics = Map.of(
-        "moving_average", movingAverage,
-        "deviation", deviation,
-        "average_deviation", avgDeviation,
-        "window_size", recentValues.size());
+    final Map<String, Object> diagnostics =
+        Map.of(
+            "moving_average", movingAverage,
+            "deviation", deviation,
+            "average_deviation", avgDeviation,
+            "window_size", recentValues.size());
 
     return new AnomalyDetectionResult(isAnomaly, anomalyScore, threshold, explanation, diagnostics);
   }
 
   /** Exponential smoothing-based anomaly detection. */
   private AnomalyDetectionResult detectExponentialSmoothingAnomaly(
-      final IntelligentAlertRule rule,
-      final double value,
-      final HistoricalMetricData historical) {
+      final IntelligentAlertRule rule, final double value, final HistoricalMetricData historical) {
 
-    final double smoothingFactor = (Double) rule.getAlgorithmParameters().getOrDefault("smoothing_factor", 0.3);
-    final double spikeThreshold = (Double) rule.getAlgorithmParameters().getOrDefault("spike_threshold", 2.0);
+    final double smoothingFactor =
+        (Double) rule.getAlgorithmParameters().getOrDefault("smoothing_factor", 0.3);
+    final double spikeThreshold =
+        (Double) rule.getAlgorithmParameters().getOrDefault("spike_threshold", 2.0);
 
     final List<Double> recentValues = historical.getRecentValues(50);
     if (recentValues.size() < 10) {
-      return new AnomalyDetectionResult(false, 0.0, 0.0, "Insufficient data for smoothing",
+      return new AnomalyDetectionResult(
+          false,
+          0.0,
+          0.0,
+          "Insufficient data for smoothing",
           Map.of("data_points", recentValues.size()));
     }
 
@@ -715,21 +915,24 @@ public final class IntelligentAlertingSystem {
     final boolean isAnomaly = deviation > threshold;
     final double anomalyScore = isAnomaly ? Math.min(1.0, deviation / threshold) : 0.0;
 
-    final String explanation = String.format(
-        "Value %.2f vs smoothed %.2f (deviation=%.2f, threshold=%.2f)",
-        value, smoothedValue, deviation, threshold);
+    final String explanation =
+        String.format(
+            "Value %.2f vs smoothed %.2f (deviation=%.2f, threshold=%.2f)",
+            value, smoothedValue, deviation, threshold);
 
-    final Map<String, Object> diagnostics = Map.of(
-        "smoothed_value", smoothedValue,
-        "deviation", deviation,
-        "smoothing_factor", smoothingFactor,
-        "data_points_used", recentValues.size());
+    final Map<String, Object> diagnostics =
+        Map.of(
+            "smoothed_value", smoothedValue,
+            "deviation", deviation,
+            "smoothing_factor", smoothingFactor,
+            "data_points_used", recentValues.size());
 
     return new AnomalyDetectionResult(isAnomaly, anomalyScore, threshold, explanation, diagnostics);
   }
 
   /** Calculates dynamic severity based on anomaly score. */
-  private AlertSeverity calculateDynamicSeverity(final AlertSeverity baseSeverity, final double anomalyScore) {
+  private AlertSeverity calculateDynamicSeverity(
+      final AlertSeverity baseSeverity, final double anomalyScore) {
     if (anomalyScore >= 0.95) {
       return AlertSeverity.EMERGENCY;
     } else if (anomalyScore >= 0.90) {
@@ -780,9 +983,11 @@ public final class IntelligentAlertingSystem {
   }
 
   /** Generates correlation ID for alert grouping. */
-  private String generateCorrelationId(final IntelligentAlertRule rule, final Map<String, String> tags) {
+  private String generateCorrelationId(
+      final IntelligentAlertRule rule, final Map<String, String> tags) {
     // Simple correlation based on rule and time window
-    final long timeWindow = Instant.now().truncatedTo(ChronoUnit.MINUTES).toEpochMilli() / 60000; // 1-minute windows
+    final long timeWindow =
+        Instant.now().truncatedTo(ChronoUnit.MINUTES).toEpochMilli() / 60000; // 1-minute windows
     return rule.getRuleId() + "_" + timeWindow;
   }
 
@@ -800,13 +1005,17 @@ public final class IntelligentAlertingSystem {
     // Add algorithm-specific insights
     switch (rule.getAlgorithm()) {
       case STATISTICAL_THRESHOLD:
-        analysis.append("Value significantly exceeds statistical threshold based on historical pattern. ");
+        analysis.append(
+            "Value significantly exceeds statistical threshold based on historical pattern. ");
         break;
       case MOVING_AVERAGE:
         analysis.append("Value deviates significantly from recent moving average. ");
         break;
       case EXPONENTIAL_SMOOTHING:
         analysis.append("Sudden spike detected using exponential smoothing forecasting. ");
+        break;
+      default:
+        analysis.append("Anomaly detected using advanced analytics. ");
         break;
     }
 
@@ -815,7 +1024,9 @@ public final class IntelligentAlertingSystem {
       analysis.append("Context: ").append(tags.toString()).append(". ");
     }
 
-    analysis.append("Confidence: ").append(String.format("%.1f%%", anomalyResult.getAnomalyScore() * 100));
+    analysis
+        .append("Confidence: ")
+        .append(String.format("%.1f%%", anomalyResult.getAnomalyScore() * 100));
 
     return analysis.toString();
   }
@@ -823,16 +1034,16 @@ public final class IntelligentAlertingSystem {
   /** Processes alert for correlation with existing alerts. */
   private void processAlertForCorrelation(final CorrelatedAlert alert) {
     // Find existing correlation groups that might be related
-    final List<AlertCorrelationGroup> candidateGroups = correlationGroups.values().stream()
-        .filter(group -> isCorrelationCandidate(group, alert))
-        .collect(Collectors.toList());
+    final List<AlertCorrelationGroup> candidateGroups =
+        correlationGroups.values().stream()
+            .filter(group -> isCorrelationCandidate(group, alert))
+            .collect(Collectors.toList());
 
     if (candidateGroups.isEmpty()) {
       // Create new correlation group
-      final AlertCorrelationGroup newGroup = new AlertCorrelationGroup(
-          alert.getCorrelationId(),
-          CorrelationStrategy.TIME_BASED,
-          alert);
+      final AlertCorrelationGroup newGroup =
+          new AlertCorrelationGroup(
+              alert.getCorrelationId(), CorrelationStrategy.TIME_BASED, alert);
       correlationGroups.put(newGroup.getGroupId(), newGroup);
       notifyCorrelationHandlers(newGroup);
     } else {
@@ -844,7 +1055,8 @@ public final class IntelligentAlertingSystem {
   }
 
   /** Checks if an alert is a candidate for correlation with a group. */
-  private boolean isCorrelationCandidate(final AlertCorrelationGroup group, final CorrelatedAlert alert) {
+  private boolean isCorrelationCandidate(
+      final AlertCorrelationGroup group, final CorrelatedAlert alert) {
     // Time-based correlation
     final Duration timeDifference = Duration.between(group.getCreatedAt(), alert.getTimestamp());
     if (timeDifference.compareTo(maxCorrelationWindow) > 0) {
@@ -853,11 +1065,14 @@ public final class IntelligentAlertingSystem {
 
     // Tag-based correlation
     final Set<String> alertTags = Set.copyOf(alert.getRule().getCorrelationTags());
-    final boolean hasCommonTags = group.getAlerts().stream()
-        .anyMatch(groupAlert -> {
-          final Set<String> groupTags = Set.copyOf(groupAlert.getRule().getCorrelationTags());
-          return alertTags.stream().anyMatch(groupTags::contains);
-        });
+    final boolean hasCommonTags =
+        group.getAlerts().stream()
+            .anyMatch(
+                groupAlert -> {
+                  final Set<String> groupTags =
+                      Set.copyOf(groupAlert.getRule().getCorrelationTags());
+                  return alertTags.stream().anyMatch(groupTags::contains);
+                });
 
     return hasCommonTags;
   }
@@ -866,19 +1081,24 @@ public final class IntelligentAlertingSystem {
   private void processAlertCorrelation() {
     try {
       // Clean up expired correlation groups
-      correlationGroups.entrySet().removeIf(entry -> {
-        final AlertCorrelationGroup group = entry.getValue();
-        if (group.isExpired()) {
-          LOGGER.fine("Removing expired correlation group: " + group.getGroupId());
-          return true;
-        }
-        return false;
-      });
+      correlationGroups
+          .entrySet()
+          .removeIf(
+              entry -> {
+                final AlertCorrelationGroup group = entry.getValue();
+                if (group.isExpired()) {
+                  LOGGER.fine("Removing expired correlation group: " + group.getGroupId());
+                  return true;
+                }
+                return false;
+              });
 
       // Log correlation statistics
       if (correlationGroups.size() > 0) {
-        LOGGER.fine(String.format("Active correlation groups: %d, Total correlations: %d",
-            correlationGroups.size(), totalAlertsCorrelated.get()));
+        LOGGER.fine(
+            String.format(
+                "Active correlation groups: %d, Total correlations: %d",
+                correlationGroups.size(), totalAlertsCorrelated.get()));
       }
 
     } catch (final Exception e) {
@@ -899,10 +1119,11 @@ public final class IntelligentAlertingSystem {
 
       // Enforce max active alerts limit
       if (activeAlerts.size() > maxActiveAlerts) {
-        final List<CorrelatedAlert> alertsToRemove = activeAlerts.values().stream()
-            .sorted(Comparator.comparing(CorrelatedAlert::getTimestamp))
-            .limit(activeAlerts.size() - maxActiveAlerts)
-            .collect(Collectors.toList());
+        final List<CorrelatedAlert> alertsToRemove =
+            activeAlerts.values().stream()
+                .sorted(Comparator.comparing(CorrelatedAlert::getTimestamp))
+                .limit(activeAlerts.size() - maxActiveAlerts)
+                .collect(Collectors.toList());
 
         for (final CorrelatedAlert alert : alertsToRemove) {
           activeAlerts.remove(alert.getAlertId());
@@ -932,8 +1153,10 @@ public final class IntelligentAlertingSystem {
         // Recalculate statistics for adaptive rules
         historical.calculateStatistics();
 
-        LOGGER.fine(String.format("Adjusted adaptive thresholds for rule %s: mean=%.2f, stddev=%.2f",
-            rule.getRuleId(), historical.getMean(), historical.getStandardDeviation()));
+        LOGGER.fine(
+            String.format(
+                "Adjusted adaptive thresholds for rule %s: mean=%.2f, stddev=%.2f",
+                rule.getRuleId(), historical.getMean(), historical.getStandardDeviation()));
       }
 
     } catch (final Exception e) {
@@ -1048,8 +1271,9 @@ public final class IntelligentAlertingSystem {
    */
   public String getAlertingStatistics() {
     return String.format(
-        "Intelligent Alerting Statistics: rules=%d, active_alerts=%d, total_generated=%d, " +
-        "total_suppressed=%d, total_correlated=%d, anomalies_detected=%d, correlation_groups=%d",
+        "Intelligent Alerting Statistics: rules=%d, active_alerts=%d, total_generated=%d,"
+            + " total_suppressed=%d, total_correlated=%d, anomalies_detected=%d,"
+            + " correlation_groups=%d",
         alertRules.size(),
         activeAlerts.size(),
         totalAlertsGenerated.get(),

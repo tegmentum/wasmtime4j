@@ -187,16 +187,23 @@ public interface Module extends Closeable {
     try {
       // Basic WebAssembly magic number validation
       if (wasmBytes.length < 8) {
-        return ModuleValidationResult.failure(List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
+        return ModuleValidationResult.failure(
+            List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
       }
 
       // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
-      if (wasmBytes[0] != 0x00 || wasmBytes[1] != 0x61 || wasmBytes[2] != 0x73 || wasmBytes[3] != 0x6D) {
+      if (wasmBytes[0] != 0x00
+          || wasmBytes[1] != 0x61
+          || wasmBytes[2] != 0x73
+          || wasmBytes[3] != 0x6D) {
         return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
       }
 
       // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
-      if (wasmBytes[4] != 0x01 || wasmBytes[5] != 0x00 || wasmBytes[6] != 0x00 || wasmBytes[7] != 0x00) {
+      if (wasmBytes[4] != 0x01
+          || wasmBytes[5] != 0x00
+          || wasmBytes[6] != 0x00
+          || wasmBytes[7] != 0x00) {
         return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
       }
 
@@ -209,7 +216,8 @@ public interface Module extends Closeable {
         return ModuleValidationResult.success();
       } catch (Exception e) {
         // If compilation fails, return validation failure with the error message
-        return ModuleValidationResult.failure(List.of("Compilation validation failed: " + e.getMessage()));
+        return ModuleValidationResult.failure(
+            List.of("Compilation validation failed: " + e.getMessage()));
       }
 
     } catch (Exception e) {
@@ -322,9 +330,9 @@ public interface Module extends Closeable {
   /**
    * Serializes this compiled module to a byte array for caching or distribution.
    *
-   * <p>Serialized modules can be stored to disk, sent over the network, or cached
-   * for faster startup times. The serialized data includes the compiled code and
-   * all necessary metadata for instantiation.
+   * <p>Serialized modules can be stored to disk, sent over the network, or cached for faster
+   * startup times. The serialized data includes the compiled code and all necessary metadata for
+   * instantiation.
    *
    * @return the serialized module data
    * @throws WasmException if serialization fails
@@ -335,9 +343,9 @@ public interface Module extends Closeable {
   /**
    * Deserializes a module from previously serialized bytes.
    *
-   * <p>This method can be used to quickly load a previously compiled module
-   * without going through the compilation process again. The bytes must have
-   * been created by a compatible version of the same engine.
+   * <p>This method can be used to quickly load a previously compiled module without going through
+   * the compilation process again. The bytes must have been created by a compatible version of the
+   * same engine.
    *
    * @param engine the engine to use for deserialization
    * @param bytes the serialized module data
@@ -360,15 +368,16 @@ public interface Module extends Closeable {
    * @throws IllegalArgumentException if engine or path is null
    * @since 1.0.0
    */
-  static Module deserializeFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+  static Module deserializeFile(final Engine engine, final java.nio.file.Path path)
+      throws WasmException {
     return WasmRuntimeFactory.create().deserializeModuleFile(engine, path);
   }
 
   /**
    * Checks if this module can be serialized.
    *
-   * <p>Some modules may not be serializable depending on their compilation
-   * settings or the engine configuration.
+   * <p>Some modules may not be serializable depending on their compilation settings or the engine
+   * configuration.
    *
    * @return true if this module can be serialized
    * @since 1.0.0

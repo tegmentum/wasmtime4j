@@ -31,6 +31,17 @@ public interface Instance extends Closeable {
   Optional<WasmFunction> getFunction(final String name);
 
   /**
+   * Gets an exported function by index.
+   *
+   * <p>Functions are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the function
+   * @return the exported function, or empty if not found or not a function
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmFunction> getFunction(final int index);
+
+  /**
    * Gets an exported global by name.
    *
    * @param name the name of the exported global
@@ -38,6 +49,17 @@ public interface Instance extends Closeable {
    * @throws IllegalArgumentException if name is null
    */
   Optional<WasmGlobal> getGlobal(final String name);
+
+  /**
+   * Gets an exported global by index.
+   *
+   * <p>Globals are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the global
+   * @return the exported global, or empty if not found or not a global
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmGlobal> getGlobal(final int index);
 
   /**
    * Gets an exported memory by name.
@@ -49,6 +71,17 @@ public interface Instance extends Closeable {
   Optional<WasmMemory> getMemory(final String name);
 
   /**
+   * Gets an exported memory by index.
+   *
+   * <p>Memories are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the memory
+   * @return the exported memory, or empty if not found or not a memory
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmMemory> getMemory(final int index);
+
+  /**
    * Gets an exported table by name.
    *
    * @param name the name of the exported table
@@ -56,6 +89,17 @@ public interface Instance extends Closeable {
    * @throws IllegalArgumentException if name is null
    */
   Optional<WasmTable> getTable(final String name);
+
+  /**
+   * Gets an exported table by index.
+   *
+   * <p>Tables are indexed in the order they appear in the module's export section.
+   *
+   * @param index the index of the table
+   * @return the exported table, or empty if not found or not a table
+   * @throws IllegalArgumentException if index is negative
+   */
+  java.util.Optional<WasmTable> getTable(final int index);
 
   /**
    * Gets the default linear memory if the module exports one.
@@ -174,50 +218,6 @@ public interface Instance extends Closeable {
       throws WasmException;
 
   /**
-   * Gets an exported function by index.
-   *
-   * <p>Functions are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the function
-   * @return the exported function, or empty if not found or not a function
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmFunction> getFunction(final int index);
-
-  /**
-   * Gets an exported memory by index.
-   *
-   * <p>Memories are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the memory
-   * @return the exported memory, or empty if not found or not a memory
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmMemory> getMemory(final int index);
-
-  /**
-   * Gets an exported table by index.
-   *
-   * <p>Tables are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the table
-   * @return the exported table, or empty if not found or not a table
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmTable> getTable(final int index);
-
-  /**
-   * Gets an exported global by index.
-   *
-   * <p>Globals are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the global
-   * @return the exported global, or empty if not found or not a global
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmGlobal> getGlobal(final int index);
-
-  /**
    * Gets all exports from this instance as a map.
    *
    * <p>This method provides a convenient way to access all exports at once. The map keys are export
@@ -265,8 +265,8 @@ public interface Instance extends Closeable {
    * Performs comprehensive resource cleanup for this instance.
    *
    * <p>This method goes beyond dispose() to perform deep cleanup of all associated resources,
-   * including native memory, function references, and internal state. Unlike dispose(), this
-   * method ensures complete resource cleanup and can be safely called multiple times.
+   * including native memory, function references, and internal state. Unlike dispose(), this method
+   * ensures complete resource cleanup and can be safely called multiple times.
    *
    * @return true if cleanup was performed, false if already cleaned up
    * @throws WasmException if cleanup fails

@@ -11,7 +11,6 @@ use crate::error::{jni_utils, WasmtimeError};
 use crate::engine::Engine as WasmtimeEngine;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use std::os::raw::c_void;
 
 /// Create a new hot reload manager
 #[no_mangle]

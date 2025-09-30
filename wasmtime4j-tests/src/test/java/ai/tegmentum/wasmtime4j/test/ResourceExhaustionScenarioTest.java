@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -28,62 +27,96 @@ import org.junit.jupiter.params.provider.EnumSource;
 /**
  * Comprehensive test suite for WebAssembly resource exhaustion scenarios.
  *
- * <p>This test class verifies proper error handling when system resources are exhausted,
- * including memory limits, too many instances, excessive compilation requests, and other
- * resource-related failures that should throw appropriate exceptions.
+ * <p>This test class verifies proper error handling when system resources are exhausted, including
+ * memory limits, too many instances, excessive compilation requests, and other resource-related
+ * failures that should throw appropriate exceptions.
  */
 @DisplayName("Resource Exhaustion Scenario Test Suite")
 class ResourceExhaustionScenarioTest {
 
   /** Simple valid WebAssembly module for resource testing. */
   private static final byte[] SIMPLE_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x04, // Section size
     0x01, // 1 function body
     0x02, // Body size
-    0x00, 0x0B // No locals, end instruction
+    0x00,
+    0x0B // No locals, end instruction
   };
 
   /**
-   * WebAssembly module with large memory allocation.
-   * This module declares a memory with a very large minimum size.
+   * WebAssembly module with large memory allocation. This module declares a memory with a very
+   * large minimum size.
    */
   private static final byte[] LARGE_MEMORY_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x05, // Memory section
     0x04, // Section size
     0x01, // 1 memory
-    0x00, (byte) 0xFF, (byte) 0xFF, // Memory limits: minimum 65535 pages (4GB)
+    0x00,
+    (byte) 0xFF,
+    (byte) 0xFF, // Memory limits: minimum 65535 pages (4GB)
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x04, // Section size
     0x01, // 1 function body
     0x02, // Body size
-    0x00, 0x0B // No locals, end instruction
+    0x00,
+    0x0B // No locals, end instruction
   };
 
   /** WebAssembly module with many functions to test compilation limits. */
@@ -118,7 +151,8 @@ class ResourceExhaustionScenarioTest {
 
     // Code section - bodies for all functions
     moduleBytes.add((byte) 0x0A); // Code section
-    int codeSectionSize = functionCountBytes.size() + functionCount * 3; // Each function body is 3 bytes
+    int codeSectionSize =
+        functionCountBytes.size() + functionCount * 3; // Each function body is 3 bytes
     moduleBytes.addAll(encodeLEB128(codeSectionSize));
 
     moduleBytes.addAll(functionCountBytes); // Function body count
@@ -179,8 +213,7 @@ class ResourceExhaustionScenarioTest {
                 || e.getMessage().toLowerCase().contains("allocation")
                 || e.getMessage().toLowerCase().contains("limit")
                 || e.getMessage().toLowerCase().contains("resource"),
-            "Exception message should mention memory/allocation/limit/resource: "
-                + e.getMessage());
+            "Exception message should mention memory/allocation/limit/resource: " + e.getMessage());
       }
     }
   }
@@ -228,8 +261,7 @@ class ResourceExhaustionScenarioTest {
                 || e.getMessage().toLowerCase().contains("limit")
                 || e.getMessage().toLowerCase().contains("memory")
                 || e.getMessage().toLowerCase().contains("allocation"),
-            "Exception message should mention resource/limit/memory/allocation: "
-                + e.getMessage());
+            "Exception message should mention resource/limit/memory/allocation: " + e.getMessage());
       } catch (OutOfMemoryError e) {
         // OutOfMemoryError is acceptable for this test
         assertTrue(true, "OutOfMemoryError is acceptable when creating many instances");
@@ -321,8 +353,7 @@ class ResourceExhaustionScenarioTest {
                 || e.getMessage().toLowerCase().contains("resource")
                 || e.getMessage().toLowerCase().contains("limit")
                 || e.getMessage().toLowerCase().contains("size"),
-            "Exception message should mention compilation/resource/limit/size: "
-                + e.getMessage());
+            "Exception message should mention compilation/resource/limit/size: " + e.getMessage());
       }
     }
   }
@@ -365,7 +396,8 @@ class ResourceExhaustionScenarioTest {
             });
       }
 
-      assertTrue(latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
+      assertTrue(
+          latch.await(60, TimeUnit.SECONDS), "All threads should complete within 60 seconds");
       executor.shutdown();
 
       // At least some threads should succeed

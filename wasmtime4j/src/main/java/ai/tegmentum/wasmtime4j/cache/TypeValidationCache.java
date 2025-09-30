@@ -149,6 +149,15 @@ public final class TypeValidationCache {
     private final TypeInfo typeInfo;
     private final long validationTimeMs;
 
+    /**
+     * Creates a new validation result.
+     *
+     * @param valid whether the validation passed
+     * @param errors array of validation errors, null if none
+     * @param warnings array of validation warnings, null if none
+     * @param typeInfo the type information for the validated type
+     * @param validationTimeMs time taken for validation in milliseconds
+     */
     public ValidationResult(
         final boolean valid,
         final String[] errors,
@@ -191,6 +200,15 @@ public final class TypeValidationCache {
     private final String moduleContext;
     private final String[] constraints;
 
+    /**
+     * Creates new type information.
+     *
+     * @param parameterTypes array of parameter type names, null if none
+     * @param returnTypes array of return type names, null if none
+     * @param isHostFunction whether this is a host function type
+     * @param moduleContext the module context for this type
+     * @param constraints array of type constraints, null if none
+     */
     public TypeInfo(
         final String[] parameterTypes,
         final String[] returnTypes,
@@ -231,6 +249,13 @@ public final class TypeValidationCache {
     private final String reason;
     private final String[] suggestions;
 
+    /**
+     * Creates a new compatibility result.
+     *
+     * @param compatible whether the types are compatible
+     * @param reason reason for compatibility or incompatibility
+     * @param suggestions array of suggestions for fixing incompatibility, null if none
+     */
     public CompatibilityResult(
         final boolean compatible, final String reason, final String[] suggestions) {
       this.compatible = compatible;

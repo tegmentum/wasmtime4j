@@ -23,8 +23,8 @@ import java.util.Set;
 /**
  * Represents a capability that a component can provide or require.
  *
- * <p>Capabilities are used for conditional component loading and compatibility checking.
- * They represent features, interfaces, or resources that components can provide or depend on.
+ * <p>Capabilities are used for conditional component loading and compatibility checking. They
+ * represent features, interfaces, or resources that components can provide or depend on.
  *
  * @since 1.0.0
  */
@@ -36,8 +36,12 @@ public final class ComponentCapability {
   private final Set<String> attributes;
   private final CapabilityLevel level;
 
-  private ComponentCapability(String name, CapabilityType type, Optional<ComponentVersion> version,
-                              Set<String> attributes, CapabilityLevel level) {
+  private ComponentCapability(
+      String name,
+      CapabilityType type,
+      Optional<ComponentVersion> version,
+      Set<String> attributes,
+      CapabilityLevel level) {
     this.name = Objects.requireNonNull(name, "Capability name cannot be null");
     this.type = Objects.requireNonNull(type, "Capability type cannot be null");
     this.version = Objects.requireNonNull(version, "Version cannot be null");
@@ -139,9 +143,7 @@ public final class ComponentCapability {
    * @return the interface capability
    */
   public static ComponentCapability interfaceCapability(String interfaceName) {
-    return builder(interfaceName, CapabilityType.INTERFACE)
-        .level(CapabilityLevel.REQUIRED)
-        .build();
+    return builder(interfaceName, CapabilityType.INTERFACE).level(CapabilityLevel.REQUIRED).build();
   }
 
   /**
@@ -151,7 +153,8 @@ public final class ComponentCapability {
    * @param version the interface version
    * @return the versioned interface capability
    */
-  public static ComponentCapability interfaceCapability(String interfaceName, ComponentVersion version) {
+  public static ComponentCapability interfaceCapability(
+      String interfaceName, ComponentVersion version) {
     return builder(interfaceName, CapabilityType.INTERFACE)
         .version(version)
         .level(CapabilityLevel.REQUIRED)
@@ -165,9 +168,7 @@ public final class ComponentCapability {
    * @return the feature capability
    */
   public static ComponentCapability featureCapability(String featureName) {
-    return builder(featureName, CapabilityType.FEATURE)
-        .level(CapabilityLevel.OPTIONAL)
-        .build();
+    return builder(featureName, CapabilityType.FEATURE).level(CapabilityLevel.OPTIONAL).build();
   }
 
   /**
@@ -177,21 +178,23 @@ public final class ComponentCapability {
    * @return the resource capability
    */
   public static ComponentCapability resourceCapability(String resourceName) {
-    return builder(resourceName, CapabilityType.RESOURCE)
-        .level(CapabilityLevel.REQUIRED)
-        .build();
+    return builder(resourceName, CapabilityType.RESOURCE).level(CapabilityLevel.REQUIRED).build();
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
     ComponentCapability that = (ComponentCapability) obj;
-    return Objects.equals(name, that.name) &&
-           type == that.type &&
-           Objects.equals(version, that.version) &&
-           Objects.equals(attributes, that.attributes) &&
-           level == that.level;
+    return Objects.equals(name, that.name)
+        && type == that.type
+        && Objects.equals(version, that.version)
+        && Objects.equals(attributes, that.attributes)
+        && level == that.level;
   }
 
   @Override
@@ -201,13 +204,12 @@ public final class ComponentCapability {
 
   @Override
   public String toString() {
-    return String.format("ComponentCapability{name='%s', type=%s, version=%s, level=%s}",
+    return String.format(
+        "ComponentCapability{name='%s', type=%s, version=%s, level=%s}",
         name, type, version.map(ComponentVersion::toString).orElse("any"), level);
   }
 
-  /**
-   * Builder for ComponentCapability.
-   */
+  /** Builder for ComponentCapability. */
   public static final class Builder {
     private final String name;
     private final CapabilityType type;
@@ -240,37 +242,33 @@ public final class ComponentCapability {
     }
   }
 
-  /**
-   * Types of capabilities.
-   */
+  /** Types of capabilities. */
   public enum CapabilityType {
-    /** WIT interface capability */
+    /** WIT interface capability. */
     INTERFACE,
-    /** WebAssembly feature capability */
+    /** WebAssembly feature capability. */
     FEATURE,
-    /** System resource capability */
+    /** System resource capability. */
     RESOURCE,
-    /** Runtime service capability */
+    /** Runtime service capability. */
     SERVICE,
-    /** Security capability */
+    /** Security capability. */
     SECURITY,
-    /** Performance capability */
+    /** Performance capability. */
     PERFORMANCE,
-    /** Custom capability */
+    /** Custom capability. */
     CUSTOM
   }
 
-  /**
-   * Capability requirement levels.
-   */
+  /** Capability requirement levels. */
   public enum CapabilityLevel {
-    /** Capability is absolutely required */
+    /** Capability is absolutely required. */
     REQUIRED,
-    /** Capability is preferred but optional */
+    /** Capability is preferred but optional. */
     PREFERRED,
-    /** Capability is optional */
+    /** Capability is optional. */
     OPTIONAL,
-    /** Capability is prohibited */
+    /** Capability is prohibited. */
     PROHIBITED;
 
     /**

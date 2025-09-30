@@ -12,13 +12,12 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.DoubleSummaryStatistics;
-import java.util.OptionalDouble;
 
 /**
  * Performance regression testing framework for wasmtime4j.
@@ -328,26 +327,25 @@ public final class PerformanceRegressionTestingFramework {
     }
   }
 
-  /**
-   * Advanced statistical analysis utilities for comprehensive performance analysis.
-   */
+  /** Advanced statistical analysis utilities for comprehensive performance analysis. */
   public static final class AdvancedStatisticalAnalysis {
 
     private AdvancedStatisticalAnalysis() {
       // Utility class
     }
 
-    /**
-     * Performs Welch's t-test for statistical significance between two performance datasets.
-     */
+    /** Performs Welch's t-test for statistical significance between two performance datasets. */
     public static StatisticalTestResult welchsTTest(
         final List<Double> sample1, final List<Double> sample2, final double confidenceLevel) {
       if (sample1 == null || sample2 == null || sample1.size() < 2 || sample2.size() < 2) {
-        return new StatisticalTestResult(false, 0.0, "Insufficient sample size for statistical analysis");
+        return new StatisticalTestResult(
+            false, 0.0, "Insufficient sample size for statistical analysis");
       }
 
-      final DoubleSummaryStatistics stats1 = sample1.stream().mapToDouble(Double::doubleValue).summaryStatistics();
-      final DoubleSummaryStatistics stats2 = sample2.stream().mapToDouble(Double::doubleValue).summaryStatistics();
+      final DoubleSummaryStatistics stats1 =
+          sample1.stream().mapToDouble(Double::doubleValue).summaryStatistics();
+      final DoubleSummaryStatistics stats2 =
+          sample2.stream().mapToDouble(Double::doubleValue).summaryStatistics();
 
       final double mean1 = stats1.getAverage();
       final double mean2 = stats2.getAverage();
@@ -359,8 +357,10 @@ public final class PerformanceRegressionTestingFramework {
 
       if (variance1 == 0 && variance2 == 0) {
         final boolean significant = mean1 != mean2;
-        return new StatisticalTestResult(significant, significant ? Double.POSITIVE_INFINITY : 0.0,
-                                       significant ? "Exact difference detected" : "No difference");
+        return new StatisticalTestResult(
+            significant,
+            significant ? Double.POSITIVE_INFINITY : 0.0,
+            significant ? "Exact difference detected" : "No difference");
       }
 
       final double standardError = Math.sqrt(variance1 / n1 + variance2 / n2);
@@ -373,24 +373,26 @@ public final class PerformanceRegressionTestingFramework {
       final double criticalValue = getCriticalValue(confidenceLevel, degreesOfFreedom);
       final boolean isSignificant = tStatistic > criticalValue;
 
-      final String interpretation = String.format(
-          "t-statistic: %.4f, df: %.2f, critical value: %.4f, %s at %.0f%% confidence level",
-          tStatistic, degreesOfFreedom, criticalValue,
-          isSignificant ? "significant" : "not significant",
-          confidenceLevel * 100);
+      final String interpretation =
+          String.format(
+              "t-statistic: %.4f, df: %.2f, critical value: %.4f, %s at %.0f%% confidence level",
+              tStatistic,
+              degreesOfFreedom,
+              criticalValue,
+              isSignificant ? "significant" : "not significant",
+              confidenceLevel * 100);
 
       return new StatisticalTestResult(isSignificant, tStatistic, interpretation);
     }
 
-    /**
-     * Calculates coefficient of variation for performance stability analysis.
-     */
+    /** Calculates coefficient of variation for performance stability analysis. */
     public static double calculateCoefficientOfVariation(final List<Double> values) {
       if (values == null || values.isEmpty()) {
         return Double.NaN;
       }
 
-      final DoubleSummaryStatistics stats = values.stream().mapToDouble(Double::doubleValue).summaryStatistics();
+      final DoubleSummaryStatistics stats =
+          values.stream().mapToDouble(Double::doubleValue).summaryStatistics();
       final double mean = stats.getAverage();
       if (mean == 0) {
         return Double.NaN;
@@ -401,23 +403,22 @@ public final class PerformanceRegressionTestingFramework {
       return standardDeviation / mean;
     }
 
-    /**
-     * Detects performance outliers using the Interquartile Range (IQR) method.
-     */
+    /** Detects performance outliers using the Interquartile Range (IQR) method. */
     public static OutlierAnalysisResult detectOutliers(final List<Double> values) {
       if (values == null || values.size() < 4) {
-        return new OutlierAnalysisResult(new ArrayList<>(), new ArrayList<>(),
-                                       "Insufficient data for outlier detection");
+        return new OutlierAnalysisResult(
+            new ArrayList<>(), new ArrayList<>(), "Insufficient data for outlier detection");
       }
 
-      final List<Double> sortedValues = values.stream()
-          .filter(v -> !Double.isNaN(v) && !Double.isInfinite(v))
-          .sorted()
-          .collect(Collectors.toList());
+      final List<Double> sortedValues =
+          values.stream()
+              .filter(v -> !Double.isNaN(v) && !Double.isInfinite(v))
+              .sorted()
+              .collect(Collectors.toList());
 
       if (sortedValues.size() < 4) {
-        return new OutlierAnalysisResult(new ArrayList<>(), sortedValues,
-                                       "Insufficient valid data for outlier detection");
+        return new OutlierAnalysisResult(
+            new ArrayList<>(), sortedValues, "Insufficient valid data for outlier detection");
       }
 
       final int n = sortedValues.size();
@@ -427,33 +428,34 @@ public final class PerformanceRegressionTestingFramework {
       final double lowerBound = q1 - 1.5 * iqr;
       final double upperBound = q3 + 1.5 * iqr;
 
-      final List<Double> outliers = sortedValues.stream()
-          .filter(v -> v < lowerBound || v > upperBound)
-          .collect(Collectors.toList());
+      final List<Double> outliers =
+          sortedValues.stream()
+              .filter(v -> v < lowerBound || v > upperBound)
+              .collect(Collectors.toList());
 
-      final List<Double> cleanedValues = sortedValues.stream()
-          .filter(v -> v >= lowerBound && v <= upperBound)
-          .collect(Collectors.toList());
+      final List<Double> cleanedValues =
+          sortedValues.stream()
+              .filter(v -> v >= lowerBound && v <= upperBound)
+              .collect(Collectors.toList());
 
-      final String analysis = String.format(
-          "Q1: %.4f, Q3: %.4f, IQR: %.4f, bounds: [%.4f, %.4f], outliers: %d/%d",
-          q1, q3, iqr, lowerBound, upperBound, outliers.size(), n);
+      final String analysis =
+          String.format(
+              "Q1: %.4f, Q3: %.4f, IQR: %.4f, bounds: [%.4f, %.4f], outliers: %d/%d",
+              q1, q3, iqr, lowerBound, upperBound, outliers.size(), n);
 
       return new OutlierAnalysisResult(outliers, cleanedValues, analysis);
     }
 
-    /**
-     * Performs trend analysis on historical performance data.
-     */
-    public static TrendAnalysisResult analyzeTrend(final List<PerformanceDataPoint> historicalData) {
+    /** Performs trend analysis on historical performance data. */
+    public static TrendAnalysisResult analyzeTrend(
+        final List<PerformanceDataPoint> historicalData) {
       if (historicalData == null || historicalData.size() < 3) {
-        return new TrendAnalysisResult(TrendDirection.UNKNOWN, 0.0, 0.0,
-                                     "Insufficient data for trend analysis");
+        return new TrendAnalysisResult(
+            TrendDirection.UNKNOWN, 0.0, 0.0, "Insufficient data for trend analysis");
       }
 
-      final List<Double> scores = historicalData.stream()
-          .map(PerformanceDataPoint::getScore)
-          .collect(Collectors.toList());
+      final List<Double> scores =
+          historicalData.stream().map(PerformanceDataPoint::getScore).collect(Collectors.toList());
 
       // Simple linear regression for trend detection
       final int n = scores.size();
@@ -492,9 +494,10 @@ public final class PerformanceRegressionTestingFramework {
         direction = TrendDirection.DEGRADING;
       }
 
-      final String analysis = String.format(
-          "Linear trend: slope=%.6f, intercept=%.4f, R²=%.4f, direction=%s",
-          slope, intercept, rSquared, direction);
+      final String analysis =
+          String.format(
+              "Linear trend: slope=%.6f, intercept=%.4f, R²=%.4f, direction=%s",
+              slope, intercept, rSquared, direction);
 
       return new TrendAnalysisResult(direction, slope, rSquared, analysis);
     }
@@ -505,36 +508,38 @@ public final class PerformanceRegressionTestingFramework {
         return 0.0;
       }
 
-      final double sumSquaredDeviations = values.stream()
-          .mapToDouble(v -> Math.pow(v - mean, 2))
-          .sum();
+      final double sumSquaredDeviations =
+          values.stream().mapToDouble(v -> Math.pow(v - mean, 2)).sum();
 
       return sumSquaredDeviations / (values.size() - 1); // Sample variance
     }
 
-    private static double calculateWelchDegreesOfFreedom(final double var1, final double var2,
-                                                        final int n1, final int n2) {
+    private static double calculateWelchDegreesOfFreedom(
+        final double var1, final double var2, final int n1, final int n2) {
       final double s1Squared = var1 / n1;
       final double s2Squared = var2 / n2;
       final double numerator = Math.pow(s1Squared + s2Squared, 2);
-      final double denominator = (s1Squared * s1Squared) / (n1 - 1) + (s2Squared * s2Squared) / (n2 - 1);
+      final double denominator =
+          (s1Squared * s1Squared) / (n1 - 1) + (s2Squared * s2Squared) / (n2 - 1);
       return denominator > 0 ? numerator / denominator : 1;
     }
 
-    private static double getCriticalValue(final double confidenceLevel, final double degreesOfFreedom) {
+    private static double getCriticalValue(
+        final double confidenceLevel, final double degreesOfFreedom) {
       // Simplified critical values for common confidence levels and large df
       if (confidenceLevel >= 0.99) {
         return 2.576; // 99% confidence
       } else if (confidenceLevel >= 0.95) {
-        return 1.96;  // 95% confidence
+        return 1.96; // 95% confidence
       } else if (confidenceLevel >= 0.90) {
         return 1.645; // 90% confidence
       } else {
-        return 1.96;  // Default to 95%
+        return 1.96; // Default to 95%
       }
     }
 
-    private static double calculateQuantile(final List<Double> sortedValues, final double percentile) {
+    private static double calculateQuantile(
+        final List<Double> sortedValues, final double percentile) {
       if (sortedValues.isEmpty()) {
         return Double.NaN;
       }
@@ -553,72 +558,94 @@ public final class PerformanceRegressionTestingFramework {
     }
   }
 
-  /**
-   * Statistical test result container.
-   */
+  /** Statistical test result container. */
   public static final class StatisticalTestResult {
     private final boolean isSignificant;
     private final double testStatistic;
     private final String interpretation;
 
-    public StatisticalTestResult(final boolean isSignificant, final double testStatistic,
-                               final String interpretation) {
+    public StatisticalTestResult(
+        final boolean isSignificant, final double testStatistic, final String interpretation) {
       this.isSignificant = isSignificant;
       this.testStatistic = testStatistic;
       this.interpretation = interpretation;
     }
 
-    public boolean isSignificant() { return isSignificant; }
-    public double getTestStatistic() { return testStatistic; }
-    public String getInterpretation() { return interpretation; }
+    public boolean isSignificant() {
+      return isSignificant;
+    }
+
+    public double getTestStatistic() {
+      return testStatistic;
+    }
+
+    public String getInterpretation() {
+      return interpretation;
+    }
   }
 
-  /**
-   * Outlier analysis result container.
-   */
+  /** Outlier analysis result container. */
   public static final class OutlierAnalysisResult {
     private final List<Double> outliers;
     private final List<Double> cleanedValues;
     private final String analysis;
 
-    public OutlierAnalysisResult(final List<Double> outliers, final List<Double> cleanedValues,
-                               final String analysis) {
+    public OutlierAnalysisResult(
+        final List<Double> outliers, final List<Double> cleanedValues, final String analysis) {
       this.outliers = new ArrayList<>(outliers);
       this.cleanedValues = new ArrayList<>(cleanedValues);
       this.analysis = analysis;
     }
 
-    public List<Double> getOutliers() { return new ArrayList<>(outliers); }
-    public List<Double> getCleanedValues() { return new ArrayList<>(cleanedValues); }
-    public String getAnalysis() { return analysis; }
+    public List<Double> getOutliers() {
+      return new ArrayList<>(outliers);
+    }
+
+    public List<Double> getCleanedValues() {
+      return new ArrayList<>(cleanedValues);
+    }
+
+    public String getAnalysis() {
+      return analysis;
+    }
   }
 
-  /**
-   * Trend analysis result container.
-   */
+  /** Trend analysis result container. */
   public static final class TrendAnalysisResult {
     private final TrendDirection direction;
     private final double slope;
     private final double strength;
     private final String analysis;
 
-    public TrendAnalysisResult(final TrendDirection direction, final double slope,
-                             final double strength, final String analysis) {
+    public TrendAnalysisResult(
+        final TrendDirection direction,
+        final double slope,
+        final double strength,
+        final String analysis) {
       this.direction = direction;
       this.slope = slope;
       this.strength = strength;
       this.analysis = analysis;
     }
 
-    public TrendDirection getDirection() { return direction; }
-    public double getSlope() { return slope; }
-    public double getStrength() { return strength; }
-    public String getAnalysis() { return analysis; }
+    public TrendDirection getDirection() {
+      return direction;
+    }
+
+    public double getSlope() {
+      return slope;
+    }
+
+    public double getStrength() {
+      return strength;
+    }
+
+    public String getAnalysis() {
+      return analysis;
+    }
   }
 
-  /**
-   * Performance trend directions.
-   */
+  /** Performance trend directions. */
   public enum TrendDirection {
     IMPROVING,
     STABLE,

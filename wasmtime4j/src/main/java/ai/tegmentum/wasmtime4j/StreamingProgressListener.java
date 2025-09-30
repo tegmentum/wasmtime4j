@@ -28,7 +28,9 @@ public interface StreamingProgressListener {
    * @param statistics current compilation statistics
    */
   default void onPhaseChanged(
-      CompilationPhase previousPhase, CompilationPhase currentPhase, StreamingStatistics statistics) {
+      CompilationPhase previousPhase,
+      CompilationPhase currentPhase,
+      StreamingStatistics statistics) {
     // Default implementation does nothing
   }
 
@@ -68,7 +70,8 @@ public interface StreamingProgressListener {
    * @param error the error that caused the failure
    * @param phaseStats statistics for the failed phase
    */
-  default void onPhaseError(CompilationPhase phase, Throwable error, CompilationPhaseStats phaseStats) {
+  default void onPhaseError(
+      CompilationPhase phase, Throwable error, CompilationPhaseStats phaseStats) {
     // Default implementation does nothing
   }
 
@@ -79,7 +82,8 @@ public interface StreamingProgressListener {
    * @param functionName the name of the function (if available)
    * @param totalFunctions total number of functions in the module
    */
-  default void onFunctionCompilationStarted(int functionIndex, String functionName, int totalFunctions) {
+  default void onFunctionCompilationStarted(
+      int functionIndex, String functionName, int totalFunctions) {
     // Default implementation does nothing
   }
 
@@ -147,9 +151,7 @@ public interface StreamingProgressListener {
     // Default implementation does nothing
   }
 
-  /**
-   * Cache event types for streaming compilation.
-   */
+  /** Cache event types for streaming compilation. */
   enum CacheEvent {
     /** Cache hit - requested data was found in cache. */
     HIT,

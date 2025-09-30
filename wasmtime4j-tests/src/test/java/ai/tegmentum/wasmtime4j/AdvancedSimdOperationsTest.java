@@ -28,14 +28,10 @@ import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
 /**
- * Comprehensive test suite for advanced SIMD operations including:
- * - Extended vector types (V256, V512)
- * - Advanced arithmetic (FMA, reciprocal, square root)
- * - Advanced logical operations (popcount, variable shifts)
- * - Vector reductions (sum, min, max)
- * - Selection and blending operations
- * - Platform-specific optimizations (AVX-512, ARM NEON)
- * - Relaxed SIMD operations
+ * Comprehensive test suite for advanced SIMD operations including: - Extended vector types (V256,
+ * V512) - Advanced arithmetic (FMA, reciprocal, square root) - Advanced logical operations
+ * (popcount, variable shifts) - Vector reductions (sum, min, max) - Selection and blending
+ * operations - Platform-specific optimizations (AVX-512, ARM NEON) - Relaxed SIMD operations
  */
 class AdvancedSimdOperationsTest {
 
@@ -45,19 +41,21 @@ class AdvancedSimdOperationsTest {
   @BeforeEach
   void setUp() throws WasmtimeException {
     // Create runtime with advanced SIMD configuration
-    final EngineConfig config = EngineConfig.builder()
-        .enableSimd(true)
-        .enableRelaxedSimd(true)
-        .optimizationLevel(EngineConfig.OptimizationLevel.SPEED)
-        .build();
+    final EngineConfig config =
+        EngineConfig.builder()
+            .enableSimd(true)
+            .enableRelaxedSimd(true)
+            .optimizationLevel(EngineConfig.OptimizationLevel.SPEED)
+            .build();
 
     runtime = WasmRuntimeFactory.createRuntime(config);
 
-    final SimdOperations.SimdConfig simdConfig = SimdOperations.SimdConfig.builder()
-        .enablePlatformOptimizations(true)
-        .enableRelaxedOperations(true)
-        .maxVectorWidth(512) // Enable up to AVX-512
-        .build();
+    final SimdOperations.SimdConfig simdConfig =
+        SimdOperations.SimdConfig.builder()
+            .enablePlatformOptimizations(true)
+            .enableRelaxedOperations(true)
+            .maxVectorWidth(512) // Enable up to AVX-512
+            .build();
 
     simdOps = new SimdOperations(simdConfig, runtime);
   }
@@ -270,7 +268,8 @@ class AdvancedSimdOperationsTest {
     assertFalse(capabilities.isEmpty(), "SIMD capabilities should not be empty");
 
     // Verify that some common capabilities are reported
-    assertTrue(capabilities.contains("v128") || capabilities.contains("SIMD"),
+    assertTrue(
+        capabilities.contains("v128") || capabilities.contains("SIMD"),
         "Should report at least basic SIMD support");
   }
 
@@ -289,16 +288,22 @@ class AdvancedSimdOperationsTest {
   void testDivisionByZeroError() {
     final V128 a = V128.fromFloats(1.0f, 2.0f, 3.0f, 4.0f);
 
-    assertThrows(WasmtimeException.class, () -> {
-      simdOps.reciprocal(V128.fromFloats(0.0f, 1.0f, 2.0f, 3.0f));
-    }, "Should throw exception for division by zero in reciprocal");
+    assertThrows(
+        WasmtimeException.class,
+        () -> {
+          simdOps.reciprocal(V128.fromFloats(0.0f, 1.0f, 2.0f, 3.0f));
+        },
+        "Should throw exception for division by zero in reciprocal");
   }
 
   @Test
   void testNegativeSquareRootError() {
-    assertThrows(WasmtimeException.class, () -> {
-      simdOps.sqrt(V128.fromFloats(-1.0f, 1.0f, 2.0f, 3.0f));
-    }, "Should throw exception for negative square root");
+    assertThrows(
+        WasmtimeException.class,
+        () -> {
+          simdOps.sqrt(V128.fromFloats(-1.0f, 1.0f, 2.0f, 3.0f));
+        },
+        "Should throw exception for negative square root");
   }
 
   @Test
@@ -306,31 +311,34 @@ class AdvancedSimdOperationsTest {
     final V128 a = V128.fromInts(1, 2, 3, 4);
     final V128 b = V128.fromInts(5, 6, 7, 8);
 
-    assertThrows(IllegalArgumentException.class, () -> {
-      simdOps.blend(a, b, 256); // Invalid mask (> 255)
-    }, "Should throw exception for invalid blend mask");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          simdOps.blend(a, b, 256); // Invalid mask (> 255)
+        },
+        "Should throw exception for invalid blend mask");
   }
 
   // ===== RELAXED SIMD OPERATIONS =====
 
   @Test
   void testRelaxedOperationsConfig() {
-    final SimdOperations.SimdConfig relaxedConfig = SimdOperations.SimdConfig.builder()
-        .enableRelaxedOperations(true)
-        .build();
+    final SimdOperations.SimdConfig relaxedConfig =
+        SimdOperations.SimdConfig.builder().enableRelaxedOperations(true).build();
 
     final SimdOperations relaxedSimd = new SimdOperations(relaxedConfig, runtime);
 
-    assertTrue(relaxedConfig.isRelaxedOperationsEnabled(),
-        "Relaxed operations should be enabled");
+    assertTrue(relaxedConfig.isRelaxedOperationsEnabled(), "Relaxed operations should be enabled");
 
     // Test that relaxed operations work without throwing exceptions
     final V128 a = V128.fromFloats(1.0f, 2.0f, 3.0f, 4.0f);
     final V128 b = V128.fromFloats(0.5f, 1.5f, 2.5f, 3.5f);
 
-    assertDoesNotThrow(() -> {
-      relaxedSimd.relaxedAdd(a, b);
-    }, "Relaxed add should not throw exception");
+    assertDoesNotThrow(
+        () -> {
+          relaxedSimd.relaxedAdd(a, b);
+        },
+        "Relaxed add should not throw exception");
   }
 
   // ===== PERFORMANCE AND BENCHMARKING =====
@@ -363,7 +371,8 @@ class AdvancedSimdOperationsTest {
     final long fmaTime = endFma - startFma;
 
     // FMA should generally be faster or comparable
-    assertTrue(fmaTime <= basicTime * 1.5,
+    assertTrue(
+        fmaTime <= basicTime * 1.5,
         "FMA operation should be reasonably performant compared to separate mul+add");
   }
 
@@ -406,16 +415,18 @@ class AdvancedSimdOperationsTest {
     // Should contain information about platform features
     if (isX86Platform()) {
       // Check for x86-specific features that might be available
-      assertTrue(capabilities.toLowerCase().contains("x86") ||
-          capabilities.toLowerCase().contains("sse") ||
-          capabilities.toLowerCase().contains("avx") ||
-          capabilities.toLowerCase().contains("simd"),
+      assertTrue(
+          capabilities.toLowerCase().contains("x86")
+              || capabilities.toLowerCase().contains("sse")
+              || capabilities.toLowerCase().contains("avx")
+              || capabilities.toLowerCase().contains("simd"),
           "Should report x86-related SIMD capabilities");
     } else if (isArmPlatform()) {
       // Check for ARM-specific features
-      assertTrue(capabilities.toLowerCase().contains("arm") ||
-          capabilities.toLowerCase().contains("neon") ||
-          capabilities.toLowerCase().contains("simd"),
+      assertTrue(
+          capabilities.toLowerCase().contains("arm")
+              || capabilities.toLowerCase().contains("neon")
+              || capabilities.toLowerCase().contains("simd"),
           "Should report ARM-related SIMD capabilities");
     }
   }
@@ -432,19 +443,23 @@ class AdvancedSimdOperationsTest {
 
   @Test
   void testDebugModeConfiguration() {
-    final SimdOperations.SimdConfig debugConfig = SimdOperations.SimdConfig.builder()
-        .validateVectorOperands(true)
-        .maxVectorWidth(128) // Conservative for debugging
-        .build();
+    final SimdOperations.SimdConfig debugConfig =
+        SimdOperations.SimdConfig.builder()
+            .validateVectorOperands(true)
+            .maxVectorWidth(128) // Conservative for debugging
+            .build();
 
     final SimdOperations debugSimd = new SimdOperations(debugConfig, runtime);
 
-    assertTrue(debugConfig.isVectorOperandValidationEnabled(),
-        "Debug mode should enable validation");
+    assertTrue(
+        debugConfig.isVectorOperandValidationEnabled(), "Debug mode should enable validation");
 
     // Test that validation catches null operands
-    assertThrows(IllegalArgumentException.class, () -> {
-      debugSimd.add(null, V128.zero());
-    }, "Should validate null operands in debug mode");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          debugSimd.add(null, V128.zero());
+        },
+        "Should validate null operands in debug mode");
   }
 }

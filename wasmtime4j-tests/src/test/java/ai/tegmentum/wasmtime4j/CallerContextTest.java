@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,19 +32,21 @@ import org.junit.jupiter.api.condition.JRE;
  * Comprehensive test suite for caller context functionality.
  *
  * <p>Tests cover all aspects of caller context support including:
+ *
  * <ul>
- *   <li>Fuel management and tracking</li>
- *   <li>Epoch deadline management</li>
- *   <li>Export access through caller context</li>
- *   <li>Multi-value function support with caller context</li>
- *   <li>Cross-runtime consistency between JNI and Panama</li>
+ *   <li>Fuel management and tracking
+ *   <li>Epoch deadline management
+ *   <li>Export access through caller context
+ *   <li>Multi-value function support with caller context
+ *   <li>Cross-runtime consistency between JNI and Panama
  * </ul>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("Caller Context Tests")
 class CallerContextTest {
 
-  private static final String SIMPLE_WAT = """
+  private static final String SIMPLE_WAT =
+      """
       (module
         (memory (export "memory") 1)
         (global (export "counter") (mut i32) (i32.const 0))
@@ -79,16 +80,10 @@ class CallerContextTest {
 
   @BeforeEach
   void setUp() throws WasmException {
-    engine = Engine.builder()
-        .withFuelEnabled(true)
-        .withEpochInterruption(true)
-        .build();
+    engine = Engine.builder().withFuelEnabled(true).withEpochInterruption(true).build();
 
     TestContext userData = new TestContext();
-    store = Store.builder(engine)
-        .withData(userData)
-        .withFuel(10000)
-        .build();
+    store = Store.builder(engine).withData(userData).withFuel(10000).build();
 
     byte[] wasmBytes = TestUtils.watToWasm(SIMPLE_WAT);
     module = Module.compile(engine, wasmBytes);
@@ -102,78 +97,85 @@ class CallerContextTest {
 
   private void setupHostFunctions(Linker<TestContext> linker) {
     // Host function that uses caller context to access exports
-    linker.define("host", "with_context",
-        FunctionType.create(new WasmValueType[]{WasmValueType.I32}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          caller.data().hostFunctionCallCount++;
+    linker.define(
+        "host",
+        "with_context",
+        FunctionType.create(new WasmValueType[] {WasmValueType.I32}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              caller.data().hostFunctionCallCount++;
 
-          // Test access to counter global through caller
-          Optional<Global> counter = caller.getGlobal("counter");
-          assertTrue(counter.isPresent(), "Should be able to access counter global");
+              // Test access to counter global through caller
+              Optional<Global> counter = caller.getGlobal("counter");
+              assertTrue(counter.isPresent(), "Should be able to access counter global");
 
-          int currentCounter = counter.get().getValue().asI32();
+              int currentCounter = counter.get().getValue().asI32();
 
-          // Test access to memory through caller
-          Optional<Memory> memory = caller.getMemory("memory");
-          assertTrue(memory.isPresent(), "Should be able to access memory");
+              // Test access to memory through caller
+              Optional<Memory> memory = caller.getMemory("memory");
+              assertTrue(memory.isPresent(), "Should be able to access memory");
 
-          // Test fuel consumption tracking
-          Optional<Long> fuelRemaining = caller.fuelRemaining();
-          if (fuelRemaining.isPresent()) {
-            caller.data().lastFuelObserved = fuelRemaining.get();
-          }
+              // Test fuel consumption tracking
+              Optional<Long> fuelRemaining = caller.fuelRemaining();
+              if (fuelRemaining.isPresent()) {
+                caller.data().lastFuelObserved = fuelRemaining.get();
+              }
 
-          return WasmValue.i32(currentCounter + params[0].asI32());
-        }));
+              return WasmValue.i32(currentCounter + params[0].asI32());
+            }));
 
     // Multi-value host function with caller context
-    linker.define("host", "multi_value",
+    linker.define(
+        "host",
+        "multi_value",
         FunctionType.create(
-            new WasmValueType[]{WasmValueType.I32, WasmValueType.I32},
-            WasmValueType.I32, WasmValueType.I32),
-        HostFunction.multiValueWithCaller((caller, params) -> {
-          caller.data().hostFunctionCallCount++;
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            WasmValueType.I32,
+            WasmValueType.I32),
+        HostFunction.multiValueWithCaller(
+            (caller, params) -> {
+              caller.data().hostFunctionCallCount++;
 
-          // Test export checking
-          assertTrue(caller.hasExport("memory"), "Should have memory export");
-          assertTrue(caller.hasExport("counter"), "Should have counter export");
-          assertFalse(caller.hasExport("nonexistent"), "Should not have nonexistent export");
+              // Test export checking
+              assertTrue(caller.hasExport("memory"), "Should have memory export");
+              assertTrue(caller.hasExport("counter"), "Should have counter export");
+              assertFalse(caller.hasExport("nonexistent"), "Should not have nonexistent export");
 
-          int a = params[0].asI32();
-          int b = params[1].asI32();
+              int a = params[0].asI32();
+              int b = params[1].asI32();
 
-          return WasmValue.multiValue(
-              WasmValue.i32(a + b),
-              WasmValue.i32(a * b)
-          );
-        }));
+              return WasmValue.multiValue(WasmValue.i32(a + b), WasmValue.i32(a * b));
+            }));
 
     // Host function that tests fuel management
-    linker.define("host", "fuel_aware",
-        FunctionType.create(new WasmValueType[]{WasmValueType.I32}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          caller.data().hostFunctionCallCount++;
+    linker.define(
+        "host",
+        "fuel_aware",
+        FunctionType.create(new WasmValueType[] {WasmValueType.I32}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              caller.data().hostFunctionCallCount++;
 
-          // Test fuel operations
-          Optional<Long> initialFuel = caller.fuelRemaining();
-          if (initialFuel.isPresent()) {
-            long initial = initialFuel.get();
+              // Test fuel operations
+              Optional<Long> initialFuel = caller.fuelRemaining();
+              if (initialFuel.isPresent()) {
+                long initial = initialFuel.get();
 
-            // Add some fuel
-            caller.addFuel(100);
+                // Add some fuel
+                caller.addFuel(100);
 
-            Optional<Long> afterAddition = caller.fuelRemaining();
-            assertTrue(afterAddition.isPresent(), "Should have fuel after addition");
-            assertEquals(initial + 100, afterAddition.get(), "Fuel should increase by 100");
+                Optional<Long> afterAddition = caller.fuelRemaining();
+                assertTrue(afterAddition.isPresent(), "Should have fuel after addition");
+                assertEquals(initial + 100, afterAddition.get(), "Fuel should increase by 100");
 
-            // Test epoch deadline
-            caller.setEpochDeadline(System.currentTimeMillis() + 5000);
-            assertTrue(caller.hasEpochDeadline(), "Should have epoch deadline after setting");
-            caller.data().epochDeadlineSet = true;
-          }
+                // Test epoch deadline
+                caller.setEpochDeadline(System.currentTimeMillis() + 5000);
+                assertTrue(caller.hasEpochDeadline(), "Should have epoch deadline after setting");
+                caller.data().epochDeadlineSet = true;
+              }
 
-          return WasmValue.i32(params[0].asI32() * 2);
-        }));
+              return WasmValue.i32(params[0].asI32() * 2);
+            }));
   }
 
   @Test
@@ -229,33 +231,38 @@ class CallerContextTest {
   void testCallerExportTypes() throws WasmException {
     // Setup a host function that tests all export types
     Linker<TestContext> linker = Linker.create(engine);
-    linker.define("host", "test_exports",
-        FunctionType.create(new WasmValueType[]{}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          // Test memory access
-          Optional<Memory> memory = caller.getMemory("memory");
-          assertTrue(memory.isPresent(), "Should have memory export");
-          assertEquals(1, memory.get().size(), "Memory should have 1 page");
+    linker.define(
+        "host",
+        "test_exports",
+        FunctionType.create(new WasmValueType[] {}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              // Test memory access
+              Optional<Memory> memory = caller.getMemory("memory");
+              assertTrue(memory.isPresent(), "Should have memory export");
+              assertEquals(1, memory.get().size(), "Memory should have 1 page");
 
-          // Test global access
-          Optional<Global> global = caller.getGlobal("counter");
-          assertTrue(global.isPresent(), "Should have global export");
-          assertEquals(WasmValueType.I32, global.get().getType().getValueType(), "Global should be i32");
+              // Test global access
+              Optional<Global> global = caller.getGlobal("counter");
+              assertTrue(global.isPresent(), "Should have global export");
+              assertEquals(
+                  WasmValueType.I32, global.get().getType().getValueType(), "Global should be i32");
 
-          // Test table access
-          Optional<Table> table = caller.getTable("table");
-          assertTrue(table.isPresent(), "Should have table export");
-          assertEquals(1, table.get().size(), "Table should have size 1");
+              // Test table access
+              Optional<Table> table = caller.getTable("table");
+              assertTrue(table.isPresent(), "Should have table export");
+              assertEquals(1, table.get().size(), "Table should have size 1");
 
-          // Test function access
-          Optional<Function> function = caller.getFunction("get_counter");
-          assertTrue(function.isPresent(), "Should have function export");
+              // Test function access
+              Optional<Function> function = caller.getFunction("get_counter");
+              assertTrue(function.isPresent(), "Should have function export");
 
-          return WasmValue.i32(1);
-        }));
+              return WasmValue.i32(1);
+            }));
 
     // Add the test function to our existing module's imports
-    String extendedWat = """
+    String extendedWat =
+        """
         (module
           (memory (export "memory") 1)
           (global (export "counter") (mut i32) (i32.const 0))
@@ -287,18 +294,22 @@ class CallerContextTest {
 
     // Create a host function that tries to add fuel when low
     Linker<TestContext> linker = Linker.create(engine);
-    linker.define("host", "fuel_saver",
-        FunctionType.create(new WasmValueType[]{}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          Optional<Long> remaining = caller.fuelRemaining();
-          if (remaining.isPresent() && remaining.get() < 10) {
-            // Add emergency fuel
-            caller.addFuel(100);
-          }
-          return WasmValue.i32(1);
-        }));
+    linker.define(
+        "host",
+        "fuel_saver",
+        FunctionType.create(new WasmValueType[] {}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              Optional<Long> remaining = caller.fuelRemaining();
+              if (remaining.isPresent() && remaining.get() < 10) {
+                // Add emergency fuel
+                caller.addFuel(100);
+              }
+              return WasmValue.i32(1);
+            }));
 
-    String fuelTestWat = """
+    String fuelTestWat =
+        """
         (module
           (func (export "fuel_test") (import "host" "fuel_saver") (result i32))
         )
@@ -317,7 +328,8 @@ class CallerContextTest {
 
     // Verify fuel was actually added
     Optional<Long> finalFuel = store.getFuelRemaining();
-    assertTrue(finalFuel.isPresent() && finalFuel.get() > 50, "Should have significant fuel remaining");
+    assertTrue(
+        finalFuel.isPresent() && finalFuel.get() > 50, "Should have significant fuel remaining");
   }
 
   @Test
@@ -325,40 +337,47 @@ class CallerContextTest {
   void testCallerContextErrorHandling() throws WasmException {
     // Create a host function that tests error conditions
     Linker<TestContext> linker = Linker.create(engine);
-    linker.define("host", "error_test",
-        FunctionType.create(new WasmValueType[]{WasmValueType.I32}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          int testCase = params[0].asI32();
+    linker.define(
+        "host",
+        "error_test",
+        FunctionType.create(new WasmValueType[] {WasmValueType.I32}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              int testCase = params[0].asI32();
 
-          switch (testCase) {
-            case 1:
-              // Test accessing non-existent export
-              Optional<Global> nonExistent = caller.getGlobal("nonexistent");
-              assertFalse(nonExistent.isPresent(), "Should not find nonexistent global");
-              break;
+              switch (testCase) {
+                case 1:
+                  // Test accessing non-existent export
+                  Optional<Global> nonExistent = caller.getGlobal("nonexistent");
+                  assertFalse(nonExistent.isPresent(), "Should not find nonexistent global");
+                  break;
 
-            case 2:
-              // Test negative fuel addition
-              assertThrows(IllegalArgumentException.class, () -> {
-                caller.addFuel(-10);
-              }, "Should throw on negative fuel");
-              break;
+                case 2:
+                  // Test negative fuel addition
+                  assertThrows(
+                      IllegalArgumentException.class,
+                      () -> {
+                        caller.addFuel(-10);
+                      },
+                      "Should throw on negative fuel");
+                  break;
 
-            case 3:
-              // Test fuel consumption tracking
-              Optional<Long> consumed = caller.fuelConsumed();
-              // This might not be available on all implementations
-              break;
+                case 3:
+                  // Test fuel consumption tracking
+                  Optional<Long> consumed = caller.fuelConsumed();
+                  // This might not be available on all implementations
+                  break;
 
-            default:
-              // Test basic functionality
-              break;
-          }
+                default:
+                  // Test basic functionality
+                  break;
+              }
 
-          return WasmValue.i32(testCase);
-        }));
+              return WasmValue.i32(testCase);
+            }));
 
-    String errorTestWat = """
+    String errorTestWat =
+        """
         (module
           (func (export "error_test") (import "host" "error_test") (param i32) (result i32))
         )
@@ -383,24 +402,31 @@ class CallerContextTest {
   void testComplexMultiValueScenarios() throws WasmException {
     // Create a host function that returns different numbers of values based on input
     Linker<TestContext> linker = Linker.create(engine);
-    linker.define("host", "variable_return",
-        FunctionType.create(new WasmValueType[]{WasmValueType.I32}, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32),
-        HostFunction.multiValueWithCaller((caller, params) -> {
-          int count = params[0].asI32();
+    linker.define(
+        "host",
+        "variable_return",
+        FunctionType.create(
+            new WasmValueType[] {WasmValueType.I32},
+            WasmValueType.I32,
+            WasmValueType.I32,
+            WasmValueType.I32),
+        HostFunction.multiValueWithCaller(
+            (caller, params) -> {
+              int count = params[0].asI32();
 
-          // Access counter through caller to make the return values interesting
-          Optional<Global> counter = caller.getGlobal("counter");
-          int baseValue = counter.map(g -> g.getValue().asI32()).orElse(0);
+              // Access counter through caller to make the return values interesting
+              Optional<Global> counter = caller.getGlobal("counter");
+              int baseValue = counter.map(g -> g.getValue().asI32()).orElse(0);
 
-          // Always return 3 values, but vary their content
-          return WasmValue.multiValue(
-              WasmValue.i32(baseValue + count),
-              WasmValue.i32(baseValue + count * 2),
-              WasmValue.i32(baseValue + count * 3)
-          );
-        }));
+              // Always return 3 values, but vary their content
+              return WasmValue.multiValue(
+                  WasmValue.i32(baseValue + count),
+                  WasmValue.i32(baseValue + count * 2),
+                  WasmValue.i32(baseValue + count * 3));
+            }));
 
-    String multiValueWat = """
+    String multiValueWat =
+        """
         (module
           (global (export "counter") (mut i32) (i32.const 5))
           (func (export "multi_test") (import "host" "variable_return") (param i32) (result i32 i32 i32))
@@ -427,24 +453,32 @@ class CallerContextTest {
     Linker<TestContext> linker = Linker.create(engine);
 
     // Void function with caller context
-    linker.define("host", "void_with_caller",
-        FunctionType.create(new WasmValueType[]{WasmValueType.I32}),
-        HostFunction.voidWithCaller((caller, params) -> {
-          caller.data().hostFunctionCallCount++;
-          // Just verify we can access the caller context
-          assertTrue(caller.hasExport("memory"), "Should have access to exports in void function");
-        }));
+    linker.define(
+        "host",
+        "void_with_caller",
+        FunctionType.create(new WasmValueType[] {WasmValueType.I32}),
+        HostFunction.voidWithCaller(
+            (caller, params) -> {
+              caller.data().hostFunctionCallCount++;
+              // Just verify we can access the caller context
+              assertTrue(
+                  caller.hasExport("memory"), "Should have access to exports in void function");
+            }));
 
     // No-param function with caller context
-    linker.define("host", "no_params",
-        FunctionType.create(new WasmValueType[]{}, WasmValueType.I32),
-        HostFunction.singleValueWithCaller((caller, params) -> {
-          assertEquals(0, params.length, "Should have no parameters");
-          Optional<Global> counter = caller.getGlobal("counter");
-          return WasmValue.i32(counter.map(g -> g.getValue().asI32()).orElse(42));
-        }));
+    linker.define(
+        "host",
+        "no_params",
+        FunctionType.create(new WasmValueType[] {}, WasmValueType.I32),
+        HostFunction.singleValueWithCaller(
+            (caller, params) -> {
+              assertEquals(0, params.length, "Should have no parameters");
+              Optional<Global> counter = caller.getGlobal("counter");
+              return WasmValue.i32(counter.map(g -> g.getValue().asI32()).orElse(42));
+            }));
 
-    String signatureTestWat = """
+    String signatureTestWat =
+        """
         (module
           (memory (export "memory") 1)
           (global (export "counter") (mut i32) (i32.const 7))
@@ -479,8 +513,8 @@ class CallerContextTest {
   void testJniCallerConsistency() throws WasmException {
     // This test would specifically test JNI implementation behavior
     // For now, we'll just ensure the basic functionality works
-    assumeTrue(System.getProperty("wasmtime4j.runtime", "").equals("jni"),
-               "Test requires JNI runtime");
+    assumeTrue(
+        System.getProperty("wasmtime4j.runtime", "").equals("jni"), "Test requires JNI runtime");
 
     testCallerExportAccess(); // Reuse existing test
   }
@@ -491,19 +525,18 @@ class CallerContextTest {
   void testPanamaCallerConsistency() throws WasmException {
     // This test would specifically test Panama implementation behavior
     // For now, we'll just ensure the basic functionality works
-    assumeTrue(System.getProperty("wasmtime4j.runtime", "").equals("panama"),
-               "Test requires Panama runtime");
+    assumeTrue(
+        System.getProperty("wasmtime4j.runtime", "").equals("panama"),
+        "Test requires Panama runtime");
 
     testCallerExportAccess(); // Reuse existing test
   }
 
-  /**
-   * Helper utility class for test operations.
-   */
+  /** Helper utility class for test operations. */
   static class TestUtils {
     /**
-     * Convert WebAssembly Text format to binary format.
-     * This is a simplified implementation for testing.
+     * Convert WebAssembly Text format to binary format. This is a simplified implementation for
+     * testing.
      */
     static byte[] watToWasm(String wat) {
       // In a real implementation, this would use a WAT to WASM compiler
@@ -513,7 +546,7 @@ class CallerContextTest {
       // Return a minimal valid WASM module for testing
       return new byte[] {
         0x00, 0x61, 0x73, 0x6d, // WASM magic number
-        0x01, 0x00, 0x00, 0x00  // WASM version
+        0x01, 0x00, 0x00, 0x00 // WASM version
       };
     }
   }

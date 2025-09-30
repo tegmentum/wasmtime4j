@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,7 +10,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.CountDownLatch;
@@ -35,27 +33,39 @@ import org.junit.jupiter.params.provider.EnumSource;
 class RuntimeErrorScenarioTest {
 
   /**
-   * WebAssembly module that contains a function which triggers an unreachable instruction.
-   * Module structure:
-   * - Type section: () -> ()
-   * - Function section: 1 function of type 0
-   * - Export section: export "trap" function 0
-   * - Code section: function body with unreachable instruction
+   * WebAssembly module that contains a function which triggers an unreachable instruction. Module
+   * structure: - Type section: () -> () - Function section: 1 function of type 0 - Export section:
+   * export "trap" function 0 - Code section: function body with unreachable instruction
    */
   private static final byte[] TRAP_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'r', 'a', 'p', // Export name "trap"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'r',
+    'a',
+    'p', // Export name "trap"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x05, // Section size
     0x01, // 1 function body
@@ -66,66 +76,104 @@ class RuntimeErrorScenarioTest {
   };
 
   /**
-   * WebAssembly module that contains a function which performs integer division by zero.
-   * Module structure:
-   * - Type section: () -> i32
-   * - Function section: 1 function of type 0
-   * - Export section: export "div_by_zero" function 0
-   * - Code section: i32.const 42, i32.const 0, i32.div_s
+   * WebAssembly module that contains a function which performs integer division by zero. Module
+   * structure: - Type section: () -> i32 - Function section: 1 function of type 0 - Export section:
+   * export "div_by_zero" function 0 - Code section: i32.const 42, i32.const 0, i32.div_s
    */
   private static final byte[] DIVISION_BY_ZERO_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x0C, // Section size
     0x01, // 1 export
-    0x0A, 'd', 'i', 'v', '_', 'b', 'y', '_', 'z', 'e', 'r', 'o', // Export name "div_by_zero"
-    0x00, 0x00, // Function export with index 0
+    0x0A,
+    'd',
+    'i',
+    'v',
+    '_',
+    'b',
+    'y',
+    '_',
+    'z',
+    'e',
+    'r',
+    'o', // Export name "div_by_zero"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x09, // Section size
     0x01, // 1 function body
     0x07, // Body size
     0x00, // No locals
-    0x41, 0x2A, // i32.const 42
-    0x41, 0x00, // i32.const 0
+    0x41,
+    0x2A, // i32.const 42
+    0x41,
+    0x00, // i32.const 0
     0x6D, // i32.div_s (division)
     0x0B // End instruction
   };
 
   /**
-   * WebAssembly module with a recursive function that can cause stack overflow.
-   * Module structure:
-   * - Type section: () -> ()
-   * - Function section: 1 function of type 0
-   * - Export section: export "recurse" function 0
-   * - Code section: function that calls itself
+   * WebAssembly module with a recursive function that can cause stack overflow. Module structure: -
+   * Type section: () -> () - Function section: 1 function of type 0 - Export section: export
+   * "recurse" function 0 - Code section: function that calls itself
    */
   private static final byte[] STACK_OVERFLOW_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x0A, // Section size
     0x01, // 1 export
-    0x07, 'r', 'e', 'c', 'u', 'r', 's', 'e', // Export name "recurse"
-    0x00, 0x00, // Function export with index 0
+    0x07,
+    'r',
+    'e',
+    'c',
+    'u',
+    'r',
+    's',
+    'e', // Export name "recurse"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x06, // Section size
     0x01, // 1 function body
     0x04, // Body size
     0x00, // No locals
-    0x10, 0x00, // call function 0 (self)
+    0x10,
+    0x00, // call function 0 (self)
     0x0B // End instruction
   };
 
@@ -337,7 +385,8 @@ class RuntimeErrorScenarioTest {
             });
       }
 
-      assertTrue(latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
+      assertTrue(
+          latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
       executor.shutdown();
 
       assertTrue(exceptionCount.get() == threadCount, "All threads should throw WasmException");
@@ -386,30 +435,61 @@ class RuntimeErrorScenarioTest {
 
       // WebAssembly module with memory and a function that accesses out of bounds
       byte[] memoryAccessModule = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x05, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+        0x60,
+        0x00,
+        0x01,
+        0x7F, // Function type: () -> i32
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x05, // Memory section
         0x03, // Section size
         0x01, // 1 memory
-        0x00, 0x01, // Memory limits: minimum 1 page (64KB)
+        0x00,
+        0x01, // Memory limits: minimum 1 page (64KB)
         0x07, // Export section
         0x0D, // Section size
         0x01, // 1 export
-        0x0B, 'o', 'u', 't', '_', 'o', 'f', '_', 'b', 'o', 'u', 'n', 'd', 's', // Export name
-        0x00, 0x00, // Function export with index 0
+        0x0B,
+        'o',
+        'u',
+        't',
+        '_',
+        'o',
+        'f',
+        '_',
+        'b',
+        'o',
+        'u',
+        'n',
+        'd',
+        's', // Export name
+        0x00,
+        0x00, // Function export with index 0
         0x0A, // Code section
         0x0A, // Section size
         0x01, // 1 function body
         0x08, // Body size
         0x00, // No locals
-        0x41, (byte) 0x80, (byte) 0x80, 0x04, // i32.const 65536 (out of bounds)
-        0x28, 0x02, 0x00, // i32.load align=2 offset=0
+        0x41,
+        (byte) 0x80,
+        (byte) 0x80,
+        0x04, // i32.const 65536 (out of bounds)
+        0x28,
+        0x02,
+        0x00, // i32.load align=2 offset=0
         0x0B // End instruction
       };
 
@@ -428,8 +508,7 @@ class RuntimeErrorScenarioTest {
               || exception.getMessage().toLowerCase().contains("memory")
               || exception.getMessage().toLowerCase().contains("access")
               || exception.getMessage().toLowerCase().contains("trap"),
-          "Exception message should mention bounds/memory/access/trap: "
-              + exception.getMessage());
+          "Exception message should mention bounds/memory/access/trap: " + exception.getMessage());
     }
   }
 

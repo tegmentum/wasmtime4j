@@ -1,69 +1,37 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 /**
- * Represents a security role for RBAC.
+ * Security role interface for WebAssembly components.
  *
  * @since 1.0.0
  */
-public final class Role {
-
-  private final String roleId;
-  private final String name;
-  private final Optional<String> description;
-  private final Set<Permission> permissions;
-  private final Set<String> parentRoles;
-  private final Map<String, String> attributes;
+public interface Role {
 
   /**
-   * Creates a new role.
+   * Gets the role name.
    *
-   * @param roleId unique role identifier
-   * @param name role name
-   * @param description role description (optional)
-   * @param permissions role permissions
-   * @param parentRoles parent roles
-   * @param attributes role attributes
+   * @return the role name
    */
-  public Role(
-      final String roleId,
-      final String name,
-      final Optional<String> description,
-      final Set<Permission> permissions,
-      final Set<String> parentRoles,
-      final Map<String, String> attributes) {
-    this.roleId = roleId;
-    this.name = name;
-    this.description = description;
-    this.permissions = Set.copyOf(permissions);
-    this.parentRoles = Set.copyOf(parentRoles);
-    this.attributes = Map.copyOf(attributes);
-  }
+  String getRoleName();
 
-  public String getRoleId() {
-    return roleId;
-  }
+  /**
+   * Gets the role description.
+   *
+   * @return the role description
+   */
+  String getDescription();
 
-  public String getName() {
-    return name;
-  }
+  /**
+   * Gets the role level.
+   *
+   * @return the role level
+   */
+  int getLevel();
 
-  public Optional<String> getDescription() {
-    return description;
-  }
-
-  public Set<Permission> getPermissions() {
-    return Set.copyOf(permissions);
-  }
-
-  public Set<String> getParentRoles() {
-    return Set.copyOf(parentRoles);
-  }
-
-  public Map<String, String> getAttributes() {
-    return Map.copyOf(attributes);
-  }
+  /**
+   * Checks if this role is active.
+   *
+   * @return true if the role is active
+   */
+  boolean isActive();
 }

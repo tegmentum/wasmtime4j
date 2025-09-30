@@ -31,7 +31,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use std::fmt;
 
-use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
+use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Source map format version supported
 pub const SOURCEMAP_VERSION: u32 = 3;

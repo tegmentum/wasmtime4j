@@ -383,7 +383,8 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(
+      final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
     JniValidation.requireNonNull(modules, "modules");
     if (modules.length == 0) {
       throw new IllegalArgumentException("modules array cannot be empty");
@@ -406,7 +407,8 @@ public final class JniLinker extends JniResource implements Linker {
       }
 
       // Convert native dependency graph to Java objects
-      final ai.tegmentum.wasmtime4j.DependencyResolution result = convertDependencyGraph(graphHandle, modules);
+      final ai.tegmentum.wasmtime4j.DependencyResolution result =
+          convertDependencyGraph(graphHandle, modules);
 
       // Clean up native graph
       nativeDestroyDependencyGraph(graphHandle);
@@ -420,7 +422,8 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(final ai.tegmentum.wasmtime4j.Module... modules) {
+  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(
+      final ai.tegmentum.wasmtime4j.Module... modules) {
     JniValidation.requireNonNull(modules, "modules");
     if (modules.length == 0) {
       throw new IllegalArgumentException("modules array cannot be empty");
@@ -437,7 +440,8 @@ public final class JniLinker extends JniResource implements Linker {
         moduleHandles[i] = ((JniModule) modules[i]).getNativeHandle();
       }
 
-      final ValidationResult validationResult = nativeValidateImports(getNativeHandle(), moduleHandles);
+      final ValidationResult validationResult =
+          nativeValidateImports(getNativeHandle(), moduleHandles);
       if (validationResult == null) {
         throw new WasmException("Failed to validate imports");
       }
@@ -471,7 +475,8 @@ public final class JniLinker extends JniResource implements Linker {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.InstantiationPlan createInstantiationPlan(final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
+  public ai.tegmentum.wasmtime4j.InstantiationPlan createInstantiationPlan(
+      final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
     final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
 
     if (!resolution.isResolutionSuccessful()) {
@@ -479,8 +484,10 @@ public final class JniLinker extends JniResource implements Linker {
     }
 
     // Create instantiation steps based on the resolved order
-    final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps = new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = resolution.getInstantiationOrder();
+    final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps =
+        new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder =
+        resolution.getInstantiationOrder();
 
     for (int i = 0; i < instantiationOrder.size(); i++) {
       final ai.tegmentum.wasmtime4j.Module module = instantiationOrder.get(i);
@@ -489,24 +496,25 @@ public final class JniLinker extends JniResource implements Linker {
       final java.util.List<String> requiredImports = extractRequiredImports(module);
       final java.util.List<String> providedExports = extractProvidedExports(module);
 
-      final ai.tegmentum.wasmtime4j.InstantiationStep step = new ai.tegmentum.wasmtime4j.InstantiationStep(
-          i + 1, // 1-based step number
-          module,
-          java.util.Optional.of("module_" + i), // Generate a default name
-          requiredImports,
-          providedExports,
-          "Instantiate " + module.getName().orElse("unnamed module")
-      );
+      final ai.tegmentum.wasmtime4j.InstantiationStep step =
+          new ai.tegmentum.wasmtime4j.InstantiationStep(
+              i + 1, // 1-based step number
+              module,
+              java.util.Optional.of("module_" + i), // Generate a default name
+              requiredImports,
+              providedExports,
+              "Instantiate " + module.getName().orElse("unnamed module"));
 
       steps.add(step);
     }
 
-    final ai.tegmentum.wasmtime4j.InstantiationPlan plan = new ai.tegmentum.wasmtime4j.InstantiationPlan(
-        steps,
-        resolution,
-        resolution.getAnalysisTime(), // Use same duration for planning
-        true // executable since resolution was successful
-    );
+    final ai.tegmentum.wasmtime4j.InstantiationPlan plan =
+        new ai.tegmentum.wasmtime4j.InstantiationPlan(
+            steps,
+            resolution,
+            resolution.getAnalysisTime(), // Use same duration for planning
+            true // executable since resolution was successful
+            );
 
     return plan;
   }
@@ -559,17 +567,16 @@ public final class JniLinker extends JniResource implements Linker {
     return nativeTypes;
   }
 
-  /**
-   * Converts native dependency graph to Java DependencyResolution object.
-   */
+  /** Converts native dependency graph to Java DependencyResolution object. */
   private ai.tegmentum.wasmtime4j.DependencyResolution convertDependencyGraph(
-      final long graphHandle,
-      final ai.tegmentum.wasmtime4j.Module[] modules) {
+      final long graphHandle, final ai.tegmentum.wasmtime4j.Module[] modules) {
 
     // For now, create a simplified version
     // In a full implementation, this would extract data from the native graph
-    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder = java.util.Arrays.asList(modules);
-    final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies = java.util.Collections.emptyList();
+    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder =
+        java.util.Arrays.asList(modules);
+    final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
+        java.util.Collections.emptyList();
     final java.time.Duration analysisTime = java.time.Duration.ofMillis(1);
 
     return new ai.tegmentum.wasmtime4j.DependencyResolution(
@@ -581,18 +588,17 @@ public final class JniLinker extends JniResource implements Linker {
         0, // resolvedDependencies
         analysisTime,
         true // resolutionSuccessful
-    );
+        );
   }
 
-  /**
-   * Converts native validation result to Java ImportValidation object.
-   */
+  /** Converts native validation result to Java ImportValidation object. */
   private ai.tegmentum.wasmtime4j.ImportValidation convertValidationResult(
-      final ValidationResult validationResult,
-      final ai.tegmentum.wasmtime4j.Module[] modules) {
+      final ValidationResult validationResult, final ai.tegmentum.wasmtime4j.Module[] modules) {
 
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = java.util.Collections.emptyList();
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports = java.util.Collections.emptyList();
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues =
+        java.util.Collections.emptyList();
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports =
+        java.util.Collections.emptyList();
     final java.time.Duration validationTime = java.time.Duration.ofMillis(1);
 
     return new ai.tegmentum.wasmtime4j.ImportValidation(
@@ -601,14 +607,12 @@ public final class JniLinker extends JniResource implements Linker {
         validatedImports,
         validationResult.totalImports,
         validationResult.validImports,
-        validationTime
-    );
+        validationTime);
   }
 
-  /**
-   * Converts native import registry info to Java ImportInfo object.
-   */
-  private ai.tegmentum.wasmtime4j.ImportInfo convertImportRegistryInfo(final ImportRegistryInfo info) {
+  /** Converts native import registry info to Java ImportInfo object. */
+  private ai.tegmentum.wasmtime4j.ImportInfo convertImportRegistryInfo(
+      final ImportRegistryInfo info) {
     final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType =
         convertNativeImportType(info.importType);
 
@@ -619,38 +623,39 @@ public final class JniLinker extends JniResource implements Linker {
         java.util.Optional.ofNullable(info.typeSignature),
         info.definedAt,
         info.isHostFunction,
-        java.util.Optional.ofNullable(info.sourceDescription)
-    );
+        java.util.Optional.ofNullable(info.sourceDescription));
   }
 
-  /**
-   * Converts native import type to Java ImportType enum.
-   */
-  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType convertNativeImportType(final int nativeType) {
+  /** Converts native import type to Java ImportType enum. */
+  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType convertNativeImportType(
+      final int nativeType) {
     switch (nativeType) {
-      case 0: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
-      case 1: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
-      case 2: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
-      case 3: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
-      case 4: return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.INSTANCE;
+      case 0:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+      case 1:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+      case 2:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+      case 3:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+      case 4:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.INSTANCE;
       default:
         throw new IllegalArgumentException("Unknown native import type: " + nativeType);
     }
   }
 
-  /**
-   * Extracts required imports from a module.
-   */
-  private java.util.List<String> extractRequiredImports(final ai.tegmentum.wasmtime4j.Module module) {
+  /** Extracts required imports from a module. */
+  private java.util.List<String> extractRequiredImports(
+      final ai.tegmentum.wasmtime4j.Module module) {
     // This would be implemented by querying the module's imports
     // For now, return empty list
     return java.util.Collections.emptyList();
   }
 
-  /**
-   * Extracts provided exports from a module.
-   */
-  private java.util.List<String> extractProvidedExports(final ai.tegmentum.wasmtime4j.Module module) {
+  /** Extracts provided exports from a module. */
+  private java.util.List<String> extractProvidedExports(
+      final ai.tegmentum.wasmtime4j.Module module) {
     // This would be implemented by querying the module's exports
     // For now, return empty list
     return java.util.Collections.emptyList();
@@ -679,9 +684,14 @@ public final class JniLinker extends JniResource implements Linker {
     final boolean isHostFunction;
     final String sourceDescription;
 
-    ImportRegistryInfo(final String moduleName, final String importName, final int importType,
-                      final String typeSignature, final java.time.Instant definedAt,
-                      final boolean isHostFunction, final String sourceDescription) {
+    ImportRegistryInfo(
+        final String moduleName,
+        final String importName,
+        final int importType,
+        final String typeSignature,
+        final java.time.Instant definedAt,
+        final boolean isHostFunction,
+        final String sourceDescription) {
       this.moduleName = moduleName;
       this.importName = importName;
       this.importType = importType;
@@ -829,9 +839,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return 1 if import exists, 0 otherwise, -1 on error
    */
   private static native int nativeHasImport(
-      final long linkerHandle,
-      final String moduleName,
-      final String importName);
+      final long linkerHandle, final String moduleName, final String importName);
 
   /**
    * Resolves dependencies for a set of modules.
@@ -841,8 +849,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return handle to dependency graph, or 0 on failure
    */
   private static native long nativeResolveDependencies(
-      final long linkerHandle,
-      final long[] moduleHandles);
+      final long linkerHandle, final long[] moduleHandles);
 
   /**
    * Validates imports for a set of modules.
@@ -852,8 +859,7 @@ public final class JniLinker extends JniResource implements Linker {
    * @return validation result object, or null on failure
    */
   private static native ValidationResult nativeValidateImports(
-      final long linkerHandle,
-      final long[] moduleHandles);
+      final long linkerHandle, final long[] moduleHandles);
 
   /**
    * Gets the import registry information.

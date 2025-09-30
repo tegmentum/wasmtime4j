@@ -15,16 +15,16 @@
 //! - **Canary Deployments**: Gradual traffic shifting for safe updates
 //! - **Background Loading**: Preload and validate components before swapping
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, RwLock, Mutex, Condvar};
 use std::time::{Duration, Instant, SystemTime};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::fs;
 use std::thread;
 use std::os::raw::{c_char, c_int};
 use std::ffi::{CStr, CString};
 
-use wasmtime::{Engine, Store, component::{Component, Instance, Linker}};
+use wasmtime::{Engine, component::Component};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::engine::Engine as WasmtimeEngine;
@@ -667,7 +667,7 @@ impl HotReloadManager {
                 message: "Failed to acquire swaps write lock".to_string(),
             })?;
 
-        if let Some(mut operation) = swaps.get_mut(operation_id) {
+        if let Some(operation) = swaps.get_mut(operation_id) {
             match operation.status {
                 SwapStatus::Pending | SwapStatus::PreLoading | SwapStatus::Validating => {
                     operation.status = SwapStatus::Failed;
@@ -1134,7 +1134,7 @@ mod tests {
         assert_eq!(version.major, 1);
         assert_eq!(version.minor, 2);
         assert_eq!(version.patch, 3);
-        assert_eq!(version.pre_release, None);
+        // Note: This SemanticVersion struct doesn't include pre_release field
     }
 
     #[test]

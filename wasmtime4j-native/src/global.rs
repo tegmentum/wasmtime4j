@@ -158,8 +158,8 @@ impl Global {
             (GlobalValue::F64(_), ValType::F64) => true,
             (GlobalValue::V128(_), ValType::V128) => true,
             // TODO: Add reference types back when properly supported
-            // (GlobalValue::FuncRef(_), ValType::FuncRef) => true,
-            // (GlobalValue::ExternRef(_), ValType::ExternRef) => true,
+            // (GlobalValue::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
+            // (GlobalValue::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
             _ => false,
         };
 
@@ -420,7 +420,7 @@ mod tests {
             Some("test_global".to_string()),
         ).expect("Failed to create global");
 
-        assert_eq!(global.metadata().value_type, ValType::I32);
+        assert!(matches!(global.metadata().value_type, ValType::I32));
         assert_eq!(global.metadata().mutability, Mutability::Var);
         assert_eq!(global.metadata().name, Some("test_global".to_string()));
     }

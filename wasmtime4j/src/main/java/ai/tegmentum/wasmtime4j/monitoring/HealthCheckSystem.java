@@ -92,6 +92,15 @@ public final class HealthCheckSystem {
     private final Map<String, Object> details;
     private final Throwable error;
 
+    /**
+     * Creates a new HealthCheckResult.
+     *
+     * @param componentId the component identifier
+     * @param status the health status
+     * @param message the status message
+     * @param executionTime the check execution time
+     * @param details additional details
+     */
     public HealthCheckResult(
         final String componentId,
         final HealthStatus status,
@@ -183,6 +192,15 @@ public final class HealthCheckSystem {
     private final boolean autoRecovery;
     private final RecoveryAction recoveryAction;
 
+    /**
+     * Creates a new HealthCheckConfig.
+     *
+     * @param componentId the component identifier
+     * @param healthCheck the health check implementation
+     * @param checkInterval the interval between checks
+     * @param timeout the check timeout
+     * @param maxFailures the maximum failures before unhealthy
+     */
     public HealthCheckConfig(
         final String componentId,
         final HealthCheck healthCheck,
@@ -264,6 +282,17 @@ public final class HealthCheckSystem {
       this(0.8, 0.95, 200, 500, Duration.ofSeconds(10), Duration.ofMinutes(1), true);
     }
 
+    /**
+     * Creates a new SystemHealthConfig with custom thresholds.
+     *
+     * @param memoryThresholdWarning the memory usage warning threshold
+     * @param memoryThresholdCritical the memory usage critical threshold
+     * @param threadCountThresholdWarning the thread count warning threshold
+     * @param threadCountThresholdCritical the thread count critical threshold
+     * @param healthCheckTimeout the health check timeout
+     * @param overallTimeout the overall timeout
+     * @param enableAutoRecovery whether to enable automatic recovery
+     */
     public SystemHealthConfig(
         final double memoryThresholdWarning,
         final double memoryThresholdCritical,

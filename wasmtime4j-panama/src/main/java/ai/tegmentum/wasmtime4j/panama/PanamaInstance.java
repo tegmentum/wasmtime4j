@@ -506,8 +506,8 @@ public final class PanamaInstance implements Instance, AutoCloseable {
           0, // activeTableElements - would need tracking
           0, // activeGlobals - would need tracking
           0, // fuelConsumed - would need tracking
-          0  // epochTicks - would need tracking
-      );
+          0 // epochTicks - would need tracking
+          );
     } catch (Exception e) {
       throw new WasmException("Failed to get instance statistics", e);
     }
@@ -684,7 +684,8 @@ public final class PanamaInstance implements Instance, AutoCloseable {
 
   @Override
   public void setImports(final java.util.Map<String, Object> imports) throws WasmException {
-    throw new UnsupportedOperationException("Setting imports is not supported for instantiated instances");
+    throw new UnsupportedOperationException(
+        "Setting imports is not supported for instantiated instances");
   }
 
   @Override

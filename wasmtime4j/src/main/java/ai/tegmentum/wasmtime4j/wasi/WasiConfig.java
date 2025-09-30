@@ -36,7 +36,7 @@ public interface WasiConfig {
    *
    * @return a new WasiConfigBuilder instance
    */
-  static WasiConfigBuilder builder() {
+  static WasiConfigBuilder builder() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -66,7 +66,7 @@ public interface WasiConfig {
    *
    * @return a default WasiConfig instance
    */
-  static WasiConfig defaultConfig() {
+  static WasiConfig defaultConfig() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     return builder().build();
   }
 
@@ -156,6 +156,13 @@ public interface WasiConfig {
    * @return a new WasiConfigBuilder initialized with this configuration's values
    */
   WasiConfigBuilder toBuilder();
+
+  /**
+   * Gets the WASI version for this configuration.
+   *
+   * @return the WASI version
+   */
+  WasiVersion getWasiVersion();
 
   /**
    * Validates this configuration for consistency and completeness.
