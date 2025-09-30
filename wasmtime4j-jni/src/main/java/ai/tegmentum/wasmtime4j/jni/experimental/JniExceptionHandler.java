@@ -311,7 +311,7 @@ public final class JniExceptionHandler {
   private List<WasmValue> deserializePayload(final byte[] data, final List<WasmValueType> types) {
     // This would use the ExceptionMarshaling utility
     // For now, return empty list as placeholder
-    return List.of();
+    return Collections.emptyList();
   }
 
   // Native method declarations

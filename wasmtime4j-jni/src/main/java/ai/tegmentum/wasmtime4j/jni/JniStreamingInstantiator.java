@@ -1,11 +1,17 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.AdaptationConfig;
+import ai.tegmentum.wasmtime4j.CompatibilityRequirements;
+import ai.tegmentum.wasmtime4j.EvolutionValidationResult;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstantiationConfig;
+import ai.tegmentum.wasmtime4j.InterfaceEvolutionStrategy;
 import ai.tegmentum.wasmtime4j.Linker;
+import ai.tegmentum.wasmtime4j.MigrationConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StreamingInstantiator;
+import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.concurrent.CompletableFuture;

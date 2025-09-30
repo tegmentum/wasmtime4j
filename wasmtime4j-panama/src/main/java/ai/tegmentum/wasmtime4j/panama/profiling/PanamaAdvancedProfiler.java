@@ -303,7 +303,9 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
    */
   public void recordFunctionExecution(
       final String functionName, final Duration executionTime, final long memoryAllocated) {
-    if (!profiling) return;
+    if (!profiling) {
+      return;
+    }
 
     totalSamples.incrementAndGet();
 
@@ -334,7 +336,9 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
    * @return allocation ID for tracking
    */
   public long recordMemoryAllocation(final long size, final String allocationType) {
-    if (!profiling) return 0;
+    if (!profiling) {
+      return 0;
+    }
 
     try {
       final MemorySegment allocationTypeSegment = arena.allocateUtf8String(allocationType);
@@ -352,7 +356,9 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
    * @param allocationId allocation ID to deallocate
    */
   public void recordMemoryDeallocation(final long allocationId) {
-    if (!profiling) return;
+    if (!profiling) {
+      return;
+    }
 
     try {
       RECORD_MEMORY_DEALLOCATION_HANDLE.invoke(nativeProfilerHandle, allocationId);
@@ -556,7 +562,7 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
             fileNameSegment,
             element.getLineNumber() > 0 ? element.getLineNumber() : 0,
             executionTime.toNanos() / stackTrace.length // Distribute time across stack
-            );
+        );
       }
 
       // Also record in Java flame graph generator

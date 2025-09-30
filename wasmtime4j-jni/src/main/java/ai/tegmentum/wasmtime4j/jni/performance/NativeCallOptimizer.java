@@ -230,8 +230,12 @@ public final class NativeCallOptimizer {
     }
 
     boolean shouldFlush() {
-      if (count == 0) return false;
-      if (count >= MAX_BATCH_SIZE) return true;
+      if (count == 0) {
+        return false;
+      }
+      if (count >= MAX_BATCH_SIZE) {
+        return true;
+      }
       return (System.nanoTime() - batchStartTime) > BATCH_TIMEOUT_NS;
     }
 

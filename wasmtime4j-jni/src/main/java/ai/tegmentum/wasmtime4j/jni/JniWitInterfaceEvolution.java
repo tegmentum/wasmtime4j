@@ -1,10 +1,17 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.AdaptationConfig;
+import ai.tegmentum.wasmtime4j.CompatibilityRequirements;
+import ai.tegmentum.wasmtime4j.EvolutionValidationResult;
+import ai.tegmentum.wasmtime4j.InterfaceEvolutionStrategy;
+import ai.tegmentum.wasmtime4j.MigrationConfig;
 import ai.tegmentum.wasmtime4j.WitEvolutionMetrics;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.WitInterfaceEvolution;
+import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.WitTypeAdapter;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -410,7 +417,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
       final String[] versions = nativeGetInterfaceVersions(evolutionManagerHandle, interfaceName);
 
       if (versions == null) {
-        return List.of(); // No versions found
+        return Collections.emptyList(); // No versions found
       }
 
       // Convert native array to interface version list
@@ -625,17 +632,17 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<BreakingChange> getBreakingChanges() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<NonBreakingChange> getNonBreakingChanges() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<RequiredAdaptation> getRequiredAdaptations() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -663,7 +670,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<CompatibilityIssue> getIssues() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -673,7 +680,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<String> getSuggestions() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -691,7 +698,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<CompatibilityIssue> getIssues() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -785,7 +792,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<MigrationStep> getSteps() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -795,12 +802,12 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<MigrationRisk> getRisks() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<MigrationStep> getRollbackSteps() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -838,12 +845,12 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<MigrationStep> getCompletedSteps() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<MigrationStep> getFailedSteps() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
@@ -853,7 +860,7 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public Map<String, Object> getMetrics() {
-      return Map.of();
+      return Collections.emptyMap();
     }
   }
 
@@ -871,32 +878,32 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
 
     @Override
     public List<WitInterfaceVersion> getVersionHistory() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<VersionChange> getMajorChanges() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<VersionChange> getMinorChanges() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<VersionChange> getPatchChanges() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<DeprecationEvent> getDeprecationHistory() {
-      return List.of();
+      return Collections.emptyList();
     }
 
     @Override
     public List<CompletedMigration> getMigrationHistory() {
-      return List.of();
+      return Collections.emptyList();
     }
   }
 }

@@ -98,7 +98,7 @@ public final class JniWitInterfaceDefinition implements WitInterfaceDefinition {
   @Override
   public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
     if (other == null) {
-      return WitCompatibilityResult.incompatible("Other interface is null", Set.of());
+      return WitCompatibilityResult.incompatible("Other interface is null", Collections.emptySet());
     }
 
     // Basic compatibility check - same package and compatible version

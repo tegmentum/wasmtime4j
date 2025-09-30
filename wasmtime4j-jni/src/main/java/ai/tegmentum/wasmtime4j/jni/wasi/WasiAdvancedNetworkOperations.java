@@ -105,12 +105,12 @@ public final class WasiAdvancedNetworkOperations {
       final int result = nativeInitializeAdvancedNetworking();
       if (result != 0) {
         throw new WasiException(
-            WasiErrorCode.NETWORK_ERROR, "Failed to initialize advanced networking: " + result);
+            WasiErrorCode.ECONNREFUSED, "Failed to initialize advanced networking: " + result);
       }
       LOGGER.log(Level.INFO, "Advanced networking initialized successfully");
     } catch (final Exception e) {
       throw new WasiException(
-          WasiErrorCode.NETWORK_ERROR, "Advanced networking initialization failed", e);
+          WasiErrorCode.ECONNREFUSED, "Advanced networking initialization failed", e);
     }
   }
 
@@ -147,7 +147,7 @@ public final class WasiAdvancedNetworkOperations {
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_WEBSOCKET);
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "WebSocket connection failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "WebSocket connection failed: " + result);
             }
 
             final AdvancedNetworkConnection connection =
@@ -164,7 +164,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Exception e) {
             metrics.incrementFailedConnections(PROTOCOL_WEBSOCKET);
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "WebSocket connection failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "WebSocket connection failed", e);
           }
         },
         executorService);
@@ -186,7 +186,7 @@ public final class WasiAdvancedNetworkOperations {
 
     if (messageType != WS_MESSAGE_TEXT && messageType != WS_MESSAGE_BINARY) {
       throw new WasiException(
-          WasiErrorCode.INVALID_ARGUMENT, "Invalid WebSocket message type: " + messageType);
+          WasiErrorCode.EINVAL, "Invalid WebSocket message type: " + messageType);
     }
 
     return CompletableFuture.runAsync(
@@ -197,7 +197,7 @@ public final class WasiAdvancedNetworkOperations {
             if (result != 0) {
               metrics.incrementErrors(PROTOCOL_WEBSOCKET);
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "WebSocket send failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "WebSocket send failed: " + result);
             }
 
             final AdvancedNetworkConnection connection = activeConnections.get(connectionId);
@@ -209,7 +209,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Exception e) {
             metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "WebSocket send failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "WebSocket send failed", e);
           }
         },
         executorService);
@@ -250,7 +250,7 @@ public final class WasiAdvancedNetworkOperations {
               }
               metrics.incrementErrors(PROTOCOL_WEBSOCKET);
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "WebSocket receive failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "WebSocket receive failed: " + result);
             }
 
             final AdvancedNetworkConnection connection = activeConnections.get(connectionId);
@@ -266,7 +266,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Exception e) {
             metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "WebSocket receive failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "WebSocket receive failed", e);
           }
         },
         executorService);
@@ -300,7 +300,7 @@ public final class WasiAdvancedNetworkOperations {
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_HTTP2);
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "HTTP/2 connection failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "HTTP/2 connection failed: " + result);
             }
 
             final AdvancedNetworkConnection connection =
@@ -317,7 +317,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Exception e) {
             metrics.incrementFailedConnections(PROTOCOL_HTTP2);
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "HTTP/2 connection failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "HTTP/2 connection failed", e);
           }
         },
         executorService);
@@ -346,7 +346,7 @@ public final class WasiAdvancedNetworkOperations {
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_GRPC);
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "gRPC connection failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "gRPC connection failed: " + result);
             }
 
             final AdvancedNetworkConnection connection =
@@ -363,7 +363,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Exception e) {
             metrics.incrementFailedConnections(PROTOCOL_GRPC);
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "gRPC connection failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "gRPC connection failed", e);
           }
         },
         executorService);
@@ -385,7 +385,7 @@ public final class WasiAdvancedNetworkOperations {
             final int result = nativeCloseConnection(connectionId);
             if (result != 0) {
               throw new WasiException(
-                  WasiErrorCode.NETWORK_ERROR, "Connection close failed: " + result);
+                  WasiErrorCode.ECONNREFUSED, "Connection close failed: " + result);
             }
 
             final AdvancedNetworkConnection connection = activeConnections.remove(connectionId);
@@ -398,7 +398,7 @@ public final class WasiAdvancedNetworkOperations {
             }
 
           } catch (final Exception e) {
-            throw new WasiException(WasiErrorCode.NETWORK_ERROR, "Connection close failed", e);
+            throw new WasiException(WasiErrorCode.ECONNREFUSED, "Connection close failed", e);
           }
         },
         executorService);
@@ -448,7 +448,7 @@ public final class WasiAdvancedNetworkOperations {
       LOGGER.log(Level.INFO, "Advanced networking operations cleaned up");
 
     } catch (final Exception e) {
-      throw new WasiException(WasiErrorCode.NETWORK_ERROR, "Advanced networking cleanup failed", e);
+      throw new WasiException(WasiErrorCode.ECONNREFUSED, "Advanced networking cleanup failed", e);
     }
   }
 

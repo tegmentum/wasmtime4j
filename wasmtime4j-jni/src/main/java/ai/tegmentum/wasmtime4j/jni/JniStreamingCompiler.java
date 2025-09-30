@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
 import java.util.logging.Logger;
 
 /**
@@ -125,54 +124,14 @@ public final class JniStreamingCompiler extends JniResource implements Streaming
    * @return a CompletableFuture that completes when compilation is finished
    * @throws IllegalArgumentException if publisher or config is null
    */
+  // Note: This method requires Java 9+ Flow API which is not available in Java 8
+  // For Java 8 compatibility, use startStreamingCompilation() instead
   @Override
   public CompletableFuture<Module> compileStreaming(
-      final Flow.Publisher<ByteBuffer> publisher, final StreamingConfig config) {
-    JniValidation.requireNonNull(publisher, "publisher");
-    JniValidation.requireNonNull(config, "config");
-    ensureNotClosed();
-
-    final CompletableFuture<Module> future = new CompletableFuture<>();
-
-    publisher.subscribe(
-        new Flow.Subscriber<ByteBuffer>() {
-          private Flow.Subscription subscription;
-
-          @Override
-          public void onSubscribe(final Flow.Subscription subscription) {
-            this.subscription = subscription;
-            subscription.request(1);
-          }
-
-          @Override
-          public void onNext(final ByteBuffer buffer) {
-            try {
-              final byte[] data = new byte[buffer.remaining()];
-              buffer.get(data);
-              nativeFeedChunk(getNativeHandle(), data, data.length);
-              subscription.request(1);
-            } catch (final Exception e) {
-              future.completeExceptionally(e);
-            }
-          }
-
-          @Override
-          public void onError(final Throwable throwable) {
-            future.completeExceptionally(throwable);
-          }
-
-          @Override
-          public void onComplete() {
-            try {
-              final long moduleHandle = nativeComplete(getNativeHandle());
-              future.complete(new JniModule(moduleHandle));
-            } catch (final Exception e) {
-              future.completeExceptionally(e);
-            }
-          }
-        });
-
-    return future;
+      final Object publisher, final StreamingConfig config) {
+    throw new UnsupportedOperationException(
+        "Flow API-based streaming compilation requires Java 9+. "
+            + "Use startStreamingCompilation() for Java 8 compatibility.");
   }
 
   /**

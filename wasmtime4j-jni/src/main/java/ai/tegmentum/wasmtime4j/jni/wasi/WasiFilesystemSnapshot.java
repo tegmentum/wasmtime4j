@@ -817,4 +817,47 @@ public final class WasiFilesystemSnapshot {
       this.checksumMismatch = checksumMismatch;
     }
   }
+
+  /** Snapshot performance metrics. */
+  public static final class SnapshotPerformanceMetrics {
+    public volatile long snapshotCreationTimeMs;
+    public volatile long snapshotRestoreTimeMs;
+    public volatile long totalBytesProcessed;
+    public volatile int filesProcessed;
+
+    public SnapshotPerformanceMetrics() {
+      this.snapshotCreationTimeMs = 0;
+      this.snapshotRestoreTimeMs = 0;
+      this.totalBytesProcessed = 0;
+      this.filesProcessed = 0;
+    }
+  }
+
+  /** Deduplication statistics. */
+  public static final class DeduplicationStatistics {
+    public volatile long duplicateBlocksFound;
+    public volatile long bytesDeduplicatedCompressionStatistics;
+    public volatile double deduplicationRatio;
+
+    public DeduplicationStatistics() {
+      this.duplicateBlocksFound = 0;
+      this.bytesDeduplicatedCompressionStatistics = 0;
+      this.deduplicationRatio = 0.0;
+    }
+  }
+
+  /** Compression statistics. */
+  public static final class CompressionStatistics {
+    public volatile long originalSize;
+    public volatile long compressedSize;
+    public volatile double compressionRatio;
+    public volatile String compressionAlgorithm;
+
+    public CompressionStatistics() {
+      this.originalSize = 0;
+      this.compressedSize = 0;
+      this.compressionRatio = 0.0;
+      this.compressionAlgorithm = "none";
+    }
+  }
 }

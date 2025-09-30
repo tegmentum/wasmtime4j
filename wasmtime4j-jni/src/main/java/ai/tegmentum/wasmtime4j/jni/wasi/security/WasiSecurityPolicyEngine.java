@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -381,14 +383,19 @@ public final class WasiSecurityPolicyEngine {
     private final boolean executeAllowed;
 
     private SecurityPolicy(final Builder builder) {
-      this.allowedDirectories = Set.copyOf(builder.allowedDirectories);
-      this.allowedOperations = Set.copyOf(builder.allowedOperations);
-      this.allowedEnvironmentVariables = Set.copyOf(builder.allowedEnvironmentVariables);
-      this.writableEnvironmentVariables = Set.copyOf(builder.writableEnvironmentVariables);
+      this.allowedDirectories =
+          Collections.unmodifiableSet(new HashSet<>(builder.allowedDirectories));
+      this.allowedOperations =
+          Collections.unmodifiableSet(new HashSet<>(builder.allowedOperations));
+      this.allowedEnvironmentVariables =
+          Collections.unmodifiableSet(new HashSet<>(builder.allowedEnvironmentVariables));
+      this.writableEnvironmentVariables =
+          Collections.unmodifiableSet(new HashSet<>(builder.writableEnvironmentVariables));
       this.networkAccessAllowed = builder.networkAccessAllowed;
-      this.allowedHosts = Set.copyOf(builder.allowedHosts);
-      this.allowedPorts = Set.copyOf(builder.allowedPorts);
-      this.allowedProtocols = Set.copyOf(builder.allowedProtocols);
+      this.allowedHosts = Collections.unmodifiableSet(new HashSet<>(builder.allowedHosts));
+      this.allowedPorts = Collections.unmodifiableSet(new HashSet<>(builder.allowedPorts));
+      this.allowedProtocols =
+          Collections.unmodifiableSet(new HashSet<>(builder.allowedProtocols));
       this.maxFileSize = builder.maxFileSize;
       this.symbolicLinksAllowed = builder.symbolicLinksAllowed;
       this.executeAllowed = builder.executeAllowed;
@@ -550,7 +557,9 @@ public final class WasiSecurityPolicyEngine {
         final Instant timestamp,
         final boolean granted) {
       eventCount.incrementAndGet();
-      if (!granted) deniedAccessCount.incrementAndGet();
+      if (!granted) {
+        deniedAccessCount.incrementAndGet();
+      }
     }
 
     void logNetworkAccess(
@@ -561,7 +570,9 @@ public final class WasiSecurityPolicyEngine {
         final Instant timestamp,
         final boolean granted) {
       eventCount.incrementAndGet();
-      if (!granted) deniedAccessCount.incrementAndGet();
+      if (!granted) {
+        deniedAccessCount.incrementAndGet();
+      }
     }
 
     void logPolicyUpdate(final String contextId, final Instant timestamp) {
@@ -577,7 +588,7 @@ public final class WasiSecurityPolicyEngine {
     }
 
     List<AuditEvent> getRecentEvents(final int maxEvents) {
-      return List.of(); // Implementation would return actual events
+      return Collections.emptyList(); // Implementation would return actual events
     }
   }
 

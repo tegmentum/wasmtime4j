@@ -669,7 +669,7 @@ public final class WasiPreview2Operations {
     public WasiHttpResponse(
         final int statusCode, final Map<String, String> headers, final ByteBuffer body) {
       this.statusCode = statusCode;
-      this.headers = headers != null ? Map.copyOf(headers) : Map.of();
+      this.headers = headers != null ? Map.copyOf(headers) : Collections.emptyMap();
       this.body = body;
     }
 

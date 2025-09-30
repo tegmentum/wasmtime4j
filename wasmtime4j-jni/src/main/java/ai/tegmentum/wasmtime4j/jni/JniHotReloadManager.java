@@ -290,8 +290,12 @@ public final class JniHotReloadManager implements AutoCloseable {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (!(obj instanceof JniHotReloadManager)) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof JniHotReloadManager)) {
+      return false;
+    }
     final JniHotReloadManager other = (JniHotReloadManager) obj;
     return nativeHandle == other.nativeHandle;
   }

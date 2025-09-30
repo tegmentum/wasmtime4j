@@ -72,8 +72,12 @@ public final class CollaborationMessage {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
     final CollaborationMessage that = (CollaborationMessage) obj;
     return timestamp == that.timestamp
         && type == that.type

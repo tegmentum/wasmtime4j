@@ -116,7 +116,9 @@ class ComponentLinkingExtensionsIntegrationTest {
   @DisplayName("Should create and execute component pipelines")
   void testComponentPipelineExecution() throws Exception {
     // Given: Pipeline with multiple processing stages
-    if (componentLinker == null) return;
+    if (componentLinker == null) {
+      return;
+    }
 
     List<ComponentSimple> pipelineComponents =
         List.of(
@@ -153,7 +155,9 @@ class ComponentLinkingExtensionsIntegrationTest {
   @Test
   @DisplayName("Should support event-driven component communication")
   void testEventDrivenCommunication() throws Exception {
-    if (eventSystem == null) return;
+    if (eventSystem == null) {
+      return;
+    }
 
     // Given: Components that communicate via events
     ComponentSimple publisher = createMockComponent("publisher", ComponentVersion.of(1, 0, 0));
@@ -197,7 +201,9 @@ class ComponentLinkingExtensionsIntegrationTest {
   @Test
   @DisplayName("Should manage shared resource pools between components")
   void testResourceSharingManagement() throws Exception {
-    if (resourceManager == null) return;
+    if (resourceManager == null) {
+      return;
+    }
 
     // Given: Components that share resources
     ComponentSimple component1 = createMockComponent("comp1", ComponentVersion.of(1, 0, 0));

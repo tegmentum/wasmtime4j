@@ -219,7 +219,7 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
           config.isAdvancedSandboxingEnabled() ? 1 : 0,
           config.isResourceLimitingEnabled() ? 1 : 0,
           1024 // Default 1GB memory limit
-          );
+      );
 
       // Configure profiling features
       if (config.isAdvancedProfilingEnabled()) {
@@ -228,7 +228,7 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
             config.isExecutionTracingEnabled() ? 1 : 0,
             config.getProfilingGranularity().ordinal(),
             1000 // 1ms sampling interval
-            );
+        );
       }
 
       LOGGER.info(
