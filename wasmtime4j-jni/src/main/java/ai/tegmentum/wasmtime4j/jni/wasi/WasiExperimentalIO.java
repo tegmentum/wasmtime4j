@@ -925,6 +925,13 @@ public final class WasiExperimentalIO {
     public final WasiException error;
     public final boolean completed;
 
+    /**
+     * Creates async I/O result.
+     *
+     * @param bytesTransferred number of bytes transferred
+     * @param error the error if operation failed (may be null)
+     * @param completed whether the operation completed
+     */
     public AsyncIOResult(
         final int bytesTransferred, final WasiException error, final boolean completed) {
       this.bytesTransferred = bytesTransferred;
@@ -940,6 +947,14 @@ public final class WasiExperimentalIO {
     public final String oldPath; // For rename/move events
     public final long timestamp;
 
+    /**
+     * Creates file system event.
+     *
+     * @param eventType the type of file system event
+     * @param path the file path affected by the event
+     * @param oldPath the old path for rename/move events (may be null)
+     * @param timestamp event timestamp in milliseconds
+     */
     public FileSystemEvent(
         final FileSystemEventType eventType,
         final String path,
