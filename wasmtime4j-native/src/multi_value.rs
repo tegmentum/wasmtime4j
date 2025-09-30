@@ -349,8 +349,8 @@ impl MultiValueFunction {
             (Val::F32(_), ValType::F32) => true,
             (Val::F64(_), ValType::F64) => true,
             (Val::V128(_), ValType::V128) => true,
-            (Val::FuncRef(_), ValType::FuncRef) => true,
-            (Val::ExternRef(_), ValType::ExternRef) => true,
+            (Val::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
+            (Val::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
             _ => false,
         }
     }

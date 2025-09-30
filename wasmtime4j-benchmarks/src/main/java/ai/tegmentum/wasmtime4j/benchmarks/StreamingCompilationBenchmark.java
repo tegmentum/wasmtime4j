@@ -7,14 +7,13 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.NetworkStreamingCompiler;
 import ai.tegmentum.wasmtime4j.NetworkStreamingConfig;
 import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StreamingCompiler;
 import ai.tegmentum.wasmtime4j.StreamingConfig;
 import ai.tegmentum.wasmtime4j.StreamingInstantiator;
-import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -33,13 +32,15 @@ import org.openjdk.jmh.annotations.Warmup;
 /**
  * JMH benchmark for comparing streaming vs traditional WebAssembly compilation performance.
  *
- * <p>This benchmark measures compilation time, instantiation time, memory usage, and throughput
- * for different compilation strategies to validate the benefits of streaming compilation.
+ * <p>This benchmark measures compilation time, instantiation time, memory usage, and throughput for
+ * different compilation strategies to validate the benefits of streaming compilation.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx4g"})
+@Fork(
+    value = 1,
+    jvmArgs = {"-Xms2g", "-Xmx4g"})
 @Warmup(iterations = 3, time = 10)
 @Measurement(iterations = 5, time = 10)
 public class StreamingCompilationBenchmark {
@@ -121,8 +122,8 @@ public class StreamingCompilationBenchmark {
   /**
    * Benchmark streaming compilation from input stream.
    *
-   * <p>This benchmark measures the time to compile a WebAssembly module using streaming
-   * compilation from an input stream.
+   * <p>This benchmark measures the time to compile a WebAssembly module using streaming compilation
+   * from an input stream.
    */
   @Benchmark
   public Module benchmarkStreamingCompilation() throws Exception {
@@ -144,7 +145,8 @@ public class StreamingCompilationBenchmark {
     try (StreamingCompiler compiler = engine.createStreamingCompiler()) {
       ByteArrayInputStream inputStream = new ByteArrayInputStream(wasmBytecode);
       CompletableFuture<StreamingInstantiator> future =
-          compiler.compileStreamingWithInstantiation(inputStream, streamingConfig, instantiationConfig);
+          compiler.compileStreamingWithInstantiation(
+              inputStream, streamingConfig, instantiationConfig);
       return future.get();
     }
   }
@@ -162,7 +164,8 @@ public class StreamingCompilationBenchmark {
           (NetworkStreamingCompiler) engine.createStreamingCompiler()) {
         // Simulate network URL (would normally be a real URL)
         URI simulatedUrl = URI.create("http://example.com/module.wasm");
-        CompletableFuture<Module> future = compiler.compileFromUrl(simulatedUrl, networkStreamingConfig);
+        CompletableFuture<Module> future =
+            compiler.compileFromUrl(simulatedUrl, networkStreamingConfig);
         return future.get();
       }
     } else {
@@ -196,7 +199,8 @@ public class StreamingCompilationBenchmark {
     try (StreamingCompiler compiler = engine.createStreamingCompiler()) {
       ByteArrayInputStream inputStream = new ByteArrayInputStream(wasmBytecode);
       CompletableFuture<StreamingInstantiator> instantiatorFuture =
-          compiler.compileStreamingWithInstantiation(inputStream, streamingConfig, instantiationConfig);
+          compiler.compileStreamingWithInstantiation(
+              inputStream, streamingConfig, instantiationConfig);
 
       StreamingInstantiator instantiator = instantiatorFuture.get();
       try {
@@ -238,9 +242,7 @@ public class StreamingCompilationBenchmark {
       streamingModule.close();
 
       return new CompilationMemoryMetrics(
-          peakTraditional - beforeTraditional,
-          peakStreaming - beforeStreaming
-      );
+          peakTraditional - beforeTraditional, peakStreaming - beforeStreaming);
     }
   }
 
@@ -271,8 +273,10 @@ public class StreamingCompilationBenchmark {
       long streamingTimeNanos = endTime - startTime;
       streamingModule.close();
 
-      double traditionalThroughput = (double) wasmBytecode.length / (traditionalTimeNanos / 1_000_000_000.0);
-      double streamingThroughput = (double) wasmBytecode.length / (streamingTimeNanos / 1_000_000_000.0);
+      double traditionalThroughput =
+          (double) wasmBytecode.length / (traditionalTimeNanos / 1_000_000_000.0);
+      double streamingThroughput =
+          (double) wasmBytecode.length / (streamingTimeNanos / 1_000_000_000.0);
 
       return new CompilationThroughputMetrics(traditionalThroughput, streamingThroughput);
     }
@@ -290,12 +294,16 @@ public class StreamingCompilationBenchmark {
 
   private byte[] generateWasmBytecode(final int targetSize) {
     // Generate a valid WebAssembly module with approximately the target size
-    // This is a simplified implementation - a real benchmark would use more sophisticated module generation
+    // This is a simplified implementation - a real benchmark would use more sophisticated module
+    // generation
 
-    final byte[] wasmHeader = {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00}; // WASM magic + version
+    final byte[] wasmHeader = {
+      0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00
+    }; // WASM magic + version
 
     // Calculate remaining size for padding
-    int remainingSize = Math.max(0, targetSize - wasmHeader.length - 100); // Reserve space for sections
+    int remainingSize =
+        Math.max(0, targetSize - wasmHeader.length - 100); // Reserve space for sections
 
     // Create a simple module structure with padding
     byte[] module = new byte[wasmHeader.length + remainingSize + 100];
@@ -315,7 +323,8 @@ public class StreamingCompilationBenchmark {
     public final long traditionalMemoryBytes;
     public final long streamingMemoryBytes;
 
-    public CompilationMemoryMetrics(final long traditionalMemoryBytes, final long streamingMemoryBytes) {
+    public CompilationMemoryMetrics(
+        final long traditionalMemoryBytes, final long streamingMemoryBytes) {
       this.traditionalMemoryBytes = traditionalMemoryBytes;
       this.streamingMemoryBytes = streamingMemoryBytes;
     }
@@ -326,7 +335,9 @@ public class StreamingCompilationBenchmark {
           "CompilationMemoryMetrics{traditional=%d bytes, streaming=%d bytes, improvement=%.2f%%}",
           traditionalMemoryBytes,
           streamingMemoryBytes,
-          (double) (traditionalMemoryBytes - streamingMemoryBytes) / traditionalMemoryBytes * 100.0);
+          (double) (traditionalMemoryBytes - streamingMemoryBytes)
+              / traditionalMemoryBytes
+              * 100.0);
     }
   }
 
@@ -344,10 +355,13 @@ public class StreamingCompilationBenchmark {
     @Override
     public String toString() {
       return String.format(
-          "CompilationThroughputMetrics{traditional=%.2f MB/s, streaming=%.2f MB/s, improvement=%.2f%%}",
+          "CompilationThroughputMetrics{traditional=%.2f MB/s, streaming=%.2f MB/s,"
+              + " improvement=%.2f%%}",
           traditionalBytesPerSecond / (1024.0 * 1024.0),
           streamingBytesPerSecond / (1024.0 * 1024.0),
-          (streamingBytesPerSecond - traditionalBytesPerSecond) / traditionalBytesPerSecond * 100.0);
+          (streamingBytesPerSecond - traditionalBytesPerSecond)
+              / traditionalBytesPerSecond
+              * 100.0);
     }
   }
 }

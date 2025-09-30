@@ -8,15 +8,15 @@
 //! - Predictive scaling based on historical patterns
 //! - Auto-tuning of scaling parameters
 
-use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::collections::{HashMap, VecDeque};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use parking_lot::{RwLock as ParkingRwLock, Mutex as ParkingMutex};
+use std::thread::JoinHandle;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use parking_lot::RwLock as ParkingRwLock;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::work_stealing::{WorkStealingScheduler, WorkStealingConfig};
-use crate::thread_affinity::{ThreadAffinityManager, AffinityConfig};
+use crate::work_stealing::WorkStealingScheduler;
+use crate::thread_affinity::ThreadAffinityManager;
 
 /// Adaptive thread pool scaling manager
 pub struct AdaptiveScalingManager {
@@ -456,6 +456,23 @@ pub struct MemoryMetrics {
     pub utilization: f64,
     /// Memory pressure level
     pub pressure: f64,
+}
+
+/// Workload metrics for adaptive scaling
+#[derive(Debug, Clone)]
+pub struct WorkloadMetrics {
+    /// CPU utilization percentage (0.0 - 1.0)
+    pub cpu_utilization: f64,
+    /// Memory utilization percentage (0.0 - 1.0)
+    pub memory_utilization: f64,
+    /// Current queue depth
+    pub queue_depth: u64,
+    /// Throughput in operations per second
+    pub throughput: f64,
+    /// Average response time in milliseconds
+    pub response_time_ms: f64,
+    /// Error rate percentage (0.0 - 1.0)
+    pub error_rate: f64,
 }
 
 /// Network metrics

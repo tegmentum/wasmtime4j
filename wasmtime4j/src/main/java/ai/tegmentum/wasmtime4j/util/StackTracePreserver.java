@@ -27,12 +27,12 @@ import java.util.logging.Logger;
  * Utility for preserving and enhancing stack trace information across WebAssembly boundaries.
  *
  * <p>This class provides mechanisms to capture and preserve stack trace information when errors
- * occur during WebAssembly execution, bridging the gap between native WebAssembly stack traces
- * and Java stack traces to provide comprehensive debugging information.
+ * occur during WebAssembly execution, bridging the gap between native WebAssembly stack traces and
+ * Java stack traces to provide comprehensive debugging information.
  *
- * <p>The stack trace preserver supports parsing native stack trace information, mapping
- * WebAssembly function names and source locations, and combining this information with Java
- * stack traces to create comprehensive error reports.
+ * <p>The stack trace preserver supports parsing native stack trace information, mapping WebAssembly
+ * function names and source locations, and combining this information with Java stack traces to
+ * create comprehensive error reports.
  *
  * @since 1.0.0
  */
@@ -50,9 +50,7 @@ public final class StackTracePreserver {
     throw new AssertionError("Utility class should not be instantiated");
   }
 
-  /**
-   * Represents a WebAssembly stack frame with enhanced debugging information.
-   */
+  /** Represents a WebAssembly stack frame with enhanced debugging information. */
   public static final class WasmStackFrame {
     private final String functionName;
     private final String moduleName;
@@ -127,8 +125,7 @@ public final class StackTracePreserver {
      * @return equivalent Java stack trace element
      */
     public StackTraceElement toStackTraceElement() {
-      final String className = WASM_FRAME_PREFIX +
-          (moduleName != null ? " " + moduleName : "");
+      final String className = WASM_FRAME_PREFIX + (moduleName != null ? " " + moduleName : "");
       final String fileName = sourceFile.orElse(null);
       final int lineNum = lineNumber.orElse(-1);
 
@@ -163,14 +160,12 @@ public final class StackTracePreserver {
     }
   }
 
-  /**
-   * Enhanced exception that preserves WebAssembly stack trace information.
-   */
+  /** Enhanced exception that preserves WebAssembly stack trace information. */
   public static final class EnhancedWasmException extends WasmException {
     private static final long serialVersionUID = 1L;
 
-    private final List<WasmStackFrame> wasmStackFrames;
-    private final Optional<String> wasmTrapMessage;
+    private final transient List<WasmStackFrame> wasmStackFrames;
+    private final transient Optional<String> wasmTrapMessage;
 
     /**
      * Creates an enhanced WebAssembly exception with stack trace information.
@@ -215,9 +210,7 @@ public final class StackTracePreserver {
       return wasmTrapMessage;
     }
 
-    /**
-     * Enhances the Java stack trace by inserting WebAssembly frames.
-     */
+    /** Enhances the Java stack trace by inserting WebAssembly frames. */
     private void enhanceStackTrace() {
       final StackTraceElement[] originalStackTrace = getStackTrace();
       final List<StackTraceElement> enhancedStackTrace = new ArrayList<>();
@@ -229,8 +222,8 @@ public final class StackTracePreserver {
 
       // Add a separator frame
       if (!wasmStackFrames.isEmpty() && originalStackTrace.length > 0) {
-        enhancedStackTrace.add(new StackTraceElement(
-            "[BOUNDARY]", "nativeToJavaTransition", null, -1));
+        enhancedStackTrace.add(
+            new StackTraceElement("[BOUNDARY]", "nativeToJavaTransition", null, -1));
       }
 
       // Add original Java frames
@@ -261,9 +254,9 @@ public final class StackTracePreserver {
   /**
    * Parses a native WebAssembly stack trace string into structured stack frames.
    *
-   * <p>This method attempts to parse various formats of WebAssembly stack trace output
-   * from different sources (Wasmtime, browser engines, etc.) and convert them into
-   * structured WasmStackFrame objects.
+   * <p>This method attempts to parse various formats of WebAssembly stack trace output from
+   * different sources (Wasmtime, browser engines, etc.) and convert them into structured
+   * WasmStackFrame objects.
    *
    * @param nativeStackTrace the native stack trace string
    * @return list of parsed WebAssembly stack frames
@@ -324,9 +317,7 @@ public final class StackTracePreserver {
     return Optional.empty();
   }
 
-  /**
-   * Parses stack trace format: "function_name (module.wasm:line:column)".
-   */
+  /** Parses stack trace format: "function_name (module.wasm:line:column)". */
   private static Optional<WasmStackFrame> parseParenthesesFormat(final String line) {
     final int parenIndex = line.indexOf('(');
     final int closeParenIndex = line.lastIndexOf(')');
@@ -341,9 +332,7 @@ public final class StackTracePreserver {
     return parseLocationInfo(functionName, locationInfo);
   }
 
-  /**
-   * Parses stack trace format: "function_name@module.wasm:line:column".
-   */
+  /** Parses stack trace format: "function_name@module.wasm:line:column". */
   private static Optional<WasmStackFrame> parseAtSignFormat(final String line) {
     final int atIndex = line.indexOf('@');
     if (atIndex == -1) {
@@ -356,9 +345,7 @@ public final class StackTracePreserver {
     return parseLocationInfo(functionName, locationInfo);
   }
 
-  /**
-   * Parses location information in the format "module.wasm:line:column".
-   */
+  /** Parses location information in the format "module.wasm:line:column". */
   private static Optional<WasmStackFrame> parseLocationInfo(
       final String functionName, final String locationInfo) {
     String moduleName = null;
@@ -396,16 +383,16 @@ public final class StackTracePreserver {
       }
     }
 
-    return Optional.of(new WasmStackFrame(
-        functionName, moduleName, sourceFile, lineNumber, columnNumber, instructionOffset));
+    return Optional.of(
+        new WasmStackFrame(
+            functionName, moduleName, sourceFile, lineNumber, columnNumber, instructionOffset));
   }
 
-  /**
-   * Checks if a string looks like a valid WebAssembly function name.
-   */
+  /** Checks if a string looks like a valid WebAssembly function name. */
   private static boolean isValidFunctionName(final String name) {
-    return name != null && !name.isEmpty() &&
-           (name.startsWith("$") || Character.isLetter(name.charAt(0)) || name.charAt(0) == '_');
+    return name != null
+        && !name.isEmpty()
+        && (name.startsWith("$") || Character.isLetter(name.charAt(0)) || name.charAt(0) == '_');
   }
 
   /**
@@ -453,8 +440,7 @@ public final class StackTracePreserver {
    * @return enhanced exception with combined stack traces
    */
   public static EnhancedWasmException combineStackTraces(
-      final WasmException primaryException,
-      final String... additionalStackTraces) {
+      final WasmException primaryException, final String... additionalStackTraces) {
     final List<WasmStackFrame> allFrames = new ArrayList<>();
 
     for (final String stackTrace : additionalStackTraces) {
@@ -477,15 +463,22 @@ public final class StackTracePreserver {
     int depth = 0;
 
     while (current != null && depth < 10) { // Prevent infinite loops
-      info.append("Exception ").append(depth).append(": ")
+      info.append("Exception ")
+          .append(depth)
+          .append(": ")
           .append(current.getClass().getSimpleName())
-          .append(": ").append(current.getMessage()).append("\n");
+          .append(": ")
+          .append(current.getMessage())
+          .append("\n");
 
       if (current instanceof EnhancedWasmException) {
         final EnhancedWasmException enhanced = (EnhancedWasmException) current;
-        info.append("  WebAssembly frames: ").append(enhanced.getWasmStackFrames().size()).append("\n");
-        enhanced.getWasmTrapMessage().ifPresent(msg ->
-            info.append("  Trap message: ").append(msg).append("\n"));
+        info.append("  WebAssembly frames: ")
+            .append(enhanced.getWasmStackFrames().size())
+            .append("\n");
+        enhanced
+            .getWasmTrapMessage()
+            .ifPresent(msg -> info.append("  Trap message: ").append(msg).append("\n"));
       }
 
       current = current.getCause();

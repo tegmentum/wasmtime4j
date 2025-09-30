@@ -22,7 +22,7 @@ pub mod jni_instance {
     use super::*;
     use crate::instance::{core, InstanceState};
     use crate::error::jni_utils;
-    use crate::ffi_common::parameter_conversion;
+    
     use std::os::raw::c_void;
 
     /// Get the current lifecycle state of an instance (JNI version)
@@ -175,7 +175,7 @@ pub mod jni_engine {
     /// Destroy a Wasmtime engine (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) {
@@ -250,7 +250,7 @@ pub mod jni_engine {
     /// Check if fuel consumption is enabled (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsFuelEnabled(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -263,7 +263,7 @@ pub mod jni_engine {
     /// Check if epoch interruption is enabled (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -276,7 +276,7 @@ pub mod jni_engine {
     /// Get memory limit in pages (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimit(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -289,7 +289,7 @@ pub mod jni_engine {
     /// Get stack size limit in bytes (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackLimit(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -302,7 +302,7 @@ pub mod jni_engine {
     /// Get maximum instances limit (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMaxInstances(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -315,7 +315,7 @@ pub mod jni_engine {
     /// Validate engine functionality (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeValidateEngine(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jboolean {
@@ -328,7 +328,7 @@ pub mod jni_engine {
     /// Check if engine supports WebAssembly feature (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
         feature_id: jint,
@@ -353,7 +353,7 @@ pub mod jni_engine {
     /// Get engine reference count for debugging (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetReferenceCount(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
     ) -> jint {
@@ -366,7 +366,7 @@ pub mod jni_engine {
     /// Check if debug info is enabled
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsDebugInfo(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _engine_ptr: jlong,
     ) -> jboolean {
@@ -796,7 +796,7 @@ pub mod jni_function {
     /// Call a function with int parameters (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jintArray,
@@ -808,7 +808,7 @@ pub mod jni_function {
     /// Call a function with long parameters (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jlongArray,
@@ -820,7 +820,7 @@ pub mod jni_function {
     /// Call a function with float parameters (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jfloatArray,
@@ -832,7 +832,7 @@ pub mod jni_function {
     /// Call a function with double parameters (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
         params: jdoubleArray,
@@ -844,7 +844,7 @@ pub mod jni_function {
     /// Destroy a function (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestroyFunction(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
     ) {
@@ -865,7 +865,7 @@ pub mod jni_native_method_bindings {
     /// Get the Wasmtime version string (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeGetWasmtimeVersion(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jstring {
         // Simple placeholder implementation - just return a hardcoded version string
@@ -876,7 +876,7 @@ pub mod jni_native_method_bindings {
     /// Create a test runtime for validation (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCreateRuntime(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jlong {
         // Placeholder implementation - return a non-zero value to indicate "success"
@@ -886,7 +886,7 @@ pub mod jni_native_method_bindings {
     /// Destroy a test runtime (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeDestroyRuntime(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         runtime_handle: jlong,
     ) {
@@ -896,7 +896,7 @@ pub mod jni_native_method_bindings {
     /// Initialize the native library (JNI version) - PLACEHOLDER
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeInitialize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) {
         // Placeholder implementation - do nothing for now
@@ -1248,7 +1248,7 @@ pub mod jni_store {
     /// Destroy a store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         store_ptr: jlong,
     ) {
@@ -1517,7 +1517,7 @@ pub mod jni_module {
     /// Validate WebAssembly bytecode without compiling
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidateModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         bytecode: jbyteArray,
     ) -> jboolean {
@@ -1542,7 +1542,7 @@ pub mod jni_module {
     /// Get the size of a compiled module in bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleSize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jlong {
@@ -1644,7 +1644,7 @@ pub mod jni_module {
     /// Get the name of a module if it has one
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleName(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jstring {
@@ -1732,7 +1732,7 @@ pub mod jni_module {
     /// Serialize a compiled module to bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeSerializeModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) -> jbyteArray {
@@ -1777,7 +1777,7 @@ pub mod jni_module {
     /// Create a native import map from serialized data
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCreateImportMap(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _store_ptr: jlong,
         _import_data: jbyteArray,
@@ -1789,7 +1789,7 @@ pub mod jni_module {
     /// Destroy a native import map
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyImportMap(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         _import_map_ptr: jlong,
     ) {
@@ -1799,7 +1799,7 @@ pub mod jni_module {
     /// Destroy a module
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         module_ptr: jlong,
     ) {
@@ -2035,12 +2035,12 @@ pub mod jni_component {
 pub mod jni_hostfunc {
     use super::*;
     use crate::error::jni_utils;
-    use crate::hostfunc::{HostFunction, HostFunctionCallback};
+    use crate::hostfunc::HostFunctionCallback;
     use crate::instance::WasmValue;
     use crate::{WasmtimeError, WasmtimeResult};
     use wasmtime::{ValType, FuncType};
     use std::os::raw::c_void;
-    use std::sync::Arc;
+    
 
     /// Execute a Java host function callback from native code
     fn execute_java_host_function_callback(
@@ -2145,7 +2145,7 @@ pub mod jni_hostfunc {
     /// Destroy a host function (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDestroyHostFunction(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         host_func_handle: jlong,
     ) {
@@ -2344,7 +2344,7 @@ pub mod jni_global {
     /// Get global variable value (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGlobal(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
         store_ptr: jlong,
@@ -2430,7 +2430,7 @@ pub mod jni_global {
     /// Get global variable metadata (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetadata(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> jbyteArray {
@@ -2528,7 +2528,7 @@ pub mod jni_global {
     /// Check if a global variable is mutable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMutable(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) -> jboolean {
@@ -2962,7 +2962,7 @@ pub mod jni_global {
     /// Destroy a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyGlobal(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) {
@@ -2974,7 +2974,7 @@ pub mod jni_global {
     /// Destroy a global variable (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroy(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         global_ptr: jlong,
     ) {
@@ -3037,7 +3037,7 @@ pub mod jni_table {
     /// Get table size (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) -> jint {
@@ -3069,7 +3069,7 @@ pub mod jni_table {
     /// Get table maximum size (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMaxSize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) -> jint {
@@ -3104,7 +3104,7 @@ pub mod jni_table {
     /// Grow table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGrow(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
         delta: jint,
@@ -3146,7 +3146,7 @@ pub mod jni_table {
     /// Fill table range (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
         start: jint,
@@ -3197,7 +3197,7 @@ pub mod jni_table {
     /// Get table metadata (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMetadata(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) -> jbyteArray {
@@ -3256,7 +3256,7 @@ pub mod jni_table {
     /// Destroy a table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) {
@@ -3277,7 +3277,7 @@ pub mod jni_memory {
     /// Get memory size in bytes (JNI version) with comprehensive validation
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jlong {
@@ -3413,7 +3413,7 @@ pub mod jni_memory {
     /// Grow memory by pages (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
         store_ptr: jlong,
@@ -3457,7 +3457,7 @@ pub mod jni_memory {
 
             // Get memory and store references with validation
             let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-            let mut store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
 
             // Perform the memory growth operation with comprehensive error handling
             match core::grow_memory(memory, store, pages as u64) {
@@ -3482,7 +3482,7 @@ pub mod jni_memory {
     /// Read a single byte from memory (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
         store_ptr: jlong,
@@ -3609,7 +3609,7 @@ pub mod jni_memory {
 
             // Get memory and store references with validation
             let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-            let mut store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
 
             // Convert jint to u8 (handling signed/unsigned conversion safely)
             let byte_value = if value < 0 {
@@ -3641,7 +3641,7 @@ pub mod jni_memory {
     /// Read bytes from memory into a buffer (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadBytes(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
         store_ptr: jlong,
@@ -3749,7 +3749,7 @@ pub mod jni_memory {
     /// Write bytes from a buffer to memory (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteBytes(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
         store_ptr: jlong,
@@ -3817,7 +3817,7 @@ pub mod jni_memory {
 
             // Get memory and store references with validation
             let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-            let mut store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
 
             // Get Java buffer data safely
             let mut signed_buffer = vec![0i8; buffer_length];
@@ -3855,7 +3855,7 @@ pub mod jni_memory {
     /// Get direct ByteBuffer view of memory (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffer<'a>(
-        mut env: JNIEnv<'a>,
+        env: JNIEnv<'a>,
         _class: JClass<'a>,
         memory_ptr: jlong,
         store_ptr: jlong,
@@ -3917,7 +3917,7 @@ pub mod jni_memory {
     /// Destroy memory (JNI version) with comprehensive validation and cleanup
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) {
@@ -3940,7 +3940,7 @@ pub mod jni_memory {
     /// Get memory page count (JNI version) with comprehensive validation
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageCount(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jlong {
@@ -4055,7 +4055,7 @@ pub mod jni_memory {
     /// Get memory maximum size in pages (JNI version) with comprehensive validation
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMaxSize(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jlong {
@@ -4174,7 +4174,7 @@ pub mod jni_memory {
     /// Validate memory handle and return diagnostics (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeValidateHandle(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jboolean {
@@ -4198,7 +4198,7 @@ pub mod jni_memory {
     /// Get memory handle diagnostics (JNI version) - returns access count
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetAccessCount(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         memory_ptr: jlong,
     ) -> jlong {
@@ -4219,7 +4219,7 @@ pub mod jni_memory {
     /// Get global memory handle diagnostics (JNI version) - returns handle count and total accesses
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetGlobalDiagnostics(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jbyteArray {
         match core::get_memory_handle_diagnostics() {
@@ -4244,7 +4244,7 @@ pub mod jni_memory {
     /// Get element type of a table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElementType(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
     ) -> jstring {
@@ -4306,7 +4306,7 @@ pub mod jni_memory {
     /// Get element from table by index (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
         index: jint,
@@ -4350,7 +4350,7 @@ pub mod jni_memory {
     /// Set element in table by index (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
         index: jint,
@@ -4512,7 +4512,7 @@ pub mod jni_runtime {
     /// Get the Wasmtime version string (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeGetWasmtimeVersion(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
     ) -> jstring {
         match env.new_string(crate::WASMTIME_VERSION) {
@@ -4527,7 +4527,7 @@ pub mod jni_runtime {
     /// Destroy a WebAssembly runtime (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDestroyRuntime(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         runtime_handle: jlong,
     ) {
@@ -4552,7 +4552,7 @@ pub mod jni_runtime {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi {
     use super::*;
-    use crate::wasi::{WasiContext, WasiConfig, WasiFileDescriptorManager, EnvironmentPolicy};
+    use crate::wasi::{WasiContext, WasiFileDescriptorManager};
     use crate::error::jni_utils;
 
     /// Create a new WASI context with default configuration
@@ -4571,7 +4571,7 @@ pub mod jni_wasi {
     /// Destroy a WASI context and free its resources
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeDestroyContext(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
     ) {
@@ -4591,8 +4591,8 @@ pub mod jni_caller {
     use crate::error::jni_utils;
     use wasmtime::Caller as WasmtimeCaller;
     use crate::store::StoreData;
-    use jni::objects::{JLongArray, JBooleanArray};
-    use jni::sys::{jlongArray, jbooleanArray};
+    
+    
 
     /// Get fuel consumed by the caller if fuel metering is enabled (JNI version)
     #[no_mangle]
@@ -4824,12 +4824,12 @@ pub mod jni_simd {
     use crate::simd;
     use crate::error::{jni_utils, WasmtimeError};
     use jni::objects::JByteArray;
-    use jni::sys::{jfloat, jbooleanArray};
+    use jni::sys::jfloat;
 
     /// Check if SIMD is supported
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsSimdSupported(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         runtime_handle: jlong,
     ) -> jboolean {
@@ -4840,7 +4840,7 @@ pub mod jni_simd {
     /// Get SIMD capabilities
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeGetSimdCapabilities(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         runtime_handle: jlong,
     ) -> jstring {
@@ -5059,7 +5059,7 @@ pub mod jni_simd {
     /// SIMD horizontal sum
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalSum(
-        mut env: JNIEnv,
+        env: JNIEnv,
         _class: JClass,
         runtime_handle: jlong,
         a: JByteArray,

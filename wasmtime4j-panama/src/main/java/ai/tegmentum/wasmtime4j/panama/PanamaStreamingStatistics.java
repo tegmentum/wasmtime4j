@@ -9,8 +9,8 @@ import java.util.Collections;
 /**
  * Panama utility for creating StreamingStatistics.
  *
- * <p>This class provides helper methods for creating StreamingStatistics from native data
- * through Panama Foreign Function API integration with the native Wasmtime library.
+ * <p>This class provides helper methods for creating StreamingStatistics from native data through
+ * Panama Foreign Function API integration with the native Wasmtime library.
  *
  * @since 1.0.0
  */
@@ -41,7 +41,8 @@ public final class PanamaStreamingStatistics {
       final long functionsCompiled,
       final long totalFunctions) {
 
-    final Instant startTime = Instant.now(); // Approximation - real implementation would track this properly
+    final Instant startTime =
+        Instant.now(); // Approximation - real implementation would track this properly
     final CompilationPhase currentPhase = mapProgressToPhase(progress);
 
     return StreamingStatistics.builder()

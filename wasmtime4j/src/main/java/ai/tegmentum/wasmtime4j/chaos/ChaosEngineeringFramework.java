@@ -27,7 +27,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -52,8 +51,7 @@ import java.util.logging.Logger;
  */
 public final class ChaosEngineeringFramework {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ChaosEngineeringFramework.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ChaosEngineeringFramework.class.getName());
 
   /** Types of chaos experiments that can be executed. */
   public enum ChaosExperimentType {
@@ -111,6 +109,16 @@ public final class ChaosEngineeringFramework {
     private volatile long executionCount;
     private volatile long failureCount;
 
+    /**
+     * Creates a new chaos experiment.
+     *
+     * @param experimentId unique identifier for the experiment
+     * @param type type of chaos experiment
+     * @param severity severity level of the experiment
+     * @param duration duration the experiment should run
+     * @param targetComponent target component for the experiment
+     * @param parameters experiment-specific parameters
+     */
     public ChaosExperiment(
         final String experimentId,
         final ChaosExperimentType type,
@@ -173,6 +181,11 @@ public final class ChaosEngineeringFramework {
       return failureCount;
     }
 
+    /**
+     * Checks if the chaos experiment is currently active.
+     *
+     * @return true if the experiment is active, false otherwise
+     */
     public boolean isActive() {
       return startTime != null
           && (endTime == null || Instant.now().isBefore(endTime))
@@ -207,6 +220,16 @@ public final class ChaosEngineeringFramework {
     private final Throwable exception;
     private final Instant timestamp;
 
+    /**
+     * Creates a new chaos experiment result.
+     *
+     * @param experimentId identifier of the experiment
+     * @param successful whether the experiment was successful
+     * @param executionTime time taken to execute the experiment
+     * @param resultMessage result message from the experiment
+     * @param metrics experiment metrics
+     * @param exception exception thrown during experiment (if any)
+     */
     public ChaosExperimentResult(
         final String experimentId,
         final boolean successful,
@@ -417,8 +440,7 @@ public final class ChaosEngineeringFramework {
 
     @Override
     public boolean injectFault(final ChaosExperiment experiment) {
-      this.latencyMs =
-          (Long) experiment.getParameters().getOrDefault("latencyMs", 1000L);
+      this.latencyMs = (Long) experiment.getParameters().getOrDefault("latencyMs", 1000L);
       this.active = true;
       return true;
     }
@@ -719,9 +741,7 @@ public final class ChaosEngineeringFramework {
         severity,
         duration,
         "wasmtime4j",
-        Map.of(
-            "threadCount", Runtime.getRuntime().availableProcessors(),
-            "intensityPercent", 70));
+        Map.of("threadCount", Runtime.getRuntime().availableProcessors(), "intensityPercent", 70));
   }
 
   /**
@@ -745,12 +765,10 @@ public final class ChaosEngineeringFramework {
   /** Starts background processing for experiment management. */
   private void startBackgroundProcessing() {
     // Experiment monitoring task
-    executorService.scheduleAtFixedRate(
-        this::monitorExperiments, 30, 30, TimeUnit.SECONDS);
+    executorService.scheduleAtFixedRate(this::monitorExperiments, 30, 30, TimeUnit.SECONDS);
 
     // Safety checks task
-    executorService.scheduleAtFixedRate(
-        this::performSafetyChecks, 60, 60, TimeUnit.SECONDS);
+    executorService.scheduleAtFixedRate(this::performSafetyChecks, 60, 60, TimeUnit.SECONDS);
   }
 
   /** Monitors active experiments and handles timeouts. */
@@ -808,11 +826,9 @@ public final class ChaosEngineeringFramework {
       // Check for runaway experiments
       final long currentTime = System.currentTimeMillis();
       for (final ChaosExperiment experiment : activeExperiments.values()) {
-        final long runningTime =
-            currentTime - experiment.getStartTime().toEpochMilli();
+        final long runningTime = currentTime - experiment.getStartTime().toEpochMilli();
         if (runningTime > maxExperimentDuration.toMillis()) {
-          LOGGER.warning(
-              "Stopping runaway experiment: " + experiment.getExperimentId());
+          LOGGER.warning("Stopping runaway experiment: " + experiment.getExperimentId());
           stopExperiment(experiment.getExperimentId());
         }
       }
@@ -851,8 +867,7 @@ public final class ChaosEngineeringFramework {
 
     final StringBuilder sb = new StringBuilder("Active Chaos Experiments:\n");
     for (final ChaosExperiment experiment : activeExperiments.values()) {
-      final Duration remaining =
-          Duration.between(Instant.now(), experiment.getEndTime());
+      final Duration remaining = Duration.between(Instant.now(), experiment.getEndTime());
       sb.append(
           String.format(
               "  %s [%s]: %s on %s (remaining: %s, executions: %d, failures: %d)\n",
@@ -860,9 +875,7 @@ public final class ChaosEngineeringFramework {
               experiment.getType(),
               experiment.getSeverity(),
               experiment.getTargetComponent(),
-              remaining.toSeconds() > 0
-                  ? remaining.toSeconds() + "s"
-                  : "expired",
+              remaining.toSeconds() > 0 ? remaining.toSeconds() + "s" : "expired",
               experiment.getExecutionCount(),
               experiment.getFailureCount()));
     }

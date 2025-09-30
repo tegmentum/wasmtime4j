@@ -40,7 +40,7 @@ public interface WasiComponentBuilder {
    *
    * @return a new WasiComponentBuilder
    */
-  static WasiComponentBuilder create() {
+  static WasiComponentBuilder create() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first

@@ -280,11 +280,16 @@ public interface WasmTable {
    * @since 1.1.0
    */
   default void init64(
-      final long destOffset, final int elementSegmentIndex, final long srcOffset, final long length) {
+      final long destOffset,
+      final int elementSegmentIndex,
+      final long srcOffset,
+      final long length) {
     if (!supports64BitAddressing()) {
       throw new UnsupportedOperationException("Table does not support 64-bit addressing");
     }
-    if (destOffset > Integer.MAX_VALUE || srcOffset > Integer.MAX_VALUE || length > Integer.MAX_VALUE) {
+    if (destOffset > Integer.MAX_VALUE
+        || srcOffset > Integer.MAX_VALUE
+        || length > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Parameters exceed 32-bit limits");
     }
     init((int) destOffset, elementSegmentIndex, (int) srcOffset, (int) length);

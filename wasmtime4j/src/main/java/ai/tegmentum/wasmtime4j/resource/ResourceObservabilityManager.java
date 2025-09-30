@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Comprehensive resource observability and monitoring system providing dashboards,
- * performance metrics, alerts, trend analysis, forecasting, and health diagnostics.
+ * Comprehensive resource observability and monitoring system providing dashboards, performance
+ * metrics, alerts, trend analysis, forecasting, and health diagnostics.
  *
  * <p>This implementation provides:
  *
@@ -51,7 +51,8 @@ import java.util.stream.Collectors;
  */
 public final class ResourceObservabilityManager {
 
-  private static final Logger LOGGER = Logger.getLogger(ResourceObservabilityManager.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(ResourceObservabilityManager.class.getName());
 
   /** Resource metric definition. */
   public static final class ResourceMetric {
@@ -65,9 +66,27 @@ public final class ResourceObservabilityManager {
     private final double value;
     private final MetricSource source;
 
-    public ResourceMetric(final String metricId, final String name, final String description,
-                         final MetricType type, final String unit, final Map<String, String> labels,
-                         final double value, final MetricSource source) {
+    /**
+     * Creates a new ResourceMetric.
+     *
+     * @param metricId the unique metric identifier
+     * @param name the metric name
+     * @param description the metric description
+     * @param type the metric type
+     * @param unit the metric unit
+     * @param labels the metric labels
+     * @param value the metric value
+     * @param source the metric source
+     */
+    public ResourceMetric(
+        final String metricId,
+        final String name,
+        final String description,
+        final MetricType type,
+        final String unit,
+        final Map<String, String> labels,
+        final double value,
+        final MetricSource source) {
       this.metricId = metricId;
       this.name = name;
       this.description = description;
@@ -80,37 +99,63 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getMetricId() { return metricId; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public MetricType getType() { return type; }
-    public String getUnit() { return unit; }
-    public Map<String, String> getLabels() { return labels; }
-    public Instant getTimestamp() { return timestamp; }
-    public double getValue() { return value; }
-    public MetricSource getSource() { return source; }
+    public String getMetricId() {
+      return metricId;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public MetricType getType() {
+      return type;
+    }
+
+    public String getUnit() {
+      return unit;
+    }
+
+    public Map<String, String> getLabels() {
+      return labels;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
+
+    public double getValue() {
+      return value;
+    }
+
+    public MetricSource getSource() {
+      return source;
+    }
   }
 
   /** Metric types for observability. */
   public enum MetricType {
-    GAUGE,      // Current value
-    COUNTER,    // Monotonically increasing
-    HISTOGRAM,  // Distribution of values
-    SUMMARY,    // Summary statistics
-    RATE,       // Rate of change
-    RATIO       // Ratio between values
+    GAUGE, // Current value
+    COUNTER, // Monotonically increasing
+    HISTOGRAM, // Distribution of values
+    SUMMARY, // Summary statistics
+    RATE, // Rate of change
+    RATIO // Ratio between values
   }
 
   /** Metric sources. */
   public enum MetricSource {
-    QUOTA_MANAGER,      // From quota management
-    SCHEDULER,          // From resource scheduler
-    POOL_MANAGER,       // From pool management
+    QUOTA_MANAGER, // From quota management
+    SCHEDULER, // From resource scheduler
+    POOL_MANAGER, // From pool management
     OPTIMIZATION_ENGINE, // From optimization engine
-    SECURITY_MANAGER,   // From security management
-    SYSTEM,             // System metrics
-    APPLICATION,        // Application metrics
-    CUSTOM              // Custom metrics
+    SECURITY_MANAGER, // From security management
+    SYSTEM, // System metrics
+    APPLICATION, // Application metrics
+    CUSTOM // Custom metrics
   }
 
   /** Alert definition and configuration. */
@@ -145,6 +190,7 @@ public final class ResourceObservabilityManager {
       return new Builder(alertId, name);
     }
 
+    /** Builder for creating custom alert configurations. */
     public static final class Builder {
       private final String alertId;
       private final String name;
@@ -214,17 +260,49 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getAlertId() { return alertId; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public String getMetricQuery() { return metricQuery; }
-    public AlertCondition getCondition() { return condition; }
-    public double getThreshold() { return threshold; }
-    public Duration getEvaluationWindow() { return evaluationWindow; }
-    public AlertSeverity getSeverity() { return severity; }
-    public List<String> getNotificationChannels() { return notificationChannels; }
-    public Map<String, Object> getMetadata() { return metadata; }
-    public boolean isEnabled() { return enabled; }
+    public String getAlertId() {
+      return alertId;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public String getMetricQuery() {
+      return metricQuery;
+    }
+
+    public AlertCondition getCondition() {
+      return condition;
+    }
+
+    public double getThreshold() {
+      return threshold;
+    }
+
+    public Duration getEvaluationWindow() {
+      return evaluationWindow;
+    }
+
+    public AlertSeverity getSeverity() {
+      return severity;
+    }
+
+    public List<String> getNotificationChannels() {
+      return notificationChannels;
+    }
+
+    public Map<String, Object> getMetadata() {
+      return metadata;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
   }
 
   /** Alert conditions. */
@@ -241,7 +319,9 @@ public final class ResourceObservabilityManager {
 
   /** Alert severity levels. */
   public enum AlertSeverity {
-    CRITICAL, WARNING, INFO
+    CRITICAL,
+    WARNING,
+    INFO
   }
 
   /** Alert instance representing a fired alert. */
@@ -255,8 +335,21 @@ public final class ResourceObservabilityManager {
     private volatile Instant resolvedAt;
     private volatile AlertStatus status = AlertStatus.FIRING;
 
-    public AlertInstance(final String instanceId, final AlertRule rule, final double actualValue,
-                        final String description, final Map<String, Object> context) {
+    /**
+     * Creates a new AlertInstance.
+     *
+     * @param instanceId the unique instance identifier
+     * @param rule the alert rule
+     * @param actualValue the actual metric value
+     * @param description the alert description
+     * @param context additional context information
+     */
+    public AlertInstance(
+        final String instanceId,
+        final AlertRule rule,
+        final double actualValue,
+        final String description,
+        final Map<String, Object> context) {
       this.instanceId = instanceId;
       this.rule = rule;
       this.actualValue = actualValue;
@@ -266,14 +359,37 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getInstanceId() { return instanceId; }
-    public AlertRule getRule() { return rule; }
-    public double getActualValue() { return actualValue; }
-    public String getDescription() { return description; }
-    public Instant getFiredAt() { return firedAt; }
-    public Instant getResolvedAt() { return resolvedAt; }
-    public Map<String, Object> getContext() { return context; }
-    public AlertStatus getStatus() { return status; }
+    public String getInstanceId() {
+      return instanceId;
+    }
+
+    public AlertRule getRule() {
+      return rule;
+    }
+
+    public double getActualValue() {
+      return actualValue;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public Instant getFiredAt() {
+      return firedAt;
+    }
+
+    public Instant getResolvedAt() {
+      return resolvedAt;
+    }
+
+    public Map<String, Object> getContext() {
+      return context;
+    }
+
+    public AlertStatus getStatus() {
+      return status;
+    }
 
     public Duration getDuration() {
       final Instant end = resolvedAt != null ? resolvedAt : Instant.now();
@@ -288,8 +404,8 @@ public final class ResourceObservabilityManager {
 
   /** Alert status. */
   public enum AlertStatus {
-    FIRING,   // Alert is currently active
-    RESOLVED  // Alert has been resolved
+    FIRING, // Alert is currently active
+    RESOLVED // Alert has been resolved
   }
 
   /** Dashboard widget definition. */
@@ -302,8 +418,23 @@ public final class ResourceObservabilityManager {
     private final int refreshInterval; // seconds
     private final boolean enabled;
 
-    public DashboardWidget(final String widgetId, final String title, final WidgetType type,
-                          final String dataQuery, final Map<String, Object> configuration, final int refreshInterval) {
+    /**
+     * Creates a new DashboardWidget.
+     *
+     * @param widgetId the unique widget identifier
+     * @param title the widget title
+     * @param type the widget type
+     * @param dataQuery the data query for the widget
+     * @param configuration the widget configuration
+     * @param refreshInterval the refresh interval in seconds
+     */
+    public DashboardWidget(
+        final String widgetId,
+        final String title,
+        final WidgetType type,
+        final String dataQuery,
+        final Map<String, Object> configuration,
+        final int refreshInterval) {
       this.widgetId = widgetId;
       this.title = title;
       this.type = type;
@@ -314,25 +445,45 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getWidgetId() { return widgetId; }
-    public String getTitle() { return title; }
-    public WidgetType getType() { return type; }
-    public String getDataQuery() { return dataQuery; }
-    public Map<String, Object> getConfiguration() { return configuration; }
-    public int getRefreshInterval() { return refreshInterval; }
-    public boolean isEnabled() { return enabled; }
+    public String getWidgetId() {
+      return widgetId;
+    }
+
+    public String getTitle() {
+      return title;
+    }
+
+    public WidgetType getType() {
+      return type;
+    }
+
+    public String getDataQuery() {
+      return dataQuery;
+    }
+
+    public Map<String, Object> getConfiguration() {
+      return configuration;
+    }
+
+    public int getRefreshInterval() {
+      return refreshInterval;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
   }
 
   /** Dashboard widget types. */
   public enum WidgetType {
-    LINE_CHART,     // Time series line chart
-    BAR_CHART,      // Bar chart
-    PIE_CHART,      // Pie chart
-    GAUGE,          // Gauge meter
-    TABLE,          // Data table
-    STAT,           // Single statistic
-    HEATMAP,        // Heat map
-    HISTOGRAM       // Histogram
+    LINE_CHART, // Time series line chart
+    BAR_CHART, // Bar chart
+    PIE_CHART, // Pie chart
+    GAUGE, // Gauge meter
+    TABLE, // Data table
+    STAT, // Single statistic
+    HEATMAP, // Heat map
+    HISTOGRAM // Histogram
   }
 
   /** Health check definition. */
@@ -348,8 +499,25 @@ public final class ResourceObservabilityManager {
     private volatile Instant lastCheck = Instant.now();
     private volatile String lastMessage = "";
 
-    public HealthCheck(final String checkId, final String name, final String description,
-                      final HealthChecker checker, final Duration interval, final Duration timeout, final boolean critical) {
+    /**
+     * Creates a new HealthCheck.
+     *
+     * @param checkId the unique check identifier
+     * @param name the check name
+     * @param description the check description
+     * @param checker the health checker implementation
+     * @param interval the check interval
+     * @param timeout the check timeout
+     * @param critical whether this is a critical check
+     */
+    public HealthCheck(
+        final String checkId,
+        final String name,
+        final String description,
+        final HealthChecker checker,
+        final Duration interval,
+        final Duration timeout,
+        final boolean critical) {
       this.checkId = checkId;
       this.name = name;
       this.description = description;
@@ -360,16 +528,45 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getCheckId() { return checkId; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public HealthChecker getChecker() { return checker; }
-    public Duration getInterval() { return interval; }
-    public Duration getTimeout() { return timeout; }
-    public boolean isCritical() { return critical; }
-    public HealthStatus getLastStatus() { return lastStatus; }
-    public Instant getLastCheck() { return lastCheck; }
-    public String getLastMessage() { return lastMessage; }
+    public String getCheckId() {
+      return checkId;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public HealthChecker getChecker() {
+      return checker;
+    }
+
+    public Duration getInterval() {
+      return interval;
+    }
+
+    public Duration getTimeout() {
+      return timeout;
+    }
+
+    public boolean isCritical() {
+      return critical;
+    }
+
+    public HealthStatus getLastStatus() {
+      return lastStatus;
+    }
+
+    public Instant getLastCheck() {
+      return lastCheck;
+    }
+
+    public String getLastMessage() {
+      return lastMessage;
+    }
 
     void updateStatus(final HealthStatus status, final String message) {
       this.lastStatus = status;
@@ -390,7 +587,15 @@ public final class ResourceObservabilityManager {
     private final String message;
     private final Map<String, Object> details;
 
-    public HealthCheckResult(final HealthStatus status, final String message, final Map<String, Object> details) {
+    /**
+     * Creates a new HealthCheckResult.
+     *
+     * @param status the health status
+     * @param message the status message
+     * @param details additional details
+     */
+    public HealthCheckResult(
+        final HealthStatus status, final String message, final Map<String, Object> details) {
       this.status = status;
       this.message = message;
       this.details = Map.copyOf(details != null ? details : Map.of());
@@ -409,17 +614,25 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public HealthStatus getStatus() { return status; }
-    public String getMessage() { return message; }
-    public Map<String, Object> getDetails() { return details; }
+    public HealthStatus getStatus() {
+      return status;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public Map<String, Object> getDetails() {
+      return details;
+    }
   }
 
   /** Health status values. */
   public enum HealthStatus {
-    HEALTHY,    // System is healthy
-    DEGRADED,   // System has issues but is functional
-    UNHEALTHY,  // System has critical issues
-    UNKNOWN     // Status cannot be determined
+    HEALTHY, // System is healthy
+    DEGRADED, // System has issues but is functional
+    UNHEALTHY, // System has critical issues
+    UNKNOWN // Status cannot be determined
   }
 
   /** Performance trend analysis. */
@@ -432,8 +645,23 @@ public final class ResourceObservabilityManager {
     private final List<Double> dataPoints;
     private final Instant analysisTime;
 
-    public TrendAnalysis(final String metricName, final Duration analysisWindow, final TrendDirection direction,
-                        final double slope, final double confidence, final List<Double> dataPoints) {
+    /**
+     * Creates a new TrendAnalysis.
+     *
+     * @param metricName the metric name
+     * @param analysisWindow the analysis window
+     * @param direction the trend direction
+     * @param slope the trend slope
+     * @param confidence the confidence level
+     * @param dataPoints the data points used in analysis
+     */
+    public TrendAnalysis(
+        final String metricName,
+        final Duration analysisWindow,
+        final TrendDirection direction,
+        final double slope,
+        final double confidence,
+        final List<Double> dataPoints) {
       this.metricName = metricName;
       this.analysisWindow = analysisWindow;
       this.direction = direction;
@@ -444,29 +672,54 @@ public final class ResourceObservabilityManager {
     }
 
     // Getters
-    public String getMetricName() { return metricName; }
-    public Duration getAnalysisWindow() { return analysisWindow; }
-    public TrendDirection getDirection() { return direction; }
-    public double getSlope() { return slope; }
-    public double getConfidence() { return confidence; }
-    public List<Double> getDataPoints() { return dataPoints; }
-    public Instant getAnalysisTime() { return analysisTime; }
+    public String getMetricName() {
+      return metricName;
+    }
+
+    public Duration getAnalysisWindow() {
+      return analysisWindow;
+    }
+
+    public TrendDirection getDirection() {
+      return direction;
+    }
+
+    public double getSlope() {
+      return slope;
+    }
+
+    public double getConfidence() {
+      return confidence;
+    }
+
+    public List<Double> getDataPoints() {
+      return dataPoints;
+    }
+
+    public Instant getAnalysisTime() {
+      return analysisTime;
+    }
   }
 
   /** Trend directions. */
   public enum TrendDirection {
-    INCREASING, DECREASING, STABLE, VOLATILE
+    INCREASING,
+    DECREASING,
+    STABLE,
+    VOLATILE
   }
 
   // Instance fields
-  private final ConcurrentHashMap<String, List<ResourceMetric>> metricHistory = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, List<ResourceMetric>> metricHistory =
+      new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, AlertRule> alertRules = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, AlertInstance> activeAlerts = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, DashboardWidget> widgets = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, HealthCheck> healthChecks = new ConcurrentHashMap<>();
   private final CopyOnWriteArrayList<AlertListener> alertListeners = new CopyOnWriteArrayList<>();
 
-  private final ScheduledExecutorService observabilityExecutor = Executors.newScheduledThreadPool(4);
+  private final ScheduledExecutorService observabilityExecutor =
+      Executors.newScheduledThreadPool(4);
   private final AtomicLong totalMetrics = new AtomicLong(0);
   private final AtomicLong totalAlerts = new AtomicLong(0);
   private final AtomicLong activeAlertCount = new AtomicLong(0);
@@ -479,9 +732,11 @@ public final class ResourceObservabilityManager {
   /** Alert listener interface. */
   public interface AlertListener {
     void onAlertFired(AlertInstance alert);
+
     void onAlertResolved(AlertInstance alert);
   }
 
+  /** Creates a new ResourceObservabilityManager. */
   public ResourceObservabilityManager() {
     initializeDefaultAlerts();
     initializeDefaultHealthChecks();
@@ -501,7 +756,8 @@ public final class ResourceObservabilityManager {
     }
 
     final String seriesKey = createSeriesKey(metric.getName(), metric.getLabels());
-    final List<ResourceMetric> series = metricHistory.computeIfAbsent(seriesKey, k -> new ArrayList<>());
+    final List<ResourceMetric> series =
+        metricHistory.computeIfAbsent(seriesKey, k -> new ArrayList<>());
 
     synchronized (series) {
       series.add(metric);
@@ -513,7 +769,9 @@ public final class ResourceObservabilityManager {
 
     totalMetrics.incrementAndGet();
 
-    LOGGER.fine(String.format("Recorded metric: %s = %f %s", metric.getName(), metric.getValue(), metric.getUnit()));
+    LOGGER.fine(
+        String.format(
+            "Recorded metric: %s = %f %s", metric.getName(), metric.getValue(), metric.getUnit()));
   }
 
   /**
@@ -523,7 +781,8 @@ public final class ResourceObservabilityManager {
    */
   public void addAlertRule(final AlertRule alertRule) {
     alertRules.put(alertRule.getAlertId(), alertRule);
-    LOGGER.info(String.format("Added alert rule: %s - %s", alertRule.getAlertId(), alertRule.getName()));
+    LOGGER.info(
+        String.format("Added alert rule: %s - %s", alertRule.getAlertId(), alertRule.getName()));
   }
 
   /**
@@ -542,7 +801,8 @@ public final class ResourceObservabilityManager {
    */
   public void addDashboardWidget(final DashboardWidget widget) {
     widgets.put(widget.getWidgetId(), widget);
-    LOGGER.info(String.format("Added dashboard widget: %s - %s", widget.getWidgetId(), widget.getTitle()));
+    LOGGER.info(
+        String.format("Added dashboard widget: %s - %s", widget.getWidgetId(), widget.getTitle()));
   }
 
   /**
@@ -552,7 +812,9 @@ public final class ResourceObservabilityManager {
    */
   public void addHealthCheck(final HealthCheck healthCheck) {
     healthChecks.put(healthCheck.getCheckId(), healthCheck);
-    LOGGER.info(String.format("Added health check: %s - %s", healthCheck.getCheckId(), healthCheck.getName()));
+    LOGGER.info(
+        String.format(
+            "Added health check: %s - %s", healthCheck.getCheckId(), healthCheck.getName()));
   }
 
   /**
@@ -564,8 +826,11 @@ public final class ResourceObservabilityManager {
    * @param to end time
    * @return list of matching metrics
    */
-  public List<ResourceMetric> getMetrics(final String metricName, final Map<String, String> labels,
-                                        final Instant from, final Instant to) {
+  public List<ResourceMetric> getMetrics(
+      final String metricName,
+      final Map<String, String> labels,
+      final Instant from,
+      final Instant to) {
     final String seriesKey = createSeriesKey(metricName, labels);
     final List<ResourceMetric> series = metricHistory.get(seriesKey);
 
@@ -575,7 +840,8 @@ public final class ResourceObservabilityManager {
 
     synchronized (series) {
       return series.stream()
-          .filter(metric -> metric.getTimestamp().isAfter(from) && metric.getTimestamp().isBefore(to))
+          .filter(
+              metric -> metric.getTimestamp().isAfter(from) && metric.getTimestamp().isBefore(to))
           .collect(Collectors.toList());
     }
   }
@@ -612,22 +878,21 @@ public final class ResourceObservabilityManager {
    * @return overall health status
    */
   public HealthStatus getOverallHealth() {
-    final List<HealthCheck> criticalChecks = healthChecks.values().stream()
-        .filter(HealthCheck::isCritical)
-        .collect(Collectors.toList());
+    final List<HealthCheck> criticalChecks =
+        healthChecks.values().stream().filter(HealthCheck::isCritical).collect(Collectors.toList());
 
     if (criticalChecks.isEmpty()) {
       return HealthStatus.HEALTHY;
     }
 
-    final boolean hasUnhealthy = criticalChecks.stream()
-        .anyMatch(check -> check.getLastStatus() == HealthStatus.UNHEALTHY);
+    final boolean hasUnhealthy =
+        criticalChecks.stream().anyMatch(check -> check.getLastStatus() == HealthStatus.UNHEALTHY);
     if (hasUnhealthy) {
       return HealthStatus.UNHEALTHY;
     }
 
-    final boolean hasDegraded = criticalChecks.stream()
-        .anyMatch(check -> check.getLastStatus() == HealthStatus.DEGRADED);
+    final boolean hasDegraded =
+        criticalChecks.stream().anyMatch(check -> check.getLastStatus() == HealthStatus.DEGRADED);
     if (hasDegraded) {
       return HealthStatus.DEGRADED;
     }
@@ -643,20 +908,22 @@ public final class ResourceObservabilityManager {
    * @param analysisWindow time window for analysis
    * @return trend analysis result
    */
-  public TrendAnalysis analyzeTrend(final String metricName, final Map<String, String> labels,
-                                   final Duration analysisWindow) {
+  public TrendAnalysis analyzeTrend(
+      final String metricName, final Map<String, String> labels, final Duration analysisWindow) {
     final Instant from = Instant.now().minus(analysisWindow);
     final Instant to = Instant.now();
     final List<ResourceMetric> metrics = getMetrics(metricName, labels, from, to);
 
     if (metrics.size() < 3) {
-      return new TrendAnalysis(metricName, analysisWindow, TrendDirection.STABLE, 0.0, 0.0, List.of());
+      return new TrendAnalysis(
+          metricName, analysisWindow, TrendDirection.STABLE, 0.0, 0.0, List.of());
     }
 
-    final List<Double> values = metrics.stream()
-        .sorted(Comparator.comparing(ResourceMetric::getTimestamp))
-        .map(ResourceMetric::getValue)
-        .collect(Collectors.toList());
+    final List<Double> values =
+        metrics.stream()
+            .sorted(Comparator.comparing(ResourceMetric::getTimestamp))
+            .map(ResourceMetric::getValue)
+            .collect(Collectors.toList());
 
     final double slope = calculateSlope(values);
     final double confidence = calculateTrendConfidence(values);
@@ -692,12 +959,24 @@ public final class ResourceObservabilityManager {
     sb.append("Active Alerts:\n");
     getActiveAlerts().stream()
         .limit(5)
-        .forEach(alert -> sb.append(String.format("  %s: %s (%.2f)\n",
-            alert.getRule().getSeverity(), alert.getRule().getName(), alert.getActualValue())));
+        .forEach(
+            alert ->
+                sb.append(
+                    String.format(
+                        "  %s: %s (%.2f)\n",
+                        alert.getRule().getSeverity(),
+                        alert.getRule().getName(),
+                        alert.getActualValue())));
 
     sb.append("\nHealth Checks:\n");
-    healthChecks.values().forEach(check -> sb.append(String.format("  %s: %s (%s)\n",
-        check.getName(), check.getLastStatus(), check.getLastMessage())));
+    healthChecks
+        .values()
+        .forEach(
+            check ->
+                sb.append(
+                    String.format(
+                        "  %s: %s (%s)\n",
+                        check.getName(), check.getLastStatus(), check.getLastMessage())));
 
     return sb.toString();
   }
@@ -738,7 +1017,8 @@ public final class ResourceObservabilityManager {
     sb.append("{");
     labels.entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
-        .forEach(entry -> sb.append(entry.getKey()).append("=").append(entry.getValue()).append(","));
+        .forEach(
+            entry -> sb.append(entry.getKey()).append("=").append(entry.getValue()).append(","));
     if (sb.charAt(sb.length() - 1) == ',') {
       sb.setLength(sb.length() - 1);
     }
@@ -757,22 +1037,30 @@ public final class ResourceObservabilityManager {
       }
 
       try {
-        final List<ResourceMetric> metrics = executeAlertQuery(rule.getMetricQuery(), rule.getEvaluationWindow());
+        final List<ResourceMetric> metrics =
+            executeAlertQuery(rule.getMetricQuery(), rule.getEvaluationWindow());
         if (metrics.isEmpty()) {
           continue;
         }
 
         final double currentValue = calculateAggregateValue(metrics);
-        final boolean shouldAlert = evaluateAlertCondition(rule.getCondition(), currentValue, rule.getThreshold());
+        final boolean shouldAlert =
+            evaluateAlertCondition(rule.getCondition(), currentValue, rule.getThreshold());
 
         final String instanceId = rule.getAlertId() + "-" + System.currentTimeMillis();
         final AlertInstance existingAlert = findActiveAlert(rule.getAlertId());
 
         if (shouldAlert && existingAlert == null) {
           // Fire new alert
-          final AlertInstance alert = new AlertInstance(instanceId, rule, currentValue,
-              String.format("Alert %s fired: %s %f %f", rule.getName(), rule.getCondition(), currentValue, rule.getThreshold()),
-              Map.of("evaluation_window", rule.getEvaluationWindow()));
+          final AlertInstance alert =
+              new AlertInstance(
+                  instanceId,
+                  rule,
+                  currentValue,
+                  String.format(
+                      "Alert %s fired: %s %f %f",
+                      rule.getName(), rule.getCondition(), currentValue, rule.getThreshold()),
+                  Map.of("evaluation_window", rule.getEvaluationWindow()));
 
           activeAlerts.put(instanceId, alert);
           activeAlertCount.incrementAndGet();
@@ -787,8 +1075,10 @@ public final class ResourceObservabilityManager {
             }
           }
 
-          LOGGER.warning(String.format("Alert fired: %s - %s (value: %f, threshold: %f)",
-              rule.getAlertId(), rule.getName(), currentValue, rule.getThreshold()));
+          LOGGER.warning(
+              String.format(
+                  "Alert fired: %s - %s (value: %f, threshold: %f)",
+                  rule.getAlertId(), rule.getName(), currentValue, rule.getThreshold()));
 
         } else if (!shouldAlert && existingAlert != null) {
           // Resolve alert
@@ -808,7 +1098,8 @@ public final class ResourceObservabilityManager {
         }
 
       } catch (final Exception e) {
-        LOGGER.warning(String.format("Error evaluating alert %s: %s", rule.getAlertId(), e.getMessage()));
+        LOGGER.warning(
+            String.format("Error evaluating alert %s: %s", rule.getAlertId(), e.getMessage()));
       }
     }
   }
@@ -843,7 +1134,8 @@ public final class ResourceObservabilityManager {
     return metrics.stream().mapToDouble(ResourceMetric::getValue).average().orElse(0.0);
   }
 
-  private boolean evaluateAlertCondition(final AlertCondition condition, final double value, final double threshold) {
+  private boolean evaluateAlertCondition(
+      final AlertCondition condition, final double value, final double threshold) {
     switch (condition) {
       case GREATER_THAN:
         return value > threshold;
@@ -880,11 +1172,15 @@ public final class ResourceObservabilityManager {
         final HealthCheckResult result = check.getChecker().check();
         check.updateStatus(result.getStatus(), result.getMessage());
 
-        LOGGER.fine(String.format("Health check %s: %s - %s", check.getName(), result.getStatus(), result.getMessage()));
+        LOGGER.fine(
+            String.format(
+                "Health check %s: %s - %s",
+                check.getName(), result.getStatus(), result.getMessage()));
 
       } catch (final Exception e) {
         check.updateStatus(HealthStatus.UNHEALTHY, "Health check failed: " + e.getMessage());
-        LOGGER.warning(String.format("Health check %s failed: %s", check.getName(), e.getMessage()));
+        LOGGER.warning(
+            String.format("Health check %s failed: %s", check.getName(), e.getMessage()));
       }
     }
 
@@ -905,12 +1201,17 @@ public final class ResourceObservabilityManager {
   }
 
   private void cleanupResolvedAlerts() {
-    final Instant cutoff = Instant.now().minus(Duration.ofDays(7)); // Keep resolved alerts for 7 days
+    final Instant cutoff =
+        Instant.now().minus(Duration.ofDays(7)); // Keep resolved alerts for 7 days
 
-    activeAlerts.entrySet().removeIf(entry -> {
-      final AlertInstance alert = entry.getValue();
-      return alert.getStatus() == AlertStatus.RESOLVED && alert.getResolvedAt().isBefore(cutoff);
-    });
+    activeAlerts
+        .entrySet()
+        .removeIf(
+            entry -> {
+              final AlertInstance alert = entry.getValue();
+              return alert.getStatus() == AlertStatus.RESOLVED
+                  && alert.getResolvedAt().isBefore(cutoff);
+            });
   }
 
   private double calculateSlope(final List<Double> values) {
@@ -918,7 +1219,10 @@ public final class ResourceObservabilityManager {
       return 0.0;
     }
 
-    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    double sumX = 0;
+    double sumY = 0;
+    double sumXY = 0;
+    double sumX2 = 0;
     final int n = values.size();
 
     for (int i = 0; i < n; i++) {
@@ -937,9 +1241,8 @@ public final class ResourceObservabilityManager {
     }
 
     final double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-    final double variance = values.stream()
-        .mapToDouble(v -> Math.pow(v - mean, 2))
-        .average().orElse(0.0);
+    final double variance =
+        values.stream().mapToDouble(v -> Math.pow(v - mean, 2)).average().orElse(0.0);
 
     final double coefficientOfVariation = Math.sqrt(variance) / mean;
     return Math.max(0.0, 1.0 - coefficientOfVariation);
@@ -954,9 +1257,8 @@ public final class ResourceObservabilityManager {
 
     // Check for volatility
     final double mean = values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-    final double stdDev = Math.sqrt(values.stream()
-        .mapToDouble(v -> Math.pow(v - mean, 2))
-        .average().orElse(0.0));
+    final double stdDev =
+        Math.sqrt(values.stream().mapToDouble(v -> Math.pow(v - mean, 2)).average().orElse(0.0));
     final double cv = stdDev / mean;
 
     if (cv > 0.3) {
@@ -968,83 +1270,125 @@ public final class ResourceObservabilityManager {
 
   private void initializeDefaultAlerts() {
     // High CPU usage alert
-    addAlertRule(AlertRule.builder("high-cpu-usage", "High CPU Usage")
-        .withDescription("CPU usage is above threshold")
-        .withMetricQuery("cpu_usage_percent")
-        .withCondition(AlertCondition.GREATER_THAN)
-        .withThreshold(80.0)
-        .withSeverity(AlertSeverity.WARNING)
-        .withEvaluationWindow(Duration.ofMinutes(5))
-        .build());
+    addAlertRule(
+        AlertRule.builder("high-cpu-usage", "High CPU Usage")
+            .withDescription("CPU usage is above threshold")
+            .withMetricQuery("cpu_usage_percent")
+            .withCondition(AlertCondition.GREATER_THAN)
+            .withThreshold(80.0)
+            .withSeverity(AlertSeverity.WARNING)
+            .withEvaluationWindow(Duration.ofMinutes(5))
+            .build());
 
     // Memory pressure alert
-    addAlertRule(AlertRule.builder("high-memory-usage", "High Memory Usage")
-        .withDescription("Memory usage is above threshold")
-        .withMetricQuery("memory_usage_percent")
-        .withCondition(AlertCondition.GREATER_THAN)
-        .withThreshold(90.0)
-        .withSeverity(AlertSeverity.CRITICAL)
-        .withEvaluationWindow(Duration.ofMinutes(3))
-        .build());
+    addAlertRule(
+        AlertRule.builder("high-memory-usage", "High Memory Usage")
+            .withDescription("Memory usage is above threshold")
+            .withMetricQuery("memory_usage_percent")
+            .withCondition(AlertCondition.GREATER_THAN)
+            .withThreshold(90.0)
+            .withSeverity(AlertSeverity.CRITICAL)
+            .withEvaluationWindow(Duration.ofMinutes(3))
+            .build());
 
     // Resource pool exhaustion alert
-    addAlertRule(AlertRule.builder("resource-pool-exhaustion", "Resource Pool Exhaustion")
-        .withDescription("Resource pool is nearly exhausted")
-        .withMetricQuery("resource_pool_utilization")
-        .withCondition(AlertCondition.GREATER_THAN)
-        .withThreshold(95.0)
-        .withSeverity(AlertSeverity.CRITICAL)
-        .withEvaluationWindow(Duration.ofMinutes(2))
-        .build());
+    addAlertRule(
+        AlertRule.builder("resource-pool-exhaustion", "Resource Pool Exhaustion")
+            .withDescription("Resource pool is nearly exhausted")
+            .withMetricQuery("resource_pool_utilization")
+            .withCondition(AlertCondition.GREATER_THAN)
+            .withThreshold(95.0)
+            .withSeverity(AlertSeverity.CRITICAL)
+            .withEvaluationWindow(Duration.ofMinutes(2))
+            .build());
   }
 
   private void initializeDefaultHealthChecks() {
     // Resource manager health check
-    addHealthCheck(new HealthCheck("resource-manager-health", "Resource Manager Health",
-        "Checks if resource manager is functioning properly",
-        () -> HealthCheckResult.healthy("Resource manager is operational"),
-        Duration.ofMinutes(1), Duration.ofSeconds(30), true));
+    addHealthCheck(
+        new HealthCheck(
+            "resource-manager-health",
+            "Resource Manager Health",
+            "Checks if resource manager is functioning properly",
+            () -> HealthCheckResult.healthy("Resource manager is operational"),
+            Duration.ofMinutes(1),
+            Duration.ofSeconds(30),
+            true));
 
     // Metric collection health check
-    addHealthCheck(new HealthCheck("metric-collection-health", "Metric Collection Health",
-        "Checks if metrics are being collected",
-        () -> {
-          final long recentMetrics = totalMetrics.get();
-          if (recentMetrics > 0) {
-            return HealthCheckResult.healthy("Metrics are being collected");
-          } else {
-            return HealthCheckResult.degraded("No recent metrics collected");
-          }
-        },
-        Duration.ofMinutes(2), Duration.ofSeconds(30), false));
+    addHealthCheck(
+        new HealthCheck(
+            "metric-collection-health",
+            "Metric Collection Health",
+            "Checks if metrics are being collected",
+            () -> {
+              final long recentMetrics = totalMetrics.get();
+              if (recentMetrics > 0) {
+                return HealthCheckResult.healthy("Metrics are being collected");
+              } else {
+                return HealthCheckResult.degraded("No recent metrics collected");
+              }
+            },
+            Duration.ofMinutes(2),
+            Duration.ofSeconds(30),
+            false));
 
     // Alert system health check
-    addHealthCheck(new HealthCheck("alert-system-health", "Alert System Health",
-        "Checks if alert system is functioning",
-        () -> HealthCheckResult.healthy("Alert system is operational"),
-        Duration.ofMinutes(5), Duration.ofSeconds(30), true));
+    addHealthCheck(
+        new HealthCheck(
+            "alert-system-health",
+            "Alert System Health",
+            "Checks if alert system is functioning",
+            () -> HealthCheckResult.healthy("Alert system is operational"),
+            Duration.ofMinutes(5),
+            Duration.ofSeconds(30),
+            true));
   }
 
   private void initializeDefaultDashboard() {
     // Resource utilization widget
-    addDashboardWidget(new DashboardWidget("resource-utilization", "Resource Utilization",
-        WidgetType.LINE_CHART, "resource_utilization_percent",
-        Map.of("chart_type", "time_series", "unit", "percent"), 30));
+    addDashboardWidget(
+        new DashboardWidget(
+            "resource-utilization",
+            "Resource Utilization",
+            WidgetType.LINE_CHART,
+            "resource_utilization_percent",
+            Map.of("chart_type", "time_series", "unit", "percent"),
+            30));
 
     // Active alerts widget
-    addDashboardWidget(new DashboardWidget("active-alerts", "Active Alerts",
-        WidgetType.STAT, "active_alerts_count",
-        Map.of("stat_type", "single_value"), 60));
+    addDashboardWidget(
+        new DashboardWidget(
+            "active-alerts",
+            "Active Alerts",
+            WidgetType.STAT,
+            "active_alerts_count",
+            Map.of("stat_type", "single_value"),
+            60));
 
     // Health status widget
-    addDashboardWidget(new DashboardWidget("health-status", "System Health",
-        WidgetType.GAUGE, "system_health_status",
-        Map.of("gauge_type", "health", "thresholds", Map.of("healthy", "green", "degraded", "yellow", "unhealthy", "red")), 30));
+    addDashboardWidget(
+        new DashboardWidget(
+            "health-status",
+            "System Health",
+            WidgetType.GAUGE,
+            "system_health_status",
+            Map.of(
+                "gauge_type",
+                "health",
+                "thresholds",
+                Map.of("healthy", "green", "degraded", "yellow", "unhealthy", "red")),
+            30));
 
     // Performance trends widget
-    addDashboardWidget(new DashboardWidget("performance-trends", "Performance Trends",
-        WidgetType.LINE_CHART, "performance_metrics",
-        Map.of("chart_type", "multi_series", "time_range", "24h"), 60));
+    addDashboardWidget(
+        new DashboardWidget(
+            "performance-trends",
+            "Performance Trends",
+            WidgetType.LINE_CHART,
+            "performance_metrics",
+            Map.of("chart_type", "multi_series", "time_range", "24h"),
+            60));
   }
 
   private void startObservabilityTasks() {
@@ -1058,7 +1402,8 @@ public final class ResourceObservabilityManager {
     observabilityExecutor.scheduleAtFixedRate(this::cleanupOldMetrics, 600, 600, TimeUnit.SECONDS);
 
     // Alert cleanup
-    observabilityExecutor.scheduleAtFixedRate(this::cleanupResolvedAlerts, 1800, 1800, TimeUnit.SECONDS);
+    observabilityExecutor.scheduleAtFixedRate(
+        this::cleanupResolvedAlerts, 1800, 1800, TimeUnit.SECONDS);
   }
 
   /**
@@ -1081,9 +1426,7 @@ public final class ResourceObservabilityManager {
     LOGGER.info("Resource observability " + (enabled ? "enabled" : "disabled"));
   }
 
-  /**
-   * Shuts down the observability manager.
-   */
+  /** Shuts down the observability manager. */
   public void shutdown() {
     enabled = false;
 

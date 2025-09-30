@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, DirPerms, FilePerms};
 use wasmtime::Linker;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::store::{Store, StoreData};
+use crate::store::Store;
 use crate::linker::Linker as WasmtimeLinker;
 
 /// Thread-safe wrapper around WASI context with comprehensive configuration
@@ -2592,7 +2592,7 @@ impl WasiContext {
             // use wasmtime_wasi::add_to_linker;
 
             // Get the linker guard
-            let mut linker_guard = linker.inner()
+            let linker_guard = linker.inner()
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to get linker: {}", e),
                     backtrace: None,

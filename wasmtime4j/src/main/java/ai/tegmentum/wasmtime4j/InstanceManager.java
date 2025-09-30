@@ -124,6 +124,19 @@ public interface InstanceManager extends AutoCloseable {
   Instance getInstance(Module module) throws InstantiationException;
 
   /**
+   * Gets an instance with a specific linker configuration.
+   *
+   * <p>This allows for custom host function binding and WASI configuration per instance request.
+   *
+   * @param module the module to instantiate
+   * @param linker the linker to use for host functions
+   * @return configured instance
+   * @throws InstantiationException if instance creation fails
+   * @throws IllegalArgumentException if module or linker is null
+   */
+  Instance getInstance(Module module, Linker<?> linker) throws InstantiationException;
+
+  /**
    * Gets an instance asynchronously from the pool.
    *
    * <p>This method returns immediately with a future that will complete when an instance becomes
@@ -145,19 +158,6 @@ public interface InstanceManager extends AutoCloseable {
    * @throws IllegalArgumentException if instance is null or not managed by this manager
    */
   void returnInstance(Instance instance);
-
-  /**
-   * Gets an instance with a specific linker configuration.
-   *
-   * <p>This allows for custom host function binding and WASI configuration per instance request.
-   *
-   * @param module the module to instantiate
-   * @param linker the linker to use for host functions
-   * @return configured instance
-   * @throws InstantiationException if instance creation fails
-   * @throws IllegalArgumentException if module or linker is null
-   */
-  Instance getInstance(Module module, Linker linker) throws InstantiationException;
 
   /**
    * Creates a new instance pool for a specific module.
@@ -788,187 +788,5 @@ public interface InstanceManager extends AutoCloseable {
     XML,
     CSV,
     YAML
-  }
-}
-
-/** Default implementation of InstanceManagerConfig.Builder. */
-final class DefaultInstanceManagerConfigBuilder
-    implements InstanceManager.InstanceManagerConfig.Builder {
-  private int defaultPoolSize = 10;
-  private int maxPoolSize = 100;
-  private boolean autoScalingEnabled = true;
-  private double scalingThreshold = 0.8;
-  private boolean healthMonitoringEnabled = true;
-  private Duration healthCheckInterval = Duration.ofMinutes(1);
-  private boolean migrationEnabled = true;
-  private boolean checkpointingEnabled = false;
-  private Duration instanceTimeout = Duration.ofMinutes(5);
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder defaultPoolSize(final int size) {
-    if (size <= 0) {
-      throw new IllegalArgumentException("Default pool size must be positive");
-    }
-    this.defaultPoolSize = size;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder maxPoolSize(final int size) {
-    if (size <= 0) {
-      throw new IllegalArgumentException("Max pool size must be positive");
-    }
-    this.maxPoolSize = size;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder autoScalingEnabled(final boolean enabled) {
-    this.autoScalingEnabled = enabled;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder scalingThreshold(final double threshold) {
-    if (threshold < 0.0 || threshold > 1.0) {
-      throw new IllegalArgumentException("Scaling threshold must be between 0.0 and 1.0");
-    }
-    this.scalingThreshold = threshold;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder healthMonitoringEnabled(
-      final boolean enabled) {
-    this.healthMonitoringEnabled = enabled;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder healthCheckInterval(
-      final Duration interval) {
-    if (interval == null || interval.isNegative()) {
-      throw new IllegalArgumentException("Health check interval must be positive");
-    }
-    this.healthCheckInterval = interval;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder migrationEnabled(final boolean enabled) {
-    this.migrationEnabled = enabled;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder checkpointingEnabled(final boolean enabled) {
-    this.checkpointingEnabled = enabled;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig.Builder instanceTimeout(final Duration timeout) {
-    if (timeout == null || timeout.isNegative()) {
-      throw new IllegalArgumentException("Instance timeout must be positive");
-    }
-    this.instanceTimeout = timeout;
-    return this;
-  }
-
-  @Override
-  public InstanceManager.InstanceManagerConfig build() {
-    if (defaultPoolSize > maxPoolSize) {
-      throw new IllegalArgumentException("Default pool size cannot exceed max pool size");
-    }
-
-    return new DefaultInstanceManagerConfig(
-        defaultPoolSize,
-        maxPoolSize,
-        autoScalingEnabled,
-        scalingThreshold,
-        healthMonitoringEnabled,
-        healthCheckInterval,
-        migrationEnabled,
-        checkpointingEnabled,
-        instanceTimeout);
-  }
-}
-
-/** Default implementation of InstanceManagerConfig. */
-final class DefaultInstanceManagerConfig implements InstanceManager.InstanceManagerConfig {
-  private final int defaultPoolSize;
-  private final int maxPoolSize;
-  private final boolean autoScalingEnabled;
-  private final double scalingThreshold;
-  private final boolean healthMonitoringEnabled;
-  private final Duration healthCheckInterval;
-  private final boolean migrationEnabled;
-  private final boolean checkpointingEnabled;
-  private final Duration instanceTimeout;
-
-  DefaultInstanceManagerConfig(
-      final int defaultPoolSize,
-      final int maxPoolSize,
-      final boolean autoScalingEnabled,
-      final double scalingThreshold,
-      final boolean healthMonitoringEnabled,
-      final Duration healthCheckInterval,
-      final boolean migrationEnabled,
-      final boolean checkpointingEnabled,
-      final Duration instanceTimeout) {
-    this.defaultPoolSize = defaultPoolSize;
-    this.maxPoolSize = maxPoolSize;
-    this.autoScalingEnabled = autoScalingEnabled;
-    this.scalingThreshold = scalingThreshold;
-    this.healthMonitoringEnabled = healthMonitoringEnabled;
-    this.healthCheckInterval = healthCheckInterval;
-    this.migrationEnabled = migrationEnabled;
-    this.checkpointingEnabled = checkpointingEnabled;
-    this.instanceTimeout = instanceTimeout;
-  }
-
-  @Override
-  public int getDefaultPoolSize() {
-    return defaultPoolSize;
-  }
-
-  @Override
-  public int getMaxPoolSize() {
-    return maxPoolSize;
-  }
-
-  @Override
-  public boolean isAutoScalingEnabled() {
-    return autoScalingEnabled;
-  }
-
-  @Override
-  public double getScalingThreshold() {
-    return scalingThreshold;
-  }
-
-  @Override
-  public boolean isHealthMonitoringEnabled() {
-    return healthMonitoringEnabled;
-  }
-
-  @Override
-  public Duration getHealthCheckInterval() {
-    return healthCheckInterval;
-  }
-
-  @Override
-  public boolean isMigrationEnabled() {
-    return migrationEnabled;
-  }
-
-  @Override
-  public boolean isCheckpointingEnabled() {
-    return checkpointingEnabled;
-  }
-
-  @Override
-  public Duration getInstanceTimeout() {
-    return instanceTimeout;
   }
 }

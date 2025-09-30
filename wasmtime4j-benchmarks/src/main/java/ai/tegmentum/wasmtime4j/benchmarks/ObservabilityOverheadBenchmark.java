@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.observability.WasmRuntimeTracer;
 import io.opentelemetry.api.common.Attributes;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -47,12 +46,15 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Benchmarks for measuring observability overhead in wasmtime4j operations.
  *
  * <p>These benchmarks measure the performance impact of enabling various observability features,
- * helping to ensure that the observability system does not significantly impact runtime performance.
+ * helping to ensure that the observability system does not significantly impact runtime
+ * performance.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgs = {"-Xms2G", "-Xmx2G"})
+@Fork(
+    value = 1,
+    jvmArgs = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
 public class ObservabilityOverheadBenchmark {
@@ -78,10 +80,11 @@ public class ObservabilityOverheadBenchmark {
     observabilityDisabled = null; // No observability
 
     // Setup enabled observability based on mode
-    final ObservabilityConfiguration.Builder configBuilder = ObservabilityConfiguration.builder()
-        .setGlobalProviderEnabled(false) // Avoid global state pollution
-        .setResourceDetectionEnabled(false) // Reduce setup overhead
-        .setUseBatchProcessors(false); // Use simple processors for consistent timing
+    final ObservabilityConfiguration.Builder configBuilder =
+        ObservabilityConfiguration.builder()
+            .setGlobalProviderEnabled(false) // Avoid global state pollution
+            .setResourceDetectionEnabled(false) // Reduce setup overhead
+            .setUseBatchProcessors(false); // Use simple processors for consistent timing
 
     switch (observabilityMode) {
       case "disabled":
@@ -173,7 +176,8 @@ public class ObservabilityOverheadBenchmark {
     metrics.recordEngineCreated("benchmark");
     metrics.recordModuleCompiled(TEST_MODULE_NAME, TEST_MODULE_SIZE, Duration.ofMillis(10));
     metrics.recordInstanceCreated(TEST_INSTANCE_ID, TEST_MODULE_NAME, Duration.ofMillis(5));
-    metrics.recordFunctionCall(TEST_FUNCTION_NAME, "(i32, i32) -> i32", Duration.ofMicroseconds(100));
+    metrics.recordFunctionCall(
+        TEST_FUNCTION_NAME, "(i32, i32) -> i32", Duration.ofMicroseconds(100));
   }
 
   @Benchmark
@@ -184,10 +188,11 @@ public class ObservabilityOverheadBenchmark {
 
     // Create and close spans
     try (final WasmRuntimeTracer.TracedOperation operation =
-             tracer.startEngineOperation("benchmark", "test")) {
-      operation.setAttribute(WasmRuntimeTracer.WASM_MODULE_NAME, TEST_MODULE_NAME)
-               .recordEvent("operation_started")
-               .recordEvent("operation_completed");
+        tracer.startEngineOperation("benchmark", "test")) {
+      operation
+          .setAttribute(WasmRuntimeTracer.WASM_MODULE_NAME, TEST_MODULE_NAME)
+          .recordEvent("operation_started")
+          .recordEvent("operation_completed");
     }
   }
 
@@ -198,12 +203,16 @@ public class ObservabilityOverheadBenchmark {
     }
 
     // Log various events
-    logger.info(WasmRuntimeLogger.LogComponent.ENGINE, "benchmark",
-                "Benchmark operation", Attributes.empty());
-    logger.debug(WasmRuntimeLogger.LogComponent.MODULE, "compile",
-                 "Module compilation", Attributes.builder()
-                     .put("module.name", TEST_MODULE_NAME)
-                     .build());
+    logger.info(
+        WasmRuntimeLogger.LogComponent.ENGINE,
+        "benchmark",
+        "Benchmark operation",
+        Attributes.empty());
+    logger.debug(
+        WasmRuntimeLogger.LogComponent.MODULE,
+        "compile",
+        "Module compilation",
+        Attributes.builder().put("module.name", TEST_MODULE_NAME).build());
   }
 
   @Benchmark
@@ -213,11 +222,14 @@ public class ObservabilityOverheadBenchmark {
     }
 
     // Simulate a complete operation with all observability features
-    observabilityEnabled.observeEngineOperation("benchmark", "complete_operation", () -> {
-      simulateModuleCompilation();
-      simulateFunctionCall();
-      return "completed";
-    });
+    observabilityEnabled.observeEngineOperation(
+        "benchmark",
+        "complete_operation",
+        () -> {
+          simulateModuleCompilation();
+          simulateFunctionCall();
+          return "completed";
+        });
   }
 
   @Benchmark
@@ -239,17 +251,19 @@ public class ObservabilityOverheadBenchmark {
       return sum;
     }
 
-    return observabilityEnabled.observeOperation("high_frequency_ops", () -> {
-      long sum = 0;
-      for (int i = 0; i < 1000; i++) {
-        sum += simulateFastOperation(i);
-        // Record metrics for every 100th operation to simulate realistic usage
-        if (i % 100 == 0) {
-          metrics.recordFunctionCall("fast_op_" + i, "() -> i64", Duration.ofNanos(1000));
-        }
-      }
-      return sum;
-    });
+    return observabilityEnabled.observeOperation(
+        "high_frequency_ops",
+        () -> {
+          long sum = 0;
+          for (int i = 0; i < 1000; i++) {
+            sum += simulateFastOperation(i);
+            // Record metrics for every 100th operation to simulate realistic usage
+            if (i % 100 == 0) {
+              metrics.recordFunctionCall("fast_op_" + i, "() -> i64", Duration.ofNanos(1000));
+            }
+          }
+          return sum;
+        });
   }
 
   @Benchmark
@@ -259,13 +273,18 @@ public class ObservabilityOverheadBenchmark {
       return;
     }
 
-    observabilityEnabled.observeOperation("outer_operation", () -> {
-      observabilityEnabled.observeOperation("inner_operation_1", () -> {
-        observabilityEnabled.observeOperation("inner_operation_2", this::simulateSimpleOperation);
-        return null;
-      });
-      return null;
-    });
+    observabilityEnabled.observeOperation(
+        "outer_operation",
+        () -> {
+          observabilityEnabled.observeOperation(
+              "inner_operation_1",
+              () -> {
+                observabilityEnabled.observeOperation(
+                    "inner_operation_2", this::simulateSimpleOperation);
+                return null;
+              });
+          return null;
+        });
   }
 
   // Simulation methods that represent typical WebAssembly operations
@@ -311,9 +330,8 @@ public class ObservabilityOverheadBenchmark {
    * @throws RunnerException if benchmark execution fails
    */
   public static void main(final String[] args) throws RunnerException {
-    final Options opt = new OptionsBuilder()
-        .include(ObservabilityOverheadBenchmark.class.getSimpleName())
-        .build();
+    final Options opt =
+        new OptionsBuilder().include(ObservabilityOverheadBenchmark.class.getSimpleName()).build();
 
     new Runner(opt).run();
   }

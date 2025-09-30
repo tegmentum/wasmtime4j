@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.jni.wasi.*;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 @EnabledIf("ai.tegmentum.wasmtime4j.test.TestEnvironment#isIntegrationTestsEnabled")
 class WasiExperimentalFeaturesIT {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiExperimentalFeaturesIT.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiExperimentalFeaturesIT.class.getName());
 
   @TempDir Path tempDir;
 
@@ -195,7 +192,9 @@ class WasiExperimentalFeaturesIT {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     final Long baseSnapshotHandle =
-        filesystemSnapshot.createFullSnapshotAsync(testDir.toString(), options).get(30, TimeUnit.SECONDS);
+        filesystemSnapshot
+            .createFullSnapshotAsync(testDir.toString(), options)
+            .get(30, TimeUnit.SECONDS);
 
     // Add new files and modify existing ones
     Files.write(testDir.resolve("new1.txt"), "New content 1".getBytes());
@@ -238,23 +237,22 @@ class WasiExperimentalFeaturesIT {
     // Skip test if external networking is not available
     try {
       final CompletableFuture<Long> connectionFuture =
-          advancedNetworking.createHttp2ConnectionAsync(
-              "httpbin.org", 443, true, http2Options);
+          advancedNetworking.createHttp2ConnectionAsync("httpbin.org", 443, true, http2Options);
 
       final Long connectionHandle = connectionFuture.get(15, TimeUnit.SECONDS);
       assertNotNull(connectionHandle);
       assertTrue(connectionHandle > 0);
 
       // Make HTTP/2 request
-      final Map<String, String> headers = Map.of(
-          "User-Agent", "wasmtime4j-test/1.0",
-          "Accept", "application/json");
+      final Map<String, String> headers =
+          Map.of(
+              "User-Agent", "wasmtime4j-test/1.0",
+              "Accept", "application/json");
 
       final CompletableFuture<WasiAdvancedNetworking.Http2Response> requestFuture =
           advancedNetworking.http2RequestAsync(connectionHandle, "GET", "/get", headers, null);
 
-      final WasiAdvancedNetworking.Http2Response response =
-          requestFuture.get(15, TimeUnit.SECONDS);
+      final WasiAdvancedNetworking.Http2Response response = requestFuture.get(15, TimeUnit.SECONDS);
       assertNotNull(response);
       assertEquals(200, response.statusCode);
       assertNotNull(response.headers);
@@ -361,7 +359,8 @@ class WasiExperimentalFeaturesIT {
 
     // Create test file
     final Path testFile = tempDir.resolve("async-test.txt");
-    final String testContent = "Async I/O test content with multiple lines\nSecond line\nThird line";
+    final String testContent =
+        "Async I/O test content with multiple lines\nSecond line\nThird line";
     Files.write(testFile, testContent.getBytes());
 
     // Get file handle (this would normally be done through WASI file operations)

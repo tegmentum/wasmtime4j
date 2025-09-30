@@ -6,12 +6,12 @@ import java.io.Closeable;
 /**
  * A pre-instantiated WebAssembly module optimized for fast instantiation.
  *
- * <p>InstancePre represents a WebAssembly module that has been prepared for instantiation with
- * most of the expensive setup work already completed. This allows for very fast creation of
- * instances when needed.
+ * <p>InstancePre represents a WebAssembly module that has been prepared for instantiation with most
+ * of the expensive setup work already completed. This allows for very fast creation of instances
+ * when needed.
  *
- * <p>InstancePre is particularly useful in scenarios where the same module needs to be
- * instantiated multiple times, such as in serverless functions or request handling.
+ * <p>InstancePre is particularly useful in scenarios where the same module needs to be instantiated
+ * multiple times, such as in serverless functions or request handling.
  *
  * @since 1.0.0
  */
@@ -79,8 +79,8 @@ public interface InstancePre extends Closeable {
   /**
    * Closes the pre-instantiated module and releases associated resources.
    *
-   * <p>After closing, the module becomes invalid and should not be used. Any instances created
-   * from this InstancePre remain valid.
+   * <p>After closing, the module becomes invalid and should not be used. Any instances created from
+   * this InstancePre remain valid.
    */
   @Override
   void close();

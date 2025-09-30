@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.serialization;
 
-import java.util.Objects;
-
 /**
  * Performance metrics for WebAssembly module serialization operations.
  *
@@ -241,9 +239,9 @@ public final class SerializationPerformanceMetrics {
     final double minAcceptableThroughputMbps = 10.0; // 10 MB/s
     final double maxAcceptableMemoryOverhead = 2.0; // 2x memory usage
 
-    return getSerializationTimeMs() <= maxAcceptableSerializationTimeMs &&
-           serializationThroughputMbps >= minAcceptableThroughputMbps &&
-           getMemoryEfficiencyRatio() >= (1.0 / maxAcceptableMemoryOverhead);
+    return getSerializationTimeMs() <= maxAcceptableSerializationTimeMs
+        && serializationThroughputMbps >= minAcceptableThroughputMbps
+        && getMemoryEfficiencyRatio() >= (1.0 / maxAcceptableMemoryOverhead);
   }
 
   /**
@@ -253,8 +251,8 @@ public final class SerializationPerformanceMetrics {
    */
   public String getPerformanceSummary() {
     return String.format(
-        "Serialization: %dms (%.1f MB/s), Memory: %.1fMB peak, CPU: %.1f%% avg, " +
-        "Compression: %.2fx efficiency, Deserialization ratio: %.2fx",
+        "Serialization: %dms (%.1f MB/s), Memory: %.1fMB peak, CPU: %.1f%% avg, "
+            + "Compression: %.2fx efficiency, Deserialization ratio: %.2fx",
         getSerializationTimeMs(),
         serializationThroughputMbps,
         peakMemoryUsageBytes / 1024.0 / 1024.0,
@@ -266,17 +264,15 @@ public final class SerializationPerformanceMetrics {
   @Override
   public String toString() {
     return String.format(
-        "SerializationPerformanceMetrics{serialization=%dms, throughput=%.1fMB/s, " +
-        "memory=%.1fMB, compression=%.2fx}",
+        "SerializationPerformanceMetrics{serialization=%dms, throughput=%.1fMB/s, "
+            + "memory=%.1fMB, compression=%.2fx}",
         getSerializationTimeMs(),
         serializationThroughputMbps,
         peakMemoryUsageBytes / 1024.0 / 1024.0,
         compressionEfficiency);
   }
 
-  /**
-   * Builder for creating SerializationPerformanceMetrics instances.
-   */
+  /** Builder for creating SerializationPerformanceMetrics instances. */
   public static final class Builder {
     private long serializationTimeNs = 0;
     private long deserializationTimeNs = 0;
@@ -297,39 +293,102 @@ public final class SerializationPerformanceMetrics {
     private long diskIoTimeNs = 0;
     private double compressionEfficiency = 1.0;
 
-    public Builder setTimingMetrics(final long serializationNs, final long deserializationNs,
-                                   final long compressionNs, final long decompressionNs,
-                                   final long hashNs) {
-      this.serializationTimeNs = requireNonNegative(serializationNs, "Serialization time cannot be negative");
-      this.deserializationTimeNs = requireNonNegative(deserializationNs, "Deserialization time cannot be negative");
-      this.compressionTimeNs = requireNonNegative(compressionNs, "Compression time cannot be negative");
-      this.decompressionTimeNs = requireNonNegative(decompressionNs, "Decompression time cannot be negative");
-      this.hashCalculationTimeNs = requireNonNegative(hashNs, "Hash calculation time cannot be negative");
+    /**
+     * Sets timing metrics for serialization operations.
+     *
+     * @param serializationNs serialization time in nanoseconds
+     * @param deserializationNs deserialization time in nanoseconds
+     * @param compressionNs compression time in nanoseconds
+     * @param decompressionNs decompression time in nanoseconds
+     * @param hashNs hash calculation time in nanoseconds
+     * @return this builder
+     */
+    public Builder setTimingMetrics(
+        final long serializationNs,
+        final long deserializationNs,
+        final long compressionNs,
+        final long decompressionNs,
+        final long hashNs) {
+      this.serializationTimeNs =
+          requireNonNegative(serializationNs, "Serialization time cannot be negative");
+      this.deserializationTimeNs =
+          requireNonNegative(deserializationNs, "Deserialization time cannot be negative");
+      this.compressionTimeNs =
+          requireNonNegative(compressionNs, "Compression time cannot be negative");
+      this.decompressionTimeNs =
+          requireNonNegative(decompressionNs, "Decompression time cannot be negative");
+      this.hashCalculationTimeNs =
+          requireNonNegative(hashNs, "Hash calculation time cannot be negative");
       return this;
     }
 
-    public Builder setThroughputMetrics(final double serializationMbps, final double deserializationMbps,
-                                       final double compressionMbps, final double decompressionMbps) {
-      this.serializationThroughputMbps = requireNonNegative(serializationMbps, "Serialization throughput cannot be negative");
-      this.deserializationThroughputMbps = requireNonNegative(deserializationMbps, "Deserialization throughput cannot be negative");
-      this.compressionThroughputMbps = requireNonNegative(compressionMbps, "Compression throughput cannot be negative");
-      this.decompressionThroughputMbps = requireNonNegative(decompressionMbps, "Decompression throughput cannot be negative");
+    /**
+     * Sets throughput metrics for serialization operations.
+     *
+     * @param serializationMbps serialization throughput in MB/s
+     * @param deserializationMbps deserialization throughput in MB/s
+     * @param compressionMbps compression throughput in MB/s
+     * @param decompressionMbps decompression throughput in MB/s
+     * @return this builder
+     */
+    public Builder setThroughputMetrics(
+        final double serializationMbps,
+        final double deserializationMbps,
+        final double compressionMbps,
+        final double decompressionMbps) {
+      this.serializationThroughputMbps =
+          requireNonNegative(serializationMbps, "Serialization throughput cannot be negative");
+      this.deserializationThroughputMbps =
+          requireNonNegative(deserializationMbps, "Deserialization throughput cannot be negative");
+      this.compressionThroughputMbps =
+          requireNonNegative(compressionMbps, "Compression throughput cannot be negative");
+      this.decompressionThroughputMbps =
+          requireNonNegative(decompressionMbps, "Decompression throughput cannot be negative");
       return this;
     }
 
-    public Builder setMemoryMetrics(final long peakBytes, final long avgBytes, final long tempBytes) {
-      this.peakMemoryUsageBytes = requireNonNegative(peakBytes, "Peak memory usage cannot be negative");
-      this.avgMemoryUsageBytes = requireNonNegative(avgBytes, "Average memory usage cannot be negative");
-      this.tempMemoryAllocatedBytes = requireNonNegative(tempBytes, "Temporary memory cannot be negative");
+    /**
+     * Sets memory usage metrics for serialization operations.
+     *
+     * @param peakBytes peak memory usage in bytes
+     * @param avgBytes average memory usage in bytes
+     * @param tempBytes temporary memory allocated in bytes
+     * @return this builder
+     */
+    public Builder setMemoryMetrics(
+        final long peakBytes, final long avgBytes, final long tempBytes) {
+      this.peakMemoryUsageBytes =
+          requireNonNegative(peakBytes, "Peak memory usage cannot be negative");
+      this.avgMemoryUsageBytes =
+          requireNonNegative(avgBytes, "Average memory usage cannot be negative");
+      this.tempMemoryAllocatedBytes =
+          requireNonNegative(tempBytes, "Temporary memory cannot be negative");
       return this;
     }
 
+    /**
+     * Sets CPU usage metrics for serialization operations.
+     *
+     * @param avgPercent average CPU usage percentage (0-100)
+     * @param peakPercent peak CPU usage percentage (0-100)
+     * @return this builder
+     */
     public Builder setCpuMetrics(final double avgPercent, final double peakPercent) {
-      this.avgCpuUsagePercent = requireInRange(avgPercent, 0.0, 100.0, "Average CPU usage must be between 0 and 100");
-      this.peakCpuUsagePercent = requireInRange(peakPercent, 0.0, 100.0, "Peak CPU usage must be between 0 and 100");
+      this.avgCpuUsagePercent =
+          requireInRange(avgPercent, 0.0, 100.0, "Average CPU usage must be between 0 and 100");
+      this.peakCpuUsagePercent =
+          requireInRange(peakPercent, 0.0, 100.0, "Peak CPU usage must be between 0 and 100");
       return this;
     }
 
+    /**
+     * Sets disk I/O metrics for serialization operations.
+     *
+     * @param read bytes read from disk
+     * @param written bytes written to disk
+     * @param ioTimeNs disk I/O time in nanoseconds
+     * @return this builder
+     */
     public Builder setIoMetrics(final long read, final long written, final long ioTimeNs) {
       this.bytesRead = requireNonNegative(read, "Bytes read cannot be negative");
       this.bytesWritten = requireNonNegative(written, "Bytes written cannot be negative");
@@ -337,8 +396,15 @@ public final class SerializationPerformanceMetrics {
       return this;
     }
 
+    /**
+     * Sets compression efficiency metric.
+     *
+     * @param efficiency compression efficiency ratio (output/input size)
+     * @return this builder
+     */
     public Builder setCompressionEfficiency(final double efficiency) {
-      this.compressionEfficiency = requirePositive(efficiency, "Compression efficiency must be positive");
+      this.compressionEfficiency =
+          requirePositive(efficiency, "Compression efficiency must be positive");
       return this;
     }
 
@@ -391,9 +457,11 @@ public final class SerializationPerformanceMetrics {
       return value;
     }
 
-    private static double requireInRange(final double value, final double min, final double max, final String message) {
+    private static double requireInRange(
+        final double value, final double min, final double max, final String message) {
       if (value < min || value > max) {
-        throw new IllegalArgumentException(message + " (was: " + value + ", expected: " + min + "-" + max + ")");
+        throw new IllegalArgumentException(
+            message + " (was: " + value + ", expected: " + min + "-" + max + ")");
       }
       return value;
     }

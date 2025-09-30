@@ -19,8 +19,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,8 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Cross-Platform Validation Tests")
 final class CrossPlatformValidationIT {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(CrossPlatformValidationIT.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CrossPlatformValidationIT.class.getName());
 
   /**
    * Tests basic WebAssembly functionality across all available platforms to ensure consistent
@@ -136,7 +133,8 @@ final class CrossPlatformValidationIT {
     final PlatformInfo platform = detectCurrentPlatform();
     final PerformanceBenchmark benchmark = new PerformanceBenchmark();
 
-    final PlatformPerformanceResult result = benchmark.measurePlatformPerformance(platform, operationCount);
+    final PlatformPerformanceResult result =
+        benchmark.measurePlatformPerformance(platform, operationCount);
 
     LOGGER.info("Platform performance results:");
     LOGGER.info("  Platform: " + platform);
@@ -176,9 +174,7 @@ final class CrossPlatformValidationIT {
     LOGGER.info("  Windows paths: " + result.isWindowsPathsWorking());
     LOGGER.info("  Memory management: " + result.isMemoryManagementWorking());
 
-    assertThat(result.isDllLoadingWorking())
-        .withFailMessage("Windows DLL loading failed")
-        .isTrue();
+    assertThat(result.isDllLoadingWorking()).withFailMessage("Windows DLL loading failed").isTrue();
 
     assertThat(result.isWindowsPathsWorking())
         .withFailMessage("Windows path handling failed")
@@ -328,7 +324,8 @@ final class CrossPlatformValidationIT {
 
   /** Loads a simple WebAssembly module for cross-platform testing. */
   private byte[] loadTestWasmModule() throws IOException {
-    final Path resourcePath = Paths.get("src/test/resources/wasm/custom-tests/add.wasm").toAbsolutePath();
+    final Path resourcePath =
+        Paths.get("src/test/resources/wasm/custom-tests/add.wasm").toAbsolutePath();
 
     if (Files.exists(resourcePath)) {
       return Files.readAllBytes(resourcePath);
@@ -341,23 +338,63 @@ final class CrossPlatformValidationIT {
   /** Creates a simple WebAssembly module for testing. */
   private byte[] createSimpleWasmModule() {
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // WASM magic
-      0x01, 0x00, 0x00, 0x00, // Version
-      0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // Type section: (i32,i32)->i32
-      0x03, 0x02, 0x01, 0x00, // Function section
-      0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // Export "add"
-      0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b // Code: local.get 0, local.get 1, i32.add
+      0x00,
+      0x61,
+      0x73,
+      0x6d, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // Version
+      0x01,
+      0x07,
+      0x01,
+      0x60,
+      0x02,
+      0x7f,
+      0x7f,
+      0x01,
+      0x7f, // Type section: (i32,i32)->i32
+      0x03,
+      0x02,
+      0x01,
+      0x00, // Function section
+      0x07,
+      0x07,
+      0x01,
+      0x03,
+      0x61,
+      0x64,
+      0x64,
+      0x00,
+      0x00, // Export "add"
+      0x0a,
+      0x09,
+      0x01,
+      0x07,
+      0x00,
+      0x20,
+      0x00,
+      0x20,
+      0x01,
+      0x6a,
+      0x0b // Code: local.get 0, local.get 1, i32.add
     };
   }
 
   /** Operating system enumeration. */
   private enum OperatingSystem {
-    WINDOWS, MACOS, LINUX, OTHER
+    WINDOWS,
+    MACOS,
+    LINUX,
+    OTHER
   }
 
   /** Architecture enumeration. */
   private enum Architecture {
-    X86_64, ARM64, OTHER
+    X86_64,
+    ARM64,
+    OTHER
   }
 
   /** Information about the current platform. */
@@ -366,7 +403,8 @@ final class CrossPlatformValidationIT {
     private final Architecture arch;
     private final String javaVersion;
 
-    public PlatformInfo(final OperatingSystem os, final Architecture arch, final String javaVersion) {
+    public PlatformInfo(
+        final OperatingSystem os, final Architecture arch, final String javaVersion) {
       this.os = os;
       this.arch = arch;
       this.javaVersion = javaVersion;
@@ -401,7 +439,8 @@ final class CrossPlatformValidationIT {
       final boolean memoryTests = runMemoryTests(platform);
       final double runtimeCompatibility = measureRuntimeCompatibility(platform);
 
-      return new PlatformTestResult(functionalTests, performanceTests, memoryTests, runtimeCompatibility);
+      return new PlatformTestResult(
+          functionalTests, performanceTests, memoryTests, runtimeCompatibility);
     }
 
     private boolean runFunctionalTests(final PlatformInfo platform) throws Exception {
@@ -544,13 +583,15 @@ final class CrossPlatformValidationIT {
   /** Validator for platform-specific features. */
   private final class PlatformFeatureValidator {
 
-    public PlatformFeatureReport validatePlatformFeatures(final PlatformInfo platform) throws Exception {
+    public PlatformFeatureReport validatePlatformFeatures(final PlatformInfo platform)
+        throws Exception {
       final boolean nativeLibraryLoading = testNativeLibraryLoading();
       final boolean memoryMapping = testMemoryMapping();
       final boolean fileSystemAccess = testFileSystemAccess();
       final boolean threadSafety = testThreadSafety();
 
-      return new PlatformFeatureReport(nativeLibraryLoading, memoryMapping, fileSystemAccess, threadSafety);
+      return new PlatformFeatureReport(
+          nativeLibraryLoading, memoryMapping, fileSystemAccess, threadSafety);
     }
 
     private boolean testNativeLibraryLoading() {
@@ -580,13 +621,16 @@ final class CrossPlatformValidationIT {
 
       try {
         for (int i = 0; i < 4; i++) {
-          futures.add(CompletableFuture.supplyAsync(() -> {
-            try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
-              return runtime.isValid();
-            } catch (final Exception e) {
-              return false;
-            }
-          }, executor));
+          futures.add(
+              CompletableFuture.supplyAsync(
+                  () -> {
+                    try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
+                      return runtime.isValid();
+                    } catch (final Exception e) {
+                      return false;
+                    }
+                  },
+                  executor));
         }
 
         return futures.stream().allMatch(CompletableFuture::join);
@@ -635,7 +679,8 @@ final class CrossPlatformValidationIT {
   /** Performance benchmark for cross-platform testing. */
   private final class PerformanceBenchmark {
 
-    public PlatformPerformanceResult measurePlatformPerformance(final PlatformInfo platform, final int operationCount) throws Exception {
+    public PlatformPerformanceResult measurePlatformPerformance(
+        final PlatformInfo platform, final int operationCount) throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
         final byte[] wasmBytes = loadTestWasmModule();
 
@@ -644,11 +689,14 @@ final class CrossPlatformValidationIT {
 
           try (final Store store = runtime.createStore(engine)) {
             final Instance instance = runtime.instantiate(module);
-            final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+            final WasmFunction addFunction =
+                instance
+                    .getFunction("add")
+                    .orElseThrow(() -> new AssertionError("No add function"));
 
             // Warm-up
             for (int i = 0; i < 10; i++) {
-              addFunction.call(new WasmValue[]{WasmValue.i32(i), WasmValue.i32(i + 1)});
+              addFunction.call(new WasmValue[] {WasmValue.i32(i), WasmValue.i32(i + 1)});
             }
 
             // Measure performance
@@ -665,16 +713,19 @@ final class CrossPlatformValidationIT {
 
             final double operationsPerSecond = operationCount / (elapsed.toMillis() / 1000.0);
             final double averageLatencyMicros = elapsed.toNanos() / 1000.0 / operationCount;
-            final double memoryEfficiency = calculateMemoryEfficiency(startMemory, endMemory, operationCount);
+            final double memoryEfficiency =
+                calculateMemoryEfficiency(startMemory, endMemory, operationCount);
             final long nativeCallOverhead = elapsed.toNanos() / operationCount; // Simplified
 
-            return new PlatformPerformanceResult(operationsPerSecond, averageLatencyMicros, memoryEfficiency, nativeCallOverhead);
+            return new PlatformPerformanceResult(
+                operationsPerSecond, averageLatencyMicros, memoryEfficiency, nativeCallOverhead);
           }
         }
       }
     }
 
-    private double calculateMemoryEfficiency(final long startMemory, final long endMemory, final int operations) {
+    private double calculateMemoryEfficiency(
+        final long startMemory, final long endMemory, final int operations) {
       final long memoryUsed = endMemory - startMemory;
       if (memoryUsed <= 0) {
         return 100.0;
@@ -738,7 +789,10 @@ final class CrossPlatformValidationIT {
     private final boolean windowsPathsWorking;
     private final boolean memoryManagementWorking;
 
-    public WindowsTestResult(final boolean dllLoadingWorking, final boolean windowsPathsWorking, final boolean memoryManagementWorking) {
+    public WindowsTestResult(
+        final boolean dllLoadingWorking,
+        final boolean windowsPathsWorking,
+        final boolean memoryManagementWorking) {
       this.dllLoadingWorking = dllLoadingWorking;
       this.windowsPathsWorking = windowsPathsWorking;
       this.memoryManagementWorking = memoryManagementWorking;
@@ -770,7 +824,10 @@ final class CrossPlatformValidationIT {
     private final boolean appleSiliconSupported;
     private final boolean securityFeaturesWorking;
 
-    public MacOSTestResult(final boolean dylibLoadingWorking, final boolean appleSiliconSupported, final boolean securityFeaturesWorking) {
+    public MacOSTestResult(
+        final boolean dylibLoadingWorking,
+        final boolean appleSiliconSupported,
+        final boolean securityFeaturesWorking) {
       this.dylibLoadingWorking = dylibLoadingWorking;
       this.appleSiliconSupported = appleSiliconSupported;
       this.securityFeaturesWorking = securityFeaturesWorking;
@@ -800,7 +857,10 @@ final class CrossPlatformValidationIT {
     private final boolean memoryManagementWorking;
     private final boolean processIsolationWorking;
 
-    public LinuxTestResult(final boolean soLoadingWorking, final boolean memoryManagementWorking, final boolean processIsolationWorking) {
+    public LinuxTestResult(
+        final boolean soLoadingWorking,
+        final boolean memoryManagementWorking,
+        final boolean processIsolationWorking) {
       this.soLoadingWorking = soLoadingWorking;
       this.memoryManagementWorking = memoryManagementWorking;
       this.processIsolationWorking = processIsolationWorking;
@@ -821,7 +881,8 @@ final class CrossPlatformValidationIT {
 
   private final class RuntimeSelectionTester {
 
-    public RuntimeSelectionResult testRuntimeSelection(final PlatformInfo platform) throws Exception {
+    public RuntimeSelectionResult testRuntimeSelection(final PlatformInfo platform)
+        throws Exception {
       try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
         final RuntimeInfo runtimeInfo = runtime.getRuntimeInfo();
         final RuntimeType selectedType = runtimeInfo.getRuntimeType();
@@ -832,7 +893,8 @@ final class CrossPlatformValidationIT {
         // Test Panama availability (Java 23+)
         final boolean panamaAvailable = testPanamaAvailability();
 
-        final String rationale = determineSelectionRationale(selectedType, jniAvailable, panamaAvailable);
+        final String rationale =
+            determineSelectionRationale(selectedType, jniAvailable, panamaAvailable);
 
         return new RuntimeSelectionResult(selectedType, jniAvailable, panamaAvailable, rationale);
       }
@@ -849,10 +911,12 @@ final class CrossPlatformValidationIT {
     private boolean testPanamaAvailability() {
       final String javaVersion = System.getProperty("java.version");
       // Simplified check - actual implementation would test Panama FFI specifically
-      return javaVersion.startsWith("23") || javaVersion.startsWith("2") && !javaVersion.startsWith("1");
+      return javaVersion.startsWith("23")
+          || javaVersion.startsWith("2") && !javaVersion.startsWith("1");
     }
 
-    private String determineSelectionRationale(final RuntimeType selected, final boolean jniAvailable, final boolean panamaAvailable) {
+    private String determineSelectionRationale(
+        final RuntimeType selected, final boolean jniAvailable, final boolean panamaAvailable) {
       if (selected == RuntimeType.JNI && jniAvailable) {
         return "JNI selected as primary runtime";
       } else if (selected == RuntimeType.PANAMA && panamaAvailable) {
@@ -869,7 +933,11 @@ final class CrossPlatformValidationIT {
     private final boolean panamaAvailable;
     private final String selectionRationale;
 
-    public RuntimeSelectionResult(final RuntimeType selectedRuntimeType, final boolean jniAvailable, final boolean panamaAvailable, final String selectionRationale) {
+    public RuntimeSelectionResult(
+        final RuntimeType selectedRuntimeType,
+        final boolean jniAvailable,
+        final boolean panamaAvailable,
+        final String selectionRationale) {
       this.selectedRuntimeType = selectedRuntimeType;
       this.jniAvailable = jniAvailable;
       this.panamaAvailable = panamaAvailable;
@@ -895,7 +963,8 @@ final class CrossPlatformValidationIT {
 
   private final class ConcurrentExecutionTester {
 
-    public ConcurrentExecutionResult testConcurrentExecution(final PlatformInfo platform) throws Exception {
+    public ConcurrentExecutionResult testConcurrentExecution(final PlatformInfo platform)
+        throws Exception {
       final int threadCount = 8;
       final int operationsPerThread = 25;
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -907,47 +976,61 @@ final class CrossPlatformValidationIT {
 
         for (int i = 0; i < threadCount; i++) {
           final int threadId = i;
-          futures.add(CompletableFuture.supplyAsync(() -> {
-            final Instant threadStart = Instant.now();
-            try {
-              for (int op = 0; op < operationsPerThread; op++) {
-                try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
-                  final byte[] wasmBytes = createSimpleWasmModule();
+          futures.add(
+              CompletableFuture.supplyAsync(
+                  () -> {
+                    final Instant threadStart = Instant.now();
+                    try {
+                      for (int op = 0; op < operationsPerThread; op++) {
+                        try (final WasmRuntime runtime = WasmRuntimeFactory.create()) {
+                          final byte[] wasmBytes = createSimpleWasmModule();
 
-                  try (final Engine engine = runtime.createEngine()) {
-                    final Module module = runtime.compileModule(engine, wasmBytes);
+                          try (final Engine engine = runtime.createEngine()) {
+                            final Module module = runtime.compileModule(engine, wasmBytes);
 
-                    try (final Store store = runtime.createStore(engine)) {
-                      final Instance instance = runtime.instantiate(module);
-                      final WasmFunction addFunction = instance.getFunction("add").orElseThrow(() -> new AssertionError("No add function"));
+                            try (final Store store = runtime.createStore(engine)) {
+                              final Instance instance = runtime.instantiate(module);
+                              final WasmFunction addFunction =
+                                  instance
+                                      .getFunction("add")
+                                      .orElseThrow(() -> new AssertionError("No add function"));
 
-                      final WasmValue[] args = {WasmValue.i32(threadId), WasmValue.i32(op)};
-                      addFunction.call(args);
+                              final WasmValue[] args = {WasmValue.i32(threadId), WasmValue.i32(op)};
+                              addFunction.call(args);
+                            }
+                          }
+                        }
+                      }
+
+                      final long responseTime =
+                          Duration.between(threadStart, Instant.now()).toMillis();
+                      threadResponseTimes.put(threadId, responseTime);
+                      return true;
+                    } catch (final Exception e) {
+                      LOGGER.warning("Thread " + threadId + " failed: " + e.getMessage());
+                      return false;
                     }
-                  }
-                }
-              }
-
-              final long responseTime = Duration.between(threadStart, Instant.now()).toMillis();
-              threadResponseTimes.put(threadId, responseTime);
-              return true;
-            } catch (final Exception e) {
-              LOGGER.warning("Thread " + threadId + " failed: " + e.getMessage());
-              return false;
-            }
-          }, executor));
+                  },
+                  executor));
         }
 
         final long successfulThreads = futures.stream().mapToLong(f -> f.join() ? 1 : 0).sum();
         final Duration totalTime = Duration.between(start, Instant.now());
 
         final double successRate = (double) successfulThreads / threadCount * 100.0;
-        final double averageResponseTime = threadResponseTimes.values().stream().mapToLong(Long::longValue).average().orElse(0.0);
-        final double threadingEfficiency = calculateThreadingEfficiency(threadCount, totalTime.toMillis(), averageResponseTime);
+        final double averageResponseTime =
+            threadResponseTimes.values().stream().mapToLong(Long::longValue).average().orElse(0.0);
+        final double threadingEfficiency =
+            calculateThreadingEfficiency(threadCount, totalTime.toMillis(), averageResponseTime);
 
         final int operationsCompleted = (int) (successfulThreads * operationsPerThread);
 
-        return new ConcurrentExecutionResult(threadCount, operationsCompleted, successRate, averageResponseTime, threadingEfficiency);
+        return new ConcurrentExecutionResult(
+            threadCount,
+            operationsCompleted,
+            successRate,
+            averageResponseTime,
+            threadingEfficiency);
 
       } finally {
         executor.shutdown();
@@ -955,7 +1038,8 @@ final class CrossPlatformValidationIT {
       }
     }
 
-    private double calculateThreadingEfficiency(final int threadCount, final long totalTime, final double avgResponseTime) {
+    private double calculateThreadingEfficiency(
+        final int threadCount, final long totalTime, final double avgResponseTime) {
       if (avgResponseTime == 0 || totalTime == 0) {
         return 0.0;
       }
@@ -974,7 +1058,12 @@ final class CrossPlatformValidationIT {
     private final double averageResponseTimeMs;
     private final double threadingEfficiencyPercent;
 
-    public ConcurrentExecutionResult(final int threadCount, final int operationsCompleted, final double successRatePercent, final double averageResponseTimeMs, final double threadingEfficiencyPercent) {
+    public ConcurrentExecutionResult(
+        final int threadCount,
+        final int operationsCompleted,
+        final double successRatePercent,
+        final double averageResponseTimeMs,
+        final double threadingEfficiencyPercent) {
       this.threadCount = threadCount;
       this.operationsCompleted = operationsCompleted;
       this.successRatePercent = successRatePercent;

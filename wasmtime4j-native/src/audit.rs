@@ -10,16 +10,15 @@
 //! This module provides enterprise-grade audit trail and compliance
 //! capabilities for regulated environments.
 
-use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
-use crate::access_control::{UserIdentity, AccessRequest, AuthorizationDecision};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::fs::{File, OpenOptions};
 use std::io::{Write, BufWriter};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-use ring::{digest, hmac};
+use ring::hmac;
 use base64::{Engine as _, engine::general_purpose};
 
 /// Audit event types for classification
@@ -225,7 +224,7 @@ impl AuditEvent {
 }
 
 /// Compliance framework requirements
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ComplianceFramework {
     /// Sarbanes-Oxley Act
     SOX,
@@ -841,7 +840,7 @@ mod tests {
     fn test_compliance_report_generation() {
         let config = ComplianceReportConfig {
             framework: ComplianceFramework::SOX,
-            start_time: SystemTime::now() - Duration::from_days(30),
+            start_time: SystemTime::now() - Duration::from_secs(30 * 24 * 60 * 60), // 30 days
             end_time: SystemTime::now(),
             event_types: vec![AuditEventType::Authentication, AuditEventType::Authorization],
             min_severity: AuditSeverity::Info,
@@ -857,7 +856,7 @@ mod tests {
 
     #[test]
     fn test_event_correlator() {
-        let mut correlator = EventCorrelator::new(Duration::from_minutes(1));
+        let mut correlator = EventCorrelator::new(Duration::from_secs(60)); // 1 minute
 
         let event = AuditEvent::new(
             AuditEventType::Authentication,

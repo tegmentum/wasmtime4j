@@ -8,14 +8,12 @@
 //! - Barriers with dynamic participant management
 //! - Memory ordering optimization for cross-platform consistency
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::collections::{HashMap, VecDeque, BinaryHeap};
 use std::thread::{self, ThreadId};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 use std::cmp::Ordering as CmpOrdering;
-use crossbeam::utils::Backoff;
-use crossbeam::epoch::{self, Atomic, Guard, Owned, Shared};
 use parking_lot::{RwLock as ParkingRwLock, Mutex as ParkingMutex, Condvar};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -1336,7 +1334,7 @@ impl AdvancedSemaphore {
 
     /// Notify waiting threads based on fairness policy
     fn notify_waiting_threads(&self) {
-        let mut queue = self.wait_queue.lock();
+        let queue = self.wait_queue.lock();
         if queue.is_empty() {
             return;
         }
@@ -1516,8 +1514,8 @@ mod tests {
         let ready_clone = ready.clone();
 
         let handle = thread::spawn(move || {
-            let guard = mutex_clone.lock();
-            condvar_clone.wait_with_predicate(&*guard, move || ready_clone.load(Ordering::Acquire)).unwrap();
+            let mut guard = mutex_clone.lock();
+            condvar_clone.wait_with_predicate(&mut guard, move || ready_clone.load(Ordering::Acquire)).unwrap();
         });
 
         thread::sleep(Duration::from_millis(10));

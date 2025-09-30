@@ -10,8 +10,8 @@ import java.util.Optional;
  * Statistics for streaming WebAssembly instantiation operations.
  *
  * <p>InstantiationStatistics provides real-time information about the progress and performance of
- * streaming instantiation, including function compilation progress, memory allocation, and
- * resource usage.
+ * streaming instantiation, including function compilation progress, memory allocation, and resource
+ * usage.
  *
  * @since 1.0.0
  */
@@ -392,6 +392,12 @@ public final class InstantiationStatistics {
       return this;
     }
 
+    /**
+     * Sets the function compilation statistics.
+     *
+     * @param functionStatistics the list of function compilation statistics
+     * @return this builder
+     */
     public Builder functionStatistics(final List<FunctionCompilationStats> functionStatistics) {
       this.functionStatistics =
           Objects.requireNonNull(functionStatistics, "Function statistics cannot be null");

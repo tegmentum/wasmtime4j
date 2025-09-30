@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -223,7 +224,7 @@ public final class WitResourceManager implements AutoCloseable {
    * @return true if resource was destroyed, false otherwise
    * @throws ResourceException if resource not found
    */
-  public boolean decrementRefCount(final int resourceId) throws ResourceException {
+  public boolean decrementRefCount(final int resourceId) throws ResourceException, WasmException {
     final ManagedResource resource = getResource(resourceId);
     final int newRefCount = resource.decrementRefCount();
 
@@ -361,11 +362,11 @@ public final class WitResourceManager implements AutoCloseable {
       final long expirationTime = config.getResourceExpirationMillis();
 
       if (expirationTime > 0) {
-        final var expired =
+        final List<ManagedResource> expired =
             activeResources.values().stream()
                 .filter(resource -> (currentTime - resource.getLastAccessedTime()) > expirationTime)
                 .filter(resource -> resource.getRefCount() <= 0)
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
 
         for (final ManagedResource resource : expired) {
           try {
@@ -410,7 +411,7 @@ public final class WitResourceManager implements AutoCloseable {
       }
 
       // Destroy all remaining resources
-      final var remainingResources = Set.copyOf(activeResources.keySet());
+      final Set<Integer> remainingResources = Collections.unmodifiableSet(activeResources.keySet());
       for (final int resourceId : remainingResources) {
         try {
           destroyResource(resourceId);
@@ -485,6 +486,15 @@ public final class WitResourceManager implements AutoCloseable {
     private final AtomicInteger refCount;
     private volatile long lastAccessedTime;
 
+    /**
+     * Creates a new managed resource.
+     *
+     * @param resourceId unique resource identifier
+     * @param typeName name of the resource type
+     * @param resource the actual resource object
+     * @param createdTime creation timestamp
+     * @param typeInfo resource type information
+     */
     public ManagedResource(
         final int resourceId,
         final String typeName,
@@ -551,6 +561,13 @@ public final class WitResourceManager implements AutoCloseable {
       this(DEFAULT_MAX_RESOURCES, DEFAULT_CLEANUP_INTERVAL_SECONDS, 0);
     }
 
+    /**
+     * Creates a new resource configuration.
+     *
+     * @param maxResources maximum number of resources
+     * @param cleanupIntervalSeconds cleanup interval in seconds
+     * @param resourceExpirationMillis resource expiration time in milliseconds
+     */
     public ResourceConfig(
         final int maxResources,
         final int cleanupIntervalSeconds,
@@ -579,6 +596,13 @@ public final class WitResourceManager implements AutoCloseable {
     private final Class<?> resourceClass;
     private final ResourceDestructor destructor;
 
+    /**
+     * Creates new resource type information.
+     *
+     * @param typeName name of the resource type
+     * @param resourceClass class of the resource
+     * @param destructor resource destructor (can be null)
+     */
     public ResourceTypeInfo(
         final String typeName, final Class<?> resourceClass, final ResourceDestructor destructor) {
       this.typeName = Objects.requireNonNull(typeName);
@@ -619,6 +643,15 @@ public final class WitResourceManager implements AutoCloseable {
     private final long maxResources;
     private final Map<String, Long> resourceTypeCounts;
 
+    /**
+     * Creates new resource usage statistics.
+     *
+     * @param activeResources number of currently active resources
+     * @param totalCreated total number of resources created
+     * @param totalDestroyed total number of resources destroyed
+     * @param maxResources maximum number of resources
+     * @param resourceTypeCounts counts by resource type
+     */
     public ResourceUsageStats(
         final long activeResources,
         final long totalCreated,

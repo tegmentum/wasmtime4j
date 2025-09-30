@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import org.junit.jupiter.api.DisplayName;
@@ -22,8 +21,8 @@ import org.junit.jupiter.params.provider.EnumSource;
  *
  * <p>This test class verifies proper error handling for various WebAssembly validation failures,
  * including type mismatches, invalid function signatures, and module structure violations.
- * Validation errors occur when WebAssembly modules are structurally correct but violate
- * WebAssembly semantic rules.
+ * Validation errors occur when WebAssembly modules are structurally correct but violate WebAssembly
+ * semantic rules.
  */
 @DisplayName("Validation Error Scenario Test Suite")
 class ValidationErrorScenarioTest {
@@ -44,13 +43,22 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with invalid function type (invalid value type)
       byte[] invalidFunctionType = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x07, // Section size
         0x01, // 1 type
         0x60, // Function type
-        0x01, (byte) 0xFF, // 1 parameter with invalid type 0xFF
-        0x01, 0x7F // 1 return value of type i32
+        0x01,
+        (byte) 0xFF, // 1 parameter with invalid type 0xFF
+        0x01,
+        0x7F // 1 return value of type i32
       };
 
       WasmException exception =
@@ -76,15 +84,26 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with duplicate type sections
       byte[] duplicateTypeSections = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x01, // Type section again (duplicate)
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00 // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00 // Function type: () -> ()
       };
 
       WasmException exception =
@@ -98,8 +117,7 @@ class ValidationErrorScenarioTest {
           exception.getMessage().toLowerCase().contains("duplicate")
               || exception.getMessage().toLowerCase().contains("section")
               || exception.getMessage().toLowerCase().contains("multiple"),
-          "Exception message should mention duplicate/section/multiple: "
-              + exception.getMessage());
+          "Exception message should mention duplicate/section/multiple: " + exception.getMessage());
     }
   }
 
@@ -111,14 +129,24 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with sections in wrong order (function before type)
       byte[] invalidSectionOrder = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x03, // Function section (should come after type section)
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x01, // Type section (should come before function section)
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00 // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00 // Function type: () -> ()
       };
 
       WasmException exception =
@@ -146,19 +174,30 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with function referencing non-existent type
       byte[] typeIndexOutOfBounds = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x05, // 1 function with type index 5 (out of bounds)
+        0x01,
+        0x05, // 1 function with type index 5 (out of bounds)
         0x0A, // Code section
         0x04, // Section size
         0x01, // 1 function body
         0x02, // Body size
-        0x00, 0x0B // No locals, end instruction
+        0x00,
+        0x0B // No locals, end instruction
       };
 
       WasmException exception =
@@ -173,8 +212,7 @@ class ValidationErrorScenarioTest {
               || exception.getMessage().toLowerCase().contains("bounds")
               || exception.getMessage().toLowerCase().contains("type")
               || exception.getMessage().toLowerCase().contains("invalid"),
-          "Exception message should mention index/bounds/type/invalid: "
-              + exception.getMessage());
+          "Exception message should mention index/bounds/type/invalid: " + exception.getMessage());
     }
   }
 
@@ -186,19 +224,31 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with mismatched function and code counts
       byte[] functionCountMismatch = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x03, // Section size
-        0x02, 0x00, 0x00, // 2 functions with type index 0
+        0x02,
+        0x00,
+        0x00, // 2 functions with type index 0
         0x0A, // Code section
         0x04, // Section size
         0x01, // Only 1 function body (should be 2)
         0x02, // Body size
-        0x00, 0x0B // No locals, end instruction
+        0x00,
+        0x0B // No locals, end instruction
       };
 
       WasmException exception =
@@ -226,14 +276,24 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with invalid instruction (reserved opcode)
       byte[] invalidInstruction = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x0A, // Code section
         0x05, // Section size
         0x01, // 1 function body
@@ -268,20 +328,32 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with function that has stack type mismatch
       byte[] stackTypeMismatch = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x05, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+        0x60,
+        0x00,
+        0x01,
+        0x7F, // Function type: () -> i32
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x0A, // Code section
         0x06, // Section size
         0x01, // 1 function body
         0x04, // Body size
         0x00, // No locals
-        0x42, 0x01, // i64.const 1 (wrong type, should be i32)
+        0x42,
+        0x01, // i64.const 1 (wrong type, should be i32)
         0x0B // End instruction
       };
 
@@ -310,21 +382,34 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with memory instruction referencing non-existent memory
       byte[] memoryIndexOutOfBounds = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x0A, // Code section
         0x08, // Section size
         0x01, // 1 function body
         0x06, // Body size
         0x00, // No locals
-        0x41, 0x00, // i32.const 0
-        0x28, 0x01, 0x00, // i32.load with memory index 1 (no memory declared)
+        0x41,
+        0x00, // i32.const 0
+        0x28,
+        0x01,
+        0x00, // i32.load with memory index 1 (no memory declared)
         0x0B // End instruction
       };
 
@@ -353,20 +438,32 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with global.get referencing non-existent global
       byte[] globalIndexOutOfBounds = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x05, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+        0x60,
+        0x00,
+        0x01,
+        0x7F, // Function type: () -> i32
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x0A, // Code section
         0x05, // Section size
         0x01, // 1 function body
         0x03, // Body size
         0x00, // No locals
-        0x23, 0x05, // global.get 5 (no global declared)
+        0x23,
+        0x05, // global.get 5 (no global declared)
         0x0B // End instruction
       };
 
@@ -395,24 +492,40 @@ class ValidationErrorScenarioTest {
 
       // WebAssembly module with export referencing non-existent function
       byte[] invalidExportName = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x07, // Export section
         0x07, // Section size
         0x01, // 1 export
-        0x04, 't', 'e', 's', 't', // Export name "test"
-        0x00, 0x05, // Function export with index 5 (out of bounds)
+        0x04,
+        't',
+        'e',
+        's',
+        't', // Export name "test"
+        0x00,
+        0x05, // Function export with index 5 (out of bounds)
         0x0A, // Code section
         0x04, // Section size
         0x01, // 1 function body
         0x02, // Body size
-        0x00, 0x0B // No locals, end instruction
+        0x00,
+        0x0B // No locals, end instruction
       };
 
       WasmException exception =
@@ -481,24 +594,40 @@ class ValidationErrorScenarioTest {
 
       // Simple valid WebAssembly module
       byte[] validModule = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x07, // Export section
         0x07, // Section size
         0x01, // 1 export
-        0x04, 't', 'e', 's', 't', // Export name "test"
-        0x00, 0x00, // Function export with index 0
+        0x04,
+        't',
+        'e',
+        's',
+        't', // Export name "test"
+        0x00,
+        0x00, // Function export with index 0
         0x0A, // Code section
         0x04, // Section size
         0x01, // 1 function body
         0x02, // Body size
-        0x00, 0x0B // No locals, end instruction
+        0x00,
+        0x0B // No locals, end instruction
       };
 
       // Valid module should compile and instantiate successfully

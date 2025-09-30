@@ -137,6 +137,15 @@ public interface ComponentVersionCompatibilityChecker {
     private final Set<String> issues;
     private final Set<String> warnings;
 
+    /**
+     * Creates a new compatibility result.
+     *
+     * @param compatible whether components are compatible
+     * @param message descriptive message about compatibility
+     * @param level compatibility level achieved
+     * @param issues set of compatibility issues found
+     * @param warnings set of compatibility warnings
+     */
     public ComponentVersionCompatibilityResult(
         boolean compatible,
         String message,
@@ -178,6 +187,14 @@ public interface ComponentVersionCompatibilityChecker {
     private final Set<String> missingInterfaces;
     private final Set<String> extraInterfaces;
 
+    /**
+     * Creates a new interface compatibility result.
+     *
+     * @param compatible whether all interfaces are compatible
+     * @param interfaceResults detailed results for each interface
+     * @param missingInterfaces interfaces missing in target
+     * @param extraInterfaces interfaces not in source
+     */
     public InterfaceCompatibilityResult(
         boolean compatible,
         Map<String, InterfaceVersionCompatibility> interfaceResults,
@@ -215,6 +232,16 @@ public interface ComponentVersionCompatibilityChecker {
     private final Set<String> incompatibleFunctions;
     private final Set<String> incompatibleTypes;
 
+    /**
+     * Creates a new interface version compatibility result.
+     *
+     * @param interfaceName name of the interface
+     * @param compatible whether versions are compatible
+     * @param sourceVersion source interface version
+     * @param targetVersion target interface version
+     * @param incompatibleFunctions functions that are incompatible
+     * @param incompatibleTypes types that are incompatible
+     */
     public InterfaceVersionCompatibility(
         String interfaceName,
         boolean compatible,
@@ -262,6 +289,14 @@ public interface ComponentVersionCompatibilityChecker {
     private final List<CompatibleChange> compatibleChanges;
     private final VersionChangeType changeType;
 
+    /**
+     * Creates a new breaking change analysis result.
+     *
+     * @param hasBreakingChanges whether breaking changes were found
+     * @param breakingChanges list of breaking changes
+     * @param compatibleChanges list of compatible changes
+     * @param changeType type of version change
+     */
     public BreakingChangeAnalysisResult(
         boolean hasBreakingChanges,
         List<BreakingChange> breakingChanges,
@@ -322,6 +357,14 @@ public interface ComponentVersionCompatibilityChecker {
     private final Set<String> blockers;
     private final Set<String> warnings;
 
+    /**
+     * Creates a new upgrade path validation result.
+     *
+     * @param valid whether the upgrade path is valid
+     * @param intermediatePath intermediate versions in the upgrade path
+     * @param blockers blocking issues preventing upgrade
+     * @param warnings warning messages for the upgrade
+     */
     public UpgradePathValidationResult(
         boolean valid,
         List<ComponentVersion> intermediatePath,
@@ -357,6 +400,14 @@ public interface ComponentVersionCompatibilityChecker {
     private final String affectedElement;
     private final Severity severity;
 
+    /**
+     * Creates a new breaking change.
+     *
+     * @param type type of breaking change
+     * @param description description of the change
+     * @param affectedElement element affected by the change
+     * @param severity severity level of the change
+     */
     public BreakingChange(
         BreakingChangeType type, String description, String affectedElement, Severity severity) {
       this.type = type;
@@ -388,6 +439,13 @@ public interface ComponentVersionCompatibilityChecker {
     private final String description;
     private final String affectedElement;
 
+    /**
+     * Creates a new compatible change.
+     *
+     * @param type type of compatible change
+     * @param description description of the change
+     * @param affectedElement element affected by the change
+     */
     public CompatibleChange(CompatibleChangeType type, String description, String affectedElement) {
       this.type = type;
       this.description = description;
@@ -416,6 +474,16 @@ public interface ComponentVersionCompatibilityChecker {
     private final CompatibilityLevel level;
     private final String description;
 
+    /**
+     * Creates a new compatibility rule.
+     *
+     * @param id unique identifier for the rule
+     * @param componentType type of component this rule applies to
+     * @param sourcePattern pattern for source versions
+     * @param targetPattern pattern for target versions
+     * @param level compatibility level this rule provides
+     * @param description description of the rule
+     */
     public CompatibilityRule(
         String id,
         String componentType,
@@ -474,6 +542,12 @@ public interface ComponentVersionCompatibilityChecker {
       return type;
     }
 
+    /**
+     * Checks if this pattern matches the given version.
+     *
+     * @param version version to match against
+     * @return true if the pattern matches the version
+     */
     public boolean matches(ComponentVersion version) {
       switch (type) {
         case EXACT:

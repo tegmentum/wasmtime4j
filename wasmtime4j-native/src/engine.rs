@@ -482,7 +482,7 @@ impl EngineConfigSummary {
 }
 
 /// WebAssembly features that can be queried
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WasmFeature {
     /// WebAssembly threads proposal support
     Threads,

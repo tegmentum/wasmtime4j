@@ -519,6 +519,13 @@ public final class WitInterfaceLinker {
     private final String message;
     private final List<String> errors;
 
+    /**
+     * Creates a new link compatibility result.
+     *
+     * @param compatible whether the link is compatible
+     * @param message descriptive message about compatibility
+     * @param errors list of compatibility errors
+     */
     public LinkCompatibilityResult(
         final boolean compatible, final String message, final List<String> errors) {
       this.compatible = compatible;
@@ -549,6 +556,13 @@ public final class WitInterfaceLinker {
     private final String message;
     private final List<String> issues;
 
+    /**
+     * Creates a new interface compatibility result.
+     *
+     * @param compatible whether the interface is compatible
+     * @param message descriptive message about compatibility
+     * @param issues list of compatibility issues
+     */
     public InterfaceCompatibilityResult(
         final boolean compatible, final String message, final List<String> issues) {
       this.compatible = compatible;
@@ -577,6 +591,15 @@ public final class WitInterfaceLinker {
     private final List<ComponentLink> links;
     private final LinkingManifest manifest;
 
+    /**
+     * Creates a new component link result.
+     *
+     * @param success whether the linking was successful
+     * @param message descriptive message about the result
+     * @param components list of linked components
+     * @param links list of component links
+     * @param manifest linking manifest
+     */
     public ComponentLinkResult(
         final boolean success,
         final String message,
@@ -619,6 +642,15 @@ public final class WitInterfaceLinker {
     private final WitInterfaceDefinition providerInterface;
     private final WitInterfaceDefinition consumerInterface;
 
+    /**
+     * Creates a new interface binding.
+     *
+     * @param providerId identifier of the provider component
+     * @param consumerId identifier of the consumer component
+     * @param interfaceName name of the interface being bound
+     * @param providerInterface provider interface definition
+     * @param consumerInterface consumer interface definition
+     */
     public InterfaceBinding(
         final String providerId,
         final String consumerId,
@@ -661,6 +693,15 @@ public final class WitInterfaceLinker {
     private final ComponentLinkType linkType;
     private final Map<String, Object> metadata;
 
+    /**
+     * Creates a new component link.
+     *
+     * @param providerId identifier of the provider component
+     * @param consumerId identifier of the consumer component
+     * @param interfaceName name of the interface being linked
+     * @param linkType type of the component link
+     * @param metadata additional link metadata
+     */
     public ComponentLink(
         final String providerId,
         final String consumerId,
@@ -717,6 +758,13 @@ public final class WitInterfaceLinker {
     private final List<String> linkIds;
     private final Map<String, Object> metadata;
 
+    /**
+     * Creates a new linking manifest.
+     *
+     * @param componentIds list of component identifiers
+     * @param linkIds list of link identifiers
+     * @param metadata additional manifest metadata
+     */
     public LinkingManifest(
         final List<String> componentIds,
         final List<String> linkIds,

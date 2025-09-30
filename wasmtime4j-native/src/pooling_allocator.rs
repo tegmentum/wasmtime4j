@@ -7,7 +7,7 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use wasmtime::{Config, Engine, InstanceAllocationStrategy, PoolingAllocationConfig};
+use wasmtime::{Config, InstanceAllocationStrategy, PoolingAllocationConfig};
 
 /// Statistics for pool usage monitoring
 #[derive(Debug, Clone)]

@@ -11,19 +11,15 @@
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, Instant, SystemTime};
-use std::path::{Path, PathBuf};
-use std::net::{IpAddr, SocketAddr};
-use std::fs;
-use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
+use std::time::{Duration, Instant};
+use std::path::PathBuf;
+use std::os::raw::{c_char, c_int};
 
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-use ring::{digest, hmac};
-use ring::rand::SystemRandom;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::security::{AccessControlEngine, SecurityCapability, AuditLogger, AuditLogEntry, AuditEventType, AuditResult, Identity};
+use crate::security::{AccessControlEngine, AuditLogEntry, AuditEventType, AuditResult};
 
 /// Global WASI security manager
 static WASI_SECURITY_MANAGER: once_cell::sync::Lazy<WasiSecurityManager> =
@@ -963,7 +959,7 @@ impl Default for WasiSecurityConfig {
             enable_threat_detection: true,
             default_session_timeout: 3600, // 1 hour
             max_concurrent_sessions: 100,
-            audit_log_path: PathBuf::from("/var/log/wasmtime4j/wasi_security.log"),
+            audit_log_path: PathBuf::from("./target/test_logs/wasi_security.log"),
             enable_capability_delegation: true,
             max_delegation_depth: 3,
         }

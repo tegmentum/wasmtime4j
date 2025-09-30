@@ -209,8 +209,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof PrimitiveTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof PrimitiveTypeKind)) {
+        return false;
+      }
       return primitive == ((PrimitiveTypeKind) obj).primitive;
     }
 
@@ -273,8 +277,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof RecordTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof RecordTypeKind)) {
+        return false;
+      }
       return fields.equals(((RecordTypeKind) obj).fields);
     }
 
@@ -337,8 +345,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof VariantTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof VariantTypeKind)) {
+        return false;
+      }
       return cases.equals(((VariantTypeKind) obj).cases);
     }
 
@@ -401,8 +413,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof EnumTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof EnumTypeKind)) {
+        return false;
+      }
       return values.equals(((EnumTypeKind) obj).values);
     }
 
@@ -438,9 +454,15 @@ public abstract class WitTypeKind {
     public Optional<Integer> getSizeBytes() {
       // Size depends on number of flags (1, 2, 4, or 8 bytes)
       final int flagCount = flags.size();
-      if (flagCount <= 8) return Optional.of(1);
-      if (flagCount <= 16) return Optional.of(2);
-      if (flagCount <= 32) return Optional.of(4);
+      if (flagCount <= 8) {
+        return Optional.of(1);
+      }
+      if (flagCount <= 16) {
+        return Optional.of(2);
+      }
+      if (flagCount <= 32) {
+        return Optional.of(4);
+      }
       return Optional.of(8);
     }
 
@@ -470,8 +492,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof FlagsTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof FlagsTypeKind)) {
+        return false;
+      }
       return flags.equals(((FlagsTypeKind) obj).flags);
     }
 
@@ -534,8 +560,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof ListTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ListTypeKind)) {
+        return false;
+      }
       return elementType.equals(((ListTypeKind) obj).elementType);
     }
 
@@ -598,8 +628,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof OptionTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof OptionTypeKind)) {
+        return false;
+      }
       return innerType.equals(((OptionTypeKind) obj).innerType);
     }
 
@@ -669,8 +703,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof ResultTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ResultTypeKind)) {
+        return false;
+      }
       final ResultTypeKind that = (ResultTypeKind) obj;
       return Objects.equals(okType, that.okType) && Objects.equals(errorType, that.errorType);
     }
@@ -734,8 +772,12 @@ public abstract class WitTypeKind {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof ResourceTypeKind)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ResourceTypeKind)) {
+        return false;
+      }
       return resourceId.equals(((ResourceTypeKind) obj).resourceId);
     }
 

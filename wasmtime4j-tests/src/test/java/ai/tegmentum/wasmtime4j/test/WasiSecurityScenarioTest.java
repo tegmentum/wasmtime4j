@@ -15,7 +15,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,98 +29,197 @@ import org.junit.jupiter.params.provider.EnumSource;
 /**
  * Comprehensive test suite for WASI security violation scenarios.
  *
- * <p>This test class verifies proper error handling for WASI security policy violations,
- * including unauthorized file access, network restrictions, resource limit violations,
- * and component security boundaries.
+ * <p>This test class verifies proper error handling for WASI security policy violations, including
+ * unauthorized file access, network restrictions, resource limit violations, and component security
+ * boundaries.
  */
 @DisplayName("WASI Security Scenario Test Suite")
 class WasiSecurityScenarioTest {
 
   /**
-   * Simple WASI module that attempts to read a file.
-   * This module uses WASI Preview 1 interface to perform file operations.
+   * Simple WASI module that attempts to read a file. This module uses WASI Preview 1 interface to
+   * perform file operations.
    */
   private static final byte[] WASI_FILE_READ_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x0C, // Section size
     0x02, // 2 types
-    0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // Type 0: (i32, i32) -> i32
-    0x60, 0x01, 0x7F, 0x01, 0x7F, // Type 1: (i32) -> i32
+    0x60,
+    0x02,
+    0x7F,
+    0x7F,
+    0x01,
+    0x7F, // Type 0: (i32, i32) -> i32
+    0x60,
+    0x01,
+    0x7F,
+    0x01,
+    0x7F, // Type 1: (i32) -> i32
     0x02, // Import section
     0x1A, // Section size
     0x02, // 2 imports
-    0x04, 'w', 'a', 's', 'i', // Module name "wasi"
-    0x07, 'f', 'd', '_', 'r', 'e', 'a', 'd', // Import name "fd_read"
-    0x00, 0x00, // Function type 0
-    0x04, 'w', 'a', 's', 'i', // Module name "wasi"
-    0x08, 'f', 'd', '_', 'c', 'l', 'o', 's', 'e', // Import name "fd_close"
-    0x00, 0x01, // Function type 1
+    0x04,
+    'w',
+    'a',
+    's',
+    'i', // Module name "wasi"
+    0x07,
+    'f',
+    'd',
+    '_',
+    'r',
+    'e',
+    'a',
+    'd', // Import name "fd_read"
+    0x00,
+    0x00, // Function type 0
+    0x04,
+    'w',
+    'a',
+    's',
+    'i', // Module name "wasi"
+    0x08,
+    'f',
+    'd',
+    '_',
+    'c',
+    'l',
+    'o',
+    's',
+    'e', // Import name "fd_close"
+    0x00,
+    0x01, // Function type 1
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type 0
+    0x01,
+    0x00, // 1 function with type 0
     0x07, // Export section
     0x0D, // Section size
     0x01, // 1 export
-    0x09, 'r', 'e', 'a', 'd', '_', 'f', 'i', 'l', 'e', // Export name "read_file"
-    0x00, 0x02, // Function export with index 2 (after imports)
+    0x09,
+    'r',
+    'e',
+    'a',
+    'd',
+    '_',
+    'f',
+    'i',
+    'l',
+    'e', // Export name "read_file"
+    0x00,
+    0x02, // Function export with index 2 (after imports)
     0x0A, // Code section
     0x0F, // Section size
     0x01, // 1 function body
     0x0D, // Body size
     0x00, // No locals
-    0x41, 0x03, // i32.const 3 (stdin fd)
-    0x41, 0x00, // i32.const 0 (buffer address)
-    0x41, 0x10, // i32.const 16 (buffer size)
-    0x41, 0x00, // i32.const 0 (bytes read pointer)
-    0x10, 0x00, // call import 0 (fd_read)
+    0x41,
+    0x03, // i32.const 3 (stdin fd)
+    0x41,
+    0x00, // i32.const 0 (buffer address)
+    0x41,
+    0x10, // i32.const 16 (buffer size)
+    0x41,
+    0x00, // i32.const 0 (bytes read pointer)
+    0x10,
+    0x00, // call import 0 (fd_read)
     0x0B // End instruction
   };
 
-  /**
-   * WASI module that attempts to write to a file.
-   */
+  /** WASI module that attempts to write to a file. */
   private static final byte[] WASI_FILE_WRITE_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x07, // Section size
     0x01, // 1 type
-    0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // Type 0: (i32, i32) -> i32
+    0x60,
+    0x02,
+    0x7F,
+    0x7F,
+    0x01,
+    0x7F, // Type 0: (i32, i32) -> i32
     0x02, // Import section
     0x12, // Section size
     0x01, // 1 import
-    0x04, 'w', 'a', 's', 'i', // Module name "wasi"
-    0x08, 'f', 'd', '_', 'w', 'r', 'i', 't', 'e', // Import name "fd_write"
-    0x00, 0x00, // Function type 0
+    0x04,
+    'w',
+    'a',
+    's',
+    'i', // Module name "wasi"
+    0x08,
+    'f',
+    'd',
+    '_',
+    'w',
+    'r',
+    'i',
+    't',
+    'e', // Import name "fd_write"
+    0x00,
+    0x00, // Function type 0
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type 0
+    0x01,
+    0x00, // 1 function with type 0
     0x05, // Memory section
     0x03, // Section size
     0x01, // 1 memory
-    0x00, 0x01, // Memory limits: minimum 1 page
+    0x00,
+    0x01, // Memory limits: minimum 1 page
     0x07, // Export section
     0x0E, // Section size
     0x01, // 1 export
-    0x0A, 'w', 'r', 'i', 't', 'e', '_', 'f', 'i', 'l', 'e', // Export name "write_file"
-    0x00, 0x01, // Function export with index 1 (after imports)
+    0x0A,
+    'w',
+    'r',
+    'i',
+    't',
+    'e',
+    '_',
+    'f',
+    'i',
+    'l',
+    'e', // Export name "write_file"
+    0x00,
+    0x01, // Function export with index 1 (after imports)
     0x0A, // Code section
     0x0F, // Section size
     0x01, // 1 function body
     0x0D, // Body size
     0x00, // No locals
-    0x41, 0x01, // i32.const 1 (stdout fd)
-    0x41, 0x00, // i32.const 0 (iov address)
-    0x41, 0x01, // i32.const 1 (iov count)
-    0x41, 0x10, // i32.const 16 (bytes written pointer)
-    0x10, 0x00, // call import 0 (fd_write)
+    0x41,
+    0x01, // i32.const 1 (stdout fd)
+    0x41,
+    0x00, // i32.const 0 (iov address)
+    0x41,
+    0x01, // i32.const 1 (iov count)
+    0x41,
+    0x10, // i32.const 16 (bytes written pointer)
+    0x10,
+    0x00, // call import 0 (fd_write)
     0x0B // End instruction
   };
 
   @ParameterizedTest
   @EnumSource(RuntimeType.class)
   @DisplayName("Unauthorized file access throws WasiException")
-  void testUnauthorizedFileAccess(RuntimeType runtimeType, @TempDir Path tempDir) throws WasmException {
+  void testUnauthorizedFileAccess(RuntimeType runtimeType, @TempDir Path tempDir)
+      throws WasmException {
     if (!WasmRuntimeFactory.isRuntimeAvailable(runtimeType)) {
       return; // Skip if runtime not available
     }
@@ -263,28 +361,50 @@ class WasiSecurityScenarioTest {
 
       // Create module that tries to allocate excessive resources
       byte[] resourceHungryModule = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type index 0
+        0x01,
+        0x00, // 1 function with type index 0
         0x05, // Memory section
         0x04, // Section size
         0x01, // 1 memory
-        0x00, (byte) 0x80, 0x08, // Memory limits: minimum 1024 pages (64MB)
+        0x00,
+        (byte) 0x80,
+        0x08, // Memory limits: minimum 1024 pages (64MB)
         0x07, // Export section
         0x0C, // Section size
         0x01, // 1 export
-        0x08, 'a', 'l', 'l', 'o', 'c', 'a', 't', 'e', // Export name "allocate"
-        0x00, 0x00, // Function export with index 0
+        0x08,
+        'a',
+        'l',
+        'l',
+        'o',
+        'c',
+        'a',
+        't',
+        'e', // Export name "allocate"
+        0x00,
+        0x00, // Function export with index 0
         0x0A, // Code section
         0x04, // Section size
         0x01, // 1 function body
         0x02, // Body size
-        0x00, 0x0B // No locals, end instruction
+        0x00,
+        0x0B // No locals, end instruction
       };
 
       try {
@@ -302,8 +422,7 @@ class WasiSecurityScenarioTest {
                 || e.getMessage().toLowerCase().contains("memory")
                 || e.getMessage().toLowerCase().contains("limit")
                 || e.getMessage().toLowerCase().contains("allocation"),
-            "Exception message should mention resource/memory/limit/allocation: "
-                + e.getMessage());
+            "Exception message should mention resource/memory/limit/allocation: " + e.getMessage());
 
         if (e instanceof WasiException) {
           WasiException wasiEx = (WasiException) e;
@@ -325,31 +444,67 @@ class WasiSecurityScenarioTest {
       // Create module that attempts network operations
       // This is a simplified test - actual network modules would be more complex
       byte[] networkModule = {
-        0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+        0x00,
+        0x61,
+        0x73,
+        0x6d,
+        0x01,
+        0x00,
+        0x00,
+        0x00, // Magic + version
         0x01, // Type section
         0x04, // Section size
         0x01, // 1 type
-        0x60, 0x00, 0x00, // Function type: () -> ()
+        0x60,
+        0x00,
+        0x00, // Function type: () -> ()
         0x02, // Import section
         0x15, // Section size
         0x01, // 1 import
-        0x04, 'w', 'a', 's', 'i', // Module name "wasi"
-        0x0B, 's', 'o', 'c', 'k', '_', 'c', 'o', 'n', 'n', 'e', 'c', 't', // Import name
-        0x00, 0x00, // Function type 0
+        0x04,
+        'w',
+        'a',
+        's',
+        'i', // Module name "wasi"
+        0x0B,
+        's',
+        'o',
+        'c',
+        'k',
+        '_',
+        'c',
+        'o',
+        'n',
+        'n',
+        'e',
+        'c',
+        't', // Import name
+        0x00,
+        0x00, // Function type 0
         0x03, // Function section
         0x02, // Section size
-        0x01, 0x00, // 1 function with type 0
+        0x01,
+        0x00, // 1 function with type 0
         0x07, // Export section
         0x0B, // Section size
         0x01, // 1 export
-        0x07, 'c', 'o', 'n', 'n', 'e', 'c', 't', // Export name "connect"
-        0x00, 0x01, // Function export with index 1
+        0x07,
+        'c',
+        'o',
+        'n',
+        'n',
+        'e',
+        'c',
+        't', // Export name "connect"
+        0x00,
+        0x01, // Function export with index 1
         0x0A, // Code section
         0x06, // Section size
         0x01, // 1 function body
         0x04, // Body size
         0x00, // No locals
-        0x10, 0x00, // call import 0
+        0x10,
+        0x00, // call import 0
         0x0B // End instruction
       };
 
@@ -497,7 +652,8 @@ class WasiSecurityScenarioTest {
             });
       }
 
-      assertTrue(latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
+      assertTrue(
+          latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
       executor.shutdown();
 
       // Most or all operations should result in security exceptions
@@ -574,23 +730,39 @@ class WasiSecurityScenarioTest {
 
   /** Simple valid WebAssembly module for basic operations. */
   private static final byte[] SIMPLE_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x04, // Section size
     0x01, // 1 function body
     0x02, // Body size
-    0x00, 0x0B // No locals, end instruction
+    0x00,
+    0x0B // No locals, end instruction
   };
 }

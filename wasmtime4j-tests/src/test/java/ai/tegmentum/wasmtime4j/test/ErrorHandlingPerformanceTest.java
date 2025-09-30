@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -28,51 +27,83 @@ import org.junit.jupiter.params.provider.EnumSource;
  * Performance test harness for measuring error handling overhead.
  *
  * <p>This test class measures the performance impact of error handling in various scenarios,
- * ensuring that error processing doesn't introduce significant overhead to normal operations
- * and that error handling itself is efficient.
+ * ensuring that error processing doesn't introduce significant overhead to normal operations and
+ * that error handling itself is efficient.
  */
 @DisplayName("Error Handling Performance Test Harness")
 class ErrorHandlingPerformanceTest {
 
   /** Simple valid WebAssembly module for baseline performance measurements. */
   private static final byte[] VALID_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x06, // Section size
     0x01, // 1 function body
     0x04, // Body size
     0x00, // No locals
-    0x41, 0x2A, // i32.const 42
+    0x41,
+    0x2A, // i32.const 42
     0x0B // End instruction
   };
 
   /** WebAssembly module that triggers trap (unreachable instruction). */
   private static final byte[] TRAP_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'r', 'a', 'p', // Export name "trap"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'r',
+    'a',
+    'p', // Export name "trap"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x05, // Section size
     0x01, // 1 function body
@@ -85,9 +116,7 @@ class ErrorHandlingPerformanceTest {
   /** Invalid WebAssembly module (wrong magic number). */
   private static final byte[] INVALID_MODULE = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
-  /**
-   * Performance measurement result.
-   */
+  /** Performance measurement result. */
   private static class PerformanceResult {
     final long totalTime;
     final long operationCount;
@@ -332,14 +361,16 @@ class ErrorHandlingPerformanceTest {
             });
       }
 
-      assertTrue(latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
+      assertTrue(
+          latch.await(30, TimeUnit.SECONDS), "All threads should complete within 30 seconds");
       executor.shutdown();
 
       long testEnd = System.nanoTime();
       long testDuration = testEnd - testStart;
 
       double averageErrorTime = (double) totalErrorTime.get() / errorCount.get();
-      double throughput = (double) errorCount.get() / (testDuration / 1_000_000_000.0); // errors/sec
+      double throughput =
+          (double) errorCount.get() / (testDuration / 1_000_000_000.0); // errors/sec
 
       System.out.printf(
           "Concurrent error handling: %.2f errors/sec, %.2fns avg per error%n",

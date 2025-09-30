@@ -6,9 +6,8 @@ import java.util.Objects;
 /**
  * Represents a change made during WIT interface evolution.
  *
- * <p>This class encapsulates information about individual changes made when evolving
- * from one WIT interface version to another, including the change type, impact,
- * and migration guidance.
+ * <p>This class encapsulates information about individual changes made when evolving from one WIT
+ * interface version to another, including the change type, impact, and migration guidance.
  *
  * @since 1.0.0
  */
@@ -49,7 +48,8 @@ public final class WitEvolutionChange {
     this.location = Objects.requireNonNull(location, "location must not be null");
     this.impact = Objects.requireNonNull(impact, "impact must not be null");
     this.breaking = breaking;
-    this.migrationSteps = List.copyOf(Objects.requireNonNull(migrationSteps, "migrationSteps must not be null"));
+    this.migrationSteps =
+        List.copyOf(Objects.requireNonNull(migrationSteps, "migrationSteps must not be null"));
     this.oldValue = oldValue;
     this.newValue = newValue;
   }
@@ -61,7 +61,8 @@ public final class WitEvolutionChange {
    * @param signature the function signature
    * @return function addition change
    */
-  public static WitEvolutionChange functionAdded(final String functionName, final String signature) {
+  public static WitEvolutionChange functionAdded(
+      final String functionName, final String signature) {
     return new WitEvolutionChange(
         ChangeType.FUNCTION_ADDED,
         "Function added: " + functionName,
@@ -80,7 +81,8 @@ public final class WitEvolutionChange {
    * @param signature the function signature
    * @return function removal change
    */
-  public static WitEvolutionChange functionRemoved(final String functionName, final String signature) {
+  public static WitEvolutionChange functionRemoved(
+      final String functionName, final String signature) {
     return new WitEvolutionChange(
         ChangeType.FUNCTION_REMOVED,
         "Function removed: " + functionName,
@@ -101,9 +103,7 @@ public final class WitEvolutionChange {
    * @return function signature change
    */
   public static WitEvolutionChange functionSignatureChanged(
-      final String functionName,
-      final String oldSignature,
-      final String newSignature) {
+      final String functionName, final String oldSignature, final String newSignature) {
     return new WitEvolutionChange(
         ChangeType.FUNCTION_SIGNATURE_CHANGED,
         "Function signature changed: " + functionName,
@@ -148,7 +148,9 @@ public final class WitEvolutionChange {
         "interface.types." + typeName,
         ChangeImpact.MEDIUM,
         true,
-        List.of("Replace usage of " + typeName + " with alternative type", "Use type adapters if available"),
+        List.of(
+            "Replace usage of " + typeName + " with alternative type",
+            "Use type adapters if available"),
         typeDefinition,
         null);
   }
@@ -261,77 +263,81 @@ public final class WitEvolutionChange {
       return false;
     }
     final WitEvolutionChange that = (WitEvolutionChange) obj;
-    return breaking == that.breaking &&
-        type == that.type &&
-        Objects.equals(description, that.description) &&
-        Objects.equals(location, that.location) &&
-        impact == that.impact &&
-        Objects.equals(migrationSteps, that.migrationSteps) &&
-        Objects.equals(oldValue, that.oldValue) &&
-        Objects.equals(newValue, that.newValue);
+    return breaking == that.breaking
+        && type == that.type
+        && Objects.equals(description, that.description)
+        && Objects.equals(location, that.location)
+        && impact == that.impact
+        && Objects.equals(migrationSteps, that.migrationSteps)
+        && Objects.equals(oldValue, that.oldValue)
+        && Objects.equals(newValue, that.newValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, description, location, impact, breaking, migrationSteps, oldValue, newValue);
+    return Objects.hash(
+        type, description, location, impact, breaking, migrationSteps, oldValue, newValue);
   }
 
   @Override
   public String toString() {
-    return "WitEvolutionChange{" +
-        "type=" + type +
-        ", description='" + description + '\'' +
-        ", location='" + location + '\'' +
-        ", impact=" + impact +
-        ", breaking=" + breaking +
-        '}';
+    return "WitEvolutionChange{"
+        + "type="
+        + type
+        + ", description='"
+        + description
+        + '\''
+        + ", location='"
+        + location
+        + '\''
+        + ", impact="
+        + impact
+        + ", breaking="
+        + breaking
+        + '}';
   }
 
-  /**
-   * Types of changes that can occur during interface evolution.
-   */
+  /** Types of changes that can occur during interface evolution. */
   public enum ChangeType {
-    /** Function was added */
+    /** Function was added. */
     FUNCTION_ADDED,
-    /** Function was removed */
+    /** Function was removed. */
     FUNCTION_REMOVED,
-    /** Function signature was changed */
+    /** Function signature was changed. */
     FUNCTION_SIGNATURE_CHANGED,
-    /** Function was renamed */
+    /** Function was renamed. */
     FUNCTION_RENAMED,
-    /** Type was added */
+    /** Type was added. */
     TYPE_ADDED,
-    /** Type was removed */
+    /** Type was removed. */
     TYPE_REMOVED,
-    /** Type was modified */
+    /** Type was modified. */
     TYPE_MODIFIED,
-    /** Type was renamed */
+    /** Type was renamed. */
     TYPE_RENAMED,
-    /** Import was added */
+    /** Import was added. */
     IMPORT_ADDED,
-    /** Import was removed */
+    /** Import was removed. */
     IMPORT_REMOVED,
-    /** Export was added */
+    /** Export was added. */
     EXPORT_ADDED,
-    /** Export was removed */
+    /** Export was removed. */
     EXPORT_REMOVED,
-    /** Interface version changed */
+    /** Interface version changed. */
     VERSION_CHANGED,
-    /** Package name changed */
+    /** Package name changed. */
     PACKAGE_CHANGED
   }
 
-  /**
-   * Impact levels for changes.
-   */
+  /** Impact levels for changes. */
   public enum ChangeImpact {
-    /** Low impact - cosmetic or minor changes */
+    /** Low impact - cosmetic or minor changes. */
     LOW,
-    /** Medium impact - functional changes that may require attention */
+    /** Medium impact - functional changes that may require attention. */
     MEDIUM,
-    /** High impact - significant changes requiring code updates */
+    /** High impact - significant changes requiring code updates. */
     HIGH,
-    /** Critical impact - major breaking changes */
+    /** Critical impact - major breaking changes. */
     CRITICAL
   }
 }

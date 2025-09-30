@@ -19,15 +19,18 @@ public final class ProducersSection {
   private final List<ProducerEntry> sdk;
 
   private ProducersSection(final Builder builder) {
-    this.languages = builder.languages == null
-        ? java.util.Collections.emptyList()
-        : java.util.Collections.unmodifiableList(builder.languages);
-    this.processedBy = builder.processedBy == null
-        ? java.util.Collections.emptyList()
-        : java.util.Collections.unmodifiableList(builder.processedBy);
-    this.sdk = builder.sdk == null
-        ? java.util.Collections.emptyList()
-        : java.util.Collections.unmodifiableList(builder.sdk);
+    this.languages =
+        builder.languages == null
+            ? java.util.Collections.emptyList()
+            : java.util.Collections.unmodifiableList(builder.languages);
+    this.processedBy =
+        builder.processedBy == null
+            ? java.util.Collections.emptyList()
+            : java.util.Collections.unmodifiableList(builder.processedBy);
+    this.sdk =
+        builder.sdk == null
+            ? java.util.Collections.emptyList()
+            : java.util.Collections.unmodifiableList(builder.sdk);
   }
 
   /**
@@ -102,9 +105,7 @@ public final class ProducersSection {
       throw new IllegalArgumentException("Producer name cannot be null");
     }
 
-    return getAllEntries().stream()
-        .filter(entry -> name.equals(entry.getName()))
-        .findFirst();
+    return getAllEntries().stream().filter(entry -> name.equals(entry.getName())).findFirst();
   }
 
   /**
@@ -140,9 +141,7 @@ public final class ProducersSection {
     return new Builder();
   }
 
-  /**
-   * Builder for constructing ProducersSection instances.
-   */
+  /** Builder for constructing ProducersSection instances. */
   public static final class Builder {
     private List<ProducerEntry> languages;
     private List<ProducerEntry> processedBy;
@@ -247,9 +246,7 @@ public final class ProducersSection {
     }
   }
 
-  /**
-   * Represents a single producer entry in the producers section.
-   */
+  /** Represents a single producer entry in the producers section. */
   public static final class ProducerEntry {
     private final String name;
     private final String version;
@@ -263,15 +260,17 @@ public final class ProducersSection {
      * @param metadata additional metadata
      * @throws IllegalArgumentException if name is null or empty
      */
-    public ProducerEntry(final String name, final String version, final Map<String, String> metadata) {
+    public ProducerEntry(
+        final String name, final String version, final Map<String, String> metadata) {
       if (name == null || name.trim().isEmpty()) {
         throw new IllegalArgumentException("Producer name cannot be null or empty");
       }
       this.name = name;
       this.version = version;
-      this.metadata = metadata == null
-          ? java.util.Collections.emptyMap()
-          : java.util.Collections.unmodifiableMap(new java.util.HashMap<>(metadata));
+      this.metadata =
+          metadata == null
+              ? java.util.Collections.emptyMap()
+              : java.util.Collections.unmodifiableMap(new java.util.HashMap<>(metadata));
     }
 
     /**
@@ -364,15 +363,13 @@ public final class ProducersSection {
     }
   }
 
-  /**
-   * Types of producer entries.
-   */
+  /** Types of producer entries. */
   public enum ProducerType {
-    /** Programming language used to create the module */
+    /** Programming language used to create the module. */
     LANGUAGE,
-    /** Tool that processed the module */
+    /** Tool that processed the module. */
     PROCESSED_BY,
-    /** SDK used to create the module */
+    /** SDK used to create the module. */
     SDK
   }
 

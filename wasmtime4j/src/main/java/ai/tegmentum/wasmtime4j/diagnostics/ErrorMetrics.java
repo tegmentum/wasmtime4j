@@ -7,11 +7,11 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * Collects and provides metrics about WebAssembly error handling performance.
  *
- * <p>This class tracks various error-related metrics including counts, durations, and
- * performance characteristics. All operations are thread-safe and designed for high-concurrency
- * environments.
+ * <p>This class tracks various error-related metrics including counts, durations, and performance
+ * characteristics. All operations are thread-safe and designed for high-concurrency environments.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * ErrorMetrics metrics = errorLogger.getMetrics();
  * System.out.println("Total errors: " + metrics.getTotalErrorCount());
@@ -56,36 +56,28 @@ public final class ErrorMetrics {
     updateErrorTimestamp();
   }
 
-  /**
-   * Records a runtime error.
-   */
+  /** Records a runtime error. */
   public void recordRuntimeError() {
     totalErrorCount.increment();
     runtimeErrorCount.increment();
     updateErrorTimestamp();
   }
 
-  /**
-   * Records a validation error.
-   */
+  /** Records a validation error. */
   public void recordValidationError() {
     totalErrorCount.increment();
     validationErrorCount.increment();
     updateErrorTimestamp();
   }
 
-  /**
-   * Records a resource management error.
-   */
+  /** Records a resource management error. */
   public void recordResourceError() {
     totalErrorCount.increment();
     resourceErrorCount.increment();
     updateErrorTimestamp();
   }
 
-  /**
-   * Records a security violation error.
-   */
+  /** Records a security violation error. */
   public void recordSecurityError() {
     totalErrorCount.increment();
     securityErrorCount.increment();
@@ -232,9 +224,7 @@ public final class ErrorMetrics {
     return (double) count / (timespan / 1000.0);
   }
 
-  /**
-   * Resets all metrics to their initial state.
-   */
+  /** Resets all metrics to their initial state. */
   public void reset() {
     totalErrorCount.reset();
     compilationErrorCount.reset();
@@ -269,8 +259,7 @@ public final class ErrorMetrics {
         getValidationErrorCount(),
         getResourceErrorCount(),
         getSecurityErrorCount(),
-        getErrorRate()
-    );
+        getErrorRate());
   }
 
   private void updateDurationBounds(final long duration) {

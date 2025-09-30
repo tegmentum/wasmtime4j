@@ -139,7 +139,8 @@ public final class JniComponentImpl implements Component {
 
     try {
       final Set<String> exports = new HashSet<>();
-      final int exportCount = JniComponent.nativeGetComponentExportCount(nativeComponent.getNativeHandle());
+      final int exportCount =
+          JniComponent.nativeGetComponentExportCount(nativeComponent.getNativeHandle());
 
       // For now, generate placeholder names based on export count
       // Full implementation would enumerate actual export names
@@ -159,7 +160,8 @@ public final class JniComponentImpl implements Component {
 
     try {
       final Set<String> imports = new HashSet<>();
-      final int importCount = JniComponent.nativeGetComponentImportCount(nativeComponent.getNativeHandle());
+      final int importCount =
+          JniComponent.nativeGetComponentImportCount(nativeComponent.getNativeHandle());
 
       // For now, generate placeholder names based on import count
       // Full implementation would enumerate actual import names
@@ -244,8 +246,7 @@ public final class JniComponentImpl implements Component {
           "1.0.0",
           "ai.tegmentum.wasmtime4j",
           getExportedInterfaces(),
-          getImportedInterfaces()
-      );
+          getImportedInterfaces());
     } catch (final Exception e) {
       throw new WasmException("Failed to get WIT interface", e);
     }

@@ -1,13 +1,15 @@
 package ai.tegmentum.wasmtime4j;
 
-import org.junit.jupiter.api.Test;
-import java.util.Map;
-import java.util.HashMap;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Tests for NameSection functionality.
- */
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+/** Tests for NameSection functionality. */
 final class NameSectionTest {
 
   @Test
@@ -29,9 +31,7 @@ final class NameSectionTest {
 
   @Test
   void testNameSectionWithModuleName() {
-    final NameSection nameSection = NameSection.builder()
-        .setModuleName("test_module")
-        .build();
+    final NameSection nameSection = NameSection.builder().setModuleName("test_module").build();
 
     assertFalse(nameSection.isEmpty());
     assertTrue(nameSection.getModuleName().isPresent());
@@ -44,9 +44,7 @@ final class NameSectionTest {
     functionNames.put(0, "main");
     functionNames.put(1, "helper");
 
-    final NameSection nameSection = NameSection.builder()
-        .setFunctionNames(functionNames)
-        .build();
+    final NameSection nameSection = NameSection.builder().setFunctionNames(functionNames).build();
 
     assertFalse(nameSection.isEmpty());
     assertEquals(2, nameSection.getFunctionNames().size());
@@ -68,9 +66,7 @@ final class NameSectionTest {
     function1Locals.put(0, "value");
     localNames.put(1, function1Locals);
 
-    final NameSection nameSection = NameSection.builder()
-        .setLocalNames(localNames)
-        .build();
+    final NameSection nameSection = NameSection.builder().setLocalNames(localNames).build();
 
     assertFalse(nameSection.isEmpty());
     assertEquals(2, nameSection.getAllLocalNames().size());
@@ -114,17 +110,18 @@ final class NameSectionTest {
     final Map<Integer, String> tagNames = new HashMap<>();
     tagNames.put(0, "error_tag");
 
-    final NameSection nameSection = NameSection.builder()
-        .setModuleName("comprehensive_module")
-        .setFunctionNames(functionNames)
-        .setTypeNames(typeNames)
-        .setTableNames(tableNames)
-        .setMemoryNames(memoryNames)
-        .setGlobalNames(globalNames)
-        .setElementSegmentNames(elementNames)
-        .setDataSegmentNames(dataNames)
-        .setTagNames(tagNames)
-        .build();
+    final NameSection nameSection =
+        NameSection.builder()
+            .setModuleName("comprehensive_module")
+            .setFunctionNames(functionNames)
+            .setTypeNames(typeNames)
+            .setTableNames(tableNames)
+            .setMemoryNames(memoryNames)
+            .setGlobalNames(globalNames)
+            .setElementSegmentNames(elementNames)
+            .setDataSegmentNames(dataNames)
+            .setTagNames(tagNames)
+            .build();
 
     assertFalse(nameSection.isEmpty());
 
@@ -145,10 +142,8 @@ final class NameSectionTest {
     functionNames.put(0, "main");
     functionNames.put(1, "helper");
 
-    final NameSection nameSection = NameSection.builder()
-        .setModuleName("test_module")
-        .setFunctionNames(functionNames)
-        .build();
+    final NameSection nameSection =
+        NameSection.builder().setModuleName("test_module").setFunctionNames(functionNames).build();
 
     final String summary = nameSection.getSummary();
     assertTrue(summary.contains("test_module"));
@@ -157,9 +152,7 @@ final class NameSectionTest {
 
   @Test
   void testNameSectionToString() {
-    final NameSection nameSection = NameSection.builder()
-        .setModuleName("test")
-        .build();
+    final NameSection nameSection = NameSection.builder().setModuleName("test").build();
 
     final String str = nameSection.toString();
     assertTrue(str.contains("test"));
@@ -170,8 +163,8 @@ final class NameSectionTest {
     final Map<Integer, String> originalFunctionNames = new HashMap<>();
     originalFunctionNames.put(0, "main");
 
-    final NameSection.Builder builder = NameSection.builder()
-        .setFunctionNames(originalFunctionNames);
+    final NameSection.Builder builder =
+        NameSection.builder().setFunctionNames(originalFunctionNames);
 
     // Modify original map
     originalFunctionNames.put(1, "added_after");
@@ -188,13 +181,10 @@ final class NameSectionTest {
     final Map<Integer, String> functionNames = new HashMap<>();
     functionNames.put(0, "main");
 
-    final NameSection nameSection = NameSection.builder()
-        .setFunctionNames(functionNames)
-        .build();
+    final NameSection nameSection = NameSection.builder().setFunctionNames(functionNames).build();
 
     final Map<Integer, String> retrievedNames = nameSection.getFunctionNames();
 
-    assertThrows(UnsupportedOperationException.class, () ->
-        retrievedNames.put(1, "hacker"));
+    assertThrows(UnsupportedOperationException.class, () -> retrievedNames.put(1, "hacker"));
   }
 }

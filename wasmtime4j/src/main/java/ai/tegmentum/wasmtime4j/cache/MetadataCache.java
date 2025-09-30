@@ -111,10 +111,18 @@ public final class MetadataCache {
     }
 
     private int estimateSize(final Object obj) {
-      if (obj == null) return 0;
-      if (obj instanceof String) return ((String) obj).length() * 2;
-      if (obj instanceof byte[]) return ((byte[]) obj).length;
-      if (obj instanceof Map<?, ?>) return ((Map<?, ?>) obj).size() * 64;
+      if (obj == null) {
+        return 0;
+      }
+      if (obj instanceof String) {
+        return ((String) obj).length() * 2;
+      }
+      if (obj instanceof byte[]) {
+        return ((byte[]) obj).length;
+      }
+      if (obj instanceof Map<?, ?>) {
+        return ((Map<?, ?>) obj).size() * 64;
+      }
       return 64; // Default estimate
     }
   }
@@ -145,6 +153,18 @@ public final class MetadataCache {
     private final TypeValidationResult validationResult;
     private final long createdTime;
 
+    /**
+     * Creates new module metadata.
+     *
+     * @param moduleHash hash of the module
+     * @param exportedFunctions exported function signatures
+     * @param globals global variable metadata
+     * @param memories memory metadata
+     * @param tables table metadata
+     * @param importedModules set of imported module names
+     * @param customSections custom section data
+     * @param validationResult type validation result
+     */
     public ModuleMetadata(
         final String moduleHash,
         final Map<String, FunctionSignature> exportedFunctions,
@@ -216,6 +236,14 @@ public final class MetadataCache {
     private final String[] returnTypes;
     private final boolean isHostFunction;
 
+    /**
+     * Creates a new function signature.
+     *
+     * @param name function name
+     * @param parameterTypes parameter type names
+     * @param returnTypes return type names
+     * @param isHostFunction whether this is a host function
+     */
     public FunctionSignature(
         final String name,
         final String[] parameterTypes,
@@ -251,6 +279,14 @@ public final class MetadataCache {
     private final boolean mutable;
     private final Object initialValue;
 
+    /**
+     * Creates new global metadata.
+     *
+     * @param name global variable name
+     * @param type global variable type
+     * @param mutable whether the global is mutable
+     * @param initialValue initial value of the global
+     */
     public GlobalMetadata(
         final String name, final String type, final boolean mutable, final Object initialValue) {
       this.name = name;
@@ -283,6 +319,14 @@ public final class MetadataCache {
     private final long maxPages;
     private final boolean shared;
 
+    /**
+     * Creates new memory metadata.
+     *
+     * @param name memory name
+     * @param minPages minimum number of pages
+     * @param maxPages maximum number of pages
+     * @param shared whether memory is shared
+     */
     public MemoryMetadata(
         final String name, final long minPages, final long maxPages, final boolean shared) {
       this.name = name;
@@ -315,6 +359,14 @@ public final class MetadataCache {
     private final long minSize;
     private final long maxSize;
 
+    /**
+     * Creates new table metadata.
+     *
+     * @param name table name
+     * @param elementType type of table elements
+     * @param minSize minimum table size
+     * @param maxSize maximum table size
+     */
     public TableMetadata(
         final String name, final String elementType, final long minSize, final long maxSize) {
       this.name = name;
@@ -347,6 +399,14 @@ public final class MetadataCache {
     private final String[] warnings;
     private final long validationTimeMs;
 
+    /**
+     * Creates a new type validation result.
+     *
+     * @param valid whether validation passed
+     * @param errors validation error messages
+     * @param warnings validation warning messages
+     * @param validationTimeMs time taken for validation in milliseconds
+     */
     public TypeValidationResult(
         final boolean valid,
         final String[] errors,

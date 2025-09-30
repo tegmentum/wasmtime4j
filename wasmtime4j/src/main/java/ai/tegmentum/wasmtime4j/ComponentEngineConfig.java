@@ -265,4 +265,14 @@ public final class ComponentEngineConfig {
       return config;
     }
   }
+
+  /**
+   * Converts this ComponentEngineConfig to a basic EngineConfig for interface compatibility.
+   *
+   * @return a basic EngineConfig with default settings suitable for component execution
+   */
+  public EngineConfig toEngineConfig() {
+    // Create a default EngineConfig suitable for component model execution
+    return new EngineConfig();
+  }
 }

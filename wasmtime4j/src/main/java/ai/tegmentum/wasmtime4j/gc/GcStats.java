@@ -388,6 +388,12 @@ public final class GcStats {
       return this;
     }
 
+    /**
+     * Sets the map of objects by generation.
+     *
+     * @param objectsByGeneration the map of generation to object count
+     * @return this builder
+     */
     public Builder objectsByGeneration(final Map<Integer, Long> objectsByGeneration) {
       this.objectsByGeneration =
           new java.util.HashMap<>(

@@ -43,8 +43,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive test suite for WebAssembly exception handling foundation.
  *
  * <p>This test suite validates the exception handling foundation implemented for Task #309,
- * including exception tag creation, payload validation, cross-language exception propagation,
- * GC integration, and debugging support.
+ * including exception tag creation, payload validation, cross-language exception propagation, GC
+ * integration, and debugging support.
  *
  * @since 1.0.0
  */
@@ -63,12 +63,11 @@ class ExceptionHandlingFoundationTest {
   void setUp() {
     // Initialize GC runtime for GC-aware exception handling tests
     try {
-      gcRuntime = GcRuntime.builder()
-          .enableGcProfiling(true)
-          .enableMemoryLeakDetection(true)
-          .build();
+      gcRuntime =
+          GcRuntime.builder().enableGcProfiling(true).enableMemoryLeakDetection(true).build();
     } catch (final Exception e) {
-      LOGGER.warning("Failed to initialize GC runtime, GC tests will be skipped: " + e.getMessage());
+      LOGGER.warning(
+          "Failed to initialize GC runtime, GC tests will be skipped: " + e.getMessage());
       gcRuntime = null;
     }
 
@@ -119,7 +118,8 @@ class ExceptionHandlingFoundationTest {
             WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED);
 
     assertNotNull(baseException);
-    assertEquals(WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
+    assertEquals(
+        WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
         baseException.getExceptionErrorCode());
     assertInstanceOf(WasmtimeException.class, baseException);
     assertInstanceOf(WasmException.class, baseException);
@@ -128,7 +128,8 @@ class ExceptionHandlingFoundationTest {
     final WasmExceptionHandlingException.TagCreationException tagException =
         new WasmExceptionHandlingException.TagCreationException("Failed to create tag", "test_tag");
     assertNotNull(tagException);
-    assertEquals(WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
+    assertEquals(
+        WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
         tagException.getExceptionErrorCode());
 
     final WasmExceptionHandlingException.UnwindingException unwindException =
@@ -155,20 +156,23 @@ class ExceptionHandlingFoundationTest {
     assertTrue(tag.getNativeHandle() > 0);
 
     // Test duplicate tag creation should fail
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.createExceptionTag("test_tag", paramTypes, false));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> jniHandler.createExceptionTag("test_tag", paramTypes, false));
 
     // Test invalid tag name
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.createExceptionTag("", paramTypes, false));
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.createExceptionTag("   ", paramTypes, false));
+    assertThrows(
+        IllegalArgumentException.class, () -> jniHandler.createExceptionTag("", paramTypes, false));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> jniHandler.createExceptionTag("   ", paramTypes, false));
 
     // Test null parameters
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.createExceptionTag(null, paramTypes, false));
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.createExceptionTag("test", null, false));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> jniHandler.createExceptionTag(null, paramTypes, false));
+    assertThrows(
+        IllegalArgumentException.class, () -> jniHandler.createExceptionTag("test", null, false));
   }
 
   @Test
@@ -188,8 +192,9 @@ class ExceptionHandlingFoundationTest {
       assertTrue(gcTag.isGcAware());
     } else {
       // Test GC-aware tag creation should fail without GC runtime
-      assertThrows(IllegalArgumentException.class, () ->
-          jniHandler.createExceptionTag("gc_tag", paramTypes, true));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> jniHandler.createExceptionTag("gc_tag", paramTypes, true));
     }
   }
 
@@ -203,10 +208,7 @@ class ExceptionHandlingFoundationTest {
         jniHandler.createExceptionTag("validation_tag", paramTypes, false);
 
     // Test valid payload
-    final List<WasmValue> validValues = List.of(
-        WasmValue.createI32(42),
-        WasmValue.createF64(3.14)
-    );
+    final List<WasmValue> validValues = List.of(WasmValue.createI32(42), WasmValue.createF64(3.14));
     final WasmExceptionHandlingException.ExceptionPayload validPayload =
         new WasmExceptionHandlingException.ExceptionPayload(tag, validValues, List.of());
 
@@ -217,8 +219,10 @@ class ExceptionHandlingFoundationTest {
 
     // Test invalid payload size
     final List<WasmValue> invalidSizeValues = List.of(WasmValue.createI32(42));
-    assertThrows(WasmExceptionHandlingException.PayloadValidationException.class, () ->
-        new WasmExceptionHandlingException.ExceptionPayload(tag, invalidSizeValues, List.of()));
+    assertThrows(
+        WasmExceptionHandlingException.PayloadValidationException.class,
+        () ->
+            new WasmExceptionHandlingException.ExceptionPayload(tag, invalidSizeValues, List.of()));
 
     // Test invalid payload types would be caught during exception throwing
   }
@@ -236,34 +240,39 @@ class ExceptionHandlingFoundationTest {
     final boolean[] handlerCalled = {false};
 
     // Register exception handler
-    jniHandler.registerExceptionHandler(tag, (exceptionTag, payload) -> {
-      assertEquals(tag, exceptionTag);
-      assertNotNull(payload);
-      handlerCalled[0] = true;
-      latch.countDown();
-      return true; // Continue execution
-    });
+    jniHandler.registerExceptionHandler(
+        tag,
+        (exceptionTag, payload) -> {
+          assertEquals(tag, exceptionTag);
+          assertNotNull(payload);
+          handlerCalled[0] = true;
+          latch.countDown();
+          return true; // Continue execution
+        });
 
     // Test exception propagation in separate thread
-    final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-      try {
-        final List<WasmValue> values = List.of(WasmValue.createI32(123));
-        final WasmExceptionHandlingException.ExceptionPayload payload =
-            new WasmExceptionHandlingException.ExceptionPayload(tag, values, List.of());
+    final CompletableFuture<Void> future =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                final List<WasmValue> values = List.of(WasmValue.createI32(123));
+                final WasmExceptionHandlingException.ExceptionPayload payload =
+                    new WasmExceptionHandlingException.ExceptionPayload(tag, values, List.of());
 
-        // This would trigger the exception handler callback
-        // For now, just simulate the callback
-        final boolean result = jniHandler.performUnwinding(0);
-        assertTrue(result);
-      } catch (final Exception e) {
-        LOGGER.warning("Exception during propagation test: " + e.getMessage());
-      }
-    });
+                // This would trigger the exception handler callback
+                // For now, just simulate the callback
+                final boolean result = jniHandler.performUnwinding(0);
+                assertTrue(result);
+              } catch (final Exception e) {
+                LOGGER.warning("Exception during propagation test: " + e.getMessage());
+              }
+            });
 
-    assertDoesNotThrow(() -> {
-      future.get(5, TimeUnit.SECONDS);
-      // latch.await(5, TimeUnit.SECONDS); // Would be used if callback was actually triggered
-    });
+    assertDoesNotThrow(
+        () -> {
+          future.get(5, TimeUnit.SECONDS);
+          // latch.await(5, TimeUnit.SECONDS); // Would be used if callback was actually triggered
+        });
   }
 
   @Test
@@ -280,8 +289,7 @@ class ExceptionHandlingFoundationTest {
     assertDoesNotThrow(() -> jniHandler.performUnwinding(999));
 
     // Test invalid depth
-    assertThrows(IllegalArgumentException.class, () ->
-        jniHandler.performUnwinding(-1));
+    assertThrows(IllegalArgumentException.class, () -> jniHandler.performUnwinding(-1));
   }
 
   @Test
@@ -310,9 +318,7 @@ class ExceptionHandlingFoundationTest {
 
     // Create parameter types list
     final List<WasmValueType> paramTypes =
-        java.util.stream.IntStream.range(0, paramCount)
-            .mapToObj(i -> WasmValueType.I32)
-            .toList();
+        java.util.stream.IntStream.range(0, paramCount).mapToObj(i -> WasmValueType.I32).toList();
 
     final WasmExceptionHandlingException.ExceptionTag tag =
         jniHandler.createExceptionTag("size_test_" + paramCount, paramTypes, false);
@@ -322,9 +328,7 @@ class ExceptionHandlingFoundationTest {
 
     // Create corresponding values
     final List<WasmValue> values =
-        java.util.stream.IntStream.range(0, paramCount)
-            .mapToObj(WasmValue::createI32)
-            .toList();
+        java.util.stream.IntStream.range(0, paramCount).mapToObj(WasmValue::createI32).toList();
 
     final WasmExceptionHandlingException.ExceptionPayload payload =
         new WasmExceptionHandlingException.ExceptionPayload(tag, values, List.of());
@@ -372,17 +376,16 @@ class ExceptionHandlingFoundationTest {
     assertDoesNotThrow(() -> jniHandler.close());
 
     // Operations on closed handler should throw
-    assertThrows(IllegalStateException.class, () ->
-        jniHandler.createExceptionTag("closed_test", List.of(WasmValueType.I32), false));
-    assertThrows(IllegalStateException.class, () ->
-        jniHandler.performUnwinding(0));
+    assertThrows(
+        IllegalStateException.class,
+        () -> jniHandler.createExceptionTag("closed_test", List.of(WasmValueType.I32), false));
+    assertThrows(IllegalStateException.class, () -> jniHandler.performUnwinding(0));
   }
 
   @Test
   @DisplayName("GC integration should work with exception payloads")
   void testGcIntegrationWithExceptionPayloads() {
-    assumeTrue(jniHandler != null && gcRuntime != null,
-        "JNI handler and GC runtime not available");
+    assumeTrue(jniHandler != null && gcRuntime != null, "JNI handler and GC runtime not available");
 
     final List<WasmValueType> paramTypes = List.of(WasmValueType.EXTERNREF, WasmValueType.I32);
     final WasmExceptionHandlingException.ExceptionTag gcTag =
@@ -392,15 +395,16 @@ class ExceptionHandlingFoundationTest {
     assertTrue(gcTag.isGcAware());
 
     // Create GC values for testing
-    final List<GcValue> gcValues = List.of(
-        // Would create actual GC values here in real implementation
-        // For now, using placeholder structure
-    );
+    final List<GcValue> gcValues =
+        List.of(
+            // Would create actual GC values here in real implementation
+            // For now, using placeholder structure
+            );
 
-    final List<WasmValue> values = List.of(
-        WasmValue.createExternRef(null), // Would be actual external reference
-        WasmValue.createI32(456)
-    );
+    final List<WasmValue> values =
+        List.of(
+            WasmValue.createExternRef(null), // Would be actual external reference
+            WasmValue.createI32(456));
 
     final WasmExceptionHandlingException.ExceptionPayload gcPayload =
         new WasmExceptionHandlingException.ExceptionPayload(gcTag, values, gcValues);
@@ -422,28 +426,30 @@ class ExceptionHandlingFoundationTest {
 
     for (int i = 0; i < threadCount; i++) {
       final int threadIndex = i;
-      new Thread(() -> {
-        try {
-          startLatch.await();
+      new Thread(
+              () -> {
+                try {
+                  startLatch.await();
 
-          // Each thread creates its own exception tag
-          final String tagName = "thread_tag_" + threadIndex;
-          final List<WasmValueType> paramTypes = List.of(WasmValueType.I32);
+                  // Each thread creates its own exception tag
+                  final String tagName = "thread_tag_" + threadIndex;
+                  final List<WasmValueType> paramTypes = List.of(WasmValueType.I32);
 
-          final WasmExceptionHandlingException.ExceptionTag tag =
-              jniHandler.createExceptionTag(tagName, paramTypes, false);
+                  final WasmExceptionHandlingException.ExceptionTag tag =
+                      jniHandler.createExceptionTag(tagName, paramTypes, false);
 
-          assertNotNull(tag);
-          assertEquals(tagName, tag.getName());
+                  assertNotNull(tag);
+                  assertEquals(tagName, tag.getName());
 
-          results[threadIndex] = true;
-        } catch (final Exception e) {
-          LOGGER.severe("Thread " + threadIndex + " failed: " + e.getMessage());
-          results[threadIndex] = false;
-        } finally {
-          doneLatch.countDown();
-        }
-      }).start();
+                  results[threadIndex] = true;
+                } catch (final Exception e) {
+                  LOGGER.severe("Thread " + threadIndex + " failed: " + e.getMessage());
+                  results[threadIndex] = false;
+                } finally {
+                  doneLatch.countDown();
+                }
+              })
+          .start();
     }
 
     startLatch.countDown(); // Start all threads

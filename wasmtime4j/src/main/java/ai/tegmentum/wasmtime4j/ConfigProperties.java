@@ -10,8 +10,8 @@ import java.util.Properties;
 /**
  * Configuration properties container for WebAssembly runtime settings.
  *
- * <p>Provides a type-safe way to access configuration properties with
- * default values, type conversion, and validation.
+ * <p>Provides a type-safe way to access configuration properties with default values, type
+ * conversion, and validation.
  *
  * @since 1.0.0
  */
@@ -25,7 +25,8 @@ public final class ConfigProperties {
    * @param properties the properties map
    */
   public ConfigProperties(final Map<String, String> properties) {
-    this.properties = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(properties)));
+    this.properties =
+        Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(properties)));
   }
 
   /**
@@ -98,13 +99,15 @@ public final class ConfigProperties {
    * @return the property value as integer, or empty if not found or invalid
    */
   public Optional<Integer> getInt(final String key) {
-    return getString(key).map(value -> {
-      try {
-        return Integer.parseInt(value);
-      } catch (final NumberFormatException e) {
-        return null;
-      }
-    });
+    return getString(key)
+        .map(
+            value -> {
+              try {
+                return Integer.parseInt(value);
+              } catch (final NumberFormatException e) {
+                return null;
+              }
+            });
   }
 
   /**
@@ -125,13 +128,15 @@ public final class ConfigProperties {
    * @return the property value as long, or empty if not found or invalid
    */
   public Optional<Long> getLong(final String key) {
-    return getString(key).map(value -> {
-      try {
-        return Long.parseLong(value);
-      } catch (final NumberFormatException e) {
-        return null;
-      }
-    });
+    return getString(key)
+        .map(
+            value -> {
+              try {
+                return Long.parseLong(value);
+              } catch (final NumberFormatException e) {
+                return null;
+              }
+            });
   }
 
   /**
@@ -152,13 +157,15 @@ public final class ConfigProperties {
    * @return the property value as double, or empty if not found or invalid
    */
   public Optional<Double> getDouble(final String key) {
-    return getString(key).map(value -> {
-      try {
-        return Double.parseDouble(value);
-      } catch (final NumberFormatException e) {
-        return null;
-      }
-    });
+    return getString(key)
+        .map(
+            value -> {
+              try {
+                return Double.parseDouble(value);
+              } catch (final NumberFormatException e) {
+                return null;
+              }
+            });
   }
 
   /**
@@ -179,11 +186,13 @@ public final class ConfigProperties {
    * @return the property value as boolean, or empty if not found
    */
   public Optional<Boolean> getBoolean(final String key) {
-    return getString(key).map(value -> {
-      return "true".equalsIgnoreCase(value) ||
-             "yes".equalsIgnoreCase(value) ||
-             "1".equals(value);
-    });
+    return getString(key)
+        .map(
+            value -> {
+              return "true".equalsIgnoreCase(value)
+                  || "yes".equalsIgnoreCase(value)
+                  || "1".equals(value);
+            });
   }
 
   /**
@@ -275,8 +284,12 @@ public final class ConfigProperties {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
     final ConfigProperties that = (ConfigProperties) obj;
     return Objects.equals(properties, that.properties);
   }

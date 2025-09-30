@@ -399,6 +399,12 @@ public final class StreamingStatistics {
       return this;
     }
 
+    /**
+     * Sets the compilation phase statistics.
+     *
+     * @param phaseStatistics the list of compilation phase statistics
+     * @return this builder
+     */
     public Builder phaseStatistics(final List<CompilationPhaseStats> phaseStatistics) {
       this.phaseStatistics =
           Objects.requireNonNull(phaseStatistics, "Phase statistics cannot be null");

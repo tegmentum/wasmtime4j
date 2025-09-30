@@ -104,9 +104,9 @@ public final class CustomSectionValidationResult {
 
     return getAllIssues().stream()
         .filter(issue -> sectionName.equals(issue.getSectionName()))
-        .collect(java.util.stream.Collectors.collectingAndThen(
-            java.util.stream.Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   /**
@@ -125,7 +125,8 @@ public final class CustomSectionValidationResult {
    * @return a validation result with no errors but with warnings
    * @throws IllegalArgumentException if warnings is null
    */
-  public static CustomSectionValidationResult successWithWarnings(final List<ValidationIssue> warnings) {
+  public static CustomSectionValidationResult successWithWarnings(
+      final List<ValidationIssue> warnings) {
     if (warnings == null) {
       throw new IllegalArgumentException("Warnings cannot be null");
     }
@@ -154,8 +155,8 @@ public final class CustomSectionValidationResult {
    * @return a validation result with both errors and warnings
    * @throws IllegalArgumentException if errors is null or empty, or warnings is null
    */
-  public static CustomSectionValidationResult failure(final List<ValidationIssue> errors,
-                                                      final List<ValidationIssue> warnings) {
+  public static CustomSectionValidationResult failure(
+      final List<ValidationIssue> errors, final List<ValidationIssue> warnings) {
     if (errors == null || errors.isEmpty()) {
       throw new IllegalArgumentException("Errors cannot be null or empty for failure result");
     }
@@ -180,20 +181,20 @@ public final class CustomSectionValidationResult {
     } else if (valid) {
       return String.format("Custom sections are valid with %d warning(s)", warnings.size());
     } else {
-      return String.format("Custom sections validation failed with %d error(s) and %d warning(s)",
+      return String.format(
+          "Custom sections validation failed with %d error(s) and %d warning(s)",
           errors.size(), warnings.size());
     }
   }
 
   @Override
   public String toString() {
-    return String.format("CustomSectionValidationResult{valid=%s, errors=%d, warnings=%d}",
+    return String.format(
+        "CustomSectionValidationResult{valid=%s, errors=%d, warnings=%d}",
         valid, errors.size(), warnings.size());
   }
 
-  /**
-   * Builder for constructing CustomSectionValidationResult instances.
-   */
+  /** Builder for constructing CustomSectionValidationResult instances. */
   public static final class Builder {
     private final List<ValidationIssue> errors = new java.util.ArrayList<>();
     private final List<ValidationIssue> warnings = new java.util.ArrayList<>();
@@ -245,6 +246,18 @@ public final class CustomSectionValidationResult {
     }
 
     /**
+     * Adds a validation error with section and message.
+     *
+     * @param sectionName the section name
+     * @param message the error message
+     * @return this builder
+     * @throws IllegalArgumentException if sectionName or message is null
+     */
+    public Builder addError(final String sectionName, final String message) {
+      return addError(ValidationIssue.error(sectionName, message));
+    }
+
+    /**
      * Adds a validation warning.
      *
      * @param warning the validation warning to add
@@ -257,18 +270,6 @@ public final class CustomSectionValidationResult {
       }
       this.warnings.add(warning);
       return this;
-    }
-
-    /**
-     * Adds a validation error with section and message.
-     *
-     * @param sectionName the section name
-     * @param message the error message
-     * @return this builder
-     * @throws IllegalArgumentException if sectionName or message is null
-     */
-    public Builder addError(final String sectionName, final String message) {
-      return addError(ValidationIssue.error(sectionName, message));
     }
 
     /**
@@ -304,9 +305,7 @@ public final class CustomSectionValidationResult {
     }
   }
 
-  /**
-   * Represents a single validation issue.
-   */
+  /** Represents a single validation issue. */
   public static final class ValidationIssue {
     private final ValidationIssueType type;
     private final String sectionName;
@@ -322,10 +321,11 @@ public final class CustomSectionValidationResult {
      * @param details additional details
      * @throws IllegalArgumentException if type, sectionName, or message is null
      */
-    public ValidationIssue(final ValidationIssueType type,
-                          final String sectionName,
-                          final String message,
-                          final String details) {
+    public ValidationIssue(
+        final ValidationIssueType type,
+        final String sectionName,
+        final String message,
+        final String details) {
       if (type == null) {
         throw new IllegalArgumentException("Validation issue type cannot be null");
       }
@@ -350,9 +350,8 @@ public final class CustomSectionValidationResult {
      * @param message the issue message
      * @throws IllegalArgumentException if type, sectionName, or message is null
      */
-    public ValidationIssue(final ValidationIssueType type,
-                          final String sectionName,
-                          final String message) {
+    public ValidationIssue(
+        final ValidationIssueType type, final String sectionName, final String message) {
       this(type, sectionName, message, null);
     }
 
@@ -465,13 +464,11 @@ public final class CustomSectionValidationResult {
     }
   }
 
-  /**
-   * Types of validation issues.
-   */
+  /** Types of validation issues. */
   public enum ValidationIssueType {
-    /** Critical validation error */
+    /** Critical validation error. */
     ERROR,
-    /** Non-critical validation warning */
+    /** Non-critical validation warning. */
     WARNING
   }
 }

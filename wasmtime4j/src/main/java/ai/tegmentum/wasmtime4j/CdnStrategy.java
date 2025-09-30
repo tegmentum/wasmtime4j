@@ -20,8 +20,8 @@ public enum CdnStrategy {
   /**
    * Try CDN endpoints in the order provided.
    *
-   * <p>Uses CDN endpoints in the sequence they were specified, without performance testing.
-   * Fails over to the next CDN only if the current one fails.
+   * <p>Uses CDN endpoints in the sequence they were specified, without performance testing. Fails
+   * over to the next CDN only if the current one fails.
    */
   SEQUENTIAL,
 
@@ -44,16 +44,16 @@ public enum CdnStrategy {
   /**
    * Use the CDN with the highest available bandwidth.
    *
-   * <p>Measures bandwidth from each CDN endpoint and selects the one with the best throughput
-   * for bulk data transfer.
+   * <p>Measures bandwidth from each CDN endpoint and selects the one with the best throughput for
+   * bulk data transfer.
    */
   HIGHEST_BANDWIDTH,
 
   /**
    * Adaptive strategy that learns from usage patterns.
    *
-   * <p>Dynamically adjusts CDN selection based on historical performance data and current
-   * network conditions.
+   * <p>Dynamically adjusts CDN selection based on historical performance data and current network
+   * conditions.
    */
   ADAPTIVE
 }

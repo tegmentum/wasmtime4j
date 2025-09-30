@@ -110,6 +110,55 @@ public interface WasmMemory {
   void copy(final int destOffset, final int srcOffset, final int length);
 
   /**
+   * Copies memory from one region to another with long addressing.
+   *
+   * @param destOffset the destination offset in memory
+   * @param srcOffset the source offset in memory
+   * @param length the number of bytes to copy
+   * @throws IndexOutOfBoundsException if any offset or length is out of bounds
+   * @since 1.1.0
+   */
+  default void copy(final long destOffset, final long srcOffset, final long length) {
+    // Handle overlapping regions correctly
+    if (destOffset == srcOffset || length == 0) {
+      return; // Nothing to copy
+    }
+
+    final int chunkSize = 1024 * 1024; // 1MB chunks
+    final byte[] copyBuffer = new byte[chunkSize];
+
+    if (destOffset < srcOffset) {
+      // Copy forward
+      long remaining = length;
+      long currentSrc = srcOffset;
+      long currentDest = destOffset;
+
+      while (remaining > 0) {
+        final int currentChunkSize = (int) Math.min(remaining, chunkSize);
+        readBytes64(currentSrc, copyBuffer, 0, currentChunkSize);
+        writeBytes64(currentDest, copyBuffer, 0, currentChunkSize);
+        remaining -= currentChunkSize;
+        currentSrc += currentChunkSize;
+        currentDest += currentChunkSize;
+      }
+    } else {
+      // Copy backward to handle overlap
+      long remaining = length;
+      long currentSrc = srcOffset + length;
+      long currentDest = destOffset + length;
+
+      while (remaining > 0) {
+        final int currentChunkSize = (int) Math.min(remaining, chunkSize);
+        currentSrc -= currentChunkSize;
+        currentDest -= currentChunkSize;
+        readBytes64(currentSrc, copyBuffer, 0, currentChunkSize);
+        writeBytes64(currentDest, copyBuffer, 0, currentChunkSize);
+        remaining -= currentChunkSize;
+      }
+    }
+  }
+
+  /**
    * Fills a memory region with the specified byte value.
    *
    * <p>This is equivalent to the WebAssembly memory.fill instruction.
@@ -120,6 +169,32 @@ public interface WasmMemory {
    * @throws IndexOutOfBoundsException if offset or length is out of bounds
    */
   void fill(final int offset, final byte value, final int length);
+
+  /**
+   * Fills a memory region with the specified byte value using long addressing.
+   *
+   * @param offset the starting offset in memory
+   * @param length the number of bytes to fill
+   * @param value the byte value to fill with
+   * @throws IndexOutOfBoundsException if offset or length is out of bounds
+   * @since 1.1.0
+   */
+  default void fill(final long offset, final long length, final byte value) {
+    // Use chunked filling for efficiency with large regions
+    final int chunkSize = 1024 * 1024; // 1MB chunks
+    final byte[] fillBuffer = new byte[chunkSize];
+    java.util.Arrays.fill(fillBuffer, value);
+
+    long remaining = length;
+    long currentOffset = offset;
+
+    while (remaining > 0) {
+      final int currentChunkSize = (int) Math.min(remaining, chunkSize);
+      writeBytes64(currentOffset, fillBuffer, 0, currentChunkSize);
+      remaining -= currentChunkSize;
+      currentOffset += currentChunkSize;
+    }
+  }
 
   /**
    * Initializes memory from a data segment.
@@ -642,7 +717,10 @@ public interface WasmMemory {
   default int readInt32(final long offset) {
     final byte[] bytes = new byte[4];
     readBytes64(offset, bytes, 0, 4);
-    return (bytes[0] & 0xFF) | ((bytes[1] & 0xFF) << 8) | ((bytes[2] & 0xFF) << 16) | ((bytes[3] & 0xFF) << 24);
+    return (bytes[0] & 0xFF)
+        | ((bytes[1] & 0xFF) << 8)
+        | ((bytes[2] & 0xFF) << 16)
+        | ((bytes[3] & 0xFF) << 24);
   }
 
   /**
@@ -656,8 +734,14 @@ public interface WasmMemory {
   default long readInt64(final long offset) {
     final byte[] bytes = new byte[8];
     readBytes64(offset, bytes, 0, 8);
-    return (bytes[0] & 0xFFL) | ((bytes[1] & 0xFFL) << 8) | ((bytes[2] & 0xFFL) << 16) | ((bytes[3] & 0xFFL) << 24)
-        | ((bytes[4] & 0xFFL) << 32) | ((bytes[5] & 0xFFL) << 40) | ((bytes[6] & 0xFFL) << 48) | ((bytes[7] & 0xFFL) << 56);
+    return (bytes[0] & 0xFFL)
+        | ((bytes[1] & 0xFFL) << 8)
+        | ((bytes[2] & 0xFFL) << 16)
+        | ((bytes[3] & 0xFFL) << 24)
+        | ((bytes[4] & 0xFFL) << 32)
+        | ((bytes[5] & 0xFFL) << 40)
+        | ((bytes[6] & 0xFFL) << 48)
+        | ((bytes[7] & 0xFFL) << 56);
   }
 
   /**
@@ -744,80 +828,5 @@ public interface WasmMemory {
    */
   default void writeFloat64(final long offset, final double value) {
     writeInt64(offset, Double.doubleToLongBits(value));
-  }
-
-  /**
-   * Fills a memory region with the specified byte value using long addressing.
-   *
-   * @param offset the starting offset in memory
-   * @param length the number of bytes to fill
-   * @param value the byte value to fill with
-   * @throws IndexOutOfBoundsException if offset or length is out of bounds
-   * @since 1.1.0
-   */
-  default void fill(final long offset, final long length, final byte value) {
-    // Use chunked filling for efficiency with large regions
-    final int chunkSize = 1024 * 1024; // 1MB chunks
-    final byte[] fillBuffer = new byte[chunkSize];
-    java.util.Arrays.fill(fillBuffer, value);
-
-    long remaining = length;
-    long currentOffset = offset;
-
-    while (remaining > 0) {
-      final int currentChunkSize = (int) Math.min(remaining, chunkSize);
-      writeBytes64(currentOffset, fillBuffer, 0, currentChunkSize);
-      remaining -= currentChunkSize;
-      currentOffset += currentChunkSize;
-    }
-  }
-
-  /**
-   * Copies memory from one region to another with long addressing.
-   *
-   * @param destOffset the destination offset in memory
-   * @param srcOffset the source offset in memory
-   * @param length the number of bytes to copy
-   * @throws IndexOutOfBoundsException if any offset or length is out of bounds
-   * @since 1.1.0
-   */
-  default void copy(final long destOffset, final long srcOffset, final long length) {
-    // Handle overlapping regions correctly
-    if (destOffset == srcOffset || length == 0) {
-      return; // Nothing to copy
-    }
-
-    final int chunkSize = 1024 * 1024; // 1MB chunks
-    final byte[] copyBuffer = new byte[chunkSize];
-
-    if (destOffset < srcOffset) {
-      // Copy forward
-      long remaining = length;
-      long currentSrc = srcOffset;
-      long currentDest = destOffset;
-
-      while (remaining > 0) {
-        final int currentChunkSize = (int) Math.min(remaining, chunkSize);
-        readBytes64(currentSrc, copyBuffer, 0, currentChunkSize);
-        writeBytes64(currentDest, copyBuffer, 0, currentChunkSize);
-        remaining -= currentChunkSize;
-        currentSrc += currentChunkSize;
-        currentDest += currentChunkSize;
-      }
-    } else {
-      // Copy backward to handle overlap
-      long remaining = length;
-      long currentSrc = srcOffset + length;
-      long currentDest = destOffset + length;
-
-      while (remaining > 0) {
-        final int currentChunkSize = (int) Math.min(remaining, chunkSize);
-        currentSrc -= currentChunkSize;
-        currentDest -= currentChunkSize;
-        readBytes64(currentSrc, copyBuffer, 0, currentChunkSize);
-        writeBytes64(currentDest, copyBuffer, 0, currentChunkSize);
-        remaining -= currentChunkSize;
-      }
-    }
   }
 }

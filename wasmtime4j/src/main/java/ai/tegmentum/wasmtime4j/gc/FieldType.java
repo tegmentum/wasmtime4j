@@ -17,21 +17,21 @@ public final class FieldType {
 
   /** Enumeration of field type kinds. */
   public enum ValueTypeKind {
-    /** 32-bit integer */
+    /** 32-bit integer. */
     I32,
-    /** 64-bit integer */
+    /** 64-bit integer. */
     I64,
-    /** 32-bit float */
+    /** 32-bit float. */
     F32,
-    /** 64-bit float */
+    /** 64-bit float. */
     F64,
-    /** 128-bit SIMD vector */
+    /** 128-bit SIMD vector. */
     V128,
-    /** 8-bit packed integer (storage type) */
+    /** 8-bit packed integer (storage type). */
     PACKED_I8,
-    /** 16-bit packed integer (storage type) */
+    /** 16-bit packed integer (storage type). */
     PACKED_I16,
-    /** Reference type */
+    /** Reference type. */
     REFERENCE
   }
 

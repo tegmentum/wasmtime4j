@@ -637,7 +637,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public Optional<GcObject> refCastNullable(final GcObject object, final GcReferenceType targetType) {
+  public Optional<GcObject> refCastNullable(
+      final GcObject object, final GcReferenceType targetType) {
     if (object == null || isNull(object)) {
       return Optional.empty();
     }
@@ -652,8 +653,10 @@ public final class JniGcRuntime implements GcRuntime {
   // ========== Complex Type Operations ==========
 
   @Override
-  public StructInstance createPackedStruct(final StructType structType, final List<GcValue> fieldValues,
-                                          final Map<Integer, Integer> customAlignment) {
+  public StructInstance createPackedStruct(
+      final StructType structType,
+      final List<GcValue> fieldValues,
+      final Map<Integer, Integer> customAlignment) {
     validateNotDisposed();
     validateNotNull(structType, "structType");
     validateNotNull(fieldValues, "fieldValues");
@@ -667,10 +670,11 @@ public final class JniGcRuntime implements GcRuntime {
 
       final int typeId = registerStructTypeInternal(structType);
       final Object[] nativeValues = convertGcValuesToNative(fieldValues);
-      final int[] alignments = customAlignment.entrySet().stream()
-          .sorted(Map.Entry.comparingByKey())
-          .mapToInt(Map.Entry::getValue)
-          .toArray();
+      final int[] alignments =
+          customAlignment.entrySet().stream()
+              .sorted(Map.Entry.comparingByKey())
+              .mapToInt(Map.Entry::getValue)
+              .toArray();
 
       final long objectId = structNewPacked(nativeHandle, typeId, nativeValues, alignments);
       if (objectId == 0) {
@@ -684,8 +688,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public ArrayInstance createVariableLengthArray(final ArrayType arrayType, final int baseLength,
-                                                final List<GcValue> flexibleElements) {
+  public ArrayInstance createVariableLengthArray(
+      final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements) {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     validateNotNull(flexibleElements, "flexibleElements");
@@ -699,7 +703,8 @@ public final class JniGcRuntime implements GcRuntime {
       final int typeId = registerArrayTypeInternal(arrayType);
       final Object[] nativeFlexibleElements = convertGcValuesToNative(flexibleElements);
 
-      final long objectId = arrayNewVariableLength(nativeHandle, typeId, baseLength, nativeFlexibleElements);
+      final long objectId =
+          arrayNewVariableLength(nativeHandle, typeId, baseLength, nativeFlexibleElements);
       if (objectId == 0) {
         throw new GcException("Failed to create variable-length array instance");
       }
@@ -712,7 +717,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public ArrayInstance createNestedArray(final ArrayType arrayType, final List<GcObject> nestedElements) {
+  public ArrayInstance createNestedArray(
+      final ArrayType arrayType, final List<GcObject> nestedElements) {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     validateNotNull(nestedElements, "nestedElements");
@@ -724,9 +730,7 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final int typeId = registerArrayTypeInternal(arrayType);
-      final long[] nestedObjectIds = nestedElements.stream()
-          .mapToLong(this::getObjectId)
-          .toArray();
+      final long[] nestedObjectIds = nestedElements.stream().mapToLong(this::getObjectId).toArray();
 
       final long objectId = arrayNewNested(nativeHandle, typeId, nestedObjectIds);
       if (objectId == 0) {
@@ -740,8 +744,12 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public void copyArrayElements(final ArrayInstance sourceArray, final int sourceIndex,
-                               final ArrayInstance destArray, final int destIndex, final int length) {
+  public void copyArrayElements(
+      final ArrayInstance sourceArray,
+      final int sourceIndex,
+      final ArrayInstance destArray,
+      final int destIndex,
+      final int length) {
     validateNotDisposed();
     validateNotNull(sourceArray, "sourceArray");
     validateNotNull(destArray, "destArray");
@@ -755,7 +763,8 @@ public final class JniGcRuntime implements GcRuntime {
       final long sourceObjectId = getObjectId(sourceArray);
       final long destObjectId = getObjectId(destArray);
 
-      final int result = arrayCopy(nativeHandle, sourceObjectId, sourceIndex, destObjectId, destIndex, length);
+      final int result =
+          arrayCopy(nativeHandle, sourceObjectId, sourceIndex, destObjectId, destIndex, length);
       if (result != 0) {
         throw new GcException("Failed to copy array elements");
       }
@@ -765,7 +774,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public void fillArrayElements(final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
+  public void fillArrayElements(
+      final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
     validateNotDisposed();
     validateNotNull(array, "array");
     validateNotNull(value, "value");
@@ -817,7 +827,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
-  public Map<String, Integer> createTypeHierarchy(final Object baseType, final List<Object> derivedTypes) {
+  public Map<String, Integer> createTypeHierarchy(
+      final Object baseType, final List<Object> derivedTypes) {
     validateNotDisposed();
     validateNotNull(baseType, "baseType");
     validateNotNull(derivedTypes, "derivedTypes");
@@ -829,11 +840,11 @@ public final class JniGcRuntime implements GcRuntime {
       }
 
       final byte[] nativeBaseType = serializeTypeDefinition(baseType);
-      final byte[][] nativeDerivedTypes = derivedTypes.stream()
-          .map(this::serializeTypeDefinition)
-          .toArray(byte[][]::new);
+      final byte[][] nativeDerivedTypes =
+          derivedTypes.stream().map(this::serializeTypeDefinition).toArray(byte[][]::new);
 
-      final Object nativeHierarchy = createTypeHierarchy(nativeHandle, nativeBaseType, nativeDerivedTypes);
+      final Object nativeHierarchy =
+          createTypeHierarchy(nativeHandle, nativeBaseType, nativeDerivedTypes);
       return deserializeTypeHierarchy(nativeHierarchy);
     } finally {
       lock.readLock().unlock();
@@ -919,7 +930,8 @@ public final class JniGcRuntime implements GcRuntime {
   // ========== Advanced Memory Management ==========
 
   @Override
-  public WeakGcReference createWeakReference(final GcObject object, final Runnable finalizationCallback) {
+  public WeakGcReference createWeakReference(
+      final GcObject object, final Runnable finalizationCallback) {
     validateNotDisposed();
     validateNotNull(object, "object");
 
@@ -1039,9 +1051,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new WasmException("GC runtime has been disposed");
       }
 
-      final long[] objectIds = objects.stream()
-          .mapToLong(this::getObjectId)
-          .toArray();
+      final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
       final Object bridge = createSharingBridge(nativeHandle, objectIds);
       if (bridge == null) {
@@ -1084,9 +1094,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new WasmException("GC runtime has been disposed");
       }
 
-      final long[] objectIds = objects.stream()
-          .mapToLong(this::getObjectId)
-          .toArray();
+      final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
       final long trackerId = trackObjectLifecycles(nativeHandle, objectIds);
       if (trackerId == 0) {
@@ -1150,9 +1158,7 @@ public final class JniGcRuntime implements GcRuntime {
         throw new WasmException("GC runtime has been disposed");
       }
 
-      final long[] objectIds = rootObjects.stream()
-          .mapToLong(this::getObjectId)
-          .toArray();
+      final long[] objectIds = rootObjects.stream().mapToLong(this::getObjectId).toArray();
 
       final Object nativeResult = validateReferenceSafety(nativeHandle, objectIds);
       return new JniReferenceSafetyResult(nativeResult);
@@ -1448,12 +1454,18 @@ public final class JniGcRuntime implements GcRuntime {
 
   private GcReferenceType convertNativeToReferenceType(final int typeId) {
     switch (typeId) {
-      case 0: return GcReferenceType.ANY_REF;
-      case 1: return GcReferenceType.EQ_REF;
-      case 2: return GcReferenceType.I31_REF;
-      case 3: return GcReferenceType.STRUCT_REF;
-      case 4: return GcReferenceType.ARRAY_REF;
-      default: throw new GcException("Unknown reference type ID: " + typeId);
+      case 0:
+        return GcReferenceType.ANY_REF;
+      case 1:
+        return GcReferenceType.EQ_REF;
+      case 2:
+        return GcReferenceType.I31_REF;
+      case 3:
+        return GcReferenceType.STRUCT_REF;
+      case 4:
+        return GcReferenceType.ARRAY_REF;
+      default:
+        throw new GcException("Unknown reference type ID: " + typeId);
     }
   }
 
@@ -1535,34 +1547,47 @@ public final class JniGcRuntime implements GcRuntime {
   private static native int getRuntimeType(long runtimeHandle, long objectId);
 
   // Complex type operations
-  private static native long structNewPacked(long runtimeHandle, int typeId, Object[] fieldValues, int[] alignments);
+  private static native long structNewPacked(
+      long runtimeHandle, int typeId, Object[] fieldValues, int[] alignments);
 
-  private static native long arrayNewVariableLength(long runtimeHandle, int typeId, int baseLength, Object[] flexibleElements);
+  private static native long arrayNewVariableLength(
+      long runtimeHandle, int typeId, int baseLength, Object[] flexibleElements);
 
   private static native long arrayNewNested(long runtimeHandle, int typeId, long[] nestedObjectIds);
 
-  private static native int arrayCopy(long runtimeHandle, long sourceObjectId, int sourceIndex, long destObjectId, int destIndex, int length);
+  private static native int arrayCopy(
+      long runtimeHandle,
+      long sourceObjectId,
+      int sourceIndex,
+      long destObjectId,
+      int destIndex,
+      int length);
 
-  private static native int arrayFill(long runtimeHandle, long objectId, int startIndex, int length, Object value);
+  private static native int arrayFill(
+      long runtimeHandle, long objectId, int startIndex, int length, Object value);
 
   // Type registration and management
-  private static native int registerRecursiveType(long runtimeHandle, String typeName, byte[] typeDefinition);
+  private static native int registerRecursiveType(
+      long runtimeHandle, String typeName, byte[] typeDefinition);
 
-  private static native Object createTypeHierarchy(long runtimeHandle, byte[] baseType, byte[][] derivedTypes);
+  private static native Object createTypeHierarchy(
+      long runtimeHandle, byte[] baseType, byte[][] derivedTypes);
 
   // Garbage collection control
   private static native Object collectGarbageIncremental(long runtimeHandle, long maxPauseMillis);
 
   private static native Object collectGarbageConcurrent(long runtimeHandle);
 
-  private static native int configureGcStrategy(long runtimeHandle, String strategy, String[] paramKeys, Object[] paramValues);
+  private static native int configureGcStrategy(
+      long runtimeHandle, String strategy, String[] paramKeys, Object[] paramValues);
 
   private static native boolean monitorGcPressure(long runtimeHandle, double pressureThreshold);
 
   // Advanced memory management
   private static native long createWeakReference(long runtimeHandle, long objectId);
 
-  private static native int registerFinalizationCallback(long runtimeHandle, long objectId, Runnable callback);
+  private static native int registerFinalizationCallback(
+      long runtimeHandle, long objectId, Runnable callback);
 
   private static native int runFinalization(long runtimeHandle);
 
@@ -1585,7 +1610,8 @@ public final class JniGcRuntime implements GcRuntime {
   // Safety and validation
   private static native Object validateReferenceSafety(long runtimeHandle, long[] objectIds);
 
-  private static native boolean enforceTypeSafety(long runtimeHandle, String operation, Object[] operands);
+  private static native boolean enforceTypeSafety(
+      long runtimeHandle, String operation, Object[] operands);
 
   private static native Object detectMemoryCorruption(long runtimeHandle);
 
@@ -1720,7 +1746,8 @@ public final class JniGcRuntime implements GcRuntime {
     private final long weakRefId;
     private volatile Runnable finalizationCallback;
 
-    public JniWeakGcReference(final JniGcRuntime runtime, final long weakRefId, final Runnable finalizationCallback) {
+    public JniWeakGcReference(
+        final JniGcRuntime runtime, final long weakRefId, final Runnable finalizationCallback) {
       this.runtime = runtime;
       this.weakRefId = weakRefId;
       this.finalizationCallback = finalizationCallback;
@@ -1978,7 +2005,10 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public void recordEvent(final String eventName, final java.time.Duration duration, final Map<String, Object> metadata) {
+    public void recordEvent(
+        final String eventName,
+        final java.time.Duration duration,
+        final Map<String, Object> metadata) {
       // Implementation would call native method to record event
     }
   }

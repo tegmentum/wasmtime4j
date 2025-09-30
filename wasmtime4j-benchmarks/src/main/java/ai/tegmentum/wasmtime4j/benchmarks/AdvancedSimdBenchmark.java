@@ -40,15 +40,12 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * JMH benchmarks for advanced SIMD operations.
  *
- * <p>This benchmark suite evaluates the performance of:
- * - Advanced arithmetic operations (FMA, reciprocal, sqrt)
- * - Advanced logical operations (popcount, variable shifts)
- * - Vector reduction operations
- * - Selection and blending operations
- * - Platform-specific optimizations
+ * <p>This benchmark suite evaluates the performance of: - Advanced arithmetic operations (FMA,
+ * reciprocal, sqrt) - Advanced logical operations (popcount, variable shifts) - Vector reduction
+ * operations - Selection and blending operations - Platform-specific optimizations
  *
- * <p>Benchmarks compare performance across different vector widths and
- * platform optimizations to identify optimal configurations.
+ * <p>Benchmarks compare performance across different vector widths and platform optimizations to
+ * identify optimal configurations.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -77,19 +74,21 @@ public class AdvancedSimdBenchmark {
 
   @Setup(Level.Trial)
   public void setupRuntime() throws WasmtimeException {
-    final EngineConfig engineConfig = EngineConfig.builder()
-        .enableSimd(true)
-        .enableRelaxedSimd(relaxedOperations)
-        .optimizationLevel(EngineConfig.OptimizationLevel.SPEED)
-        .build();
+    final EngineConfig engineConfig =
+        EngineConfig.builder()
+            .enableSimd(true)
+            .enableRelaxedSimd(relaxedOperations)
+            .optimizationLevel(EngineConfig.OptimizationLevel.SPEED)
+            .build();
 
     runtime = WasmRuntimeFactory.createRuntime(engineConfig);
 
-    final SimdOperations.SimdConfig simdConfig = SimdOperations.SimdConfig.builder()
-        .enablePlatformOptimizations(platformOptimizations)
-        .enableRelaxedOperations(relaxedOperations)
-        .maxVectorWidth(vectorWidth)
-        .build();
+    final SimdOperations.SimdConfig simdConfig =
+        SimdOperations.SimdConfig.builder()
+            .enablePlatformOptimizations(platformOptimizations)
+            .enableRelaxedOperations(relaxedOperations)
+            .maxVectorWidth(vectorWidth)
+            .build();
 
     simdOps = new SimdOperations(simdConfig, runtime);
   }
@@ -351,7 +350,10 @@ public class AdvancedSimdBenchmark {
       benchmark.setupVectors();
 
       // Run a few representative benchmarks
-      final Blackhole bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
+      final Blackhole bh =
+          new Blackhole(
+              "Today's password is swordfish. I understand instantiating Blackholes directly is"
+                  + " dangerous.");
 
       System.out.println("Running Advanced SIMD Benchmarks...");
 

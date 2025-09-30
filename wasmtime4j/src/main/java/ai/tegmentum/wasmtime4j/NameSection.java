@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,33 +27,42 @@ public final class NameSection {
 
   private NameSection(final Builder builder) {
     this.moduleName = builder.moduleName;
-    this.functionNames = builder.functionNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.functionNames);
-    this.localNames = builder.localNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.localNames);
-    this.typeNames = builder.typeNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.typeNames);
-    this.tableNames = builder.tableNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.tableNames);
-    this.memoryNames = builder.memoryNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.memoryNames);
-    this.globalNames = builder.globalNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.globalNames);
-    this.elementSegmentNames = builder.elementSegmentNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.elementSegmentNames);
-    this.dataSegmentNames = builder.dataSegmentNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.dataSegmentNames);
-    this.tagNames = builder.tagNames == null
-        ? java.util.Collections.emptyMap()
-        : java.util.Collections.unmodifiableMap(builder.tagNames);
+    this.functionNames =
+        builder.functionNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.functionNames);
+    this.localNames =
+        builder.localNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.localNames);
+    this.typeNames =
+        builder.typeNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.typeNames);
+    this.tableNames =
+        builder.tableNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.tableNames);
+    this.memoryNames =
+        builder.memoryNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.memoryNames);
+    this.globalNames =
+        builder.globalNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.globalNames);
+    this.elementSegmentNames =
+        builder.elementSegmentNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.elementSegmentNames);
+    this.dataSegmentNames =
+        builder.dataSegmentNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.dataSegmentNames);
+    this.tagNames =
+        builder.tagNames == null
+            ? java.util.Collections.emptyMap()
+            : java.util.Collections.unmodifiableMap(builder.tagNames);
   }
 
   /**
@@ -281,15 +289,24 @@ public final class NameSection {
       sb.append("module='").append(moduleName).append("', ");
     }
 
-    sb.append("functions=").append(functionNames.size())
-        .append(", locals=").append(localNames.size())
-        .append(", types=").append(typeNames.size())
-        .append(", tables=").append(tableNames.size())
-        .append(", memories=").append(memoryNames.size())
-        .append(", globals=").append(globalNames.size())
-        .append(", elements=").append(elementSegmentNames.size())
-        .append(", data=").append(dataSegmentNames.size())
-        .append(", tags=").append(tagNames.size())
+    sb.append("functions=")
+        .append(functionNames.size())
+        .append(", locals=")
+        .append(localNames.size())
+        .append(", types=")
+        .append(typeNames.size())
+        .append(", tables=")
+        .append(tableNames.size())
+        .append(", memories=")
+        .append(memoryNames.size())
+        .append(", globals=")
+        .append(globalNames.size())
+        .append(", elements=")
+        .append(elementSegmentNames.size())
+        .append(", data=")
+        .append(dataSegmentNames.size())
+        .append(", tags=")
+        .append(tagNames.size())
         .append("}");
 
     return sb.toString();
@@ -304,9 +321,7 @@ public final class NameSection {
     return new Builder();
   }
 
-  /**
-   * Builder for constructing NameSection instances.
-   */
+  /** Builder for constructing NameSection instances. */
   public static final class Builder {
     private String moduleName;
     private Map<Integer, String> functionNames;
@@ -405,7 +420,8 @@ public final class NameSection {
      * @return this builder
      */
     public Builder setElementSegmentNames(final Map<Integer, String> elementSegmentNames) {
-      this.elementSegmentNames = elementSegmentNames == null ? null : new java.util.HashMap<>(elementSegmentNames);
+      this.elementSegmentNames =
+          elementSegmentNames == null ? null : new java.util.HashMap<>(elementSegmentNames);
       return this;
     }
 
@@ -416,7 +432,8 @@ public final class NameSection {
      * @return this builder
      */
     public Builder setDataSegmentNames(final Map<Integer, String> dataSegmentNames) {
-      this.dataSegmentNames = dataSegmentNames == null ? null : new java.util.HashMap<>(dataSegmentNames);
+      this.dataSegmentNames =
+          dataSegmentNames == null ? null : new java.util.HashMap<>(dataSegmentNames);
       return this;
     }
 

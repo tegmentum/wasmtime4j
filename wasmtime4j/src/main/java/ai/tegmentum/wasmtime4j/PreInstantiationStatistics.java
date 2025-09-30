@@ -224,6 +224,12 @@ public final class PreInstantiationStatistics {
       return this;
     }
 
+    /**
+     * Sets the preparation time for pre-instantiation.
+     *
+     * @param preparationTime the time spent preparing for instantiation
+     * @return this builder
+     */
     public Builder preparationTime(final Duration preparationTime) {
       this.preparationTime =
           Objects.requireNonNull(preparationTime, "Preparation time cannot be null");
@@ -250,9 +256,16 @@ public final class PreInstantiationStatistics {
       return this;
     }
 
+    /**
+     * Sets the average time taken for instantiation.
+     *
+     * @param averageInstantiationTime the average instantiation time
+     * @return this builder
+     */
     public Builder averageInstantiationTime(final Duration averageInstantiationTime) {
       this.averageInstantiationTime =
-          Objects.requireNonNull(averageInstantiationTime, "Average instantiation time cannot be null");
+          Objects.requireNonNull(
+              averageInstantiationTime, "Average instantiation time cannot be null");
       return this;
     }
 

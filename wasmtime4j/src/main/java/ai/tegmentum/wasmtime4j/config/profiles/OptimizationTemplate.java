@@ -39,25 +39,25 @@ public final class OptimizationTemplate {
 
   /** Template types for different optimization strategies. */
   public enum TemplateType {
-    /** CPU-bound workload optimization */
+    /** CPU-bound workload optimization. */
     CPU_INTENSIVE,
-    /** I/O-bound workload optimization */
+    /** I/O-bound workload optimization. */
     IO_INTENSIVE,
-    /** Memory-constrained optimization */
+    /** Memory-constrained optimization. */
     MEMORY_CONSTRAINED,
-    /** Real-time performance optimization */
+    /** Real-time performance optimization. */
     REAL_TIME,
-    /** Batch processing optimization */
+    /** Batch processing optimization. */
     BATCH_PROCESSING,
-    /** Web application optimization */
+    /** Web application optimization. */
     WEB_APPLICATION,
-    /** Microservice optimization */
+    /** Microservice optimization. */
     MICROSERVICE,
-    /** Machine learning inference optimization */
+    /** Machine learning inference optimization. */
     ML_INFERENCE,
-    /** Game engine optimization */
+    /** Game engine optimization. */
     GAME_ENGINE,
-    /** Scientific computing optimization */
+    /** Scientific computing optimization. */
     SCIENTIFIC_COMPUTING
   }
 
@@ -104,6 +104,9 @@ public final class OptimizationTemplate {
         break;
       case SCIENTIFIC_COMPUTING:
         modifiedConfig = applyScientificComputingOptimizations(modifiedConfig);
+        break;
+      default:
+        // No optimization changes for unknown types
         break;
     }
 

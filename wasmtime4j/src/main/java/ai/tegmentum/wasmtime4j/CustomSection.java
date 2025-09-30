@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Represents a WebAssembly custom section.
  *
- * <p>Custom sections contain arbitrary data embedded in WebAssembly modules for metadata,
- * debugging information, or tooling-specific purposes. They do not affect WebAssembly execution
- * semantics and can be safely ignored by implementations.
+ * <p>Custom sections contain arbitrary data embedded in WebAssembly modules for metadata, debugging
+ * information, or tooling-specific purposes. They do not affect WebAssembly execution semantics and
+ * can be safely ignored by implementations.
  *
  * @since 1.0.0
  */
@@ -110,9 +110,7 @@ public final class CustomSection {
       return false;
     }
     final CustomSection that = (CustomSection) obj;
-    return name.equals(that.name)
-        && java.util.Arrays.equals(data, that.data)
-        && type == that.type;
+    return name.equals(that.name) && java.util.Arrays.equals(data, that.data) && type == that.type;
   }
 
   @Override

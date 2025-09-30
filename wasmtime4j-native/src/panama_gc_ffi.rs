@@ -9,13 +9,8 @@
 //! high performance with minimal overhead. Memory management is handled safely
 //! through Panama's memory segments.
 
-use std::sync::Arc;
-use crate::error::{WasmtimeError, WasmtimeResult};
 // TODO: Re-enable when gc module is available
 // use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
-use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcValue, GcReferenceType};
-use crate::gc_heap::{GcHeapConfig, ObjectId};
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 // TODO: Re-enable all GC FFI functions when gc module is available
 /*

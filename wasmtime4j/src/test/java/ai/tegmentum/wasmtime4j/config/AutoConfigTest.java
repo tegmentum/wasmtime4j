@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -198,7 +199,7 @@ class AutoConfigTest {
     EngineConfig config = recommendation.toEngineConfig();
 
     // Should enable SIMD if system supports it
-    if (autoConfig.getSystemCapabilities().hasSIMDSupport()) {
+    if (autoConfig.getSystemCapabilities().hasSimdSupport()) {
       assertTrue(
           config.getWasmFeatures().contains(ai.tegmentum.wasmtime4j.WasmFeature.SIMD),
           "Machine learning workload should enable SIMD on supported systems");
@@ -426,7 +427,7 @@ class AutoConfigTest {
     assertEquals(caps1.getProcessorCount(), caps2.getProcessorCount());
     assertEquals(caps1.getOperatingSystem(), caps2.getOperatingSystem());
     assertEquals(caps1.getCpuArchitecture(), caps2.getCpuArchitecture());
-    assertEquals(caps1.hasSIMDSupport(), caps2.hasSIMDSupport());
+    assertEquals(caps1.hasSimdSupport(), caps2.hasSimdSupport());
   }
 
   @Test

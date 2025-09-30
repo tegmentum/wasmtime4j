@@ -13,15 +13,13 @@ import java.util.Objects;
  */
 public abstract class GcValue {
 
-  /** The type of this GC value including advanced SIMD from Task #307. */
+  /** The type of this GC value. */
   public enum Type {
     I32,
     I64,
     F32,
     F64,
     V128,
-    V256,
-    V512,
     REFERENCE,
     NULL
   }
@@ -102,26 +100,6 @@ public abstract class GcValue {
   }
 
   /**
-   * Gets this value as a V256 (32-byte array) - advanced SIMD from Task #307.
-   *
-   * @return the V256 value
-   * @throws IllegalStateException if not a V256
-   */
-  public byte[] asV256() {
-    throw new IllegalStateException("Value is not a V256");
-  }
-
-  /**
-   * Gets this value as a V512 (64-byte array) - AVX-512 support from Task #307.
-   *
-   * @return the V512 value
-   * @throws IllegalStateException if not a V512
-   */
-  public byte[] asV512() {
-    throw new IllegalStateException("Value is not a V512");
-  }
-
-  /**
    * Gets this value as a reference.
    *
    * @return the reference value
@@ -191,26 +169,6 @@ public abstract class GcValue {
   }
 
   /**
-   * Create a V256 value - advanced SIMD from Task #307.
-   *
-   * @param value the V256 value (32 bytes)
-   * @return the GC value
-   */
-  public static GcValue v256(final byte[] value) {
-    return new V256Value(value);
-  }
-
-  /**
-   * Create a V512 value - AVX-512 support from Task #307.
-   *
-   * @param value the V512 value (64 bytes)
-   * @return the GC value
-   */
-  public static GcValue v512(final byte[] value) {
-    return new V512Value(value);
-  }
-
-  /**
    * Create a reference value.
    *
    * @param object the GC object
@@ -252,15 +210,8 @@ public abstract class GcValue {
     if (obj instanceof Double) {
       return f64((Double) obj);
     }
-    if (obj instanceof byte[]) {
-      final byte[] bytes = (byte[]) obj;
-      if (bytes.length == 16) {
-        return v128(bytes);
-      } else if (bytes.length == 32) {
-        return v256(bytes);
-      } else if (bytes.length == 64) {
-        return v512(bytes);
-      }
+    if (obj instanceof byte[] && ((byte[]) obj).length == 16) {
+      return v128((byte[]) obj);
     }
     if (obj instanceof GcObject) {
       return reference((GcObject) obj);
@@ -298,8 +249,12 @@ public abstract class GcValue {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof I32Value)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof I32Value)) {
+        return false;
+      }
       return value == ((I32Value) obj).value;
     }
 
@@ -338,8 +293,12 @@ public abstract class GcValue {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof I64Value)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof I64Value)) {
+        return false;
+      }
       return value == ((I64Value) obj).value;
     }
 
@@ -378,8 +337,12 @@ public abstract class GcValue {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof F32Value)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof F32Value)) {
+        return false;
+      }
       return Float.compare(value, ((F32Value) obj).value) == 0;
     }
 
@@ -418,8 +381,12 @@ public abstract class GcValue {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof F64Value)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof F64Value)) {
+        return false;
+      }
       return Double.compare(value, ((F64Value) obj).value) == 0;
     }
 
@@ -457,7 +424,8 @@ public abstract class GcValue {
     @Override
     public WasmValue toWasmValue() {
       // Convert bytes to long for V128 representation
-      long low = 0, high = 0;
+      long low = 0;
+      long high = 0;
       for (int i = 0; i < 8; i++) {
         low |= ((long) (value[i] & 0xFF)) << (i * 8);
         high |= ((long) (value[i + 8] & 0xFF)) << (i * 8);
@@ -467,8 +435,12 @@ public abstract class GcValue {
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof V128Value)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof V128Value)) {
+        return false;
+      }
       return java.util.Arrays.equals(value, ((V128Value) obj).value);
     }
 
@@ -481,123 +453,9 @@ public abstract class GcValue {
     public String toString() {
       final StringBuilder sb = new StringBuilder("v128(");
       for (int i = 0; i < value.length; i++) {
-        if (i > 0) sb.append(" ");
-        sb.append(String.format("%02x", value[i] & 0xFF));
-      }
-      sb.append(")");
-      return sb.toString();
-    }
-  }
-
-  private static final class V256Value extends GcValue {
-    private final byte[] value;
-
-    V256Value(final byte[] value) {
-      if (value.length != 32) {
-        throw new IllegalArgumentException("V256 value must be exactly 32 bytes");
-      }
-      this.value = value.clone();
-    }
-
-    @Override
-    public Type getType() {
-      return Type.V256;
-    }
-
-    @Override
-    public byte[] asV256() {
-      return value.clone();
-    }
-
-    @Override
-    public WasmValue toWasmValue() {
-      // Convert bytes to V128 for compatibility (first 16 bytes)
-      final byte[] v128Bytes = new byte[16];
-      System.arraycopy(value, 0, v128Bytes, 0, 16);
-      long low = 0;
-      long high = 0;
-      for (int i = 0; i < 8; i++) {
-        low |= ((long) (v128Bytes[i] & 0xFF)) << (i * 8);
-        high |= ((long) (v128Bytes[i + 8] & 0xFF)) << (i * 8);
-      }
-      return WasmValue.v128(high, low);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof V256Value)) return false;
-      return java.util.Arrays.equals(value, ((V256Value) obj).value);
-    }
-
-    @Override
-    public int hashCode() {
-      return java.util.Arrays.hashCode(value);
-    }
-
-    @Override
-    public String toString() {
-      final StringBuilder sb = new StringBuilder("v256(");
-      for (int i = 0; i < value.length; i++) {
-        if (i > 0) sb.append(" ");
-        sb.append(String.format("%02x", value[i] & 0xFF));
-      }
-      sb.append(")");
-      return sb.toString();
-    }
-  }
-
-  private static final class V512Value extends GcValue {
-    private final byte[] value;
-
-    V512Value(final byte[] value) {
-      if (value.length != 64) {
-        throw new IllegalArgumentException("V512 value must be exactly 64 bytes");
-      }
-      this.value = value.clone();
-    }
-
-    @Override
-    public Type getType() {
-      return Type.V512;
-    }
-
-    @Override
-    public byte[] asV512() {
-      return value.clone();
-    }
-
-    @Override
-    public WasmValue toWasmValue() {
-      // Convert bytes to V128 for compatibility (first 16 bytes)
-      final byte[] v128Bytes = new byte[16];
-      System.arraycopy(value, 0, v128Bytes, 0, 16);
-      long low = 0;
-      long high = 0;
-      for (int i = 0; i < 8; i++) {
-        low |= ((long) (v128Bytes[i] & 0xFF)) << (i * 8);
-        high |= ((long) (v128Bytes[i + 8] & 0xFF)) << (i * 8);
-      }
-      return WasmValue.v128(high, low);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof V512Value)) return false;
-      return java.util.Arrays.equals(value, ((V512Value) obj).value);
-    }
-
-    @Override
-    public int hashCode() {
-      return java.util.Arrays.hashCode(value);
-    }
-
-    @Override
-    public String toString() {
-      final StringBuilder sb = new StringBuilder("v512(");
-      for (int i = 0; i < value.length; i++) {
-        if (i > 0) sb.append(" ");
+        if (i > 0) {
+          sb.append(" ");
+        }
         sb.append(String.format("%02x", value[i] & 0xFF));
       }
       sb.append(")");
@@ -629,13 +487,17 @@ public abstract class GcValue {
 
     @Override
     public WasmValue toWasmValue() {
-      return object != null ? object.toWasmValue() : WasmValue.externref(null);
+      return object != null ? object.toWasmValue() : WasmValue.externRef(null);
     }
 
     @Override
     public boolean equals(final Object obj) {
-      if (this == obj) return true;
-      if (!(obj instanceof ReferenceValue)) return false;
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ReferenceValue)) {
+        return false;
+      }
       return Objects.equals(object, ((ReferenceValue) obj).object);
     }
 
@@ -667,7 +529,7 @@ public abstract class GcValue {
 
     @Override
     public WasmValue toWasmValue() {
-      return WasmValue.externref(null);
+      return WasmValue.externRef(null);
     }
 
     @Override

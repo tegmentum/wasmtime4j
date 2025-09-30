@@ -21,9 +21,9 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmExceptionHandlingException;
 import ai.tegmentum.wasmtime4j.gc.GcRuntime;
 import ai.tegmentum.wasmtime4j.gc.GcValue;
-import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniGcBridge;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,11 +33,12 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of WebAssembly exception handling with GC integration.
  *
- * <p>This class provides JNI-specific bindings for WebAssembly exception handling, integrating
- * with both the native Rust implementation and the WebAssembly GC foundation. It ensures proper
- * resource management, cross-language exception propagation, and defensive programming practices.
+ * <p>This class provides JNI-specific bindings for WebAssembly exception handling, integrating with
+ * both the native Rust implementation and the WebAssembly GC foundation. It ensures proper resource
+ * management, cross-language exception propagation, and defensive programming practices.
  *
  * <p>Key features:
+ *
  * <ul>
  *   <li>Cross-language exception propagation between WebAssembly and Java
  *   <li>GC-aware exception handling for exception payloads containing GC references
@@ -88,27 +89,37 @@ public final class JniExceptionHandler implements AutoCloseable {
     this.handlerCallbacks = new ConcurrentHashMap<>();
 
     try {
-      this.nativeHandle = nativeCreateHandler(
-          config.enableNestedTryCatch,
-          config.enableExceptionUnwinding,
-          config.maxUnwindDepth,
-          config.validateExceptionTypes,
-          config.enableStackTraces,
-          config.enableExceptionPropagation,
-          config.enableGcIntegration);
+      this.nativeHandle =
+          nativeCreateHandler(
+              config.enableNestedTryCatch,
+              config.enableExceptionUnwinding,
+              config.maxUnwindDepth,
+              config.validateExceptionTypes,
+              config.enableStackTraces,
+              config.enableExceptionPropagation,
+              config.enableGcIntegration);
 
       if (nativeHandle == 0) {
-        throw new WasmExceptionHandlingException("Failed to create native exception handler",
+        throw new WasmExceptionHandlingException(
+            "Failed to create native exception handler",
             WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED);
       }
 
-      LOGGER.fine("Created JNI exception handler with ID: " + handlerId
-          + ", native handle: " + nativeHandle);
+      LOGGER.fine(
+          "Created JNI exception handler with ID: "
+              + handlerId
+              + ", native handle: "
+              + nativeHandle);
     } catch (final Exception e) {
-      throw new WasmExceptionHandlingException("Failed to create JNI exception handler",
-          e, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.NATIVE_LIBRARY_ERROR,
-          null, WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
-          null, null, 0);
+      throw new WasmExceptionHandlingException(
+          "Failed to create JNI exception handler",
+          e,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.NATIVE_LIBRARY_ERROR,
+          null,
+          WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
+          null,
+          null,
+          0);
     }
   }
 
@@ -124,9 +135,7 @@ public final class JniExceptionHandler implements AutoCloseable {
    * @throws IllegalStateException if handler is closed
    */
   public WasmExceptionHandlingException.ExceptionTag createExceptionTag(
-      final String name,
-      final List<WasmValueType> parameterTypes,
-      final boolean isGcAware) {
+      final String name, final List<WasmValueType> parameterTypes, final boolean isGcAware) {
     validateNotClosed();
     JniValidation.validateNotNull(name, "Exception tag name");
     JniValidation.validateNotEmpty(name.trim(), "Exception tag name");
@@ -151,8 +160,8 @@ public final class JniExceptionHandler implements AutoCloseable {
         typeBytes[i] = (byte) parameterTypes.get(i).ordinal();
       }
 
-      final long tagHandle = nativeCreateExceptionTag(nativeHandle, trimmedName, typeBytes,
-          isGcAware);
+      final long tagHandle =
+          nativeCreateExceptionTag(nativeHandle, trimmedName, typeBytes, isGcAware);
 
       if (tagHandle == 0) {
         throw new WasmExceptionHandlingException.TagCreationException(
@@ -160,13 +169,18 @@ public final class JniExceptionHandler implements AutoCloseable {
       }
 
       final WasmExceptionHandlingException.ExceptionTag tag =
-          new WasmExceptionHandlingException.ExceptionTag(trimmedName, parameterTypes,
-              tagHandle, isGcAware);
+          new WasmExceptionHandlingException.ExceptionTag(
+              trimmedName, parameterTypes, tagHandle, isGcAware);
 
       tagCache.put(tagHandle, tag);
 
-      LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle
-          + ", GC-aware: " + isGcAware);
+      LOGGER.fine(
+          "Created exception tag '"
+              + trimmedName
+              + "' with handle: "
+              + tagHandle
+              + ", GC-aware: "
+              + isGcAware);
       return tag;
     } catch (final WasmExceptionHandlingException e) {
       throw e;
@@ -216,17 +230,22 @@ public final class JniExceptionHandler implements AutoCloseable {
             try {
               gcRuntime.releaseGcValue(handle);
             } catch (final Exception gcE) {
-              LOGGER.warning("Failed to release GC handle during exception cleanup: "
-                  + gcE.getMessage());
+              LOGGER.warning(
+                  "Failed to release GC handle during exception cleanup: " + gcE.getMessage());
             }
           }
         }
       }
 
-      throw new WasmExceptionHandlingException("Failed to throw WebAssembly exception",
-          e, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN, null,
+      throw new WasmExceptionHandlingException(
+          "Failed to throw WebAssembly exception",
+          e,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
+          null,
           WasmExceptionHandlingException.ExceptionErrorCode.PROPAGATION_FAILED,
-          payload, null, 0);
+          payload,
+          null,
+          0);
     }
   }
 
@@ -255,10 +274,15 @@ public final class JniExceptionHandler implements AutoCloseable {
       LOGGER.fine("Registered exception handler for tag: " + tag.getName());
     } catch (final Exception e) {
       handlerCallbacks.remove(tag.getNativeHandle());
-      throw new WasmExceptionHandlingException("Failed to register exception handler",
-          e, ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN, null,
+      throw new WasmExceptionHandlingException(
+          "Failed to register exception handler",
+          e,
+          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
+          null,
           WasmExceptionHandlingException.ExceptionErrorCode.HANDLER_REGISTRATION_FAILED,
-          null, null, 0);
+          null,
+          null,
+          0);
     }
   }
 
@@ -305,8 +329,8 @@ public final class JniExceptionHandler implements AutoCloseable {
       LOGGER.fine("Captured stack trace for tag: " + tag.getName());
       return trace;
     } catch (final Exception e) {
-      LOGGER.warning("Failed to capture stack trace for tag " + tag.getName()
-          + ": " + e.getMessage());
+      LOGGER.warning(
+          "Failed to capture stack trace for tag " + tag.getName() + ": " + e.getMessage());
       return null; // Return null instead of throwing for optional feature
     }
   }
@@ -376,8 +400,11 @@ public final class JniExceptionHandler implements AutoCloseable {
 
     if (values.size() != expectedTypes.size()) {
       throw new WasmExceptionHandlingException.PayloadValidationException(
-          "Exception payload size (" + values.size()
-              + ") doesn't match tag parameter count (" + expectedTypes.size() + ")",
+          "Exception payload size ("
+              + values.size()
+              + ") doesn't match tag parameter count ("
+              + expectedTypes.size()
+              + ")",
           payload);
     }
 
@@ -387,8 +414,13 @@ public final class JniExceptionHandler implements AutoCloseable {
 
       if (!expectedType.equals(actualType)) {
         throw new WasmExceptionHandlingException.PayloadValidationException(
-            "Exception payload parameter " + i + " type mismatch. "
-                + "Expected: " + expectedType + ", Actual: " + actualType,
+            "Exception payload parameter "
+                + i
+                + " type mismatch. "
+                + "Expected: "
+                + expectedType
+                + ", Actual: "
+                + actualType,
             payload);
       }
     }
@@ -463,8 +495,8 @@ public final class JniExceptionHandler implements AutoCloseable {
    * @return true to continue execution, false to re-throw
    */
   @SuppressWarnings("unused") // Called from native code
-  private boolean onExceptionHandled(final long tagHandle, final byte[] payloadData,
-      final long[] gcHandles) {
+  private boolean onExceptionHandled(
+      final long tagHandle, final byte[] payloadData, final long[] gcHandles) {
     try {
       final ExceptionHandlerCallback callback = handlerCallbacks.get(tagHandle);
       if (callback == null) {
@@ -502,7 +534,7 @@ public final class JniExceptionHandler implements AutoCloseable {
   private List<WasmValue> deserializePayload(final byte[] data, final List<WasmValueType> types) {
     // This would use the ExceptionMarshaling utility
     // For now, return empty list as placeholder
-    return List.of();
+    return Collections.emptyList();
   }
 
   /**
@@ -513,14 +545,14 @@ public final class JniExceptionHandler implements AutoCloseable {
    */
   private List<GcValue> reconstructGcValues(final long[] gcHandles) {
     if (gcHandles == null || gcRuntime == null) {
-      return List.of();
+      return Collections.emptyList();
     }
 
     try {
       return JniGcBridge.reconstructGcValues(gcRuntime, gcHandles);
     } catch (final Exception e) {
       LOGGER.warning("Failed to reconstruct GC values: " + e.getMessage());
-      return List.of();
+      return Collections.emptyList();
     }
   }
 
@@ -651,8 +683,13 @@ public final class JniExceptionHandler implements AutoCloseable {
 
     @Override
     public int hashCode() {
-      return Objects.hash(enableNestedTryCatch, enableExceptionUnwinding, maxUnwindDepth,
-          validateExceptionTypes, enableStackTraces, enableExceptionPropagation,
+      return Objects.hash(
+          enableNestedTryCatch,
+          enableExceptionUnwinding,
+          maxUnwindDepth,
+          validateExceptionTypes,
+          enableStackTraces,
+          enableExceptionPropagation,
           enableGcIntegration);
     }
   }
@@ -667,7 +704,8 @@ public final class JniExceptionHandler implements AutoCloseable {
      * @param payload the exception payload
      * @return true to continue execution, false to re-throw
      */
-    boolean handle(WasmExceptionHandlingException.ExceptionTag tag,
+    boolean handle(
+        WasmExceptionHandlingException.ExceptionTag tag,
         WasmExceptionHandlingException.ExceptionPayload payload);
   }
 }

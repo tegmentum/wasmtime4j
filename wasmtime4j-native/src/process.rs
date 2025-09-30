@@ -12,9 +12,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime};
-use std::process::{Command, Child, ExitStatus, Stdio};
-use std::path::{Path, PathBuf};
-use std::ffi::{OsString, OsStr};
+use std::process::{ExitStatus, Stdio};
+use std::path::PathBuf;
 use std::env;
 use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
 
@@ -24,10 +23,8 @@ use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::os::windows::process::CommandExt;
 
 use tokio::process::{Command as AsyncCommand, Child as AsyncChild};
-use tokio::io::{AsyncRead, AsyncWrite, AsyncBufReadExt, BufReader};
-use tokio::sync::{mpsc, oneshot, Semaphore};
-use tokio::signal;
-use tokio::time::{timeout, sleep, interval};
+use tokio::sync::Semaphore;
+use tokio::time::{timeout, interval};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;

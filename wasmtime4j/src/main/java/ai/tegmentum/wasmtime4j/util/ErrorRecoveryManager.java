@@ -54,9 +54,7 @@ public final class ErrorRecoveryManager {
     throw new AssertionError("Utility class should not be instantiated");
   }
 
-  /**
-   * Configuration for retry operations.
-   */
+  /** Configuration for retry operations. */
   public static final class RetryConfig {
     private final int maxRetries;
     private final long initialDelayMs;
@@ -121,7 +119,8 @@ public final class ErrorRecoveryManager {
      */
     public static RetryConfig exponentialBackoff(
         final int maxRetries, final long initialDelayMs, final long maxDelayMs) {
-      return new RetryConfig(maxRetries, initialDelayMs, maxDelayMs, DEFAULT_BACKOFF_MULTIPLIER, true);
+      return new RetryConfig(
+          maxRetries, initialDelayMs, maxDelayMs, DEFAULT_BACKOFF_MULTIPLIER, true);
     }
 
     public int getMaxRetries() {
@@ -222,9 +221,9 @@ public final class ErrorRecoveryManager {
   /**
    * Executes an operation with retry logic for recoverable errors.
    *
-   * <p>This method automatically retries operations that fail with recoverable exceptions,
-   * applying the specified retry configuration. Non-recoverable errors are propagated immediately
-   * without retry attempts.
+   * <p>This method automatically retries operations that fail with recoverable exceptions, applying
+   * the specified retry configuration. Non-recoverable errors are propagated immediately without
+   * retry attempts.
    *
    * @param operation the operation to execute
    * @param config the retry configuration
@@ -264,7 +263,9 @@ public final class ErrorRecoveryManager {
         if (!UnifiedExceptionMapper.isRecoverableError(wasmException)) {
           if (LOGGER.isLoggable(Level.WARNING)) {
             LOGGER.warning(
-                operationName + " failed with non-recoverable error: " + wasmException.getMessage());
+                operationName
+                    + " failed with non-recoverable error: "
+                    + wasmException.getMessage());
           }
           break; // Don't retry non-recoverable errors
         }
@@ -294,8 +295,10 @@ public final class ErrorRecoveryManager {
 
           // Calculate next delay for exponential backoff
           if (config.isExponentialBackoff()) {
-            currentDelayMs = Math.min(
-                (long) (currentDelayMs * config.getBackoffMultiplier()), config.getMaxDelayMs());
+            currentDelayMs =
+                Math.min(
+                    (long) (currentDelayMs * config.getBackoffMultiplier()),
+                    config.getMaxDelayMs());
           }
         }
       }
@@ -384,7 +387,9 @@ public final class ErrorRecoveryManager {
 
       if (LOGGER.isLoggable(Level.INFO)) {
         LOGGER.info(
-            operationName + " primary operation failed, attempting fallback: " + wasmException.getMessage());
+            operationName
+                + " primary operation failed, attempting fallback: "
+                + wasmException.getMessage());
       }
 
       try {
@@ -407,8 +412,8 @@ public final class ErrorRecoveryManager {
   /**
    * Creates a circuit breaker-like behavior by tracking failure rates.
    *
-   * <p>This method provides a simple circuit breaker implementation that can help prevent
-   * cascading failures by temporarily disabling operations that have a high failure rate.
+   * <p>This method provides a simple circuit breaker implementation that can help prevent cascading
+   * failures by temporarily disabling operations that have a high failure rate.
    *
    * @param operation the operation to execute
    * @param failureThreshold the failure rate threshold (0.0 to 1.0)

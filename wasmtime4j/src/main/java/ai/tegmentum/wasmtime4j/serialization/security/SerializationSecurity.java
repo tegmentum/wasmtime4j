@@ -26,7 +26,6 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -44,12 +43,13 @@ import javax.crypto.spec.SecretKeySpec;
  * Security utilities for WebAssembly module serialization.
  *
  * <p>This class provides comprehensive security features for module serialization including:
+ *
  * <ul>
- *   <li>AES-GCM encryption with authenticated encryption</li>
- *   <li>Digital signatures for authenticity verification</li>
- *   <li>Integrity verification with SHA-256 and HMAC</li>
- *   <li>Secure key generation and management</li>
- *   <li>Access control and permission validation</li>
+ *   <li>AES-GCM encryption with authenticated encryption
+ *   <li>Digital signatures for authenticity verification
+ *   <li>Integrity verification with SHA-256 and HMAC
+ *   <li>Secure key generation and management
+ *   <li>Access control and permission validation
  * </ul>
  *
  * @since 1.0.0
@@ -108,8 +108,12 @@ public final class SerializationSecurity {
       LOGGER.fine("Successfully encrypted " + data.length + " bytes using AES-GCM");
       return new EncryptedData(encryptedData, iv, AES_GCM_ALGORITHM);
 
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-             InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
+        | InvalidAlgorithmParameterException
+        | IllegalBlockSizeException
+        | BadPaddingException e) {
       throw new WasmException("AES-GCM encryption failed", e);
     }
   }
@@ -134,7 +138,8 @@ public final class SerializationSecurity {
     try {
       // Initialize cipher
       final Cipher cipher = Cipher.getInstance(AES_GCM_ALGORITHM);
-      final GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, encryptedData.getIv());
+      final GCMParameterSpec gcmSpec =
+          new GCMParameterSpec(GCM_TAG_LENGTH * 8, encryptedData.getIv());
       cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
 
       // Decrypt and authenticate
@@ -143,8 +148,12 @@ public final class SerializationSecurity {
       LOGGER.fine("Successfully decrypted " + decryptedData.length + " bytes using AES-GCM");
       return decryptedData;
 
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-             InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
+        | InvalidAlgorithmParameterException
+        | IllegalBlockSizeException
+        | BadPaddingException e) {
       throw new WasmException("AES-GCM decryption failed", e);
     }
   }
@@ -177,8 +186,12 @@ public final class SerializationSecurity {
       LOGGER.fine("Successfully encrypted " + data.length + " bytes using AES-CBC");
       return new EncryptedData(encryptedData, iv, AES_CBC_ALGORITHM);
 
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-             InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
+        | InvalidAlgorithmParameterException
+        | IllegalBlockSizeException
+        | BadPaddingException e) {
       throw new WasmException("AES-CBC encryption failed", e);
     }
   }
@@ -212,8 +225,12 @@ public final class SerializationSecurity {
       LOGGER.fine("Successfully decrypted " + decryptedData.length + " bytes using AES-CBC");
       return decryptedData;
 
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-             InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
+        | InvalidAlgorithmParameterException
+        | IllegalBlockSizeException
+        | BadPaddingException e) {
       throw new WasmException("AES-CBC decryption failed", e);
     }
   }
@@ -227,8 +244,8 @@ public final class SerializationSecurity {
    * @return the digital signature
    * @throws WasmException if signing fails
    */
-  public static byte[] createDigitalSignature(final byte[] data, final PrivateKey privateKey,
-                                            final String algorithm) throws WasmException {
+  public static byte[] createDigitalSignature(
+      final byte[] data, final PrivateKey privateKey, final String algorithm) throws WasmException {
     Objects.requireNonNull(data, "Data cannot be null");
     Objects.requireNonNull(privateKey, "Private key cannot be null");
     Objects.requireNonNull(algorithm, "Algorithm cannot be null");
@@ -239,7 +256,11 @@ public final class SerializationSecurity {
       signature.update(data);
       final byte[] signatureBytes = signature.sign();
 
-      LOGGER.fine("Successfully created digital signature for " + data.length + " bytes using " + algorithm);
+      LOGGER.fine(
+          "Successfully created digital signature for "
+              + data.length
+              + " bytes using "
+              + algorithm);
       return signatureBytes;
 
     } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
@@ -257,8 +278,11 @@ public final class SerializationSecurity {
    * @return true if signature is valid
    * @throws WasmException if verification fails
    */
-  public static boolean verifyDigitalSignature(final byte[] data, final byte[] signatureBytes,
-                                             final PublicKey publicKey, final String algorithm)
+  public static boolean verifyDigitalSignature(
+      final byte[] data,
+      final byte[] signatureBytes,
+      final PublicKey publicKey,
+      final String algorithm)
       throws WasmException {
     Objects.requireNonNull(data, "Data cannot be null");
     Objects.requireNonNull(signatureBytes, "Signature cannot be null");
@@ -271,7 +295,8 @@ public final class SerializationSecurity {
       signature.update(data);
       final boolean isValid = signature.verify(signatureBytes);
 
-      LOGGER.fine("Digital signature verification result: " + isValid + " for " + data.length + " bytes");
+      LOGGER.fine(
+          "Digital signature verification result: " + isValid + " for " + data.length + " bytes");
       return isValid;
 
     } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
@@ -358,8 +383,9 @@ public final class SerializationSecurity {
    * @return true if HMAC is valid
    * @throws WasmException if verification fails
    */
-  public static boolean verifyHmacSha256(final byte[] data, final byte[] expectedHmac,
-                                       final SecretKey secretKey) throws WasmException {
+  public static boolean verifyHmacSha256(
+      final byte[] data, final byte[] expectedHmac, final SecretKey secretKey)
+      throws WasmException {
     Objects.requireNonNull(data, "Data cannot be null");
     Objects.requireNonNull(expectedHmac, "Expected HMAC cannot be null");
     Objects.requireNonNull(secretKey, "Secret key cannot be null");
@@ -442,8 +468,8 @@ public final class SerializationSecurity {
    * @return true if access is allowed
    * @throws WasmException if permission validation fails
    */
-  public static boolean validateAccess(final SecurityOperation operation,
-                                     final PermissionContext permissions) throws WasmException {
+  public static boolean validateAccess(
+      final SecurityOperation operation, final PermissionContext permissions) throws WasmException {
     Objects.requireNonNull(operation, "Operation cannot be null");
     Objects.requireNonNull(permissions, "Permissions cannot be null");
 
@@ -543,9 +569,7 @@ public final class SerializationSecurity {
     return bytes;
   }
 
-  /**
-   * Security operations that can be performed on modules.
-   */
+  /** Security operations that can be performed on modules. */
   public enum SecurityOperation {
     SERIALIZE,
     DESERIALIZE,
@@ -555,9 +579,7 @@ public final class SerializationSecurity {
     VERIFY
   }
 
-  /**
-   * Interface for permission context validation.
-   */
+  /** Interface for permission context validation. */
   public interface PermissionContext {
     /**
      * Checks if a specific permission is granted.

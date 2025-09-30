@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -104,8 +103,7 @@ public final class WasiFilesystemSnapshot {
     PanamaValidation.requireNonNull(options, "options");
 
     if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
-      throw new WasiException(
-          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException("Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
     }
 
     LOGGER.info(() -> String.format("Creating full snapshot: rootPath=%s", rootPath));
@@ -131,8 +129,7 @@ public final class WasiFilesystemSnapshot {
 
             // Create native snapshot using Panama FFI
             try (final Arena callArena = Arena.ofConfined()) {
-              final MemorySegment rootPathSegment =
-                  callArena.allocateUtf8String(rootPath);
+              final MemorySegment rootPathSegment = callArena.allocateUtf8String(rootPath);
               final MemorySegment encryptionKeySegment =
                   options.encryptionKey != null
                       ? callArena.allocateArray(ValueLayout.JAVA_BYTE, options.encryptionKey)
@@ -210,8 +207,7 @@ public final class WasiFilesystemSnapshot {
     }
 
     if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
-      throw new WasiException(
-          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException("Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
     }
 
     LOGGER.info(
@@ -241,8 +237,7 @@ public final class WasiFilesystemSnapshot {
 
             // Create native incremental snapshot using Panama FFI
             try (final Arena callArena = Arena.ofConfined()) {
-              final MemorySegment rootPathSegment =
-                  callArena.allocateUtf8String(rootPath);
+              final MemorySegment rootPathSegment = callArena.allocateUtf8String(rootPath);
               final MemorySegment encryptionKeySegment =
                   options.encryptionKey != null
                       ? callArena.allocateArray(ValueLayout.JAVA_BYTE, options.encryptionKey)
@@ -294,7 +289,8 @@ public final class WasiFilesystemSnapshot {
 
           } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to create incremental snapshot", e);
-            throw new RuntimeException("Incremental snapshot creation failed: " + e.getMessage(), e);
+            throw new RuntimeException(
+                "Incremental snapshot creation failed: " + e.getMessage(), e);
           }
         },
         asyncExecutor);
@@ -331,8 +327,7 @@ public final class WasiFilesystemSnapshot {
         () -> {
           try {
             try (final Arena callArena = Arena.ofConfined()) {
-              final MemorySegment targetPathSegment =
-                  callArena.allocateUtf8String(targetPath);
+              final MemorySegment targetPathSegment = callArena.allocateUtf8String(targetPath);
 
               final int result =
                   nativeRestoreSnapshot(
@@ -352,8 +347,7 @@ public final class WasiFilesystemSnapshot {
                     errorCode != null ? errorCode : WasiErrorCode.EIO);
               }
 
-              LOGGER.info(
-                  () -> String.format("Restored from snapshot: handle=%d", snapshotHandle));
+              LOGGER.info(() -> String.format("Restored from snapshot: handle=%d", snapshotHandle));
             }
 
           } catch (final Exception e) {
@@ -521,8 +515,7 @@ public final class WasiFilesystemSnapshot {
       boolean preserveTimestamps,
       boolean verifyIntegrity);
 
-  private native SnapshotVerifyResult nativeVerifySnapshot(
-      long contextHandle, long snapshotHandle);
+  private native SnapshotVerifyResult nativeVerifySnapshot(long contextHandle, long snapshotHandle);
 
   private native int nativeDeleteSnapshot(long contextHandle, long snapshotHandle);
 
@@ -695,7 +688,7 @@ public final class WasiFilesystemSnapshot {
     }
   }
 
-  /** Additional classes for advanced snapshot functionality */
+  /** Additional classes for advanced snapshot functionality. */
 
   /** Comprehensive snapshot metrics. */
   public static final class SnapshotMetrics {
@@ -811,9 +804,7 @@ public final class WasiFilesystemSnapshot {
     public final long optimizationTimeMs;
 
     public OptimizationResult(
-        final long blocksRemoved,
-        final long spaceReclaimed,
-        final long optimizationTimeMs) {
+        final long blocksRemoved, final long spaceReclaimed, final long optimizationTimeMs) {
       this.blocksRemoved = blocksRemoved;
       this.spaceReclaimed = spaceReclaimed;
       this.optimizationTimeMs = optimizationTimeMs;

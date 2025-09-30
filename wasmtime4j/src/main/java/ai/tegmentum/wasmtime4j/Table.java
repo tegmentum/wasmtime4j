@@ -5,9 +5,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 /**
  * Represents a WebAssembly table instance.
  *
- * <p>WebAssembly tables are arrays of opaque values of a particular table element type.
- * Tables are used to store references that cannot be directly manipulated by WebAssembly code,
- * such as function references.
+ * <p>WebAssembly tables are arrays of opaque values of a particular table element type. Tables are
+ * used to store references that cannot be directly manipulated by WebAssembly code, such as
+ * function references.
  *
  * @since 1.0.0
  */
@@ -69,13 +69,11 @@ public interface Table {
    */
   boolean isValid();
 
-  /**
-   * Enumeration of supported table element types.
-   */
+  /** Enumeration of supported table element types. */
   enum TableElementType {
-    /** Function reference type */
+    /** Function reference type. */
     FUNCREF,
-    /** External reference type */
+    /** External reference type. */
     EXTERNREF
   }
 }

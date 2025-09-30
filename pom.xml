@@ -489,6 +489,12 @@
                             <importOrder />
                             <removeUnusedImports />
                             <formatAnnotations />
+                            <!-- Fix Javadoc trailing periods -->
+                            <replaceRegex>
+                                <name>Add periods to single-line Javadoc comments</name>
+                                <searchRegex>(/\*\* )([A-Z][^.]*[^.\s])( \*/)</searchRegex>
+                                <replacement>$1$2.$3</replacement>
+                            </replaceRegex>
                         </java>
                         <formats>
                             <format>

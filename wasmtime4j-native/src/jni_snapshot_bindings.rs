@@ -8,12 +8,10 @@
 //! - Comprehensive monitoring and metrics
 //! - Validation and integrity checking
 
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_void};
 use std::path::Path;
 
-use jni::objects::{JClass, JObject, JString, JByteArray, JValue, JValueGen};
-use jni::sys::{jlong, jboolean, jint, jdouble, jobject, jbyteArray};
+use jni::objects::{JClass, JString, JByteArray, JValue};
+use jni::sys::{jlong, jboolean, jint, jobject};
 use jni::{JNIEnv, JavaVM};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -29,7 +27,7 @@ static mut JVM: Option<JavaVM> = None;
 /// Initialize JNI snapshot bindings
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeInitSnapshotManager(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
 ) -> jint {
     // Store JVM reference for callbacks
@@ -51,7 +49,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Cleanup JNI snapshot bindings
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeCleanupSnapshotManager(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
 ) {
     unsafe {
@@ -155,7 +153,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 /// Restore from snapshot with advanced options
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeRestoreSnapshot(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     snapshot_handle: jlong,

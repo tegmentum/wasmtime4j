@@ -1,197 +1,189 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Set;
-
 /**
- * Builder for creating SecurityManager instances with custom configuration.
+ * Security manager builder interface for WebAssembly components.
  *
  * @since 1.0.0
  */
 public interface SecurityManagerBuilder {
 
   /**
-   * Sets whether to require module signatures for all modules.
+   * Sets the security policy.
    *
-   * @param required true to require signatures
-   * @return this builder for method chaining
+   * @param policy security policy
+   * @return this builder
    */
-  SecurityManagerBuilder requireSignatures(final boolean required);
+  SecurityManagerBuilder withPolicy(SecurityPolicy policy);
 
   /**
-   * Sets whether to enforce certificate chain validation.
+   * Sets the access control configuration.
    *
-   * @param enforce true to enforce certificate chains
-   * @return this builder for method chaining
+   * @param accessControl access control configuration
+   * @return this builder
    */
-  SecurityManagerBuilder enforceCertificateChains(final boolean enforce);
+  SecurityManagerBuilder withAccessControl(String accessControl);
 
   /**
-   * Sets the allowed signature algorithms.
+   * Sets the audit configuration.
    *
-   * @param algorithms the allowed algorithms
-   * @return this builder for method chaining
+   * @param auditEnabled audit enabled flag
+   * @return this builder
    */
-  SecurityManagerBuilder allowedSignatureAlgorithms(final Set<SignatureAlgorithm> algorithms);
+  SecurityManagerBuilder withAuditEnabled(boolean auditEnabled);
 
   /**
-   * Sets the maximum age for signatures.
+   * Sets the compliance framework.
    *
-   * @param maxAge the maximum signature age
-   * @return this builder for method chaining
+   * @param framework compliance framework
+   * @return this builder
    */
-  SecurityManagerBuilder maxSignatureAge(final Duration maxAge);
+  SecurityManagerBuilder withComplianceFramework(String framework);
 
   /**
-   * Sets whether to allow self-signed certificates.
+   * Sets the session timeout.
    *
-   * @param allow true to allow self-signed certificates
-   * @return this builder for method chaining
+   * @param timeoutMs timeout in milliseconds
+   * @return this builder
    */
-  SecurityManagerBuilder allowSelfSigned(final boolean allow);
+  SecurityManagerBuilder withSessionTimeout(long timeoutMs);
 
   /**
-   * Sets the trust store file path.
+   * Builds the security manager.
    *
-   * @param path the trust store file path
-   * @return this builder for method chaining
+   * @return security manager instance
    */
-  SecurityManagerBuilder trustStorePath(final Path path);
+  SecurityManager build();
 
   /**
-   * Sets the HMAC secret for session tokens.
+   * Creates a new builder instance.
    *
-   * @param secret the HMAC secret bytes
-   * @return this builder for method chaining
+   * @return new builder
    */
-  SecurityManagerBuilder sessionSecret(final byte[] secret);
+  static SecurityManagerBuilder create() {
+    return new DefaultSecurityManagerBuilder();
+  }
 
-  /**
-   * Sets the default session expiration duration.
-   *
-   * @param duration the session expiration duration
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder sessionExpiration(final Duration duration);
+  /** Default implementation of SecurityManagerBuilder. */
+  class DefaultSecurityManagerBuilder implements SecurityManagerBuilder {
+    private SecurityPolicy policy;
+    private String accessControl;
+    private boolean auditEnabled;
+    private String complianceFramework;
+    private long sessionTimeout = 30000;
 
-  /**
-   * Sets the authorization combining algorithm.
-   *
-   * @param algorithm the combining algorithm
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder authorizationAlgorithm(final CombiningAlgorithm algorithm);
+    @Override
+    public SecurityManagerBuilder withPolicy(final SecurityPolicy policy) {
+      this.policy = policy;
+      return this;
+    }
 
-  /**
-   * Enables or disables strict sandbox mode.
-   *
-   * @param strict true for strict mode
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder strictSandboxMode(final boolean strict);
+    @Override
+    public SecurityManagerBuilder withAccessControl(final String accessControl) {
+      this.accessControl = accessControl;
+      return this;
+    }
 
-  /**
-   * Sets the maximum number of concurrent sandboxes.
-   *
-   * @param maxConcurrent the maximum concurrent sandboxes
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder maxConcurrentSandboxes(final int maxConcurrent);
+    @Override
+    public SecurityManagerBuilder withAuditEnabled(final boolean auditEnabled) {
+      this.auditEnabled = auditEnabled;
+      return this;
+    }
 
-  /**
-   * Enables or disables audit logging.
-   *
-   * @param enabled true to enable audit logging
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder auditLogging(final boolean enabled);
+    @Override
+    public SecurityManagerBuilder withComplianceFramework(final String framework) {
+      this.complianceFramework = framework;
+      return this;
+    }
 
-  /**
-   * Sets the audit log file path.
-   *
-   * @param path the audit log file path
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder auditLogPath(final Path path);
+    @Override
+    public SecurityManagerBuilder withSessionTimeout(final long timeoutMs) {
+      this.sessionTimeout = timeoutMs;
+      return this;
+    }
 
-  /**
-   * Sets the audit log buffer size.
-   *
-   * @param bufferSize the buffer size for audit events
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder auditBufferSize(final int bufferSize);
+    @Override
+    public SecurityManager build() {
+      return new DefaultSecurityManager(
+          policy, accessControl, auditEnabled, complianceFramework, sessionTimeout);
+    }
+  }
 
-  /**
-   * Sets the audit log flush interval.
-   *
-   * @param interval the flush interval
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder auditFlushInterval(final Duration interval);
+  /** Default security manager implementation. */
+  class DefaultSecurityManager implements SecurityManager {
+    private final SecurityPolicy policy;
+    private final String accessControl;
+    private final boolean auditEnabled;
+    private final String complianceFramework;
+    private final long sessionTimeout;
 
-  /**
-   * Enables or disables real-time security alerting.
-   *
-   * @param enabled true to enable alerting
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder securityAlerting(final boolean enabled);
+    /**
+     * Creates a new default security manager.
+     *
+     * @param policy the security policy to enforce
+     * @param accessControl the access control mechanism
+     * @param auditEnabled whether audit logging is enabled
+     * @param complianceFramework the compliance framework to use
+     * @param sessionTimeout the session timeout in milliseconds
+     */
+    public DefaultSecurityManager(
+        final SecurityPolicy policy,
+        final String accessControl,
+        final boolean auditEnabled,
+        final String complianceFramework,
+        final long sessionTimeout) {
+      this.policy = policy;
+      this.accessControl = accessControl;
+      this.auditEnabled = auditEnabled;
+      this.complianceFramework = complianceFramework;
+      this.sessionTimeout = sessionTimeout;
+    }
 
-  /**
-   * Sets the alert severity threshold.
-   *
-   * @param threshold the minimum severity for alerts
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder alertThreshold(final AuditSeverity threshold);
+    @Override
+    public void initialize(final SecurityPolicy policy) {
+      // Implementation
+    }
 
-  /**
-   * Enables or disables audit log integrity protection.
-   *
-   * @param enabled true to enable integrity protection
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder auditIntegrity(final boolean enabled);
+    @Override
+    public boolean checkAccess(final AccessRequest request) {
+      return policy != null && policy.checkAccess(request);
+    }
 
-  /**
-   * Sets the integrity secret for audit log protection.
-   *
-   * @param secret the integrity secret bytes
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder integritySecret(final byte[] secret);
+    @Override
+    public SecurityContext getCurrentContext() {
+      return new DefaultSecurityContext();
+    }
 
-  /**
-   * Sets the default resource limits for sandboxes.
-   *
-   * @param limits the resource limits
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder defaultResourceLimits(final ResourceLimits limits);
+    @Override
+    public void shutdown() {
+      // Implementation
+    }
+  }
 
-  /**
-   * Enables or disables inter-module communication.
-   *
-   * @param enabled true to enable inter-module communication
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder interModuleCommunication(final boolean enabled);
+  /** Default security context implementation. */
+  class DefaultSecurityContext implements SecurityContext {
+    @Override
+    public String getContextId() {
+      return "default";
+    }
 
-  /**
-   * Sets the maximum message size for inter-module communication.
-   *
-   * @param maxSize the maximum message size in bytes
-   * @return this builder for method chaining
-   */
-  SecurityManagerBuilder maxMessageSize(final int maxSize);
+    @Override
+    public java.util.Set<Role> getRoles() {
+      return java.util.Collections.emptySet();
+    }
 
-  /**
-   * Builds the SecurityManager with the configured settings.
-   *
-   * @return a new SecurityManager instance
-   * @throws SecurityException if the configuration is invalid
-   */
-  SecurityManager build() throws SecurityException;
+    @Override
+    public java.util.Set<Capability> getCapabilities() {
+      return java.util.Collections.emptySet();
+    }
+
+    @Override
+    public boolean hasRole(Role role) {
+      return false;
+    }
+
+    @Override
+    public boolean hasCapability(Capability capability) {
+      return false;
+    }
+  }
 }

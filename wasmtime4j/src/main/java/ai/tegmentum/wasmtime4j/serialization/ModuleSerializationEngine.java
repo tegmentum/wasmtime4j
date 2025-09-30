@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -46,14 +45,15 @@ import java.util.zip.GZIPOutputStream;
  * Advanced WebAssembly module serialization engine with comprehensive optimization features.
  *
  * <p>This engine provides production-ready serialization capabilities including:
+ *
  * <ul>
- *   <li>Multiple compression algorithms (LZ4, GZIP, none)</li>
- *   <li>Streaming serialization for large modules</li>
- *   <li>Zero-copy operations where possible</li>
- *   <li>Cross-platform compatibility</li>
- *   <li>Parallel serialization/deserialization</li>
- *   <li>Performance monitoring and metrics</li>
- *   <li>Integrity verification</li>
+ *   <li>Multiple compression algorithms (LZ4, GZIP, none)
+ *   <li>Streaming serialization for large modules
+ *   <li>Zero-copy operations where possible
+ *   <li>Cross-platform compatibility
+ *   <li>Parallel serialization/deserialization
+ *   <li>Performance monitoring and metrics
+ *   <li>Integrity verification
  * </ul>
  *
  * @since 1.0.0
@@ -72,9 +72,7 @@ public final class ModuleSerializationEngine {
   private final Executor parallelExecutor;
   private final MemoryMXBean memoryBean;
 
-  /**
-   * Creates a new serialization engine with default configuration.
-   */
+  /** Creates a new serialization engine with default configuration. */
   public ModuleSerializationEngine() {
     this(ForkJoinPool.commonPool());
   }
@@ -99,11 +97,15 @@ public final class ModuleSerializationEngine {
    * @return the serialized module with metadata
    * @throws WasmException if serialization fails
    */
-  public SerializationResult serialize(final Module module, final ModuleSerializationFormat format,
-                                     final SerializationOptions options) throws WasmException {
+  public SerializationResult serialize(
+      final Module module,
+      final ModuleSerializationFormat format,
+      final SerializationOptions options)
+      throws WasmException {
     Objects.requireNonNull(module, "Module cannot be null");
     Objects.requireNonNull(format, "Format cannot be null");
-    final SerializationOptions opts = options != null ? options : SerializationOptions.createDefault();
+    final SerializationOptions opts =
+        options != null ? options : SerializationOptions.createDefault();
 
     final long startTime = System.nanoTime();
     final long startMemory = getUsedMemory();
@@ -190,14 +192,17 @@ public final class ModuleSerializationEngine {
    * @throws WasmException if serialization fails
    * @throws IOException if I/O operations fail
    */
-  public SerializedModuleMetadata serializeToStream(final Module module, final OutputStream outputStream,
-                                                  final ModuleSerializationFormat format,
-                                                  final SerializationOptions options)
+  public SerializedModuleMetadata serializeToStream(
+      final Module module,
+      final OutputStream outputStream,
+      final ModuleSerializationFormat format,
+      final SerializationOptions options)
       throws WasmException, IOException {
     Objects.requireNonNull(module, "Module cannot be null");
     Objects.requireNonNull(outputStream, "Output stream cannot be null");
     Objects.requireNonNull(format, "Format cannot be null");
-    final SerializationOptions opts = options != null ? options : SerializationOptions.createDefault();
+    final SerializationOptions opts =
+        options != null ? options : SerializationOptions.createDefault();
 
     final long startTime = System.nanoTime();
 
@@ -215,7 +220,8 @@ public final class ModuleSerializationEngine {
    * @throws WasmException if deserialization fails
    * @throws IOException if I/O operations fail
    */
-  public Module deserializeFromStream(final InputStream inputStream, final SerializedModuleMetadata metadata)
+  public Module deserializeFromStream(
+      final InputStream inputStream, final SerializedModuleMetadata metadata)
       throws WasmException, IOException {
     Objects.requireNonNull(inputStream, "Input stream cannot be null");
 
@@ -235,42 +241,49 @@ public final class ModuleSerializationEngine {
    * @return array of serialization results
    * @throws WasmException if any serialization fails
    */
-  public CompletableFuture<SerializationResult[]> serializeParallel(final Module[] modules,
-                                                                   final ModuleSerializationFormat format,
-                                                                   final SerializationOptions options) {
+  public CompletableFuture<SerializationResult[]> serializeParallel(
+      final Module[] modules,
+      final ModuleSerializationFormat format,
+      final SerializationOptions options) {
     Objects.requireNonNull(modules, "Modules cannot be null");
     Objects.requireNonNull(format, "Format cannot be null");
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     final CompletableFuture<SerializationResult>[] futures = new CompletableFuture[modules.length];
 
     for (int i = 0; i < modules.length; i++) {
       final Module module = modules[i];
-      futures[i] = CompletableFuture.supplyAsync(() -> {
-        try {
-          return serialize(module, format, options);
-        } catch (WasmException e) {
-          throw new RuntimeException("Parallel serialization failed", e);
-        }
-      }, parallelExecutor);
+      futures[i] =
+          CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  return serialize(module, format, options);
+                } catch (WasmException e) {
+                  throw new RuntimeException("Parallel serialization failed", e);
+                }
+              },
+              parallelExecutor);
     }
 
     return CompletableFuture.allOf(futures)
-        .thenApply(v -> {
-          final SerializationResult[] results = new SerializationResult[futures.length];
-          for (int i = 0; i < futures.length; i++) {
-            results[i] = futures[i].join();
-          }
-          return results;
-        });
+        .thenApply(
+            v -> {
+              final SerializationResult[] results = new SerializationResult[futures.length];
+              for (int i = 0; i < futures.length; i++) {
+                results[i] = futures[i].join();
+              }
+              return results;
+            });
   }
 
   // Private serialization methods
 
-  /**
-   * Serializes a module using raw binary format (no compression).
-   */
-  private SerializationResult serializeRawBinary(final Module module, final SerializationOptions options,
-                                               final long startTime, final long startMemory)
+  /** Serializes a module using raw binary format (no compression). */
+  private SerializationResult serializeRawBinary(
+      final Module module,
+      final SerializationOptions options,
+      final long startTime,
+      final long startMemory)
       throws WasmException {
     try {
       // Get the raw module data (implementation dependent)
@@ -281,23 +294,24 @@ public final class ModuleSerializationEngine {
       final long endMemory = getUsedMemory();
 
       // Calculate performance metrics
-      final SerializationPerformanceMetrics.Builder metricsBuilder = new SerializationPerformanceMetrics.Builder()
-          .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
-          .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
-          .setIoMetrics(rawModuleData.length, serializedData.length, 0)
-          .calculateThroughput(rawModuleData.length);
+      final SerializationPerformanceMetrics.Builder metricsBuilder =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
+              .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
+              .setIoMetrics(rawModuleData.length, serializedData.length, 0)
+              .calculateThroughput(rawModuleData.length);
 
       final SerializationPerformanceMetrics metrics = metricsBuilder.build();
 
       // Create metadata
-      final SerializedModuleMetadata metadata = createMetadata(
-          ModuleSerializationFormat.RAW_BINARY,
-          module,
-          serializedData,
-          rawModuleData.length,
-          metrics,
-          options
-      );
+      final SerializedModuleMetadata metadata =
+          createMetadata(
+              ModuleSerializationFormat.RAW_BINARY,
+              module,
+              serializedData,
+              rawModuleData.length,
+              metrics,
+              options);
 
       LOGGER.fine("Raw binary serialization completed: " + serializedData.length + " bytes");
       return new SerializationResult(serializedData, metadata);
@@ -307,12 +321,13 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Serializes a module using compact binary format with compression.
-   */
-  private SerializationResult serializeCompactBinary(final Module module, final SerializationOptions options,
-                                                   final long startTime, final long startMemory,
-                                                   final CompressionType compressionType)
+  /** Serializes a module using compact binary format with compression. */
+  private SerializationResult serializeCompactBinary(
+      final Module module,
+      final SerializationOptions options,
+      final long startTime,
+      final long startMemory,
+      final CompressionType compressionType)
       throws WasmException {
     try {
       // Get the raw module data
@@ -330,30 +345,32 @@ public final class ModuleSerializationEngine {
       final long endMemory = getUsedMemory();
 
       // Calculate performance metrics
-      final SerializationPerformanceMetrics.Builder metricsBuilder = new SerializationPerformanceMetrics.Builder()
-          .setTimingMetrics(endTime - startTime, 0, compressionEnd - compressionStart, 0, 0)
-          .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
-          .setIoMetrics(rawModuleData.length, serializedData.length, 0)
-          .setCompressionEfficiency((double) rawModuleData.length / compressedData.length)
-          .calculateThroughput(rawModuleData.length);
+      final SerializationPerformanceMetrics.Builder metricsBuilder =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(endTime - startTime, 0, compressionEnd - compressionStart, 0, 0)
+              .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
+              .setIoMetrics(rawModuleData.length, serializedData.length, 0)
+              .setCompressionEfficiency((double) rawModuleData.length / compressedData.length)
+              .calculateThroughput(rawModuleData.length);
 
       final SerializationPerformanceMetrics metrics = metricsBuilder.build();
 
       // Create metadata
-      final ModuleSerializationFormat format = compressionType == CompressionType.LZ4 ?
-          ModuleSerializationFormat.COMPACT_BINARY_LZ4 : ModuleSerializationFormat.COMPACT_BINARY_GZIP;
+      final ModuleSerializationFormat format =
+          compressionType == CompressionType.LZ4
+              ? ModuleSerializationFormat.COMPACT_BINARY_LZ4
+              : ModuleSerializationFormat.COMPACT_BINARY_GZIP;
 
-      final SerializedModuleMetadata metadata = createMetadata(
-          format,
-          module,
-          serializedData,
-          rawModuleData.length,
-          metrics,
-          options
-      );
+      final SerializedModuleMetadata metadata =
+          createMetadata(format, module, serializedData, rawModuleData.length, metrics, options);
 
-      LOGGER.fine("Compact binary serialization completed: " + serializedData.length + " bytes " +
-          "(compression: " + String.format("%.2fx", metrics.getCompressionEfficiency()) + ")");
+      LOGGER.fine(
+          "Compact binary serialization completed: "
+              + serializedData.length
+              + " bytes "
+              + "(compression: "
+              + String.format("%.2fx", metrics.getCompressionEfficiency())
+              + ")");
 
       return new SerializationResult(serializedData, metadata);
 
@@ -362,11 +379,12 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Serializes a module using streaming format for large modules.
-   */
-  private SerializationResult serializeStreaming(final Module module, final SerializationOptions options,
-                                               final long startTime, final long startMemory)
+  /** Serializes a module using streaming format for large modules. */
+  private SerializationResult serializeStreaming(
+      final Module module,
+      final SerializationOptions options,
+      final long startTime,
+      final long startMemory)
       throws WasmException {
     try {
       final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -386,23 +404,24 @@ public final class ModuleSerializationEngine {
       final long endMemory = getUsedMemory();
 
       // Calculate performance metrics
-      final SerializationPerformanceMetrics.Builder metricsBuilder = new SerializationPerformanceMetrics.Builder()
-          .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
-          .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
-          .setIoMetrics(rawModuleData.length, serializedData.length, 0)
-          .calculateThroughput(rawModuleData.length);
+      final SerializationPerformanceMetrics.Builder metricsBuilder =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
+              .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
+              .setIoMetrics(rawModuleData.length, serializedData.length, 0)
+              .calculateThroughput(rawModuleData.length);
 
       final SerializationPerformanceMetrics metrics = metricsBuilder.build();
 
       // Create metadata
-      final SerializedModuleMetadata metadata = createMetadata(
-          ModuleSerializationFormat.STREAMING_BINARY,
-          module,
-          serializedData,
-          rawModuleData.length,
-          metrics,
-          options
-      );
+      final SerializedModuleMetadata metadata =
+          createMetadata(
+              ModuleSerializationFormat.STREAMING_BINARY,
+              module,
+              serializedData,
+              rawModuleData.length,
+              metrics,
+              options);
 
       LOGGER.fine("Streaming serialization completed: " + serializedData.length + " bytes");
       return new SerializationResult(serializedData, metadata);
@@ -412,11 +431,12 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Serializes a module using memory-mapped format.
-   */
-  private SerializationResult serializeMemoryMapped(final Module module, final SerializationOptions options,
-                                                  final long startTime, final long startMemory)
+  /** Serializes a module using memory-mapped format. */
+  private SerializationResult serializeMemoryMapped(
+      final Module module,
+      final SerializationOptions options,
+      final long startTime,
+      final long startMemory)
       throws WasmException {
     try {
       // For memory-mapped serialization, we create a temporary file
@@ -436,25 +456,31 @@ public final class ModuleSerializationEngine {
         final long endMemory = getUsedMemory();
 
         // Calculate performance metrics
-        final SerializationPerformanceMetrics.Builder metricsBuilder = new SerializationPerformanceMetrics.Builder()
-            .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
-            .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
-            .setIoMetrics(rawModuleData.length, serializedData.length, endTime - startTime)
-            .calculateThroughput(rawModuleData.length);
+        final SerializationPerformanceMetrics.Builder metricsBuilder =
+            new SerializationPerformanceMetrics.Builder()
+                .setTimingMetrics(endTime - startTime, 0, 0, 0, 0)
+                .setMemoryMetrics(endMemory, (startMemory + endMemory) / 2, endMemory - startMemory)
+                .setIoMetrics(rawModuleData.length, serializedData.length, endTime - startTime)
+                .calculateThroughput(rawModuleData.length);
 
         final SerializationPerformanceMetrics metrics = metricsBuilder.build();
 
         // Create metadata
-        final SerializedModuleMetadata metadata = createMetadata(
-            ModuleSerializationFormat.MEMORY_MAPPED,
-            module,
-            serializedData,
-            rawModuleData.length,
-            metrics,
-            options
-        );
+        final SerializedModuleMetadata metadata =
+            createMetadata(
+                ModuleSerializationFormat.MEMORY_MAPPED,
+                module,
+                serializedData,
+                rawModuleData.length,
+                metrics,
+                options);
 
-        LOGGER.fine("Memory-mapped serialization completed: " + tempFile + " (" + rawModuleData.length + " bytes)");
+        LOGGER.fine(
+            "Memory-mapped serialization completed: "
+                + tempFile
+                + " ("
+                + rawModuleData.length
+                + " bytes)");
         return new SerializationResult(serializedData, metadata);
 
       } finally {
@@ -471,7 +497,8 @@ public final class ModuleSerializationEngine {
 
   // Private deserialization methods
 
-  private Module deserializeRawBinary(final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
+  private Module deserializeRawBinary(
+      final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
       throws WasmException {
     try {
       // Extract raw module data from serialized package
@@ -481,7 +508,8 @@ public final class ModuleSerializationEngine {
       final Module module = reconstructModuleFromData(moduleData);
 
       final long endTime = System.nanoTime();
-      LOGGER.fine("Raw binary deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
+      LOGGER.fine(
+          "Raw binary deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
 
       return module;
 
@@ -490,8 +518,11 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  private Module deserializeCompactBinary(final byte[] data, final SerializedModuleMetadata metadata,
-                                        final long startTime, final CompressionType compressionType)
+  private Module deserializeCompactBinary(
+      final byte[] data,
+      final SerializedModuleMetadata metadata,
+      final long startTime,
+      final CompressionType compressionType)
       throws WasmException {
     try {
       // Extract compressed data from serialized package
@@ -504,7 +535,10 @@ public final class ModuleSerializationEngine {
       final Module module = reconstructModuleFromData(moduleData);
 
       final long endTime = System.nanoTime();
-      LOGGER.fine("Compact binary deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
+      LOGGER.fine(
+          "Compact binary deserialization completed in "
+              + ((endTime - startTime) / 1_000_000)
+              + "ms");
 
       return module;
 
@@ -513,7 +547,8 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  private Module deserializeStreaming(final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
+  private Module deserializeStreaming(
+      final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
       throws WasmException {
     try {
       final ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
@@ -531,7 +566,8 @@ public final class ModuleSerializationEngine {
       final Module module = reconstructModuleFromData(moduleData);
 
       final long endTime = System.nanoTime();
-      LOGGER.fine("Streaming deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
+      LOGGER.fine(
+          "Streaming deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
 
       return module;
 
@@ -540,7 +576,8 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  private Module deserializeMemoryMapped(final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
+  private Module deserializeMemoryMapped(
+      final byte[] data, final SerializedModuleMetadata metadata, final long startTime)
       throws WasmException {
     try {
       // Extract file path from serialized data
@@ -558,7 +595,10 @@ public final class ModuleSerializationEngine {
       final Module module = reconstructModuleFromData(moduleData);
 
       final long endTime = System.nanoTime();
-      LOGGER.fine("Memory-mapped deserialization completed in " + ((endTime - startTime) / 1_000_000) + "ms");
+      LOGGER.fine(
+          "Memory-mapped deserialization completed in "
+              + ((endTime - startTime) / 1_000_000)
+              + "ms");
 
       return module;
 
@@ -570,8 +610,8 @@ public final class ModuleSerializationEngine {
   // Helper methods
 
   /**
-   * Extracts raw module data from a module instance.
-   * Note: This is a placeholder - actual implementation would depend on module internals.
+   * Extracts raw module data from a module instance. Note: This is a placeholder - actual
+   * implementation would depend on module internals.
    */
   private byte[] extractRawModuleData(final Module module) throws WasmException {
     // In a real implementation, this would extract the compiled module bytes
@@ -581,8 +621,8 @@ public final class ModuleSerializationEngine {
   }
 
   /**
-   * Reconstructs a module from raw data.
-   * Note: This is a placeholder - actual implementation would depend on module factory.
+   * Reconstructs a module from raw data. Note: This is a placeholder - actual implementation would
+   * depend on module factory.
    */
   private Module reconstructModuleFromData(final byte[] data) throws WasmException {
     // In a real implementation, this would use the module factory to recreate the module
@@ -590,11 +630,9 @@ public final class ModuleSerializationEngine {
         "reconstructModuleFromData not implemented - requires module factory integration");
   }
 
-  /**
-   * Creates a serialized package with header, data, and checksum.
-   */
-  private byte[] createSerializedPackage(final byte[] moduleData, final SerializationOptions options)
-      throws IOException {
+  /** Creates a serialized package with header, data, and checksum. */
+  private byte[] createSerializedPackage(
+      final byte[] moduleData, final SerializationOptions options) throws IOException {
     final ByteArrayOutputStream packageStream = new ByteArrayOutputStream();
 
     // Write magic header
@@ -618,9 +656,7 @@ public final class ModuleSerializationEngine {
     return packageStream.toByteArray();
   }
 
-  /**
-   * Extracts module data from a serialized package.
-   */
+  /** Extracts module data from a serialized package. */
   private byte[] extractModuleDataFromPackage(final byte[] packageData) throws IOException {
     final ByteArrayInputStream packageStream = new ByteArrayInputStream(packageData);
 
@@ -662,10 +698,9 @@ public final class ModuleSerializationEngine {
     return moduleData;
   }
 
-  /**
-   * Compresses data using the specified compression type.
-   */
-  private byte[] compressData(final byte[] data, final CompressionType compressionType) throws IOException {
+  /** Compresses data using the specified compression type. */
+  private byte[] compressData(final byte[] data, final CompressionType compressionType)
+      throws IOException {
     switch (compressionType) {
       case GZIP:
         return compressGzip(data);
@@ -678,10 +713,9 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Decompresses data using the specified compression type.
-   */
-  private byte[] decompressData(final byte[] data, final CompressionType compressionType) throws IOException {
+  /** Decompresses data using the specified compression type. */
+  private byte[] decompressData(final byte[] data, final CompressionType compressionType)
+      throws IOException {
     switch (compressionType) {
       case GZIP:
         return decompressGzip(data);
@@ -694,20 +728,17 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Compresses data using GZIP.
-   */
+  /** Compresses data using GZIP. */
   private byte[] compressGzip(final byte[] data) throws IOException {
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    try (final GZIPOutputStream gzipStream = new GZIPOutputStream(outputStream, DEFAULT_BUFFER_SIZE)) {
+    try (final GZIPOutputStream gzipStream =
+        new GZIPOutputStream(outputStream, DEFAULT_BUFFER_SIZE)) {
       gzipStream.write(data);
     }
     return outputStream.toByteArray();
   }
 
-  /**
-   * Decompresses GZIP data.
-   */
+  /** Decompresses GZIP data. */
   private byte[] decompressGzip(final byte[] data) throws IOException {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -721,9 +752,7 @@ public final class ModuleSerializationEngine {
     return outputStream.toByteArray();
   }
 
-  /**
-   * Compresses data using LZ4 (placeholder implementation).
-   */
+  /** Compresses data using LZ4 (placeholder implementation). */
   private byte[] compressLz4(final byte[] data) throws IOException {
     // In a real implementation, this would use the LZ4 library
     // For now, we'll just return the original data as a placeholder
@@ -731,9 +760,7 @@ public final class ModuleSerializationEngine {
     return data;
   }
 
-  /**
-   * Decompresses LZ4 data (placeholder implementation).
-   */
+  /** Decompresses LZ4 data (placeholder implementation). */
   private byte[] decompressLz4(final byte[] data) throws IOException {
     // In a real implementation, this would use the LZ4 library
     // For now, we'll just return the original data as a placeholder
@@ -741,9 +768,7 @@ public final class ModuleSerializationEngine {
     return data;
   }
 
-  /**
-   * Calculates SHA-256 checksum of data.
-   */
+  /** Calculates SHA-256 checksum of data. */
   private byte[] calculateChecksum(final byte[] data) {
     try {
       final MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -753,10 +778,9 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Streams data in chunks for streaming serialization.
-   */
-  private void streamDataInChunks(final byte[] data, final OutputStream outputStream) throws IOException {
+  /** Streams data in chunks for streaming serialization. */
+  private void streamDataInChunks(final byte[] data, final OutputStream outputStream)
+      throws IOException {
     int offset = 0;
     while (offset < data.length) {
       final int chunkSize = Math.min(STREAMING_CHUNK_SIZE, data.length - offset);
@@ -774,9 +798,7 @@ public final class ModuleSerializationEngine {
     outputStream.write(ByteBuffer.allocate(4).putInt(0).array());
   }
 
-  /**
-   * Reads streamed data chunks.
-   */
+  /** Reads streamed data chunks. */
   private byte[] readStreamedDataChunks(final InputStream inputStream) throws IOException {
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final byte[] sizeBuffer = new byte[4];
@@ -804,11 +826,9 @@ public final class ModuleSerializationEngine {
     return outputStream.toByteArray();
   }
 
-  /**
-   * Writes streaming header.
-   */
-  private void writeStreamingHeader(final OutputStream outputStream, final SerializationOptions options)
-      throws IOException {
+  /** Writes streaming header. */
+  private void writeStreamingHeader(
+      final OutputStream outputStream, final SerializationOptions options) throws IOException {
     // Write magic header
     outputStream.write(MAGIC_HEADER);
 
@@ -819,21 +839,19 @@ public final class ModuleSerializationEngine {
     outputStream.write(ByteBuffer.allocate(4).putInt(PROTOCOL_VERSION).array());
   }
 
-  /**
-   * Reads streaming header.
-   */
+  /** Reads streaming header. */
   private void readStreamingHeader(final InputStream inputStream) throws IOException {
     // Validate magic header
     final byte[] headerBytes = new byte[MAGIC_HEADER.length];
-    if (inputStream.read(headerBytes) != MAGIC_HEADER.length ||
-        !java.util.Arrays.equals(headerBytes, MAGIC_HEADER)) {
+    if (inputStream.read(headerBytes) != MAGIC_HEADER.length
+        || !java.util.Arrays.equals(headerBytes, MAGIC_HEADER)) {
       throw new IOException("Invalid streaming header");
     }
 
     // Validate streaming format marker
     final byte[] streamMarker = new byte[6];
-    if (inputStream.read(streamMarker) != 6 ||
-        !java.util.Arrays.equals(streamMarker, "STREAM".getBytes("UTF-8"))) {
+    if (inputStream.read(streamMarker) != 6
+        || !java.util.Arrays.equals(streamMarker, "STREAM".getBytes("UTF-8"))) {
       throw new IOException("Invalid streaming format marker");
     }
 
@@ -849,9 +867,7 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Writes streaming footer.
-   */
+  /** Writes streaming footer. */
   private void writeStreamingFooter(final OutputStream outputStream, final byte[] originalData)
       throws IOException {
     // Write original data length
@@ -862,9 +878,7 @@ public final class ModuleSerializationEngine {
     outputStream.write(checksum);
   }
 
-  /**
-   * Reads streaming footer.
-   */
+  /** Reads streaming footer. */
   private void readStreamingFooter(final InputStream inputStream, final byte[] reconstructedData)
       throws IOException {
     // Read original data length
@@ -875,8 +889,8 @@ public final class ModuleSerializationEngine {
 
     final int originalLength = ByteBuffer.wrap(lengthBytes).getInt();
     if (originalLength != reconstructedData.length) {
-      throw new IOException("Data length mismatch: expected " + originalLength +
-          ", got " + reconstructedData.length);
+      throw new IOException(
+          "Data length mismatch: expected " + originalLength + ", got " + reconstructedData.length);
     }
 
     // Read and validate checksum
@@ -891,33 +905,36 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Serializes to a writable byte channel.
-   */
-  private SerializedModuleMetadata serializeToChannel(final Module module, final WritableByteChannel channel,
-                                                    final ModuleSerializationFormat format,
-                                                    final SerializationOptions options, final long startTime)
+  /** Serializes to a writable byte channel. */
+  private SerializedModuleMetadata serializeToChannel(
+      final Module module,
+      final WritableByteChannel channel,
+      final ModuleSerializationFormat format,
+      final SerializationOptions options,
+      final long startTime)
       throws IOException, WasmException {
     // This would implement channel-based serialization
     throw new UnsupportedOperationException("Channel-based serialization not yet implemented");
   }
 
-  /**
-   * Deserializes from a readable byte channel.
-   */
-  private Module deserializeFromChannel(final ReadableByteChannel channel, final SerializedModuleMetadata metadata,
-                                      final long startTime) throws IOException, WasmException {
+  /** Deserializes from a readable byte channel. */
+  private Module deserializeFromChannel(
+      final ReadableByteChannel channel,
+      final SerializedModuleMetadata metadata,
+      final long startTime)
+      throws IOException, WasmException {
     // This would implement channel-based deserialization
     throw new UnsupportedOperationException("Channel-based deserialization not yet implemented");
   }
 
-  /**
-   * Creates comprehensive metadata for a serialization result.
-   */
-  private SerializedModuleMetadata createMetadata(final ModuleSerializationFormat format, final Module module,
-                                                final byte[] serializedData, final long originalSize,
-                                                final SerializationPerformanceMetrics metrics,
-                                                final SerializationOptions options) {
+  /** Creates comprehensive metadata for a serialization result. */
+  private SerializedModuleMetadata createMetadata(
+      final ModuleSerializationFormat format,
+      final Module module,
+      final byte[] serializedData,
+      final long originalSize,
+      final SerializationPerformanceMetrics metrics,
+      final SerializationOptions options) {
     try {
       final MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
       final String hash = bytesToHex(sha256.digest(serializedData));
@@ -938,9 +955,7 @@ public final class ModuleSerializationEngine {
     }
   }
 
-  /**
-   * Converts byte array to hexadecimal string.
-   */
+  /** Converts byte array to hexadecimal string. */
   private String bytesToHex(final byte[] bytes) {
     final StringBuilder result = new StringBuilder();
     for (final byte b : bytes) {
@@ -949,16 +964,12 @@ public final class ModuleSerializationEngine {
     return result.toString();
   }
 
-  /**
-   * Gets current used memory in bytes.
-   */
+  /** Gets current used memory in bytes. */
   private long getUsedMemory() {
     return memoryBean.getHeapMemoryUsage().getUsed();
   }
 
-  /**
-   * Compression types supported by the serialization engine.
-   */
+  /** Compression types supported by the serialization engine. */
   private enum CompressionType {
     NONE,
     GZIP,

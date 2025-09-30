@@ -23,8 +23,8 @@ import java.util.Set;
 /**
  * Configuration for advanced component linking operations.
  *
- * <p>This configuration controls various aspects of component linking including
- * dynamic loading strategies, resource sharing policies, and compatibility requirements.
+ * <p>This configuration controls various aspects of component linking including dynamic loading
+ * strategies, resource sharing policies, and compatibility requirements.
  *
  * @since 1.0.0
  */
@@ -193,9 +193,7 @@ public final class ComponentLinkingConfig {
         .build();
   }
 
-  /**
-   * Builder for ComponentLinkingConfig.
-   */
+  /** Builder for ComponentLinkingConfig. */
   public static final class Builder {
     private LinkingStrategy strategy = LinkingStrategy.ADAPTIVE;
     private SharedResourcePolicy sharedResourcePolicy = SharedResourcePolicy.CONSERVATIVE;
@@ -265,59 +263,51 @@ public final class ComponentLinkingConfig {
     }
   }
 
-  /**
-   * Linking strategy options.
-   */
+  /** Linking strategy options. */
   public enum LinkingStrategy {
-    /** Static linking with all dependencies bundled */
+    /** Static linking with all dependencies bundled. */
     STATIC_LINKING,
-    /** Dynamic linking with runtime resolution */
+    /** Dynamic linking with runtime resolution. */
     DYNAMIC_LINKING,
-    /** Shared-everything dynamic linking for efficient resource usage */
+    /** Shared-everything dynamic linking for efficient resource usage. */
     SHARED_EVERYTHING,
-    /** Adaptive strategy that chooses based on runtime conditions */
+    /** Adaptive strategy that chooses based on runtime conditions. */
     ADAPTIVE
   }
 
-  /**
-   * Resource sharing policy options.
-   */
+  /** Resource sharing policy options. */
   public enum SharedResourcePolicy {
-    /** No resource sharing between components */
+    /** No resource sharing between components. */
     NO_SHARING,
-    /** Conservative sharing of safe resources only */
+    /** Conservative sharing of safe resources only. */
     CONSERVATIVE,
-    /** Moderate sharing with safety checks */
+    /** Moderate sharing with safety checks. */
     MODERATE,
-    /** Aggressive sharing for maximum efficiency */
+    /** Aggressive sharing for maximum efficiency. */
     AGGRESSIVE_SHARING
   }
 
-  /**
-   * Compatibility level requirements.
-   */
+  /** Compatibility level requirements. */
   public enum CompatibilityLevel {
-    /** Strict compatibility checking */
+    /** Strict compatibility checking. */
     STRICT,
-    /** Moderate compatibility with some flexibility */
+    /** Moderate compatibility with some flexibility. */
     MODERATE,
-    /** Lenient compatibility allowing more mismatches */
+    /** Lenient compatibility allowing more mismatches. */
     LENIENT
   }
 
-  /**
-   * Resource isolation levels.
-   */
+  /** Resource isolation levels. */
   public enum ResourceIsolationLevel {
-    /** No isolation - components share all resources */
+    /** No isolation - components share all resources. */
     NONE,
-    /** Basic isolation of critical resources */
+    /** Basic isolation of critical resources. */
     BASIC,
-    /** Moderate isolation with balanced sharing */
+    /** Moderate isolation with balanced sharing. */
     MODERATE,
-    /** Strong isolation with minimal sharing */
+    /** Strong isolation with minimal sharing. */
     STRONG,
-    /** Complete isolation - no resource sharing */
+    /** Complete isolation - no resource sharing. */
     COMPLETE
   }
 }

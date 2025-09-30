@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +65,8 @@ public final class WasiFilesystemSnapshot {
   private final Map<Long, SnapshotMetadata> snapshotMetadata = new ConcurrentHashMap<>();
 
   /** Snapshot performance metrics. */
-  private final Map<Long, SnapshotPerformanceMetrics> performanceMetrics = new ConcurrentHashMap<>();
+  private final Map<Long, SnapshotPerformanceMetrics> performanceMetrics =
+      new ConcurrentHashMap<>();
 
   /** Cleanup scheduler for background maintenance. */
   private final java.util.concurrent.ScheduledExecutorService cleanupScheduler =
@@ -127,8 +126,7 @@ public final class WasiFilesystemSnapshot {
     JniValidation.requireNonNull(options, "options");
 
     if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
-      throw new WasiException(
-          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException("Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
     }
 
     LOGGER.info(() -> String.format("Creating full snapshot: rootPath=%s", rootPath));
@@ -151,11 +149,12 @@ public final class WasiFilesystemSnapshot {
                     null);
 
             // Add advanced metadata fields
-            metadata.creationContext = new CreationContext(
-                System.getProperty("user.name"),
-                ProcessHandle.current().pid(),
-                createHostInfo(),
-                "Programmatic snapshot creation");
+            metadata.creationContext =
+                new CreationContext(
+                    System.getProperty("user.name"),
+                    ProcessHandle.current().pid(),
+                    createHostInfo(),
+                    "Programmatic snapshot creation");
 
             metadata.version = new SnapshotVersion(1, 0, 0);
             metadata.tags = new ArrayList<>();
@@ -239,8 +238,7 @@ public final class WasiFilesystemSnapshot {
     }
 
     if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
-      throw new WasiException(
-          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException("Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
     }
 
     LOGGER.info(
@@ -318,7 +316,8 @@ public final class WasiFilesystemSnapshot {
 
           } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to create incremental snapshot", e);
-            throw new RuntimeException("Incremental snapshot creation failed: " + e.getMessage(), e);
+            throw new RuntimeException(
+                "Incremental snapshot creation failed: " + e.getMessage(), e);
           }
         },
         asyncExecutor);
@@ -372,8 +371,7 @@ public final class WasiFilesystemSnapshot {
                   errorCode != null ? errorCode : WasiErrorCode.EIO);
             }
 
-            LOGGER.info(
-                () -> String.format("Restored from snapshot: handle=%d", snapshotHandle));
+            LOGGER.info(() -> String.format("Restored from snapshot: handle=%d", snapshotHandle));
 
           } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to restore from snapshot", e);
@@ -531,24 +529,20 @@ public final class WasiFilesystemSnapshot {
     LOGGER.info("Filesystem snapshot handler closed successfully");
   }
 
-  /**
-   * Creates a differential snapshot (changes since last full snapshot).
-   */
+  /** Creates a differential snapshot (changes since last full snapshot). */
   public CompletableFuture<Long> createDifferentialSnapshotAsync(
       final String rootPath, final SnapshotOptions options) {
     JniValidation.requireNonEmpty(rootPath, "rootPath");
     JniValidation.requireNonNull(options, "options");
 
     if (activeSnapshots.size() >= MAX_ACTIVE_SNAPSHOTS) {
-      throw new WasiException(
-          "Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
+      throw new WasiException("Maximum number of active snapshots exceeded", WasiErrorCode.ENOMEM);
     }
 
     // Find last full snapshot for this path
     final Optional<Long> lastFullSnapshot = findLastFullSnapshot(rootPath);
     if (!lastFullSnapshot.isPresent()) {
-      throw new WasiException(
-          "No full snapshot found for differential", WasiErrorCode.ENOENT);
+      throw new WasiException("No full snapshot found for differential", WasiErrorCode.ENOENT);
     }
 
     LOGGER.info(
@@ -622,7 +616,8 @@ public final class WasiFilesystemSnapshot {
 
           } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to create differential snapshot", e);
-            throw new RuntimeException("Differential snapshot creation failed: " + e.getMessage(), e);
+            throw new RuntimeException(
+                "Differential snapshot creation failed: " + e.getMessage(), e);
           }
         },
         asyncExecutor);

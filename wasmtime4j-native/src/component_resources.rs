@@ -14,18 +14,11 @@
 //! - **Cross-Component Sharing**: Safe resource sharing between component instances
 //! - **Performance Monitoring**: Real-time resource usage tracking and analytics
 
-use std::collections::{HashMap, HashSet, BTreeMap};
-use std::sync::{Arc, RwLock, Mutex, Weak};
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, RwLock, Mutex};
 use std::time::{Duration, Instant};
-use std::any::Any;
 
-use wasmtime::{
-    Engine, Store,
-    component::{
-        Component, Instance, Resource, ResourceTable, ResourceAny,
-        ResourceType, types::ComponentItem
-    }
-};
+use wasmtime::component::ResourceAny;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 // TODO: Re-enable when component_core module is available
@@ -248,7 +241,7 @@ pub struct AccessRule {
 }
 
 /// Permission level
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Permission {
     Deny,
     Read,

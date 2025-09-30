@@ -1,239 +1,200 @@
 package ai.tegmentum.wasmtime4j.debug;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-
 /**
- * Debug information for a WebAssembly instance.
- *
- * <p>Contains metadata about debuggable instances, their modules,
- * and available debugging features.
+ * Debug information interface for WebAssembly components.
  *
  * @since 1.0.0
  */
-public final class DebugInfo {
+public interface DebugInfo {
 
-    private final String instanceId;
-    private final String moduleName;
-    private final boolean hasSourceMap;
-    private final boolean hasDwarfInfo;
-    private final List<String> availableFunctions;
-    private final List<String> sourceFiles;
-    private final int breakpointCount;
-    private final boolean isDebuggable;
-    private final String version;
+  /**
+   * Gets the module name.
+   *
+   * @return module name
+   */
+  String getModuleName();
+
+  /**
+   * Gets function debug information.
+   *
+   * @return list of function debug info
+   */
+  java.util.List<FunctionDebugInfo> getFunctionDebugInfo();
+
+  /**
+   * Gets global variable information.
+   *
+   * @return list of global variables
+   */
+  java.util.List<GlobalVariableInfo> getGlobalVariables();
+
+  /**
+   * Gets type information.
+   *
+   * @return list of type info
+   */
+  java.util.List<TypeInfo> getTypeInfo();
+
+  /**
+   * Finds debug info by address.
+   *
+   * @param address instruction address
+   * @return debug info or null
+   */
+  AddressDebugInfo getDebugInfoAtAddress(long address);
+
+  /** Function debug information interface. */
+  interface FunctionDebugInfo {
+    /**
+     * Gets the function name.
+     *
+     * @return function name
+     */
+    String getFunctionName();
 
     /**
-     * Creates debug information.
+     * Gets the start address.
      *
-     * @param instanceId instance identifier
-     * @param moduleName module name
-     * @param hasSourceMap whether source map is available
-     * @param hasDwarfInfo whether DWARF info is available
-     * @param availableFunctions list of debuggable functions
-     * @param sourceFiles list of source files
-     * @param breakpointCount number of active breakpoints
-     * @param isDebuggable whether instance is debuggable
-     * @param version debug info version
+     * @return start address
      */
-    public DebugInfo(final String instanceId, final String moduleName,
-                    final boolean hasSourceMap, final boolean hasDwarfInfo,
-                    final List<String> availableFunctions, final List<String> sourceFiles,
-                    final int breakpointCount, final boolean isDebuggable,
-                    final String version) {
-        this.instanceId = Objects.requireNonNull(instanceId, "instanceId cannot be null");
-        this.moduleName = moduleName;
-        this.hasSourceMap = hasSourceMap;
-        this.hasDwarfInfo = hasDwarfInfo;
-        this.availableFunctions = availableFunctions != null ?
-                Collections.unmodifiableList(availableFunctions) : Collections.emptyList();
-        this.sourceFiles = sourceFiles != null ?
-                Collections.unmodifiableList(sourceFiles) : Collections.emptyList();
-        this.breakpointCount = breakpointCount;
-        this.isDebuggable = isDebuggable;
-        this.version = Objects.requireNonNull(version, "version cannot be null");
-    }
+    long getStartAddress();
 
     /**
-     * Creates basic debug information.
+     * Gets the end address.
      *
-     * @param instanceId instance ID
-     * @param moduleName module name
-     * @return basic debug info
+     * @return end address
      */
-    public static DebugInfo basic(final String instanceId, final String moduleName) {
-        return new DebugInfo(instanceId, moduleName, false, false,
-                Collections.emptyList(), Collections.emptyList(), 0, true, "1.0.0");
-    }
+    long getEndAddress();
 
     /**
-     * Gets the instance ID.
+     * Gets local variables.
      *
-     * @return instance ID
+     * @return list of local variables
      */
-    public String getInstanceId() {
-        return instanceId;
-    }
+    java.util.List<VariableDebugInfo> getLocalVariables();
 
     /**
-     * Gets the module name.
+     * Gets parameters.
      *
-     * @return module name or null
+     * @return list of parameters
      */
-    public String getModuleName() {
-        return moduleName;
-    }
+    java.util.List<VariableDebugInfo> getParameters();
+  }
+
+  /** Variable debug information interface. */
+  interface VariableDebugInfo {
+    /**
+     * Gets the variable name.
+     *
+     * @return variable name
+     */
+    String getName();
 
     /**
-     * Checks if source map is available.
+     * Gets the variable type.
      *
-     * @return true if source map is available
+     * @return variable type
      */
-    public boolean hasSourceMap() {
-        return hasSourceMap;
-    }
+    String getType();
 
     /**
-     * Checks if DWARF debug info is available.
+     * Gets the storage location.
      *
-     * @return true if DWARF info is available
+     * @return storage location
      */
-    public boolean hasDwarfInfo() {
-        return hasDwarfInfo;
-    }
+    String getLocation();
+  }
+
+  /** Global variable information interface. */
+  interface GlobalVariableInfo {
+    /**
+     * Gets the variable name.
+     *
+     * @return variable name
+     */
+    String getName();
 
     /**
-     * Gets available debuggable functions.
+     * Gets the variable type.
      *
-     * @return list of function names
+     * @return variable type
      */
-    public List<String> getAvailableFunctions() {
-        return availableFunctions;
-    }
+    String getType();
 
     /**
-     * Gets available source files.
+     * Gets the memory address.
      *
-     * @return list of source files
+     * @return memory address
      */
-    public List<String> getSourceFiles() {
-        return sourceFiles;
-    }
+    long getAddress();
+  }
+
+  /** Type information interface. */
+  interface TypeInfo {
+    /**
+     * Gets the type name.
+     *
+     * @return type name
+     */
+    String getTypeName();
 
     /**
-     * Gets the number of active breakpoints.
+     * Gets the type size.
      *
-     * @return breakpoint count
+     * @return size in bytes
      */
-    public int getBreakpointCount() {
-        return breakpointCount;
-    }
+    int getSize();
 
     /**
-     * Checks if the instance is debuggable.
+     * Gets the type kind.
      *
-     * @return true if debuggable
+     * @return type kind
      */
-    public boolean isDebuggable() {
-        return isDebuggable;
-    }
+    TypeKind getTypeKind();
+  }
+
+  /** Type kind enumeration. */
+  enum TypeKind {
+    /** Primitive type. */
+    PRIMITIVE,
+    /** Struct type. */
+    STRUCT,
+    /** Array type. */
+    ARRAY,
+    /** Pointer type. */
+    POINTER,
+    /** Function type. */
+    FUNCTION
+  }
+
+  /** Address debug information interface. */
+  interface AddressDebugInfo {
+    /**
+     * Gets the source file.
+     *
+     * @return source file path
+     */
+    String getSourceFile();
 
     /**
-     * Gets the debug info version.
+     * Gets the line number.
      *
-     * @return version string
+     * @return line number
      */
-    public String getVersion() {
-        return version;
-    }
+    int getLineNumber();
 
     /**
-     * Checks if source-level debugging is supported.
+     * Gets the column number.
      *
-     * @return true if source debugging is supported
+     * @return column number
      */
-    public boolean supportsSourceDebugging() {
-        return hasSourceMap || hasDwarfInfo;
-    }
+    int getColumnNumber();
 
     /**
-     * Gets the number of available functions.
+     * Gets the function name.
      *
-     * @return function count
+     * @return function name
      */
-    public int getFunctionCount() {
-        return availableFunctions.size();
-    }
-
-    /**
-     * Gets the number of source files.
-     *
-     * @return source file count
-     */
-    public int getSourceFileCount() {
-        return sourceFiles.size();
-    }
-
-    /**
-     * Checks if a function is available for debugging.
-     *
-     * @param functionName function name
-     * @return true if function is available
-     */
-    public boolean hasFunctionDebugInfo(final String functionName) {
-        return availableFunctions.contains(functionName);
-    }
-
-    /**
-     * Creates a copy with updated breakpoint count.
-     *
-     * @param newCount new breakpoint count
-     * @return updated debug info
-     */
-    public DebugInfo withBreakpointCount(final int newCount) {
-        return new DebugInfo(instanceId, moduleName, hasSourceMap, hasDwarfInfo,
-                availableFunctions, sourceFiles, newCount, isDebuggable, version);
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final DebugInfo other = (DebugInfo) obj;
-        return hasSourceMap == other.hasSourceMap &&
-                hasDwarfInfo == other.hasDwarfInfo &&
-                breakpointCount == other.breakpointCount &&
-                isDebuggable == other.isDebuggable &&
-                Objects.equals(instanceId, other.instanceId) &&
-                Objects.equals(moduleName, other.moduleName) &&
-                Objects.equals(availableFunctions, other.availableFunctions) &&
-                Objects.equals(sourceFiles, other.sourceFiles) &&
-                Objects.equals(version, other.version);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(instanceId, moduleName, hasSourceMap, hasDwarfInfo,
-                availableFunctions, sourceFiles, breakpointCount, isDebuggable, version);
-    }
-
-    @Override
-    public String toString() {
-        return "DebugInfo{" +
-                "instanceId='" + instanceId + '\'' +
-                ", moduleName='" + moduleName + '\'' +
-                ", sourceMap=" + hasSourceMap +
-                ", dwarfInfo=" + hasDwarfInfo +
-                ", functions=" + availableFunctions.size() +
-                ", sourceFiles=" + sourceFiles.size() +
-                ", breakpoints=" + breakpointCount +
-                ", debuggable=" + isDebuggable +
-                ", version='" + version + '\'' +
-                '}';
-    }
+    String getFunctionName();
+  }
 }

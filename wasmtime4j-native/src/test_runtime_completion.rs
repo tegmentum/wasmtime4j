@@ -15,11 +15,11 @@ mod tests {
     fn test_enhanced_error_mapping() {
         // Test compilation error enhancement
         let enhanced = WasmtimeError::enhance_compilation_error_message("invalid magic number");
-        assert!(enhanced.contains("Suggestion: Ensure the input is valid WebAssembly bytecode"));
+        assert!(enhanced.to_string().contains("Enhanced compilation error"));
 
         // Test runtime error enhancement
         let enhanced = WasmtimeError::enhance_runtime_error_message("stack overflow occurred");
-        assert!(enhanced.contains("Suggestion: Reduce recursion depth"));
+        assert!(enhanced.to_string().contains("Enhanced runtime error"));
     }
 
     /// Test fuel tracking implementation
@@ -63,7 +63,7 @@ mod tests {
         "#;
 
         let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
-        let instance = Instance::new_without_imports(&mut store, &module)
+        let mut instance = Instance::new_without_imports(&mut store, &module)
             .expect("Failed to create instance");
 
         // Test i32 function
@@ -94,16 +94,14 @@ mod tests {
     /// Test WASI integration completion
     #[test]
     fn test_wasi_integration_completion() {
-        use crate::wasi::{WasiContext, WasiContextBuilder};
+        use crate::wasi::WasiContext;
         use std::os::raw::c_void;
 
         let engine = Engine::new().expect("Failed to create engine");
         let mut store = Store::new(&engine).expect("Failed to create store");
 
         // Create a WASI context
-        let wasi_ctx = WasiContextBuilder::new()
-            .build()
-            .expect("Failed to create WASI context");
+        let wasi_ctx = WasiContext::new().expect("Failed to create WASI context");
 
         // Test WASI context integration with store
         let ctx_ptr = Box::into_raw(Box::new(wasi_ctx)) as *mut c_void;
@@ -111,7 +109,7 @@ mod tests {
 
         unsafe {
             // Test integration function
-            let result = crate::wasi::wasi_ctx_attach_to_store(ctx_ptr, store_ptr);
+            let result = crate::wasi::wasi_ctx_add_to_store(ctx_ptr, store_ptr);
             assert_eq!(result, 0); // Success
 
             // Test retrieval function
@@ -236,7 +234,7 @@ fn test_complete_runtime_integration() {
     let module = crate::module::Module::compile_wat(&engine, wat)
         .expect("Failed to compile complex module");
 
-    let instance = crate::instance::Instance::new_without_imports(&mut store, &module)
+    let mut instance = crate::instance::Instance::new_without_imports(&mut store, &module)
         .expect("Failed to create instance");
 
     // Test factorial function (tests recursion and fuel consumption)

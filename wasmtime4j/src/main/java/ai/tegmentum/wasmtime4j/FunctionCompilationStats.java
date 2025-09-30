@@ -116,8 +116,7 @@ public final class FunctionCompilationStats {
   /**
    * Checks if this function was compiled lazily.
    *
-   * <p>Lazily compiled functions are compiled on first invocation rather than during
-   * instantiation.
+   * <p>Lazily compiled functions are compiled on first invocation rather than during instantiation.
    *
    * @return true if function was compiled lazily
    */

@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -32,8 +31,8 @@ import org.junit.jupiter.params.provider.EnumSource;
  * Memory leak detection tests for error scenarios.
  *
  * <p>This test class validates that error handling does not introduce memory leaks, ensuring that
- * resources are properly cleaned up even when exceptions occur during WebAssembly operations.
- * Tests cover various error scenarios including compilation failures, runtime traps, and resource
+ * resources are properly cleaned up even when exceptions occur during WebAssembly operations. Tests
+ * cover various error scenarios including compilation failures, runtime traps, and resource
  * exhaustion conditions.
  */
 @DisplayName("Error Memory Leak Detection Tests")
@@ -41,43 +40,75 @@ class ErrorMemoryLeakDetectionTest {
 
   /** Simple valid WebAssembly module. */
   private static final byte[] VALID_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x05, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x01, 0x7F, // Function type: () -> i32
+    0x60,
+    0x00,
+    0x01,
+    0x7F, // Function type: () -> i32
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'e', 's', 't', // Export name "test"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'e',
+    's',
+    't', // Export name "test"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x06, // Section size
     0x01, // 1 function body
     0x04, // Body size
     0x00, // No locals
-    0x41, 0x2A, // i32.const 42
+    0x41,
+    0x2A, // i32.const 42
     0x0B // End instruction
   };
 
   /** WebAssembly module that triggers a trap. */
   private static final byte[] TRAP_MODULE = {
-    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // Magic + version
+    0x00,
+    0x61,
+    0x73,
+    0x6d,
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Magic + version
     0x01, // Type section
     0x04, // Section size
     0x01, // 1 type
-    0x60, 0x00, 0x00, // Function type: () -> ()
+    0x60,
+    0x00,
+    0x00, // Function type: () -> ()
     0x03, // Function section
     0x02, // Section size
-    0x01, 0x00, // 1 function with type index 0
+    0x01,
+    0x00, // 1 function with type index 0
     0x07, // Export section
     0x08, // Section size
     0x01, // 1 export
-    0x04, 't', 'r', 'a', 'p', // Export name "trap"
-    0x00, 0x00, // Function export with index 0
+    0x04,
+    't',
+    'r',
+    'a',
+    'p', // Export name "trap"
+    0x00,
+    0x00, // Function export with index 0
     0x0A, // Code section
     0x05, // Section size
     0x01, // 1 function body
@@ -96,9 +127,7 @@ class ErrorMemoryLeakDetectionTest {
   /** Number of iterations for leak detection tests. */
   private static final int LEAK_TEST_ITERATIONS = 1000;
 
-  /**
-   * Memory measurement utility.
-   */
+  /** Memory measurement utility. */
   private static class MemoryMeasurement {
     final long heapUsed;
     final long heapCommitted;
@@ -128,9 +157,7 @@ class ErrorMemoryLeakDetectionTest {
     }
   }
 
-  /**
-   * Forces garbage collection and waits for it to complete.
-   */
+  /** Forces garbage collection and waits for it to complete. */
   private static void forceGarbageCollection() {
     System.gc();
     System.runFinalization();
@@ -255,7 +282,9 @@ class ErrorMemoryLeakDetectionTest {
       System.out.println("Initial memory for instance creation failures: " + initialMemory);
 
       // Perform many instance creation operations
-      for (int i = 0; i < LEAK_TEST_ITERATIONS / 10; i++) { // Fewer iterations for instance creation
+      for (int i = 0;
+          i < LEAK_TEST_ITERATIONS / 10;
+          i++) { // Fewer iterations for instance creation
         Store store = runtime.createStore(engine);
 
         try {
@@ -328,8 +357,13 @@ class ErrorMemoryLeakDetectionTest {
           forceGarbageCollection();
 
           // Check how many exceptions are still referenced
-          long stillReferenced = exceptionRefs.stream().mapToLong(ref -> ref.get() != null ? 1 : 0).sum();
-          System.out.println("Exceptions still referenced after GC: " + stillReferenced + "/" + exceptionRefs.size());
+          long stillReferenced =
+              exceptionRefs.stream().mapToLong(ref -> ref.get() != null ? 1 : 0).sum();
+          System.out.println(
+              "Exceptions still referenced after GC: "
+                  + stillReferenced
+                  + "/"
+                  + exceptionRefs.size());
         }
       }
 
@@ -339,15 +373,21 @@ class ErrorMemoryLeakDetectionTest {
       System.out.println("Final memory for exception objects: " + finalMemory);
 
       // Check how many exceptions are still referenced after final GC
-      long finalReferencedCount = exceptionRefs.stream().mapToLong(ref -> ref.get() != null ? 1 : 0).sum();
-      System.out.println("Final exceptions still referenced: " + finalReferencedCount + "/" + exceptionRefs.size());
+      long finalReferencedCount =
+          exceptionRefs.stream().mapToLong(ref -> ref.get() != null ? 1 : 0).sum();
+      System.out.println(
+          "Final exceptions still referenced: "
+              + finalReferencedCount
+              + "/"
+              + exceptionRefs.size());
 
       // Most exceptions should be garbage collected (allow 5% to remain)
       assertTrue(
           finalReferencedCount < exceptionRefs.size() * 0.05,
           "Most exception objects should be garbage collected. Still referenced: "
               + finalReferencedCount
-              + "/" + exceptionRefs.size());
+              + "/"
+              + exceptionRefs.size());
 
       long memoryIncrease = finalMemory.totalUsed() - initialMemory.totalUsed();
       System.out.println("Memory increase for exception objects: " + memoryIncrease + " bytes");
@@ -552,9 +592,7 @@ class ErrorMemoryLeakDetectionTest {
 
       assertTrue(
           memoryIncrease < MEMORY_LEAK_THRESHOLD,
-          "Error recovery should not cause memory leaks. Increase: "
-              + memoryIncrease
-              + " bytes");
+          "Error recovery should not cause memory leaks. Increase: " + memoryIncrease + " bytes");
     }
   }
 
@@ -598,8 +636,13 @@ class ErrorMemoryLeakDetectionTest {
           long increase = current.totalUsed() - initial.totalUsed();
 
           System.out.println(
-              "Memory after " + operationCount + " operations: " + current +
-              " (increase: " + increase + " bytes)");
+              "Memory after "
+                  + operationCount
+                  + " operations: "
+                  + current
+                  + " (increase: "
+                  + increase
+                  + " bytes)");
         }
       }
 
@@ -611,7 +654,8 @@ class ErrorMemoryLeakDetectionTest {
 
       long totalIncrease = finalMeasurement.totalUsed() - initialMeasurement.totalUsed();
 
-      System.out.println("Total memory increase over " + testDurationMs + "ms: " + totalIncrease + " bytes");
+      System.out.println(
+          "Total memory increase over " + testDurationMs + "ms: " + totalIncrease + " bytes");
 
       // Memory should remain stable during long-running error scenarios
       assertTrue(

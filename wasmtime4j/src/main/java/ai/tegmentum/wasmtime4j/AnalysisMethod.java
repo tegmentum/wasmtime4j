@@ -3,55 +3,55 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Methods available for analyzing WebAssembly execution and performance.
  *
- * <p>Defines different approaches for gathering insights about function
- * behavior, call patterns, and optimization opportunities.
+ * <p>Defines different approaches for gathering insights about function behavior, call patterns,
+ * and optimization opportunities.
  *
  * @since 1.0.0
  */
 public enum AnalysisMethod {
-  /** Statistical sampling of execution patterns */
+  /** Statistical sampling of execution patterns. */
   SAMPLING_ANALYSIS,
 
-  /** Instrumentation-based detailed tracking */
+  /** Instrumentation-based detailed tracking. */
   INSTRUMENTATION_ANALYSIS,
 
-  /** Call frequency and pattern analysis */
+  /** Call frequency and pattern analysis. */
   CALL_FREQUENCY_ANALYSIS,
 
-  /** Execution time and performance analysis */
+  /** Execution time and performance analysis. */
   EXECUTION_TIME_ANALYSIS,
 
-  /** Memory usage and allocation analysis */
+  /** Memory usage and allocation analysis. */
   MEMORY_USAGE_ANALYSIS,
 
-  /** Function hotness detection */
+  /** Function hotness detection. */
   HOTNESS_ANALYSIS,
 
-  /** Dead code and unused function detection */
+  /** Dead code and unused function detection. */
   DEAD_CODE_ANALYSIS,
 
-  /** Call graph structure analysis */
+  /** Call graph structure analysis. */
   CALL_GRAPH_ANALYSIS,
 
-  /** Control flow analysis */
+  /** Control flow analysis. */
   CONTROL_FLOW_ANALYSIS,
 
-  /** Data flow analysis */
+  /** Data flow analysis. */
   DATA_FLOW_ANALYSIS,
 
-  /** Loop detection and analysis */
+  /** Loop detection and analysis. */
   LOOP_ANALYSIS,
 
-  /** Recursive function analysis */
+  /** Recursive function analysis. */
   RECURSION_ANALYSIS,
 
-  /** Cache behavior analysis */
+  /** Cache behavior analysis. */
   CACHE_ANALYSIS,
 
-  /** Branch prediction analysis */
+  /** Branch prediction analysis. */
   BRANCH_PREDICTION_ANALYSIS,
 
-  /** Compiler optimization opportunity analysis */
+  /** Compiler optimization opportunity analysis. */
   OPTIMIZATION_ANALYSIS;
 
   /**
@@ -60,14 +60,27 @@ public enum AnalysisMethod {
    * @return true if runtime execution is required
    */
   public boolean requiresExecution() {
-    return switch (this) {
-      case SAMPLING_ANALYSIS, INSTRUMENTATION_ANALYSIS, CALL_FREQUENCY_ANALYSIS,
-           EXECUTION_TIME_ANALYSIS, MEMORY_USAGE_ANALYSIS, HOTNESS_ANALYSIS,
-           CACHE_ANALYSIS, BRANCH_PREDICTION_ANALYSIS -> true;
-      case DEAD_CODE_ANALYSIS, CALL_GRAPH_ANALYSIS, CONTROL_FLOW_ANALYSIS,
-           DATA_FLOW_ANALYSIS, LOOP_ANALYSIS, RECURSION_ANALYSIS,
-           OPTIMIZATION_ANALYSIS -> false;
-    };
+    switch (this) {
+      case SAMPLING_ANALYSIS:
+      case INSTRUMENTATION_ANALYSIS:
+      case CALL_FREQUENCY_ANALYSIS:
+      case EXECUTION_TIME_ANALYSIS:
+      case MEMORY_USAGE_ANALYSIS:
+      case HOTNESS_ANALYSIS:
+      case CACHE_ANALYSIS:
+      case BRANCH_PREDICTION_ANALYSIS:
+        return true;
+      case DEAD_CODE_ANALYSIS:
+      case CALL_GRAPH_ANALYSIS:
+      case CONTROL_FLOW_ANALYSIS:
+      case DATA_FLOW_ANALYSIS:
+      case LOOP_ANALYSIS:
+      case RECURSION_ANALYSIS:
+      case OPTIMIZATION_ANALYSIS:
+        return false;
+      default:
+        throw new IllegalArgumentException("Unknown analysis method: " + this);
+    }
   }
 
   /**
@@ -89,8 +102,11 @@ public enum AnalysisMethod {
    */
   public boolean providesTimingInfo() {
     return switch (this) {
-      case SAMPLING_ANALYSIS, INSTRUMENTATION_ANALYSIS, EXECUTION_TIME_ANALYSIS,
-           HOTNESS_ANALYSIS, CACHE_ANALYSIS -> true;
+      case SAMPLING_ANALYSIS,
+          INSTRUMENTATION_ANALYSIS,
+          EXECUTION_TIME_ANALYSIS,
+          HOTNESS_ANALYSIS,
+          CACHE_ANALYSIS -> true;
       default -> false;
     };
   }
@@ -120,10 +136,17 @@ public enum AnalysisMethod {
    */
   public OverheadLevel getOverheadLevel() {
     return switch (this) {
-      case SAMPLING_ANALYSIS, CALL_FREQUENCY_ANALYSIS, DEAD_CODE_ANALYSIS,
-           CALL_GRAPH_ANALYSIS, CONTROL_FLOW_ANALYSIS, DATA_FLOW_ANALYSIS,
-           LOOP_ANALYSIS, RECURSION_ANALYSIS, OPTIMIZATION_ANALYSIS -> OverheadLevel.LOW;
-      case EXECUTION_TIME_ANALYSIS, HOTNESS_ANALYSIS, BRANCH_PREDICTION_ANALYSIS -> OverheadLevel.MEDIUM;
+      case SAMPLING_ANALYSIS,
+          CALL_FREQUENCY_ANALYSIS,
+          DEAD_CODE_ANALYSIS,
+          CALL_GRAPH_ANALYSIS,
+          CONTROL_FLOW_ANALYSIS,
+          DATA_FLOW_ANALYSIS,
+          LOOP_ANALYSIS,
+          RECURSION_ANALYSIS,
+          OPTIMIZATION_ANALYSIS -> OverheadLevel.LOW;
+      case EXECUTION_TIME_ANALYSIS, HOTNESS_ANALYSIS, BRANCH_PREDICTION_ANALYSIS -> OverheadLevel
+          .MEDIUM;
       case INSTRUMENTATION_ANALYSIS, MEMORY_USAGE_ANALYSIS, CACHE_ANALYSIS -> OverheadLevel.HIGH;
     };
   }
@@ -153,17 +176,15 @@ public enum AnalysisMethod {
     };
   }
 
-  /**
-   * Overhead levels for analysis methods.
-   */
+  /** Overhead levels for analysis methods. */
   public enum OverheadLevel {
-    /** Minimal performance impact */
+    /** Minimal performance impact. */
     LOW,
 
-    /** Moderate performance impact */
+    /** Moderate performance impact. */
     MEDIUM,
 
-    /** Significant performance impact */
+    /** Significant performance impact. */
     HIGH
   }
 }

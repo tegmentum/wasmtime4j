@@ -63,8 +63,7 @@ public final class WitEvolutionValidation {
    * @return successful validation result
    */
   public static WitEvolutionValidation success(
-      final List<String> recommendations,
-      final ValidationMetrics metrics) {
+      final List<String> recommendations, final ValidationMetrics metrics) {
     return new WitEvolutionValidation(
         true,
         List.of(),
@@ -230,9 +229,7 @@ public final class WitEvolutionValidation {
    * @return filtered violations
    */
   public List<ConstraintViolation> getViolationsByType(final ViolationType type) {
-    return violations.stream()
-        .filter(v -> v.getType() == type)
-        .toList();
+    return violations.stream().filter(v -> v.getType() == type).toList();
   }
 
   /**
@@ -242,26 +239,28 @@ public final class WitEvolutionValidation {
    * @return filtered issues
    */
   public List<CompatibilityIssue> getIssuesBySeverity(final IssueSeverity severity) {
-    return issues.stream()
-        .filter(i -> i.getSeverity() == severity)
-        .toList();
+    return issues.stream().filter(i -> i.getSeverity() == severity).toList();
   }
 
   @Override
   public String toString() {
-    return "WitEvolutionValidation{" +
-        "valid=" + valid +
-        ", violations=" + violations.size() +
-        ", issues=" + issues.size() +
-        ", warnings=" + warnings.size() +
-        ", riskAssessment=" + riskAssessment +
-        ", validationTime=" + validationTime +
-        '}';
+    return "WitEvolutionValidation{"
+        + "valid="
+        + valid
+        + ", violations="
+        + violations.size()
+        + ", issues="
+        + issues.size()
+        + ", warnings="
+        + warnings.size()
+        + ", riskAssessment="
+        + riskAssessment
+        + ", validationTime="
+        + validationTime
+        + '}';
   }
 
-  /**
-   * Constraint violation information.
-   */
+  /** Constraint violation information. */
   public static final class ConstraintViolation {
     private final ViolationType type;
     private final String description;
@@ -338,18 +337,22 @@ public final class WitEvolutionValidation {
 
     @Override
     public String toString() {
-      return "ConstraintViolation{" +
-          "type=" + type +
-          ", description='" + description + '\'' +
-          ", location='" + location + '\'' +
-          ", severity=" + severity +
-          '}';
+      return "ConstraintViolation{"
+          + "type="
+          + type
+          + ", description='"
+          + description
+          + '\''
+          + ", location='"
+          + location
+          + '\''
+          + ", severity="
+          + severity
+          + '}';
     }
   }
 
-  /**
-   * Compatibility issue information.
-   */
+  /** Compatibility issue information. */
   public static final class CompatibilityIssue {
     private final IssueType type;
     private final String description;
@@ -439,19 +442,24 @@ public final class WitEvolutionValidation {
 
     @Override
     public String toString() {
-      return "CompatibilityIssue{" +
-          "type=" + type +
-          ", description='" + description + '\'' +
-          ", location='" + location + '\'' +
-          ", severity=" + severity +
-          ", impactLevel=" + impactLevel +
-          '}';
+      return "CompatibilityIssue{"
+          + "type="
+          + type
+          + ", description='"
+          + description
+          + '\''
+          + ", location='"
+          + location
+          + '\''
+          + ", severity="
+          + severity
+          + ", impactLevel="
+          + impactLevel
+          + '}';
     }
   }
 
-  /**
-   * Evolution warning information.
-   */
+  /** Evolution warning information. */
   public static final class EvolutionWarning {
     private final WarningType type;
     private final String message;
@@ -515,17 +523,20 @@ public final class WitEvolutionValidation {
 
     @Override
     public String toString() {
-      return "EvolutionWarning{" +
-          "type=" + type +
-          ", message='" + message + '\'' +
-          ", location='" + location + '\'' +
-          '}';
+      return "EvolutionWarning{"
+          + "type="
+          + type
+          + ", message='"
+          + message
+          + '\''
+          + ", location='"
+          + location
+          + '\''
+          + '}';
     }
   }
 
-  /**
-   * Validation metrics information.
-   */
+  /** Validation metrics information. */
   public interface ValidationMetrics {
     /**
      * Gets validation duration.
@@ -571,6 +582,7 @@ public final class WitEvolutionValidation {
   }
 
   // Enums for categorization
+  /** Types of evolution validation violations. */
   public enum ViolationType {
     SEMANTIC_VERSION_VIOLATION,
     BACKWARD_COMPATIBILITY_VIOLATION,
@@ -579,29 +591,53 @@ public final class WitEvolutionValidation {
     DEPENDENCY_VIOLATION
   }
 
+  /** Severity levels for validation violations. */
   public enum ViolationSeverity {
-    LOW, MEDIUM, HIGH, CRITICAL
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
   }
 
+  /** Types of issues found during validation. */
   public enum IssueType {
-    TYPE_MISMATCH, MISSING_FUNCTION, INCOMPATIBLE_SIGNATURE,
-    VERSION_CONFLICT, DEPENDENCY_ISSUE
+    TYPE_MISMATCH,
+    MISSING_FUNCTION,
+    INCOMPATIBLE_SIGNATURE,
+    VERSION_CONFLICT,
+    DEPENDENCY_ISSUE
   }
 
+  /** Severity levels for validation issues. */
   public enum IssueSeverity {
-    INFO, WARNING, ERROR, CRITICAL
+    INFO,
+    WARNING,
+    ERROR,
+    CRITICAL
   }
 
+  /** Types of warnings during evolution validation. */
   public enum WarningType {
-    PERFORMANCE_WARNING, DEPRECATION_WARNING, COMPATIBILITY_WARNING,
-    BEST_PRACTICE_WARNING, SECURITY_WARNING
+    PERFORMANCE_WARNING,
+    DEPRECATION_WARNING,
+    COMPATIBILITY_WARNING,
+    BEST_PRACTICE_WARNING,
+    SECURITY_WARNING
   }
 
+  /** Risk levels for interface evolution. */
   public enum EvolutionRisk {
-    LOW, MEDIUM, HIGH, CRITICAL
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL
   }
 
+  /** Levels of backward compatibility. */
   public enum CompatibilityLevel {
-    FULL, PARTIAL, LIMITED, NONE
+    FULL,
+    PARTIAL,
+    LIMITED,
+    NONE
   }
 }

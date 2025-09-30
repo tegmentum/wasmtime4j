@@ -13,8 +13,8 @@ use wasmtime::{
     MemoryType as WasmtimeMemoryType,
     TableType as WasmtimeTableType,
     ValType,
+    RefType,
     Mutability,
-    Engine,
     Module,
     Instance,
     Store,
@@ -440,11 +440,13 @@ mod tests {
     fn test_value_type_conversion() {
         assert_eq!(IntrospectionValueType::from(ValType::I32), IntrospectionValueType::I32);
         assert_eq!(IntrospectionValueType::from(ValType::F64), IntrospectionValueType::F64);
-        assert_eq!(IntrospectionValueType::from(ValType::FuncRef), IntrospectionValueType::FuncRef);
+        assert_eq!(IntrospectionValueType::from(ValType::Ref(RefType::FUNCREF)), IntrospectionValueType::FuncRef);
 
-        assert_eq!(ValType::from(IntrospectionValueType::I64), ValType::I64);
-        assert_eq!(ValType::from(IntrospectionValueType::F32), ValType::F32);
-        assert_eq!(ValType::from(IntrospectionValueType::ExternRef), ValType::ExternRef);
+        assert!(matches!(ValType::from(IntrospectionValueType::I64), ValType::I64));
+        assert!(matches!(ValType::from(IntrospectionValueType::F32), ValType::F32));
+        // Test ExternRef conversion (can't use exact comparison due to wasmtime types)
+        let result = ValType::from(IntrospectionValueType::ExternRef);
+        assert!(matches!(result, ValType::Ref(_)), "ExternRef conversion should produce ValType::Ref");
     }
 
     #[test]

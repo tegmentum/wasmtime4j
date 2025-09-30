@@ -34,22 +34,20 @@ import java.util.Objects;
  *   <li>Type-safe vector operations and conversions
  * </ul>
  *
- * <p>All vector types support both signed and unsigned integer operations,
- * floating-point operations, and platform-specific optimizations when available.
+ * <p>All vector types support both signed and unsigned integer operations, floating-point
+ * operations, and platform-specific optimizations when available.
  *
  * @since 1.0.0
  */
 public final class SimdValue {
 
-  /**
-   * Vector width enumeration for different SIMD vector sizes.
-   */
+  /** Vector width enumeration for different SIMD vector sizes. */
   public enum VectorWidth {
-    /** 128-bit vectors (v128) - Standard WebAssembly SIMD */
+    /** 128-bit vectors (v128) - Standard WebAssembly SIMD. */
     V128(128, 16),
-    /** 256-bit vectors (v256) - Extended SIMD for AVX */
+    /** 256-bit vectors (v256) - Extended SIMD for AVX. */
     V256(256, 32),
-    /** 512-bit vectors (v512) - Extended SIMD for AVX-512 */
+    /** 512-bit vectors (v512) - Extended SIMD for AVX-512. */
     V512(512, 64);
 
     private final int bitWidth;
@@ -79,29 +77,27 @@ public final class SimdValue {
     }
   }
 
-  /**
-   * Lane type enumeration for different data types within vectors.
-   */
+  /** Lane type enumeration for different data types within vectors. */
   public enum LaneType {
-    /** 8-bit signed integers */
+    /** 8-bit signed integers. */
     I8(1, 8),
-    /** 8-bit unsigned integers */
+    /** 8-bit unsigned integers. */
     U8(1, 8),
-    /** 16-bit signed integers */
+    /** 16-bit signed integers. */
     I16(2, 16),
-    /** 16-bit unsigned integers */
+    /** 16-bit unsigned integers. */
     U16(2, 16),
-    /** 32-bit signed integers */
+    /** 32-bit signed integers. */
     I32(4, 32),
-    /** 32-bit unsigned integers */
+    /** 32-bit unsigned integers. */
     U32(4, 32),
-    /** 64-bit signed integers */
+    /** 64-bit signed integers. */
     I64(8, 64),
-    /** 64-bit unsigned integers */
+    /** 64-bit unsigned integers. */
     U64(8, 64),
-    /** 32-bit floating-point */
+    /** 32-bit floating-point. */
     F32(4, 32),
-    /** 64-bit floating-point */
+    /** 64-bit floating-point. */
     F64(8, 64);
 
     private final int byteSize;
@@ -141,9 +137,7 @@ public final class SimdValue {
     }
   }
 
-  /**
-   * Abstract base class for SIMD vector values.
-   */
+  /** Abstract base class for SIMD vector values. */
   public abstract static class Vector {
     protected final byte[] data;
     protected final VectorWidth width;
@@ -161,7 +155,8 @@ public final class SimdValue {
       }
       if (data.length != width.getByteWidth()) {
         throw new IllegalArgumentException(
-            String.format("Vector data must be %d bytes, got %d", width.getByteWidth(), data.length));
+            String.format(
+                "Vector data must be %d bytes, got %d", width.getByteWidth(), data.length));
       }
       this.data = data.clone();
       this.width = width;
@@ -226,7 +221,8 @@ public final class SimdValue {
           }
           break;
         default:
-          throw new IllegalArgumentException("Lane type " + laneType + " is not supported for integers");
+          throw new IllegalArgumentException(
+              "Lane type " + laneType + " is not supported for integers");
       }
 
       return result;
@@ -253,7 +249,8 @@ public final class SimdValue {
           }
           break;
         default:
-          throw new IllegalArgumentException("Lane type " + laneType + " is not supported for longs");
+          throw new IllegalArgumentException(
+              "Lane type " + laneType + " is not supported for longs");
       }
 
       return result;
@@ -268,7 +265,8 @@ public final class SimdValue {
      */
     public final float[] getAsFloats(final LaneType laneType) {
       if (laneType != LaneType.F32) {
-        throw new IllegalArgumentException("Lane type " + laneType + " is not supported for floats");
+        throw new IllegalArgumentException(
+            "Lane type " + laneType + " is not supported for floats");
       }
 
       final int laneCount = laneType.getLaneCount(width);
@@ -292,7 +290,8 @@ public final class SimdValue {
      */
     public final double[] getAsDoubles(final LaneType laneType) {
       if (laneType != LaneType.F64) {
-        throw new IllegalArgumentException("Lane type " + laneType + " is not supported for doubles");
+        throw new IllegalArgumentException(
+            "Lane type " + laneType + " is not supported for doubles");
       }
 
       final int laneCount = laneType.getLaneCount(width);
@@ -326,15 +325,13 @@ public final class SimdValue {
 
     @Override
     public final String toString() {
-      return String.format("%s{width=%s, data=%s}",
-          getClass().getSimpleName(), width, Arrays.toString(data));
+      return String.format(
+          "%s{width=%s, data=%s}", getClass().getSimpleName(), width, Arrays.toString(data));
     }
   }
 
-  /**
-   * 128-bit SIMD vector (v128) - Standard WebAssembly SIMD.
-   */
-  public static final class V128 extends Vector {
+  /** 128-bit SIMD vector (v128) - Standard WebAssembly SIMD. */
+  public static final class V128 extends Vector implements SimdOperations.V128 {
 
     /**
      * Creates a new V128 vector from byte array.
@@ -344,6 +341,31 @@ public final class SimdValue {
      */
     public V128(final byte[] data) {
       super(data, VectorWidth.V128);
+    }
+
+    @Override
+    public byte[] toByteArray() {
+      return getData();
+    }
+
+    @Override
+    public int[] toIntArray() {
+      return getAsInts(LaneType.I32);
+    }
+
+    @Override
+    public float[] toFloatArray() {
+      return getAsFloats(LaneType.F32);
+    }
+
+    @Override
+    public long[] toLongArray() {
+      return getAsLongs(LaneType.I64);
+    }
+
+    @Override
+    public double[] toDoubleArray() {
+      return getAsDoubles(LaneType.F64);
     }
 
     /**
@@ -428,9 +450,7 @@ public final class SimdValue {
     }
   }
 
-  /**
-   * 256-bit SIMD vector (v256) - Extended SIMD for AVX support.
-   */
+  /** 256-bit SIMD vector (v256) - Extended SIMD for AVX support. */
   public static final class V256 extends Vector {
 
     /**
@@ -473,7 +493,8 @@ public final class SimdValue {
      */
     public static V256 fromInts(final int[] values) {
       if (values.length != 8) {
-        throw new IllegalArgumentException("V256 requires exactly 8 integers, got " + values.length);
+        throw new IllegalArgumentException(
+            "V256 requires exactly 8 integers, got " + values.length);
       }
       final ByteBuffer buffer = ByteBuffer.allocate(32);
       buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -522,9 +543,7 @@ public final class SimdValue {
     }
   }
 
-  /**
-   * 512-bit SIMD vector (v512) - Extended SIMD for AVX-512 support.
-   */
+  /** 512-bit SIMD vector (v512) - Extended SIMD for AVX-512 support. */
   public static final class V512 extends Vector {
 
     /**
@@ -567,7 +586,8 @@ public final class SimdValue {
      */
     public static V512 fromInts(final int[] values) {
       if (values.length != 16) {
-        throw new IllegalArgumentException("V512 requires exactly 16 integers, got " + values.length);
+        throw new IllegalArgumentException(
+            "V512 requires exactly 16 integers, got " + values.length);
       }
       final ByteBuffer buffer = ByteBuffer.allocate(64);
       buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -616,9 +636,7 @@ public final class SimdValue {
     }
   }
 
-  /**
-   * Platform capabilities for SIMD operations.
-   */
+  /** Platform capabilities for SIMD operations. */
   public static final class PlatformCapabilities {
     private final boolean hasSSE41;
     private final boolean hasAVX;
@@ -626,7 +644,7 @@ public final class SimdValue {
     private final boolean hasAVX512F;
     private final boolean hasAVX512BW;
     private final boolean hasFMA;
-    private final boolean hasNEON;
+    private final boolean hasNeon;
     private final boolean hasSVE;
     private final int maxVectorWidth;
 
@@ -637,21 +655,47 @@ public final class SimdValue {
       this.hasAVX512F = builder.hasAVX512F;
       this.hasAVX512BW = builder.hasAVX512BW;
       this.hasFMA = builder.hasFMA;
-      this.hasNEON = builder.hasNEON;
+      this.hasNeon = builder.hasNeon;
       this.hasSVE = builder.hasSVE;
       this.maxVectorWidth = builder.maxVectorWidth;
     }
 
     // Getters
-    public boolean hasSSE41() { return hasSSE41; }
-    public boolean hasAVX() { return hasAVX; }
-    public boolean hasAVX2() { return hasAVX2; }
-    public boolean hasAVX512F() { return hasAVX512F; }
-    public boolean hasAVX512BW() { return hasAVX512BW; }
-    public boolean hasFMA() { return hasFMA; }
-    public boolean hasNEON() { return hasNEON; }
-    public boolean hasSVE() { return hasSVE; }
-    public int getMaxVectorWidth() { return maxVectorWidth; }
+    public boolean hasSSE41() {
+      return hasSSE41;
+    }
+
+    public boolean hasAVX() {
+      return hasAVX;
+    }
+
+    public boolean hasAVX2() {
+      return hasAVX2;
+    }
+
+    public boolean hasAVX512F() {
+      return hasAVX512F;
+    }
+
+    public boolean hasAVX512BW() {
+      return hasAVX512BW;
+    }
+
+    public boolean hasFMA() {
+      return hasFMA;
+    }
+
+    public boolean hasNeon() {
+      return hasNeon;
+    }
+
+    public boolean hasSVE() {
+      return hasSVE;
+    }
+
+    public int getMaxVectorWidth() {
+      return maxVectorWidth;
+    }
 
     /**
      * Gets the maximum supported vector width enum.
@@ -682,6 +726,7 @@ public final class SimdValue {
       return new Builder();
     }
 
+    /** Builder for SIMD capabilities configuration. */
     public static final class Builder {
       private boolean hasSSE41 = false;
       private boolean hasAVX = false;
@@ -689,21 +734,56 @@ public final class SimdValue {
       private boolean hasAVX512F = false;
       private boolean hasAVX512BW = false;
       private boolean hasFMA = false;
-      private boolean hasNEON = false;
+      private boolean hasNeon = false;
       private boolean hasSVE = false;
       private int maxVectorWidth = 128;
 
       private Builder() {}
 
-      public Builder hasSSE41(final boolean has) { this.hasSSE41 = has; return this; }
-      public Builder hasAVX(final boolean has) { this.hasAVX = has; return this; }
-      public Builder hasAVX2(final boolean has) { this.hasAVX2 = has; return this; }
-      public Builder hasAVX512F(final boolean has) { this.hasAVX512F = has; return this; }
-      public Builder hasAVX512BW(final boolean has) { this.hasAVX512BW = has; return this; }
-      public Builder hasFMA(final boolean has) { this.hasFMA = has; return this; }
-      public Builder hasNEON(final boolean has) { this.hasNEON = has; return this; }
-      public Builder hasSVE(final boolean has) { this.hasSVE = has; return this; }
-      public Builder maxVectorWidth(final int width) { this.maxVectorWidth = width; return this; }
+      public Builder hasSSE41(final boolean has) {
+        this.hasSSE41 = has;
+        return this;
+      }
+
+      public Builder hasAVX(final boolean has) {
+        this.hasAVX = has;
+        return this;
+      }
+
+      public Builder hasAVX2(final boolean has) {
+        this.hasAVX2 = has;
+        return this;
+      }
+
+      public Builder hasAVX512F(final boolean has) {
+        this.hasAVX512F = has;
+        return this;
+      }
+
+      public Builder hasAVX512BW(final boolean has) {
+        this.hasAVX512BW = has;
+        return this;
+      }
+
+      public Builder hasFMA(final boolean has) {
+        this.hasFMA = has;
+        return this;
+      }
+
+      public Builder hasNeon(final boolean has) {
+        this.hasNeon = has;
+        return this;
+      }
+
+      public Builder hasSVE(final boolean has) {
+        this.hasSVE = has;
+        return this;
+      }
+
+      public Builder maxVectorWidth(final int width) {
+        this.maxVectorWidth = width;
+        return this;
+      }
 
       public PlatformCapabilities build() {
         return new PlatformCapabilities(this);
@@ -713,8 +793,17 @@ public final class SimdValue {
     @Override
     public String toString() {
       return String.format(
-          "PlatformCapabilities{SSE4.1=%s, AVX=%s, AVX2=%s, AVX512F=%s, AVX512BW=%s, FMA=%s, NEON=%s, SVE=%s, maxWidth=%d}",
-          hasSSE41, hasAVX, hasAVX2, hasAVX512F, hasAVX512BW, hasFMA, hasNEON, hasSVE, maxVectorWidth);
+          "PlatformCapabilities{SSE4.1=%s, AVX=%s, AVX2=%s, AVX512F=%s, AVX512BW=%s, FMA=%s,"
+              + " NEON=%s, SVE=%s, maxWidth=%d}",
+          hasSSE41,
+          hasAVX,
+          hasAVX2,
+          hasAVX512F,
+          hasAVX512BW,
+          hasFMA,
+          hasNeon,
+          hasSVE,
+          maxVectorWidth);
     }
   }
 

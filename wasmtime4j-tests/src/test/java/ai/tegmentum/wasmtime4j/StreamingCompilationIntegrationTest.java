@@ -1,15 +1,12 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
@@ -18,7 +15,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
@@ -104,9 +100,10 @@ class StreamingCompilationIntegrationTest {
       ByteArrayInputStream input = new ByteArrayInputStream(testWasmModule);
 
       CompletableFuture<Module> future = compiler.compileStreaming(input, defaultConfig);
-      Module module = future.get(10, TimeUnit.SECONDS);
+      final Module module = future.get(10, TimeUnit.SECONDS);
 
-      assertTrue(completionLatch.await(5, TimeUnit.SECONDS), "Completion callback should be called");
+      assertTrue(
+          completionLatch.await(5, TimeUnit.SECONDS), "Completion callback should be called");
       assertTrue(progressUpdates.get() > 0, "Should receive progress updates");
       assertNotNull(finalStats.get(), "Final statistics should be available");
       assertTrue(finalStats.get().isComplete(), "Final statistics should show completion");
@@ -136,7 +133,8 @@ class StreamingCompilationIntegrationTest {
 
       assertNotNull(module, "Compiled module should not be null");
       assertTrue(module.isValid(), "Compiled module should be valid");
-      assertEquals(testWasmModule.length, handle.getBytesFeeded(), "Should track bytes fed correctly");
+      assertEquals(
+          testWasmModule.length, handle.getBytesFeeded(), "Should track bytes fed correctly");
 
       module.close();
       handle.close();
@@ -202,13 +200,15 @@ class StreamingCompilationIntegrationTest {
           compiler.compileStreamingWithInstantiation(input, defaultConfig, instantiationConfig);
       StreamingInstantiator instantiator = future.get(10, TimeUnit.SECONDS);
 
-      StreamingInstanceHandle handle = instantiator.createStreamingInstance(store, instantiationConfig);
+      StreamingInstanceHandle handle =
+          instantiator.createStreamingInstance(store, instantiationConfig);
 
       // Test prioritizing functions (if any exist in test module)
       List<String> readyFunctions = handle.getReadyFunctions();
       List<String> pendingFunctions = handle.getPendingFunctions();
 
-      assertTrue(readyFunctions.size() + pendingFunctions.size() >= 0, "Should have function information");
+      assertTrue(
+          readyFunctions.size() + pendingFunctions.size() >= 0, "Should have function information");
 
       // Wait for completion
       CompletableFuture<Instance> instanceFuture = handle.complete();
@@ -269,7 +269,8 @@ class StreamingCompilationIntegrationTest {
       // Check statistics during compilation
       StreamingStatistics stats = compiler.getStatistics();
       assertNotNull(stats, "Statistics should be available");
-      assertEquals(CompilationPhase.PARSING, stats.getCurrentPhase(), "Should start with parsing phase");
+      assertEquals(
+          CompilationPhase.PARSING, stats.getCurrentPhase(), "Should start with parsing phase");
 
       Module module = future.get(10, TimeUnit.SECONDS);
 
@@ -329,11 +330,30 @@ class StreamingCompilationIntegrationTest {
     // Create a simple but valid WebAssembly module for testing
     // This is a minimal module with just the header and basic structure
     return new byte[] {
-      0x00, 0x61, 0x73, 0x6D, // WASM magic
-      0x01, 0x00, 0x00, 0x00, // WASM version
-      0x01, 0x04, 0x01, 0x60, 0x00, 0x00, // Type section: () -> ()
-      0x03, 0x02, 0x01, 0x00, // Function section: func 0 has type 0
-      0x0A, 0x04, 0x01, 0x02, 0x00, 0x0B // Code section: func 0 body is empty
+      0x00,
+      0x61,
+      0x73,
+      0x6D, // WASM magic
+      0x01,
+      0x00,
+      0x00,
+      0x00, // WASM version
+      0x01,
+      0x04,
+      0x01,
+      0x60,
+      0x00,
+      0x00, // Type section: () -> ()
+      0x03,
+      0x02,
+      0x01,
+      0x00, // Function section: func 0 has type 0
+      0x0A,
+      0x04,
+      0x01,
+      0x02,
+      0x00,
+      0x0B // Code section: func 0 body is empty
     };
   }
 

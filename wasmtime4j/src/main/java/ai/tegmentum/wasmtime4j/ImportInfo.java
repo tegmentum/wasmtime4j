@@ -7,8 +7,8 @@ import java.util.Optional;
 /**
  * Information about an import definition in a linker.
  *
- * <p>This class provides comprehensive metadata about registered imports,
- * including their types, signatures, and registration details.
+ * <p>This class provides comprehensive metadata about registered imports, including their types,
+ * signatures, and registration details.
  *
  * @since 1.0.0
  */
@@ -80,8 +80,8 @@ public final class ImportInfo {
   /**
    * Gets the type signature for this import.
    *
-   * <p>For functions, this includes parameter and return types.
-   * For other types, this may include size or other type information.
+   * <p>For functions, this includes parameter and return types. For other types, this may include
+   * size or other type information.
    *
    * @return the type signature if available
    */
@@ -110,8 +110,8 @@ public final class ImportInfo {
   /**
    * Gets a description of the import source.
    *
-   * <p>This might indicate whether the import comes from a host function,
-   * another module instance, or a direct definition.
+   * <p>This might indicate whether the import comes from a host function, another module instance,
+   * or a direct definition.
    *
    * @return the source description if available
    */
@@ -174,22 +174,26 @@ public final class ImportInfo {
   @Override
   public int hashCode() {
     return Objects.hash(
-        moduleName, importName, importType, typeSignature, definedAt, isHostFunction, sourceDescription);
+        moduleName,
+        importName,
+        importType,
+        typeSignature,
+        definedAt,
+        isHostFunction,
+        sourceDescription);
   }
 
-  /**
-   * Types of imports that can be defined in a linker.
-   */
+  /** Types of imports that can be defined in a linker. */
   public enum ImportType {
-    /** Function import */
+    /** Function import. */
     FUNCTION,
-    /** Memory import */
+    /** Memory import. */
     MEMORY,
-    /** Table import */
+    /** Table import. */
     TABLE,
-    /** Global import */
+    /** Global import. */
     GLOBAL,
-    /** Instance import (all exports from an instance) */
+    /** Instance import (all exports from an instance). */
     INSTANCE
   }
 }

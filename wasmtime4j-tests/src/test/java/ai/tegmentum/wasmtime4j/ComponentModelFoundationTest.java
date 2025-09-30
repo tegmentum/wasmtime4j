@@ -29,9 +29,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive test suite for Component Model foundation validation.
  *
- * <p>This test suite validates the foundational Component Model support implemented
- * as part of Task #304, including WIT interface handling, component linking,
- * and component registry functionality.
+ * <p>This test suite validates the foundational Component Model support implemented as part of Task
+ * #304, including WIT interface handling, component linking, and component registry functionality.
  *
  * @since 1.0.0
  */
@@ -291,7 +290,8 @@ class ComponentModelFoundationTest {
     @DisplayName("Should validate WIT interface definition")
     void shouldValidateWitInterfaceDefinition() throws WasmException {
       // Given a test component with WIT interface
-      final ComponentSimple component = createTestComponent("wit-test", new ComponentVersion(1, 0, 0));
+      final ComponentSimple component =
+          createTestComponent("wit-test", new ComponentVersion(1, 0, 0));
 
       // When getting the WIT interface
       final WitInterfaceDefinition witInterface = component.getWitInterface();
@@ -324,7 +324,8 @@ class ComponentModelFoundationTest {
     @DisplayName("Should generate WIT text representation")
     void shouldGenerateWitTextRepresentation() throws WasmException {
       // Given a component with WIT interface
-      final ComponentSimple component = createTestComponent("wit-text-test", new ComponentVersion(1, 0, 0));
+      final ComponentSimple component =
+          createTestComponent("wit-text-test", new ComponentVersion(1, 0, 0));
       final WitInterfaceDefinition witInterface = component.getWitInterface();
 
       // When getting WIT text representation
@@ -340,7 +341,8 @@ class ComponentModelFoundationTest {
     @DisplayName("Should handle WIT interface dependencies")
     void shouldHandleWitInterfaceDependencies() throws WasmException {
       // Given a component with WIT interface
-      final ComponentSimple component = createTestComponent("dependency-test", new ComponentVersion(1, 0, 0));
+      final ComponentSimple component =
+          createTestComponent("dependency-test", new ComponentVersion(1, 0, 0));
       final WitInterfaceDefinition witInterface = component.getWitInterface();
 
       // When getting dependencies
@@ -370,7 +372,8 @@ class ComponentModelFoundationTest {
       final ResourceSpecification resourceSpec = new ResourceSpecification(512, 2);
 
       // When allocating resources
-      final ResourceAllocationResult result = resourceManager.allocateResources(componentId, resourceSpec);
+      final ResourceAllocationResult result =
+          resourceManager.allocateResources(componentId, resourceSpec);
 
       // Then should successfully allocate resources
       assertNotNull(result);
@@ -418,8 +421,8 @@ class ComponentModelFoundationTest {
       final SharedResourceConfig config = new SharedResourceConfig();
 
       // When creating shared resource
-      final SharedResourceHandle handle = resourceManager.createSharedResource(
-          resourceId, resourceType, config);
+      final SharedResourceHandle handle =
+          resourceManager.createSharedResource(resourceId, resourceType, config);
 
       // Then should create valid shared resource
       assertNotNull(handle);
@@ -452,9 +455,7 @@ class ComponentModelFoundationTest {
     return new TestComponentSimple(id, version);
   }
 
-  /**
-   * Simple test implementation of ComponentSimple for testing purposes.
-   */
+  /** Simple test implementation of ComponentSimple for testing purposes. */
   private static class TestComponentSimple implements ComponentSimple {
     private final String id;
     private final ComponentVersion version;
@@ -513,7 +514,8 @@ class ComponentModelFoundationTest {
     }
 
     @Override
-    public ComponentInstance instantiate(final ComponentInstanceConfig config) throws WasmException {
+    public ComponentInstance instantiate(final ComponentInstanceConfig config)
+        throws WasmException {
       throw new UnsupportedOperationException("Test component instantiation not implemented");
     }
 
@@ -539,7 +541,8 @@ class ComponentModelFoundationTest {
     }
 
     @Override
-    public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other) throws WasmException {
+    public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other)
+        throws WasmException {
       return getWitInterface().isCompatibleWith(other.getWitInterface());
     }
 
@@ -571,9 +574,7 @@ class ComponentModelFoundationTest {
     }
   }
 
-  /**
-   * Test implementation of WitInterfaceDefinition.
-   */
+  /** Test implementation of WitInterfaceDefinition. */
   private static class TestWitInterfaceDefinition implements WitInterfaceDefinition {
     private final String name;
 
@@ -617,9 +618,9 @@ class ComponentModelFoundationTest {
         return WitCompatibilityResult.incompatible("Other interface is null", Set.of());
       }
       final boolean compatible = this.name.equals(other.getName());
-      return compatible ?
-          WitCompatibilityResult.compatible("Test compatibility", Set.of()) :
-          WitCompatibilityResult.incompatible("Names don't match", Set.of());
+      return compatible
+          ? WitCompatibilityResult.compatible("Test compatibility", Set.of())
+          : WitCompatibilityResult.incompatible("Names don't match", Set.of());
     }
 
     @Override

@@ -165,8 +165,8 @@ public interface HostFunction {
   /**
    * Creates a streaming multi-value host function that can yield values incrementally.
    *
-   * <p>This is useful for functions that need to return large amounts of data or
-   * perform streaming operations.
+   * <p>This is useful for functions that need to return large amounts of data or perform streaming
+   * operations.
    *
    * @param impl the streaming implementation
    * @return a new HostFunction
@@ -201,8 +201,8 @@ public interface HostFunction {
   /**
    * Creates a void host function that receives caller context.
    *
-   * <p>Caller-aware host functions can access the calling WebAssembly instance's
-   * exports, memory, and other resources through the provided Caller interface.
+   * <p>Caller-aware host functions can access the calling WebAssembly instance's exports, memory,
+   * and other resources through the provided Caller interface.
    *
    * @param <T> the type of user data associated with the store
    * @param impl the implementation that receives caller context
@@ -222,10 +222,12 @@ public interface HostFunction {
    * @since 1.0.0
    */
   static <T> HostFunction singleValueWithCaller(final SingleValueHostFunctionWithCaller<T> impl) {
-    return new CallerAwareHostFunction<>((caller, params) -> {
-      final WasmValue result = impl.execute(caller, params);
-      return result != null ? new WasmValue[] {result} : new WasmValue[0];
-    });
+    return new CallerAwareHostFunction<>(
+        (caller, params) -> {
+          @SuppressWarnings("unchecked")
+          final WasmValue result = impl.execute((Caller<T>) caller, params);
+          return result != null ? new WasmValue[] {result} : new WasmValue[0];
+        });
   }
 
   /**
@@ -346,9 +348,7 @@ public interface HostFunction {
       return results.size();
     }
 
-    /**
-     * Clears all accumulated results.
-     */
+    /** Clears all accumulated results. */
     public void clear() {
       results.clear();
     }
@@ -357,8 +357,8 @@ public interface HostFunction {
   /**
    * Wrapper class for host functions that need caller context.
    *
-   * <p>This class adapts caller-aware host functions to the standard HostFunction
-   * interface by managing the caller context internally.
+   * <p>This class adapts caller-aware host functions to the standard HostFunction interface by
+   * managing the caller context internally.
    *
    * @param <T> the type of user data associated with the store
    * @since 1.0.0
@@ -372,10 +372,11 @@ public interface HostFunction {
      * @param voidImpl the void implementation
      */
     public CallerAwareHostFunction(VoidHostFunctionWithCaller<T> voidImpl) {
-      this.implementation = (caller, params) -> {
-        voidImpl.execute(caller, params);
-        return new WasmValue[0];
-      };
+      this.implementation =
+          (caller, params) -> {
+            voidImpl.execute(caller, params);
+            return new WasmValue[0];
+          };
     }
 
     /**
@@ -399,15 +400,16 @@ public interface HostFunction {
     /**
      * Gets the current caller context.
      *
-     * <p>This method is implemented by the runtime to provide access to the
-     * actual calling instance context during execution.
+     * <p>This method is implemented by the runtime to provide access to the actual calling instance
+     * context during execution.
      *
      * @return the current caller context
      */
     @SuppressWarnings("unchecked")
     private Caller<T> getCurrentCaller() {
       // This will be implemented by the runtime to provide the actual caller
-      throw new UnsupportedOperationException("Caller context not available - this should be provided by the runtime");
+      throw new UnsupportedOperationException(
+          "Caller context not available - this should be provided by the runtime");
     }
 
     /**
@@ -506,14 +508,11 @@ public interface HostFunction {
    * @since 1.0.0
    */
   static <T> HostFunction optimizedWithCaller(
-      final MultiValueHostFunctionWithCaller<T> impl,
-      final CallerContextUsage usage) {
+      final MultiValueHostFunctionWithCaller<T> impl, final CallerContextUsage usage) {
     return new OptimizedCallerAwareHostFunction<>(impl, usage);
   }
 
-  /**
-   * Optimized host function wrapper that avoids unnecessary overhead.
-   */
+  /** Optimized host function wrapper that avoids unnecessary overhead. */
   class OptimizedHostFunction implements HostFunction {
     private final HostFunction delegate;
     private final boolean isCallerAware;
@@ -557,8 +556,7 @@ public interface HostFunction {
     private final CallerContextUsage contextUsage;
 
     public OptimizedCallerAwareHostFunction(
-        MultiValueHostFunctionWithCaller<T> impl,
-        CallerContextUsage usage) {
+        MultiValueHostFunctionWithCaller<T> impl, CallerContextUsage usage) {
       super(impl);
       this.contextUsage = usage;
     }

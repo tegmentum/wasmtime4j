@@ -20,22 +20,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.*;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration tests for advanced Component Model linking extensions.
  *
- * <p>This test suite validates the implementation of advanced component linking features
- * including dynamic loading, hot-swapping, composition patterns, and resource sharing.
+ * <p>This test suite validates the implementation of advanced component linking features including
+ * dynamic loading, hot-swapping, composition patterns, and resource sharing.
  */
 @Tag("integration")
 @DisplayName("Component Linking Extensions Integration Tests")
@@ -59,19 +58,21 @@ class ComponentLinkingExtensionsIntegrationTest {
   @DisplayName("Should support dynamic component loading with capability checking")
   void testDynamicComponentLoading() throws Exception {
     // Given: Component specification with capability requirements
-    ComponentSpecification spec = ComponentSpecification.builder()
-        .name("test-component")
-        .version(ComponentVersion.of(1, 0, 0))
-        .requiredCapabilities(Set.of(
-            ComponentCapability.interfaceCapability("wasi:filesystem@0.2.0"),
-            ComponentCapability.featureCapability("async-support")
-        ))
-        .build();
+    ComponentSpecification spec =
+        ComponentSpecification.builder()
+            .name("test-component")
+            .version(ComponentVersion.of(1, 0, 0))
+            .requiredCapabilities(
+                Set.of(
+                    ComponentCapability.interfaceCapability("wasi:filesystem@0.2.0"),
+                    ComponentCapability.featureCapability("async-support")))
+            .build();
 
-    ComponentLoadConditions conditions = ComponentLoadConditions.builder()
-        .requireAllCapabilities(true)
-        .timeout(Duration.ofSeconds(30))
-        .build();
+    ComponentLoadConditions conditions =
+        ComponentLoadConditions.builder()
+            .requireAllCapabilities(true)
+            .timeout(Duration.ofSeconds(30))
+            .build();
 
     // When: Loading component dynamically
     if (componentLinker != null) {
@@ -105,8 +106,9 @@ class ComponentLinkingExtensionsIntegrationTest {
       // Then: Swap should complete successfully
       assertTrue(result.isSuccessful(), "Hot swap should complete successfully");
       assertFalse(result.isRollbackPerformed(), "No rollback should be needed");
-      assertTrue(result.getTotalTime().compareTo(Duration.ofSeconds(30)) < 0,
-                "Swap should complete within timeout");
+      assertTrue(
+          result.getTotalTime().compareTo(Duration.ofSeconds(30)) < 0,
+          "Swap should complete within timeout");
     }
   }
 
@@ -116,17 +118,18 @@ class ComponentLinkingExtensionsIntegrationTest {
     // Given: Pipeline with multiple processing stages
     if (componentLinker == null) return;
 
-    List<ComponentSimple> pipelineComponents = List.of(
-        createMockComponent("input-processor", ComponentVersion.of(1, 0, 0)),
-        createMockComponent("data-transformer", ComponentVersion.of(1, 0, 0)),
-        createMockComponent("output-formatter", ComponentVersion.of(1, 0, 0))
-    );
+    List<ComponentSimple> pipelineComponents =
+        List.of(
+            createMockComponent("input-processor", ComponentVersion.of(1, 0, 0)),
+            createMockComponent("data-transformer", ComponentVersion.of(1, 0, 0)),
+            createMockComponent("output-formatter", ComponentVersion.of(1, 0, 0)));
 
-    ComponentPipelineSpec pipelineSpec = ComponentPipelineSpec.builder()
-        .name("test-pipeline")
-        .components(pipelineComponents)
-        .configuration(ComponentPipelineConfig.defaultConfig())
-        .build();
+    ComponentPipelineSpec pipelineSpec =
+        ComponentPipelineSpec.builder()
+            .name("test-pipeline")
+            .components(pipelineComponents)
+            .configuration(ComponentPipelineConfig.defaultConfig())
+            .build();
 
     // When: Creating and executing pipeline
     ComponentPipeline pipeline = componentLinker.createPipeline(pipelineSpec);
@@ -159,23 +162,25 @@ class ComponentLinkingExtensionsIntegrationTest {
     eventSystem.start();
 
     // Mock event handler
-    ComponentEventSystem.EventHandler handler = (event, context) -> {
-      // Process received event
-      assertEquals("test-topic", event.getTopic());
-      context.acknowledge();
-      return CompletableFuture.completedFuture(null);
-    };
+    ComponentEventSystem.EventHandler handler =
+        (event, context) -> {
+          // Process received event
+          assertEquals("test-topic", event.getTopic());
+          context.acknowledge();
+          return CompletableFuture.completedFuture(null);
+        };
 
     // When: Setting up event communication
     ComponentEventSystem.EventSubscription subscription =
         eventSystem.subscribe("test-topic", subscriber, handler);
 
-    ComponentEvent testEvent = ComponentEvent.builder()
-        .topic("test-topic")
-        .source(publisher.getId())
-        .type("test-event")
-        .payload("test-data".getBytes())
-        .build();
+    ComponentEvent testEvent =
+        ComponentEvent.builder()
+            .topic("test-topic")
+            .source(publisher.getId())
+            .type("test-event")
+            .payload("test-data".getBytes())
+            .build();
 
     CompletableFuture<ComponentEventSystem.EventPublishResult> publishResult =
         eventSystem.publishEvent("test-topic", testEvent);
@@ -201,22 +206,24 @@ class ComponentLinkingExtensionsIntegrationTest {
     resourceManager.start();
 
     // Create shared memory pool
-    ResourcePoolConfig poolConfig = ResourcePoolConfig.builder()
-        .initialCapacity(1024)
-        .maxCapacity(2048)
-        .sharingPolicy(ResourcePoolConfig.ResourceSharingPolicy.SHARED)
-        .build();
+    ResourcePoolConfig poolConfig =
+        ResourcePoolConfig.builder()
+            .initialCapacity(1024)
+            .maxCapacity(2048)
+            .sharingPolicy(ResourcePoolConfig.ResourceSharingPolicy.SHARED)
+            .build();
 
     ComponentResourceSharingManager.ResourcePool memoryPool =
-        resourceManager.createResourcePool("shared-memory",
-            ComponentResourceSharingManager.ResourceType.MEMORY, poolConfig);
+        resourceManager.createResourcePool(
+            "shared-memory", ComponentResourceSharingManager.ResourceType.MEMORY, poolConfig);
 
     // When: Allocating resources to components
-    ResourceAllocationRequest request1 = ResourceAllocationRequest.builder()
-        .resourceType(ComponentResourceSharingManager.ResourceType.MEMORY)
-        .requestedAmount(512)
-        .timeout(Duration.ofSeconds(10))
-        .build();
+    ResourceAllocationRequest request1 =
+        ResourceAllocationRequest.builder()
+            .resourceType(ComponentResourceSharingManager.ResourceType.MEMORY)
+            .requestedAmount(512)
+            .timeout(Duration.ofSeconds(10))
+            .build();
 
     CompletableFuture<ComponentResourceSharingManager.ResourceAllocation> allocation1Future =
         resourceManager.allocateResources(component1, "shared-memory", request1);
@@ -227,8 +234,8 @@ class ComponentLinkingExtensionsIntegrationTest {
     // Then: Resource allocation should succeed
     assertNotNull(allocation1, "Resource allocation should succeed");
     assertEquals(512, allocation1.getAllocatedAmount());
-    assertEquals(ComponentResourceSharingManager.ResourceAllocationStatus.ACTIVE,
-                allocation1.getStatus());
+    assertEquals(
+        ComponentResourceSharingManager.ResourceAllocationStatus.ACTIVE, allocation1.getStatus());
 
     // Verify pool state
     assertEquals(512, memoryPool.getUsedCapacity());
@@ -244,15 +251,17 @@ class ComponentLinkingExtensionsIntegrationTest {
   @DisplayName("Should support WIT interface evolution and adaptation")
   void testWitInterfaceEvolution() throws Exception {
     // Given: Two versions of the same interface
-    WitInterfaceVersion oldVersion = WitInterfaceVersion.builder()
-        .name("test-interface")
-        .version(ComponentVersion.of(1, 0, 0))
-        .build();
+    WitInterfaceVersion oldVersion =
+        WitInterfaceVersion.builder()
+            .name("test-interface")
+            .version(ComponentVersion.of(1, 0, 0))
+            .build();
 
-    WitInterfaceVersion newVersion = WitInterfaceVersion.builder()
-        .name("test-interface")
-        .version(ComponentVersion.of(1, 1, 0))
-        .build();
+    WitInterfaceVersion newVersion =
+        WitInterfaceVersion.builder()
+            .name("test-interface")
+            .version(ComponentVersion.of(1, 1, 0))
+            .build();
 
     // Mock WIT interface evolution system
     WitInterfaceEvolution evolutionSystem = createMockEvolutionSystem();
@@ -265,20 +274,20 @@ class ComponentLinkingExtensionsIntegrationTest {
     // Then: Evolution analysis should provide compatibility information
     assertNotNull(analysis, "Evolution analysis should be available");
     assertEquals(WitInterfaceEvolution.EvolutionType.MINOR, analysis.getEvolutionType());
-    assertTrue(analysis.getBreakingChanges().isEmpty(), "Minor version should have no breaking changes");
+    assertTrue(
+        analysis.getBreakingChanges().isEmpty(), "Minor version should have no breaking changes");
 
     // Test backward compatibility
     WitInterfaceEvolution.BackwardCompatibilityResult backwardCompatibility =
         evolutionSystem.checkBackwardCompatibility(oldVersion, newVersion);
 
-    assertTrue(backwardCompatibility.isBackwardCompatible(),
-              "Minor version should be backward compatible");
+    assertTrue(
+        backwardCompatibility.isBackwardCompatible(),
+        "Minor version should be backward compatible");
 
     // Test interface adaptation
-    AdaptationConfig adaptationConfig = AdaptationConfig.builder()
-        .allowTypeCoercion(true)
-        .strictModeEnabled(false)
-        .build();
+    AdaptationConfig adaptationConfig =
+        AdaptationConfig.builder().allowTypeCoercion(true).strictModeEnabled(false).build();
 
     WitInterfaceEvolution.InterfaceAdapter adapter =
         evolutionSystem.createAdapter(oldVersion, newVersion, adaptationConfig);
@@ -308,8 +317,9 @@ class ComponentLinkingExtensionsIntegrationTest {
     assertNotNull(compatibility.getSuggestions());
 
     if (!compatibility.isCompatible()) {
-      assertFalse(compatibility.getIssues().isEmpty(),
-                  "Incompatible components should have identified issues");
+      assertFalse(
+          compatibility.getIssues().isEmpty(),
+          "Incompatible components should have identified issues");
     }
   }
 
@@ -339,13 +349,19 @@ class ComponentLinkingExtensionsIntegrationTest {
     }
 
     @Override
-    public String getId() { return id; }
+    public String getId() {
+      return id;
+    }
 
     @Override
-    public ComponentVersion getVersion() { return version; }
+    public ComponentVersion getVersion() {
+      return version;
+    }
 
     @Override
-    public long getSize() throws WasmException { return 1024; }
+    public long getSize() throws WasmException {
+      return 1024;
+    }
 
     @Override
     public ComponentMetadata getMetadata() {
@@ -353,49 +369,82 @@ class ComponentLinkingExtensionsIntegrationTest {
     }
 
     @Override
-    public boolean exportsInterface(String interfaceName) throws WasmException { return true; }
+    public boolean exportsInterface(String interfaceName) throws WasmException {
+      return true;
+    }
 
     @Override
-    public boolean importsInterface(String interfaceName) throws WasmException { return false; }
+    public boolean importsInterface(String interfaceName) throws WasmException {
+      return false;
+    }
 
     @Override
-    public Set<String> getExportedInterfaces() throws WasmException { return Set.of("test-interface"); }
+    public Set<String> getExportedInterfaces() throws WasmException {
+      return Set.of("test-interface");
+    }
 
     @Override
-    public Set<String> getImportedInterfaces() throws WasmException { return Set.of(); }
+    public Set<String> getImportedInterfaces() throws WasmException {
+      return Set.of();
+    }
 
     @Override
-    public ComponentInstance instantiate() throws WasmException { return null; }
+    public ComponentInstance instantiate() throws WasmException {
+      return null;
+    }
 
     @Override
-    public ComponentInstance instantiate(ComponentInstanceConfig config) throws WasmException { return null; }
+    public ComponentInstance instantiate(ComponentInstanceConfig config) throws WasmException {
+      return null;
+    }
 
     @Override
-    public ComponentDependencyGraph getDependencyGraph() throws WasmException { return null; }
+    public ComponentDependencyGraph getDependencyGraph() throws WasmException {
+      return null;
+    }
 
     @Override
-    public Set<ComponentSimple> resolveDependencies(ComponentRegistry registry) throws WasmException { return Set.of(); }
+    public Set<ComponentSimple> resolveDependencies(ComponentRegistry registry)
+        throws WasmException {
+      return Set.of();
+    }
 
     @Override
-    public ComponentCompatibility checkCompatibility(ComponentSimple other) throws WasmException { return null; }
+    public ComponentCompatibility checkCompatibility(ComponentSimple other) throws WasmException {
+      return null;
+    }
 
     @Override
-    public WitInterfaceDefinition getWitInterface() throws WasmException { return null; }
+    public WitInterfaceDefinition getWitInterface() throws WasmException {
+      return null;
+    }
 
     @Override
-    public WitCompatibilityResult checkWitCompatibility(ComponentSimple other) throws WasmException { return null; }
+    public WitCompatibilityResult checkWitCompatibility(ComponentSimple other)
+        throws WasmException {
+      return null;
+    }
 
     @Override
-    public ComponentResourceUsage getResourceUsage() { return null; }
+    public ComponentResourceUsage getResourceUsage() {
+      return null;
+    }
 
     @Override
-    public ComponentLifecycleState getLifecycleState() { return ComponentLifecycleState.READY; }
+    public ComponentLifecycleState getLifecycleState() {
+      return ComponentLifecycleState.READY;
+    }
 
     @Override
-    public boolean isValid() { return true; }
+    public boolean isValid() {
+      return true;
+    }
 
     @Override
-    public ComponentValidationResult validate(ComponentValidationConfig validationConfig) throws WasmException { return null; }
+    public ComponentValidationResult validate(ComponentValidationConfig validationConfig)
+        throws WasmException {
+      return null;
+    }
 
     @Override
     public void close() {}
@@ -403,112 +452,173 @@ class ComponentLinkingExtensionsIntegrationTest {
 
   private static class MockWitInterfaceEvolution implements WitInterfaceEvolution {
     @Override
-    public InterfaceEvolutionAnalysis analyzeEvolution(WitInterfaceVersion fromVersion, WitInterfaceVersion toVersion) {
+    public InterfaceEvolutionAnalysis analyzeEvolution(
+        WitInterfaceVersion fromVersion, WitInterfaceVersion toVersion) {
       return new MockEvolutionAnalysis();
     }
 
     @Override
-    public BackwardCompatibilityResult checkBackwardCompatibility(WitInterfaceVersion olderVersion, WitInterfaceVersion newerVersion) {
+    public BackwardCompatibilityResult checkBackwardCompatibility(
+        WitInterfaceVersion olderVersion, WitInterfaceVersion newerVersion) {
       return new MockBackwardCompatibilityResult();
     }
 
     @Override
-    public ForwardCompatibilityResult checkForwardCompatibility(WitInterfaceVersion newerVersion, WitInterfaceVersion olderVersion) {
+    public ForwardCompatibilityResult checkForwardCompatibility(
+        WitInterfaceVersion newerVersion, WitInterfaceVersion olderVersion) {
       return null;
     }
 
     @Override
-    public InterfaceAdapter createAdapter(WitInterfaceVersion sourceVersion, WitInterfaceVersion targetVersion, AdaptationConfig adaptationConfig) {
+    public InterfaceAdapter createAdapter(
+        WitInterfaceVersion sourceVersion,
+        WitInterfaceVersion targetVersion,
+        AdaptationConfig adaptationConfig) {
       return new MockInterfaceAdapter(sourceVersion, targetVersion);
     }
 
     @Override
-    public EvolutionValidationResult validateEvolutionStrategy(InterfaceEvolutionStrategy strategy) { return null; }
+    public EvolutionValidationResult validateEvolutionStrategy(
+        InterfaceEvolutionStrategy strategy) {
+      return null;
+    }
 
     @Override
-    public InterfaceMigrationPlan createMigrationPlan(WitInterfaceDefinition currentInterface, WitInterfaceDefinition targetInterface, MigrationConfig migrationConfig) { return null; }
+    public InterfaceMigrationPlan createMigrationPlan(
+        WitInterfaceDefinition currentInterface,
+        WitInterfaceDefinition targetInterface,
+        MigrationConfig migrationConfig) {
+      return null;
+    }
 
     @Override
-    public MigrationExecutionResult executeMigration(InterfaceMigrationPlan migrationPlan) { return null; }
+    public MigrationExecutionResult executeMigration(InterfaceMigrationPlan migrationPlan) {
+      return null;
+    }
 
     @Override
-    public InterfaceEvolutionHistory getEvolutionHistory(String interfaceName) { return null; }
+    public InterfaceEvolutionHistory getEvolutionHistory(String interfaceName) {
+      return null;
+    }
 
     @Override
     public void registerInterfaceVersion(WitInterfaceVersion interfaceVersion) {}
 
     @Override
-    public void deprecateInterfaceVersion(WitInterfaceVersion interfaceVersion, DeprecationInfo deprecationInfo) {}
+    public void deprecateInterfaceVersion(
+        WitInterfaceVersion interfaceVersion, DeprecationInfo deprecationInfo) {}
 
     @Override
-    public List<WitInterfaceVersion> getInterfaceVersions(String interfaceName) { return List.of(); }
+    public List<WitInterfaceVersion> getInterfaceVersions(String interfaceName) {
+      return List.of();
+    }
 
     @Override
-    public java.util.Optional<WitInterfaceVersion> findCompatibleVersion(String interfaceName, CompatibilityRequirements requirements) { return java.util.Optional.empty(); }
+    public java.util.Optional<WitInterfaceVersion> findCompatibleVersion(
+        String interfaceName, CompatibilityRequirements requirements) {
+      return java.util.Optional.empty();
+    }
   }
 
-  private static class MockEvolutionAnalysis implements WitInterfaceEvolution.InterfaceEvolutionAnalysis {
+  private static class MockEvolutionAnalysis
+      implements WitInterfaceEvolution.InterfaceEvolutionAnalysis {
     @Override
-    public WitInterfaceVersion getSourceVersion() { return null; }
+    public WitInterfaceVersion getSourceVersion() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return null; }
+    public WitInterfaceVersion getTargetVersion() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceEvolution.EvolutionType getEvolutionType() { return WitInterfaceEvolution.EvolutionType.MINOR; }
+    public WitInterfaceEvolution.EvolutionType getEvolutionType() {
+      return WitInterfaceEvolution.EvolutionType.MINOR;
+    }
 
     @Override
-    public List<WitInterfaceEvolution.BreakingChange> getBreakingChanges() { return List.of(); }
+    public List<WitInterfaceEvolution.BreakingChange> getBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<WitInterfaceEvolution.NonBreakingChange> getNonBreakingChanges() { return List.of(); }
+    public List<WitInterfaceEvolution.NonBreakingChange> getNonBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<WitInterfaceEvolution.RequiredAdaptation> getRequiredAdaptations() { return List.of(); }
+    public List<WitInterfaceEvolution.RequiredAdaptation> getRequiredAdaptations() {
+      return List.of();
+    }
 
     @Override
-    public WitInterfaceEvolution.MigrationComplexity getMigrationComplexity() { return WitInterfaceEvolution.MigrationComplexity.SIMPLE; }
+    public WitInterfaceEvolution.MigrationComplexity getMigrationComplexity() {
+      return WitInterfaceEvolution.MigrationComplexity.SIMPLE;
+    }
 
     @Override
-    public WitInterfaceEvolution.MigrationEffort getEstimatedEffort() { return WitInterfaceEvolution.MigrationEffort.LOW; }
+    public WitInterfaceEvolution.MigrationEffort getEstimatedEffort() {
+      return WitInterfaceEvolution.MigrationEffort.LOW;
+    }
   }
 
-  private static class MockBackwardCompatibilityResult implements WitInterfaceEvolution.BackwardCompatibilityResult {
+  private static class MockBackwardCompatibilityResult
+      implements WitInterfaceEvolution.BackwardCompatibilityResult {
     @Override
-    public boolean isBackwardCompatible() { return true; }
+    public boolean isBackwardCompatible() {
+      return true;
+    }
 
     @Override
-    public List<WitInterfaceEvolution.CompatibilityIssue> getIssues() { return List.of(); }
+    public List<WitInterfaceEvolution.CompatibilityIssue> getIssues() {
+      return List.of();
+    }
 
     @Override
-    public WitInterfaceEvolution.CompatibilityLevel getCompatibilityLevel() { return WitInterfaceEvolution.CompatibilityLevel.FULL; }
+    public WitInterfaceEvolution.CompatibilityLevel getCompatibilityLevel() {
+      return WitInterfaceEvolution.CompatibilityLevel.FULL;
+    }
 
     @Override
-    public List<String> getSuggestions() { return List.of(); }
+    public List<String> getSuggestions() {
+      return List.of();
+    }
   }
 
   private static class MockInterfaceAdapter implements WitInterfaceEvolution.InterfaceAdapter {
     private final WitInterfaceVersion sourceVersion;
     private final WitInterfaceVersion targetVersion;
 
-    public MockInterfaceAdapter(WitInterfaceVersion sourceVersion, WitInterfaceVersion targetVersion) {
+    public MockInterfaceAdapter(
+        WitInterfaceVersion sourceVersion, WitInterfaceVersion targetVersion) {
       this.sourceVersion = sourceVersion;
       this.targetVersion = targetVersion;
     }
 
     @Override
-    public WitInterfaceVersion getSourceVersion() { return sourceVersion; }
+    public WitInterfaceVersion getSourceVersion() {
+      return sourceVersion;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return targetVersion; }
+    public WitInterfaceVersion getTargetVersion() {
+      return targetVersion;
+    }
 
     @Override
-    public WasmValue[] adaptCall(String functionName, WasmValue[] sourceArgs) { return sourceArgs; }
+    public WasmValue[] adaptCall(String functionName, WasmValue[] sourceArgs) {
+      return sourceArgs;
+    }
 
     @Override
-    public WasmValue adaptReturn(String functionName, WasmValue targetResult) { return targetResult; }
+    public WasmValue adaptReturn(String functionName, WasmValue targetResult) {
+      return targetResult;
+    }
 
     @Override
-    public AdaptationStatistics getStatistics() { return null; }
+    public AdaptationStatistics getStatistics() {
+      return null;
+    }
   }
 }

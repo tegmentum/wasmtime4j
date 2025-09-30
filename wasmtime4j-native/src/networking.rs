@@ -13,15 +13,14 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use std::net::{SocketAddr, IpAddr, Ipv4Addr, Ipv6Addr, TcpListener, TcpStream, UdpSocket};
-use std::io::{self, Read, Write, ErrorKind};
-use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
+use std::net::SocketAddr;
+use std::io::{Read, Write};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use tokio::net::{TcpListener as AsyncTcpListener, TcpStream as AsyncTcpStream, UdpSocket as AsyncUdpSocket};
-use tokio::io::{AsyncRead, AsyncWrite, AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
-use tokio::sync::{mpsc, oneshot, Semaphore};
-use tokio::time::{timeout, sleep};
-use futures::future::{BoxFuture, FutureExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::{oneshot, Semaphore};
+use tokio::time::timeout;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;

@@ -1,13 +1,15 @@
 package ai.tegmentum.wasmtime4j;
 
-import org.junit.jupiter.api.Test;
-import java.util.List;
-import java.util.ArrayList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Tests for CustomSectionSecurity functionality.
- */
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+/** Tests for CustomSectionSecurity functionality. */
 final class CustomSectionSecurityTest {
 
   @Test
@@ -99,7 +101,8 @@ final class CustomSectionSecurityTest {
 
     // Add normal sections
     for (int i = 0; i < 5; i++) {
-      sections.add(new CustomSection("section" + i, ("data" + i).getBytes(), CustomSectionType.UNKNOWN));
+      sections.add(
+          new CustomSection("section" + i, ("data" + i).getBytes(), CustomSectionType.UNKNOWN));
     }
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(sections);
@@ -120,8 +123,9 @@ final class CustomSectionSecurityTest {
     assertFalse(result.isValid());
     assertFalse(result.getErrors().isEmpty());
 
-    boolean foundCountError = result.getErrors().stream()
-        .anyMatch(error -> error.getMessage().contains("exceeds maximum allowed count"));
+    boolean foundCountError =
+        result.getErrors().stream()
+            .anyMatch(error -> error.getMessage().contains("exceeds maximum allowed count"));
     assertTrue(foundCountError);
   }
 
@@ -129,19 +133,22 @@ final class CustomSectionSecurityTest {
   void testTotalSizeLimit() {
     final List<CustomSection> sections = new ArrayList<>();
     final int sectionSize = 1024 * 1024; // 1MB each
-    final int sectionCount = (int) (CustomSectionSecurity.MAX_TOTAL_CUSTOM_SECTIONS_SIZE / sectionSize) + 1;
+    final int sectionCount =
+        (int) (CustomSectionSecurity.MAX_TOTAL_CUSTOM_SECTIONS_SIZE / sectionSize) + 1;
 
     // Add sections that exceed total size limit
     for (int i = 0; i < sectionCount; i++) {
-      sections.add(new CustomSection("section" + i, new byte[sectionSize], CustomSectionType.UNKNOWN));
+      sections.add(
+          new CustomSection("section" + i, new byte[sectionSize], CustomSectionType.UNKNOWN));
     }
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(sections);
     assertFalse(result.isValid());
     assertFalse(result.getErrors().isEmpty());
 
-    boolean foundSizeError = result.getErrors().stream()
-        .anyMatch(error -> error.getMessage().contains("Total custom sections size"));
+    boolean foundSizeError =
+        result.getErrors().stream()
+            .anyMatch(error -> error.getMessage().contains("Total custom sections size"));
     assertTrue(foundSizeError);
   }
 
@@ -157,25 +164,31 @@ final class CustomSectionSecurityTest {
     assertTrue(result.getErrors().isEmpty());
     assertFalse(result.getWarnings().isEmpty());
 
-    boolean foundDuplicateWarning = result.getWarnings().stream()
-        .anyMatch(warning -> warning.getMessage().contains("duplicated"));
+    boolean foundDuplicateWarning =
+        result.getWarnings().stream()
+            .anyMatch(warning -> warning.getMessage().contains("duplicated"));
     assertTrue(foundDuplicateWarning);
   }
 
   @Test
   void testSuspiciousSectionNames() {
-    final String[] suspiciousNames = {"eval", "script", "exec", "shell", ".exe", ".dll", "javascript"};
+    final String[] suspiciousNames = {
+      "eval", "script", "exec", "shell", ".exe", ".dll", "javascript"
+    };
 
     for (final String name : suspiciousNames) {
-      assertTrue(CustomSectionSecurity.isSuspiciousSectionName(name),
+      assertTrue(
+          CustomSectionSecurity.isSuspiciousSectionName(name),
           "Name should be suspicious: " + name);
-      assertTrue(CustomSectionSecurity.isSuspiciousSectionName(name.toUpperCase()),
+      assertTrue(
+          CustomSectionSecurity.isSuspiciousSectionName(name.toUpperCase()),
           "Name should be suspicious (case insensitive): " + name.toUpperCase());
     }
 
     final String[] normalNames = {"name", "producers", "data", "metadata"};
     for (final String name : normalNames) {
-      assertFalse(CustomSectionSecurity.isSuspiciousSectionName(name),
+      assertFalse(
+          CustomSectionSecurity.isSuspiciousSectionName(name),
           "Name should not be suspicious: " + name);
     }
   }
@@ -183,14 +196,19 @@ final class CustomSectionSecurityTest {
   @Test
   void testSuspiciousPatterns() {
     // Test executable file headers
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns(new byte[]{0x4D, 0x5A})); // PE
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns(new byte[]{0x7F, 0x45, 0x4C, 0x46})); // ELF
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns(new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})); // Mach-O
+    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns(new byte[] {0x4D, 0x5A})); // PE
+    assertTrue(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            new byte[] {0x7F, 0x45, 0x4C, 0x46})); // ELF
+    assertTrue(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            new byte[] {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})); // Mach-O
 
     // Test script patterns
     assertTrue(CustomSectionSecurity.containsSuspiciousPatterns("eval(malicious)".getBytes()));
     assertTrue(CustomSectionSecurity.containsSuspiciousPatterns("system('rm -rf /')".getBytes()));
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns("<script>alert()</script>".getBytes()));
+    assertTrue(
+        CustomSectionSecurity.containsSuspiciousPatterns("<script>alert()</script>".getBytes()));
 
     // Test normal data
     assertFalse(CustomSectionSecurity.containsSuspiciousPatterns("normal data".getBytes()));
@@ -221,7 +239,8 @@ final class CustomSectionSecurityTest {
     assertEquals(CustomSectionSecurity.MAX_CUSTOM_SECTION_COUNT, config.getMaxSectionCount());
 
     // Test configuration changes
-    config.setStrictValidation(false)
+    config
+        .setStrictValidation(false)
         .setAllowSuspiciousNames(true)
         .setSanitizeContent(false)
         .setMaxSectionSize(1000)
@@ -247,15 +266,17 @@ final class CustomSectionSecurityTest {
 
   @Test
   void testNullArgumentValidation() {
-    assertThrows(IllegalArgumentException.class, () ->
-        CustomSectionSecurity.validateSecurity((CustomSection) null));
-    assertThrows(IllegalArgumentException.class, () ->
-        CustomSectionSecurity.validateSecurity((List<CustomSection>) null));
-    assertThrows(IllegalArgumentException.class, () ->
-        CustomSectionSecurity.sanitize(null));
-    assertThrows(IllegalArgumentException.class, () ->
-        CustomSectionSecurity.isSuspiciousSectionName(null));
-    assertThrows(IllegalArgumentException.class, () ->
-        CustomSectionSecurity.containsSuspiciousPatterns(null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> CustomSectionSecurity.validateSecurity((CustomSection) null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> CustomSectionSecurity.validateSecurity((List<CustomSection>) null));
+    assertThrows(IllegalArgumentException.class, () -> CustomSectionSecurity.sanitize(null));
+    assertThrows(
+        IllegalArgumentException.class, () -> CustomSectionSecurity.isSuspiciousSectionName(null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> CustomSectionSecurity.containsSuspiciousPatterns(null));
   }
 }

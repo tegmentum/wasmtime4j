@@ -11,8 +11,8 @@ import java.util.Set;
 /**
  * JNI implementation of WIT interface definition.
  *
- * <p>This class provides a concrete implementation of the WitInterfaceDefinition interface
- * for use with JNI-based component operations.
+ * <p>This class provides a concrete implementation of the WitInterfaceDefinition interface for use
+ * with JNI-based component operations.
  *
  * @since 1.0.0
  */
@@ -148,13 +148,22 @@ public final class JniWitInterfaceDefinition implements WitInterfaceDefinition {
 
   @Override
   public String toString() {
-    return "JniWitInterfaceDefinition{" +
-        "name='" + name + '\'' +
-        ", version='" + version + '\'' +
-        ", packageName='" + packageName + '\'' +
-        ", functionCount=" + functionNames.size() +
-        ", typeCount=" + typeNames.size() +
-        ", dependencyCount=" + dependencies.size() +
-        '}';
+    return "JniWitInterfaceDefinition{"
+        + "name='"
+        + name
+        + '\''
+        + ", version='"
+        + version
+        + '\''
+        + ", packageName='"
+        + packageName
+        + '\''
+        + ", functionCount="
+        + functionNames.size()
+        + ", typeCount="
+        + typeNames.size()
+        + ", dependencyCount="
+        + dependencies.size()
+        + '}';
   }
 }

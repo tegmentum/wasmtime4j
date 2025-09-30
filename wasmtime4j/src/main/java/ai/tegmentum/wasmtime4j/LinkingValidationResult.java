@@ -19,8 +19,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Result of component linking validation operation.
  *
- * <p>This class provides information about the validation of a component linking
- * configuration, including validation status and any issues found.
+ * <p>This class provides information about the validation of a component linking configuration,
+ * including validation status and any issues found.
  *
  * @since 1.0.0
  */

@@ -1,24 +1,27 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -35,8 +38,7 @@ class WasiFilesystemSnapshotTest {
   private WasiContext mockWasiContext;
   private WasiFilesystemSnapshot snapshotHandler;
 
-  @TempDir
-  Path tempDirectory;
+  @TempDir Path tempDirectory;
 
   @BeforeAll
   static void setUpClass() {
@@ -94,8 +96,8 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    CompletableFuture<Long> future = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options);
+    CompletableFuture<Long> future =
+        snapshotHandler.createFullSnapshotAsync(testRoot.toString(), options);
 
     // Wait for completion with timeout
     Long snapshotHandle = future.get(10, TimeUnit.SECONDS);
@@ -128,13 +130,13 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         new WasiFilesystemSnapshot.SnapshotOptions(
             false, // includeHiddenFiles
-            9,     // compressionLevel (maximum)
+            9, // compressionLevel (maximum)
             false, // encryptionEnabled
-            null   // encryptionKey
-        );
+            null // encryptionKey
+            );
 
-    CompletableFuture<Long> future = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options);
+    CompletableFuture<Long> future =
+        snapshotHandler.createFullSnapshotAsync(testRoot.toString(), options);
 
     Long snapshotHandle = future.get(10, TimeUnit.SECONDS);
 
@@ -155,18 +157,24 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    Long fullSnapshotHandle = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long fullSnapshotHandle =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     // Modify the directory structure
     Files.writeString(testRoot.resolve("modified.txt"), "This file was modified");
 
     // Create incremental snapshot
-    Long incrementalSnapshotHandle = snapshotHandler.createIncrementalSnapshotAsync(
-        testRoot.toString(), fullSnapshotHandle, options).get(10, TimeUnit.SECONDS);
+    Long incrementalSnapshotHandle =
+        snapshotHandler
+            .createIncrementalSnapshotAsync(testRoot.toString(), fullSnapshotHandle, options)
+            .get(10, TimeUnit.SECONDS);
 
     assertNotNull(incrementalSnapshotHandle);
-    assertNotEquals(fullSnapshotHandle, incrementalSnapshotHandle,
+    assertNotEquals(
+        fullSnapshotHandle,
+        incrementalSnapshotHandle,
         "Incremental snapshot should have different handle");
 
     // Verify both snapshots exist
@@ -174,10 +182,11 @@ class WasiFilesystemSnapshotTest {
     assertEquals(2, snapshots.size(), "Should have two snapshots");
 
     // Find incremental snapshot
-    WasiFilesystemSnapshot.SnapshotInfo incrementalSnapshot = snapshots.stream()
-        .filter(s -> s.type == WasiFilesystemSnapshot.SnapshotType.INCREMENTAL)
-        .findFirst()
-        .orElse(null);
+    WasiFilesystemSnapshot.SnapshotInfo incrementalSnapshot =
+        snapshots.stream()
+            .filter(s -> s.type == WasiFilesystemSnapshot.SnapshotType.INCREMENTAL)
+            .findFirst()
+            .orElse(null);
 
     assertNotNull(incrementalSnapshot, "Should find incremental snapshot");
     assertEquals(incrementalSnapshotHandle, incrementalSnapshot.handle);
@@ -193,15 +202,19 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    Long fullSnapshotHandle = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long fullSnapshotHandle =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     // Modify files
     Files.writeString(testRoot.resolve("differential.txt"), "Differential change");
 
     // Create differential snapshot
-    Long differentialSnapshotHandle = snapshotHandler.createDifferentialSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long differentialSnapshotHandle =
+        snapshotHandler
+            .createDifferentialSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     assertNotNull(differentialSnapshotHandle);
 
@@ -209,10 +222,11 @@ class WasiFilesystemSnapshotTest {
     assertEquals(2, snapshots.size(), "Should have two snapshots");
 
     // Verify differential snapshot
-    WasiFilesystemSnapshot.SnapshotInfo differentialSnapshot = snapshots.stream()
-        .filter(s -> s.type == WasiFilesystemSnapshot.SnapshotType.DIFFERENTIAL)
-        .findFirst()
-        .orElse(null);
+    WasiFilesystemSnapshot.SnapshotInfo differentialSnapshot =
+        snapshots.stream()
+            .filter(s -> s.type == WasiFilesystemSnapshot.SnapshotType.DIFFERENTIAL)
+            .findFirst()
+            .orElse(null);
 
     assertNotNull(differentialSnapshot, "Should find differential snapshot");
   }
@@ -227,8 +241,10 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    Long snapshotHandle = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long snapshotHandle =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     // Create restore target
     Path restoreTarget = tempDirectory.resolve("restore_target");
@@ -237,11 +253,13 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.RestoreOptions restoreOptions =
         WasiFilesystemSnapshot.RestoreOptions.defaultOptions();
 
-    CompletableFuture<Void> restoreFuture = snapshotHandler.restoreFromSnapshotAsync(
-        snapshotHandle, restoreTarget.toString(), restoreOptions);
+    CompletableFuture<Void> restoreFuture =
+        snapshotHandler.restoreFromSnapshotAsync(
+            snapshotHandle, restoreTarget.toString(), restoreOptions);
 
     // Wait for restoration to complete
-    assertDoesNotThrow(() -> restoreFuture.get(15, TimeUnit.SECONDS),
+    assertDoesNotThrow(
+        () -> restoreFuture.get(15, TimeUnit.SECONDS),
         "Snapshot restoration should complete without errors");
 
     // Note: In a full implementation, we would verify the restored files
@@ -257,8 +275,10 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    Long snapshotHandle = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long snapshotHandle =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     CompletableFuture<WasiFilesystemSnapshot.SnapshotVerificationResult> validationFuture =
         snapshotHandler.verifySnapshotAsync(snapshotHandle);
@@ -281,23 +301,26 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Create multiple snapshots
-    Long fullSnapshot = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long fullSnapshot =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     // Modify and create incremental
     Files.writeString(testRoot.resolve("incremental.txt"), "Incremental content");
-    Long incrementalSnapshot = snapshotHandler.createIncrementalSnapshotAsync(
-        testRoot.toString(), fullSnapshot, options).get(10, TimeUnit.SECONDS);
 
     // Test filtering by type
     List<WasiFilesystemSnapshot.SnapshotInfo> fullSnapshots =
         snapshotHandler.listSnapshotsFiltered(
-            WasiFilesystemSnapshot.SnapshotFilter.byType(
-                WasiFilesystemSnapshot.SnapshotType.FULL));
+            WasiFilesystemSnapshot.SnapshotFilter.byType(WasiFilesystemSnapshot.SnapshotType.FULL));
 
     assertEquals(1, fullSnapshots.size(), "Should have one full snapshot");
     assertEquals(fullSnapshot, fullSnapshots.get(0).handle);
 
+    final Long incrementalSnapshot =
+        snapshotHandler
+            .createIncrementalSnapshotAsync(testRoot.toString(), fullSnapshot, options)
+            .get(10, TimeUnit.SECONDS);
     List<WasiFilesystemSnapshot.SnapshotInfo> incrementalSnapshots =
         snapshotHandler.listSnapshotsFiltered(
             WasiFilesystemSnapshot.SnapshotFilter.byType(
@@ -324,8 +347,7 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Create a snapshot to generate metrics
-    snapshotHandler.createFullSnapshotAsync(testRoot.toString(), options)
-        .get(10, TimeUnit.SECONDS);
+    snapshotHandler.createFullSnapshotAsync(testRoot.toString(), options).get(10, TimeUnit.SECONDS);
 
     WasiFilesystemSnapshot.SnapshotMetrics metrics = snapshotHandler.getSnapshotMetrics();
 
@@ -344,8 +366,7 @@ class WasiFilesystemSnapshotTest {
     CompletableFuture<WasiFilesystemSnapshot.OptimizationResult> optimizationFuture =
         snapshotHandler.optimizeStorageAsync();
 
-    WasiFilesystemSnapshot.OptimizationResult result =
-        optimizationFuture.get(10, TimeUnit.SECONDS);
+    WasiFilesystemSnapshot.OptimizationResult result = optimizationFuture.get(10, TimeUnit.SECONDS);
 
     assertNotNull(result, "Optimization result should not be null");
     assertTrue(result.optimizationTimeMs >= 0, "Optimization time should be non-negative");
@@ -361,21 +382,24 @@ class WasiFilesystemSnapshotTest {
     WasiFilesystemSnapshot.SnapshotOptions options =
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
-    Long snapshotHandle = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long snapshotHandle =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     // Verify snapshot exists
     assertEquals(1, snapshotHandler.listSnapshots().size(), "Should have one snapshot");
 
     // Delete snapshot
-    assertDoesNotThrow(() -> snapshotHandler.deleteSnapshot(snapshotHandle),
-        "Snapshot deletion should not throw");
+    assertDoesNotThrow(
+        () -> snapshotHandler.deleteSnapshot(snapshotHandle), "Snapshot deletion should not throw");
 
     // Verify snapshot is removed
     assertEquals(0, snapshotHandler.listSnapshots().size(), "Should have no snapshots");
 
     // Verify metadata is also removed
-    assertThrows(WasiException.class,
+    assertThrows(
+        WasiException.class,
         () -> snapshotHandler.getSnapshotMetadata(snapshotHandle),
         "Should throw exception for non-existent snapshot metadata");
   }
@@ -388,22 +412,26 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Test null root path
-    assertThrows(IllegalArgumentException.class,
+    assertThrows(
+        IllegalArgumentException.class,
         () -> snapshotHandler.createFullSnapshotAsync(null, options),
         "Should throw for null root path");
 
     // Test empty root path
-    assertThrows(IllegalArgumentException.class,
+    assertThrows(
+        IllegalArgumentException.class,
         () -> snapshotHandler.createFullSnapshotAsync("", options),
         "Should throw for empty root path");
 
     // Test null options
-    assertThrows(IllegalArgumentException.class,
+    assertThrows(
+        IllegalArgumentException.class,
         () -> snapshotHandler.createFullSnapshotAsync("/tmp", null),
         "Should throw for null options");
 
     // Test invalid snapshot handle for deletion
-    assertThrows(WasiException.class,
+    assertThrows(
+        WasiException.class,
         () -> snapshotHandler.deleteSnapshot(999999L),
         "Should throw for non-existent snapshot");
   }
@@ -417,9 +445,9 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Try to create incremental snapshot without valid base
-    assertThrows(WasiException.class,
-        () -> snapshotHandler.createIncrementalSnapshotAsync(
-            testRoot.toString(), 999999L, options),
+    assertThrows(
+        WasiException.class,
+        () -> snapshotHandler.createIncrementalSnapshotAsync(testRoot.toString(), 999999L, options),
         "Should throw for non-existent base snapshot");
   }
 
@@ -432,9 +460,9 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Try to create differential snapshot without any full snapshot for the path
-    assertThrows(WasiException.class,
-        () -> snapshotHandler.createDifferentialSnapshotAsync(
-            testRoot.toString(), options),
+    assertThrows(
+        WasiException.class,
+        () -> snapshotHandler.createDifferentialSnapshotAsync(testRoot.toString(), options),
         "Should throw when no full snapshot exists for differential");
   }
 
@@ -449,10 +477,10 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Create concurrent snapshots
-    CompletableFuture<Long> snapshot1 = snapshotHandler.createFullSnapshotAsync(
-        testRoot1.toString(), options);
-    CompletableFuture<Long> snapshot2 = snapshotHandler.createFullSnapshotAsync(
-        testRoot2.toString(), options);
+    CompletableFuture<Long> snapshot1 =
+        snapshotHandler.createFullSnapshotAsync(testRoot1.toString(), options);
+    CompletableFuture<Long> snapshot2 =
+        snapshotHandler.createFullSnapshotAsync(testRoot2.toString(), options);
 
     // Wait for both to complete
     Long handle1 = snapshot1.get(15, TimeUnit.SECONDS);
@@ -477,26 +505,34 @@ class WasiFilesystemSnapshotTest {
         WasiFilesystemSnapshot.SnapshotOptions.defaultOptions();
 
     // Create a chain of snapshots
-    Long fullSnapshot = snapshotHandler.createFullSnapshotAsync(
-        testRoot.toString(), options).get(10, TimeUnit.SECONDS);
+    Long fullSnapshot =
+        snapshotHandler
+            .createFullSnapshotAsync(testRoot.toString(), options)
+            .get(10, TimeUnit.SECONDS);
 
     Files.writeString(testRoot.resolve("chain1.txt"), "Chain modification 1");
-    Long incremental1 = snapshotHandler.createIncrementalSnapshotAsync(
-        testRoot.toString(), fullSnapshot, options).get(10, TimeUnit.SECONDS);
+    Long incremental1 =
+        snapshotHandler
+            .createIncrementalSnapshotAsync(testRoot.toString(), fullSnapshot, options)
+            .get(10, TimeUnit.SECONDS);
 
     Files.writeString(testRoot.resolve("chain2.txt"), "Chain modification 2");
-    Long incremental2 = snapshotHandler.createIncrementalSnapshotAsync(
-        testRoot.toString(), incremental1, options).get(10, TimeUnit.SECONDS);
+    Long incremental2 =
+        snapshotHandler
+            .createIncrementalSnapshotAsync(testRoot.toString(), incremental1, options)
+            .get(10, TimeUnit.SECONDS);
 
     // Test chain validation (would be implemented in full version)
-    assertDoesNotThrow(() -> {
-      // In full implementation, this would validate the entire chain
-      WasiFilesystemSnapshot.SnapshotInfo info = snapshotHandler.listSnapshots().stream()
-          .filter(s -> s.handle.equals(incremental2))
-          .findFirst()
-          .orElse(null);
-      assertNotNull(info, "Chain snapshot should exist");
-    });
+    assertDoesNotThrow(
+        () -> {
+          // In full implementation, this would validate the entire chain
+          WasiFilesystemSnapshot.SnapshotInfo info =
+              snapshotHandler.listSnapshots().stream()
+                  .filter(s -> s.handle.equals(incremental2))
+                  .findFirst()
+                  .orElse(null);
+          assertNotNull(info, "Chain snapshot should exist");
+        });
   }
 
   // Utility methods

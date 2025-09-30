@@ -61,7 +61,8 @@ import java.util.stream.Collectors;
  */
 public final class ComprehensiveAuditLoggingSystem {
 
-  private static final Logger LOGGER = Logger.getLogger(ComprehensiveAuditLoggingSystem.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(ComprehensiveAuditLoggingSystem.class.getName());
 
   /** Audit event types for categorization and filtering. */
   public enum AuditEventType {
@@ -88,8 +89,13 @@ public final class ComprehensiveAuditLoggingSystem {
       this.description = description;
     }
 
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
+    public String getDisplayName() {
+      return displayName;
+    }
+
+    public String getDescription() {
+      return description;
+    }
   }
 
   /** Compliance framework types. */
@@ -111,8 +117,13 @@ public final class ComprehensiveAuditLoggingSystem {
       this.description = description;
     }
 
-    public String getDisplayName() { return displayName; }
-    public String getDescription() { return description; }
+    public String getDisplayName() {
+      return displayName;
+    }
+
+    public String getDescription() {
+      return description;
+    }
   }
 
   /** Audit event severity levels. */
@@ -131,8 +142,13 @@ public final class ComprehensiveAuditLoggingSystem {
       this.description = description;
     }
 
-    public int getLevel() { return level; }
-    public String getDescription() { return description; }
+    public int getLevel() {
+      return level;
+    }
+
+    public String getDescription() {
+      return description;
+    }
 
     public boolean isHigherThan(final AuditSeverity other) {
       return this.level > other.level;
@@ -158,6 +174,15 @@ public final class ComprehensiveAuditLoggingSystem {
     private final String checksum;
     private final List<ComplianceFramework> applicableFrameworks;
 
+    /**
+     * Creates a new AuditLogEntry.
+     *
+     * @param entryId the unique entry identifier
+     * @param eventType the type of audit event
+     * @param severity the event severity
+     * @param event the event description
+     * @param description the detailed description
+     */
     public AuditLogEntry(
         final String entryId,
         final AuditEventType eventType,
@@ -187,7 +212,8 @@ public final class ComprehensiveAuditLoggingSystem {
       this.action = action;
       this.eventData = Map.copyOf(eventData != null ? eventData : Map.of());
       this.timestamp = Instant.now();
-      this.applicableFrameworks = List.copyOf(applicableFrameworks != null ? applicableFrameworks : List.of());
+      this.applicableFrameworks =
+          List.copyOf(applicableFrameworks != null ? applicableFrameworks : List.of());
       this.checksum = calculateChecksum();
     }
 
@@ -195,8 +221,10 @@ public final class ComprehensiveAuditLoggingSystem {
     private String calculateChecksum() {
       try {
         final MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        final String data = String.format("%s|%s|%s|%s|%s|%s|%s|%s",
-            entryId, eventType, event, userId, component, action, timestamp, eventData);
+        final String data =
+            String.format(
+                "%s|%s|%s|%s|%s|%s|%s|%s",
+                entryId, eventType, event, userId, component, action, timestamp, eventData);
         final byte[] hash = digest.digest(data.getBytes());
 
         final StringBuilder hexString = new StringBuilder();
@@ -215,22 +243,69 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     // Getters
-    public String getEntryId() { return entryId; }
-    public AuditEventType getEventType() { return eventType; }
-    public AuditSeverity getSeverity() { return severity; }
-    public String getEvent() { return event; }
-    public String getDescription() { return description; }
-    public String getUserId() { return userId; }
-    public String getSessionId() { return sessionId; }
-    public String getSourceIp() { return sourceIp; }
-    public String getUserAgent() { return userAgent; }
-    public String getComponent() { return component; }
-    public String getResource() { return resource; }
-    public String getAction() { return action; }
-    public Map<String, Object> getEventData() { return eventData; }
-    public Instant getTimestamp() { return timestamp; }
-    public String getChecksum() { return checksum; }
-    public List<ComplianceFramework> getApplicableFrameworks() { return applicableFrameworks; }
+    public String getEntryId() {
+      return entryId;
+    }
+
+    public AuditEventType getEventType() {
+      return eventType;
+    }
+
+    public AuditSeverity getSeverity() {
+      return severity;
+    }
+
+    public String getEvent() {
+      return event;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public String getUserId() {
+      return userId;
+    }
+
+    public String getSessionId() {
+      return sessionId;
+    }
+
+    public String getSourceIp() {
+      return sourceIp;
+    }
+
+    public String getUserAgent() {
+      return userAgent;
+    }
+
+    public String getComponent() {
+      return component;
+    }
+
+    public String getResource() {
+      return resource;
+    }
+
+    public String getAction() {
+      return action;
+    }
+
+    public Map<String, Object> getEventData() {
+      return eventData;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
+
+    public String getChecksum() {
+      return checksum;
+    }
+
+    public List<ComplianceFramework> getApplicableFrameworks() {
+      return applicableFrameworks;
+    }
 
     /** Validates the integrity of this audit entry. */
     public boolean validateIntegrity() {
@@ -239,7 +314,8 @@ public final class ComprehensiveAuditLoggingSystem {
 
     /** Formats the audit entry for logging. */
     public String formatForLogging() {
-      return String.format("[%s] %s|%s|%s|%s|%s|%s|%s|%s|%s",
+      return String.format(
+          "[%s] %s|%s|%s|%s|%s|%s|%s|%s|%s",
           timestamp.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
           entryId,
           eventType,
@@ -260,7 +336,9 @@ public final class ComprehensiveAuditLoggingSystem {
       json.append("  \"eventType\": \"").append(eventType).append("\",\n");
       json.append("  \"severity\": \"").append(severity).append("\",\n");
       json.append("  \"event\": \"").append(event).append("\",\n");
-      json.append("  \"description\": \"").append(description != null ? description : "").append("\",\n");
+      json.append("  \"description\": \"")
+          .append(description != null ? description : "")
+          .append("\",\n");
       json.append("  \"userId\": \"").append(userId != null ? userId : "").append("\",\n");
       json.append("  \"sessionId\": \"").append(sessionId != null ? sessionId : "").append("\",\n");
       json.append("  \"sourceIp\": \"").append(sourceIp != null ? sourceIp : "").append("\",\n");
@@ -269,7 +347,9 @@ public final class ComprehensiveAuditLoggingSystem {
       json.append("  \"action\": \"").append(action != null ? action : "").append("\",\n");
       json.append("  \"timestamp\": \"").append(timestamp.toString()).append("\",\n");
       json.append("  \"checksum\": \"").append(checksum).append("\",\n");
-      json.append("  \"applicableFrameworks\": ").append(applicableFrameworks.toString()).append(",\n");
+      json.append("  \"applicableFrameworks\": ")
+          .append(applicableFrameworks.toString())
+          .append(",\n");
       json.append("  \"eventData\": ").append(eventData.toString()).append("\n");
       json.append("}");
       return json.toString();
@@ -289,6 +369,15 @@ public final class ComprehensiveAuditLoggingSystem {
     private final Map<String, Object> metrics;
     private final boolean compliant;
 
+    /**
+     * Creates a new ComplianceReport.
+     *
+     * @param reportId the unique report identifier
+     * @param framework the compliance framework
+     * @param periodStart the report period start
+     * @param periodEnd the report period end
+     * @param complianceViolations the list of violations
+     */
     public ComplianceReport(
         final String reportId,
         final ComplianceFramework framework,
@@ -303,7 +392,8 @@ public final class ComprehensiveAuditLoggingSystem {
       this.generatedAt = Instant.now();
       this.periodStart = periodStart;
       this.periodEnd = periodEnd;
-      this.complianceViolations = List.copyOf(complianceViolations != null ? complianceViolations : List.of());
+      this.complianceViolations =
+          List.copyOf(complianceViolations != null ? complianceViolations : List.of());
       this.recommendations = List.copyOf(recommendations != null ? recommendations : List.of());
       this.eventCounts = Map.copyOf(eventCounts != null ? eventCounts : Map.of());
       this.metrics = Map.copyOf(metrics != null ? metrics : Map.of());
@@ -311,16 +401,45 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     // Getters
-    public String getReportId() { return reportId; }
-    public ComplianceFramework getFramework() { return framework; }
-    public Instant getGeneratedAt() { return generatedAt; }
-    public Instant getPeriodStart() { return periodStart; }
-    public Instant getPeriodEnd() { return periodEnd; }
-    public List<String> getComplianceViolations() { return complianceViolations; }
-    public List<String> getRecommendations() { return recommendations; }
-    public Map<AuditEventType, Long> getEventCounts() { return eventCounts; }
-    public Map<String, Object> getMetrics() { return metrics; }
-    public boolean isCompliant() { return compliant; }
+    public String getReportId() {
+      return reportId;
+    }
+
+    public ComplianceFramework getFramework() {
+      return framework;
+    }
+
+    public Instant getGeneratedAt() {
+      return generatedAt;
+    }
+
+    public Instant getPeriodStart() {
+      return periodStart;
+    }
+
+    public Instant getPeriodEnd() {
+      return periodEnd;
+    }
+
+    public List<String> getComplianceViolations() {
+      return complianceViolations;
+    }
+
+    public List<String> getRecommendations() {
+      return recommendations;
+    }
+
+    public Map<AuditEventType, Long> getEventCounts() {
+      return eventCounts;
+    }
+
+    public Map<String, Object> getMetrics() {
+      return metrics;
+    }
+
+    public boolean isCompliant() {
+      return compliant;
+    }
 
     /** Formats the compliance report. */
     public String formatReport() {
@@ -328,19 +447,32 @@ public final class ComprehensiveAuditLoggingSystem {
       report.append("=== Compliance Report ===\n");
       report.append("Report ID: ").append(reportId).append("\n");
       report.append("Framework: ").append(framework.getDisplayName()).append("\n");
-      report.append("Generated: ").append(generatedAt.atZone(ZoneId.systemDefault())
-          .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
-      report.append("Period: ").append(periodStart.atZone(ZoneId.systemDefault())
-          .format(DateTimeFormatter.ISO_LOCAL_DATE))
-          .append(" to ").append(periodEnd.atZone(ZoneId.systemDefault())
-          .format(DateTimeFormatter.ISO_LOCAL_DATE)).append("\n");
+      report
+          .append("Generated: ")
+          .append(
+              generatedAt
+                  .atZone(ZoneId.systemDefault())
+                  .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+          .append("\n");
+      report
+          .append("Period: ")
+          .append(
+              periodStart.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE))
+          .append(" to ")
+          .append(periodEnd.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE))
+          .append("\n");
       report.append("Status: ").append(compliant ? "COMPLIANT" : "NON-COMPLIANT").append("\n");
       report.append("\n");
 
       if (!complianceViolations.isEmpty()) {
         report.append("Compliance Violations:\n");
         for (int i = 0; i < complianceViolations.size(); i++) {
-          report.append("  ").append(i + 1).append(". ").append(complianceViolations.get(i)).append("\n");
+          report
+              .append("  ")
+              .append(i + 1)
+              .append(". ")
+              .append(complianceViolations.get(i))
+              .append("\n");
         }
         report.append("\n");
       }
@@ -348,23 +480,36 @@ public final class ComprehensiveAuditLoggingSystem {
       if (!recommendations.isEmpty()) {
         report.append("Recommendations:\n");
         for (int i = 0; i < recommendations.size(); i++) {
-          report.append("  ").append(i + 1).append(". ").append(recommendations.get(i)).append("\n");
+          report
+              .append("  ")
+              .append(i + 1)
+              .append(". ")
+              .append(recommendations.get(i))
+              .append("\n");
         }
         report.append("\n");
       }
 
       report.append("Event Summary:\n");
       for (final Map.Entry<AuditEventType, Long> entry : eventCounts.entrySet()) {
-        report.append("  ").append(entry.getKey().getDisplayName()).append(": ")
-            .append(entry.getValue()).append("\n");
+        report
+            .append("  ")
+            .append(entry.getKey().getDisplayName())
+            .append(": ")
+            .append(entry.getValue())
+            .append("\n");
       }
       report.append("\n");
 
       if (!metrics.isEmpty()) {
         report.append("Metrics:\n");
         for (final Map.Entry<String, Object> entry : metrics.entrySet()) {
-          report.append("  ").append(entry.getKey()).append(": ")
-              .append(entry.getValue()).append("\n");
+          report
+              .append("  ")
+              .append(entry.getKey())
+              .append(": ")
+              .append(entry.getValue())
+              .append("\n");
         }
       }
 
@@ -385,6 +530,14 @@ public final class ComprehensiveAuditLoggingSystem {
     private final List<ComplianceFramework> frameworks;
     private final int limit;
 
+    /**
+     * Creates a new AuditQueryFilter.
+     *
+     * @param startTime the query start time
+     * @param endTime the query end time
+     * @param eventTypes the event types to filter
+     * @param severities the severities to filter
+     */
     public AuditQueryFilter(
         final Instant startTime,
         final Instant endTime,
@@ -409,16 +562,45 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     // Getters
-    public Instant getStartTime() { return startTime; }
-    public Instant getEndTime() { return endTime; }
-    public List<AuditEventType> getEventTypes() { return eventTypes; }
-    public List<AuditSeverity> getSeverities() { return severities; }
-    public String getUserId() { return userId; }
-    public String getComponent() { return component; }
-    public String getResource() { return resource; }
-    public String getAction() { return action; }
-    public List<ComplianceFramework> getFrameworks() { return frameworks; }
-    public int getLimit() { return limit; }
+    public Instant getStartTime() {
+      return startTime;
+    }
+
+    public Instant getEndTime() {
+      return endTime;
+    }
+
+    public List<AuditEventType> getEventTypes() {
+      return eventTypes;
+    }
+
+    public List<AuditSeverity> getSeverities() {
+      return severities;
+    }
+
+    public String getUserId() {
+      return userId;
+    }
+
+    public String getComponent() {
+      return component;
+    }
+
+    public String getResource() {
+      return resource;
+    }
+
+    public String getAction() {
+      return action;
+    }
+
+    public List<ComplianceFramework> getFrameworks() {
+      return frameworks;
+    }
+
+    public int getLimit() {
+      return limit;
+    }
 
     /** Checks if an audit entry matches this filter. */
     public boolean matches(final AuditLogEntry entry) {
@@ -447,8 +629,8 @@ public final class ComprehensiveAuditLoggingSystem {
         return false;
       }
       if (!frameworks.isEmpty()) {
-        final boolean hasFramework = entry.getApplicableFrameworks().stream()
-            .anyMatch(frameworks::contains);
+        final boolean hasFramework =
+            entry.getApplicableFrameworks().stream().anyMatch(frameworks::contains);
         if (!hasFramework) {
           return false;
         }
@@ -460,7 +642,8 @@ public final class ComprehensiveAuditLoggingSystem {
   // Instance fields
   private final ConcurrentHashMap<String, AuditLogEntry> auditEntries = new ConcurrentHashMap<>();
   private final CopyOnWriteArrayList<AuditLogEntry> auditLog = new CopyOnWriteArrayList<>();
-  private final ConcurrentHashMap<String, ComplianceReport> complianceReports = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ComplianceReport> complianceReports =
+      new ConcurrentHashMap<>();
 
   // Configuration
   private final Path auditLogDirectory;
@@ -499,9 +682,11 @@ public final class ComprehensiveAuditLoggingSystem {
       final boolean persistToDisk,
       final Duration logRetentionPeriod,
       final int maxInMemoryEntries) {
-    this.auditLogDirectory = auditLogDirectory != null ? auditLogDirectory : Paths.get("audit-logs");
+    this.auditLogDirectory =
+        auditLogDirectory != null ? auditLogDirectory : Paths.get("audit-logs");
     this.persistToDisk = persistToDisk;
-    this.logRetentionPeriod = logRetentionPeriod != null ? logRetentionPeriod : Duration.ofDays(365);
+    this.logRetentionPeriod =
+        logRetentionPeriod != null ? logRetentionPeriod : Duration.ofDays(365);
     this.maxInMemoryEntries = maxInMemoryEntries > 0 ? maxInMemoryEntries : 10000;
 
     initializeAuditSystem();
@@ -531,13 +716,11 @@ public final class ComprehensiveAuditLoggingSystem {
   private void startBackgroundProcessing() {
     // Audit log maintenance
     backgroundExecutor.scheduleAtFixedRate(
-        this::performAuditMaintenance,
-        3600, 3600, TimeUnit.SECONDS); // Every hour
+        this::performAuditMaintenance, 3600, 3600, TimeUnit.SECONDS); // Every hour
 
     // Integrity checks
     backgroundExecutor.scheduleAtFixedRate(
-        this::performIntegrityCheck,
-        21600, 21600, TimeUnit.SECONDS); // Every 6 hours
+        this::performIntegrityCheck, 21600, 21600, TimeUnit.SECONDS); // Every 6 hours
   }
 
   /** Logs system startup event. */
@@ -595,21 +778,22 @@ public final class ComprehensiveAuditLoggingSystem {
       final List<ComplianceFramework> applicableFrameworks) {
 
     final String entryId = generateEntryId();
-    final AuditLogEntry entry = new AuditLogEntry(
-        entryId,
-        eventType,
-        severity,
-        event,
-        description,
-        userId,
-        sessionId,
-        sourceIp,
-        userAgent,
-        component,
-        resource,
-        action,
-        eventData,
-        applicableFrameworks);
+    final AuditLogEntry entry =
+        new AuditLogEntry(
+            entryId,
+            eventType,
+            severity,
+            event,
+            description,
+            userId,
+            sessionId,
+            sourceIp,
+            userAgent,
+            component,
+            resource,
+            action,
+            eventData,
+            applicableFrameworks);
 
     // Store in memory
     auditEntries.put(entryId, entry);
@@ -638,16 +822,17 @@ public final class ComprehensiveAuditLoggingSystem {
     // Check for compliance violations
     checkComplianceViolations(entry);
 
-    LOGGER.fine(String.format("Audit event logged: %s [%s] - %s",
-        entryId, eventType, event));
+    LOGGER.fine(String.format("Audit event logged: %s [%s] - %s", entryId, eventType, event));
 
     return entry;
   }
 
   /** Generates a unique entry ID. */
   private String generateEntryId() {
-    return "audit_" + System.currentTimeMillis() + "_" +
-           Integer.toHexString((int) (Math.random() * 0x10000));
+    return "audit_"
+        + System.currentTimeMillis()
+        + "_"
+        + Integer.toHexString((int) (Math.random() * 0x10000));
   }
 
   /** Persists audit entry to disk. */
@@ -657,12 +842,18 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     try {
-      final String fileName = String.format("audit-%s.log",
-          entry.getTimestamp().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+      final String fileName =
+          String.format(
+              "audit-%s.log",
+              entry
+                  .getTimestamp()
+                  .atZone(ZoneId.systemDefault())
+                  .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
       final Path logFile = auditLogDirectory.resolve(fileName);
 
       final String logLine = entry.formatForLogging() + "\n";
-      Files.write(logFile, logLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+      Files.write(
+          logFile, logLine.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
     } catch (final IOException e) {
       LOGGER.warning("Failed to persist audit entry to disk: " + e.getMessage());
@@ -683,8 +874,8 @@ public final class ComprehensiveAuditLoggingSystem {
   /** Checks for compliance violations in audit events. */
   private void checkComplianceViolations(final AuditLogEntry entry) {
     // Simple compliance checks - in production would be more sophisticated
-    if (entry.getEventType() == AuditEventType.SECURITY_EVENT &&
-        entry.getSeverity().isHigherThan(AuditSeverity.MEDIUM)) {
+    if (entry.getEventType() == AuditEventType.SECURITY_EVENT
+        && entry.getSeverity().isHigherThan(AuditSeverity.MEDIUM)) {
       complianceViolationCount.incrementAndGet();
 
       // Log compliance violation
@@ -705,8 +896,10 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     // Check for failed access attempts
-    if (entry.getAction() != null && entry.getAction().contains("login") &&
-        entry.getDescription() != null && entry.getDescription().toLowerCase().contains("failed")) {
+    if (entry.getAction() != null
+        && entry.getAction().contains("login")
+        && entry.getDescription() != null
+        && entry.getDescription().toLowerCase().contains("failed")) {
 
       // Log potential security issue
       logAuditEvent(
@@ -749,24 +942,24 @@ public final class ComprehensiveAuditLoggingSystem {
    * @return generated compliance report
    */
   public ComplianceReport generateComplianceReport(
-      final ComplianceFramework framework,
-      final Instant periodStart,
-      final Instant periodEnd) {
+      final ComplianceFramework framework, final Instant periodStart, final Instant periodEnd) {
 
-    final String reportId = "report_" + framework.name().toLowerCase() + "_" + System.currentTimeMillis();
+    final String reportId =
+        "report_" + framework.name().toLowerCase() + "_" + System.currentTimeMillis();
 
     // Filter audit logs for the specified period and framework
-    final AuditQueryFilter filter = new AuditQueryFilter(
-        periodStart,
-        periodEnd,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        List.of(framework),
-        Integer.MAX_VALUE);
+    final AuditQueryFilter filter =
+        new AuditQueryFilter(
+            periodStart,
+            periodEnd,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            List.of(framework),
+            Integer.MAX_VALUE);
 
     final List<AuditLogEntry> relevantEntries = queryAuditLogs(filter);
 
@@ -775,10 +968,9 @@ public final class ComprehensiveAuditLoggingSystem {
     final List<String> recommendations = new ArrayList<>();
 
     // Count events by type
-    final Map<AuditEventType, Long> eventCounts = relevantEntries.stream()
-        .collect(Collectors.groupingBy(
-            AuditLogEntry::getEventType,
-            Collectors.counting()));
+    final Map<AuditEventType, Long> eventCounts =
+        relevantEntries.stream()
+            .collect(Collectors.groupingBy(AuditLogEntry::getEventType, Collectors.counting()));
 
     // Framework-specific compliance checks
     switch (framework) {
@@ -806,18 +998,20 @@ public final class ComprehensiveAuditLoggingSystem {
     metrics.put("securityEvents", eventCounts.getOrDefault(AuditEventType.SECURITY_EVENT, 0L));
     metrics.put("complianceEvents", eventCounts.getOrDefault(AuditEventType.COMPLIANCE_EVENT, 0L));
     metrics.put("accessControlEvents", eventCounts.getOrDefault(AuditEventType.ACCESS_CONTROL, 0L));
-    metrics.put("configurationChanges", eventCounts.getOrDefault(AuditEventType.CONFIGURATION_CHANGE, 0L));
+    metrics.put(
+        "configurationChanges", eventCounts.getOrDefault(AuditEventType.CONFIGURATION_CHANGE, 0L));
     metrics.put("reportPeriodDays", Duration.between(periodStart, periodEnd).toDays());
 
-    final ComplianceReport report = new ComplianceReport(
-        reportId,
-        framework,
-        periodStart,
-        periodEnd,
-        violations,
-        recommendations,
-        eventCounts,
-        metrics);
+    final ComplianceReport report =
+        new ComplianceReport(
+            reportId,
+            framework,
+            periodStart,
+            periodEnd,
+            violations,
+            recommendations,
+            eventCounts,
+            metrics);
 
     complianceReports.put(reportId, report);
 
@@ -826,7 +1020,8 @@ public final class ComprehensiveAuditLoggingSystem {
         AuditEventType.COMPLIANCE_EVENT,
         AuditSeverity.INFO,
         "Compliance Report Generated",
-        String.format("Generated %s compliance report for period %s to %s",
+        String.format(
+            "Generated %s compliance report for period %s to %s",
             framework.getDisplayName(),
             periodStart.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE),
             periodEnd.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE)),
@@ -837,7 +1032,8 @@ public final class ComprehensiveAuditLoggingSystem {
         "compliance-generator",
         "compliance-report",
         "generate",
-        Map.of("reportId", reportId, "framework", framework.name(), "compliant", report.isCompliant()),
+        Map.of(
+            "reportId", reportId, "framework", framework.name(), "compliant", report.isCompliant()),
         List.of(framework));
 
     return report;
@@ -848,24 +1044,27 @@ public final class ComprehensiveAuditLoggingSystem {
     final List<String> violations = new ArrayList<>();
 
     // Check for unauthorized configuration changes
-    final long configChanges = entries.stream()
-        .filter(e -> e.getEventType() == AuditEventType.CONFIGURATION_CHANGE)
-        .filter(e -> e.getUserId() == null || e.getUserId().equals("SYSTEM"))
-        .count();
+    final long configChanges =
+        entries.stream()
+            .filter(e -> e.getEventType() == AuditEventType.CONFIGURATION_CHANGE)
+            .filter(e -> e.getUserId() == null || e.getUserId().equals("SYSTEM"))
+            .count();
 
     if (configChanges > 0) {
       violations.add("Unauthorized configuration changes detected: " + configChanges + " events");
     }
 
     // Check for administrative actions without proper authorization
-    final long unauthorizedActions = entries.stream()
-        .filter(e -> e.getEventType() == AuditEventType.ADMINISTRATIVE_ACTION)
-        .filter(e -> e.getSeverity().isHigherThan(AuditSeverity.MEDIUM))
-        .filter(e -> e.getUserId() == null)
-        .count();
+    final long unauthorizedActions =
+        entries.stream()
+            .filter(e -> e.getEventType() == AuditEventType.ADMINISTRATIVE_ACTION)
+            .filter(e -> e.getSeverity().isHigherThan(AuditSeverity.MEDIUM))
+            .filter(e -> e.getUserId() == null)
+            .count();
 
     if (unauthorizedActions > 0) {
-      violations.add("Administrative actions without user identification: " + unauthorizedActions + " events");
+      violations.add(
+          "Administrative actions without user identification: " + unauthorizedActions + " events");
     }
 
     return violations;
@@ -893,9 +1092,8 @@ public final class ComprehensiveAuditLoggingSystem {
     final List<String> violations = new ArrayList<>();
 
     // Check for data access without proper logging
-    final long dataAccessEvents = entries.stream()
-        .filter(e -> e.getEventType() == AuditEventType.DATA_ACCESS)
-        .count();
+    final long dataAccessEvents =
+        entries.stream().filter(e -> e.getEventType() == AuditEventType.DATA_ACCESS).count();
 
     // In GDPR, all data access should be logged
     if (dataAccessEvents == 0) {
@@ -903,13 +1101,17 @@ public final class ComprehensiveAuditLoggingSystem {
     }
 
     // Check for security incidents
-    final long securityIncidents = entries.stream()
-        .filter(e -> e.getEventType() == AuditEventType.SECURITY_EVENT)
-        .filter(e -> e.getSeverity().isHigherThan(AuditSeverity.MEDIUM))
-        .count();
+    final long securityIncidents =
+        entries.stream()
+            .filter(e -> e.getEventType() == AuditEventType.SECURITY_EVENT)
+            .filter(e -> e.getSeverity().isHigherThan(AuditSeverity.MEDIUM))
+            .count();
 
     if (securityIncidents > 0) {
-      violations.add("Security incidents detected: " + securityIncidents + " events require GDPR breach assessment");
+      violations.add(
+          "Security incidents detected: "
+              + securityIncidents
+              + " events require GDPR breach assessment");
     }
 
     return violations;
@@ -937,13 +1139,15 @@ public final class ComprehensiveAuditLoggingSystem {
     final List<String> violations = new ArrayList<>();
 
     // Check for security events without proper classification
-    final long unclassifiedSecurity = entries.stream()
-        .filter(e -> e.getEventType() == AuditEventType.SECURITY_EVENT)
-        .filter(e -> e.getSeverity() == AuditSeverity.INFO)
-        .count();
+    final long unclassifiedSecurity =
+        entries.stream()
+            .filter(e -> e.getEventType() == AuditEventType.SECURITY_EVENT)
+            .filter(e -> e.getSeverity() == AuditSeverity.INFO)
+            .count();
 
     if (unclassifiedSecurity > 10) {
-      violations.add("High number of low-severity security events may indicate insufficient classification");
+      violations.add(
+          "High number of low-severity security events may indicate insufficient classification");
     }
 
     return violations;
@@ -966,12 +1170,12 @@ public final class ComprehensiveAuditLoggingSystem {
     final List<String> violations = new ArrayList<>();
 
     // Check for high-severity errors
-    final long criticalErrors = entries.stream()
-        .filter(e -> e.getSeverity() == AuditSeverity.CRITICAL)
-        .count();
+    final long criticalErrors =
+        entries.stream().filter(e -> e.getSeverity() == AuditSeverity.CRITICAL).count();
 
     if (criticalErrors > 0) {
-      violations.add("Critical severity events detected: " + criticalErrors + " events require investigation");
+      violations.add(
+          "Critical severity events detected: " + criticalErrors + " events require investigation");
     }
 
     return violations;
@@ -1019,21 +1223,24 @@ public final class ComprehensiveAuditLoggingSystem {
     try {
       Files.list(auditLogDirectory)
           .filter(path -> path.getFileName().toString().startsWith("audit-"))
-          .filter(path -> {
-            try {
-              return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
-            } catch (final IOException e) {
-              return false;
-            }
-          })
-          .forEach(path -> {
-            try {
-              Files.delete(path);
-              LOGGER.fine("Deleted old audit log file: " + path);
-            } catch (final IOException e) {
-              LOGGER.warning("Failed to delete old audit log file " + path + ": " + e.getMessage());
-            }
-          });
+          .filter(
+              path -> {
+                try {
+                  return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
+                } catch (final IOException e) {
+                  return false;
+                }
+              })
+          .forEach(
+              path -> {
+                try {
+                  Files.delete(path);
+                  LOGGER.fine("Deleted old audit log file: " + path);
+                } catch (final IOException e) {
+                  LOGGER.warning(
+                      "Failed to delete old audit log file " + path + ": " + e.getMessage());
+                }
+              });
     } catch (final IOException e) {
       LOGGER.warning("Error cleaning old log files: " + e.getMessage());
     }
@@ -1070,11 +1277,14 @@ public final class ComprehensiveAuditLoggingSystem {
 
       lastIntegrityCheck.set(Instant.now());
 
-      LOGGER.fine(String.format("Integrity check completed: %d entries checked, %d violations",
-          checkedEntries, integrityViolations));
+      LOGGER.fine(
+          String.format(
+              "Integrity check completed: %d entries checked, %d violations",
+              checkedEntries, integrityViolations));
 
       if (integrityViolations > 0) {
-        LOGGER.severe("SECURITY ALERT: " + integrityViolations + " audit log integrity violations detected");
+        LOGGER.severe(
+            "SECURITY ALERT: " + integrityViolations + " audit log integrity violations detected");
       }
 
     } catch (final Exception e) {
@@ -1109,14 +1319,17 @@ public final class ComprehensiveAuditLoggingSystem {
    */
   public String getAuditStatistics() {
     return String.format(
-        "Audit System Statistics: total_entries=%d, memory_entries=%d, security_events=%d, " +
-        "compliance_violations=%d, compliance_reports=%d, last_integrity_check=%s",
+        "Audit System Statistics: total_entries=%d, memory_entries=%d, security_events=%d, "
+            + "compliance_violations=%d, compliance_reports=%d, last_integrity_check=%s",
         totalAuditEntries.get(),
         auditLog.size(),
         securityEventCount.get(),
         complianceViolationCount.get(),
         complianceReports.size(),
-        lastIntegrityCheck.get().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_TIME));
+        lastIntegrityCheck
+            .get()
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ISO_LOCAL_TIME));
   }
 
   /**

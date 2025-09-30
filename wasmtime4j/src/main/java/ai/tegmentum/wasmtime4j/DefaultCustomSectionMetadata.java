@@ -9,12 +9,12 @@ import java.util.stream.Collectors;
 /**
  * Default implementation of CustomSectionMetadata.
  *
- * <p>This implementation provides comprehensive custom section metadata access and management
- * for WebAssembly modules.
+ * <p>This implementation provides comprehensive custom section metadata access and management for
+ * WebAssembly modules.
  *
  * @since 1.0.0
  */
-final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
+public final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
 
   private final List<CustomSection> customSections;
   private final CustomSectionParser parser;
@@ -31,8 +31,8 @@ final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
    * @param parser the custom section parser
    * @throws IllegalArgumentException if customSections or parser is null
    */
-  DefaultCustomSectionMetadata(final List<CustomSection> customSections,
-                              final CustomSectionParser parser) {
+  DefaultCustomSectionMetadata(
+      final List<CustomSection> customSections, final CustomSectionParser parser) {
     if (customSections == null) {
       throw new IllegalArgumentException("Custom sections cannot be null");
     }
@@ -40,23 +40,26 @@ final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
       throw new IllegalArgumentException("Custom section parser cannot be null");
     }
 
-    this.customSections = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(customSections));
+    this.customSections =
+        java.util.Collections.unmodifiableList(new java.util.ArrayList<>(customSections));
     this.parser = parser;
 
     // Pre-compute lookup maps for efficiency
-    this.sectionsByName = this.customSections.stream()
-        .collect(Collectors.groupingBy(
-            CustomSection::getName,
-            Collectors.collectingAndThen(
-                Collectors.toList(),
-                java.util.Collections::unmodifiableList)));
+    this.sectionsByName =
+        this.customSections.stream()
+            .collect(
+                Collectors.groupingBy(
+                    CustomSection::getName,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(), java.util.Collections::unmodifiableList)));
 
-    this.sectionsByType = this.customSections.stream()
-        .collect(Collectors.groupingBy(
-            CustomSection::getType,
-            Collectors.collectingAndThen(
-                Collectors.toList(),
-                java.util.Collections::unmodifiableList)));
+    this.sectionsByType =
+        this.customSections.stream()
+            .collect(
+                Collectors.groupingBy(
+                    CustomSection::getType,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(), java.util.Collections::unmodifiableList)));
   }
 
   @Override
@@ -119,9 +122,7 @@ final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
 
   @Override
   public long getCustomSectionsTotalSize() {
-    return customSections.stream()
-        .mapToLong(CustomSection::getSize)
-        .sum();
+    return customSections.stream().mapToLong(CustomSection::getSize).sum();
   }
 
   @Override
@@ -184,15 +185,14 @@ final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
   public List<CustomSection> getDebuggingSections() {
     return customSections.stream()
         .filter(section -> section.getType().isDebuggingSection())
-        .collect(Collectors.collectingAndThen(
-            Collectors.toList(),
-            java.util.Collections::unmodifiableList));
+        .collect(
+            Collectors.collectingAndThen(
+                Collectors.toList(), java.util.Collections::unmodifiableList));
   }
 
   @Override
   public boolean hasDebuggingInfo() {
-    return customSections.stream()
-        .anyMatch(section -> section.getType().isDebuggingSection());
+    return customSections.stream().anyMatch(section -> section.getType().isDebuggingSection());
   }
 
   @Override
@@ -235,19 +235,22 @@ final class DefaultCustomSectionMetadata implements CustomSectionMetadata {
     }
 
     // Security validation
-    final CustomSectionValidationResult securityResult = CustomSectionSecurity.validateSecurity(customSections);
+    final CustomSectionValidationResult securityResult =
+        CustomSectionSecurity.validateSecurity(customSections);
     builder.setErrors(securityResult.getErrors());
     builder.setWarnings(securityResult.getWarnings());
 
     // Validate individual sections based on their type
     for (final CustomSection section : customSections) {
-      final CustomSectionValidationResult sectionResult = parser.validateSection(section.getName(), section.getData());
+      final CustomSectionValidationResult sectionResult =
+          parser.validateSection(section.getName(), section.getData());
 
       // Combine results
       for (final CustomSectionValidationResult.ValidationIssue error : sectionResult.getErrors()) {
         builder.addError(error);
       }
-      for (final CustomSectionValidationResult.ValidationIssue warning : sectionResult.getWarnings()) {
+      for (final CustomSectionValidationResult.ValidationIssue warning :
+          sectionResult.getWarnings()) {
         builder.addWarning(warning);
       }
     }

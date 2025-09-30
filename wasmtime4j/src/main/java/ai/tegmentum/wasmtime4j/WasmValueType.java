@@ -102,16 +102,24 @@ public enum WasmValueType {
    * @throws IllegalArgumentException if the type code is unknown
    */
   public static WasmValueType fromNativeTypeCode(final int typeCode) {
-    return switch (typeCode) {
-      case 0 -> I32;
-      case 1 -> I64;
-      case 2 -> F32;
-      case 3 -> F64;
-      case 4 -> V128;
-      case 5 -> FUNCREF;
-      case 6 -> EXTERNREF;
-      default -> throw new IllegalArgumentException("Unknown type code: " + typeCode);
-    };
+    switch (typeCode) {
+      case 0:
+        return I32;
+      case 1:
+        return I64;
+      case 2:
+        return F32;
+      case 3:
+        return F64;
+      case 4:
+        return V128;
+      case 5:
+        return FUNCREF;
+      case 6:
+        return EXTERNREF;
+      default:
+        throw new IllegalArgumentException("Unknown type code: " + typeCode);
+    }
   }
 
   /**

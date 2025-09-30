@@ -87,6 +87,14 @@ public final class DiagnosticCollector {
     private final String threadName;
     private final long threadId;
 
+    /**
+     * Creates a new DiagnosticEvent.
+     *
+     * @param type the event type
+     * @param severity the event severity
+     * @param message the event message
+     * @param metadata additional event metadata
+     */
     public DiagnosticEvent(
         final DiagnosticEventType type,
         final DiagnosticSeverity severity,
@@ -99,7 +107,7 @@ public final class DiagnosticCollector {
       this.metadata = Map.copyOf(metadata != null ? metadata : Map.of());
       final Thread currentThread = Thread.currentThread();
       this.threadName = currentThread.getName();
-      this.threadId = currentThread.getId();
+      this.threadId = currentThread.threadId();
     }
 
     public DiagnosticEventType getType() {
@@ -149,6 +157,12 @@ public final class DiagnosticCollector {
     private final AtomicLong memoryAllocated = new AtomicLong(0);
     private volatile boolean disposed = false;
 
+    /**
+     * Creates a new InstanceLifecycleInfo.
+     *
+     * @param instanceId the instance identifier
+     * @param moduleName the module name
+     */
     public InstanceLifecycleInfo(final String instanceId, final String moduleName) {
       this.instanceId = instanceId;
       this.moduleName = moduleName;
@@ -221,6 +235,14 @@ public final class DiagnosticCollector {
     private final String threadName;
     private final Map<String, Object> stackTrace;
 
+    /**
+     * Creates a new MemoryAllocationInfo.
+     *
+     * @param allocationType the type of allocation
+     * @param size the allocation size
+     * @param location the allocation location
+     * @param stackTrace the stack trace information
+     */
     public MemoryAllocationInfo(
         final String allocationType,
         final long size,
@@ -270,6 +292,13 @@ public final class DiagnosticCollector {
     private final long waitedTime;
     private final Instant timestamp;
 
+    /**
+     * Creates a new ThreadActivityInfo.
+     *
+     * @param threadInfo the thread information
+     * @param cpuTime the CPU time
+     * @param userTime the user time
+     */
     public ThreadActivityInfo(
         final ThreadInfo threadInfo, final long cpuTime, final long userTime) {
       this.threadId = threadInfo.getThreadId();
@@ -324,6 +353,15 @@ public final class DiagnosticCollector {
     private final Instant detectedAt;
     private final Map<String, Object> context;
 
+    /**
+     * Creates a new PerformanceBottleneck.
+     *
+     * @param operation the operation name
+     * @param duration the operation duration
+     * @param location the bottleneck location
+     * @param severity the severity level
+     * @param context additional context information
+     */
     public PerformanceBottleneck(
         final String operation,
         final Duration duration,
@@ -482,6 +520,10 @@ public final class DiagnosticCollector {
                   "lifetime", disposeInfo.getLifetime().toString(),
                   "usageCount", disposeInfo.getUsageCount()));
         }
+        break;
+
+      default:
+        LOGGER.warning("Unknown lifecycle event: " + event);
         break;
     }
   }

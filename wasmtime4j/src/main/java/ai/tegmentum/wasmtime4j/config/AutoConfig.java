@@ -219,7 +219,7 @@ public final class AutoConfig {
             : PerformanceProfile.MEMORY_OPTIMIZED;
 
       case MACHINE_LEARNING:
-        return systemCapabilities.hasSIMDSupport()
+        return systemCapabilities.hasSimdSupport()
             ? PerformanceProfile.MAXIMUM_PERFORMANCE
             : PerformanceProfile.BALANCED;
 
@@ -319,7 +319,7 @@ public final class AutoConfig {
     switch (workloadType) {
       case MACHINE_LEARNING:
       case CPU_INTENSIVE:
-        if (systemCapabilities.hasSIMDSupport()) {
+        if (systemCapabilities.hasSimdSupport()) {
           features.add(WasmFeature.SIMD);
         }
         break;
@@ -330,7 +330,7 @@ public final class AutoConfig {
         break;
 
       case WEB_APPLICATION:
-        if (systemCapabilities.hasSIMDSupport()) {
+        if (systemCapabilities.hasSimdSupport()) {
           features.add(WasmFeature.SIMD);
         }
         break;
@@ -371,7 +371,7 @@ public final class AutoConfig {
       reasons.add("Parallel compilation enabled due to multi-core system");
     }
 
-    if (systemCapabilities.hasSIMDSupport()
+    if (systemCapabilities.hasSimdSupport()
         && (workloadType == WorkloadType.MACHINE_LEARNING
             || workloadType == WorkloadType.CPU_INTENSIVE)) {
       reasons.add("SIMD optimizations enabled based on CPU support and workload requirements");
@@ -606,12 +606,12 @@ public final class AutoConfig {
       this.availableMemoryMB = Runtime.getRuntime().maxMemory() / (1024 * 1024);
       this.operatingSystem = System.getProperty("os.name");
       this.cpuArchitecture = System.getProperty("os.arch");
-      this.simdSupport = detectSIMDSupport();
+      this.simdSupport = detectSimdSupport();
       this.serverEnvironment = detectServerEnvironment();
       this.detailedCpuInfo = true; // Assume we have basic info
     }
 
-    private boolean detectSIMDSupport() {
+    private boolean detectSimdSupport() {
       // Basic heuristic based on architecture
       final String arch = cpuArchitecture.toLowerCase();
       return arch.contains("x86")
@@ -641,7 +641,7 @@ public final class AutoConfig {
       return cpuArchitecture;
     }
 
-    public boolean hasSIMDSupport() {
+    public boolean hasSimdSupport() {
       return simdSupport;
     }
 
@@ -787,6 +787,16 @@ public final class AutoConfig {
     private final double cpuUtilization;
     private final int instanceCount;
 
+    /**
+     * Creates new execution metrics.
+     *
+     * @param compilationTimeMs compilation time in milliseconds
+     * @param executionTimeMs actual execution time in milliseconds
+     * @param expectedExecutionTimeMs expected execution time in milliseconds
+     * @param memoryUsageMB memory usage in megabytes
+     * @param cpuUtilization CPU utilization percentage (0.0 to 1.0)
+     * @param instanceCount number of instances created
+     */
     public ExecutionMetrics(
         final long compilationTimeMs,
         final long executionTimeMs,

@@ -29,11 +29,11 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the WebAssembly caller interface.
  *
- * <p>This implementation provides access to the calling WebAssembly instance context
- * within host functions. It uses JNI for direct native access to exports,
- * fuel management, and execution state.
+ * <p>This implementation provides access to the calling WebAssembly instance context within host
+ * functions. It uses JNI for direct native access to exports, fuel management, and execution state.
  *
  * <p>The caller interface enables host functions to:
+ *
  * <ul>
  *   <li>Access exported functions, memory, tables, and globals from the calling instance
  *   <li>Monitor fuel consumption if fuel metering is enabled
@@ -339,21 +339,27 @@ public final class JniCaller<T> implements Caller<T>, AutoCloseable {
 
   @Override
   public String toString() {
-    return "JniCaller{" +
-           "callerHandle=" + callerHandle +
-           ", closed=" + closed +
-           '}';
+    return "JniCaller{" + "callerHandle=" + callerHandle + ", closed=" + closed + '}';
   }
 
   // Native method declarations
   private static native boolean nativeGetFuel(long callerHandle, long[] fuelOut);
+
   private static native boolean nativeGetFuelRemaining(long callerHandle, long[] fuelOut);
+
   private static native boolean nativeAddFuel(long callerHandle, long fuel);
+
   private static native boolean nativeSetEpochDeadline(long callerHandle, long deadline);
+
   private static native boolean nativeHasEpochDeadline(long callerHandle);
+
   private static native boolean nativeHasExport(long callerHandle, String name);
+
   private static native long nativeGetMemory(long callerHandle, String name);
+
   private static native long nativeGetFunction(long callerHandle, String name);
+
   private static native long nativeGetGlobal(long callerHandle, String name);
+
   private static native long nativeGetTable(long callerHandle, String name);
 }

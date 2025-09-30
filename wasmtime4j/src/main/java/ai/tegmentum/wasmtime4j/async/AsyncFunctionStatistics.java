@@ -6,8 +6,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Statistics for asynchronous function execution.
  *
- * <p>Tracks execution metrics, performance data, and resource usage
- * for asynchronous WebAssembly function calls.
+ * <p>Tracks execution metrics, performance data, and resource usage for asynchronous WebAssembly
+ * function calls.
  *
  * @since 1.0.0
  */
@@ -21,6 +21,7 @@ public final class AsyncFunctionStatistics {
   private final AtomicLong minExecutionTimeMs;
   private final AtomicLong maxExecutionTimeMs;
 
+  /** Creates a new AsyncFunctionStatistics instance with zero initial values. */
   public AsyncFunctionStatistics() {
     this.totalCalls = new AtomicLong(0);
     this.successfulCalls = new AtomicLong(0);
@@ -148,9 +149,7 @@ public final class AsyncFunctionStatistics {
     return Duration.ofMillis(maxExecutionTimeMs.get());
   }
 
-  /**
-   * Resets all statistics.
-   */
+  /** Resets all statistics. */
   public void reset() {
     totalCalls.set(0);
     successfulCalls.set(0);

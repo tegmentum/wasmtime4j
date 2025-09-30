@@ -51,8 +51,7 @@ import java.util.logging.Logger;
  */
 public final class GlobalDistributionSystem {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(GlobalDistributionSystem.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(GlobalDistributionSystem.class.getName());
 
   /** Geographic regions for global distribution. */
   public enum Region {
@@ -147,6 +146,13 @@ public final class GlobalDistributionSystem {
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final AtomicLong totalErrors = new AtomicLong(0);
 
+    /**
+     * Creates a new regional node.
+     *
+     * @param nodeId unique identifier for the node
+     * @param region geographic region of the node
+     * @param endpoint network endpoint of the node
+     */
     public RegionalNode(
         final String nodeId,
         final Region region,
@@ -232,6 +238,16 @@ public final class GlobalDistributionSystem {
       this.lastHealthCheck = Instant.now();
     }
 
+    /**
+     * Updates the node metrics with current values.
+     *
+     * @param requestCount total number of requests processed
+     * @param errorCount total number of errors encountered
+     * @param averageLatency average response latency
+     * @param cpuUsage current CPU usage percentage
+     * @param memoryUsage current memory usage percentage
+     * @param activeConnections number of active connections
+     */
     public void updateMetrics(
         final long requestCount,
         final long errorCount,
@@ -250,8 +266,7 @@ public final class GlobalDistributionSystem {
     }
 
     public boolean isHealthy() {
-      return healthStatus == NodeHealthStatus.HEALTHY
-          || healthStatus == NodeHealthStatus.DEGRADED;
+      return healthStatus == NodeHealthStatus.HEALTHY || healthStatus == NodeHealthStatus.DEGRADED;
     }
 
     public boolean isAvailable() {
@@ -259,6 +274,11 @@ public final class GlobalDistributionSystem {
           && healthStatus != NodeHealthStatus.MAINTENANCE;
     }
 
+    /**
+     * Gets the health score for this node.
+     *
+     * @return health score between 0.0 and 1.0
+     */
     public double getHealthScore() {
       switch (healthStatus) {
         case HEALTHY:
@@ -285,6 +305,14 @@ public final class GlobalDistributionSystem {
     private final Instant decisionTime;
     private final double confidenceScore;
 
+    /**
+     * Creates a new routing decision.
+     *
+     * @param targetNode the target node for routing
+     * @param routingReason reason for the routing decision
+     * @param routingMetadata additional metadata for the decision
+     * @param confidenceScore confidence score for this decision
+     */
     public RoutingDecision(
         final RegionalNode targetNode,
         final String routingReason,
@@ -333,6 +361,17 @@ public final class GlobalDistributionSystem {
     private volatile String errorMessage;
     private final AtomicBoolean completed = new AtomicBoolean(false);
 
+    /**
+     * Creates a new replication job.
+     *
+     * @param jobId unique identifier for the job
+     * @param dataId identifier of the data to replicate
+     * @param sourceNode source node for replication
+     * @param targetNode target node for replication
+     * @param strategy replication strategy to use
+     * @param data data to replicate
+     * @param metadata additional metadata for the job
+     */
     public ReplicationJob(
         final String jobId,
         final String dataId,
@@ -402,6 +441,12 @@ public final class GlobalDistributionSystem {
       this.startTime = Instant.now();
     }
 
+    /**
+     * Marks the replication job as complete.
+     *
+     * @param success whether the replication was successful
+     * @param errorMessage error message if replication failed
+     */
     public void complete(final boolean success, final String errorMessage) {
       this.completionTime = Instant.now();
       this.successful = success;
@@ -409,6 +454,11 @@ public final class GlobalDistributionSystem {
       this.completed.set(true);
     }
 
+    /**
+     * Gets the time taken for replication.
+     *
+     * @return replication duration, or null if not completed
+     */
     public Duration getReplicationTime() {
       return completionTime != null && startTime != null
           ? Duration.between(startTime, completionTime)
@@ -477,11 +527,16 @@ public final class GlobalDistributionSystem {
   private RegionalNode createRegionalNode(final Region region, final String endpoint) {
     final Map<String, Object> capabilities =
         Map.of(
-            "max_concurrent_requests", 1000,
-            "max_memory_mb", 8192,
-            "supported_features", List.of("wasi", "modules", "instances", "memory"),
-            "ssl_enabled", true,
-            "compression_supported", true);
+            "max_concurrent_requests",
+            1000,
+            "max_memory_mb",
+            8192,
+            "supported_features",
+            List.of("wasi", "modules", "instances", "memory"),
+            "ssl_enabled",
+            true,
+            "compression_supported",
+            true);
 
     return new RegionalNode(
         region.getRegionCode() + "_node_" + System.currentTimeMillis(),
@@ -653,7 +708,11 @@ public final class GlobalDistributionSystem {
         }
 
         final String jobId =
-            "repl_" + dataId + "_" + targetNode.getRegion().getRegionCode() + "_"
+            "repl_"
+                + dataId
+                + "_"
+                + targetNode.getRegion().getRegionCode()
+                + "_"
                 + System.currentTimeMillis();
 
         final ReplicationJob job =
@@ -824,13 +883,14 @@ public final class GlobalDistributionSystem {
 
   /** Checks if replication is transpacific. */
   private boolean isTranspacific(final Region source, final Region target) {
-    return (isNorthAmerica(source) && isAsia(target))
-        || (isAsia(source) && isNorthAmerica(target));
+    return (isNorthAmerica(source) && isAsia(target)) || (isAsia(source) && isNorthAmerica(target));
   }
 
   /** Checks if region is in North America. */
   private boolean isNorthAmerica(final Region region) {
-    return region == Region.US_EAST_1 || region == Region.US_WEST_2 || region == Region.CA_CENTRAL_1;
+    return region == Region.US_EAST_1
+        || region == Region.US_WEST_2
+        || region == Region.CA_CENTRAL_1;
   }
 
   /** Checks if region is in Europe. */
@@ -849,22 +909,16 @@ public final class GlobalDistributionSystem {
   private void startBackgroundProcessing() {
     // Health monitoring
     executorService.scheduleAtFixedRate(
-        this::performHealthChecks,
-        0,
-        healthCheckInterval.toSeconds(),
-        TimeUnit.SECONDS);
+        this::performHealthChecks, 0, healthCheckInterval.toSeconds(), TimeUnit.SECONDS);
 
     // Regional failover detection
-    executorService.scheduleAtFixedRate(
-        this::detectRegionalFailures, 60, 60, TimeUnit.SECONDS);
+    executorService.scheduleAtFixedRate(this::detectRegionalFailures, 60, 60, TimeUnit.SECONDS);
 
     // Replication monitoring
-    executorService.scheduleAtFixedRate(
-        this::monitorActiveReplications, 30, 30, TimeUnit.SECONDS);
+    executorService.scheduleAtFixedRate(this::monitorActiveReplications, 30, 30, TimeUnit.SECONDS);
 
     // Statistics collection
-    executorService.scheduleAtFixedRate(
-        this::collectGlobalStatistics, 5, 5, TimeUnit.MINUTES);
+    executorService.scheduleAtFixedRate(this::collectGlobalStatistics, 5, 5, TimeUnit.MINUTES);
   }
 
   /** Performs health checks on all regional nodes. */
@@ -929,10 +983,7 @@ public final class GlobalDistributionSystem {
         }
 
         // Calculate region health
-        final long unhealthyNodes =
-            regionNodes.stream()
-                .filter(node -> !node.isHealthy())
-                .count();
+        final long unhealthyNodes = regionNodes.stream().filter(node -> !node.isHealthy()).count();
 
         final double unhealthyRatio = (double) unhealthyNodes / regionNodes.size();
 
@@ -967,14 +1018,16 @@ public final class GlobalDistributionSystem {
               .stream()
               .max(
                   (e1, e2) -> {
-                    final double health1 = e1.getValue().stream()
-                        .mapToDouble(RegionalNode::getHealthScore)
-                        .average()
-                        .orElse(0.0);
-                    final double health2 = e2.getValue().stream()
-                        .mapToDouble(RegionalNode::getHealthScore)
-                        .average()
-                        .orElse(0.0);
+                    final double health1 =
+                        e1.getValue().stream()
+                            .mapToDouble(RegionalNode::getHealthScore)
+                            .average()
+                            .orElse(0.0);
+                    final double health2 =
+                        e2.getValue().stream()
+                            .mapToDouble(RegionalNode::getHealthScore)
+                            .average()
+                            .orElse(0.0);
                     return Double.compare(health1, health2);
                   })
               .map(Map.Entry::getKey)
@@ -1025,17 +1078,14 @@ public final class GlobalDistributionSystem {
   private void collectGlobalStatistics() {
     try {
       final int totalNodes = regionalNodes.size();
-      final long healthyNodes = regionalNodes.values().stream()
-          .filter(RegionalNode::isHealthy)
-          .count();
+      final long healthyNodes =
+          regionalNodes.values().stream().filter(RegionalNode::isHealthy).count();
 
-      final long totalRequestsGlobal = regionalNodes.values().stream()
-          .mapToLong(RegionalNode::getTotalRequests)
-          .sum();
+      final long totalRequestsGlobal =
+          regionalNodes.values().stream().mapToLong(RegionalNode::getTotalRequests).sum();
 
-      final long totalErrorsGlobal = regionalNodes.values().stream()
-          .mapToLong(RegionalNode::getTotalErrors)
-          .sum();
+      final long totalErrorsGlobal =
+          regionalNodes.values().stream().mapToLong(RegionalNode::getTotalErrors).sum();
 
       LOGGER.fine(
           String.format(
@@ -1070,8 +1120,8 @@ public final class GlobalDistributionSystem {
    */
   public void setPrimaryRegion(final Region region) {
     final Region old = primaryRegion.getAndSet(region);
-    LOGGER.info("Primary region changed from " + old.getDisplayName() + " to "
-        + region.getDisplayName());
+    LOGGER.info(
+        "Primary region changed from " + old.getDisplayName() + " to " + region.getDisplayName());
   }
 
   /**

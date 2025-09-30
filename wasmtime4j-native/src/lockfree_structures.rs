@@ -9,13 +9,11 @@
 //! - Memory reclamation strategies for safe concurrent access
 
 use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU64, AtomicUsize, Ordering};
-use std::ptr::{self, NonNull};
-use std::mem::{self, MaybeUninit};
-use std::marker::PhantomData;
-use std::collections::HashMap;
+use std::ptr::{self};
+use std::mem::{self};
 use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
-use crossbeam::epoch::{self, Atomic, CompareExchangeError, Guard, Owned, Shared};
+use crossbeam::epoch::{self, Atomic, Owned, Shared};
 use crossbeam::utils::{Backoff, CachePadded};
 use parking_lot::{RwLock, Mutex};
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -42,17 +40,17 @@ struct Node<T> {
 
 /// Queue performance statistics
 #[derive(Debug, Default)]
-struct QueueStatistics {
+pub struct QueueStatistics {
     /// Total enqueue operations
-    enqueues: AtomicU64,
+    pub enqueues: AtomicU64,
     /// Total dequeue operations
-    dequeues: AtomicU64,
+    pub dequeues: AtomicU64,
     /// Failed dequeue attempts (empty queue)
     empty_dequeues: AtomicU64,
     /// Current approximate size
     size: AtomicUsize,
     /// Total retries due to contention
-    retries: AtomicU64,
+    pub retries: AtomicU64,
 }
 
 /// Lock-free hash table with linearizable operations
@@ -89,11 +87,11 @@ struct HashNode<K, V> {
 
 /// Hash table performance statistics
 #[derive(Debug, Default)]
-struct HashTableStatistics {
+pub struct HashTableStatistics {
     /// Total insert operations
     inserts: AtomicU64,
     /// Total lookup operations
-    lookups: AtomicU64,
+    pub lookups: AtomicU64,
     /// Total delete operations
     deletes: AtomicU64,
     /// Successful lookups
@@ -101,7 +99,7 @@ struct HashTableStatistics {
     /// Failed lookups
     lookup_misses: AtomicU64,
     /// Hash collisions
-    collisions: AtomicU64,
+    pub collisions: AtomicU64,
     /// Resize operations
     resizes: AtomicU64,
 }
@@ -170,6 +168,13 @@ struct RetiredPointer {
     /// Retirement timestamp
     retired_at: Instant,
 }
+
+// SAFETY: RetiredPointer is safe to send between threads because:
+// 1. The raw pointer is managed by the hazard pointer algorithm
+// 2. The deleter function is already Send + Sync
+// 3. Access is coordinated through the hazard pointer mechanism
+unsafe impl Send for RetiredPointer {}
+unsafe impl Sync for RetiredPointer {}
 
 /// Hazard pointer management statistics
 #[derive(Debug, Clone, Default)]

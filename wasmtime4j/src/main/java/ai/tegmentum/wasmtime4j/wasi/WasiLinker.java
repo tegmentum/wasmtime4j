@@ -16,10 +16,11 @@ import java.util.Map;
  * Specialized linker for WASI (WebAssembly System Interface) modules with enhanced configuration.
  *
  * <p>A WasiLinker extends the standard linker functionality with WASI-specific capabilities,
- * providing fine-grained control over system interface access, filesystem permissions,
- * environment variables, and network access.
+ * providing fine-grained control over system interface access, filesystem permissions, environment
+ * variables, and network access.
  *
  * <p>Key features include:
+ *
  * <ul>
  *   <li>Configurable filesystem access with directory mapping and permissions
  *   <li>Environment variable control with allow/deny lists
@@ -30,6 +31,7 @@ import java.util.Map;
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * try (WasiLinker linker = WasiLinker.create(engine)) {
  *     // Configure filesystem access
@@ -54,9 +56,9 @@ public interface WasiLinker extends Closeable {
   /**
    * Allows access to a host directory from the WebAssembly module.
    *
-   * <p>This method maps a host filesystem directory to a path visible within
-   * the WebAssembly module's WASI filesystem namespace. Permissions control
-   * what operations the module can perform on files within this directory.
+   * <p>This method maps a host filesystem directory to a path visible within the WebAssembly
+   * module's WASI filesystem namespace. Permissions control what operations the module can perform
+   * on files within this directory.
    *
    * @param hostPath the path on the host filesystem to expose
    * @param guestPath the path where it should appear in the WASI filesystem
@@ -66,9 +68,8 @@ public interface WasiLinker extends Closeable {
    * @since 1.0.0
    */
   void allowDirectoryAccess(
-      final Path hostPath,
-      final String guestPath,
-      final WasiPermissions permissions) throws WasmException;
+      final Path hostPath, final String guestPath, final WasiPermissions permissions)
+      throws WasmException;
 
   /**
    * Allows access to a host directory with default permissions.
@@ -102,9 +103,8 @@ public interface WasiLinker extends Closeable {
   /**
    * Inherits environment variables from the host process.
    *
-   * <p>This allows the WebAssembly module to access the same environment
-   * variables as the host Java process. Use with caution as this may expose
-   * sensitive information.
+   * <p>This allows the WebAssembly module to access the same environment variables as the host Java
+   * process. Use with caution as this may expose sensitive information.
    *
    * @throws WasmException if environment inheritance fails
    */
@@ -122,8 +122,8 @@ public interface WasiLinker extends Closeable {
   /**
    * Sets the command-line arguments that will be passed to the WebAssembly module.
    *
-   * <p>The first argument is typically the program name, followed by any
-   * command-line flags or parameters.
+   * <p>The first argument is typically the program name, followed by any command-line flags or
+   * parameters.
    *
    * @param arguments list of command-line arguments
    * @throws IllegalArgumentException if arguments is null
@@ -160,8 +160,8 @@ public interface WasiLinker extends Closeable {
   /**
    * Enables network access for the WebAssembly module.
    *
-   * <p>Network access is disabled by default for security. Enable only when
-   * the WebAssembly module requires network connectivity and is trusted.
+   * <p>Network access is disabled by default for security. Enable only when the WebAssembly module
+   * requires network connectivity and is trusted.
    *
    * @throws WasmException if network access cannot be enabled
    */
@@ -170,16 +170,16 @@ public interface WasiLinker extends Closeable {
   /**
    * Disables network access for the WebAssembly module.
    *
-   * <p>This is the default state. Network access can be explicitly disabled
-   * even after being enabled.
+   * <p>This is the default state. Network access can be explicitly disabled even after being
+   * enabled.
    */
   void disableNetworkAccess();
 
   /**
    * Sets the maximum file size for WASI file operations.
    *
-   * <p>This limits how large files can grow through WASI operations, providing
-   * protection against resource exhaustion attacks.
+   * <p>This limits how large files can grow through WASI operations, providing protection against
+   * resource exhaustion attacks.
    *
    * @param maxSizeBytes maximum file size in bytes, or null for no limit
    */
@@ -188,8 +188,8 @@ public interface WasiLinker extends Closeable {
   /**
    * Sets the maximum number of open file descriptors.
    *
-   * <p>This limits how many files the WebAssembly module can have open
-   * simultaneously, providing protection against resource exhaustion.
+   * <p>This limits how many files the WebAssembly module can have open simultaneously, providing
+   * protection against resource exhaustion.
    *
    * @param maxOpenFiles maximum number of open files, or null for no limit
    */
@@ -198,9 +198,8 @@ public interface WasiLinker extends Closeable {
   /**
    * Instantiates a WebAssembly module with WASI support using this linker.
    *
-   * <p>The linker will provide all WASI functions and configured resources
-   * to satisfy the module's import requirements. The module must be a valid
-   * WASI module that imports WASI functions.
+   * <p>The linker will provide all WASI functions and configured resources to satisfy the module's
+   * import requirements. The module must be a valid WASI module that imports WASI functions.
    *
    * @param store the store to instantiate the module in
    * @param module the compiled WASI module to instantiate
@@ -213,12 +212,12 @@ public interface WasiLinker extends Closeable {
   /**
    * Gets the underlying standard linker.
    *
-   * <p>This provides access to the base linker functionality for defining
-   * additional host functions or imports beyond WASI.
+   * <p>This provides access to the base linker functionality for defining additional host functions
+   * or imports beyond WASI.
    *
    * @return the underlying Linker instance
    */
-  Linker getLinker();
+  Linker<WasiContext> getLinker();
 
   /**
    * Gets the engine associated with this WASI linker.

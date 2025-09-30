@@ -83,6 +83,17 @@ public final class EnterpriseResourceManager {
     private final double utilizationPercentage;
     private final Instant lastUpdated;
 
+    /**
+     * Creates a new ResourceUsageStats.
+     *
+     * @param resourceType the type of resource
+     * @param currentUsage the current usage amount
+     * @param peakUsage the peak usage amount
+     * @param totalAllocated the total allocated amount
+     * @param totalDeallocated the total deallocated amount
+     * @param averageUsage the average usage
+     * @param utilizationPercentage the utilization percentage
+     */
     public ResourceUsageStats(
         final ResourceType resourceType,
         final long currentUsage,
@@ -142,6 +153,15 @@ public final class EnterpriseResourceManager {
     private final Duration warningThreshold;
     private final boolean enforcementEnabled;
 
+    /**
+     * Creates a new ResourceQuota.
+     *
+     * @param resourceType the type of resource
+     * @param softLimit the soft limit
+     * @param hardLimit the hard limit
+     * @param warningThreshold the warning threshold
+     * @param enforcementEnabled whether enforcement is enabled
+     */
     public ResourceQuota(
         final ResourceType resourceType,
         final long softLimit,
@@ -484,6 +504,9 @@ public final class EnterpriseResourceManager {
               break;
             case NORMAL:
               // Normal operation
+              break;
+            default:
+              // No action needed for unknown pressure levels
               break;
           }
         }

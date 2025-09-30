@@ -5,8 +5,8 @@ import java.time.Instant;
 /**
  * Resource usage information during WebAssembly instance instantiation.
  *
- * <p>This class tracks memory usage, CPU utilization, and other resource
- * metrics during the instantiation process for monitoring and optimization.
+ * <p>This class tracks memory usage, CPU utilization, and other resource metrics during the
+ * instantiation process for monitoring and optimization.
  *
  * @since 1.0.0
  */
@@ -258,9 +258,7 @@ public final class InstantiationResourceUsage {
    * @return updated resource usage
    */
   public InstantiationResourceUsage withResourceCounts(
-      final int newFunctionsLinked,
-      final int newTablesAllocated,
-      final int newGlobalsInitialized) {
+      final int newFunctionsLinked, final int newTablesAllocated, final int newGlobalsInitialized) {
     return new InstantiationResourceUsage(
         memoryUsed,
         peakMemoryUsed,
@@ -285,8 +283,12 @@ public final class InstantiationResourceUsage {
   }
 
   private String formatBytes(final long bytes) {
-    if (bytes < 1024) return bytes + "B";
-    if (bytes < 1024 * 1024) return (bytes / 1024) + "KB";
+    if (bytes < 1024) {
+      return bytes + "B";
+    }
+    if (bytes < 1024 * 1024) {
+      return (bytes / 1024) + "KB";
+    }
     return (bytes / (1024 * 1024)) + "MB";
   }
 }

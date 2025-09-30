@@ -24,8 +24,8 @@ import java.util.Objects;
 /**
  * Result of a WebAssembly module serialization operation.
  *
- * <p>This class encapsulates the serialized module data and its associated metadata,
- * providing convenient methods for saving, loading, and analyzing serialization results.
+ * <p>This class encapsulates the serialized module data and its associated metadata, providing
+ * convenient methods for saving, loading, and analyzing serialization results.
  *
  * @since 1.0.0
  */
@@ -42,7 +42,8 @@ public final class SerializationResult {
    * @throws IllegalArgumentException if parameters are null
    */
   public SerializationResult(final byte[] serializedData, final SerializedModuleMetadata metadata) {
-    this.serializedData = Objects.requireNonNull(serializedData, "Serialized data cannot be null").clone();
+    this.serializedData =
+        Objects.requireNonNull(serializedData, "Serialized data cannot be null").clone();
     this.metadata = Objects.requireNonNull(metadata, "Metadata cannot be null");
   }
 
@@ -111,11 +112,17 @@ public final class SerializationResult {
     summary.append("Serialization Result:\n");
     summary.append("  Format: ").append(metadata.getFormat().getIdentifier()).append("\n");
     summary.append("  Size: ").append(String.format("%.2f MB", getSizeMB())).append("\n");
-    summary.append("  Compression: ").append(String.format("%.2fx", getCompressionRatio())).append("\n");
+    summary
+        .append("  Compression: ")
+        .append(String.format("%.2fx", getCompressionRatio()))
+        .append("\n");
     summary.append("  Duration: ").append(metadata.getSerializationDurationMs()).append("ms\n");
 
     if (metadata.getPerformanceMetrics() != null) {
-      summary.append("  Performance: ").append(metadata.getPerformanceMetrics().getPerformanceSummary()).append("\n");
+      summary
+          .append("  Performance: ")
+          .append(metadata.getPerformanceMetrics().getPerformanceSummary())
+          .append("\n");
     }
 
     return summary.toString();
@@ -232,17 +239,29 @@ public final class SerializationResult {
     // Size comparison
     final long sizeDiff = this.getSize() - other.getSize();
     final double sizePercent = ((double) sizeDiff / other.getSize()) * 100;
-    comparison.append("  Size: ").append(String.format("%+.2f%% (%+d bytes)", sizePercent, sizeDiff)).append("\n");
+    comparison
+        .append("  Size: ")
+        .append(String.format("%+.2f%% (%+d bytes)", sizePercent, sizeDiff))
+        .append("\n");
 
     // Compression comparison
     final double compressionDiff = this.getCompressionRatio() - other.getCompressionRatio();
-    comparison.append("  Compression: ").append(String.format("%+.2fx", compressionDiff)).append("\n");
+    comparison
+        .append("  Compression: ")
+        .append(String.format("%+.2fx", compressionDiff))
+        .append("\n");
 
     // Duration comparison
-    final long durationDiff = this.metadata.getSerializationDurationMs() - other.metadata.getSerializationDurationMs();
-    final double durationPercent = other.metadata.getSerializationDurationMs() > 0 ?
-        ((double) durationDiff / other.metadata.getSerializationDurationMs()) * 100 : 0;
-    comparison.append("  Duration: ").append(String.format("%+.1f%% (%+dms)", durationPercent, durationDiff)).append("\n");
+    final long durationDiff =
+        this.metadata.getSerializationDurationMs() - other.metadata.getSerializationDurationMs();
+    final double durationPercent =
+        other.metadata.getSerializationDurationMs() > 0
+            ? ((double) durationDiff / other.metadata.getSerializationDurationMs()) * 100
+            : 0;
+    comparison
+        .append("  Duration: ")
+        .append(String.format("%+.1f%% (%+dms)", durationPercent, durationDiff))
+        .append("\n");
 
     return comparison.toString();
   }
@@ -259,12 +278,16 @@ public final class SerializationResult {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
 
     final SerializationResult other = (SerializationResult) obj;
-    return java.util.Arrays.equals(serializedData, other.serializedData) &&
-           Objects.equals(metadata, other.metadata);
+    return java.util.Arrays.equals(serializedData, other.serializedData)
+        && Objects.equals(metadata, other.metadata);
   }
 
   @Override
@@ -295,20 +318,20 @@ public final class SerializationResult {
   private static String serializeMetadata(final SerializedModuleMetadata metadata) {
     // Simplified JSON serialization - in production would use Jackson or similar
     return String.format(
-        "{\n" +
-        "  \"format\": \"%s\",\n" +
-        "  \"formatVersion\": \"%s\",\n" +
-        "  \"serializedSize\": %d,\n" +
-        "  \"originalSize\": %d,\n" +
-        "  \"sha256Hash\": \"%s\",\n" +
-        "  \"timestamp\": \"%s\",\n" +
-        "  \"serializationDurationMs\": %d,\n" +
-        "  \"compressionRatio\": %.4f,\n" +
-        "  \"wasmtimeVersion\": \"%s\",\n" +
-        "  \"javaVersion\": \"%s\",\n" +
-        "  \"platformArch\": \"%s\",\n" +
-        "  \"platformOs\": \"%s\"\n" +
-        "}",
+        "{\n"
+            + "  \"format\": \"%s\",\n"
+            + "  \"formatVersion\": \"%s\",\n"
+            + "  \"serializedSize\": %d,\n"
+            + "  \"originalSize\": %d,\n"
+            + "  \"sha256Hash\": \"%s\",\n"
+            + "  \"timestamp\": \"%s\",\n"
+            + "  \"serializationDurationMs\": %d,\n"
+            + "  \"compressionRatio\": %.4f,\n"
+            + "  \"wasmtimeVersion\": \"%s\",\n"
+            + "  \"javaVersion\": \"%s\",\n"
+            + "  \"platformArch\": \"%s\",\n"
+            + "  \"platformOs\": \"%s\"\n"
+            + "}",
         metadata.getFormat().getIdentifier(),
         metadata.getFormatVersion(),
         metadata.getSerializedSize(),
@@ -320,8 +343,7 @@ public final class SerializationResult {
         metadata.getWasmtimeVersion(),
         metadata.getJavaVersion(),
         metadata.getPlatformArch(),
-        metadata.getPlatformOs()
-    );
+        metadata.getPlatformOs());
   }
 
   /**

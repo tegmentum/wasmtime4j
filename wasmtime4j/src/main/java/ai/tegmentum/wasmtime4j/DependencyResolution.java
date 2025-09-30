@@ -8,9 +8,8 @@ import java.util.Objects;
 /**
  * Result of dependency resolution analysis for a set of WebAssembly modules.
  *
- * <p>This class provides detailed information about the dependency relationships
- * between modules, the optimal instantiation order, and any issues detected
- * during analysis.
+ * <p>This class provides detailed information about the dependency relationships between modules,
+ * the optimal instantiation order, and any issues detected during analysis.
  *
  * @since 1.0.0
  */
@@ -46,13 +45,15 @@ public final class DependencyResolution {
       final int resolvedDependencies,
       final Duration analysisTime,
       final boolean resolutionSuccessful) {
-    this.instantiationOrder = Collections.unmodifiableList(
-        Objects.requireNonNull(instantiationOrder, "instantiationOrder"));
-    this.dependencies = Collections.unmodifiableList(
-        Objects.requireNonNull(dependencies, "dependencies"));
+    this.instantiationOrder =
+        Collections.unmodifiableList(
+            Objects.requireNonNull(instantiationOrder, "instantiationOrder"));
+    this.dependencies =
+        Collections.unmodifiableList(Objects.requireNonNull(dependencies, "dependencies"));
     this.hasCircularDependencies = hasCircularDependencies;
-    this.circularDependencyChains = Collections.unmodifiableList(
-        Objects.requireNonNull(circularDependencyChains, "circularDependencyChains"));
+    this.circularDependencyChains =
+        Collections.unmodifiableList(
+            Objects.requireNonNull(circularDependencyChains, "circularDependencyChains"));
     this.totalModules = totalModules;
     this.resolvedDependencies = resolvedDependencies;
     this.analysisTime = Objects.requireNonNull(analysisTime, "analysisTime");
@@ -62,9 +63,8 @@ public final class DependencyResolution {
   /**
    * Gets the optimal instantiation order for the modules.
    *
-   * <p>Modules should be instantiated in this order to ensure all dependencies
-   * are satisfied. If resolution was not successful, this list may be incomplete
-   * or empty.
+   * <p>Modules should be instantiated in this order to ensure all dependencies are satisfied. If
+   * resolution was not successful, this list may be incomplete or empty.
    *
    * @return an unmodifiable list of modules in instantiation order
    */
@@ -93,8 +93,8 @@ public final class DependencyResolution {
   /**
    * Gets descriptions of any circular dependency chains detected.
    *
-   * <p>Each string describes a cycle in the dependency graph, typically
-   * in the format "ModuleA -> ModuleB -> ModuleC -> ModuleA".
+   * <p>Each string describes a cycle in the dependency graph, typically in the format "ModuleA ->
+   * ModuleB -> ModuleC -> ModuleA".
    *
    * @return an unmodifiable list of circular dependency descriptions
    */
@@ -132,8 +132,8 @@ public final class DependencyResolution {
   /**
    * Checks whether dependency resolution was successful.
    *
-   * <p>Resolution is considered successful if all dependencies can be satisfied
-   * and no circular dependencies exist.
+   * <p>Resolution is considered successful if all dependencies can be satisfied and no circular
+   * dependencies exist.
    *
    * @return true if resolution was successful, false otherwise
    */
@@ -156,8 +156,8 @@ public final class DependencyResolution {
   @Override
   public String toString() {
     return String.format(
-        "DependencyResolution{modules=%d, dependencies=%d, resolved=%d (%.1f%%), " +
-        "circular=%s, successful=%s, analysisTime=%s}",
+        "DependencyResolution{modules=%d, dependencies=%d, resolved=%d (%.1f%%), "
+            + "circular=%s, successful=%s, analysisTime=%s}",
         totalModules,
         dependencies.size(),
         resolvedDependencies,

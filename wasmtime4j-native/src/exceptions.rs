@@ -230,8 +230,8 @@ impl ExceptionHandler {
             (Val::F32(_), ValType::F32) => true,
             (Val::F64(_), ValType::F64) => true,
             (Val::V128(_), ValType::V128) => true,
-            (Val::FuncRef(_), ValType::FuncRef) => true,
-            (Val::ExternRef(_), ValType::ExternRef) => true,
+            (Val::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
+            (Val::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
             _ => false,
         }
     }
@@ -654,8 +654,8 @@ pub mod jni_bindings {
                 "F32" => ValType::F32,
                 "F64" => ValType::F64,
                 "V128" => ValType::V128,
-                "FUNCREF" => ValType::FuncRef,
-                "EXTERNREF" => ValType::ExternRef,
+                "FUNCREF" => ValType::Ref(RefType::FUNCREF),
+                "EXTERNREF" => ValType::Ref(RefType::EXTERNREF),
                 _ => return Err(WasmtimeError::InvalidInput(format!("Unknown value type: {}", type_str))),
             };
 
@@ -722,8 +722,8 @@ pub mod panama_bindings {
                 2 => ValType::F32,
                 3 => ValType::F64,
                 4 => ValType::V128,
-                5 => ValType::FuncRef,
-                6 => ValType::ExternRef,
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
                 _ => return 0,
             };
             val_types.push(val_type);

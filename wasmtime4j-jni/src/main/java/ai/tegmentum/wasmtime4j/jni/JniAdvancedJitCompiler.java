@@ -6,16 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
  * JNI implementation of advanced JIT compilation features.
  *
- * <p>This class provides JNI bindings to the native Rust JIT compiler
- * implementation, supporting all advanced optimization strategies including
- * tiered compilation, adaptive optimization, speculative optimization,
- * and profile-guided optimization.
+ * <p>This class provides JNI bindings to the native Rust JIT compiler implementation, supporting
+ * all advanced optimization strategies including tiered compilation, adaptive optimization,
+ * speculative optimization, and profile-guided optimization.
  *
  * @since 1.0.0
  */
@@ -53,16 +51,16 @@ public final class JniAdvancedJitCompiler {
     this.performanceMonitor = config.getPerformanceMonitor();
 
     try {
-      this.nativeHandle = createNativeCompiler(
-          config.getCompilationStrategy().ordinal(),
-          config.getOptimizationLevel().ordinal(),
-          config.isParallelCompilation(),
-          config.isEnableTieredCompilation(),
-          config.isEnableAdaptiveOptimization(),
-          config.isEnableSpeculativeOptimization(),
-          config.isEnableProfileGuidedOptimization(),
-          serializeConfig(config)
-      );
+      this.nativeHandle =
+          createNativeCompiler(
+              config.getCompilationStrategy().ordinal(),
+              config.getOptimizationLevel().ordinal(),
+              config.isParallelCompilation(),
+              config.isEnableTieredCompilation(),
+              config.isEnableAdaptiveOptimization(),
+              config.isEnableSpeculativeOptimization(),
+              config.isEnableProfileGuidedOptimization(),
+              serializeConfig(config));
 
       if (this.nativeHandle == 0) {
         throw new RuntimeException("Failed to create native JIT compiler");
@@ -97,18 +95,14 @@ public final class JniAdvancedJitCompiler {
     final long startTime = System.nanoTime();
 
     try {
-      final CompilationSession session = performanceMonitor.startCompilation(
-          moduleId,
-          null, // function name - null for module-level compilation
-          CompilationType.TIERED,
-          CompilationTier.BASELINE
-      );
+      final CompilationSession session =
+          performanceMonitor.startCompilation(
+              moduleId,
+              null, // function name - null for module-level compilation
+              CompilationType.TIERED,
+              CompilationTier.BASELINE);
 
-      final long compilationResult = compileModuleNative(
-          nativeHandle,
-          moduleBytes,
-          moduleId
-      );
+      final long compilationResult = compileModuleNative(nativeHandle, moduleBytes, moduleId);
 
       if (compilationResult == 0) {
         final CompilationResult result = CompilationResult.failure("Native compilation failed");
@@ -118,14 +112,14 @@ public final class JniAdvancedJitCompiler {
 
       final JitCompilationResult result = createCompilationResult(compilationResult, moduleId);
 
-      final CompilationResult perfResult = CompilationResult.success(
-          result.getCodeSizeBytes(),
-          result.getMetadata()
-      );
+      final CompilationResult perfResult =
+          CompilationResult.success(result.getCodeSizeBytes(), result.getMetadata());
       performanceMonitor.endCompilation(session, perfResult);
 
-      LOGGER.fine(String.format("Compiled module %s in %.2f ms",
-          moduleId, (System.nanoTime() - startTime) / 1_000_000.0));
+      LOGGER.fine(
+          String.format(
+              "Compiled module %s in %.2f ms",
+              moduleId, (System.nanoTime() - startTime) / 1_000_000.0));
 
       return result;
 
@@ -144,9 +138,10 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null
    * @throws IllegalStateException if compiler is closed
    */
-  public JitOptimizationResult optimizeFunction(final String moduleId,
-                                                final String functionName,
-                                                final JitExecutionProfile executionProfile) {
+  public JitOptimizationResult optimizeFunction(
+      final String moduleId,
+      final String functionName,
+      final JitExecutionProfile executionProfile) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -161,41 +156,42 @@ public final class JniAdvancedJitCompiler {
     final long startTime = System.nanoTime();
 
     try {
-      final long optimizationResult = optimizeFunctionNative(
-          nativeHandle,
-          moduleId,
-          functionName,
-          executionProfile.getExecutionCount(),
-          executionProfile.getAverageExecutionTimeNs(),
-          executionProfile.getTotalExecutionTimeNs(),
-          executionProfile.getCpuUtilization(),
-          executionProfile.getMemoryUsage(),
-          executionProfile.hasLoops(),
-          executionProfile.hasVectorOperations(),
-          executionProfile.hasRecursion(),
-          executionProfile.getFunctionCount(),
-          executionProfile.getModuleSize()
-      );
+      final long optimizationResult =
+          optimizeFunctionNative(
+              nativeHandle,
+              moduleId,
+              functionName,
+              executionProfile.getExecutionCount(),
+              executionProfile.getAverageExecutionTimeNs(),
+              executionProfile.getTotalExecutionTimeNs(),
+              executionProfile.getCpuUtilization(),
+              executionProfile.getMemoryUsage(),
+              executionProfile.hasLoops(),
+              executionProfile.hasVectorOperations(),
+              executionProfile.hasRecursion(),
+              executionProfile.getFunctionCount(),
+              executionProfile.getModuleSize());
 
       final JitOptimizationResult result = createOptimizationResult(optimizationResult);
 
       // Record optimization metrics
-      final OptimizationMetrics metrics = new OptimizationMetrics(
-          result.getOptimizationType(),
-          (System.nanoTime() - startTime) / 1_000_000, // Convert to ms
-          result.getPerformanceImprovement(),
-          result.getCodeSizeChange(),
-          result.isSuccessful(),
-          result.getAdditionalMetrics()
-      );
+      final OptimizationMetrics metrics =
+          new OptimizationMetrics(
+              result.getOptimizationType(),
+              (System.nanoTime() - startTime) / 1_000_000, // Convert to ms
+              result.getPerformanceImprovement(),
+              result.getCodeSizeChange(),
+              result.isSuccessful(),
+              result.getAdditionalMetrics());
 
-      performanceMonitor.recordOptimizationMetrics(moduleId, functionName,
-          result.getOptimizationType(), metrics);
+      performanceMonitor.recordOptimizationMetrics(
+          moduleId, functionName, result.getOptimizationType(), metrics);
 
       return result;
 
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to optimize function: " + moduleId + "::" + functionName, e);
+      throw new RuntimeException(
+          "Failed to optimize function: " + moduleId + "::" + functionName, e);
     }
   }
 
@@ -209,9 +205,10 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null
    * @throws IllegalStateException if compiler is closed
    */
-  public JitSpeculativeOptimizationResult speculativeOptimize(final String moduleId,
-                                                              final String functionName,
-                                                              final List<JitSpeculationAssumption> speculationAssumptions) {
+  public JitSpeculativeOptimizationResult speculativeOptimize(
+      final String moduleId,
+      final String functionName,
+      final List<JitSpeculationAssumption> speculationAssumptions) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -226,35 +223,37 @@ public final class JniAdvancedJitCompiler {
     final long startTime = System.nanoTime();
 
     try {
-      final String[] assumptionTypes = speculationAssumptions.stream()
-          .map(assumption -> assumption.getType().name())
-          .toArray(String[]::new);
+      final String[] assumptionTypes =
+          speculationAssumptions.stream()
+              .map(assumption -> assumption.getType().name())
+              .toArray(String[]::new);
 
-      final String[] assumptionParams = speculationAssumptions.stream()
-          .map(assumption -> serializeAssumptionParams(assumption.getParameters()))
-          .toArray(String[]::new);
+      final String[] assumptionParams =
+          speculationAssumptions.stream()
+              .map(assumption -> serializeAssumptionParams(assumption.getParameters()))
+              .toArray(String[]::new);
 
-      final long speculativeResult = speculativeOptimizeNative(
-          nativeHandle,
-          moduleId,
-          functionName,
-          assumptionTypes,
-          assumptionParams
-      );
+      final long speculativeResult =
+          speculativeOptimizeNative(
+              nativeHandle, moduleId, functionName, assumptionTypes, assumptionParams);
 
-      final JitSpeculativeOptimizationResult result = createSpeculativeOptimizationResult(speculativeResult);
+      final JitSpeculativeOptimizationResult result =
+          createSpeculativeOptimizationResult(speculativeResult);
 
       // Record speculative optimization metrics if monitoring is enabled
       if (result.isSuccessful()) {
         final long compilationTimeMs = (System.nanoTime() - startTime) / 1_000_000;
-        LOGGER.fine(String.format("Speculative optimization for %s::%s completed in %d ms",
-            moduleId, functionName, compilationTimeMs));
+        LOGGER.fine(
+            String.format(
+                "Speculative optimization for %s::%s completed in %d ms",
+                moduleId, functionName, compilationTimeMs));
       }
 
       return result;
 
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to perform speculative optimization: " + moduleId + "::" + functionName, e);
+      throw new RuntimeException(
+          "Failed to perform speculative optimization: " + moduleId + "::" + functionName, e);
     }
   }
 
@@ -268,9 +267,10 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null
    * @throws IllegalStateException if compiler is closed
    */
-  public JitDeoptimizationResult deoptimizeFunction(final String moduleId,
-                                                    final String functionName,
-                                                    final JitDeoptimizationReason violationReason) {
+  public JitDeoptimizationResult deoptimizeFunction(
+      final String moduleId,
+      final String functionName,
+      final JitDeoptimizationReason violationReason) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -285,26 +285,27 @@ public final class JniAdvancedJitCompiler {
     final long startTime = System.nanoTime();
 
     try {
-      final long deoptResult = deoptimizeFunctionNative(
-          nativeHandle,
-          moduleId,
-          functionName,
-          violationReason.ordinal()
-      );
+      final long deoptResult =
+          deoptimizeFunctionNative(nativeHandle, moduleId, functionName, violationReason.ordinal());
 
       final JitDeoptimizationResult result = createDeoptimizationResult(deoptResult);
 
       // Record deoptimization event
-      performanceMonitor.recordDeoptimization(moduleId, functionName,
-          violationReason.name(), Map.of(
-              "deoptimization_time_ms", (System.nanoTime() - startTime) / 1_000_000,
-              "reason", violationReason.getDescription()
-          ));
+      performanceMonitor.recordDeoptimization(
+          moduleId,
+          functionName,
+          violationReason.name(),
+          Map.of(
+              "deoptimization_time_ms",
+              (System.nanoTime() - startTime) / 1_000_000,
+              "reason",
+              violationReason.getDescription()));
 
       return result;
 
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to deoptimize function: " + moduleId + "::" + functionName, e);
+      throw new RuntimeException(
+          "Failed to deoptimize function: " + moduleId + "::" + functionName, e);
     }
   }
 
@@ -345,9 +346,8 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null
    * @throws IllegalStateException if compiler is closed
    */
-  public void recordPgoProfileData(final String moduleId,
-                                   final String functionName,
-                                   final JitProfileDataPoint profileData) {
+  public void recordPgoProfileData(
+      final String moduleId, final String functionName, final JitProfileDataPoint profileData) {
     if (moduleId == null) {
       throw new IllegalArgumentException("Module ID cannot be null");
     }
@@ -367,8 +367,7 @@ public final class JniAdvancedJitCompiler {
           profileData.getExecutionCount(),
           profileData.getExecutionTimeNs(),
           serializeBranchCounts(profileData.getBranchCounts()),
-          serializeAdditionalMetrics(profileData.getAdditionalMetrics())
-      );
+          serializeAdditionalMetrics(profileData.getAdditionalMetrics()));
 
     } catch (final Exception e) {
       LOGGER.warning("Failed to record PGO profile data: " + e.getMessage());
@@ -435,8 +434,8 @@ public final class JniAdvancedJitCompiler {
    * @throws IllegalArgumentException if any parameter is null or invalid
    * @throws IllegalStateException if compiler is closed
    */
-  public CompletableFuture<JitCompilationResult> compileModuleAsync(final byte[] moduleBytes,
-                                                                   final String moduleId) {
+  public CompletableFuture<JitCompilationResult> compileModuleAsync(
+      final byte[] moduleBytes, final String moduleId) {
     if (moduleBytes == null) {
       throw new IllegalArgumentException("Module bytes cannot be null");
     }
@@ -445,18 +444,17 @@ public final class JniAdvancedJitCompiler {
     }
     checkNotClosed();
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return compileModule(moduleBytes, moduleId);
-      } catch (final Exception e) {
-        throw new RuntimeException("Async compilation failed for module: " + moduleId, e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return compileModule(moduleBytes, moduleId);
+          } catch (final Exception e) {
+            throw new RuntimeException("Async compilation failed for module: " + moduleId, e);
+          }
+        });
   }
 
-  /**
-   * Closes the JIT compiler and releases native resources.
-   */
+  /** Closes the JIT compiler and releases native resources. */
   public void close() {
     if (!closed) {
       try {
@@ -492,11 +490,15 @@ public final class JniAdvancedJitCompiler {
     final StringBuilder json = new StringBuilder();
     json.append("{");
     json.append("\"strategy\":").append(config.getCompilationStrategy().ordinal()).append(",");
-    json.append("\"optimization_level\":").append(config.getOptimizationLevel().ordinal()).append(",");
+    json.append("\"optimization_level\":")
+        .append(config.getOptimizationLevel().ordinal())
+        .append(",");
     json.append("\"parallel_compilation\":").append(config.isParallelCompilation()).append(",");
     json.append("\"enable_tiered\":").append(config.isEnableTieredCompilation()).append(",");
     json.append("\"enable_adaptive\":").append(config.isEnableAdaptiveOptimization()).append(",");
-    json.append("\"enable_speculative\":").append(config.isEnableSpeculativeOptimization()).append(",");
+    json.append("\"enable_speculative\":")
+        .append(config.isEnableSpeculativeOptimization())
+        .append(",");
     json.append("\"enable_pgo\":").append(config.isEnableProfileGuidedOptimization());
     json.append("}");
     return json.toString();
@@ -514,7 +516,11 @@ public final class JniAdvancedJitCompiler {
       if (!first) {
         json.append(",");
       }
-      json.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\"");
+      json.append("\"")
+          .append(entry.getKey())
+          .append("\":\"")
+          .append(entry.getValue())
+          .append("\"");
       first = false;
     }
     json.append("}");
@@ -552,18 +558,25 @@ public final class JniAdvancedJitCompiler {
       if (!first) {
         json.append(",");
       }
-      json.append("\"").append(entry.getKey()).append("\":\"").append(entry.getValue().toString()).append("\"");
+      json.append("\"")
+          .append(entry.getKey())
+          .append("\":\"")
+          .append(entry.getValue().toString())
+          .append("\"");
       first = false;
     }
     json.append("}");
     return json.toString();
   }
 
-  private JitCompilationResult createCompilationResult(final long nativeResult, final String moduleId) {
+  private JitCompilationResult createCompilationResult(
+      final long nativeResult, final String moduleId) {
     // Extract compilation result data from native handle
-    final CompilationStrategy strategy = CompilationStrategy.values()[getCompilationStrategyNative(nativeResult)];
+    final CompilationStrategy strategy =
+        CompilationStrategy.values()[getCompilationStrategyNative(nativeResult)];
     final ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel =
-        ai.tegmentum.wasmtime4j.OptimizationLevel.values()[getOptimizationLevelNative(nativeResult)];
+        ai.tegmentum.wasmtime4j.OptimizationLevel.values()[
+            getOptimizationLevelNative(nativeResult)];
     final int codeSizeBytes = getCodeSizeNative(nativeResult);
     final long compilationTimeMs = getCompilationTimeNative(nativeResult);
 
@@ -575,7 +588,7 @@ public final class JniAdvancedJitCompiler {
         compilationTimeMs,
         null, // error message
         new HashMap<>() // metadata - would extract from native result
-    );
+        );
   }
 
   private JitOptimizationResult createOptimizationResult(final long nativeResult) {
@@ -591,19 +604,19 @@ public final class JniAdvancedJitCompiler {
         performanceImprovement,
         codeSizeChange,
         new HashMap<>() // additional metrics
-    );
+        );
   }
 
-  private JitSpeculativeOptimizationResult createSpeculativeOptimizationResult(final long nativeResult) {
+  private JitSpeculativeOptimizationResult createSpeculativeOptimizationResult(
+      final long nativeResult) {
     // Extract speculative optimization result data from native handle
     final boolean successful = isSpeculativeOptimizationSuccessfulNative(nativeResult);
-    final String rejectionReason = successful ? null : getSpeculativeRejectionReasonNative(nativeResult);
+    final String rejectionReason =
+        successful ? null : getSpeculativeRejectionReasonNative(nativeResult);
 
     return new JitSpeculativeOptimizationResult(
-        successful,
-        rejectionReason,
-        new HashMap<>() // metadata
-    );
+        successful, rejectionReason, new HashMap<>() // metadata
+        );
   }
 
   private JitDeoptimizationResult createDeoptimizationResult(final long nativeResult) {
@@ -611,10 +624,7 @@ public final class JniAdvancedJitCompiler {
     final boolean successful = isDeoptimizationSuccessfulNative(nativeResult);
     final long deoptimizationTimeMs = getDeoptimizationTimeNative(nativeResult);
 
-    return new JitDeoptimizationResult(
-        successful,
-        deoptimizationTimeMs
-    );
+    return new JitDeoptimizationResult(successful, deoptimizationTimeMs);
   }
 
   private JitInstrumentedModule createInstrumentedModule(final long nativeResult) {
@@ -622,10 +632,7 @@ public final class JniAdvancedJitCompiler {
     final byte[] instrumentedBytes = getInstrumentedBytesNative(nativeResult);
     final Map<String, Integer> instrumentationMap = parseInstrumentationMapNative(nativeResult);
 
-    return new JitInstrumentedModule(
-        instrumentedBytes,
-        instrumentationMap
-    );
+    return new JitInstrumentedModule(instrumentedBytes, instrumentationMap);
   }
 
   private JitPgoOptimizationResult createPgoOptimizationResult(final long nativeResult) {
@@ -634,11 +641,7 @@ public final class JniAdvancedJitCompiler {
     final byte[] optimizedBytes = getPgoOptimizedBytesNative(nativeResult);
     final double performanceImprovement = getPgoPerformanceImprovementNative(nativeResult);
 
-    return new JitPgoOptimizationResult(
-        successful,
-        optimizedBytes,
-        performanceImprovement
-    );
+    return new JitPgoOptimizationResult(successful, optimizedBytes, performanceImprovement);
   }
 
   private JitCompilerMetrics createCompilerMetrics(final long nativeResult) {
@@ -656,8 +659,7 @@ public final class JniAdvancedJitCompiler {
         totalCompilationTime,
         totalOptimizations,
         deoptimizations,
-        cacheHitRate
-    );
+        cacheHitRate);
   }
 
   private Map<String, Integer> parseInstrumentationMapNative(final long nativeResult) {
@@ -670,57 +672,56 @@ public final class JniAdvancedJitCompiler {
 
   private static native void initialize();
 
-  private static native long createNativeCompiler(int strategy,
-                                                  int optimizationLevel,
-                                                  boolean parallelCompilation,
-                                                  boolean enableTiered,
-                                                  boolean enableAdaptive,
-                                                  boolean enableSpeculative,
-                                                  boolean enablePgo,
-                                                  String configJson);
+  private static native long createNativeCompiler(
+      int strategy,
+      int optimizationLevel,
+      boolean parallelCompilation,
+      boolean enableTiered,
+      boolean enableAdaptive,
+      boolean enableSpeculative,
+      boolean enablePgo,
+      String configJson);
 
-  private static native long compileModuleNative(long compilerHandle,
-                                                 byte[] moduleBytes,
-                                                 String moduleId);
+  private static native long compileModuleNative(
+      long compilerHandle, byte[] moduleBytes, String moduleId);
 
-  private static native long optimizeFunctionNative(long compilerHandle,
-                                                    String moduleId,
-                                                    String functionName,
-                                                    long executionCount,
-                                                    long averageExecutionTimeNs,
-                                                    long totalExecutionTimeNs,
-                                                    double cpuUtilization,
-                                                    long memoryUsage,
-                                                    boolean hasLoops,
-                                                    boolean hasVectorOperations,
-                                                    boolean hasRecursion,
-                                                    int functionCount,
-                                                    long moduleSize);
+  private static native long optimizeFunctionNative(
+      long compilerHandle,
+      String moduleId,
+      String functionName,
+      long executionCount,
+      long averageExecutionTimeNs,
+      long totalExecutionTimeNs,
+      double cpuUtilization,
+      long memoryUsage,
+      boolean hasLoops,
+      boolean hasVectorOperations,
+      boolean hasRecursion,
+      int functionCount,
+      long moduleSize);
 
-  private static native long speculativeOptimizeNative(long compilerHandle,
-                                                       String moduleId,
-                                                       String functionName,
-                                                       String[] assumptionTypes,
-                                                       String[] assumptionParams);
+  private static native long speculativeOptimizeNative(
+      long compilerHandle,
+      String moduleId,
+      String functionName,
+      String[] assumptionTypes,
+      String[] assumptionParams);
 
-  private static native long deoptimizeFunctionNative(long compilerHandle,
-                                                      String moduleId,
-                                                      String functionName,
-                                                      int violationReason);
+  private static native long deoptimizeFunctionNative(
+      long compilerHandle, String moduleId, String functionName, int violationReason);
 
-  private static native long startPgoInstrumentationNative(long compilerHandle,
-                                                           String moduleId);
+  private static native long startPgoInstrumentationNative(long compilerHandle, String moduleId);
 
-  private static native void recordPgoProfileDataNative(long compilerHandle,
-                                                        String moduleId,
-                                                        String functionName,
-                                                        long executionCount,
-                                                        long executionTimeNs,
-                                                        String branchCountsJson,
-                                                        String additionalMetricsJson);
+  private static native void recordPgoProfileDataNative(
+      long compilerHandle,
+      String moduleId,
+      String functionName,
+      long executionCount,
+      long executionTimeNs,
+      String branchCountsJson,
+      String additionalMetricsJson);
 
-  private static native long applyPgoOptimizationsNative(long compilerHandle,
-                                                         String moduleId);
+  private static native long applyPgoOptimizationsNative(long compilerHandle, String moduleId);
 
   private static native long getPerformanceMetricsNative(long compilerHandle);
 
@@ -729,38 +730,51 @@ public final class JniAdvancedJitCompiler {
   // Native methods for extracting results from handles
 
   private static native int getCompilationStrategyNative(long resultHandle);
+
   private static native int getOptimizationLevelNative(long resultHandle);
+
   private static native int getCodeSizeNative(long resultHandle);
+
   private static native long getCompilationTimeNative(long resultHandle);
 
   private static native boolean isOptimizationSuccessfulNative(long resultHandle);
+
   private static native String getOptimizationTypeNative(long resultHandle);
+
   private static native double getPerformanceImprovementNative(long resultHandle);
+
   private static native int getCodeSizeChangeNative(long resultHandle);
 
   private static native boolean isSpeculativeOptimizationSuccessfulNative(long resultHandle);
+
   private static native String getSpeculativeRejectionReasonNative(long resultHandle);
 
   private static native boolean isDeoptimizationSuccessfulNative(long resultHandle);
+
   private static native long getDeoptimizationTimeNative(long resultHandle);
 
   private static native byte[] getInstrumentedBytesNative(long resultHandle);
 
   private static native boolean isPgoOptimizationSuccessfulNative(long resultHandle);
+
   private static native byte[] getPgoOptimizedBytesNative(long resultHandle);
+
   private static native double getPgoPerformanceImprovementNative(long resultHandle);
 
   private static native long getTotalCompilationsNative(long resultHandle);
+
   private static native long getSuccessfulCompilationsNative(long resultHandle);
+
   private static native long getTotalCompilationTimeNative(long resultHandle);
+
   private static native long getTotalOptimizationsNative(long resultHandle);
+
   private static native long getDeoptimizationsNative(long resultHandle);
+
   private static native double getCacheHitRateNative(long resultHandle);
 }
 
-/**
- * Configuration for the JIT compiler.
- */
+/** Configuration for the JIT compiler. */
 final class JitCompilerConfiguration {
   private final CompilationStrategy compilationStrategy;
   private final ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel;
@@ -784,15 +798,41 @@ final class JitCompilerConfiguration {
     this.performanceMonitor = builder.performanceMonitor;
   }
 
-  public CompilationStrategy getCompilationStrategy() { return compilationStrategy; }
-  public ai.tegmentum.wasmtime4j.OptimizationLevel getOptimizationLevel() { return optimizationLevel; }
-  public boolean isParallelCompilation() { return parallelCompilation; }
-  public boolean isEnableTieredCompilation() { return enableTieredCompilation; }
-  public boolean isEnableAdaptiveOptimization() { return enableAdaptiveOptimization; }
-  public boolean isEnableSpeculativeOptimization() { return enableSpeculativeOptimization; }
-  public boolean isEnableProfileGuidedOptimization() { return enableProfileGuidedOptimization; }
-  public TieredCompilationConfig getTieredCompilationConfig() { return tieredCompilationConfig; }
-  public JitPerformanceMonitor getPerformanceMonitor() { return performanceMonitor; }
+  public CompilationStrategy getCompilationStrategy() {
+    return compilationStrategy;
+  }
+
+  public ai.tegmentum.wasmtime4j.OptimizationLevel getOptimizationLevel() {
+    return optimizationLevel;
+  }
+
+  public boolean isParallelCompilation() {
+    return parallelCompilation;
+  }
+
+  public boolean isEnableTieredCompilation() {
+    return enableTieredCompilation;
+  }
+
+  public boolean isEnableAdaptiveOptimization() {
+    return enableAdaptiveOptimization;
+  }
+
+  public boolean isEnableSpeculativeOptimization() {
+    return enableSpeculativeOptimization;
+  }
+
+  public boolean isEnableProfileGuidedOptimization() {
+    return enableProfileGuidedOptimization;
+  }
+
+  public TieredCompilationConfig getTieredCompilationConfig() {
+    return tieredCompilationConfig;
+  }
+
+  public JitPerformanceMonitor getPerformanceMonitor() {
+    return performanceMonitor;
+  }
 
   public static Builder builder() {
     return new Builder();
@@ -800,13 +840,15 @@ final class JitCompilerConfiguration {
 
   public static final class Builder {
     private CompilationStrategy compilationStrategy = CompilationStrategy.TIERED;
-    private ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel = ai.tegmentum.wasmtime4j.OptimizationLevel.SPEED;
+    private ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel =
+        ai.tegmentum.wasmtime4j.OptimizationLevel.SPEED;
     private boolean parallelCompilation = true;
     private boolean enableTieredCompilation = true;
     private boolean enableAdaptiveOptimization = true;
     private boolean enableSpeculativeOptimization = false;
     private boolean enableProfileGuidedOptimization = false;
-    private TieredCompilationConfig tieredCompilationConfig = TieredCompilationConfig.createDefault();
+    private TieredCompilationConfig tieredCompilationConfig =
+        TieredCompilationConfig.createDefault();
     private JitPerformanceMonitor performanceMonitor = JitPerformanceMonitor.createDefault();
 
     public Builder compilationStrategy(final CompilationStrategy strategy) {
@@ -860,9 +902,7 @@ final class JitCompilerConfiguration {
   }
 }
 
-/**
- * Compilation strategies supported by the JIT compiler.
- */
+/** Compilation strategies supported by the JIT compiler. */
 enum CompilationStrategy {
   BASELINE,
   TIERED,
@@ -873,9 +913,7 @@ enum CompilationStrategy {
 
 // Result classes for various JIT operations
 
-/**
- * Result of JIT compilation.
- */
+/** Result of JIT compilation. */
 final class JitCompilationResult {
   private final boolean successful;
   private final CompilationStrategy strategy;
@@ -885,13 +923,14 @@ final class JitCompilationResult {
   private final String errorMessage;
   private final Map<String, Object> metadata;
 
-  public JitCompilationResult(final boolean successful,
-                              final CompilationStrategy strategy,
-                              final ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel,
-                              final int codeSizeBytes,
-                              final long compilationTimeMs,
-                              final String errorMessage,
-                              final Map<String, Object> metadata) {
+  public JitCompilationResult(
+      final boolean successful,
+      final CompilationStrategy strategy,
+      final ai.tegmentum.wasmtime4j.OptimizationLevel optimizationLevel,
+      final int codeSizeBytes,
+      final long compilationTimeMs,
+      final String errorMessage,
+      final Map<String, Object> metadata) {
     this.successful = successful;
     this.strategy = strategy;
     this.optimizationLevel = optimizationLevel;
@@ -901,18 +940,36 @@ final class JitCompilationResult {
     this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
   }
 
-  public boolean isSuccessful() { return successful; }
-  public CompilationStrategy getStrategy() { return strategy; }
-  public ai.tegmentum.wasmtime4j.OptimizationLevel getOptimizationLevel() { return optimizationLevel; }
-  public int getCodeSizeBytes() { return codeSizeBytes; }
-  public long getCompilationTimeMs() { return compilationTimeMs; }
-  public String getErrorMessage() { return errorMessage; }
-  public Map<String, Object> getMetadata() { return metadata; }
+  public boolean isSuccessful() {
+    return successful;
+  }
+
+  public CompilationStrategy getStrategy() {
+    return strategy;
+  }
+
+  public ai.tegmentum.wasmtime4j.OptimizationLevel getOptimizationLevel() {
+    return optimizationLevel;
+  }
+
+  public int getCodeSizeBytes() {
+    return codeSizeBytes;
+  }
+
+  public long getCompilationTimeMs() {
+    return compilationTimeMs;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public Map<String, Object> getMetadata() {
+    return metadata;
+  }
 }
 
-/**
- * Result of function optimization.
- */
+/** Result of function optimization. */
 final class JitOptimizationResult {
   private final boolean successful;
   private final String optimizationType;
@@ -920,49 +977,68 @@ final class JitOptimizationResult {
   private final int codeSizeChange;
   private final Map<String, Object> additionalMetrics;
 
-  public JitOptimizationResult(final boolean successful,
-                               final String optimizationType,
-                               final double performanceImprovement,
-                               final int codeSizeChange,
-                               final Map<String, Object> additionalMetrics) {
+  public JitOptimizationResult(
+      final boolean successful,
+      final String optimizationType,
+      final double performanceImprovement,
+      final int codeSizeChange,
+      final Map<String, Object> additionalMetrics) {
     this.successful = successful;
     this.optimizationType = optimizationType;
     this.performanceImprovement = performanceImprovement;
     this.codeSizeChange = codeSizeChange;
-    this.additionalMetrics = additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
+    this.additionalMetrics =
+        additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
   }
 
-  public boolean isSuccessful() { return successful; }
-  public String getOptimizationType() { return optimizationType; }
-  public double getPerformanceImprovement() { return performanceImprovement; }
-  public int getCodeSizeChange() { return codeSizeChange; }
-  public Map<String, Object> getAdditionalMetrics() { return additionalMetrics; }
+  public boolean isSuccessful() {
+    return successful;
+  }
+
+  public String getOptimizationType() {
+    return optimizationType;
+  }
+
+  public double getPerformanceImprovement() {
+    return performanceImprovement;
+  }
+
+  public int getCodeSizeChange() {
+    return codeSizeChange;
+  }
+
+  public Map<String, Object> getAdditionalMetrics() {
+    return additionalMetrics;
+  }
 }
 
-/**
- * Result of speculative optimization.
- */
+/** Result of speculative optimization. */
 final class JitSpeculativeOptimizationResult {
   private final boolean successful;
   private final String rejectionReason;
   private final Map<String, Object> metadata;
 
-  public JitSpeculativeOptimizationResult(final boolean successful,
-                                          final String rejectionReason,
-                                          final Map<String, Object> metadata) {
+  public JitSpeculativeOptimizationResult(
+      final boolean successful, final String rejectionReason, final Map<String, Object> metadata) {
     this.successful = successful;
     this.rejectionReason = rejectionReason;
     this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
   }
 
-  public boolean isSuccessful() { return successful; }
-  public String getRejectionReason() { return rejectionReason; }
-  public Map<String, Object> getMetadata() { return metadata; }
+  public boolean isSuccessful() {
+    return successful;
+  }
+
+  public String getRejectionReason() {
+    return rejectionReason;
+  }
+
+  public Map<String, Object> getMetadata() {
+    return metadata;
+  }
 }
 
-/**
- * Result of deoptimization.
- */
+/** Result of deoptimization. */
 final class JitDeoptimizationResult {
   private final boolean successful;
   private final long deoptimizationTimeMs;
@@ -972,51 +1048,63 @@ final class JitDeoptimizationResult {
     this.deoptimizationTimeMs = deoptimizationTimeMs;
   }
 
-  public boolean isSuccessful() { return successful; }
-  public long getDeoptimizationTimeMs() { return deoptimizationTimeMs; }
+  public boolean isSuccessful() {
+    return successful;
+  }
+
+  public long getDeoptimizationTimeMs() {
+    return deoptimizationTimeMs;
+  }
 }
 
-/**
- * Instrumented module for PGO.
- */
+/** Instrumented module for PGO. */
 final class JitInstrumentedModule {
   private final byte[] instrumentedBytes;
   private final Map<String, Integer> instrumentationMap;
 
-  public JitInstrumentedModule(final byte[] instrumentedBytes,
-                               final Map<String, Integer> instrumentationMap) {
+  public JitInstrumentedModule(
+      final byte[] instrumentedBytes, final Map<String, Integer> instrumentationMap) {
     this.instrumentedBytes = instrumentedBytes != null ? instrumentedBytes.clone() : new byte[0];
-    this.instrumentationMap = instrumentationMap != null ? new HashMap<>(instrumentationMap) : new HashMap<>();
+    this.instrumentationMap =
+        instrumentationMap != null ? new HashMap<>(instrumentationMap) : new HashMap<>();
   }
 
-  public byte[] getInstrumentedBytes() { return instrumentedBytes.clone(); }
-  public Map<String, Integer> getInstrumentationMap() { return new HashMap<>(instrumentationMap); }
+  public byte[] getInstrumentedBytes() {
+    return instrumentedBytes.clone();
+  }
+
+  public Map<String, Integer> getInstrumentationMap() {
+    return new HashMap<>(instrumentationMap);
+  }
 }
 
-/**
- * Result of PGO optimization.
- */
+/** Result of PGO optimization. */
 final class JitPgoOptimizationResult {
   private final boolean successful;
   private final byte[] optimizedBytes;
   private final double performanceImprovement;
 
-  public JitPgoOptimizationResult(final boolean successful,
-                                  final byte[] optimizedBytes,
-                                  final double performanceImprovement) {
+  public JitPgoOptimizationResult(
+      final boolean successful, final byte[] optimizedBytes, final double performanceImprovement) {
     this.successful = successful;
     this.optimizedBytes = optimizedBytes != null ? optimizedBytes.clone() : new byte[0];
     this.performanceImprovement = performanceImprovement;
   }
 
-  public boolean isSuccessful() { return successful; }
-  public byte[] getOptimizedBytes() { return optimizedBytes.clone(); }
-  public double getPerformanceImprovement() { return performanceImprovement; }
+  public boolean isSuccessful() {
+    return successful;
+  }
+
+  public byte[] getOptimizedBytes() {
+    return optimizedBytes.clone();
+  }
+
+  public double getPerformanceImprovement() {
+    return performanceImprovement;
+  }
 }
 
-/**
- * Overall JIT compiler metrics.
- */
+/** Overall JIT compiler metrics. */
 final class JitCompilerMetrics {
   private final long totalCompilations;
   private final long successfulCompilations;
@@ -1025,12 +1113,13 @@ final class JitCompilerMetrics {
   private final long deoptimizations;
   private final double cacheHitRate;
 
-  public JitCompilerMetrics(final long totalCompilations,
-                            final long successfulCompilations,
-                            final long totalCompilationTime,
-                            final long totalOptimizations,
-                            final long deoptimizations,
-                            final double cacheHitRate) {
+  public JitCompilerMetrics(
+      final long totalCompilations,
+      final long successfulCompilations,
+      final long totalCompilationTime,
+      final long totalOptimizations,
+      final long deoptimizations,
+      final double cacheHitRate) {
     this.totalCompilations = totalCompilations;
     this.successfulCompilations = successfulCompilations;
     this.totalCompilationTime = totalCompilationTime;
@@ -1039,12 +1128,29 @@ final class JitCompilerMetrics {
     this.cacheHitRate = cacheHitRate;
   }
 
-  public long getTotalCompilations() { return totalCompilations; }
-  public long getSuccessfulCompilations() { return successfulCompilations; }
-  public long getTotalCompilationTime() { return totalCompilationTime; }
-  public long getTotalOptimizations() { return totalOptimizations; }
-  public long getDeoptimizations() { return deoptimizations; }
-  public double getCacheHitRate() { return cacheHitRate; }
+  public long getTotalCompilations() {
+    return totalCompilations;
+  }
+
+  public long getSuccessfulCompilations() {
+    return successfulCompilations;
+  }
+
+  public long getTotalCompilationTime() {
+    return totalCompilationTime;
+  }
+
+  public long getTotalOptimizations() {
+    return totalOptimizations;
+  }
+
+  public long getDeoptimizations() {
+    return deoptimizations;
+  }
+
+  public double getCacheHitRate() {
+    return cacheHitRate;
+  }
 
   public double getSuccessRate() {
     return totalCompilations == 0 ? 0.0 : (double) successfulCompilations / totalCompilations;
@@ -1057,9 +1163,7 @@ final class JitCompilerMetrics {
 
 // Supporting data classes
 
-/**
- * Execution profile data for optimization decisions.
- */
+/** Execution profile data for optimization decisions. */
 final class JitExecutionProfile {
   private final long executionCount;
   private final long averageExecutionTimeNs;
@@ -1072,16 +1176,17 @@ final class JitExecutionProfile {
   private final int functionCount;
   private final long moduleSize;
 
-  public JitExecutionProfile(final long executionCount,
-                             final long averageExecutionTimeNs,
-                             final long totalExecutionTimeNs,
-                             final double cpuUtilization,
-                             final long memoryUsage,
-                             final boolean hasLoops,
-                             final boolean hasVectorOperations,
-                             final boolean hasRecursion,
-                             final int functionCount,
-                             final long moduleSize) {
+  public JitExecutionProfile(
+      final long executionCount,
+      final long averageExecutionTimeNs,
+      final long totalExecutionTimeNs,
+      final double cpuUtilization,
+      final long memoryUsage,
+      final boolean hasLoops,
+      final boolean hasVectorOperations,
+      final boolean hasRecursion,
+      final int functionCount,
+      final long moduleSize) {
     this.executionCount = executionCount;
     this.averageExecutionTimeNs = averageExecutionTimeNs;
     this.totalExecutionTimeNs = totalExecutionTimeNs;
@@ -1094,38 +1199,68 @@ final class JitExecutionProfile {
     this.moduleSize = moduleSize;
   }
 
-  public long getExecutionCount() { return executionCount; }
-  public long getAverageExecutionTimeNs() { return averageExecutionTimeNs; }
-  public long getTotalExecutionTimeNs() { return totalExecutionTimeNs; }
-  public double getCpuUtilization() { return cpuUtilization; }
-  public long getMemoryUsage() { return memoryUsage; }
-  public boolean hasLoops() { return hasLoops; }
-  public boolean hasVectorOperations() { return hasVectorOperations; }
-  public boolean hasRecursion() { return hasRecursion; }
-  public int getFunctionCount() { return functionCount; }
-  public long getModuleSize() { return moduleSize; }
+  public long getExecutionCount() {
+    return executionCount;
+  }
+
+  public long getAverageExecutionTimeNs() {
+    return averageExecutionTimeNs;
+  }
+
+  public long getTotalExecutionTimeNs() {
+    return totalExecutionTimeNs;
+  }
+
+  public double getCpuUtilization() {
+    return cpuUtilization;
+  }
+
+  public long getMemoryUsage() {
+    return memoryUsage;
+  }
+
+  public boolean hasLoops() {
+    return hasLoops;
+  }
+
+  public boolean hasVectorOperations() {
+    return hasVectorOperations;
+  }
+
+  public boolean hasRecursion() {
+    return hasRecursion;
+  }
+
+  public int getFunctionCount() {
+    return functionCount;
+  }
+
+  public long getModuleSize() {
+    return moduleSize;
+  }
 }
 
-/**
- * Speculation assumption for speculative optimization.
- */
+/** Speculation assumption for speculative optimization. */
 final class JitSpeculationAssumption {
   private final JitSpeculationAssumptionType type;
   private final Map<String, String> parameters;
 
-  public JitSpeculationAssumption(final JitSpeculationAssumptionType type,
-                                  final Map<String, String> parameters) {
+  public JitSpeculationAssumption(
+      final JitSpeculationAssumptionType type, final Map<String, String> parameters) {
     this.type = Objects.requireNonNull(type);
     this.parameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
   }
 
-  public JitSpeculationAssumptionType getType() { return type; }
-  public Map<String, String> getParameters() { return new HashMap<>(parameters); }
+  public JitSpeculationAssumptionType getType() {
+    return type;
+  }
+
+  public Map<String, String> getParameters() {
+    return new HashMap<>(parameters);
+  }
 }
 
-/**
- * Types of speculation assumptions.
- */
+/** Types of speculation assumptions. */
 enum JitSpeculationAssumptionType {
   TYPE_SPECIALIZATION,
   BRANCH_PREDICTION,
@@ -1133,9 +1268,7 @@ enum JitSpeculationAssumptionType {
   CALL_TARGET
 }
 
-/**
- * Deoptimization reasons.
- */
+/** Deoptimization reasons. */
 enum JitDeoptimizationReason {
   TYPE_ASSUMPTION_VIOLATED("Type assumption violated"),
   BRANCH_PREDICTION_MISS("Branch prediction miss"),
@@ -1154,27 +1287,38 @@ enum JitDeoptimizationReason {
   }
 }
 
-/**
- * Profile data point for PGO.
- */
+/** Profile data point for PGO. */
 final class JitProfileDataPoint {
   private final long executionCount;
   private final long executionTimeNs;
   private final Map<String, Integer> branchCounts;
   private final Map<String, Object> additionalMetrics;
 
-  public JitProfileDataPoint(final long executionCount,
-                             final long executionTimeNs,
-                             final Map<String, Integer> branchCounts,
-                             final Map<String, Object> additionalMetrics) {
+  public JitProfileDataPoint(
+      final long executionCount,
+      final long executionTimeNs,
+      final Map<String, Integer> branchCounts,
+      final Map<String, Object> additionalMetrics) {
     this.executionCount = executionCount;
     this.executionTimeNs = executionTimeNs;
     this.branchCounts = branchCounts != null ? new HashMap<>(branchCounts) : new HashMap<>();
-    this.additionalMetrics = additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
+    this.additionalMetrics =
+        additionalMetrics != null ? new HashMap<>(additionalMetrics) : new HashMap<>();
   }
 
-  public long getExecutionCount() { return executionCount; }
-  public long getExecutionTimeNs() { return executionTimeNs; }
-  public Map<String, Integer> getBranchCounts() { return new HashMap<>(branchCounts); }
-  public Map<String, Object> getAdditionalMetrics() { return new HashMap<>(additionalMetrics); }
+  public long getExecutionCount() {
+    return executionCount;
+  }
+
+  public long getExecutionTimeNs() {
+    return executionTimeNs;
+  }
+
+  public Map<String, Integer> getBranchCounts() {
+    return new HashMap<>(branchCounts);
+  }
+
+  public Map<String, Object> getAdditionalMetrics() {
+    return new HashMap<>(additionalMetrics);
+  }
 }

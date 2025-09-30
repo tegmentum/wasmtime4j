@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 /**
  * Interface for streaming WebAssembly module instantiation.
@@ -131,9 +129,7 @@ public interface StreamingInstantiator extends AutoCloseable {
    */
   void removeProgressListener(InstantiationProgressListener listener);
 
-  /**
-   * Closes the streaming instantiator and releases associated resources.
-   */
+  /** Closes the streaming instantiator and releases associated resources. */
   @Override
   void close();
 }

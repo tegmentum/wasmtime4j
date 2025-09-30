@@ -3,7 +3,6 @@
 use crate::hot_reload::{HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig, SemanticVersion};
 use crate::engine::Engine;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::os::raw::{c_char, c_int, c_void, c_float, c_double};

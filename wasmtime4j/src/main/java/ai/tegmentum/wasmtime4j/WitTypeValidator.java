@@ -524,6 +524,13 @@ public final class WitTypeValidator {
     private final List<String> errors;
     private final List<String> warnings;
 
+    /**
+     * Creates a new WIT type validation result.
+     *
+     * @param valid whether the type validation passed
+     * @param errors list of validation errors
+     * @param warnings list of validation warnings
+     */
     public WitTypeValidationResult(
         final boolean valid, final List<String> errors, final List<String> warnings) {
       this.valid = valid;
@@ -550,6 +557,13 @@ public final class WitTypeValidator {
     private final List<String> errors;
     private final List<String> warnings;
 
+    /**
+     * Creates a new WIT interface validation result.
+     *
+     * @param valid whether the interface validation passed
+     * @param errors list of validation errors
+     * @param warnings list of validation warnings
+     */
     public WitInterfaceValidationResult(
         final boolean valid, final List<String> errors, final List<String> warnings) {
       this.valid = valid;
@@ -576,6 +590,13 @@ public final class WitTypeValidator {
     private final String message;
     private final List<String> issues;
 
+    /**
+     * Creates a new WIT type compatibility result.
+     *
+     * @param compatible whether the types are compatible
+     * @param message compatibility message or description
+     * @param issues list of compatibility issues
+     */
     public WitTypeCompatibilityResult(
         final boolean compatible, final String message, final List<String> issues) {
       this.compatible = compatible;

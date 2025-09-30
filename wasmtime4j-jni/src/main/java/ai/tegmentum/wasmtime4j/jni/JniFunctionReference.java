@@ -132,10 +132,11 @@ public final class JniFunctionReference extends JniResource implements FunctionR
     Objects.requireNonNull(wasmFunction, "WebAssembly function cannot be null");
     Objects.requireNonNull(store, "Store cannot be null");
 
-    if (!(wasmFunction instanceof JniFunction jniFunction)) {
+    if (!(wasmFunction instanceof JniFunction)) {
       throw new WasmException(
           "WebAssembly function must be a JNI function for function reference creation");
     }
+    final JniFunction jniFunction = (JniFunction) wasmFunction;
 
     final long functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
     final long nativeHandle =

@@ -9,8 +9,8 @@ import java.util.Set;
  * Interface bindings for evolved WIT interfaces.
  *
  * <p>This interface provides comprehensive binding capabilities for evolved WIT interfaces,
- * enabling automatic code generation, runtime adaptation, and type-safe invocation of
- * evolved interface methods.
+ * enabling automatic code generation, runtime adaptation, and type-safe invocation of evolved
+ * interface methods.
  *
  * @since 1.0.0
  */
@@ -155,9 +155,7 @@ public interface WitInterfaceBindings {
    */
   BindingMetadata getMetadata();
 
-  /**
-   * Function binding information.
-   */
+  /** Function binding information. */
   interface FunctionBinding {
     /**
      * Gets the source function name.
@@ -225,9 +223,7 @@ public interface WitInterfaceBindings {
     BindingValidationResult validate();
   }
 
-  /**
-   * Type binding information.
-   */
+  /** Type binding information. */
   interface TypeBinding {
     /**
      * Gets the source type name.
@@ -305,9 +301,7 @@ public interface WitInterfaceBindings {
     BindingValidationResult validate();
   }
 
-  /**
-   * Import binding information.
-   */
+  /** Import binding information. */
   interface ImportBinding {
     /**
      * Gets the import name.
@@ -345,9 +339,7 @@ public interface WitInterfaceBindings {
     ResolutionMetadata getResolutionMetadata();
   }
 
-  /**
-   * Export binding information.
-   */
+  /** Export binding information. */
   interface ExportBinding {
     /**
      * Gets the export name.
@@ -378,9 +370,7 @@ public interface WitInterfaceBindings {
     ExportMetadata getExportMetadata();
   }
 
-  /**
-   * Binding statistics.
-   */
+  /** Binding statistics. */
   interface BindingStatistics {
     /**
      * Gets total number of bindings.
@@ -439,9 +429,7 @@ public interface WitInterfaceBindings {
     Map<String, Object> getDetailedStatistics();
   }
 
-  /**
-   * Binding validation result.
-   */
+  /** Binding validation result. */
   interface BindingValidationResult {
     /**
      * Checks if validation passed.
@@ -479,9 +467,7 @@ public interface WitInterfaceBindings {
     List<String> getUnboundItems();
   }
 
-  /**
-   * Binding metadata.
-   */
+  /** Binding metadata. */
   interface BindingMetadata {
     /**
      * Gets binding creation time.
@@ -512,9 +498,7 @@ public interface WitInterfaceBindings {
     Map<String, Object> getProperties();
   }
 
-  /**
-   * Adaptation metadata.
-   */
+  /** Adaptation metadata. */
   interface AdaptationMetadata {
     /**
      * Gets adaptation type.
@@ -545,9 +529,7 @@ public interface WitInterfaceBindings {
     PerformanceImpact getPerformanceImpact();
   }
 
-  /**
-   * Resolution metadata.
-   */
+  /** Resolution metadata. */
   interface ResolutionMetadata {
     /**
      * Gets resolution strategy.
@@ -571,9 +553,7 @@ public interface WitInterfaceBindings {
     Optional<String> getFallbackInfo();
   }
 
-  /**
-   * Export metadata.
-   */
+  /** Export metadata. */
   interface ExportMetadata {
     /**
      * Gets export visibility.
@@ -598,23 +578,40 @@ public interface WitInterfaceBindings {
   }
 
   // Enums for categorization
+  /** Type of binding between WIT and Java. */
   enum BindingType {
-    DIRECT, ADAPTED, GENERATED, CUSTOM
+    DIRECT,
+    ADAPTED,
+    GENERATED,
+    CUSTOM
   }
 
+  /** Direction of type conversion. */
   enum ConversionDirection {
-    FORWARD, REVERSE
+    FORWARD,
+    REVERSE
   }
 
+  /** Complexity level of binding operations. */
   enum ComplexityLevel {
-    LOW, MEDIUM, HIGH
+    LOW,
+    MEDIUM,
+    HIGH
   }
 
+  /** Performance impact level of conversions. */
   enum PerformanceImpact {
-    MINIMAL, LOW, MEDIUM, HIGH
+    MINIMAL,
+    LOW,
+    MEDIUM,
+    HIGH
   }
 
+  /** Visibility level for generated bindings. */
   enum VisibilityLevel {
-    PRIVATE, PACKAGE, PROTECTED, PUBLIC
+    PRIVATE,
+    PACKAGE,
+    PROTECTED,
+    PUBLIC
   }
 }

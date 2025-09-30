@@ -56,13 +56,14 @@ public final class JniStreamingFeedHandle implements StreamingFeedHandle {
     ensureNotClosed();
     ensureNotCompleted();
 
-    return CompletableFuture.runAsync(() -> {
-      try {
-        feedSync(data);
-      } catch (final WasmException | InterruptedException e) {
-        throw new RuntimeException("Failed to feed data chunk", e);
-      }
-    });
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            feedSync(data);
+          } catch (final WasmException | InterruptedException e) {
+            throw new RuntimeException("Failed to feed data chunk", e);
+          }
+        });
   }
 
   /**
@@ -104,8 +105,8 @@ public final class JniStreamingFeedHandle implements StreamingFeedHandle {
   /**
    * Signals that no more data will be fed and completes the compilation.
    *
-   * <p>This method must be called to indicate that all WebAssembly bytecode has been provided.
-   * The returned future will complete when compilation is finished.
+   * <p>This method must be called to indicate that all WebAssembly bytecode has been provided. The
+   * returned future will complete when compilation is finished.
    *
    * @return a CompletableFuture that completes with the compiled Module
    * @throws IllegalStateException if completion has already been signaled
@@ -117,13 +118,14 @@ public final class JniStreamingFeedHandle implements StreamingFeedHandle {
 
     completed.set(true);
 
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return completeSync();
-      } catch (final WasmException | InterruptedException e) {
-        throw new RuntimeException("Failed to complete compilation", e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return completeSync();
+          } catch (final WasmException | InterruptedException e) {
+            throw new RuntimeException("Failed to complete compilation", e);
+          }
+        });
   }
 
   /**
@@ -175,8 +177,8 @@ public final class JniStreamingFeedHandle implements StreamingFeedHandle {
   /**
    * Checks if the handle can accept more data without blocking.
    *
-   * <p>This method can be used to implement flow control and avoid overwhelming the compiler
-   * with data.
+   * <p>This method can be used to implement flow control and avoid overwhelming the compiler with
+   * data.
    *
    * @return true if data can be fed without blocking
    */

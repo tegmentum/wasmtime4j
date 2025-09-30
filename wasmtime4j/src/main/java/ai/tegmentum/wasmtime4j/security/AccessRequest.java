@@ -1,67 +1,37 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-
 /**
- * Represents an access request for authorization.
+ * Security access request interface for WebAssembly components.
  *
  * @since 1.0.0
  */
-public final class AccessRequest {
-
-  private final UserIdentity user;
-  private final String resourceType;
-  private final Optional<String> resourceId;
-  private final String action;
-  private final Map<String, String> context;
-  private final Instant timestamp;
+public interface AccessRequest {
 
   /**
-   * Creates a new access request.
+   * Gets the resource being accessed.
    *
-   * @param user the user making the request
-   * @param resourceType the resource type being accessed
-   * @param resourceId the specific resource identifier (optional)
-   * @param action the action being performed
-   * @param context the request context
+   * @return the resource identifier
    */
-  public AccessRequest(
-      final UserIdentity user,
-      final String resourceType,
-      final Optional<String> resourceId,
-      final String action,
-      final Map<String, String> context) {
-    this.user = user;
-    this.resourceType = resourceType;
-    this.resourceId = resourceId;
-    this.action = action;
-    this.context = Map.copyOf(context);
-    this.timestamp = Instant.now();
-  }
+  String getResource();
 
-  public UserIdentity getUser() {
-    return user;
-  }
+  /**
+   * Gets the requested action.
+   *
+   * @return the action name
+   */
+  String getAction();
 
-  public String getResourceType() {
-    return resourceType;
-  }
+  /**
+   * Gets the requesting subject.
+   *
+   * @return the subject identifier
+   */
+  String getSubject();
 
-  public Optional<String> getResourceId() {
-    return resourceId;
-  }
-
-  public String getAction() {
-    return action;
-  }
-
-  public Map<String, String> getContext() {
-    return Map.copyOf(context);
-  }
-
-  public Instant getTimestamp() {
-    return timestamp;
-  }
+  /**
+   * Gets the request context.
+   *
+   * @return the security context
+   */
+  SecurityContext getContext();
 }

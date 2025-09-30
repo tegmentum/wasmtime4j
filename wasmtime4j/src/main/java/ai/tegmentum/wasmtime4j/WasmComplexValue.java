@@ -29,23 +29,23 @@ public final class WasmComplexValue {
 
   /** Enumeration of complex value types supported by the marshaling system. */
   public enum ComplexType {
-    /** Multi-dimensional array */
+    /** Multi-dimensional array. */
     MULTI_ARRAY,
-    /** Java List collection */
+    /** Java List collection. */
     LIST,
-    /** Java Map collection */
+    /** Java Map collection. */
     MAP,
-    /** Custom Java object (POJO) */
+    /** Custom Java object (POJO). */
     OBJECT,
-    /** Nested structure */
+    /** Nested structure. */
     STRUCT,
-    /** Union type */
+    /** Union type. */
     UNION,
-    /** Binary data blob */
+    /** Binary data blob. */
     BINARY_BLOB,
-    /** String data */
+    /** String data. */
     STRING_DATA,
-    /** Null reference */
+    /** Null reference. */
     NULL_REF
   }
 

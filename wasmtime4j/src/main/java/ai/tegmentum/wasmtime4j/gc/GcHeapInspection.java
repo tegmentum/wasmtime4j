@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * Results of a GC heap inspection operation.
  *
- * <p>Provides detailed information about the current state of the WebAssembly GC heap,
- * including object counts, type distributions, memory usage, and reference relationships.
+ * <p>Provides detailed information about the current state of the WebAssembly GC heap, including
+ * object counts, type distributions, memory usage, and reference relationships.
  *
  * @since 1.0.0
  */
@@ -104,9 +104,7 @@ public interface GcHeapInspection {
    */
   List<RootObjectInfo> getRootObjects();
 
-  /**
-   * Information about a struct instance in the heap.
-   */
+  /** Information about a struct instance in the heap. */
   interface StructInstanceInfo {
     /** Gets the object ID. */
     long getObjectId();
@@ -127,9 +125,7 @@ public interface GcHeapInspection {
     int getOutgoingReferences();
   }
 
-  /**
-   * Information about an array instance in the heap.
-   */
+  /** Information about an array instance in the heap. */
   interface ArrayInstanceInfo {
     /** Gets the object ID. */
     long getObjectId();
@@ -153,9 +149,7 @@ public interface GcHeapInspection {
     int getOutgoingReferences();
   }
 
-  /**
-   * Information about an I31 instance in the heap.
-   */
+  /** Information about an I31 instance in the heap. */
   interface I31InstanceInfo {
     /** Gets the object ID. */
     long getObjectId();
@@ -167,9 +161,7 @@ public interface GcHeapInspection {
     int getIncomingReferences();
   }
 
-  /**
-   * Information about heap fragmentation.
-   */
+  /** Information about heap fragmentation. */
   interface HeapFragmentation {
     /** Gets the fragmentation ratio (0.0 to 1.0). */
     double getFragmentationRatio();
@@ -184,9 +176,7 @@ public interface GcHeapInspection {
     long getAverageFreeBlockSize();
   }
 
-  /**
-   * Information about a root object.
-   */
+  /** Information about a root object. */
   interface RootObjectInfo {
     /** Gets the object ID. */
     long getObjectId();

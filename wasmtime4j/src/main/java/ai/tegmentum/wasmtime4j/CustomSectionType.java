@@ -37,8 +37,8 @@ public enum CustomSectionType {
   /**
    * DWARF debugging information sections.
    *
-   * <p>These sections contain DWARF debugging metadata including source line information,
-   * variable locations, and type information for debugging tools.
+   * <p>These sections contain DWARF debugging metadata including source line information, variable
+   * locations, and type information for debugging tools.
    */
   DWARF(".debug_info", ".debug_line", ".debug_abbrev", ".debug_str", ".debug_ranges", ".debug_loc"),
 
@@ -53,24 +53,24 @@ public enum CustomSectionType {
   /**
    * Linking metadata for WebAssembly object files.
    *
-   * <p>Linking sections contain relocation information, symbol tables, and other metadata
-   * required for linking WebAssembly object files into complete modules.
+   * <p>Linking sections contain relocation information, symbol tables, and other metadata required
+   * for linking WebAssembly object files into complete modules.
    */
   LINKING("linking"),
 
   /**
    * Relocation information for WebAssembly object files.
    *
-   * <p>Relocation sections specify how addresses and symbols should be resolved during the
-   * linking process.
+   * <p>Relocation sections specify how addresses and symbols should be resolved during the linking
+   * process.
    */
   RELOC("reloc.CODE", "reloc.DATA"),
 
   /**
    * Unknown or unrecognized custom section type.
    *
-   * <p>This type is used for custom sections that don't match any of the well-known types
-   * defined above.
+   * <p>This type is used for custom sections that don't match any of the well-known types defined
+   * above.
    */
   UNKNOWN();
 

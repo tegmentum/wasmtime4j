@@ -7,9 +7,9 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Handle for manual feeding of WebAssembly bytecode during streaming compilation.
  *
- * <p>StreamingFeedHandle allows fine-grained control over the data feeding process during
- * streaming compilation. It supports both synchronous and asynchronous feeding patterns with
- * backpressure management.
+ * <p>StreamingFeedHandle allows fine-grained control over the data feeding process during streaming
+ * compilation. It supports both synchronous and asynchronous feeding patterns with backpressure
+ * management.
  *
  * @since 1.0.0
  */
@@ -46,8 +46,8 @@ public interface StreamingFeedHandle extends AutoCloseable {
   /**
    * Signals that no more data will be fed and completes the compilation.
    *
-   * <p>This method must be called to indicate that all WebAssembly bytecode has been provided.
-   * The returned future will complete when compilation is finished.
+   * <p>This method must be called to indicate that all WebAssembly bytecode has been provided. The
+   * returned future will complete when compilation is finished.
    *
    * @return a CompletableFuture that completes with the compiled Module
    * @throws IllegalStateException if completion has already been signaled
@@ -83,8 +83,8 @@ public interface StreamingFeedHandle extends AutoCloseable {
   /**
    * Checks if the handle can accept more data without blocking.
    *
-   * <p>This method can be used to implement flow control and avoid overwhelming the compiler
-   * with data.
+   * <p>This method can be used to implement flow control and avoid overwhelming the compiler with
+   * data.
    *
    * @return true if data can be fed without blocking
    */

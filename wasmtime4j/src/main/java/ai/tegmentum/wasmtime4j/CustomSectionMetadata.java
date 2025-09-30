@@ -7,9 +7,9 @@ import java.util.Optional;
 /**
  * Interface for accessing and manipulating WebAssembly custom section metadata.
  *
- * <p>This interface provides a unified API for working with custom sections in WebAssembly
- * modules, including both standard sections like "name" and "producers", as well as
- * arbitrary custom sections.
+ * <p>This interface provides a unified API for working with custom sections in WebAssembly modules,
+ * including both standard sections like "name" and "producers", as well as arbitrary custom
+ * sections.
  *
  * @since 1.0.0
  */

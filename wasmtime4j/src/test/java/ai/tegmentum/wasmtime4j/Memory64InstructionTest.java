@@ -1,6 +1,11 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
@@ -524,7 +529,9 @@ class Memory64InstructionTest {
 
     @Override
     public long grow64(long pages) {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       long oldSize = currentSize;
       currentSize += pages;
       return oldSize;
@@ -532,7 +539,9 @@ class Memory64InstructionTest {
 
     @Override
     public ByteBuffer getBuffer() {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       return ByteBuffer.wrap(memory);
     }
 
@@ -543,7 +552,9 @@ class Memory64InstructionTest {
 
     @Override
     public byte readByte64(long offset) {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       return memory[(int) offset];
     }
 
@@ -554,7 +565,9 @@ class Memory64InstructionTest {
 
     @Override
     public void writeByte64(long offset, byte value) {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       memory[(int) offset] = value;
     }
 
@@ -565,7 +578,9 @@ class Memory64InstructionTest {
 
     @Override
     public void readBytes64(long offset, byte[] dest, int destOffset, int length) {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       System.arraycopy(memory, (int) offset, dest, destOffset, length);
     }
 
@@ -576,7 +591,9 @@ class Memory64InstructionTest {
 
     @Override
     public void writeBytes64(long offset, byte[] src, int srcOffset, int length) {
-      if (closed) throw new RuntimeException("Memory is closed");
+      if (closed) {
+        throw new RuntimeException("Memory is closed");
+      }
       System.arraycopy(src, srcOffset, memory, (int) offset, length);
     }
 

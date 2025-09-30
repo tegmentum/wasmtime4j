@@ -30,7 +30,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.logging.Logger;
 
 /**
- * Unified exception mapper that converts implementation-specific exceptions to public API exceptions.
+ * Unified exception mapper that converts implementation-specific exceptions to public API
+ * exceptions.
  *
  * <p>This utility class provides methods to map JNI and Panama implementation exceptions to the
  * public WebAssembly API exception hierarchy. It ensures consistent error handling across different
@@ -198,7 +199,8 @@ public final class UnifiedExceptionMapper {
    * @param message the exception message
    * @return the mapped public API exception
    */
-  private static WasmException mapByMessageContent(final Throwable exception, final String message) {
+  private static WasmException mapByMessageContent(
+      final Throwable exception, final String message) {
     if (message != null) {
       final String lowerMessage = message.toLowerCase();
 
@@ -343,8 +345,9 @@ public final class UnifiedExceptionMapper {
    */
   public static WasmException wrapWithContext(
       final String operation, final String context, final Throwable originalException) {
-    final String contextualMessage = createContextualErrorMessage(
-        operation, context, originalException != null ? originalException.getMessage() : null);
+    final String contextualMessage =
+        createContextualErrorMessage(
+            operation, context, originalException != null ? originalException.getMessage() : null);
 
     final WasmException mappedException = mapToPublicException(originalException);
 

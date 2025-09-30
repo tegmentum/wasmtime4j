@@ -2496,8 +2496,8 @@ mod tests {
         let config = SIMDConfig::default();
         let simd = SIMDOperations::new(config).unwrap();
 
-        let a = V128::from_i32s(0xFF00FF00, 0x00FF00FF, 0xF0F0F0F0, 0x0F0F0F0F);
-        let b = V128::from_i32s(0xF0F0F0F0, 0x0F0F0F0F, 0xFF00FF00, 0x00FF00FF);
+        let a = V128::from_i32s(0xFF00FF00u32 as i32, 0x00FF00FF, 0xF0F0F0F0u32 as i32, 0x0F0F0F0F);
+        let b = V128::from_i32s(0xF0F0F0F0u32 as i32, 0x0F0F0F0F, 0xFF00FF00u32 as i32, 0x00FF00FF);
 
         // Test AND
         let and_result = simd.and(&a, &b).unwrap();

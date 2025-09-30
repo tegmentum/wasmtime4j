@@ -2,19 +2,17 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.*;
-import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
-
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * JMH benchmarks for WebAssembly execution control system performance.
  *
- * <p>Measures the overhead of fuel management, epoch interruption, resource quotas,
- * and other execution control mechanisms to ensure minimal performance impact
- * on WebAssembly execution.
+ * <p>Measures the overhead of fuel management, epoch interruption, resource quotas, and other
+ * execution control mechanisms to ensure minimal performance impact on WebAssembly execution.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -37,15 +35,17 @@ public class ExecutionControlBenchmark {
     controller = createBenchmarkController();
 
     // Create execution context with optimized configuration
-    ExecutionContextConfig config = ExecutionContextConfig.builder()
-        .fuelPriority(FuelPriority.HIGH)
-        .quotas(ExecutionQuotas.builder()
-            .fuelQuota(1_000_000L)
-            .cpuTimeQuota(Duration.ofMinutes(10))
-            .memoryQuota(256 * 1024 * 1024L) // 256MB
-            .build())
-        .interruptMode(InterruptMode.COOPERATIVE)
-        .build();
+    ExecutionContextConfig config =
+        ExecutionContextConfig.builder()
+            .fuelPriority(FuelPriority.HIGH)
+            .quotas(
+                ExecutionQuotas.builder()
+                    .fuelQuota(1_000_000L)
+                    .cpuTimeQuota(Duration.ofMinutes(10))
+                    .memoryQuota(256 * 1024 * 1024L) // 256MB
+                    .build())
+            .interruptMode(InterruptMode.COOPERATIVE)
+            .build();
 
     context = controller.createContext(CONTEXT_ID, config);
     fuelManager = context.getFuelManager();
@@ -142,11 +142,12 @@ public class ExecutionControlBenchmark {
   @Benchmark
   @OperationsPerInvocation(1)
   public void benchmarkExecutionQuotasSetting(Blackhole bh) throws WasmException {
-    ExecutionQuotas quotas = ExecutionQuotas.builder()
-        .fuelQuota(10000L)
-        .cpuTimeQuota(Duration.ofSeconds(30))
-        .memoryQuota(64 * 1024 * 1024L)
-        .build();
+    ExecutionQuotas quotas =
+        ExecutionQuotas.builder()
+            .fuelQuota(10000L)
+            .cpuTimeQuota(Duration.ofSeconds(30))
+            .memoryQuota(64 * 1024 * 1024L)
+            .build();
 
     controller.setExecutionQuotas(CONTEXT_ID, quotas);
     bh.consume(quotas.getFuelQuota());
@@ -155,10 +156,8 @@ public class ExecutionControlBenchmark {
   @Benchmark
   @OperationsPerInvocation(1)
   public void benchmarkExecutionPoliciesApplication(Blackhole bh) throws WasmException {
-    Set<ExecutionPolicy> policies = Set.of(
-        ExecutionPolicy.ENABLE_FUEL_TRACKING,
-        ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING
-    );
+    Set<ExecutionPolicy> policies =
+        Set.of(ExecutionPolicy.ENABLE_FUEL_TRACKING, ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING);
 
     controller.applyExecutionPolicies(CONTEXT_ID, policies);
     bh.consume(policies.size());
@@ -203,19 +202,21 @@ public class ExecutionControlBenchmark {
   @Benchmark
   @OperationsPerInvocation(1)
   public void benchmarkExecutionAnalyticsRetrieval(Blackhole bh) throws WasmException {
-    ExecutionAnalytics analytics = controller.getExecutionAnalytics(CONTEXT_ID, Duration.ofSeconds(1));
+    ExecutionAnalytics analytics =
+        controller.getExecutionAnalytics(CONTEXT_ID, Duration.ofSeconds(1));
     bh.consume(analytics.getTotalExecutionTime());
   }
 
   @Benchmark
   @OperationsPerInvocation(1)
   public void benchmarkTraceDataExport(Blackhole bh) throws WasmException {
-    TraceFilter filter = TraceFilter.builder()
-        .startTime(java.time.Instant.now().minusSeconds(1))
-        .endTime(java.time.Instant.now())
-        .traceTypes(Set.of(TraceType.FUEL_CONSUMPTION))
-        .maxEntries(100)
-        .build();
+    TraceFilter filter =
+        TraceFilter.builder()
+            .startTime(java.time.Instant.now().minusSeconds(1))
+            .endTime(java.time.Instant.now())
+            .traceTypes(Set.of(TraceType.FUEL_CONSUMPTION))
+            .maxEntries(100)
+            .build();
 
     ExecutionTraceData trace = controller.exportExecutionTrace(CONTEXT_ID, filter);
     bh.consume(trace.getEntryCount());
@@ -226,7 +227,8 @@ public class ExecutionControlBenchmark {
   @Threads(4)
   public void benchmarkConcurrentFuelOperations(Blackhole bh) throws WasmException {
     // Test concurrent performance with multiple threads
-    fuelManager.allocateFuel(CONTEXT_ID + "-" + Thread.currentThread().getId(), 100L, FuelPriority.NORMAL);
+    fuelManager.allocateFuel(
+        CONTEXT_ID + "-" + Thread.currentThread().getId(), 100L, FuelPriority.NORMAL);
     long consumed = fuelManager.consumeFuel(CONTEXT_ID + "-" + Thread.currentThread().getId(), 10L);
     bh.consume(consumed);
   }
@@ -237,7 +239,8 @@ public class ExecutionControlBenchmark {
   public void benchmarkConcurrentEpochOperations(Blackhole bh) throws WasmException {
     // Test concurrent epoch operations
     long epoch = interruptManager.incrementGlobalEpoch();
-    boolean interrupted = interruptManager.isInterrupted(CONTEXT_ID + "-" + Thread.currentThread().getId());
+    boolean interrupted =
+        interruptManager.isInterrupted(CONTEXT_ID + "-" + Thread.currentThread().getId());
     bh.consume(epoch);
     bh.consume(interrupted);
   }
@@ -287,27 +290,32 @@ public class ExecutionControlBenchmark {
   @OperationsPerInvocation(1)
   public void benchmarkMemoryOverhead(Blackhole bh) throws WasmException {
     // Measure memory allocation overhead of execution control structures
-    ExecutionContextConfig config = ExecutionContextConfig.builder()
-        .fuelPriority(FuelPriority.NORMAL)
-        .quotas(ExecutionQuotas.createDefault())
-        .interruptMode(InterruptMode.COOPERATIVE)
-        .build();
+    ExecutionContextConfig config =
+        ExecutionContextConfig.builder()
+            .fuelPriority(FuelPriority.NORMAL)
+            .quotas(ExecutionQuotas.createDefault())
+            .interruptMode(InterruptMode.COOPERATIVE)
+            .build();
 
     String tempContextId = "temp-context-" + System.nanoTime();
     ExecutionContext tempContext = controller.createContext(tempContextId, config);
 
     // Perform operations to initialize structures
     tempContext.getFuelManager().allocateFuel(tempContextId, 1000L, FuelPriority.NORMAL);
-    tempContext.getEpochInterruptManager().setEpochDeadline(tempContextId, 100L, InterruptMode.COOPERATIVE);
+    tempContext
+        .getEpochInterruptManager()
+        .setEpochDeadline(tempContextId, 100L, InterruptMode.COOPERATIVE);
 
     bh.consume(tempContext.getId());
 
     // Cleanup
-    controller.terminateExecution(tempContextId, ExecutionTerminationConfig.builder()
-        .forceTermination(true)
-        .cleanupResources(true)
-        .terminationTimeout(Duration.ofSeconds(1))
-        .build());
+    controller.terminateExecution(
+        tempContextId,
+        ExecutionTerminationConfig.builder()
+            .forceTermination(true)
+            .cleanupResources(true)
+            .terminationTimeout(Duration.ofSeconds(1))
+            .build());
   }
 
   // Comparison benchmark without execution control
@@ -330,10 +338,12 @@ public class ExecutionControlBenchmark {
 
   // Benchmark-specific execution controller implementation
   private static class BenchmarkExecutionController implements ExecutionController {
-    private final java.util.Map<String, BenchmarkExecutionContext> contexts = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, BenchmarkExecutionContext> contexts =
+        new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
-    public ExecutionContext createContext(String contextId, ExecutionContextConfig config) throws WasmException {
+    public ExecutionContext createContext(String contextId, ExecutionContextConfig config)
+        throws WasmException {
       BenchmarkExecutionContext context = new BenchmarkExecutionContext(contextId, config);
       contexts.put(contextId, context);
       return context;
@@ -345,7 +355,8 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void applyExecutionPolicies(String contextId, Set<ExecutionPolicy> policies) throws WasmException {
+    public void applyExecutionPolicies(String contextId, Set<ExecutionPolicy> policies)
+        throws WasmException {
       // Optimized implementation for benchmarking
     }
 
@@ -358,17 +369,20 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void enableMonitoring(String contextId, ExecutionMonitoringConfig monitoring) throws WasmException {
+    public void enableMonitoring(String contextId, ExecutionMonitoringConfig monitoring)
+        throws WasmException {
       // Lightweight implementation for benchmarking
     }
 
     @Override
-    public void configureTracing(String contextId, ExecutionTracingConfig tracing) throws WasmException {
+    public void configureTracing(String contextId, ExecutionTracingConfig tracing)
+        throws WasmException {
       // Lightweight implementation for benchmarking
     }
 
     @Override
-    public java.util.concurrent.CompletableFuture<ExecutionResult> startExecution(String contextId, ExecutionRequest executionRequest) throws WasmException {
+    public java.util.concurrent.CompletableFuture<ExecutionResult> startExecution(
+        String contextId, ExecutionRequest executionRequest) throws WasmException {
       return java.util.concurrent.CompletableFuture.completedFuture(new BenchmarkExecutionResult());
     }
 
@@ -383,12 +397,14 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void terminateExecution(String contextId, ExecutionTerminationConfig termination) throws WasmException {
+    public void terminateExecution(String contextId, ExecutionTerminationConfig termination)
+        throws WasmException {
       contexts.remove(contextId);
     }
 
     @Override
-    public void adjustExecutionParameters(String contextId, ExecutionAdjustments adjustments) throws WasmException {
+    public void adjustExecutionParameters(String contextId, ExecutionAdjustments adjustments)
+        throws WasmException {
       // Lightweight implementation
     }
 
@@ -398,12 +414,14 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public ExecutionAnalytics getExecutionAnalytics(String contextId, Duration timeWindow) throws WasmException {
+    public ExecutionAnalytics getExecutionAnalytics(String contextId, Duration timeWindow)
+        throws WasmException {
       return new BenchmarkExecutionAnalytics();
     }
 
     @Override
-    public ExecutionTraceData exportExecutionTrace(String contextId, TraceFilter traceFilter) throws WasmException {
+    public ExecutionTraceData exportExecutionTrace(String contextId, TraceFilter traceFilter)
+        throws WasmException {
       return new BenchmarkExecutionTraceData();
     }
 
@@ -413,17 +431,20 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void setupFairResourceAllocation(Set<String> contextIds, FairAllocationStrategy allocationStrategy) throws WasmException {
+    public void setupFairResourceAllocation(
+        Set<String> contextIds, FairAllocationStrategy allocationStrategy) throws WasmException {
       // Lightweight implementation
     }
 
     @Override
-    public void configureDynamicQuotaAdjustment(String contextId, LoadBasedQuotaConfig loadBasedConfig) throws WasmException {
+    public void configureDynamicQuotaAdjustment(
+        String contextId, LoadBasedQuotaConfig loadBasedConfig) throws WasmException {
       // Lightweight implementation
     }
 
     @Override
-    public void enableAnomalyDetection(String contextId, AnomalyDetectionConfig anomalyDetection) throws WasmException {
+    public void enableAnomalyDetection(String contextId, AnomalyDetectionConfig anomalyDetection)
+        throws WasmException {
       // Lightweight implementation
     }
 
@@ -441,10 +462,8 @@ public class ExecutionControlBenchmark {
     @Override
     public java.util.Map<String, ExecutionState> getActiveContexts() {
       return contexts.keySet().stream()
-          .collect(java.util.stream.Collectors.toMap(
-              key -> key,
-              key -> new BenchmarkExecutionState()
-          ));
+          .collect(
+              java.util.stream.Collectors.toMap(key -> key, key -> new BenchmarkExecutionState()));
     }
 
     @Override
@@ -515,7 +534,8 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void allocateFuel(String contextId, long amount, FuelPriority priority) throws WasmException {
+    public void allocateFuel(String contextId, long amount, FuelPriority priority)
+        throws WasmException {
       // Apply priority multiplier for realistic benchmark
       double multiplier = priority.getAllocationShare();
       long effectiveAmount = Math.round(amount * multiplier);
@@ -525,7 +545,9 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void allocateHierarchicalFuel(String contextId, String parentContextId, long amount, double inheritanceRatio) throws WasmException {
+    public void allocateHierarchicalFuel(
+        String contextId, String parentContextId, long amount, double inheritanceRatio)
+        throws WasmException {
       long effectiveAmount = Math.round(amount * inheritanceRatio);
       allocateFuel(contextId, effectiveAmount, FuelPriority.NORMAL);
     }
@@ -539,12 +561,14 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public long consumeFunctionFuel(String contextId, String functionName, long amount) throws WasmException {
+    public long consumeFunctionFuel(String contextId, String functionName, long amount)
+        throws WasmException {
       return consumeFuel(contextId, amount);
     }
 
     @Override
-    public long consumeInstructionFuel(String contextId, long instructionCount, double fuelPerInstruction) throws WasmException {
+    public long consumeInstructionFuel(
+        String contextId, long instructionCount, double fuelPerInstruction) throws WasmException {
       long amount = Math.round(instructionCount * fuelPerInstruction);
       return consumeFuel(contextId, amount);
     }
@@ -565,24 +589,35 @@ public class ExecutionControlBenchmark {
 
     // Simplified implementations for other methods
     @Override
-    public void adjustFuelAllocation(String contextId, FuelAdjustment adjustment) throws WasmException {}
+    public void adjustFuelAllocation(String contextId, FuelAdjustment adjustment)
+        throws WasmException {}
 
     @Override
-    public void delegateFuel(String sourceContextId, String targetContextId, long amount, DelegationConditions conditions) throws WasmException {}
+    public void delegateFuel(
+        String sourceContextId,
+        String targetContextId,
+        long amount,
+        DelegationConditions conditions)
+        throws WasmException {}
 
     @Override
-    public void createFuelBudget(String budgetId, long totalFuel, FuelAllocationStrategy allocationStrategy) throws WasmException {}
+    public void createFuelBudget(
+        String budgetId, long totalFuel, FuelAllocationStrategy allocationStrategy)
+        throws WasmException {}
 
     @Override
-    public void transferFuel(String budgetId, String fromContext, String toContext, long amount) throws WasmException {}
+    public void transferFuel(String budgetId, String fromContext, String toContext, long amount)
+        throws WasmException {}
 
     @Override
-    public FuelConsumptionPattern getConsumptionPattern(String contextId, Duration timeWindow) throws WasmException {
+    public FuelConsumptionPattern getConsumptionPattern(String contextId, Duration timeWindow)
+        throws WasmException {
       return null;
     }
 
     @Override
-    public void setConsumptionLimits(String contextId, FuelConsumptionLimits limits) throws WasmException {}
+    public void setConsumptionLimits(String contextId, FuelConsumptionLimits limits)
+        throws WasmException {}
 
     @Override
     public Set<String> getActiveContexts() {
@@ -624,12 +659,14 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public void setEpochDeadline(String contextId, long deadline, InterruptMode mode) throws WasmException {
+    public void setEpochDeadline(String contextId, long deadline, InterruptMode mode)
+        throws WasmException {
       this.epochDeadline = currentEpoch + deadline;
     }
 
     @Override
-    public void setHierarchicalDeadline(String contextId, EpochDeadlineLevels levels) throws WasmException {
+    public void setHierarchicalDeadline(String contextId, EpochDeadlineLevels levels)
+        throws WasmException {
       setEpochDeadline(contextId, levels.getTerminalLevel(), InterruptMode.COOPERATIVE);
     }
 
@@ -639,8 +676,10 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public java.util.Map<String, Long> incrementContextEpochs(Set<String> contextIds) throws WasmException {
-      return contextIds.stream().collect(java.util.stream.Collectors.toMap(id -> id, id -> ++currentEpoch));
+    public java.util.Map<String, Long> incrementContextEpochs(Set<String> contextIds)
+        throws WasmException {
+      return contextIds.stream()
+          .collect(java.util.stream.Collectors.toMap(id -> id, id -> ++currentEpoch));
     }
 
     @Override
@@ -670,43 +709,54 @@ public class ExecutionControlBenchmark {
 
     // Simplified implementations for other methods
     @Override
-    public void registerInterruptHandler(String contextId, EpochInterruptHandler handler, InterruptPriority priority) throws WasmException {}
+    public void registerInterruptHandler(
+        String contextId, EpochInterruptHandler handler, InterruptPriority priority)
+        throws WasmException {}
 
     @Override
-    public void unregisterInterruptHandler(String contextId, String handlerId) throws WasmException {}
+    public void unregisterInterruptHandler(String contextId, String handlerId)
+        throws WasmException {}
 
     @Override
-    public void configureInterruptRecovery(String contextId, InterruptRecoveryConfig recovery) throws WasmException {}
+    public void configureInterruptRecovery(String contextId, InterruptRecoveryConfig recovery)
+        throws WasmException {}
 
     @Override
-    public void setupTimeSlicing(String contextId, TimeSlicingConfig sliceConfig) throws WasmException {}
+    public void setupTimeSlicing(String contextId, TimeSlicingConfig sliceConfig)
+        throws WasmException {}
 
     @Override
     public void setCooperativeMode(String contextId, boolean enabled) throws WasmException {}
 
     @Override
-    public String createInterruptPoint(String contextId, InterruptPointConfig interruptPoint) throws WasmException {
+    public String createInterruptPoint(String contextId, InterruptPointConfig interruptPoint)
+        throws WasmException {
       return "interrupt-point-" + System.nanoTime();
     }
 
     @Override
-    public String protectFromInterruption(String contextId, InterruptProtectionConfig protectionConfig) throws WasmException {
+    public String protectFromInterruption(
+        String contextId, InterruptProtectionConfig protectionConfig) throws WasmException {
       return "protection-" + System.nanoTime();
     }
 
     @Override
-    public void removeInterruptProtection(String contextId, String protectionId) throws WasmException {}
+    public void removeInterruptProtection(String contextId, String protectionId)
+        throws WasmException {}
 
     @Override
-    public void setupMultiThreadedCoordination(String contextId, InterruptCoordinationConfig coordination) throws WasmException {}
+    public void setupMultiThreadedCoordination(
+        String contextId, InterruptCoordinationConfig coordination) throws WasmException {}
 
     @Override
-    public String chainInterruptHandlers(String contextId, InterruptHandlerChain handlerChain) throws WasmException {
+    public String chainInterruptHandlers(String contextId, InterruptHandlerChain handlerChain)
+        throws WasmException {
       return "chain-" + System.nanoTime();
     }
 
     @Override
-    public void triggerManualInterrupt(String contextId, String reason, boolean immediate) throws WasmException {
+    public void triggerManualInterrupt(String contextId, String reason, boolean immediate)
+        throws WasmException {
       totalInterrupts++;
     }
 
@@ -724,17 +774,21 @@ public class ExecutionControlBenchmark {
     }
 
     @Override
-    public java.util.concurrent.CompletableFuture<InterruptEvent> waitForNextInterrupt(String contextId, Duration timeout) throws WasmException {
+    public java.util.concurrent.CompletableFuture<InterruptEvent> waitForNextInterrupt(
+        String contextId, Duration timeout) throws WasmException {
       return java.util.concurrent.CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public String subscribeToInterrupts(String contextId, java.util.function.Consumer<InterruptEvent> subscriber) throws WasmException {
+    public String subscribeToInterrupts(
+        String contextId, java.util.function.Consumer<InterruptEvent> subscriber)
+        throws WasmException {
       return "subscription-" + System.nanoTime();
     }
 
     @Override
-    public void unsubscribeFromInterrupts(String contextId, String subscriptionId) throws WasmException {}
+    public void unsubscribeFromInterrupts(String contextId, String subscriptionId)
+        throws WasmException {}
 
     @Override
     public Set<String> getActiveContexts() {

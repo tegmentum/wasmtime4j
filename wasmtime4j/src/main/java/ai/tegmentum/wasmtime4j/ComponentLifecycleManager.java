@@ -263,6 +263,13 @@ public interface ComponentLifecycleManager {
     private final boolean validateDependencies;
     private final boolean waitForDependencies;
 
+    /**
+     * Creates a new component startup configuration.
+     *
+     * @param timeoutMillis startup timeout in milliseconds
+     * @param validateDependencies whether to validate dependencies
+     * @param waitForDependencies whether to wait for dependencies
+     */
     public ComponentStartupConfig(
         long timeoutMillis, boolean validateDependencies, boolean waitForDependencies) {
       this.timeoutMillis = timeoutMillis;
@@ -289,6 +296,13 @@ public interface ComponentLifecycleManager {
     private final boolean graceful;
     private final boolean force;
 
+    /**
+     * Creates a new component shutdown configuration.
+     *
+     * @param timeoutMillis shutdown timeout in milliseconds
+     * @param graceful whether to perform graceful shutdown
+     * @param force whether to force shutdown if graceful fails
+     */
     public ComponentShutdownConfig(long timeoutMillis, boolean graceful, boolean force) {
       this.timeoutMillis = timeoutMillis;
       this.graceful = graceful;
@@ -314,6 +328,13 @@ public interface ComponentLifecycleManager {
     private final ComponentStartupConfig startupConfig;
     private final long delayBetweenMillis;
 
+    /**
+     * Creates a new component restart configuration.
+     *
+     * @param shutdownConfig the shutdown configuration
+     * @param startupConfig the startup configuration
+     * @param delayBetweenMillis delay between shutdown and startup in milliseconds
+     */
     public ComponentRestartConfig(
         ComponentShutdownConfig shutdownConfig,
         ComponentStartupConfig startupConfig,
@@ -351,6 +372,14 @@ public interface ComponentLifecycleManager {
     private final Instant timestamp;
     private final Map<String, Object> details;
 
+    /**
+     * Creates a new component health check result.
+     *
+     * @param healthy whether the component is healthy
+     * @param message descriptive message about health status
+     * @param timestamp when the health check was performed
+     * @param details additional health check details
+     */
     public ComponentHealthCheckResult(
         boolean healthy, String message, Instant timestamp, Map<String, Object> details) {
       this.healthy = healthy;
@@ -387,6 +416,18 @@ public interface ComponentLifecycleManager {
     private final Instant lastStopTime;
     private final long totalUptime;
 
+    /**
+     * Creates new component lifecycle statistics.
+     *
+     * @param componentId the component identifier
+     * @param startCount number of times component was started
+     * @param stopCount number of times component was stopped
+     * @param restartCount number of times component was restarted
+     * @param failureCount number of failures encountered
+     * @param lastStartTime timestamp of last start operation
+     * @param lastStopTime timestamp of last stop operation
+     * @param totalUptime total uptime in milliseconds
+     */
     public ComponentLifecycleStatistics(
         String componentId,
         int startCount,
@@ -447,6 +488,15 @@ public interface ComponentLifecycleManager {
     private final long totalUptime;
     private final int totalRestarts;
 
+    /**
+     * Creates new overall lifecycle statistics.
+     *
+     * @param totalComponents total number of components managed
+     * @param runningComponents number of currently running components
+     * @param failedComponents number of failed components
+     * @param totalUptime total uptime across all components in milliseconds
+     * @param totalRestarts total number of restarts across all components
+     */
     public OverallLifecycleStatistics(
         int totalComponents,
         int runningComponents,
@@ -487,6 +537,13 @@ public interface ComponentLifecycleManager {
     private final boolean graceful;
     private final boolean forceStopComponents;
 
+    /**
+     * Creates a new lifecycle manager shutdown configuration.
+     *
+     * @param timeoutMillis shutdown timeout in milliseconds
+     * @param graceful whether to perform graceful shutdown
+     * @param forceStopComponents whether to force stop components
+     */
     public LifecycleManagerShutdownConfig(
         long timeoutMillis, boolean graceful, boolean forceStopComponents) {
       this.timeoutMillis = timeoutMillis;

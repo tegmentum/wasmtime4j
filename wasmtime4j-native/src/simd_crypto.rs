@@ -4,7 +4,7 @@
 //! including AES, SHA, RSA acceleration, and specialized crypto algorithms.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::simd::{V128, V256, V512, PlatformCapabilities};
+use crate::simd::{V128, V256, PlatformCapabilities};
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]
@@ -593,7 +593,7 @@ pub mod crypto {
             let h = self.encrypt_block(&zero_block)?;
 
             // CTR encryption
-            let mut counter = 2u64; // Start from 2 (1 is reserved for tag generation)
+            let counter = 2u64; // Start from 2 (1 is reserved for tag generation)
             let ciphertext = self.encrypt_ctr(plaintext, &j0, counter)?;
 
             // Generate authentication tag using GHASH

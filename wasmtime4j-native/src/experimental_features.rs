@@ -8,13 +8,9 @@
 use wasmtime::Config;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
-use std::os::raw::{c_void, c_int, c_char};
-use std::ffi::CStr;
+use std::os::raw::{c_void, c_int};
 
 // Enhanced imports for advanced experimental features
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use tokio::runtime::Runtime;
 
 /// Configuration for experimental WebAssembly features
 #[derive(Debug, Clone)]

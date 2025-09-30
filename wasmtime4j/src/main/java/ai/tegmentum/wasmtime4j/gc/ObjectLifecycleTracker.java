@@ -7,8 +7,8 @@ import java.util.Map;
 /**
  * Tracks the lifecycle of WebAssembly GC objects for debugging and profiling.
  *
- * <p>Provides detailed information about object creation, access patterns, reference changes,
- * and garbage collection events for a specific set of tracked objects.
+ * <p>Provides detailed information about object creation, access patterns, reference changes, and
+ * garbage collection events for a specific set of tracked objects.
  *
  * @since 1.0.0
  */
@@ -71,9 +71,7 @@ public interface ObjectLifecycleTracker {
    */
   void stopTrackingObjects(List<Long> objectIds);
 
-  /**
-   * A lifecycle event for a tracked object.
-   */
+  /** A lifecycle event for a tracked object. */
   interface LifecycleEvent {
     /** Gets the event timestamp. */
     Instant getTimestamp();
@@ -91,9 +89,7 @@ public interface ObjectLifecycleTracker {
     long getThreadId();
   }
 
-  /**
-   * Types of lifecycle events.
-   */
+  /** Types of lifecycle events. */
   enum LifecycleEventType {
     /** Object was created. */
     CREATED,
@@ -111,9 +107,7 @@ public interface ObjectLifecycleTracker {
     COLLECTED
   }
 
-  /**
-   * Current status of a tracked object.
-   */
+  /** Current status of a tracked object. */
   interface ObjectStatus {
     /** Gets the object ID. */
     long getObjectId();
@@ -134,9 +128,7 @@ public interface ObjectLifecycleTracker {
     GcReferenceType getObjectType();
   }
 
-  /**
-   * Access statistics for a tracked object.
-   */
+  /** Access statistics for a tracked object. */
   interface AccessStatistics {
     /** Gets the object ID. */
     long getObjectId();
@@ -160,9 +152,7 @@ public interface ObjectLifecycleTracker {
     long getAverageAccessInterval();
   }
 
-  /**
-   * A reference change event.
-   */
+  /** A reference change event. */
   interface ReferenceChange {
     /** Gets the change timestamp. */
     Instant getTimestamp();
@@ -183,9 +173,7 @@ public interface ObjectLifecycleTracker {
     String getDetails();
   }
 
-  /**
-   * Types of reference changes.
-   */
+  /** Types of reference changes. */
   enum ReferenceChangeType {
     /** A new reference was created. */
     REFERENCE_CREATED,
@@ -195,9 +183,7 @@ public interface ObjectLifecycleTracker {
     REFERENCE_UPDATED
   }
 
-  /**
-   * Summary of lifecycle tracking results.
-   */
+  /** Summary of lifecycle tracking results. */
   interface LifecycleTrackingSummary {
     /** Gets the tracking duration. */
     long getTrackingDurationMillis();

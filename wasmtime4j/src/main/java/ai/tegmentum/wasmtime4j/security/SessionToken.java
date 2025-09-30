@@ -1,47 +1,44 @@
 package ai.tegmentum.wasmtime4j.security;
 
-import java.util.Set;
-
 /**
- * Session token for authentication.
+ * Security session token interface for WebAssembly components.
  *
  * @since 1.0.0
  */
 public interface SessionToken {
 
   /**
-   * Gets the token identifier.
+   * Gets the token ID.
    *
-   * @return token ID
+   * @return the token ID
    */
   String getTokenId();
 
   /**
-   * Gets the user identifier.
+   * Gets the token expiration time.
    *
-   * @return user ID
+   * @return the expiration time in milliseconds
+   */
+  long getExpirationTime();
+
+  /**
+   * Checks if the token is valid.
+   *
+   * @return true if the token is valid
+   */
+  boolean isValid();
+
+  /**
+   * Gets the associated user ID.
+   *
+   * @return the user ID
    */
   String getUserId();
 
   /**
-   * Gets the token scopes.
+   * Refreshes the token.
    *
-   * @return scopes
+   * @return true if refresh was successful
    */
-  Set<String> getScopes();
-
-  /**
-   * Checks if the token has expired.
-   *
-   * @return true if expired
-   */
-  boolean isExpired();
-
-  /**
-   * Checks if the token has a specific scope.
-   *
-   * @param scope the scope to check
-   * @return true if the token has the scope
-   */
-  boolean hasScope(final String scope);
+  boolean refresh();
 }

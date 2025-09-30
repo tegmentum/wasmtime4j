@@ -10,7 +10,7 @@
 //! This module extends Wasmtime's built-in sandboxing with enterprise-grade
 //! security controls for high-security environments.
 
-use crate::error::{WasmtimeError, WasmtimeResult, ErrorCode};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::Instance;
 use crate::store::Store;
 use std::collections::{HashMap, HashSet};

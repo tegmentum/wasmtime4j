@@ -14,17 +14,16 @@
 //! All functions in this module follow defensive programming principles to prevent JVM crashes.
 //! Null pointer checks, bounds validation, and error handling are implemented throughout.
 
-use wasmtime::{Config, Engine, Module};
+use wasmtime::{Engine, Module};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock, Weak};
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
-use std::io::{Read, BufReader, Cursor};
+use std::io::Read;
 use std::thread;
-use std::mem;
 use std::ptr;
-use std::os::raw::{c_void, c_int, c_char, c_uchar};
+use std::os::raw::{c_void, c_int, c_uchar};
 
 /// Streaming compiler configuration
 #[derive(Debug, Clone)]
@@ -238,7 +237,7 @@ impl StreamingCompiler {
     /// Start streaming compilation from an input reader
     pub fn compile_streaming<R: Read + Send + 'static>(
         self: &Arc<Self>,
-        mut reader: R,
+        reader: R,
     ) -> WasmtimeResult<()> {
         // Check if already started
         {

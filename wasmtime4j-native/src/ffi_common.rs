@@ -168,8 +168,9 @@ mod tests {
         let mut value = 42i32;
         let result = safe_deref_mut(&mut value as *mut i32, "test");
         assert!(result.is_ok());
-        assert_eq!(*result.unwrap(), 42);
-        *result.unwrap() = 100;
+        let mut_ref = result.unwrap();
+        assert_eq!(*mut_ref, 42);
+        *mut_ref = 100;
         assert_eq!(value, 100);
     }
     

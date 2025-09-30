@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -30,13 +29,12 @@ import java.util.logging.Logger;
 /**
  * Validation framework for caller context implementations.
  *
- * <p>This class provides a comprehensive validation framework to ensure
- * that all caller context implementations (JNI, Panama) behave consistently
- * and correctly according to the Wasmtime specification.
+ * <p>This class provides a comprehensive validation framework to ensure that all caller context
+ * implementations (JNI, Panama) behave consistently and correctly according to the Wasmtime
+ * specification.
  *
- * <p>The validator can be used during development and testing to catch
- * implementation inconsistencies and ensure proper behavior across
- * different runtime environments.
+ * <p>The validator can be used during development and testing to catch implementation
+ * inconsistencies and ensure proper behavior across different runtime environments.
  *
  * @since 1.0.0
  */
@@ -55,8 +53,7 @@ public final class CallerContextValidator {
    * @param validationConfig configuration for validation behavior
    * @return validation results
    */
-  public static <T> ValidationResult validate(
-      Caller<T> caller, ValidationConfig validationConfig) {
+  public static <T> ValidationResult validate(Caller<T> caller, ValidationConfig validationConfig) {
     ValidationResult result = new ValidationResult();
 
     try {
@@ -150,7 +147,7 @@ public final class CallerContextValidator {
 
     // Test function access
     try {
-      Optional<Function> function = caller.getFunction("some_function");
+      Optional<Function<T>> function = caller.getFunction("some_function");
       result.addSuccess("Function export access works");
     } catch (Exception e) {
       result.addWarning("Function export access failed: " + e.getMessage());
@@ -262,9 +259,7 @@ public final class CallerContextValidator {
     }
   }
 
-  /**
-   * Configuration for caller context validation.
-   */
+  /** Configuration for caller context validation. */
   public static class ValidationConfig {
     public final boolean validateBasicFunctionality;
     public final boolean validateExportAccess;
@@ -272,6 +267,15 @@ public final class CallerContextValidator {
     public final boolean validateEpochOperations;
     public final boolean validateErrorHandling;
 
+    /**
+     * Creates a new ValidationConfig.
+     *
+     * @param validateBasicFunctionality whether to validate basic functionality
+     * @param validateExportAccess whether to validate export access
+     * @param validateFuelOperations whether to validate fuel operations
+     * @param validateEpochOperations whether to validate epoch operations
+     * @param validateErrorHandling whether to validate error handling
+     */
     public ValidationConfig(
         boolean validateBasicFunctionality,
         boolean validateExportAccess,
@@ -286,9 +290,7 @@ public final class CallerContextValidator {
     }
   }
 
-  /**
-   * Results of caller context validation.
-   */
+  /** Results of caller context validation. */
   public static class ValidationResult {
     private final java.util.List<String> successes = new java.util.ArrayList<>();
     private final java.util.List<String> warnings = new java.util.ArrayList<>();

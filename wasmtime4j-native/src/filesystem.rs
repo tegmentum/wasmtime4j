@@ -11,24 +11,22 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime};
 use std::path::{Path, PathBuf};
-use std::fs::{self, File, OpenOptions, Metadata, DirEntry, ReadDir};
-use std::io::{self, Read, Write, Seek, SeekFrom, BufReader, BufWriter};
-use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
+use std::io::{Read, Write};
+use std::os::raw::{c_char, c_int, c_uint};
 
 #[cfg(unix)]
-use std::os::unix::fs::{PermissionsExt, MetadataExt, symlink};
+use std::os::unix::fs::{PermissionsExt, MetadataExt};
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
 
 use tokio::fs::{
-    File as AsyncFile, OpenOptions as AsyncOpenOptions, DirEntry as AsyncDirEntry,
-    ReadDir as AsyncReadDir, create_dir, create_dir_all, remove_dir, remove_dir_all,
-    remove_file, rename, copy, metadata, symlink_metadata, read_link, canonicalize,
+    File as AsyncFile, OpenOptions as AsyncOpenOptions,
+    ReadDir as AsyncReadDir, create_dir_all, remove_dir_all, metadata, read_link, canonicalize,
 };
-use tokio::io::{AsyncRead, AsyncWrite, AsyncReadExt, AsyncWriteExt, AsyncSeekExt, BufReader as AsyncBufReader};
-use tokio::sync::{mpsc, oneshot, Semaphore};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::{mpsc, Semaphore};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;

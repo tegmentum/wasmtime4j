@@ -5,8 +5,8 @@ import java.util.Objects;
 /**
  * Represents an issue found during import validation.
  *
- * <p>Import issues include missing imports, type mismatches, circular dependencies,
- * and other problems that prevent successful module instantiation.
+ * <p>Import issues include missing imports, type mismatches, circular dependencies, and other
+ * problems that prevent successful module instantiation.
  *
  * @since 1.0.0
  */
@@ -175,39 +175,35 @@ public final class ImportIssue {
     return Objects.hash(severity, type, moduleName, importName, message, expectedType, actualType);
   }
 
-  /**
-   * Severity levels for import issues.
-   */
+  /** Severity levels for import issues. */
   public enum Severity {
-    /** Informational issue that doesn't prevent instantiation */
+    /** Informational issue that doesn't prevent instantiation. */
     INFO,
-    /** Warning that might cause issues but doesn't prevent instantiation */
+    /** Warning that might cause issues but doesn't prevent instantiation. */
     WARNING,
-    /** Error that will prevent successful instantiation */
+    /** Error that will prevent successful instantiation. */
     ERROR,
-    /** Critical error that indicates a serious problem */
+    /** Critical error that indicates a serious problem. */
     CRITICAL
   }
 
-  /**
-   * Types of import issues.
-   */
+  /** Types of import issues. */
   public enum Type {
-    /** Import is missing from the linker */
+    /** Import is missing from the linker. */
     MISSING_IMPORT,
-    /** Import type doesn't match expected type */
+    /** Import type doesn't match expected type. */
     TYPE_MISMATCH,
-    /** Circular dependency detected */
+    /** Circular dependency detected. */
     CIRCULAR_DEPENDENCY,
-    /** Import signature is incompatible */
+    /** Import signature is incompatible. */
     SIGNATURE_MISMATCH,
-    /** Import is not available in the specified module */
+    /** Import is not available in the specified module. */
     MODULE_NOT_FOUND,
-    /** Import name is not exported by the target module */
+    /** Import name is not exported by the target module. */
     EXPORT_NOT_FOUND,
-    /** Import cannot be resolved due to multiple candidates */
+    /** Import cannot be resolved due to multiple candidates. */
     AMBIGUOUS_IMPORT,
-    /** Import validation failed for unknown reasons */
+    /** Import validation failed for unknown reasons. */
     VALIDATION_FAILED
   }
 }

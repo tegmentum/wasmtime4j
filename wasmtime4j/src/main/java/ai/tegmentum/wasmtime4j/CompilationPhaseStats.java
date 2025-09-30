@@ -167,7 +167,14 @@ public final class CompilationPhaseStats {
   @Override
   public int hashCode() {
     return Objects.hash(
-        phase, startTime, endTime, duration, bytesProcessed, memoryUsed, threadsUsed, completed,
+        phase,
+        startTime,
+        endTime,
+        duration,
+        bytesProcessed,
+        memoryUsed,
+        threadsUsed,
+        completed,
         errorMessage);
   }
 

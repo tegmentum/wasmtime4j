@@ -63,8 +63,12 @@ public final class Permission {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (!(obj instanceof Permission)) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof Permission)) {
+      return false;
+    }
     final Permission that = (Permission) obj;
     return resourceType.equals(that.resourceType)
         && resourceId.equals(that.resourceId)

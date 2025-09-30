@@ -13,20 +13,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll, Waker};
-use std::io;
-use std::path::{Path, PathBuf};
-use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
-use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
+use std::path::Path;
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
-use tokio::sync::{mpsc, oneshot, Semaphore, Mutex as AsyncMutex};
-use tokio::time::{timeout, sleep, Interval};
-use tokio::io::{AsyncRead, AsyncWrite, AsyncReadExt, AsyncWriteExt};
+use tokio::sync::{oneshot, Semaphore, Mutex as AsyncMutex};
+use tokio::time::sleep;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener as AsyncTcpListener, TcpStream as AsyncTcpStream, UdpSocket as AsyncUdpSocket};
 use tokio::fs::{File as AsyncFile, OpenOptions as AsyncOpenOptions};
-use futures::future::{BoxFuture, FutureExt};
+use futures::future::FutureExt;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
@@ -500,7 +495,7 @@ impl AsyncOperationsManager {
     /// Create an async timer operation
     pub async fn create_timer_operation(
         &self,
-        duration_ms: u64,
+        _duration_ms: u64,
         timer_type: AsyncTimerType,
     ) -> WasmtimeResult<u64> {
         let operation_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);

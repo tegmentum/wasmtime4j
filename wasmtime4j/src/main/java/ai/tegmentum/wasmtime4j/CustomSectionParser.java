@@ -6,8 +6,8 @@ import java.util.Optional;
  * Interface for parsing WebAssembly custom sections.
  *
  * <p>This interface defines the contract for parsing custom sections from WebAssembly modules.
- * Implementations provide support for different custom section formats including standard
- * sections like "name", "producers", and "target_features", as well as arbitrary custom sections.
+ * Implementations provide support for different custom section formats including standard sections
+ * like "name", "producers", and "target_features", as well as arbitrary custom sections.
  *
  * @since 1.0.0
  */
@@ -85,9 +85,8 @@ public interface CustomSectionParser {
    * @return the created custom section, or empty if creation fails
    * @throws IllegalArgumentException if name, type, or structuredData is null
    */
-  Optional<CustomSection> createCustomSection(final String name,
-                                              final CustomSectionType type,
-                                              final Object structuredData);
+  Optional<CustomSection> createCustomSection(
+      final String name, final CustomSectionType type, final Object structuredData);
 
   /**
    * Serializes a name section to binary data.
@@ -114,5 +113,6 @@ public interface CustomSectionParser {
    * @return the serialized binary data, or empty if serialization fails
    * @throws IllegalArgumentException if targetFeaturesSection is null
    */
-  Optional<byte[]> serializeTargetFeaturesSection(final TargetFeaturesSection targetFeaturesSection);
+  Optional<byte[]> serializeTargetFeaturesSection(
+      final TargetFeaturesSection targetFeaturesSection);
 }

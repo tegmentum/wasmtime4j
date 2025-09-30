@@ -217,7 +217,8 @@ public final class PanamaValidation {
    * @param activeConnections the map of active connections
    * @throws IllegalArgumentException if the connection ID is invalid or not found
    */
-  public static void requireValidConnectionId(final long connectionId, final java.util.Map<Long, ?> activeConnections) {
+  public static void requireValidConnectionId(
+      final long connectionId, final java.util.Map<Long, ?> activeConnections) {
     requireNonNull(activeConnections, "activeConnections");
     if (connectionId <= 0) {
       throw new IllegalArgumentException("Connection ID must be positive, got: " + connectionId);

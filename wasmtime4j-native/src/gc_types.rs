@@ -21,7 +21,6 @@ use wasmtime::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::simd::{V256, V512};
 
 /// WebAssembly GC reference type enumeration
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

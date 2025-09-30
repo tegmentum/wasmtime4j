@@ -1,29 +1,28 @@
 package ai.tegmentum.wasmtime4j.execution;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledIf;
-import org.junit.jupiter.api.condition.OS;
+import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /**
  * Comprehensive integration tests for advanced WebAssembly execution control mechanisms.
  *
- * <p>Tests fuel management, epoch interruption, resource quotas, execution policies,
- * and production-ready execution management features across different scenarios.
+ * <p>Tests fuel management, epoch interruption, resource quotas, execution policies, and
+ * production-ready execution management features across different scenarios.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExecutionControlIntegrationTest {
 
-  private static final Logger logger = Logger.getLogger(ExecutionControlIntegrationTest.class.getName());
+  private static final Logger logger =
+      Logger.getLogger(ExecutionControlIntegrationTest.class.getName());
 
   private ExecutionController controller;
   private String testContextId;
@@ -65,7 +64,8 @@ class ExecutionControlIntegrationTest {
     // Get execution status
     ExecutionStatus status = controller.getExecutionStatus(testContextId);
     assertNotNull(status, "Execution status should be available");
-    assertEquals(ExecutionPhase.CREATED, status.getExecutionPhase(), "Initial phase should be CREATED");
+    assertEquals(
+        ExecutionPhase.CREATED, status.getExecutionPhase(), "Initial phase should be CREATED");
   }
 
   @Test
@@ -121,11 +121,12 @@ class ExecutionControlIntegrationTest {
     assertTrue(remainingEpochs > 0, "Should have remaining epochs until deadline");
 
     // Test hierarchical deadline levels
-    EpochDeadlineLevels levels = EpochDeadlineLevels.builder()
-        .warningLevel(800L)
-        .criticalLevel(950L)
-        .terminalLevel(1000L)
-        .build();
+    EpochDeadlineLevels levels =
+        EpochDeadlineLevels.builder()
+            .warningLevel(800L)
+            .criticalLevel(950L)
+            .terminalLevel(1000L)
+            .build();
 
     interruptManager.setHierarchicalDeadline(testContextId, levels);
 
@@ -141,8 +142,10 @@ class ExecutionControlIntegrationTest {
     assertNotNull(stats, "Interrupt statistics should be available");
     assertEquals(testContextId, stats.getContextId(), "Statistics should match context");
 
-    logger.info("Interrupt statistics: total={}, success_rate={}",
-        stats.getTotalInterrupts(), stats.getSuccessRate());
+    logger.info(
+        "Interrupt statistics: total={}, success_rate={}",
+        stats.getTotalInterrupts(),
+        stats.getSuccessRate());
   }
 
   @Test
@@ -150,24 +153,26 @@ class ExecutionControlIntegrationTest {
   @DisplayName("Test execution quotas and limits enforcement")
   void testExecutionQuotasEnforcement() throws WasmException {
     // Create quotas with strict enforcement
-    ExecutionQuotas quotas = ExecutionQuotas.builder()
-        .fuelQuota(5000L)
-        .cpuTimeQuota(Duration.ofSeconds(10))
-        .memoryQuota(16 * 1024 * 1024L) // 16MB
-        .ioOperationQuota(100L)
-        .networkRequestQuota(10L)
-        .ioRateLimit(50.0)
-        .enforcementPolicy(ExecutionQuotas.QuotaEnforcementPolicy.STRICT)
-        .enableDynamicAdjustment(true)
-        .overallocationRatio(1.1)
-        .quotaResetPeriod(Duration.ofMinutes(1))
-        .build();
+    ExecutionQuotas quotas =
+        ExecutionQuotas.builder()
+            .fuelQuota(5000L)
+            .cpuTimeQuota(Duration.ofSeconds(10))
+            .memoryQuota(16 * 1024 * 1024L) // 16MB
+            .ioOperationQuota(100L)
+            .networkRequestQuota(10L)
+            .ioRateLimit(50.0)
+            .enforcementPolicy(ExecutionQuotas.QuotaEnforcementPolicy.STRICT)
+            .enableDynamicAdjustment(true)
+            .overallocationRatio(1.1)
+            .quotaResetPeriod(Duration.ofMinutes(1))
+            .build();
 
-    ExecutionContextConfig config = ExecutionContextConfig.builder()
-        .fuelPriority(FuelPriority.NORMAL)
-        .quotas(quotas)
-        .interruptMode(InterruptMode.COOPERATIVE)
-        .build();
+    ExecutionContextConfig config =
+        ExecutionContextConfig.builder()
+            .fuelPriority(FuelPriority.NORMAL)
+            .quotas(quotas)
+            .interruptMode(InterruptMode.COOPERATIVE)
+            .build();
 
     ExecutionContext context = controller.createContext(testContextId, config);
 
@@ -179,12 +184,13 @@ class ExecutionControlIntegrationTest {
     assertNotNull(status.getResourceUsage(), "Resource usage should be tracked");
 
     // Test dynamic quota adjustment
-    LoadBasedQuotaConfig loadConfig = LoadBasedQuotaConfig.builder()
-        .enabled(true)
-        .loadThreshold(0.8)
-        .adjustmentFactor(1.2)
-        .adjustmentInterval(Duration.ofSeconds(30))
-        .build();
+    LoadBasedQuotaConfig loadConfig =
+        LoadBasedQuotaConfig.builder()
+            .enabled(true)
+            .loadThreshold(0.8)
+            .adjustmentFactor(1.2)
+            .adjustmentInterval(Duration.ofSeconds(30))
+            .build();
 
     controller.configureDynamicQuotaAdjustment(testContextId, loadConfig);
 
@@ -199,12 +205,12 @@ class ExecutionControlIntegrationTest {
     ExecutionContext context = controller.createContext(testContextId, config);
 
     // Define execution policies
-    Set<ExecutionPolicy> policies = Set.of(
-        ExecutionPolicy.ENABLE_FUEL_TRACKING,
-        ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING,
-        ExecutionPolicy.ENABLE_RESOURCE_LIMITS,
-        ExecutionPolicy.ENABLE_SECURITY_SANDBOX
-    );
+    Set<ExecutionPolicy> policies =
+        Set.of(
+            ExecutionPolicy.ENABLE_FUEL_TRACKING,
+            ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING,
+            ExecutionPolicy.ENABLE_RESOURCE_LIMITS,
+            ExecutionPolicy.ENABLE_SECURITY_SANDBOX);
 
     // Apply execution policies
     controller.applyExecutionPolicies(testContextId, policies);
@@ -214,9 +220,11 @@ class ExecutionControlIntegrationTest {
     assertNotNull(status, "Execution status should be available");
 
     // Test policy-specific behavior
-    assertTrue(status.isPolicyEnabled(ExecutionPolicy.ENABLE_FUEL_TRACKING),
+    assertTrue(
+        status.isPolicyEnabled(ExecutionPolicy.ENABLE_FUEL_TRACKING),
         "Fuel tracking policy should be enabled");
-    assertTrue(status.isPolicyEnabled(ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING),
+    assertTrue(
+        status.isPolicyEnabled(ExecutionPolicy.ENABLE_PERFORMANCE_MONITORING),
         "Performance monitoring policy should be enabled");
 
     logger.info("Applied {} execution policies", policies.size());
@@ -232,40 +240,44 @@ class ExecutionControlIntegrationTest {
     EpochInterruptManager interruptManager = context.getEpochInterruptManager();
 
     // Configure interrupt recovery
-    InterruptRecoveryConfig recoveryConfig = InterruptRecoveryConfig.builder()
-        .preserveState(true)
-        .maxRecoveryAttempts(3)
-        .recoveryTimeout(Duration.ofSeconds(5))
-        .rollbackOnFailure(true)
-        .build();
+    InterruptRecoveryConfig recoveryConfig =
+        InterruptRecoveryConfig.builder()
+            .preserveState(true)
+            .maxRecoveryAttempts(3)
+            .recoveryTimeout(Duration.ofSeconds(5))
+            .rollbackOnFailure(true)
+            .build();
 
     interruptManager.configureInterruptRecovery(testContextId, recoveryConfig);
 
     // Setup time slicing for cooperative multitasking
-    TimeSlicingConfig slicingConfig = TimeSlicingConfig.builder()
-        .sliceDuration(Duration.ofMillis(100))
-        .yieldPoints(Set.of("function_call", "loop_backedge"))
-        .preemptionThreshold(Duration.ofMillis(200))
-        .build();
+    TimeSlicingConfig slicingConfig =
+        TimeSlicingConfig.builder()
+            .sliceDuration(Duration.ofMillis(100))
+            .yieldPoints(Set.of("function_call", "loop_backedge"))
+            .preemptionThreshold(Duration.ofMillis(200))
+            .build();
 
     interruptManager.setupTimeSlicing(testContextId, slicingConfig);
 
     // Create interrupt points for safe interruption
-    InterruptPointConfig pointConfig = InterruptPointConfig.builder()
-        .safePoint(true)
-        .atomicProtection(false)
-        .statePreservation(true)
-        .build();
+    InterruptPointConfig pointConfig =
+        InterruptPointConfig.builder()
+            .safePoint(true)
+            .atomicProtection(false)
+            .statePreservation(true)
+            .build();
 
     String interruptPointId = interruptManager.createInterruptPoint(testContextId, pointConfig);
     assertNotNull(interruptPointId, "Interrupt point should be created");
 
     // Test interrupt protection
-    InterruptProtectionConfig protectionConfig = InterruptProtectionConfig.builder()
-        .protectionType(ProtectionType.ATOMIC_OPERATION)
-        .maxDuration(Duration.ofSeconds(1))
-        .emergencyOverride(true)
-        .build();
+    InterruptProtectionConfig protectionConfig =
+        InterruptProtectionConfig.builder()
+            .protectionType(ProtectionType.ATOMIC_OPERATION)
+            .maxDuration(Duration.ofSeconds(1))
+            .emergencyOverride(true)
+            .build();
 
     String protectionId = interruptManager.protectFromInterruption(testContextId, protectionConfig);
     assertNotNull(protectionId, "Interrupt protection should be established");
@@ -284,33 +296,36 @@ class ExecutionControlIntegrationTest {
     ExecutionContext context = controller.createContext(testContextId, config);
 
     // Enable comprehensive monitoring
-    ExecutionMonitoringConfig monitoringConfig = ExecutionMonitoringConfig.builder()
-        .enableFuelTracking(true)
-        .enablePerformanceMetrics(true)
-        .enableResourceUsage(true)
-        .enableAnomalyDetection(true)
-        .metricsInterval(Duration.ofSeconds(1))
-        .build();
+    ExecutionMonitoringConfig monitoringConfig =
+        ExecutionMonitoringConfig.builder()
+            .enableFuelTracking(true)
+            .enablePerformanceMetrics(true)
+            .enableResourceUsage(true)
+            .enableAnomalyDetection(true)
+            .metricsInterval(Duration.ofSeconds(1))
+            .build();
 
     controller.enableMonitoring(testContextId, monitoringConfig);
 
     // Configure execution tracing
-    ExecutionTracingConfig tracingConfig = ExecutionTracingConfig.builder()
-        .enableFunctionTracing(true)
-        .enableInstructionTracing(true)
-        .enableMemoryTracing(true)
-        .traceBufferSize(1024 * 1024) // 1MB buffer
-        .build();
+    ExecutionTracingConfig tracingConfig =
+        ExecutionTracingConfig.builder()
+            .enableFunctionTracing(true)
+            .enableInstructionTracing(true)
+            .enableMemoryTracing(true)
+            .traceBufferSize(1024 * 1024) // 1MB buffer
+            .build();
 
     controller.configureTracing(testContextId, tracingConfig);
 
     // Enable anomaly detection
-    AnomalyDetectionConfig anomalyConfig = AnomalyDetectionConfig.builder()
-        .enabled(true)
-        .sensitivity(0.8)
-        .detectionWindow(Duration.ofMinutes(5))
-        .anomalyThreshold(0.95)
-        .build();
+    AnomalyDetectionConfig anomalyConfig =
+        AnomalyDetectionConfig.builder()
+            .enabled(true)
+            .sensitivity(0.8)
+            .detectionWindow(Duration.ofMinutes(5))
+            .anomalyThreshold(0.95)
+            .build();
 
     controller.enableAnomalyDetection(testContextId, anomalyConfig);
 
@@ -320,17 +335,19 @@ class ExecutionControlIntegrationTest {
     assertNotNull(analytics, "Execution analytics should be available");
 
     // Export execution trace
-    TraceFilter traceFilter = TraceFilter.builder()
-        .startTime(java.time.Instant.now().minusSeconds(60))
-        .endTime(java.time.Instant.now())
-        .traceTypes(Set.of(TraceType.FUNCTION_CALLS, TraceType.FUEL_CONSUMPTION))
-        .maxEntries(1000)
-        .build();
+    TraceFilter traceFilter =
+        TraceFilter.builder()
+            .startTime(java.time.Instant.now().minusSeconds(60))
+            .endTime(java.time.Instant.now())
+            .traceTypes(Set.of(TraceType.FUNCTION_CALLS, TraceType.FUEL_CONSUMPTION))
+            .maxEntries(1000)
+            .build();
 
     ExecutionTraceData traceData = controller.exportExecutionTrace(testContextId, traceFilter);
     assertNotNull(traceData, "Execution trace data should be available");
 
-    logger.info("Analytics and monitoring configured. Trace entries: {}", traceData.getEntryCount());
+    logger.info(
+        "Analytics and monitoring configured. Trace entries: {}", traceData.getEntryCount());
   }
 
   @Test
@@ -341,14 +358,15 @@ class ExecutionControlIntegrationTest {
     ExecutionContext context = controller.createContext(testContextId, config);
 
     // Configure detailed tracing
-    ExecutionTracingConfig tracingConfig = ExecutionTracingConfig.builder()
-        .enableFunctionTracing(true)
-        .enableInstructionTracing(true)
-        .enableMemoryTracing(true)
-        .enableStackTracing(true)
-        .traceBufferSize(2 * 1024 * 1024) // 2MB buffer
-        .compressionEnabled(true)
-        .build();
+    ExecutionTracingConfig tracingConfig =
+        ExecutionTracingConfig.builder()
+            .enableFunctionTracing(true)
+            .enableInstructionTracing(true)
+            .enableMemoryTracing(true)
+            .enableStackTracing(true)
+            .traceBufferSize(2 * 1024 * 1024) // 2MB buffer
+            .compressionEnabled(true)
+            .build();
 
     controller.configureTracing(testContextId, tracingConfig);
 
@@ -356,20 +374,21 @@ class ExecutionControlIntegrationTest {
     simulateExecution(context);
 
     // Export detailed trace for debugging
-    TraceFilter debugFilter = TraceFilter.builder()
-        .startTime(java.time.Instant.now().minusMinutes(1))
-        .endTime(java.time.Instant.now())
-        .traceTypes(Set.of(
-            TraceType.FUNCTION_CALLS,
-            TraceType.INSTRUCTION_EXECUTION,
-            TraceType.MEMORY_OPERATIONS,
-            TraceType.FUEL_CONSUMPTION,
-            TraceType.INTERRUPT_EVENTS
-        ))
-        .maxEntries(5000)
-        .includeStackTraces(true)
-        .includeTimestamps(true)
-        .build();
+    TraceFilter debugFilter =
+        TraceFilter.builder()
+            .startTime(java.time.Instant.now().minusMinutes(1))
+            .endTime(java.time.Instant.now())
+            .traceTypes(
+                Set.of(
+                    TraceType.FUNCTION_CALLS,
+                    TraceType.INSTRUCTION_EXECUTION,
+                    TraceType.MEMORY_OPERATIONS,
+                    TraceType.FUEL_CONSUMPTION,
+                    TraceType.INTERRUPT_EVENTS))
+            .maxEntries(5000)
+            .includeStackTraces(true)
+            .includeTimestamps(true)
+            .build();
 
     ExecutionTraceData debugTrace = controller.exportExecutionTrace(testContextId, debugFilter);
     assertNotNull(debugTrace, "Debug trace should be available");
@@ -379,8 +398,10 @@ class ExecutionControlIntegrationTest {
     TraceAnalysis analysis = debugTrace.analyze();
     assertNotNull(analysis, "Trace analysis should be available");
 
-    logger.info("Debug trace captured {} entries with analysis: {}",
-        debugTrace.getEntryCount(), analysis.getSummary());
+    logger.info(
+        "Debug trace captured {} entries with analysis: {}",
+        debugTrace.getEntryCount(),
+        analysis.getSummary());
   }
 
   @Test
@@ -396,11 +417,12 @@ class ExecutionControlIntegrationTest {
 
     // Setup fair resource allocation between contexts
     Set<String> contextIds = Set.of(context1Id, context2Id);
-    FairAllocationStrategy allocationStrategy = FairAllocationStrategy.builder()
-        .allocationMode(AllocationMode.WEIGHTED_FAIR)
-        .fairnessWeight(0.8)
-        .rebalanceInterval(Duration.ofSeconds(10))
-        .build();
+    FairAllocationStrategy allocationStrategy =
+        FairAllocationStrategy.builder()
+            .allocationMode(AllocationMode.WEIGHTED_FAIR)
+            .fairnessWeight(0.8)
+            .rebalanceInterval(Duration.ofSeconds(10))
+            .build();
 
     controller.setupFairResourceAllocation(contextIds, allocationStrategy);
 
@@ -411,11 +433,12 @@ class ExecutionControlIntegrationTest {
     controller.resumeExecution(context1Id, pauseToken1);
 
     // Test dynamic parameter adjustment
-    ExecutionAdjustments adjustments = ExecutionAdjustments.builder()
-        .fuelAdjustment(2000L)
-        .priorityAdjustment(FuelPriority.HIGH)
-        .resourceAdjustments(Map.of("memory", 32 * 1024 * 1024L))
-        .build();
+    ExecutionAdjustments adjustments =
+        ExecutionAdjustments.builder()
+            .fuelAdjustment(2000L)
+            .priorityAdjustment(FuelPriority.HIGH)
+            .resourceAdjustments(Map.of("memory", 32 * 1024 * 1024L))
+            .build();
 
     controller.adjustExecutionParameters(context1Id, adjustments);
 
@@ -429,8 +452,10 @@ class ExecutionControlIntegrationTest {
     assertNotNull(validation, "Validation result should be available");
     assertTrue(validation.isValid(), "Controller should be in valid state");
 
-    logger.info("Production management test completed. Active contexts: {}, Total fuel: {}",
-        stats.getActiveContexts(), stats.getTotalFuelAllocated());
+    logger.info(
+        "Production management test completed. Active contexts: {}, Total fuel: {}",
+        stats.getActiveContexts(),
+        stats.getTotalFuelAllocated());
   }
 
   @Test
@@ -441,11 +466,12 @@ class ExecutionControlIntegrationTest {
     ExecutionContext context = controller.createContext(testContextId, config);
 
     // Test normal termination
-    ExecutionTerminationConfig terminationConfig = ExecutionTerminationConfig.builder()
-        .forceTermination(false)
-        .cleanupResources(true)
-        .terminationTimeout(Duration.ofSeconds(5))
-        .build();
+    ExecutionTerminationConfig terminationConfig =
+        ExecutionTerminationConfig.builder()
+            .forceTermination(false)
+            .cleanupResources(true)
+            .terminationTimeout(Duration.ofSeconds(5))
+            .build();
 
     controller.terminateExecution(testContextId, terminationConfig);
 
@@ -458,7 +484,9 @@ class ExecutionControlIntegrationTest {
 
     // Verify context is terminated
     ExecutionStatus status = controller.getExecutionStatus(emergencyContextId);
-    assertEquals(ExecutionPhase.TERMINATED, status.getExecutionPhase(),
+    assertEquals(
+        ExecutionPhase.TERMINATED,
+        status.getExecutionPhase(),
         "Context should be in terminated state");
 
     logger.info("Termination tests completed successfully");
@@ -474,25 +502,29 @@ class ExecutionControlIntegrationTest {
 
     for (int i = 0; i < contextCount; i++) {
       final String contextId = testContextId + "-concurrent-" + i;
-      futures[i] = CompletableFuture.runAsync(() -> {
-        try {
-          ExecutionContextConfig config = createDefaultConfig();
-          ExecutionContext context = controller.createContext(contextId, config);
+      futures[i] =
+          CompletableFuture.runAsync(
+              () -> {
+                try {
+                  ExecutionContextConfig config = createDefaultConfig();
+                  ExecutionContext context = controller.createContext(contextId, config);
 
-          // Perform concurrent operations
-          context.getFuelManager().allocateFuel(contextId, 1000L, FuelPriority.NORMAL);
-          context.getFuelManager().consumeFuel(contextId, 100L);
+                  // Perform concurrent operations
+                  context.getFuelManager().allocateFuel(contextId, 1000L, FuelPriority.NORMAL);
+                  context.getFuelManager().consumeFuel(contextId, 100L);
 
-          context.getEpochInterruptManager().setEpochDeadline(contextId, 100L, InterruptMode.COOPERATIVE);
+                  context
+                      .getEpochInterruptManager()
+                      .setEpochDeadline(contextId, 100L, InterruptMode.COOPERATIVE);
 
-          // Get statistics
-          ExecutionStatus status = controller.getExecutionStatus(contextId);
-          assertNotNull(status, "Status should be available for " + contextId);
+                  // Get statistics
+                  ExecutionStatus status = controller.getExecutionStatus(contextId);
+                  assertNotNull(status, "Status should be available for " + contextId);
 
-        } catch (Exception e) {
-          throw new RuntimeException("Concurrent execution failed for " + contextId, e);
-        }
-      });
+                } catch (Exception e) {
+                  throw new RuntimeException("Concurrent execution failed for " + contextId, e);
+                }
+              });
     }
 
     // Wait for all concurrent operations to complete
@@ -500,7 +532,8 @@ class ExecutionControlIntegrationTest {
 
     // Verify controller state
     ControllerStatistics stats = controller.getControllerStatistics();
-    assertTrue(stats.getActiveContexts() >= contextCount,
+    assertTrue(
+        stats.getActiveContexts() >= contextCount,
         "Should have at least " + contextCount + " active contexts");
 
     logger.info("Concurrent execution test completed with {} contexts", contextCount);
@@ -524,10 +557,12 @@ class ExecutionControlIntegrationTest {
 
     long endTime = System.nanoTime();
     long totalTimeNanos = endTime - startTime;
-    double avgTimePerOperation = totalTimeNanos / (double)(iterations * 2); // 2 operations per iteration
+    double avgTimePerOperation =
+        totalTimeNanos / (double) (iterations * 2); // 2 operations per iteration
 
     // Performance assertions (adjust thresholds based on requirements)
-    assertTrue(avgTimePerOperation < 1_000_000, // Less than 1ms per operation
+    assertTrue(
+        avgTimePerOperation < 1_000_000, // Less than 1ms per operation
         "Average operation time should be under 1ms, was: " + avgTimePerOperation + "ns");
 
     // Test epoch increment performance
@@ -540,13 +575,16 @@ class ExecutionControlIntegrationTest {
 
     endTime = System.nanoTime();
     long epochIncrementTime = endTime - startTime;
-    double avgEpochTime = epochIncrementTime / (double)iterations;
+    double avgEpochTime = epochIncrementTime / (double) iterations;
 
-    assertTrue(avgEpochTime < 100_000, // Less than 0.1ms per epoch increment
+    assertTrue(
+        avgEpochTime < 100_000, // Less than 0.1ms per epoch increment
         "Average epoch increment time should be under 0.1ms, was: " + avgEpochTime + "ns");
 
-    logger.info("Performance test completed. Avg fuel operation: {}ns, Avg epoch increment: {}ns",
-        avgTimePerOperation, avgEpochTime);
+    logger.info(
+        "Performance test completed. Avg fuel operation: {}ns, Avg epoch increment: {}ns",
+        avgTimePerOperation,
+        avgEpochTime);
   }
 
   // Helper methods
@@ -568,11 +606,12 @@ class ExecutionControlIntegrationTest {
   private ExecutionContextConfig createHighPriorityConfig() {
     return ExecutionContextConfig.builder()
         .fuelPriority(FuelPriority.HIGH)
-        .quotas(ExecutionQuotas.builder()
-            .fuelQuota(50000L)
-            .cpuTimeQuota(Duration.ofSeconds(60))
-            .memoryQuota(128 * 1024 * 1024L)
-            .build())
+        .quotas(
+            ExecutionQuotas.builder()
+                .fuelQuota(50000L)
+                .cpuTimeQuota(Duration.ofSeconds(60))
+                .memoryQuota(128 * 1024 * 1024L)
+                .build())
         .interruptMode(InterruptMode.PREEMPTIVE)
         .build();
   }
@@ -580,11 +619,12 @@ class ExecutionControlIntegrationTest {
   private ExecutionContextConfig createLowPriorityConfig() {
     return ExecutionContextConfig.builder()
         .fuelPriority(FuelPriority.LOW)
-        .quotas(ExecutionQuotas.builder()
-            .fuelQuota(10000L)
-            .cpuTimeQuota(Duration.ofSeconds(15))
-            .memoryQuota(32 * 1024 * 1024L)
-            .build())
+        .quotas(
+            ExecutionQuotas.builder()
+                .fuelQuota(10000L)
+                .cpuTimeQuota(Duration.ofSeconds(15))
+                .memoryQuota(32 * 1024 * 1024L)
+                .build())
         .interruptMode(InterruptMode.GRACEFUL)
         .build();
   }
@@ -627,7 +667,8 @@ class ExecutionControlIntegrationTest {
 
   // Mock/test execution controller for testing
   private static class TestExecutionController implements ExecutionController {
-    private final Map<String, TestExecutionContext> contexts = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, TestExecutionContext> contexts =
+        new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
     public ExecutionContext createContext(String contextId, ExecutionContextConfig config) {
@@ -663,7 +704,8 @@ class ExecutionControlIntegrationTest {
     }
 
     @Override
-    public CompletableFuture<ExecutionResult> startExecution(String contextId, ExecutionRequest executionRequest) {
+    public CompletableFuture<ExecutionResult> startExecution(
+        String contextId, ExecutionRequest executionRequest) {
       return CompletableFuture.completedFuture(new TestExecutionResult());
     }
 
@@ -708,20 +750,24 @@ class ExecutionControlIntegrationTest {
 
     @Override
     public void emergencyTermination(String contextId, String reason) {
-      terminateExecution(contextId, ExecutionTerminationConfig.builder()
-          .forceTermination(true)
-          .cleanupResources(true)
-          .terminationTimeout(Duration.ZERO)
-          .build());
+      terminateExecution(
+          contextId,
+          ExecutionTerminationConfig.builder()
+              .forceTermination(true)
+              .cleanupResources(true)
+              .terminationTimeout(Duration.ZERO)
+              .build());
     }
 
     @Override
-    public void setupFairResourceAllocation(Set<String> contextIds, FairAllocationStrategy allocationStrategy) {
+    public void setupFairResourceAllocation(
+        Set<String> contextIds, FairAllocationStrategy allocationStrategy) {
       // Test implementation
     }
 
     @Override
-    public void configureDynamicQuotaAdjustment(String contextId, LoadBasedQuotaConfig loadBasedConfig) {
+    public void configureDynamicQuotaAdjustment(
+        String contextId, LoadBasedQuotaConfig loadBasedConfig) {
       // Test implementation
     }
 
@@ -744,10 +790,9 @@ class ExecutionControlIntegrationTest {
     @Override
     public Map<String, ExecutionState> getActiveContexts() {
       return contexts.entrySet().stream()
-          .collect(java.util.stream.Collectors.toMap(
-              Map.Entry::getKey,
-              e -> e.getValue().getExecutionState()
-          ));
+          .collect(
+              java.util.stream.Collectors.toMap(
+                  Map.Entry::getKey, e -> e.getValue().getExecutionState()));
     }
 
     @Override

@@ -152,7 +152,7 @@ class MultiValueFunctionTest {
 
     @Test
     @DisplayName("Should validate multi-value limits")
-    void testMultiValueLimits() {
+    void testMultiValueLimits() throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
       // Valid case - within limits
       WasmValue[] validArray = new WasmValue[10];
       for (int i = 0; i < 10; i++) {

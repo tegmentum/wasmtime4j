@@ -363,6 +363,13 @@ pub enum WasmtimeError {
         /// Error message describing the compilation error
         message: String,
     },
+
+    /// Deadlock detection error
+    #[error("Operation would cause deadlock: {message}")]
+    WouldDeadlock {
+        /// Error message describing the potential deadlock
+        message: String,
+    },
 }
 
 impl Clone for WasmtimeError {
@@ -419,6 +426,7 @@ impl Clone for WasmtimeError {
             WasmtimeError::Concurrency { message } => WasmtimeError::Concurrency { message: message.clone() },
             WasmtimeError::Wasi { message } => WasmtimeError::Wasi { message: message.clone() },
             WasmtimeError::Security { message } => WasmtimeError::Security { message: message.clone() },
+            WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock { message: message.clone() },
         }
     }
 }
@@ -555,6 +563,7 @@ impl WasmtimeError {
             WasmtimeError::UnsupportedFeature { .. } => ErrorCode::UnsupportedOperation,
             WasmtimeError::SystemError { .. } => ErrorCode::InternalError,
             WasmtimeError::CompilationError { .. } => ErrorCode::CompilationError,
+            WasmtimeError::WouldDeadlock { .. } => ErrorCode::ConcurrencyError,
         }
     }
 
@@ -728,6 +737,21 @@ impl WasmtimeError {
                 // Default recovery time
                 std::time::Duration::from_millis(25)
             }
+        }
+    }
+
+    /// Enhance compilation error message with additional context
+    pub fn enhance_compilation_error_message(base_message: &str) -> Self {
+        WasmtimeError::Compilation {
+            message: format!("Enhanced compilation error: {}", base_message),
+        }
+    }
+
+    /// Enhance runtime error message with additional context
+    pub fn enhance_runtime_error_message(base_message: &str) -> Self {
+        WasmtimeError::Runtime {
+            message: format!("Enhanced runtime error: {}", base_message),
+            backtrace: None,
         }
     }
 }

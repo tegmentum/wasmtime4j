@@ -1,16 +1,10 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitEvolutionMetrics;
-import ai.tegmentum.wasmtime4j.WitEvolutionOperation;
-import ai.tegmentum.wasmtime4j.WitEvolutionResult;
-import ai.tegmentum.wasmtime4j.WitEvolutionValidation;
-import ai.tegmentum.wasmtime4j.WitInterfaceBindings;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.WitInterfaceEvolution;
 import ai.tegmentum.wasmtime4j.WitTypeAdapter;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
-
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -22,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,9 +25,9 @@ import java.util.logging.Logger;
 /**
  * Panama implementation of WIT interface evolution support.
  *
- * <p>This class provides Panama Foreign Function Interface implementation for WebAssembly
- * Interface Type evolution, including backward compatibility checking, type adaptation,
- * and interface migration using Java 23+ Panama FFI.
+ * <p>This class provides Panama Foreign Function Interface implementation for WebAssembly Interface
+ * Type evolution, including backward compatibility checking, type adaptation, and interface
+ * migration using Java 23+ Panama FFI.
  *
  * <p>Thread-safe implementation with proper resource management and native memory handling.
  *
@@ -42,31 +35,33 @@ import java.util.logging.Logger;
  */
 public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution {
 
-  private static final Logger LOGGER = Logger.getLogger(PanamaWitInterfaceEvolution.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(PanamaWitInterfaceEvolution.class.getName());
 
-  /** Arena for native memory management */
+  /** Arena for native memory management. */
   private final Arena arena;
 
-  /** Native handle for the evolution manager */
+  /** Native handle for the evolution manager. */
   private volatile MemorySegment evolutionManagerHandle;
 
-  /** Registered interface versions */
+  /** Registered interface versions. */
   private final Map<String, List<WitInterfaceVersion>> versionRegistry = new ConcurrentHashMap<>();
 
-  /** Type adapter registry */
+  /** Type adapter registry. */
   private final Map<String, WitTypeAdapter> adapterRegistry = new ConcurrentHashMap<>();
 
-  /** Evolution metrics */
+  /** Evolution metrics. */
   private final WitEvolutionMetrics.Builder metricsBuilder = WitEvolutionMetrics.builder();
 
-  /** Lock for thread-safe operations */
+  /** Lock for thread-safe operations. */
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-  /** Native library symbol lookup */
+  /** Native library symbol lookup. */
   private static final SymbolLookup NATIVE_LOOKUP;
 
-  /** Native method handles */
+  /** Native method handles. */
   private static final MethodHandle CREATE_EVOLUTION_MANAGER;
+
   private static final MethodHandle DESTROY_EVOLUTION_MANAGER;
   private static final MethodHandle ANALYZE_EVOLUTION;
   private static final MethodHandle CHECK_BACKWARD_COMPATIBILITY;
@@ -89,75 +84,126 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
       // Initialize method handles
       final Linker linker = Linker.nativeLinker();
 
-      CREATE_EVOLUTION_MANAGER = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_create_evolution_manager").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS));
+      CREATE_EVOLUTION_MANAGER =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_create_evolution_manager").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.ADDRESS));
 
-      DESTROY_EVOLUTION_MANAGER = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_destroy_evolution_manager").orElseThrow(),
-          FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+      DESTROY_EVOLUTION_MANAGER =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_destroy_evolution_manager").orElseThrow(),
+              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-      ANALYZE_EVOLUTION = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_analyze_evolution").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      ANALYZE_EVOLUTION =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_analyze_evolution").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      CHECK_BACKWARD_COMPATIBILITY = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_check_backward_compatibility").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      CHECK_BACKWARD_COMPATIBILITY =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_check_backward_compatibility").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      CHECK_FORWARD_COMPATIBILITY = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_check_forward_compatibility").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      CHECK_FORWARD_COMPATIBILITY =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_check_forward_compatibility").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      CREATE_ADAPTER = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_create_adapter").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      CREATE_ADAPTER =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_create_adapter").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      VALIDATE_EVOLUTION_STRATEGY = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_validate_evolution_strategy").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      VALIDATE_EVOLUTION_STRATEGY =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_validate_evolution_strategy").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-      CREATE_MIGRATION_PLAN = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_create_migration_plan").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      CREATE_MIGRATION_PLAN =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_create_migration_plan").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      EXECUTE_MIGRATION = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_execute_migration").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      EXECUTE_MIGRATION =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_execute_migration").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-      GET_EVOLUTION_HISTORY = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_get_evolution_history").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      GET_EVOLUTION_HISTORY =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_get_evolution_history").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-      REGISTER_INTERFACE_VERSION = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_register_interface_version").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      REGISTER_INTERFACE_VERSION =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_register_interface_version").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      DEPRECATE_INTERFACE_VERSION = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_deprecate_interface_version").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      DEPRECATE_INTERFACE_VERSION =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_deprecate_interface_version").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
-      GET_INTERFACE_VERSIONS = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_get_interface_versions").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      GET_INTERFACE_VERSIONS =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_get_interface_versions").orElseThrow(),
+              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-      FIND_COMPATIBLE_VERSION = linker.downcallHandle(
-          NATIVE_LOOKUP.find("wasmtime4j_find_compatible_version").orElseThrow(),
-          FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-              ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+      FIND_COMPATIBLE_VERSION =
+          linker.downcallHandle(
+              NATIVE_LOOKUP.find("wasmtime4j_find_compatible_version").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS));
 
       LOGGER.info("Initialized Panama WIT interface evolution method handles");
 
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to initialize Panama WIT interface evolution", e);
-      throw new ExceptionInInitializerError("Failed to initialize Panama WIT interface evolution: " + e.getMessage());
+      throw new ExceptionInInitializerError(
+          "Failed to initialize Panama WIT interface evolution: " + e.getMessage());
     }
   }
 
@@ -183,8 +229,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
   @Override
   public InterfaceEvolutionAnalysis analyzeEvolution(
-      final WitInterfaceVersion fromVersion,
-      final WitInterfaceVersion toVersion) {
+      final WitInterfaceVersion fromVersion, final WitInterfaceVersion toVersion) {
     Objects.requireNonNull(fromVersion, "fromVersion must not be null");
     Objects.requireNonNull(toVersion, "toVersion must not be null");
 
@@ -194,15 +239,19 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment fromVersionStr = createNativeString(fromVersion.getVersion());
       final MemorySegment toVersionStr = createNativeString(toVersion.getVersion());
-      final MemorySegment fromInterfaceStr = createNativeString(serializeInterface(fromVersion.getInterface()));
-      final MemorySegment toInterfaceStr = createNativeString(serializeInterface(toVersion.getInterface()));
+      final MemorySegment fromInterfaceStr =
+          createNativeString(serializeInterface(fromVersion.getInterface()));
+      final MemorySegment toInterfaceStr =
+          createNativeString(serializeInterface(toVersion.getInterface()));
 
-      final MemorySegment analysisHandle = (MemorySegment) ANALYZE_EVOLUTION.invokeExact(
-          evolutionManagerHandle,
-          fromVersionStr,
-          toVersionStr,
-          fromInterfaceStr,
-          toInterfaceStr);
+      final MemorySegment analysisHandle =
+          (MemorySegment)
+              ANALYZE_EVOLUTION.invokeExact(
+                  evolutionManagerHandle,
+                  fromVersionStr,
+                  toVersionStr,
+                  fromInterfaceStr,
+                  toInterfaceStr);
 
       if (analysisHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to analyze interface evolution");
@@ -220,8 +269,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
   @Override
   public BackwardCompatibilityResult checkBackwardCompatibility(
-      final WitInterfaceVersion olderVersion,
-      final WitInterfaceVersion newerVersion) {
+      final WitInterfaceVersion olderVersion, final WitInterfaceVersion newerVersion) {
     Objects.requireNonNull(olderVersion, "olderVersion must not be null");
     Objects.requireNonNull(newerVersion, "newerVersion must not be null");
 
@@ -231,15 +279,19 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment olderVersionStr = createNativeString(olderVersion.getVersion());
       final MemorySegment newerVersionStr = createNativeString(newerVersion.getVersion());
-      final MemorySegment olderInterfaceStr = createNativeString(serializeInterface(olderVersion.getInterface()));
-      final MemorySegment newerInterfaceStr = createNativeString(serializeInterface(newerVersion.getInterface()));
+      final MemorySegment olderInterfaceStr =
+          createNativeString(serializeInterface(olderVersion.getInterface()));
+      final MemorySegment newerInterfaceStr =
+          createNativeString(serializeInterface(newerVersion.getInterface()));
 
-      final MemorySegment compatibilityHandle = (MemorySegment) CHECK_BACKWARD_COMPATIBILITY.invokeExact(
-          evolutionManagerHandle,
-          olderVersionStr,
-          newerVersionStr,
-          olderInterfaceStr,
-          newerInterfaceStr);
+      final MemorySegment compatibilityHandle =
+          (MemorySegment)
+              CHECK_BACKWARD_COMPATIBILITY.invokeExact(
+                  evolutionManagerHandle,
+                  olderVersionStr,
+                  newerVersionStr,
+                  olderInterfaceStr,
+                  newerInterfaceStr);
 
       if (compatibilityHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to check backward compatibility");
@@ -257,8 +309,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
   @Override
   public ForwardCompatibilityResult checkForwardCompatibility(
-      final WitInterfaceVersion newerVersion,
-      final WitInterfaceVersion olderVersion) {
+      final WitInterfaceVersion newerVersion, final WitInterfaceVersion olderVersion) {
     Objects.requireNonNull(newerVersion, "newerVersion must not be null");
     Objects.requireNonNull(olderVersion, "olderVersion must not be null");
 
@@ -268,15 +319,19 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment newerVersionStr = createNativeString(newerVersion.getVersion());
       final MemorySegment olderVersionStr = createNativeString(olderVersion.getVersion());
-      final MemorySegment newerInterfaceStr = createNativeString(serializeInterface(newerVersion.getInterface()));
-      final MemorySegment olderInterfaceStr = createNativeString(serializeInterface(olderVersion.getInterface()));
+      final MemorySegment newerInterfaceStr =
+          createNativeString(serializeInterface(newerVersion.getInterface()));
+      final MemorySegment olderInterfaceStr =
+          createNativeString(serializeInterface(olderVersion.getInterface()));
 
-      final MemorySegment compatibilityHandle = (MemorySegment) CHECK_FORWARD_COMPATIBILITY.invokeExact(
-          evolutionManagerHandle,
-          newerVersionStr,
-          olderVersionStr,
-          newerInterfaceStr,
-          olderInterfaceStr);
+      final MemorySegment compatibilityHandle =
+          (MemorySegment)
+              CHECK_FORWARD_COMPATIBILITY.invokeExact(
+                  evolutionManagerHandle,
+                  newerVersionStr,
+                  olderVersionStr,
+                  newerInterfaceStr,
+                  olderInterfaceStr);
 
       if (compatibilityHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to check forward compatibility");
@@ -307,17 +362,22 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment sourceVersionStr = createNativeString(sourceVersion.getVersion());
       final MemorySegment targetVersionStr = createNativeString(targetVersion.getVersion());
-      final MemorySegment sourceInterfaceStr = createNativeString(serializeInterface(sourceVersion.getInterface()));
-      final MemorySegment targetInterfaceStr = createNativeString(serializeInterface(targetVersion.getInterface()));
-      final MemorySegment adaptationConfigStr = createNativeString(serializeAdaptationConfig(adaptationConfig));
+      final MemorySegment sourceInterfaceStr =
+          createNativeString(serializeInterface(sourceVersion.getInterface()));
+      final MemorySegment targetInterfaceStr =
+          createNativeString(serializeInterface(targetVersion.getInterface()));
+      final MemorySegment adaptationConfigStr =
+          createNativeString(serializeAdaptationConfig(adaptationConfig));
 
-      final MemorySegment adapterHandle = (MemorySegment) CREATE_ADAPTER.invokeExact(
-          evolutionManagerHandle,
-          sourceVersionStr,
-          targetVersionStr,
-          sourceInterfaceStr,
-          targetInterfaceStr,
-          adaptationConfigStr);
+      final MemorySegment adapterHandle =
+          (MemorySegment)
+              CREATE_ADAPTER.invokeExact(
+                  evolutionManagerHandle,
+                  sourceVersionStr,
+                  targetVersionStr,
+                  sourceInterfaceStr,
+                  targetInterfaceStr,
+                  adaptationConfigStr);
 
       if (adapterHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to create interface adapter");
@@ -344,9 +404,9 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment strategyStr = createNativeString(serializeEvolutionStrategy(strategy));
 
-      final MemorySegment validationHandle = (MemorySegment) VALIDATE_EVOLUTION_STRATEGY.invokeExact(
-          evolutionManagerHandle,
-          strategyStr);
+      final MemorySegment validationHandle =
+          (MemorySegment)
+              VALIDATE_EVOLUTION_STRATEGY.invokeExact(evolutionManagerHandle, strategyStr);
 
       if (validationHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to validate evolution strategy");
@@ -375,15 +435,20 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     try {
       checkNativeHandle();
 
-      final MemorySegment currentInterfaceStr = createNativeString(serializeInterface(currentInterface));
-      final MemorySegment targetInterfaceStr = createNativeString(serializeInterface(targetInterface));
-      final MemorySegment migrationConfigStr = createNativeString(serializeMigrationConfig(migrationConfig));
+      final MemorySegment currentInterfaceStr =
+          createNativeString(serializeInterface(currentInterface));
+      final MemorySegment targetInterfaceStr =
+          createNativeString(serializeInterface(targetInterface));
+      final MemorySegment migrationConfigStr =
+          createNativeString(serializeMigrationConfig(migrationConfig));
 
-      final MemorySegment planHandle = (MemorySegment) CREATE_MIGRATION_PLAN.invokeExact(
-          evolutionManagerHandle,
-          currentInterfaceStr,
-          targetInterfaceStr,
-          migrationConfigStr);
+      final MemorySegment planHandle =
+          (MemorySegment)
+              CREATE_MIGRATION_PLAN.invokeExact(
+                  evolutionManagerHandle,
+                  currentInterfaceStr,
+                  targetInterfaceStr,
+                  migrationConfigStr);
 
       if (planHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to create migration plan");
@@ -400,8 +465,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
   }
 
   @Override
-  public MigrationExecutionResult executeMigration(
-      final InterfaceMigrationPlan migrationPlan) {
+  public MigrationExecutionResult executeMigration(final InterfaceMigrationPlan migrationPlan) {
     Objects.requireNonNull(migrationPlan, "migrationPlan must not be null");
 
     lock.writeLock().lock();
@@ -413,9 +477,9 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
       }
 
       final PanamaInterfaceMigrationPlan panamaPlan = (PanamaInterfaceMigrationPlan) migrationPlan;
-      final MemorySegment executionHandle = (MemorySegment) EXECUTE_MIGRATION.invokeExact(
-          evolutionManagerHandle,
-          panamaPlan.getHandle());
+      final MemorySegment executionHandle =
+          (MemorySegment)
+              EXECUTE_MIGRATION.invokeExact(evolutionManagerHandle, panamaPlan.getHandle());
 
       if (executionHandle.address() == 0L) {
         throw new WasmRuntimeException("Failed to execute migration");
@@ -444,18 +508,20 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment interfaceNameStr = createNativeString(interfaceName);
 
-      final MemorySegment historyHandle = (MemorySegment) GET_EVOLUTION_HISTORY.invokeExact(
-          evolutionManagerHandle,
-          interfaceNameStr);
+      final MemorySegment historyHandle =
+          (MemorySegment)
+              GET_EVOLUTION_HISTORY.invokeExact(evolutionManagerHandle, interfaceNameStr);
 
       if (historyHandle.address() == 0L) {
-        throw new WasmRuntimeException("Failed to get evolution history for interface: " + interfaceName);
+        throw new WasmRuntimeException(
+            "Failed to get evolution history for interface: " + interfaceName);
       }
 
       return new PanamaInterfaceEvolutionHistory(arena, historyHandle);
 
     } catch (final Throwable e) {
-      LOGGER.log(Level.SEVERE, "Failed to get evolution history for interface: " + interfaceName, e);
+      LOGGER.log(
+          Level.SEVERE, "Failed to get evolution history for interface: " + interfaceName, e);
       throw new WasmRuntimeException("Evolution history retrieval failed", e);
     } finally {
       lock.readLock().unlock();
@@ -470,25 +536,32 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     try {
       checkNativeHandle();
 
-      final MemorySegment interfaceNameStr = createNativeString(interfaceVersion.getInterfaceName());
+      final MemorySegment interfaceNameStr =
+          createNativeString(interfaceVersion.getInterfaceName());
       final MemorySegment versionStr = createNativeString(interfaceVersion.getVersion());
-      final MemorySegment interfaceDefStr = createNativeString(serializeInterface(interfaceVersion.getInterface()));
+      final MemorySegment interfaceDefStr =
+          createNativeString(serializeInterface(interfaceVersion.getInterface()));
 
-      final boolean success = (boolean) REGISTER_INTERFACE_VERSION.invokeExact(
-          evolutionManagerHandle,
-          interfaceNameStr,
-          versionStr,
-          interfaceDefStr);
+      final boolean success =
+          (boolean)
+              REGISTER_INTERFACE_VERSION.invokeExact(
+                  evolutionManagerHandle, interfaceNameStr, versionStr, interfaceDefStr);
 
       if (!success) {
-        throw new WasmRuntimeException("Failed to register interface version: " + interfaceVersion.getVersion());
+        throw new WasmRuntimeException(
+            "Failed to register interface version: " + interfaceVersion.getVersion());
       }
 
       // Update local registry
-      versionRegistry.computeIfAbsent(interfaceVersion.getInterfaceName(), k -> new java.util.ArrayList<>())
+      versionRegistry
+          .computeIfAbsent(interfaceVersion.getInterfaceName(), k -> new java.util.ArrayList<>())
           .add(interfaceVersion);
 
-      LOGGER.fine("Registered interface version: " + interfaceVersion.getInterfaceName() + "@" + interfaceVersion.getVersion());
+      LOGGER.fine(
+          "Registered interface version: "
+              + interfaceVersion.getInterfaceName()
+              + "@"
+              + interfaceVersion.getVersion());
 
     } catch (final Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to register interface version", e);
@@ -500,8 +573,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
   @Override
   public void deprecateInterfaceVersion(
-      final WitInterfaceVersion interfaceVersion,
-      final DeprecationInfo deprecationInfo) {
+      final WitInterfaceVersion interfaceVersion, final DeprecationInfo deprecationInfo) {
     Objects.requireNonNull(interfaceVersion, "interfaceVersion must not be null");
     Objects.requireNonNull(deprecationInfo, "deprecationInfo must not be null");
 
@@ -509,21 +581,27 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     try {
       checkNativeHandle();
 
-      final MemorySegment interfaceNameStr = createNativeString(interfaceVersion.getInterfaceName());
+      final MemorySegment interfaceNameStr =
+          createNativeString(interfaceVersion.getInterfaceName());
       final MemorySegment versionStr = createNativeString(interfaceVersion.getVersion());
-      final MemorySegment deprecationInfoStr = createNativeString(serializeDeprecationInfo(deprecationInfo));
+      final MemorySegment deprecationInfoStr =
+          createNativeString(serializeDeprecationInfo(deprecationInfo));
 
-      final boolean success = (boolean) DEPRECATE_INTERFACE_VERSION.invokeExact(
-          evolutionManagerHandle,
-          interfaceNameStr,
-          versionStr,
-          deprecationInfoStr);
+      final boolean success =
+          (boolean)
+              DEPRECATE_INTERFACE_VERSION.invokeExact(
+                  evolutionManagerHandle, interfaceNameStr, versionStr, deprecationInfoStr);
 
       if (!success) {
-        throw new WasmRuntimeException("Failed to deprecate interface version: " + interfaceVersion.getVersion());
+        throw new WasmRuntimeException(
+            "Failed to deprecate interface version: " + interfaceVersion.getVersion());
       }
 
-      LOGGER.info("Deprecated interface version: " + interfaceVersion.getInterfaceName() + "@" + interfaceVersion.getVersion());
+      LOGGER.info(
+          "Deprecated interface version: "
+              + interfaceVersion.getInterfaceName()
+              + "@"
+              + interfaceVersion.getVersion());
 
     } catch (final Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to deprecate interface version", e);
@@ -546,9 +624,9 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
       final MemorySegment interfaceNameStr = createNativeString(interfaceName);
 
-      final MemorySegment versionsHandle = (MemorySegment) GET_INTERFACE_VERSIONS.invokeExact(
-          evolutionManagerHandle,
-          interfaceNameStr);
+      final MemorySegment versionsHandle =
+          (MemorySegment)
+              GET_INTERFACE_VERSIONS.invokeExact(evolutionManagerHandle, interfaceNameStr);
 
       if (versionsHandle.address() == 0L) {
         return List.of(); // No versions found
@@ -567,8 +645,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
   @Override
   public java.util.Optional<WitInterfaceVersion> findCompatibleVersion(
-      final String interfaceName,
-      final CompatibilityRequirements requirements) {
+      final String interfaceName, final CompatibilityRequirements requirements) {
     Objects.requireNonNull(interfaceName, "interfaceName must not be null");
     Objects.requireNonNull(requirements, "requirements must not be null");
 
@@ -577,12 +654,13 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
       checkNativeHandle();
 
       final MemorySegment interfaceNameStr = createNativeString(interfaceName);
-      final MemorySegment requirementsStr = createNativeString(serializeCompatibilityRequirements(requirements));
+      final MemorySegment requirementsStr =
+          createNativeString(serializeCompatibilityRequirements(requirements));
 
-      final MemorySegment compatibleVersionHandle = (MemorySegment) FIND_COMPATIBLE_VERSION.invokeExact(
-          evolutionManagerHandle,
-          interfaceNameStr,
-          requirementsStr);
+      final MemorySegment compatibleVersionHandle =
+          (MemorySegment)
+              FIND_COMPATIBLE_VERSION.invokeExact(
+                  evolutionManagerHandle, interfaceNameStr, requirementsStr);
 
       if (compatibleVersionHandle.address() == 0L) {
         return java.util.Optional.empty();
@@ -600,9 +678,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
   }
 
-  /**
-   * Closes this evolution manager and releases native resources.
-   */
+  /** Closes this evolution manager and releases native resources. */
   public void close() {
     lock.writeLock().lock();
     try {
@@ -651,10 +727,14 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
         interfaceDefinition.getName(),
         interfaceDefinition.getVersion(),
         interfaceDefinition.getPackageName(),
-        String.join(",", interfaceDefinition.getFunctionNames().stream()
-            .map(name -> "\"" + name + "\"").toList()),
-        String.join(",", interfaceDefinition.getTypeNames().stream()
-            .map(name -> "\"" + name + "\"").toList()));
+        String.join(
+            ",",
+            interfaceDefinition.getFunctionNames().stream()
+                .map(name -> "\"" + name + "\"")
+                .toList()),
+        String.join(
+            ",",
+            interfaceDefinition.getTypeNames().stream().map(name -> "\"" + name + "\"").toList()));
   }
 
   private String serializeAdaptationConfig(final AdaptationConfig config) {
@@ -676,8 +756,7 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     // Serialize deprecation information
     return String.format(
         "{\"deprecationDate\":\"%s\",\"reason\":\"%s\"}",
-        info.getDeprecationDate().toString(),
-        info.getReason());
+        info.getDeprecationDate().toString(), info.getReason());
   }
 
   private String serializeCompatibilityRequirements(final CompatibilityRequirements requirements) {
@@ -685,13 +764,15 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     return "{}"; // Simplified implementation
   }
 
-  private List<WitInterfaceVersion> convertToInterfaceVersions(final String interfaceName, final MemorySegment versionsHandle) {
+  private List<WitInterfaceVersion> convertToInterfaceVersions(
+      final String interfaceName, final MemorySegment versionsHandle) {
     // Convert native array to interface version objects
     // This is a simplified implementation
     return List.of(); // Would parse actual version array
   }
 
-  private java.util.Optional<WitInterfaceVersion> createInterfaceVersion(final String interfaceName, final String version) {
+  private java.util.Optional<WitInterfaceVersion> createInterfaceVersion(
+      final String interfaceName, final String version) {
     // Create interface version from name and version string
     // This is a simplified implementation
     return java.util.Optional.empty(); // Would create actual version object
@@ -711,28 +792,44 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
 
     // Implementation of InterfaceEvolutionAnalysis methods would go here
     @Override
-    public WitInterfaceVersion getSourceVersion() { return null; }
+    public WitInterfaceVersion getSourceVersion() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return null; }
+    public WitInterfaceVersion getTargetVersion() {
+      return null;
+    }
 
     @Override
-    public EvolutionType getEvolutionType() { return EvolutionType.MAJOR; }
+    public EvolutionType getEvolutionType() {
+      return EvolutionType.MAJOR;
+    }
 
     @Override
-    public List<BreakingChange> getBreakingChanges() { return List.of(); }
+    public List<BreakingChange> getBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<NonBreakingChange> getNonBreakingChanges() { return List.of(); }
+    public List<NonBreakingChange> getNonBreakingChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<RequiredAdaptation> getRequiredAdaptations() { return List.of(); }
+    public List<RequiredAdaptation> getRequiredAdaptations() {
+      return List.of();
+    }
 
     @Override
-    public MigrationComplexity getMigrationComplexity() { return MigrationComplexity.SIMPLE; }
+    public MigrationComplexity getMigrationComplexity() {
+      return MigrationComplexity.SIMPLE;
+    }
 
     @Override
-    public MigrationEffort getEstimatedEffort() { return MigrationEffort.LOW; }
+    public MigrationEffort getEstimatedEffort() {
+      return MigrationEffort.LOW;
+    }
   }
 
   private static class PanamaBackwardCompatibilityResult implements BackwardCompatibilityResult {
@@ -745,16 +842,24 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public boolean isBackwardCompatible() { return true; }
+    public boolean isBackwardCompatible() {
+      return true;
+    }
 
     @Override
-    public List<CompatibilityIssue> getIssues() { return List.of(); }
+    public List<CompatibilityIssue> getIssues() {
+      return List.of();
+    }
 
     @Override
-    public CompatibilityLevel getCompatibilityLevel() { return CompatibilityLevel.FULL; }
+    public CompatibilityLevel getCompatibilityLevel() {
+      return CompatibilityLevel.FULL;
+    }
 
     @Override
-    public List<String> getSuggestions() { return List.of(); }
+    public List<String> getSuggestions() {
+      return List.of();
+    }
   }
 
   private static class PanamaForwardCompatibilityResult implements ForwardCompatibilityResult {
@@ -767,16 +872,24 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public boolean isForwardCompatible() { return true; }
+    public boolean isForwardCompatible() {
+      return true;
+    }
 
     @Override
-    public List<CompatibilityIssue> getIssues() { return List.of(); }
+    public List<CompatibilityIssue> getIssues() {
+      return List.of();
+    }
 
     @Override
-    public CompatibilityLevel getCompatibilityLevel() { return CompatibilityLevel.FULL; }
+    public CompatibilityLevel getCompatibilityLevel() {
+      return CompatibilityLevel.FULL;
+    }
 
     @Override
-    public RiskAssessment getRiskAssessment() { return null; }
+    public RiskAssessment getRiskAssessment() {
+      return null;
+    }
   }
 
   private static class PanamaInterfaceAdapter implements InterfaceAdapter {
@@ -785,7 +898,11 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     private final WitInterfaceVersion sourceVersion;
     private final WitInterfaceVersion targetVersion;
 
-    PanamaInterfaceAdapter(final Arena arena, final MemorySegment handle, final WitInterfaceVersion sourceVersion, final WitInterfaceVersion targetVersion) {
+    PanamaInterfaceAdapter(
+        final Arena arena,
+        final MemorySegment handle,
+        final WitInterfaceVersion sourceVersion,
+        final WitInterfaceVersion targetVersion) {
       this.arena = arena;
       this.handle = handle;
       this.sourceVersion = sourceVersion;
@@ -793,23 +910,31 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public WitInterfaceVersion getSourceVersion() { return sourceVersion; }
+    public WitInterfaceVersion getSourceVersion() {
+      return sourceVersion;
+    }
 
     @Override
-    public WitInterfaceVersion getTargetVersion() { return targetVersion; }
+    public WitInterfaceVersion getTargetVersion() {
+      return targetVersion;
+    }
 
     @Override
-    public ai.tegmentum.wasmtime4j.WasmValue[] adaptCall(final String functionName, final ai.tegmentum.wasmtime4j.WasmValue[] sourceArgs) {
+    public ai.tegmentum.wasmtime4j.WasmValue[] adaptCall(
+        final String functionName, final ai.tegmentum.wasmtime4j.WasmValue[] sourceArgs) {
       return sourceArgs; // Simplified implementation
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.WasmValue adaptReturn(final String functionName, final ai.tegmentum.wasmtime4j.WasmValue targetResult) {
+    public ai.tegmentum.wasmtime4j.WasmValue adaptReturn(
+        final String functionName, final ai.tegmentum.wasmtime4j.WasmValue targetResult) {
       return targetResult; // Simplified implementation
     }
 
     @Override
-    public AdaptationStatistics getStatistics() { return null; }
+    public AdaptationStatistics getStatistics() {
+      return null;
+    }
   }
 
   private static class PanamaEvolutionValidationResult implements EvolutionValidationResult {
@@ -838,25 +963,39 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public String getId() { return "migration-" + handle.address(); }
+    public String getId() {
+      return "migration-" + handle.address();
+    }
 
     @Override
-    public WitInterfaceDefinition getSourceInterface() { return null; }
+    public WitInterfaceDefinition getSourceInterface() {
+      return null;
+    }
 
     @Override
-    public WitInterfaceDefinition getTargetInterface() { return null; }
+    public WitInterfaceDefinition getTargetInterface() {
+      return null;
+    }
 
     @Override
-    public List<MigrationStep> getSteps() { return List.of(); }
+    public List<MigrationStep> getSteps() {
+      return List.of();
+    }
 
     @Override
-    public java.time.Duration getEstimatedDuration() { return java.time.Duration.ZERO; }
+    public java.time.Duration getEstimatedDuration() {
+      return java.time.Duration.ZERO;
+    }
 
     @Override
-    public List<MigrationRisk> getRisks() { return List.of(); }
+    public List<MigrationRisk> getRisks() {
+      return List.of();
+    }
 
     @Override
-    public List<MigrationStep> getRollbackSteps() { return List.of(); }
+    public List<MigrationStep> getRollbackSteps() {
+      return List.of();
+    }
   }
 
   private static class PanamaMigrationExecutionResult implements MigrationExecutionResult {
@@ -869,31 +1008,49 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public InterfaceMigrationPlan getPlan() { return null; }
+    public InterfaceMigrationPlan getPlan() {
+      return null;
+    }
 
     @Override
-    public boolean isSuccessful() { return true; }
+    public boolean isSuccessful() {
+      return true;
+    }
 
     @Override
-    public java.time.Instant getStartTime() { return java.time.Instant.now(); }
+    public java.time.Instant getStartTime() {
+      return java.time.Instant.now();
+    }
 
     @Override
-    public java.time.Instant getEndTime() { return java.time.Instant.now(); }
+    public java.time.Instant getEndTime() {
+      return java.time.Instant.now();
+    }
 
     @Override
-    public java.time.Duration getActualDuration() { return java.time.Duration.ZERO; }
+    public java.time.Duration getActualDuration() {
+      return java.time.Duration.ZERO;
+    }
 
     @Override
-    public List<MigrationStep> getCompletedSteps() { return List.of(); }
+    public List<MigrationStep> getCompletedSteps() {
+      return List.of();
+    }
 
     @Override
-    public List<MigrationStep> getFailedSteps() { return List.of(); }
+    public List<MigrationStep> getFailedSteps() {
+      return List.of();
+    }
 
     @Override
-    public java.util.Optional<Exception> getError() { return java.util.Optional.empty(); }
+    public java.util.Optional<Exception> getError() {
+      return java.util.Optional.empty();
+    }
 
     @Override
-    public Map<String, Object> getMetrics() { return Map.of(); }
+    public Map<String, Object> getMetrics() {
+      return Map.of();
+    }
   }
 
   private static class PanamaInterfaceEvolutionHistory implements InterfaceEvolutionHistory {
@@ -906,24 +1063,38 @@ public final class PanamaWitInterfaceEvolution implements WitInterfaceEvolution 
     }
 
     @Override
-    public String getInterfaceName() { return ""; }
+    public String getInterfaceName() {
+      return "";
+    }
 
     @Override
-    public List<WitInterfaceVersion> getVersionHistory() { return List.of(); }
+    public List<WitInterfaceVersion> getVersionHistory() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getMajorChanges() { return List.of(); }
+    public List<VersionChange> getMajorChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getMinorChanges() { return List.of(); }
+    public List<VersionChange> getMinorChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<VersionChange> getPatchChanges() { return List.of(); }
+    public List<VersionChange> getPatchChanges() {
+      return List.of();
+    }
 
     @Override
-    public List<DeprecationEvent> getDeprecationHistory() { return List.of(); }
+    public List<DeprecationEvent> getDeprecationHistory() {
+      return List.of();
+    }
 
     @Override
-    public List<CompletedMigration> getMigrationHistory() { return List.of(); }
+    public List<CompletedMigration> getMigrationHistory() {
+      return List.of();
+    }
   }
 }

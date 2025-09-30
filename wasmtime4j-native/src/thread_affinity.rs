@@ -8,14 +8,14 @@
 //! - Hyper-threading optimization
 //! - CPU frequency scaling coordination
 
-use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::collections::{HashMap, HashSet, BTreeMap};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
-use parking_lot::{RwLock as ParkingRwLock, Mutex as ParkingMutex};
+use parking_lot::RwLock as ParkingRwLock;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::work_stealing::{CpuTopology, NumaNode, CacheHierarchy};
+use crate::work_stealing::CpuTopology;
 
 /// Thread affinity manager for optimal CPU core binding
 pub struct ThreadAffinityManager {
@@ -37,6 +37,22 @@ pub struct ThreadAffinityManager {
     manager_thread: Option<thread::JoinHandle<WasmtimeResult<()>>>,
     /// Shutdown flag
     shutdown: Arc<AtomicBool>,
+}
+
+impl Clone for ThreadAffinityManager {
+    fn clone(&self) -> Self {
+        Self {
+            topology: self.topology.clone(),
+            config: self.config.clone(),
+            core_assignments: self.core_assignments.clone(),
+            core_utilization: self.core_utilization.clone(),
+            policies: self.policies.clone(),
+            performance_counters: self.performance_counters.clone(),
+            dynamic_adjustment: self.dynamic_adjustment.clone(),
+            manager_thread: None, // Cannot clone JoinHandle
+            shutdown: self.shutdown.clone(),
+        }
+    }
 }
 
 /// Thread affinity configuration
@@ -1028,7 +1044,7 @@ impl ThreadAffinityManager {
         let memory_score = (1.0 - core_util.memory_bandwidth_utilization).max(0.0);
         let thread_score = (1.0 - (core_util.thread_count as f64 / 8.0)).max(0.0);
 
-        (utilization_score * 0.3 + cache_score * 0.25 + memory_score * 0.25 + thread_score * 0.2)
+        utilization_score * 0.3 + cache_score * 0.25 + memory_score * 0.25 + thread_score * 0.2
     }
 
     fn update_average_duration(current_avg: Duration, new_duration: Duration, count: u64) -> Duration {
@@ -1089,6 +1105,51 @@ impl ThreadAffinityManager {
         }
 
         log::info!("Thread affinity manager shutdown complete");
+        Ok(())
+    }
+
+    /// Get affinity management statistics
+    pub fn get_statistics(&self) -> PerformanceCounters {
+        self.performance_counters.read().clone()
+    }
+
+    /// Assign a thread to a specific CPU core
+    pub fn assign_thread_to_core(&self, thread_id: thread::ThreadId, core_id: usize) -> WasmtimeResult<()> {
+        // Implementation would set thread affinity
+        let assignment = CoreAssignment {
+            core_id,
+            numa_node: 0, // Default to NUMA node 0
+            assigned_at: Instant::now(),
+            assignment_reason: AssignmentReason::Initial,
+            thread_priority: ThreadPriority::Normal,
+            performance_hint: None,
+            binding_strength: BindingStrength::Normal,
+            migration_count: 0,
+            last_migration: None,
+        };
+
+        self.core_assignments.write().insert(thread_id, assignment);
+
+        // Update statistics
+        {
+            let mut counters = self.performance_counters.write();
+            counters.total_assignments += 1;
+            counters.successful_assignments += 1;
+        }
+
+        Ok(())
+    }
+
+    /// Get the current core assignment for a thread
+    pub fn get_thread_assignment(&self, thread_id: thread::ThreadId) -> Option<usize> {
+        self.core_assignments.read().get(&thread_id).map(|assignment| assignment.core_id)
+    }
+
+    /// Update thread performance metrics
+    pub fn update_thread_metrics(&self, thread_id: thread::ThreadId) -> WasmtimeResult<()> {
+        // Implementation would update thread performance data
+        // For now, just track that we updated metrics
+        log::debug!("Updated metrics for thread {:?}", thread_id);
         Ok(())
     }
 }

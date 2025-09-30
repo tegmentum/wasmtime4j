@@ -7,14 +7,13 @@
 //! - Thread-local storage
 //! - Thread pool management
 
-use std::sync::{Arc, Mutex, RwLock, Condvar};
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::collections::HashMap;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
-use wasmtime::{Engine, Store, Memory, Instance, Func, Trap, MemoryType, SharedMemory};
+use wasmtime::{Engine, SharedMemory, MemoryType};
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::store::Store as WasmtimeStore;
 
 /// Thread identifier type
 pub type ThreadId = u64;
@@ -141,7 +140,7 @@ pub struct ThreadPoolStatistics {
 }
 
 /// Atomic operation types for WebAssembly threading
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AtomicOperation {
     Load,
     Store,
@@ -665,13 +664,13 @@ mod tests {
     #[test]
     fn test_thread_creation() {
         let engine = Engine::new().expect("Failed to create engine");
-        let memory_type = MemoryType::shared(1, Some(10));
+        let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
-            SharedMemory::new(&engine, memory_type)
+            SharedMemory::new(engine.inner(), memory_type)
                 .expect("Failed to create shared memory")
         );
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
+        let thread = WasmThread::new(1, shared_memory, engine.inner())
             .expect("Failed to create thread");
 
         assert_eq!(thread.get_id(), 1);
@@ -683,13 +682,13 @@ mod tests {
     #[test]
     fn test_thread_local_storage() {
         let engine = Engine::new().expect("Failed to create engine");
-        let memory_type = MemoryType::shared(1, Some(10));
+        let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
-            SharedMemory::new(&engine, memory_type)
+            SharedMemory::new(engine.inner(), memory_type)
                 .expect("Failed to create shared memory")
         );
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
+        let thread = WasmThread::new(1, shared_memory, engine.inner())
             .expect("Failed to create thread");
 
         // Test different value types
@@ -724,14 +723,14 @@ mod tests {
 
         let pool = WasmThreadPool::new(config);
         let engine = Engine::new().expect("Failed to create engine");
-        let memory_type = MemoryType::shared(1, Some(10));
+        let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
-            SharedMemory::new(&engine, memory_type)
+            SharedMemory::new(engine.inner(), memory_type)
                 .expect("Failed to create shared memory")
         );
 
         // Spawn a thread
-        let thread = pool.spawn_thread(shared_memory, &engine)
+        let thread = pool.spawn_thread(shared_memory, engine.inner())
             .expect("Failed to spawn thread");
         let thread_id = thread.get_id();
 
@@ -755,13 +754,13 @@ mod tests {
     #[test]
     fn test_thread_termination() {
         let engine = Engine::new().expect("Failed to create engine");
-        let memory_type = MemoryType::shared(1, Some(10));
+        let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
-            SharedMemory::new(&engine, memory_type)
+            SharedMemory::new(engine.inner(), memory_type)
                 .expect("Failed to create shared memory")
         );
 
-        let mut thread = WasmThread::new(1, shared_memory, &engine)
+        let mut thread = WasmThread::new(1, shared_memory, engine.inner())
             .expect("Failed to create thread");
 
         assert!(!thread.is_termination_requested());
@@ -776,9 +775,9 @@ mod tests {
     #[test]
     fn test_atomic_operations() {
         let engine = Engine::new().expect("Failed to create engine");
-        let memory_type = MemoryType::shared(1, Some(10));
+        let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
-            SharedMemory::new(&engine, memory_type)
+            SharedMemory::new(engine.inner(), memory_type)
                 .expect("Failed to create shared memory")
         );
 

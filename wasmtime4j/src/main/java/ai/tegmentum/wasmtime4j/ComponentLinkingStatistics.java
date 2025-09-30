@@ -19,8 +19,8 @@ package ai.tegmentum.wasmtime4j;
 /**
  * Statistics and metrics for component linking operations.
  *
- * <p>This class provides information about linking performance and activity,
- * useful for monitoring and debugging component linking operations.
+ * <p>This class provides information about linking performance and activity, useful for monitoring
+ * and debugging component linking operations.
  *
  * @since 1.0.0
  */
@@ -37,9 +37,8 @@ public final class ComponentLinkingStatistics {
    * @param totalSwapsPerformed total number of hot swaps performed
    * @param activeLinksCount current number of active links
    */
-  public ComponentLinkingStatistics(final int totalLinksCreated,
-      final int totalSwapsPerformed,
-      final int activeLinksCount) {
+  public ComponentLinkingStatistics(
+      final int totalLinksCreated, final int totalSwapsPerformed, final int activeLinksCount) {
     this.totalLinksCreated = totalLinksCreated;
     this.totalSwapsPerformed = totalSwapsPerformed;
     this.activeLinksCount = activeLinksCount;
@@ -74,10 +73,13 @@ public final class ComponentLinkingStatistics {
 
   @Override
   public String toString() {
-    return "ComponentLinkingStatistics{" +
-        "totalLinksCreated=" + totalLinksCreated +
-        ", totalSwapsPerformed=" + totalSwapsPerformed +
-        ", activeLinksCount=" + activeLinksCount +
-        '}';
+    return "ComponentLinkingStatistics{"
+        + "totalLinksCreated="
+        + totalLinksCreated
+        + ", totalSwapsPerformed="
+        + totalSwapsPerformed
+        + ", activeLinksCount="
+        + activeLinksCount
+        + '}';
   }
 }

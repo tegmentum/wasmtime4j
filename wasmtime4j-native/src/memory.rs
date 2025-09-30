@@ -15,10 +15,9 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime};
 use std::ptr::{self, NonNull};
-use std::alloc::{GlobalAlloc, Layout, System};
 use std::ffi::c_void;
 use anyhow::{anyhow, Result};
-use log::{debug, info, warn, error};
+use log::{debug, info, error};
 
 use wasmtime::{Memory as WasmtimeMemory, MemoryType};
 use crate::error::{WasmtimeError, WasmtimeResult};

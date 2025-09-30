@@ -816,37 +816,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Consumes fuel from the store.
-   *
-   * <p>This method allows manual consumption of fuel from the store's fuel supply. This can be
-   * useful for implementing custom fuel accounting or for testing fuel-related functionality.
-   *
-   * @param fuelAmount the amount of fuel to consume (must be positive)
-   * @return true if the fuel was successfully consumed, false if insufficient fuel is available
-   * @throws JniException if fuel consumption fails
-   * @throws JniResourceException if this store has been closed
-   * @throws IllegalArgumentException if fuelAmount is negative or zero
-   */
-  public boolean consumeFuel(final long fuelAmount) {
-    JniValidation.requirePositive(fuelAmount, "fuelAmount");
-    ensureNotClosed();
-
-    try {
-      final boolean success = nativeConsumeFuel(getNativeHandle(), fuelAmount);
-      if (success) {
-        LOGGER.fine(
-            "Consumed " + fuelAmount + " fuel from store 0x" + Long.toHexString(getNativeHandle()));
-      }
-      return success;
-    } catch (final Exception e) {
-      if (e instanceof JniException) {
-        throw e;
-      }
-      throw new JniException("Unexpected error consuming fuel", e);
-    }
-  }
-
   // Validation and Diagnostics
 
   /**
@@ -976,15 +945,6 @@ public final class JniStore extends JniResource implements Store {
    * @return remaining fuel or -1 if fuel is not enabled/available
    */
   private static native long nativeGetFuelRemaining(long storeHandle);
-
-  /**
-   * Consumes fuel from the store.
-   *
-   * @param storeHandle the native store handle
-   * @param fuelAmount the amount of fuel to consume
-   * @return true on success, false on failure
-   */
-  private static native boolean nativeConsumeFuel(long storeHandle, long fuelAmount);
 
   /**
    * Sets the epoch deadline for a store.
