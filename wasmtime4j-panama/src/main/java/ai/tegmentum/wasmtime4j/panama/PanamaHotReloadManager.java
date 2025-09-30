@@ -648,6 +648,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
       return cacheSize;
     }
 
+    /** Builder for hot reload configuration. */
     public static final class Builder {
       private boolean validationEnabled = true;
       private boolean statePreservationEnabled = true;
@@ -739,6 +740,14 @@ public final class PanamaHotReloadManager implements AutoCloseable {
       return new SwapStrategy(0, 0, 0, 0.0) {};
     }
 
+    /**
+     * Creates a canary swap strategy.
+     *
+     * @param initialPercentage initial traffic percentage
+     * @param incrementPercentage traffic increment percentage
+     * @param successThreshold success rate threshold
+     * @return canary swap strategy
+     */
     public static SwapStrategy canary(
         final float initialPercentage,
         final float incrementPercentage,
@@ -776,6 +785,16 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     private final int status;
     private final float progress;
 
+    /**
+     * Creates hot swap status.
+     *
+     * @param operationId the operation ID
+     * @param componentName the component name
+     * @param fromVersion the source version
+     * @param toVersion the target version
+     * @param status the swap status code
+     * @param progress the progress percentage
+     */
     public HotSwapStatus(
         final String operationId,
         final String componentName,
@@ -823,6 +842,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     }
   }
 
+  /** Swap status enumeration. */
   public enum SwapStatus {
     PENDING,
     PRE_LOADING,
@@ -841,6 +861,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     }
   }
 
+  /** Load request for component loading. */
   public static final class LoadRequest {
     private final String componentName;
     private final String componentPath;
@@ -848,6 +869,15 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     private final LoadPriority priority;
     private final ValidationConfig validationConfig;
 
+    /**
+     * Creates a load request.
+     *
+     * @param componentName the component name
+     * @param componentPath the component path
+     * @param version the component version
+     * @param priority the load priority
+     * @param validationConfig the validation configuration
+     */
     public LoadRequest(
         final String componentName,
         final String componentPath,
@@ -862,6 +892,11 @@ public final class PanamaHotReloadManager implements AutoCloseable {
           validationConfig != null ? validationConfig : ValidationConfig.getDefault();
     }
 
+    /**
+     * Validates the load request.
+     *
+     * @throws IllegalArgumentException if validation fails
+     */
     public void validate() {
       if (componentName == null || componentName.trim().isEmpty()) {
         throw new IllegalArgumentException("Component name cannot be null or empty");
@@ -895,6 +930,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     }
   }
 
+  /** Load priority enumeration. */
   public enum LoadPriority {
     LOW,
     NORMAL,
@@ -902,6 +938,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     CRITICAL
   }
 
+  /** Validation configuration. */
   public static final class ValidationConfig {
     private final boolean validateInterfaces;
     private final boolean validateDependencies;
@@ -909,6 +946,15 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     private final boolean validatePerformance;
     private final long timeoutSecs;
 
+    /**
+     * Creates validation configuration.
+     *
+     * @param validateInterfaces whether to validate interfaces
+     * @param validateDependencies whether to validate dependencies
+     * @param validateSecurity whether to validate security
+     * @param validatePerformance whether to validate performance
+     * @param timeoutSecs validation timeout in seconds
+     */
     public ValidationConfig(
         final boolean validateInterfaces,
         final boolean validateDependencies,
@@ -947,6 +993,7 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     }
   }
 
+  /** Hot reload metrics. */
   public static final class HotReloadMetrics {
     private final long totalSwaps;
     private final long successfulSwaps;
@@ -957,6 +1004,18 @@ public final class PanamaHotReloadManager implements AutoCloseable {
     private final long componentsLoaded;
     private final float cacheEfficiency;
 
+    /**
+     * Creates hot reload metrics.
+     *
+     * @param totalSwaps total number of swaps
+     * @param successfulSwaps number of successful swaps
+     * @param failedSwaps number of failed swaps
+     * @param rollbacks number of rollbacks
+     * @param avgSwapTimeMs average swap time in milliseconds
+     * @param currentActiveSwaps number of currently active swaps
+     * @param componentsLoaded number of components loaded
+     * @param cacheEfficiency cache efficiency percentage
+     */
     public HotReloadMetrics(
         final long totalSwaps,
         final long successfulSwaps,
