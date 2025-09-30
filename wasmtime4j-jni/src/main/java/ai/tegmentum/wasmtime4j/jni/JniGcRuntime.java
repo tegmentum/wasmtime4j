@@ -900,6 +900,15 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Type Registration and Management ==========
 
+  /**
+   * Registers a recursive type definition with the GC runtime.
+   *
+   * @param typeName the name of the type
+   * @param typeDefinition the recursive type definition
+   * @return the assigned type ID
+   * @throws GcException if the runtime is disposed or registration fails
+   * @throws IllegalArgumentException if typeName or typeDefinition is null
+   */
   public int registerRecursiveType(final String typeName, final Object typeDefinition) {
     validateNotDisposed();
     validateNotNull(typeName, "typeName");
@@ -925,6 +934,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Creates a type hierarchy with a base type and derived types.
+   *
+   * @param baseType the base type definition
+   * @param derivedTypes list of derived type definitions
+   * @return map of type names to their assigned type IDs
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if baseType or derivedTypes is null
+   */
   public Map<String, Integer> createTypeHierarchy(
       final Object baseType, final List<Object> derivedTypes) {
     validateNotDisposed();
@@ -951,6 +969,13 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Garbage Collection Control ==========
 
+  /**
+   * Performs incremental garbage collection with a specified maximum pause time.
+   *
+   * @param maxPauseMillis maximum pause time in milliseconds
+   * @return GC statistics from the collection
+   * @throws GcException if the runtime is disposed
+   */
   public GcStats collectGarbageIncremental(final long maxPauseMillis) {
     validateNotDisposed();
 
@@ -967,6 +992,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Performs concurrent garbage collection.
+   *
+   * @return GC statistics from the collection
+   * @throws GcException if the runtime is disposed
+   */
   public GcStats collectGarbageConcurrent() {
     validateNotDisposed();
 
@@ -983,6 +1014,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Configures the garbage collection strategy and parameters.
+   *
+   * @param strategy the GC strategy name
+   * @param parameters strategy-specific parameters
+   * @throws GcException if the runtime is disposed or configuration fails
+   * @throws IllegalArgumentException if strategy or parameters is null
+   */
   public void configureGcStrategy(
       final String strategy, final Map<String, Object> parameters) {
     validateNotDisposed();
@@ -1007,6 +1046,13 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Monitors GC pressure and returns whether it exceeds the threshold.
+   *
+   * @param pressureThreshold the pressure threshold (0.0 to 1.0)
+   * @return true if GC pressure exceeds the threshold
+   * @throws GcException if the runtime is disposed
+   */
   public boolean monitorGcPressure(final double pressureThreshold) {
     validateNotDisposed();
 
@@ -1024,6 +1070,15 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Advanced Memory Management ==========
 
+  /**
+   * Creates a weak reference to a GC object with an optional finalization callback.
+   *
+   * @param object the object to create a weak reference to
+   * @param finalizationCallback optional callback to run when object is finalized (may be null)
+   * @return the weak reference
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if object is null
+   */
   public WeakGcReference createWeakReference(
       final GcObject object, final Runnable finalizationCallback) {
     validateNotDisposed();
@@ -1047,6 +1102,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Registers a finalization callback for a GC object.
+   *
+   * @param object the object to register the callback for
+   * @param callback the finalization callback
+   * @throws GcException if the runtime is disposed or registration fails
+   * @throws IllegalArgumentException if object or callback is null
+   */
   public void registerFinalizationCallback(final GcObject object, final Runnable callback) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -1068,6 +1131,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Runs finalization on all pending finalizable objects.
+   *
+   * @return the number of objects finalized
+   * @throws GcException if the runtime is disposed
+   */
   public int runFinalization() {
     validateNotDisposed();
 
@@ -1085,6 +1154,15 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Host Integration ==========
 
+  /**
+   * Integrates a host Java object into the GC system.
+   *
+   * @param hostObject the host object to integrate
+   * @param gcType the GC reference type for the integrated object
+   * @return the GC object wrapping the host object
+   * @throws GcException if the runtime is disposed or integration fails
+   * @throws IllegalArgumentException if hostObject or gcType is null
+   */
   public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType) {
     validateNotDisposed();
     validateNotNull(hostObject, "hostObject");
@@ -1108,6 +1186,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Extracts the host Java object from a GC-integrated object.
+   *
+   * @param gcObject the GC object to extract from
+   * @return the host object
+   * @throws GcException if the runtime is disposed, extraction fails, or object is not host-integrated
+   * @throws IllegalArgumentException if gcObject is null
+   */
   public Object extractHostObject(final GcObject gcObject) {
     validateNotDisposed();
     validateNotNull(gcObject, "gcObject");
@@ -1130,6 +1216,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Creates a sharing bridge for cross-module object sharing.
+   *
+   * @param objects the objects to include in the sharing bridge
+   * @return the sharing bridge object
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if objects is null
+   */
   public Object createSharingBridge(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
@@ -1155,6 +1249,12 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Debugging and Profiling ==========
 
+  /**
+   * Inspects the GC heap and returns detailed information.
+   *
+   * @return heap inspection results
+   * @throws GcException if the runtime is disposed
+   */
   public GcHeapInspection inspectHeap() {
     validateNotDisposed();
 
@@ -1171,6 +1271,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Creates a tracker for monitoring object lifecycles.
+   *
+   * @param objects the objects to track
+   * @return the lifecycle tracker
+   * @throws GcException if the runtime is disposed or creation fails
+   * @throws IllegalArgumentException if objects is null
+   */
   public ObjectLifecycleTracker trackObjectLifecycles(final List<GcObject> objects) {
     validateNotDisposed();
     validateNotNull(objects, "objects");
@@ -1194,6 +1302,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Analyzes the heap for memory leaks.
+   *
+   * @return memory leak analysis results
+   * @throws GcException if the runtime is disposed
+   */
   public MemoryLeakAnalysis detectMemoryLeaks() {
     validateNotDisposed();
 
@@ -1210,6 +1324,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Starts GC profiling.
+   *
+   * @return the GC profiler instance
+   * @throws GcException if the runtime is disposed or profiling cannot be started
+   */
   public GcProfiler startProfiling() {
     validateNotDisposed();
 
@@ -1232,6 +1352,14 @@ public final class JniGcRuntime implements GcRuntime {
 
   // ========== Safety and Validation ==========
 
+  /**
+   * Validates the safety of references from the given root objects.
+   *
+   * @param rootObjects the root objects to start validation from
+   * @return reference safety validation results
+   * @throws GcException if the runtime is disposed
+   * @throws IllegalArgumentException if rootObjects is null
+   */
   public ReferenceSafetyResult validateReferenceSafety(final List<GcObject> rootObjects) {
     validateNotDisposed();
     validateNotNull(rootObjects, "rootObjects");
@@ -1251,6 +1379,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Enforces type safety for a GC operation.
+   *
+   * @param operation the operation name
+   * @param operands the operands for the operation
+   * @return true if type safety is enforced
+   * @throws GcException if the runtime is disposed
+   * @throws IllegalArgumentException if operation or operands is null
+   */
   public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
     validateNotDisposed();
     validateNotNull(operation, "operation");
@@ -1269,6 +1406,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Detects memory corruption in the GC heap.
+   *
+   * @return memory corruption analysis results
+   * @throws GcException if the runtime is disposed
+   */
   public MemoryCorruptionAnalysis detectMemoryCorruption() {
     validateNotDisposed();
 
@@ -1285,6 +1428,12 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /**
+   * Validates GC invariants and heap consistency.
+   *
+   * @return invariant validation results
+   * @throws GcException if the runtime is disposed
+   */
   public GcInvariantValidation validateInvariants() {
     validateNotDisposed();
 
