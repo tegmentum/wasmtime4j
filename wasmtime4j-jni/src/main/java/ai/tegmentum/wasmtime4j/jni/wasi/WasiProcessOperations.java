@@ -488,6 +488,16 @@ public final class WasiProcessOperations {
     public volatile boolean terminated = false;
     public volatile int exitCode = -1;
 
+    /**
+     * Creates a new process information object.
+     *
+     * @param handle the native process handle
+     * @param process the Java Process object
+     * @param command the command executed
+     * @param arguments the command arguments
+     * @param environment the environment variables
+     * @param workingDirectory the working directory
+     */
     public ProcessInfo(
         final long handle,
         final Process process,

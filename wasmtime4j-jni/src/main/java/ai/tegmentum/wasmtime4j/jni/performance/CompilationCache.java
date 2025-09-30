@@ -38,8 +38,8 @@ import java.util.logging.Logger;
  * <pre>
  * ~/.wasmtime4j/cache/
  * ├── modules/
- * │   ├── <sha256-hash>.wasm    # Original bytecode
- * │   └── <sha256-hash>.cache   # Compiled module
+ * │   ├── &lt;sha256-hash&gt;.wasm    # Original bytecode
+ * │   └── &lt;sha256-hash&gt;.cache   # Compiled module
  * └── metadata.properties       # Cache metadata
  * </pre>
  *

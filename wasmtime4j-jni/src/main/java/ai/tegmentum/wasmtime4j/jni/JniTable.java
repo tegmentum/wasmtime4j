@@ -465,6 +465,12 @@ public final class JniTable extends JniResource implements WasmTable {
 
     // Table initialization from element segments is handled by the runtime during instantiation
     // This is a no-op in the JNI implementation as Wasmtime manages table initialization internally
-    LOGGER.fine("Initialized table range [" + destOffset + ", " + (destOffset + length) + ") from segment " + srcSegmentIndex);
+    LOGGER.fine(
+        "Initialized table range ["
+            + destOffset
+            + ", "
+            + (destOffset + length)
+            + ") from segment "
+            + srcSegmentIndex);
   }
 }
