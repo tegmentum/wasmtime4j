@@ -496,6 +496,8 @@ public final class JniLinker extends JniResource implements Linker {
       final java.util.List<String> requiredImports = extractRequiredImports(module);
       final java.util.List<String> providedExports = extractProvidedExports(module);
 
+      final String moduleName = module.getName();
+      final String displayName = (moduleName != null && !moduleName.isEmpty()) ? moduleName : "unnamed module";
       final ai.tegmentum.wasmtime4j.InstantiationStep step =
           new ai.tegmentum.wasmtime4j.InstantiationStep(
               i + 1, // 1-based step number
@@ -503,7 +505,7 @@ public final class JniLinker extends JniResource implements Linker {
               java.util.Optional.of("module_" + i), // Generate a default name
               requiredImports,
               providedExports,
-              "Instantiate " + module.getName().orElse("unnamed module"));
+              "Instantiate " + displayName);
 
       steps.add(step);
     }

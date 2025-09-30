@@ -212,7 +212,9 @@ public final class JniAdvancedProfiler implements AutoCloseable {
    */
   public void recordFunctionExecution(
       final String functionName, final Duration executionTime, final long memoryAllocated) {
-    if (!profiling) return;
+    if (!profiling) {
+      return;
+    }
 
     totalSamples.incrementAndGet();
 
@@ -234,7 +236,9 @@ public final class JniAdvancedProfiler implements AutoCloseable {
    * @return allocation ID for tracking
    */
   public long recordMemoryAllocation(final long size, final String allocationType) {
-    if (!profiling) return 0;
+    if (!profiling) {
+      return 0;
+    }
 
     return nativeRecordMemoryAllocation(nativeProfilerHandle, size, allocationType);
   }
