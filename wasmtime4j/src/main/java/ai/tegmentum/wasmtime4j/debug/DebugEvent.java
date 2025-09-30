@@ -83,15 +83,6 @@ public final class DebugEvent {
   }
 
   /**
-   * Gets the timestamp when the event was created.
-   *
-   * @return the event timestamp in milliseconds since epoch
-   */
-  public long getTimestamp() {
-    return timestamp;
-  }
-
-  /**
    * Gets a specific data value.
    *
    * @param key the data key
@@ -99,6 +90,15 @@ public final class DebugEvent {
    */
   public Object getData(final String key) {
     return data.get(key);
+  }
+
+  /**
+   * Gets the timestamp when the event was created.
+   *
+   * @return the event timestamp in milliseconds since epoch
+   */
+  public long getTimestamp() {
+    return timestamp;
   }
 
   /**
