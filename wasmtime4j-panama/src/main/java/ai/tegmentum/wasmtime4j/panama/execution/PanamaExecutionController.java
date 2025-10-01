@@ -1,8 +1,31 @@
 package ai.tegmentum.wasmtime4j.panama.execution;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.*;
-import java.lang.foreign.*;
+import ai.tegmentum.wasmtime4j.execution.AnomalyDetectionConfig;
+import ai.tegmentum.wasmtime4j.execution.ControllerStatistics;
+import ai.tegmentum.wasmtime4j.execution.ControllerValidationResult;
+import ai.tegmentum.wasmtime4j.execution.ExecutionAnalytics;
+import ai.tegmentum.wasmtime4j.execution.ExecutionContext;
+import ai.tegmentum.wasmtime4j.execution.ExecutionContextConfig;
+import ai.tegmentum.wasmtime4j.execution.ExecutionController;
+import ai.tegmentum.wasmtime4j.execution.ExecutionMonitoringConfig;
+import ai.tegmentum.wasmtime4j.execution.ExecutionPolicy;
+import ai.tegmentum.wasmtime4j.execution.ExecutionQuotas;
+import ai.tegmentum.wasmtime4j.execution.ExecutionRequest;
+import ai.tegmentum.wasmtime4j.execution.ExecutionResult;
+import ai.tegmentum.wasmtime4j.execution.ExecutionState;
+import ai.tegmentum.wasmtime4j.execution.ExecutionStatus;
+import ai.tegmentum.wasmtime4j.execution.ExecutionTerminationConfig;
+import ai.tegmentum.wasmtime4j.execution.ExecutionTracingConfig;
+import ai.tegmentum.wasmtime4j.execution.FairAllocationStrategy;
+import ai.tegmentum.wasmtime4j.execution.LoadBasedQuotaConfig;
+import ai.tegmentum.wasmtime4j.execution.TraceFilter;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.time.Duration;
 import java.util.Map;
@@ -51,6 +74,11 @@ public final class PanamaExecutionController implements ExecutionController {
   private final MethodHandle cleanupHandle;
   private final MethodHandle resetHandle;
 
+  /**
+   * Creates a new Panama execution controller.
+   *
+   * @throws WasmException if initialization fails
+   */
   public PanamaExecutionController() throws WasmException {
     this.contextPointers = new ConcurrentHashMap<>();
     this.arena = Arena.ofShared();
@@ -746,6 +774,7 @@ public final class PanamaExecutionController implements ExecutionController {
     contextPointers.remove(contextId);
   }
 
+  /** Closes the execution controller and releases all resources. */
   public void close() {
     try {
       cleanup(false);
