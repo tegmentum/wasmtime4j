@@ -3,13 +3,22 @@ package ai.tegmentum.wasmtime4j.panama.profiling;
 import ai.tegmentum.wasmtime4j.profiling.AdvancedProfiler;
 import ai.tegmentum.wasmtime4j.profiling.FlameGraphGenerator;
 import java.io.IOException;
-import java.lang.foreign.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -195,6 +204,11 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
     this(AdvancedProfiler.ProfilerConfiguration.builder().build());
   }
 
+  /**
+   * Creates a new advanced profiler with the specified configuration.
+   *
+   * @param config the profiler configuration
+   */
   public PanamaAdvancedProfiler(final AdvancedProfiler.ProfilerConfiguration config) {
     this.config = Objects.requireNonNull(config);
     this.flameGraphGenerator = new FlameGraphGenerator();
@@ -592,6 +606,17 @@ public final class PanamaAdvancedProfiler implements AutoCloseable {
     public final double cpuUsagePercent;
     public final long activeThreads;
 
+    /**
+     * Creates profiler statistics.
+     *
+     * @param totalSamples total number of samples
+     * @param functionCalls total number of function calls
+     * @param totalExecutionTimeNanos total execution time in nanoseconds
+     * @param memoryAllocations total number of memory allocations
+     * @param totalAllocatedBytes total bytes allocated
+     * @param cpuUsagePercent CPU usage percentage
+     * @param activeThreads number of active threads
+     */
     public ProfilerStatistics(
         final long totalSamples,
         final long functionCalls,
