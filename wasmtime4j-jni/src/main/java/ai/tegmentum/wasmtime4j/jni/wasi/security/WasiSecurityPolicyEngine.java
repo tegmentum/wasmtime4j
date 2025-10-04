@@ -285,21 +285,16 @@ public final class WasiSecurityPolicyEngine {
     }
 
     // Check file-specific restrictions
-    try {
-      if (Files.exists(path)) {
-        if (Files.isSymbolicLink(path) && !securityPolicy.areSymbolicLinksAllowed()) {
-          throw new WasiPermissionException("Access to symbolic links is forbidden");
-        }
-
-        if (Files.isExecutable(path)
-            && operation == WasiFileOperation.EXECUTE
-            && !securityPolicy.isExecuteAllowed()) {
-          throw new WasiPermissionException("File execution is forbidden by security policy");
-        }
+    if (Files.exists(path)) {
+      if (Files.isSymbolicLink(path) && !securityPolicy.areSymbolicLinksAllowed()) {
+        throw new WasiPermissionException("Access to symbolic links is forbidden");
       }
-    } catch (final IOException e) {
-      // If we can't check file properties, deny access for security
-      throw new WasiPermissionException("Unable to verify file properties: " + e.getMessage());
+
+      if (Files.isExecutable(path)
+          && operation == WasiFileOperation.EXECUTE
+          && !securityPolicy.isExecuteAllowed()) {
+        throw new WasiPermissionException("File execution is forbidden by security policy");
+      }
     }
   }
 

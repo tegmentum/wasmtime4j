@@ -6,9 +6,9 @@ import java.util.Set;
 /**
  * Represents the reference graph of objects in the WebAssembly GC heap.
  *
- * <p>The reference graph shows the relationships between objects, including which objects reference
- * which other objects. This is useful for debugging memory leaks and understanding object lifecycle
- * dependencies.
+ * <p>The reference graph shows the relationships between objects, including which objects
+ * reference which other objects. This is useful for debugging memory leaks and understanding
+ * object lifecycle dependencies.
  *
  * @since 1.0.0
  */
@@ -84,7 +84,9 @@ public interface ReferenceGraph {
    */
   ReferenceEdgeInfo getReferenceEdge(long fromObjectId, long toObjectId);
 
-  /** Information about a reference edge between two objects. */
+  /**
+   * Information about a reference edge between two objects.
+   */
   interface ReferenceEdgeInfo {
     /** Gets the source object ID. */
     long getFromObjectId();

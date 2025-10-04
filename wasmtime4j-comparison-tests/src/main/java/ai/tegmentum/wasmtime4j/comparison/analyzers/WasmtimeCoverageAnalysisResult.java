@@ -72,6 +72,7 @@ public final class WasmtimeCoverageAnalysisResult {
     return baseCoverageResult;
   }
 
+  /** Builder for creating WasmtimeCoverageAnalysisResult instances. */
   public static final class Builder {
     private final String testName;
     private final WasmTestSuiteLoader.TestSuiteType suiteType;
@@ -118,6 +119,11 @@ public final class WasmtimeCoverageAnalysisResult {
       return this;
     }
 
+    /**
+     * Builds the coverage analysis result.
+     *
+     * @return configured coverage analysis result
+     */
     public WasmtimeCoverageAnalysisResult build() {
       return new WasmtimeCoverageAnalysisResult(
           testName,

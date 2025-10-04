@@ -171,10 +171,7 @@ public final class WasiProcessOperations {
             childProcesses.put(processHandle, processInfo);
 
             LOGGER.fine(
-                () ->
-                    String.format(
-                        "Process spawned successfully: handle=%d",
-                        processHandle));
+                () -> String.format("Process spawned successfully: handle=%d", processHandle));
 
             return processHandle;
 

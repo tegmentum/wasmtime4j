@@ -62,36 +62,36 @@ public class GcComprehensiveTest {
     LOGGER.info("Testing I31 reference operations");
 
     // Test creating I31 references with various values
-    I31Instance i31_0 = gcRuntime.createI31(0);
-    I31Instance i31_positive = gcRuntime.createI31(42);
-    I31Instance i31_negative = gcRuntime.createI31(-100);
-    I31Instance i31_max = gcRuntime.createI31(Integer.MAX_VALUE >> 1); // 31-bit max
-    I31Instance i31_min = gcRuntime.createI31(Integer.MIN_VALUE >> 1); // 31-bit min
+    I31Instance i31Zero = gcRuntime.createI31(0);
+    I31Instance i31Positive = gcRuntime.createI31(42);
+    I31Instance i31Negative = gcRuntime.createI31(-100);
+    I31Instance i31Max = gcRuntime.createI31(Integer.MAX_VALUE >> 1); // 31-bit max
+    I31Instance i31Min = gcRuntime.createI31(Integer.MIN_VALUE >> 1); // 31-bit min
 
     // Test value retrieval
-    assertEquals(0, i31_0.getValue());
-    assertEquals(42, i31_positive.getValue());
-    assertEquals(-100, i31_negative.getValue());
+    assertEquals(0, i31Zero.getValue());
+    assertEquals(42, i31Positive.getValue());
+    assertEquals(-100, i31Negative.getValue());
 
     // Test signed/unsigned value access
-    assertEquals(42, i31_positive.getSignedValue());
-    assertEquals(42, i31_positive.getUnsignedValue());
-    assertEquals(-100, i31_negative.getSignedValue());
-    assertTrue(i31_negative.getUnsignedValue() >= 0); // Unsigned should be positive
+    assertEquals(42, i31Positive.getSignedValue());
+    assertEquals(42, i31Positive.getUnsignedValue());
+    assertEquals(-100, i31Negative.getSignedValue());
+    assertTrue(i31Negative.getUnsignedValue() >= 0); // Unsigned should be positive
 
     // Test reference type checking
-    assertTrue(gcRuntime.refTest(i31_positive, GcReferenceType.I31_REF));
-    assertTrue(gcRuntime.refTest(i31_positive, GcReferenceType.EQ_REF));
-    assertTrue(gcRuntime.refTest(i31_positive, GcReferenceType.ANY_REF));
+    assertTrue(gcRuntime.refTest(i31Positive, GcReferenceType.I31_REF));
+    assertTrue(gcRuntime.refTest(i31Positive, GcReferenceType.EQ_REF));
+    assertTrue(gcRuntime.refTest(i31Positive, GcReferenceType.ANY_REF));
 
     // Test reference equality
-    assertTrue(gcRuntime.refEquals(i31_positive, i31_positive));
-    assertFalse(gcRuntime.refEquals(i31_positive, i31_negative));
-    assertFalse(gcRuntime.refEquals(i31_positive, null));
+    assertTrue(gcRuntime.refEquals(i31Positive, i31Positive));
+    assertFalse(gcRuntime.refEquals(i31Positive, i31Negative));
+    assertFalse(gcRuntime.refEquals(i31Positive, null));
     assertTrue(gcRuntime.refEquals(null, null));
 
     // Test null checking
-    assertFalse(gcRuntime.isNull(i31_positive));
+    assertFalse(gcRuntime.isNull(i31Positive));
     assertTrue(gcRuntime.isNull(null));
 
     LOGGER.info("I31 reference operations test completed successfully");
@@ -218,12 +218,13 @@ public class GcComprehensiveTest {
     StructType structType =
         StructType.builder("TestStruct").addField("value", FieldType.i32(), true).build();
     gcRuntime.registerStructType(structType);
-    StructInstance struct = gcRuntime.createStruct(structType, Arrays.asList(GcValue.i32(123)));
+    final StructInstance struct =
+        gcRuntime.createStruct(structType, Arrays.asList(GcValue.i32(123)));
 
     ArrayType arrayType =
         ArrayType.builder("TestArray").elementType(FieldType.i32()).mutable(true).build();
     gcRuntime.registerArrayType(arrayType);
-    ArrayInstance array = gcRuntime.createArray(arrayType, Arrays.asList(GcValue.i32(456)));
+    final ArrayInstance array = gcRuntime.createArray(arrayType, Arrays.asList(GcValue.i32(456)));
 
     // Test type hierarchy relationships
     assertTrue(gcRuntime.refTest(i31, GcReferenceType.I31_REF));
@@ -277,7 +278,7 @@ public class GcComprehensiveTest {
     assertNotNull(initialStats);
 
     long initialAllocated = initialStats.getTotalAllocated();
-    long initialCollections = initialStats.getMajorCollections();
+    final long initialCollections = initialStats.getMajorCollections();
 
     // Allocate some objects
     for (int i = 0; i < 100; i++) {

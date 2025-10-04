@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +61,8 @@ public final class PanamaWasmThread implements WasmThread {
       new AtomicReference<>(WasmThreadState.NEW);
 
   static {
-    PanamaNativeLoader.loadNativeLibrary();
+    // TODO: Load native library when PanamaNativeLoader is implemented
+    // PanamaNativeLoader.loadNativeLibrary();
   }
 
   /**
@@ -97,7 +97,8 @@ public final class PanamaWasmThread implements WasmThread {
     this.threadLocalStorage = new PanamaWasmThreadLocalStorage(nativeHandle, arena);
 
     // Register for cleanup
-    PanamaResourceRegistry.register(this, nativeHandle.address());
+    // TODO: Register resource when PanamaResourceRegistry is implemented
+    // PanamaResourceRegistry.register(this, nativeHandle.address());
   }
 
   @Override
@@ -108,12 +109,16 @@ public final class PanamaWasmThread implements WasmThread {
   @Override
   public WasmThreadState getState() {
     ensureNotClosed();
+    // TODO: Implement when PanamaThreadingBindings is available
+    return currentState.get();
+    /*
     try {
       final int stateValue = PanamaThreadingBindings.getThreadState(nativeHandle);
       return WasmThreadState.values()[stateValue];
     } catch (final Exception e) {
       return WasmThreadState.ERROR;
     }
+    */
   }
 
   @Override
@@ -123,6 +128,11 @@ public final class PanamaWasmThread implements WasmThread {
     validateNotNull(function, "function");
     validateNotNull(args, "args");
 
+    // TODO: Implement when PanamaThreadingBindings and PanamaValueConverter are available
+    throw new UnsupportedOperationException(
+        "Thread function execution not yet implemented in Panama backend");
+
+    /*
     if (getState() != WasmThreadState.NEW && getState() != WasmThreadState.TERMINATED) {
       throw new IllegalStateException(
           "Thread must be in NEW or TERMINATED state to execute function");
@@ -154,6 +164,7 @@ public final class PanamaWasmThread implements WasmThread {
             throw new RuntimeException("Function execution failed", e);
           }
         });
+    */
   }
 
   @Override
@@ -184,6 +195,10 @@ public final class PanamaWasmThread implements WasmThread {
   public void join() throws WasmException, InterruptedException {
     ensureNotClosed();
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    throw new UnsupportedOperationException("Thread join not yet implemented in Panama backend");
+
+    /*
     try {
       PanamaThreadingBindings.joinThread(nativeHandle);
     } catch (final Exception e) {
@@ -192,6 +207,7 @@ public final class PanamaWasmThread implements WasmThread {
       }
       throw new WasmException("Thread join failed: " + e.getMessage(), e);
     }
+    */
   }
 
   @Override
@@ -202,6 +218,11 @@ public final class PanamaWasmThread implements WasmThread {
       throw new IllegalArgumentException("Timeout must be non-negative");
     }
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    throw new UnsupportedOperationException(
+        "Thread join with timeout not yet implemented in Panama backend");
+
+    /*
     try {
       return PanamaThreadingBindings.joinThreadTimeout(nativeHandle, timeoutMs);
     } catch (final Exception e) {
@@ -210,6 +231,7 @@ public final class PanamaWasmThread implements WasmThread {
       }
       throw new WasmException("Thread join with timeout failed: " + e.getMessage(), e);
     }
+    */
   }
 
   @Override
@@ -218,6 +240,12 @@ public final class PanamaWasmThread implements WasmThread {
       return CompletableFuture.completedFuture(null);
     }
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    return CompletableFuture.failedFuture(
+        new UnsupportedOperationException(
+            "Thread termination not yet implemented in Panama backend"));
+
+    /*
     return CompletableFuture.runAsync(
         () -> {
           try {
@@ -240,18 +268,25 @@ public final class PanamaWasmThread implements WasmThread {
             throw new RuntimeException("Thread termination failed", e);
           }
         });
+    */
   }
 
   @Override
   public void forceTerminate() throws WasmException {
     ensureNotClosed();
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    throw new UnsupportedOperationException(
+        "Force termination not yet implemented in Panama backend");
+
+    /*
     try {
       PanamaThreadingBindings.forceTerminate(nativeHandle);
       currentState.set(WasmThreadState.KILLED);
     } catch (final Exception e) {
       throw new WasmException("Force termination failed: " + e.getMessage(), e);
     }
+    */
   }
 
   @Override
@@ -278,19 +313,36 @@ public final class PanamaWasmThread implements WasmThread {
 
   @Override
   public boolean isTerminationRequested() {
-    ensureNotClosed();
+    try {
+      ensureNotClosed();
+    } catch (final Exception e) {
+      return false;
+    }
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    return false;
+
+    /*
     try {
       return PanamaThreadingBindings.isTerminationRequested(nativeHandle);
     } catch (final Exception e) {
       return false;
     }
+    */
   }
 
   @Override
   public WasmThreadStatistics getStatistics() {
-    ensureNotClosed();
+    try {
+      ensureNotClosed();
+    } catch (final Exception e) {
+      return new WasmThreadStatistics(0, 0, 0, 0, 0, 0);
+    }
 
+    // TODO: Implement when PanamaThreadingBindings is available
+    return new WasmThreadStatistics(0, 0, 0, 0, 0, 0);
+
+    /*
     try {
       try (final Arena statsArena = Arena.ofConfined()) {
         final MemorySegment statsSegment =
@@ -315,6 +367,7 @@ public final class PanamaWasmThread implements WasmThread {
     } catch (final Exception e) {
       return new WasmThreadStatistics(0, 0, 0, 0, 0, 0);
     }
+    */
   }
 
   @Override
@@ -344,11 +397,11 @@ public final class PanamaWasmThread implements WasmThread {
         ((PanamaWasmThreadLocalStorage) threadLocalStorage).close();
       }
 
-      // Clean up native resources
-      PanamaThreadingBindings.destroyThread(nativeHandle);
+      // TODO: Clean up native resources when PanamaThreadingBindings is available
+      // PanamaThreadingBindings.destroyThread(nativeHandle);
 
-      // Unregister from cleanup
-      PanamaResourceRegistry.unregister(nativeHandle.address());
+      // TODO: Unregister from cleanup when PanamaResourceRegistry is available
+      // PanamaResourceRegistry.unregister(nativeHandle.address());
 
     } catch (final Exception e) {
       throw new WasmException("Failed to close thread: " + e.getMessage(), e);

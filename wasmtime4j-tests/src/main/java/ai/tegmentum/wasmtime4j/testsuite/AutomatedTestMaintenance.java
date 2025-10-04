@@ -37,6 +37,11 @@ public final class AutomatedTestMaintenance {
   private final ScheduledExecutorService scheduler;
   private final HttpClient httpClient;
 
+  /**
+   * Creates a new automated test maintenance instance.
+   *
+   * @param configuration test suite configuration
+   */
   public AutomatedTestMaintenance(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Configuration cannot be null");

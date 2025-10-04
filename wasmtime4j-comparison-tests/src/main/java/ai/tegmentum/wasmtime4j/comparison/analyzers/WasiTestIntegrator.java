@@ -132,6 +132,7 @@ public final class WasiTestIntegrator {
       return previewVersion;
     }
 
+    /** Builder for creating WasiEnvironmentConfiguration instances. */
     public static final class Builder {
       private final Map<String, String> environmentVariables = new HashMap<>();
       private final List<String> commandLineArguments = new ArrayList<>();
@@ -205,6 +206,17 @@ public final class WasiTestIntegrator {
     private final Instant executionTime;
     private final boolean successful;
 
+    /**
+     * Creates a test execution result with runtime results and analysis.
+     *
+     * @param testName name of the executed test
+     * @param category test category
+     * @param environment WASI environment configuration used
+     * @param runtimeResults execution results per runtime
+     * @param compatibilityAnalysis compatibility analysis results
+     * @param performanceMetrics performance metrics collected
+     * @param successful true if test execution was successful
+     */
     public WasiTestExecutionResult(
         final String testName,
         final WasiTestCategory category,
@@ -264,6 +276,15 @@ public final class WasiTestIntegrator {
     private final Map<String, String> compatibilityIssues;
     private final double overallCompatibilityScore;
 
+    /**
+     * Creates a compatibility analysis with feature support assessment.
+     *
+     * @param previewCompatibilityScores compatibility scores per runtime
+     * @param supportedWasiFeatures WASI features that are supported
+     * @param unsupportedWasiFeatures WASI features that are not supported
+     * @param compatibilityIssues issues found during compatibility analysis
+     * @param overallCompatibilityScore overall compatibility score
+     */
     public WasiCompatibilityAnalysis(
         final Map<RuntimeType, Double> previewCompatibilityScores,
         final Set<String> supportedWasiFeatures,
@@ -306,6 +327,15 @@ public final class WasiTestIntegrator {
     private final Map<RuntimeType, Integer> systemCallCounts;
     private final Map<RuntimeType, Long> memoryUsage;
 
+    /**
+     * Creates performance metrics with WASI-specific measurements.
+     *
+     * @param ioOperationTimes I/O operation execution times per runtime
+     * @param filesystemOperationTimes filesystem operation times per runtime
+     * @param networkOperationTimes network operation times per runtime
+     * @param systemCallCounts system call counts per runtime
+     * @param memoryUsage memory usage per runtime
+     */
     public WasiPerformanceMetrics(
         final Map<RuntimeType, Long> ioOperationTimes,
         final Map<RuntimeType, Long> filesystemOperationTimes,

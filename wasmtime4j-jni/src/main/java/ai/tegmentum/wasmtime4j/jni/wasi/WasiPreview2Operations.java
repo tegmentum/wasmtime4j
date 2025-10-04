@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -676,7 +677,10 @@ public final class WasiPreview2Operations {
     public WasiHttpResponse(
         final int statusCode, final Map<String, String> headers, final ByteBuffer body) {
       this.statusCode = statusCode;
-      this.headers = headers != null ? Map.copyOf(headers) : Collections.emptyMap();
+      this.headers =
+          headers != null
+              ? Collections.unmodifiableMap(new java.util.HashMap<>(headers))
+              : Collections.emptyMap();
       this.body = body;
     }
 

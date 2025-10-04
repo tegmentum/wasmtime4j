@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
+import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
 import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.Arena;
@@ -272,8 +273,9 @@ public final class WasiContextBuilder {
    *
    * @return the configured WASI context
    * @throws RuntimeException if the WASI context cannot be created
+   * @throws WasiPermissionException if configuration validation fails
    */
-  public WasiContext build() {
+  public WasiContext build() throws WasiPermissionException {
     LOGGER.info(
         String.format(
             "Building Panama WASI context with %d environment variables, %d arguments, %d preopen"
@@ -370,7 +372,7 @@ public final class WasiContextBuilder {
   }
 
   /** Validates the configuration before creating the WASI context. */
-  private void validateConfiguration() {
+  private void validateConfiguration() throws WasiPermissionException {
     // Validate pre-opened directories
     for (final Map.Entry<String, Path> entry : preopenedDirectories.entrySet()) {
       final String guestDir = entry.getKey();

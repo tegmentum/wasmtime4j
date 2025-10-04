@@ -6,6 +6,7 @@
  * accordance with the terms of the license agreement you entered into with
  * Tegmentum AI.
  */
+
 package ai.tegmentum.wasmtime4j.webassembly.spec;
 
 import java.io.IOException;

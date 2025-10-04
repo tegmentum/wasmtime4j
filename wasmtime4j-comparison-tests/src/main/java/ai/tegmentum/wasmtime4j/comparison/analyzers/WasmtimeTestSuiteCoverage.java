@@ -13,6 +13,13 @@ public final class WasmtimeTestSuiteCoverage {
   private final double coveragePercentage;
   private final Map<WasmTestSuiteLoader.TestSuiteType, Integer> testSuiteDistribution;
 
+  /**
+   * Creates a new Wasmtime test suite coverage instance.
+   *
+   * @param executedTests number of tests executed
+   * @param coveragePercentage coverage percentage achieved
+   * @param testSuiteDistribution distribution of tests across suite types
+   */
   public WasmtimeTestSuiteCoverage(
       final int executedTests,
       final double coveragePercentage,

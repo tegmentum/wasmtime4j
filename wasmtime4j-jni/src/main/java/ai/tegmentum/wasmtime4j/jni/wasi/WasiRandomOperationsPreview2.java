@@ -294,8 +294,10 @@ public final class WasiRandomOperationsPreview2 {
    */
   public CompletableFuture<Integer> getRandomInRangeAsync(final int min, final int max) {
     if (min >= max) {
-      return CompletableFuture.failedFuture(
+      final CompletableFuture<Integer> future = new CompletableFuture<>();
+      future.completeExceptionally(
           new WasiException("Invalid range: min must be less than max", WasiErrorCode.EINVAL));
+      return future;
     }
 
     return CompletableFuture.supplyAsync(

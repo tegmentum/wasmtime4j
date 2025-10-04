@@ -272,7 +272,7 @@ class StreamingCompilationIntegrationTest {
       assertEquals(
           CompilationPhase.PARSING, stats.getCurrentPhase(), "Should start with parsing phase");
 
-      Module module = future.get(10, TimeUnit.SECONDS);
+      final Module module = future.get(10, TimeUnit.SECONDS);
 
       // Check final statistics
       stats = compiler.getStatistics();

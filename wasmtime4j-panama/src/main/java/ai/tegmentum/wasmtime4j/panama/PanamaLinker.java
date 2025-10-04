@@ -1,276 +1,57 @@
-/*
- * Copyright 2025 Tegmentum AI
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.ImportInfo;
+import ai.tegmentum.wasmtime4j.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.InstantiationPlan;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaMemoryManager;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
-import java.lang.invoke.MethodHandle;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Panama FFI implementation of the WebAssembly linker interface.
+ * Panama FFI implementation of WebAssembly Linker.
  *
- * <p>A WebAssembly linker provides the mechanism to define host functions and bind imports before
- * instantiating WebAssembly modules. This implementation uses Panama FFI for direct access to the
- * underlying Wasmtime linker structure with zero-copy optimization.
- *
- * <p>Linkers enable advanced WebAssembly integration patterns including host function binding,
- * module linking, and WASI integration. All operations use Arena-based resource management for
- * automatic cleanup.
- *
+ * @param <T> the type of user data associated with stores
  * @since 1.0.0
  */
-public final class PanamaLinker implements Linker, AutoCloseable {
-
+public final class PanamaLinker<T> implements Linker<T> {
   private static final Logger LOGGER = Logger.getLogger(PanamaLinker.class.getName());
 
-  /** Memory segment representing the native linker handle. */
-  private final MemorySegment linkerHandle;
-
-  /** Arena for managing memory lifecycle. */
+  private final PanamaEngine engine;
   private final Arena arena;
-
-  /** Reference to the engine this linker was created for. */
-  private final Engine engine;
-
-  /** Flag to track if this linker has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
-
-  /** Memory manager for optimized FFI operations. */
-  private final PanamaMemoryManager memoryManager;
-
-  // Method handles for native functions (will be initialized from native library)
-  private static final MethodHandle CREATE_LINKER;
-  private static final MethodHandle DEFINE_HOST_FUNCTION;
-  private static final MethodHandle DEFINE_MEMORY;
-  private static final MethodHandle DEFINE_TABLE;
-  private static final MethodHandle DEFINE_GLOBAL;
-  private static final MethodHandle DEFINE_INSTANCE;
-  private static final MethodHandle CREATE_ALIAS;
-  private static final MethodHandle INSTANTIATE;
-  private static final MethodHandle ENABLE_WASI;
-  private static final MethodHandle DESTROY_LINKER;
-  // Advanced resolution method handles
-  private static final MethodHandle HAS_IMPORT;
-  private static final MethodHandle RESOLVE_DEPENDENCIES;
-  private static final MethodHandle VALIDATE_IMPORTS;
-  private static final MethodHandle DESTROY_DEPENDENCY_GRAPH;
-  private static final MethodHandle DESTROY_VALIDATION_ISSUES;
-
-  static {
-    // Initialize method handles - these would be loaded from the native library
-    // For now, we'll use placeholder implementations
-    try {
-      CREATE_LINKER =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_create",
-              FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-      DEFINE_HOST_FUNCTION =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_define_host_function",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS, // linker
-                  ValueLayout.ADDRESS, // module_name
-                  ValueLayout.ADDRESS, // function_name
-                  ValueLayout.ADDRESS, // param_types
-                  ValueLayout.JAVA_INT, // param_count
-                  ValueLayout.ADDRESS, // return_types
-                  ValueLayout.JAVA_INT, // return_count
-                  ValueLayout.ADDRESS)); // host_function
-      DEFINE_MEMORY =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_define_memory",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      DEFINE_TABLE =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_define_table",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      DEFINE_GLOBAL =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_define_global",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      DEFINE_INSTANCE =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_define_instance",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      CREATE_ALIAS =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_alias",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      INSTANTIATE =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_instantiate",
-              FunctionDescriptor.of(
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      ENABLE_WASI =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_enable_wasi",
-              FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
-      DESTROY_LINKER =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-      // Advanced resolution method handles
-      HAS_IMPORT =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_has_import",
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_INT,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS));
-      RESOLVE_DEPENDENCIES =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_resolve_dependencies",
-              FunctionDescriptor.of(
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_LONG));
-      VALIDATE_IMPORTS =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_linker_validate_imports",
-              FunctionDescriptor.of(
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_LONG,
-                  ValueLayout.ADDRESS));
-      DESTROY_DEPENDENCY_GRAPH =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_dependency_graph_destroy",
-              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-      DESTROY_VALIDATION_ISSUES =
-          PanamaNativeLibrary.findFunction(
-              "wasmtime4j_validation_issues_destroy",
-              FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-    } catch (final Exception e) {
-      throw new ExceptionInInitializerError(
-          "Failed to initialize Panama linker: " + e.getMessage());
-    }
-  }
+  private final MemorySegment nativeLinker;
+  private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama linker with the given handle, arena, and engine.
-   *
-   * @param linkerHandle the native linker handle
-   * @param arena the arena for memory management
-   * @param engine the engine this linker was created for
-   * @throws IllegalArgumentException if any parameter is null or handle is NULL
-   */
-  private PanamaLinker(final MemorySegment linkerHandle, final Arena arena, final Engine engine) {
-    PanamaValidation.requireNonNull(linkerHandle, "linkerHandle");
-    PanamaValidation.requireNonNull(arena, "arena");
-    PanamaValidation.requireNonNull(engine, "engine");
-
-    if (linkerHandle.equals(MemorySegment.NULL)) {
-      throw new IllegalArgumentException("Linker handle cannot be NULL");
-    }
-
-    this.linkerHandle = linkerHandle;
-    this.arena = arena;
-    this.engine = engine;
-    this.memoryManager = new PanamaMemoryManager(arena);
-
-    LOGGER.fine("Created Panama linker with handle: " + linkerHandle);
-  }
-
-  /**
-   * Creates a new linker for the given engine.
+   * Creates a new Panama linker.
    *
    * @param engine the engine to create the linker for
-   * @return a new PanamaLinker instance
    * @throws WasmException if linker creation fails
-   * @throws IllegalArgumentException if engine is null or not a Panama engine
    */
-  public static PanamaLinker create(final Engine engine) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a Panama engine instance");
+  public PanamaLinker(final PanamaEngine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
     }
+    this.engine = engine;
+    this.arena = Arena.ofShared();
 
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-    final Arena arena = Arena.ofConfined();
+    // TODO: Create native linker via Panama FFI
+    this.nativeLinker = MemorySegment.NULL;
 
-    try {
-      final MemorySegment engineHandle = panamaEngine.getHandle();
-      final MemorySegment linkerHandle = (MemorySegment) CREATE_LINKER.invokeExact(engineHandle);
-
-      if (linkerHandle.equals(MemorySegment.NULL)) {
-        arena.close();
-        throw new WasmException("Failed to create native linker");
-      }
-
-      return new PanamaLinker(linkerHandle, arena, engine);
-    } catch (final WasmException e) {
-      arena.close();
-      throw e;
-    } catch (final Throwable e) {
-      arena.close();
-      throw PanamaExceptionMapper.mapException(e);
-    }
+    LOGGER.fine("Created Panama linker");
   }
 
   @Override
@@ -280,298 +61,147 @@ public final class PanamaLinker implements Linker, AutoCloseable {
       final FunctionType functionType,
       final HostFunction implementation)
       throws WasmException {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonBlank(name, "name");
-    PanamaValidation.requireNonNull(functionType, "functionType");
-    PanamaValidation.requireNonNull(implementation, "implementation");
-    ensureNotClosed();
-
-    try {
-      // Convert strings to native memory
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment functionNameSegment = memoryManager.allocateString(name);
-
-      // Convert function type to native representation
-      final int[] paramTypes = convertToNativeTypes(functionType.getParamTypes());
-      final int[] returnTypes = convertToNativeTypes(functionType.getReturnTypes());
-
-      final MemorySegment paramTypesSegment = memoryManager.allocateIntArray(paramTypes);
-      final MemorySegment returnTypesSegment = memoryManager.allocateIntArray(returnTypes);
-
-      // Create host function wrapper
-      final MemorySegment hostFunctionHandle = createHostFunction(implementation, functionType);
-
-      final boolean success =
-          (boolean)
-              DEFINE_HOST_FUNCTION.invokeExact(
-                  linkerHandle,
-                  moduleNameSegment,
-                  functionNameSegment,
-                  paramTypesSegment,
-                  paramTypes.length,
-                  returnTypesSegment,
-                  returnTypes.length,
-                  hostFunctionHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
-      }
-
-      LOGGER.fine("Defined host function " + moduleName + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement host function definition
+    throw new UnsupportedOperationException("Host function definition not yet implemented");
   }
 
   @Override
   public void defineMemory(final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonBlank(name, "name");
-    PanamaValidation.requireNonNull(memory, "memory");
-    ensureNotClosed();
-
-    try {
-      if (!(memory instanceof PanamaMemory)) {
-        throw new IllegalArgumentException("Memory must be a Panama memory instance");
-      }
-
-      final PanamaMemory panamaMemory = (PanamaMemory) memory;
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment memoryNameSegment = memoryManager.allocateString(name);
-      final MemorySegment memoryHandle = panamaMemory.getHandle();
-
-      final boolean success =
-          (boolean)
-              DEFINE_MEMORY.invokeExact(
-                  linkerHandle, moduleNameSegment, memoryNameSegment, memoryHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
-      }
-
-      LOGGER.fine("Defined memory " + moduleName + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (memory == null) {
+      throw new IllegalArgumentException("Memory cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement memory definition
+    throw new UnsupportedOperationException("Memory definition not yet implemented");
   }
 
   @Override
   public void defineTable(final String moduleName, final String name, final WasmTable table)
       throws WasmException {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonBlank(name, "name");
-    PanamaValidation.requireNonNull(table, "table");
-    ensureNotClosed();
-
-    try {
-      if (!(table instanceof PanamaTable)) {
-        throw new IllegalArgumentException("Table must be a Panama table instance");
-      }
-
-      final PanamaTable panamaTable = (PanamaTable) table;
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment tableNameSegment = memoryManager.allocateString(name);
-      final MemorySegment tableHandle = panamaTable.getHandle();
-
-      final boolean success =
-          (boolean)
-              DEFINE_TABLE.invokeExact(
-                  linkerHandle, moduleNameSegment, tableNameSegment, tableHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define table: " + moduleName + "::" + name);
-      }
-
-      LOGGER.fine("Defined table " + moduleName + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (table == null) {
+      throw new IllegalArgumentException("Table cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement table definition
+    throw new UnsupportedOperationException("Table definition not yet implemented");
   }
 
   @Override
   public void defineGlobal(final String moduleName, final String name, final WasmGlobal global)
       throws WasmException {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonBlank(name, "name");
-    PanamaValidation.requireNonNull(global, "global");
-    ensureNotClosed();
-
-    try {
-      if (!(global instanceof PanamaGlobal)) {
-        throw new IllegalArgumentException("Global must be a Panama global instance");
-      }
-
-      final PanamaGlobal panamaGlobal = (PanamaGlobal) global;
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment globalNameSegment = memoryManager.allocateString(name);
-      final MemorySegment globalHandle = panamaGlobal.getHandle();
-
-      final boolean success =
-          (boolean)
-              DEFINE_GLOBAL.invokeExact(
-                  linkerHandle, moduleNameSegment, globalNameSegment, globalHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define global: " + moduleName + "::" + name);
-      }
-
-      LOGGER.fine("Defined global " + moduleName + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (global == null) {
+      throw new IllegalArgumentException("Global cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement global definition
+    throw new UnsupportedOperationException("Global definition not yet implemented");
   }
 
   @Override
   public void defineInstance(final String moduleName, final Instance instance)
       throws WasmException {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonNull(instance, "instance");
-    ensureNotClosed();
-
-    try {
-      if (!(instance instanceof PanamaInstance)) {
-        throw new IllegalArgumentException("Instance must be a Panama instance");
-      }
-
-      final PanamaInstance panamaInstance = (PanamaInstance) instance;
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment instanceHandle = panamaInstance.getHandle();
-
-      final boolean success =
-          (boolean) DEFINE_INSTANCE.invokeExact(linkerHandle, moduleNameSegment, instanceHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define instance: " + moduleName);
-      }
-
-      LOGGER.fine("Defined instance for module " + moduleName);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement instance definition
+    throw new UnsupportedOperationException("Instance definition not yet implemented");
   }
 
   @Override
   public void alias(
-      final String fromModule, final String fromName, final String toModule, final String toName)
+      final String fromModule,
+      final String fromName,
+      final String toModule,
+      final String toName)
       throws WasmException {
-    PanamaValidation.requireNonBlank(fromModule, "fromModule");
-    PanamaValidation.requireNonBlank(fromName, "fromName");
-    PanamaValidation.requireNonBlank(toModule, "toModule");
-    PanamaValidation.requireNonBlank(toName, "toName");
-    ensureNotClosed();
-
-    try {
-      final MemorySegment fromModuleSegment = memoryManager.allocateString(fromModule);
-      final MemorySegment fromNameSegment = memoryManager.allocateString(fromName);
-      final MemorySegment toModuleSegment = memoryManager.allocateString(toModule);
-      final MemorySegment toNameSegment = memoryManager.allocateString(toName);
-
-      final boolean success =
-          (boolean)
-              CREATE_ALIAS.invokeExact(
-                  linkerHandle, fromModuleSegment, fromNameSegment, toModuleSegment, toNameSegment);
-
-      if (!success) {
-        throw new WasmException(
-            "Failed to create alias: "
-                + fromModule
-                + "::"
-                + fromName
-                + " -> "
-                + toModule
-                + "::"
-                + toName);
-      }
-
-      LOGGER.fine(
-          "Created alias " + fromModule + "::" + fromName + " -> " + toModule + "::" + toName);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (fromModule == null) {
+      throw new IllegalArgumentException("From module cannot be null");
     }
+    if (fromName == null) {
+      throw new IllegalArgumentException("From name cannot be null");
+    }
+    if (toModule == null) {
+      throw new IllegalArgumentException("To module cannot be null");
+    }
+    if (toName == null) {
+      throw new IllegalArgumentException("To name cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement aliasing
+    throw new UnsupportedOperationException("Aliasing not yet implemented");
   }
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
-    PanamaValidation.requireNonNull(store, "store");
-    PanamaValidation.requireNonNull(module, "module");
-    ensureNotClosed();
-
-    try {
-      if (!(store instanceof PanamaStore)) {
-        throw new IllegalArgumentException("Store must be a Panama store instance");
-      }
-      if (!(module instanceof PanamaModule)) {
-        throw new IllegalArgumentException("Module must be a Panama module instance");
-      }
-
-      final PanamaStore panamaStore = (PanamaStore) store;
-      final PanamaModule panamaModule = (PanamaModule) module;
-
-      final MemorySegment instanceHandle =
-          (MemorySegment)
-              INSTANTIATE.invokeExact(
-                  linkerHandle, panamaStore.getHandle(), panamaModule.getHandle());
-
-      if (instanceHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to instantiate module");
-      }
-
-      final PanamaInstance instance =
-          PanamaInstance.fromHandle(instanceHandle, module, store, arena);
-      LOGGER.fine("Successfully instantiated module");
-      return instance;
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
     }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement module instantiation
+    throw new UnsupportedOperationException("Instantiation not yet implemented");
   }
 
   @Override
   public Instance instantiate(final Store store, final String moduleName, final Module module)
       throws WasmException {
-    final Instance instance = instantiate(store, module);
-
-    try {
-      defineInstance(moduleName, instance);
-      LOGGER.fine("Instantiated and registered module as '" + moduleName + "'");
-      return instance;
-    } catch (final WasmException e) {
-      // If we can't register the instance, still return it but close it
-      instance.close();
-      throw e;
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
     }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement named module instantiation
+    throw new UnsupportedOperationException("Named instantiation not yet implemented");
   }
 
   @Override
   public void enableWasi() throws WasmException {
     ensureNotClosed();
-
-    try {
-      final boolean success = (boolean) ENABLE_WASI.invokeExact(linkerHandle);
-      if (!success) {
-        throw new WasmException("Failed to enable WASI");
-      }
-
-      LOGGER.fine("WASI support enabled");
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
-    }
+    // TODO: Implement WASI enablement
+    throw new UnsupportedOperationException("WASI not yet implemented");
   }
 
   @Override
@@ -581,318 +211,92 @@ public final class PanamaLinker implements Linker, AutoCloseable {
 
   @Override
   public boolean isValid() {
-    return !closed.get() && !linkerHandle.equals(MemorySegment.NULL);
+    return !closed;
   }
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    PanamaValidation.requireNonBlank(moduleName, "moduleName");
-    PanamaValidation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
-    try {
-      final MemorySegment moduleNameSegment = memoryManager.allocateString(moduleName);
-      final MemorySegment importNameSegment = memoryManager.allocateString(name);
-
-      final int result =
-          (int) HAS_IMPORT.invokeExact(linkerHandle, moduleNameSegment, importNameSegment);
-      return result == 1;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+    // TODO: Implement import check
+    return false;
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(
-      final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
-    PanamaValidation.requireNonNull(modules, "modules");
-    if (modules.length == 0) {
-      throw new IllegalArgumentException("modules array cannot be empty");
+  public DependencyResolution resolveDependencies(final Module... modules) throws WasmException {
+    if (modules == null || modules.length == 0) {
+      throw new IllegalArgumentException("Modules cannot be null or empty");
     }
     ensureNotClosed();
-
-    try {
-      // Convert modules to native handles
-      final MemorySegment moduleHandlesSegment = memoryManager.allocatePointerArray(modules.length);
-      for (int i = 0; i < modules.length; i++) {
-        if (!(modules[i] instanceof PanamaModule)) {
-          throw new IllegalArgumentException("All modules must be Panama module instances");
-        }
-        final PanamaModule panamaModule = (PanamaModule) modules[i];
-        moduleHandlesSegment.setAtIndex(C_POINTER, i, panamaModule.getHandle());
-      }
-
-      final MemorySegment graphHandle =
-          (MemorySegment)
-              RESOLVE_DEPENDENCIES.invokeExact(
-                  linkerHandle, moduleHandlesSegment, (long) modules.length);
-
-      if (graphHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to resolve dependencies");
-      }
-
-      // Convert native dependency graph to Java objects
-      final ai.tegmentum.wasmtime4j.DependencyResolution result =
-          convertDependencyGraph(graphHandle, modules);
-
-      // Clean up native graph
-      DESTROY_DEPENDENCY_GRAPH.invokeExact(graphHandle);
-
-      return result;
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
-    }
+    // TODO: Implement dependency resolution
+    throw new UnsupportedOperationException("Dependency resolution not yet implemented");
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(
-      final ai.tegmentum.wasmtime4j.Module... modules) {
-    PanamaValidation.requireNonNull(modules, "modules");
-    if (modules.length == 0) {
-      throw new IllegalArgumentException("modules array cannot be empty");
+  public ImportValidation validateImports(final Module... modules) {
+    if (modules == null || modules.length == 0) {
+      throw new IllegalArgumentException("Modules cannot be null or empty");
     }
     ensureNotClosed();
-
-    try {
-      // Convert modules to native handles
-      final MemorySegment moduleHandlesSegment = memoryManager.allocatePointerArray(modules.length);
-      for (int i = 0; i < modules.length; i++) {
-        if (!(modules[i] instanceof PanamaModule)) {
-          throw new IllegalArgumentException("All modules must be Panama module instances");
-        }
-        final PanamaModule panamaModule = (PanamaModule) modules[i];
-        moduleHandlesSegment.setAtIndex(C_POINTER, i, panamaModule.getHandle());
-      }
-
-      final MemorySegment issueCountSegment = memoryManager.allocateSize();
-      final MemorySegment validationResult =
-          (MemorySegment)
-              VALIDATE_IMPORTS.invokeExact(
-                  linkerHandle, moduleHandlesSegment, (long) modules.length, issueCountSegment);
-
-      if (validationResult.equals(MemorySegment.NULL)) {
-        throw new RuntimeException("Failed to validate imports");
-      }
-
-      final long issueCount = issueCountSegment.get(C_LONG, 0);
-
-      // Convert native validation result to Java objects
-      final ai.tegmentum.wasmtime4j.ImportValidation result =
-          convertValidationResult(validationResult, issueCount, modules);
-
-      // Clean up native validation result
-      DESTROY_VALIDATION_ISSUES.invokeExact(validationResult);
-
-      return result;
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
-    }
+    // TODO: Implement import validation
+    throw new UnsupportedOperationException("Import validation not yet implemented");
   }
 
   @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
+  public List<ImportInfo> getImportRegistry() {
     ensureNotClosed();
-
-    try {
-      // For now, return empty list - would need native function to get registry
-      return java.util.Collections.emptyList();
-    } catch (final Throwable e) {
-      throw PanamaExceptionMapper.mapException(e);
-    }
+    // TODO: Implement import registry
+    return Collections.emptyList();
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.InstantiationPlan createInstantiationPlan(
-      final ai.tegmentum.wasmtime4j.Module... modules) throws WasmException {
-    final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
-
-    if (!resolution.isResolutionSuccessful()) {
-      throw new WasmException("Cannot create instantiation plan: dependency resolution failed");
+  public InstantiationPlan createInstantiationPlan(final Module... modules) throws WasmException {
+    if (modules == null || modules.length == 0) {
+      throw new IllegalArgumentException("Modules cannot be null or empty");
     }
-
-    // Create instantiation steps based on the resolved order
-    final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps =
-        new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder =
-        resolution.getInstantiationOrder();
-
-    for (int i = 0; i < instantiationOrder.size(); i++) {
-      final ai.tegmentum.wasmtime4j.Module module = instantiationOrder.get(i);
-
-      // Extract import/export information for this module
-      final java.util.List<String> requiredImports = extractRequiredImports(module);
-      final java.util.List<String> providedExports = extractProvidedExports(module);
-
-      final ai.tegmentum.wasmtime4j.InstantiationStep step =
-          new ai.tegmentum.wasmtime4j.InstantiationStep(
-              i + 1, // 1-based step number
-              module,
-              java.util.Optional.of("module_" + i), // Generate a default name
-              requiredImports,
-              providedExports,
-              "Instantiate " + module.getName().orElse("unnamed module"));
-
-      steps.add(step);
-    }
-
-    final ai.tegmentum.wasmtime4j.InstantiationPlan plan =
-        new ai.tegmentum.wasmtime4j.InstantiationPlan(
-            steps,
-            resolution,
-            resolution.getAnalysisTime(), // Use same duration for planning
-            true // executable since resolution was successful
-            );
-
-    return plan;
+    ensureNotClosed();
+    // TODO: Implement instantiation plan creation
+    throw new UnsupportedOperationException("Instantiation plan not yet implemented");
   }
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        DESTROY_LINKER.invokeExact(linkerHandle);
-        arena.close();
-        LOGGER.fine("Closed Panama linker");
-      } catch (final Throwable e) {
-        LOGGER.warning("Error during linker cleanup: " + e.getMessage());
-      }
+    if (closed) {
+      return;
+    }
+
+    try {
+      // TODO: Destroy native linker
+      arena.close();
+      closed = true;
+      LOGGER.fine("Closed Panama linker");
+    } catch (final Exception e) {
+      LOGGER.warning("Error closing linker: " + e.getMessage());
     }
   }
 
   /**
-   * Gets the native linker handle.
+   * Gets the native linker pointer.
    *
-   * @return the memory segment representing the native handle
-   * @throws IllegalStateException if the linker is closed
+   * @return native linker memory segment
    */
-  public MemorySegment getHandle() {
-    ensureNotClosed();
-    return linkerHandle;
+  public MemorySegment getNativeLinker() {
+    return nativeLinker;
   }
 
   /**
-   * Ensures this linker is not closed.
+   * Ensures the linker is not closed.
    *
-   * @throws IllegalStateException if this linker is closed
+   * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed.get()) {
+    if (closed) {
       throw new IllegalStateException("Linker has been closed");
     }
-  }
-
-  /**
-   * Converts WasmValueType array to native type representation.
-   *
-   * @param types the WasmValueType array to convert
-   * @return array of native type constants
-   */
-  private int[] convertToNativeTypes(final WasmValueType[] types) {
-    final int[] nativeTypes = new int[types.length];
-    for (int i = 0; i < types.length; i++) {
-      switch (types[i]) {
-        case I32:
-          nativeTypes[i] = 0;
-          break;
-        case I64:
-          nativeTypes[i] = 1;
-          break;
-        case F32:
-          nativeTypes[i] = 2;
-          break;
-        case F64:
-          nativeTypes[i] = 3;
-          break;
-        case V128:
-          nativeTypes[i] = 4;
-          break;
-        case FUNCREF:
-          nativeTypes[i] = 5;
-          break;
-        case EXTERNREF:
-          nativeTypes[i] = 6;
-          break;
-        default:
-          throw new IllegalArgumentException("Unknown WebAssembly value type: " + types[i]);
-      }
-    }
-    return nativeTypes;
-  }
-
-  /**
-   * Creates a native host function wrapper.
-   *
-   * @param implementation the host function implementation
-   * @param functionType the function type
-   * @return memory segment representing the native host function
-   */
-  private MemorySegment createHostFunction(
-      final HostFunction implementation, final FunctionType functionType) {
-    // This would create a callback that can be called from native code
-    // For now, return a placeholder
-    return MemorySegment.NULL;
-  }
-
-  /** Converts native dependency graph to Java DependencyResolution object. */
-  private ai.tegmentum.wasmtime4j.DependencyResolution convertDependencyGraph(
-      final MemorySegment graphHandle, final ai.tegmentum.wasmtime4j.Module[] modules) {
-
-    // For now, create a simplified version
-    // In a full implementation, this would extract data from the native graph
-    final java.util.List<ai.tegmentum.wasmtime4j.Module> instantiationOrder =
-        java.util.Arrays.asList(modules);
-    final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
-        java.util.Collections.emptyList();
-    final java.time.Duration analysisTime = java.time.Duration.ofMillis(1);
-
-    return new ai.tegmentum.wasmtime4j.DependencyResolution(
-        instantiationOrder,
-        dependencies,
-        false, // hasCircularDependencies
-        java.util.Collections.emptyList(), // circularDependencyChains
-        modules.length,
-        0, // resolvedDependencies
-        analysisTime,
-        true // resolutionSuccessful
-        );
-  }
-
-  /** Converts native validation result to Java ImportValidation object. */
-  private ai.tegmentum.wasmtime4j.ImportValidation convertValidationResult(
-      final MemorySegment validationResult,
-      final long issueCount,
-      final ai.tegmentum.wasmtime4j.Module[] modules) {
-
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues =
-        java.util.Collections.emptyList();
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports =
-        java.util.Collections.emptyList();
-    final java.time.Duration validationTime = java.time.Duration.ofMillis(1);
-
-    return new ai.tegmentum.wasmtime4j.ImportValidation(
-        issueCount == 0, // valid if no issues
-        issues,
-        validatedImports,
-        modules.length, // totalImports
-        modules.length, // validImports (simplified)
-        validationTime);
-  }
-
-  /** Extracts required imports from a module. */
-  private java.util.List<String> extractRequiredImports(
-      final ai.tegmentum.wasmtime4j.Module module) {
-    // This would be implemented by querying the module's imports
-    // For now, return empty list
-    return java.util.Collections.emptyList();
-  }
-
-  /** Extracts provided exports from a module. */
-  private java.util.List<String> extractProvidedExports(
-      final ai.tegmentum.wasmtime4j.Module module) {
-    // This would be implemented by querying the module's exports
-    // For now, return empty list
-    return java.util.Collections.emptyList();
   }
 }

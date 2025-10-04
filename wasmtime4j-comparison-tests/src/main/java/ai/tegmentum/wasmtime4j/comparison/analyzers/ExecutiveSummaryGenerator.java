@@ -317,6 +317,9 @@ public final class ExecutiveSummaryGenerator {
       case HIGH -> score -= 20.0;
       case MEDIUM -> score -= 10.0;
       case LOW -> score -= 2.0;
+      default -> {
+        // No additional impact for unknown risk levels
+      }
     }
 
     // Success rate impact (10% weight)
@@ -496,6 +499,13 @@ public final class ExecutiveSummaryGenerator {
     private final long averageMemoryUsage;
     private final double successRate;
 
+    /**
+     * Creates performance metrics for a runtime.
+     *
+     * @param averageExecutionTime average execution time
+     * @param averageMemoryUsage average memory usage in bytes
+     * @param successRate success rate as a decimal (0.0 to 1.0)
+     */
     public PerformanceMetrics(
         final Duration averageExecutionTime,
         final long averageMemoryUsage,
@@ -519,6 +529,8 @@ public final class ExecutiveSummaryGenerator {
   }
 
   // Enums for categorization
+
+  /** Types of strategic insights for executive analysis. */
   public enum InsightType {
     RUNTIME_MATURITY,
     PERFORMANCE,
@@ -526,12 +538,14 @@ public final class ExecutiveSummaryGenerator {
     RISK
   }
 
+  /** Severity levels for insights. */
   public enum InsightSeverity {
     INFO,
     WARNING,
     CRITICAL
   }
 
+  /** Types of risks identified in analysis. */
   public enum RiskType {
     COMPLIANCE,
     REGRESSION,
@@ -539,18 +553,21 @@ public final class ExecutiveSummaryGenerator {
     PERFORMANCE
   }
 
+  /** Risk level severity categories. */
   public enum RiskLevel {
     LOW,
     MEDIUM,
     HIGH
   }
 
+  /** Compliance level categories for zero discrepancy requirement. */
   public enum ComplianceLevel {
     FULL,
     PARTIAL,
     NON_COMPLIANT
   }
 
+  /** Priority levels for executive recommendations. */
   public enum RecommendationPriority {
     CRITICAL,
     HIGH,
@@ -558,6 +575,7 @@ public final class ExecutiveSummaryGenerator {
     LOW
   }
 
+  /** Estimated effort levels for implementing recommendations. */
   public enum EstimatedEffort {
     LOW,
     MEDIUM,

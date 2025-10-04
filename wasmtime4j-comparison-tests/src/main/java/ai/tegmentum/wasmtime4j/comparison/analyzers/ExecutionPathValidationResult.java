@@ -113,6 +113,12 @@ public final class ExecutionPathValidationResult {
     private double pathConsistencyScore = 1.0;
     private boolean pathsConsistent = true;
 
+    /**
+     * Sets the execution paths for validation.
+     *
+     * @param executionPaths map of execution paths per runtime
+     * @return this builder
+     */
     public Builder executionPaths(final Map<RuntimeType, String> executionPaths) {
       this.executionPaths = Objects.requireNonNull(executionPaths, "executionPaths cannot be null");
       return this;
@@ -123,6 +129,13 @@ public final class ExecutionPathValidationResult {
       return this;
     }
 
+    /**
+     * Sets the path consistency score.
+     *
+     * @param pathConsistencyScore consistency score between 0.0 and 1.0
+     * @return this builder
+     * @throws IllegalArgumentException if score is not between 0.0 and 1.0
+     */
     public Builder pathConsistencyScore(final double pathConsistencyScore) {
       if (pathConsistencyScore < 0.0 || pathConsistencyScore > 1.0) {
         throw new IllegalArgumentException("pathConsistencyScore must be between 0.0 and 1.0");

@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +108,8 @@ public final class WasiEnvironmentOperationsPreview2 {
       }
 
       final Map<String, String> environment = parseEnvironmentVariables(result.envVars);
-      cachedEnvironment = Map.copyOf(environment); // Make immutable
+      cachedEnvironment =
+          java.util.Collections.unmodifiableMap(new java.util.HashMap<>(environment));
 
       LOGGER.fine(() -> String.format("Got %d environment variables", environment.size()));
       return cachedEnvironment;
@@ -198,7 +200,7 @@ public final class WasiEnvironmentOperationsPreview2 {
 
     // Return cached arguments if available
     if (cachedArguments != null) {
-      return List.of(cachedArguments);
+      return java.util.Arrays.asList(cachedArguments);
     }
 
     try {
@@ -216,7 +218,7 @@ public final class WasiEnvironmentOperationsPreview2 {
       cachedArguments = arguments;
 
       LOGGER.fine(() -> String.format("Got %d command-line arguments", arguments.length));
-      return List.of(arguments);
+      return java.util.Arrays.asList(arguments);
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get command-line arguments", e);
@@ -278,7 +280,9 @@ public final class WasiEnvironmentOperationsPreview2 {
     try {
       final List<String> allArguments = getArguments();
       final List<String> programArguments =
-          allArguments.size() <= 1 ? List.of() : allArguments.subList(1, allArguments.size());
+          allArguments.size() <= 1
+              ? Collections.emptyList()
+              : allArguments.subList(1, allArguments.size());
 
       LOGGER.fine(() -> String.format("Got %d program arguments", programArguments.size()));
       return programArguments;
@@ -374,13 +378,13 @@ public final class WasiEnvironmentOperationsPreview2 {
   /** Parses environment variables from native result. */
   private Map<String, String> parseEnvironmentVariables(final String[] envVars) {
     if (envVars == null) {
-      return Map.of();
+      return Collections.emptyMap();
     }
 
     if (envVars.length > MAX_ENVIRONMENT_VARIABLES) {
       throw new WasiException(
           "Too many environment variables: " + envVars.length + " > " + MAX_ENVIRONMENT_VARIABLES,
-          WasiErrorCode.E2BIG);
+          WasiErrorCode.EINVAL);
     }
 
     final Map<String, String> environment = new HashMap<>();
@@ -421,7 +425,7 @@ public final class WasiEnvironmentOperationsPreview2 {
 
     if (args.length > MAX_ARGUMENTS) {
       throw new WasiException(
-          "Too many arguments: " + args.length + " > " + MAX_ARGUMENTS, WasiErrorCode.E2BIG);
+          "Too many arguments: " + args.length + " > " + MAX_ARGUMENTS, WasiErrorCode.EINVAL);
     }
 
     final List<String> validArgs = new ArrayList<>();

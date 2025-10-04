@@ -1056,7 +1056,9 @@ final class RealWebAssemblyModuleIT {
     private double calculateOverallCompatibility(final boolean... tests) {
       int passed = 0;
       for (final boolean test : tests) {
-        if (test) passed++;
+        if (test) {
+          passed++;
+        }
       }
       return (double) passed / tests.length * 100.0;
     }

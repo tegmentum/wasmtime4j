@@ -389,10 +389,10 @@ public final class GcStats {
     }
 
     /**
-     * Sets the map of objects by generation.
+     * Sets the objects by generation map.
      *
-     * @param objectsByGeneration the map of generation to object count
-     * @return this builder
+     * @param objectsByGeneration the objects by generation map
+     * @return this builder instance
      */
     public Builder objectsByGeneration(final Map<Integer, Long> objectsByGeneration) {
       this.objectsByGeneration =

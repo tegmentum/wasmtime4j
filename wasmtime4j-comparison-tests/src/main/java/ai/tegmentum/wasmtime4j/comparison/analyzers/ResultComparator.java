@@ -89,6 +89,12 @@ public final class ResultComparator {
     return compareValues(value1, value2, 0);
   }
 
+  /** Performs comparison with explicit recursion depth tracking. */
+  private ValueComparisonResult compareValues(
+      final Object value1, final Object value2, final int depth) {
+    return compareValuesWithMode(value1, value2, depth, ComparisonMode.STANDARD);
+  }
+
   /**
    * Performs strict cross-runtime comparison with enhanced tolerances for zero discrepancy
    * requirement.
@@ -111,12 +117,6 @@ public final class ResultComparator {
   public ValueComparisonResult compareValuesWasmtimeStrict(
       final Object value1, final Object value2) {
     return compareValuesWithMode(value1, value2, 0, ComparisonMode.WASMTIME_ZERO_TOLERANCE);
-  }
-
-  /** Performs comparison with explicit recursion depth tracking. */
-  private ValueComparisonResult compareValues(
-      final Object value1, final Object value2, final int depth) {
-    return compareValuesWithMode(value1, value2, depth, ComparisonMode.STANDARD);
   }
 
   /** Performs comparison with specified comparison mode for enhanced validation. */

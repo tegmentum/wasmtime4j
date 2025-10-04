@@ -16,11 +16,42 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.ComponentAnalytics;
+import ai.tegmentum.wasmtime4j.ComponentFederationConfig;
+import ai.tegmentum.wasmtime4j.ComponentId;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
-import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.*;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.CdnConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.CdnStatistics;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ClusterInfo;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ClusterJoinConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ComplianceStatus;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ComponentMeshManager;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.DecryptionContext;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.EncryptionContext;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.FederationStatus;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.MeshAnalytics;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.MeshConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.MeshStatistics;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.MonitoringConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.OptimizationRecommendation;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.RequestContext;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.RequestPriority;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.SecurityPolicy;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ServiceDiscoveryCriteria;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ServiceEndpoint;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.ServiceHealthStatus;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.StreamEvent;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.StreamPipelineConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.StreamProcessorConfig;
+import ai.tegmentum.wasmtime4j.jni.JniComponentMeshManager.StreamingStatistics;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

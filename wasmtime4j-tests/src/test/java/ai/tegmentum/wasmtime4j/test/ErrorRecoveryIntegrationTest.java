@@ -290,6 +290,8 @@ class ErrorRecoveryIntegrationTest {
           // For now, reset by creating new store (store reset might not be implemented)
           recoveryStore = runtime.createStore(engine);
           break;
+        default:
+          throw new IllegalStateException("Unknown recovery strategy: " + scenario.strategy);
       }
 
       // Test recovery
@@ -321,9 +323,9 @@ class ErrorRecoveryIntegrationTest {
       Module divZeroModule = runtime.compileModule(engine, DIVISION_BY_ZERO_MODULE);
 
       // Create instances
-      Instance validInstance = runtime.instantiateModule(store, validModule);
-      Instance trapInstance = runtime.instantiateModule(store, trapModule);
-      Instance divZeroInstance = runtime.instantiateModule(store, divZeroModule);
+      final Instance validInstance = runtime.instantiateModule(store, validModule);
+      final Instance trapInstance = runtime.instantiateModule(store, trapModule);
+      final Instance divZeroInstance = runtime.instantiateModule(store, divZeroModule);
 
       // Sequence of errors and recoveries
       List<String> operationLog = new ArrayList<>();
@@ -751,7 +753,8 @@ class ErrorRecoveryIntegrationTest {
       // Force garbage collection and measure initial memory
       System.gc();
       Thread.yield();
-      long initialMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      final long initialMemory =
+          Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
       // Perform many error/recovery cycles
       for (int cycle = 0; cycle < 100; cycle++) {

@@ -18,6 +18,11 @@ public final class TestExecutionEngine {
 
   private final TestSuiteConfiguration configuration;
 
+  /**
+   * Creates a new test execution engine.
+   *
+   * @param configuration test suite configuration
+   */
   public TestExecutionEngine(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Configuration cannot be null");
@@ -209,7 +214,7 @@ public final class TestExecutionEngine {
       // Force specific runtime implementation for testing
       System.setProperty("wasmtime4j.runtime", runtime.getId());
 
-      return WasmRuntimeFactory.createRuntime();
+      return WasmRuntimeFactory.create();
 
     } catch (final Exception e) {
       throw new TestSuiteException("Failed to create runtime: " + runtime, e);
@@ -260,7 +265,9 @@ public final class TestExecutionEngine {
       final WasmRuntime runtime, final byte[] wasmBytes, final WebAssemblyTestCase testCase) {
     try {
       // Basic WebAssembly module compilation and instantiation
-      runtime.compileModule("test-module", wasmBytes);
+      try (final ai.tegmentum.wasmtime4j.Engine engine = runtime.createEngine()) {
+        runtime.compileModule(engine, wasmBytes);
+      }
 
       // For spec tests, we might need more sophisticated execution logic
       // This is a basic implementation - real tests would need more specific handling

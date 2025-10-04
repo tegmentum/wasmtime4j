@@ -62,6 +62,7 @@ public final class WasmtimeCompatibilityScore {
     return overallScore >= 95.0;
   }
 
+  /** Builder for creating WasmtimeCompatibilityScore instances. */
   public static final class Builder {
     private final String testName;
     private Map<RuntimeType, Double> runtimeScores;

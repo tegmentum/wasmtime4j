@@ -75,6 +75,33 @@ public class WitInterfaceVersion implements Comparable<WitInterfaceVersion> {
   }
 
   /**
+   * Gets the version string.
+   *
+   * @return version string
+   */
+  public String getVersion() {
+    return toString();
+  }
+
+  /**
+   * Gets the interface name (stub implementation).
+   *
+   * @return interface name
+   */
+  public String getInterfaceName() {
+    return "unknown";
+  }
+
+  /**
+   * Gets the WIT interface definition (stub implementation).
+   *
+   * @return interface definition
+   */
+  public WitInterfaceDefinition getInterface() {
+    return null; // Stub - would return actual interface
+  }
+
+  /**
    * Checks if this version is compatible with another version.
    *
    * @param other other version

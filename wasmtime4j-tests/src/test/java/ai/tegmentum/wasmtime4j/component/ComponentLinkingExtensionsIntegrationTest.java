@@ -16,9 +16,47 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.AdaptationConfig;
+import ai.tegmentum.wasmtime4j.AdaptationStatistics;
+import ai.tegmentum.wasmtime4j.CompatibilityRequirements;
+import ai.tegmentum.wasmtime4j.ComponentCapability;
+import ai.tegmentum.wasmtime4j.ComponentCompatibility;
+import ai.tegmentum.wasmtime4j.ComponentCompatibilityResult;
+import ai.tegmentum.wasmtime4j.ComponentDependencyGraph;
+import ai.tegmentum.wasmtime4j.ComponentEvent;
+import ai.tegmentum.wasmtime4j.ComponentEventSystem;
+import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.ComponentLifecycleState;
+import ai.tegmentum.wasmtime4j.ComponentLinker;
+import ai.tegmentum.wasmtime4j.ComponentLoadConditions;
+import ai.tegmentum.wasmtime4j.ComponentMetadata;
+import ai.tegmentum.wasmtime4j.ComponentPipeline;
+import ai.tegmentum.wasmtime4j.ComponentPipelineConfig;
+import ai.tegmentum.wasmtime4j.ComponentPipelineSpec;
+import ai.tegmentum.wasmtime4j.ComponentRegistry;
+import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager;
+import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.ComponentSpecification;
+import ai.tegmentum.wasmtime4j.ComponentSwapConfig;
+import ai.tegmentum.wasmtime4j.ComponentSwapResult;
+import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
+import ai.tegmentum.wasmtime4j.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.ComponentVersion;
+import ai.tegmentum.wasmtime4j.DeprecationInfo;
+import ai.tegmentum.wasmtime4j.ResourceAllocationRequest;
+import ai.tegmentum.wasmtime4j.ResourcePoolConfig;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.WitInterfaceEvolution;
+import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.time.Duration;
 import java.util.List;
@@ -219,7 +257,7 @@ class ComponentLinkingExtensionsIntegrationTest {
             .sharingPolicy(ResourcePoolConfig.ResourceSharingPolicy.SHARED)
             .build();
 
-    ComponentResourceSharingManager.ResourcePool memoryPool =
+    final ComponentResourceSharingManager.ResourcePool memoryPool =
         resourceManager.createResourcePool(
             "shared-memory", ComponentResourceSharingManager.ResourceType.MEMORY, poolConfig);
 
@@ -271,7 +309,9 @@ class ComponentLinkingExtensionsIntegrationTest {
 
     // Mock WIT interface evolution system
     WitInterfaceEvolution evolutionSystem = createMockEvolutionSystem();
-    if (evolutionSystem == null) return;
+    if (evolutionSystem == null) {
+      return;
+    }
 
     // When: Analyzing interface evolution
     WitInterfaceEvolution.InterfaceEvolutionAnalysis analysis =
@@ -306,7 +346,9 @@ class ComponentLinkingExtensionsIntegrationTest {
   @Test
   @DisplayName("Should validate component compatibility before linking")
   void testComponentCompatibilityValidation() throws Exception {
-    if (componentLinker == null) return;
+    if (componentLinker == null) {
+      return;
+    }
 
     // Given: Components with different compatibility levels
     ComponentSimple sourceComponent = createMockComponent("source", ComponentVersion.of(1, 0, 0));

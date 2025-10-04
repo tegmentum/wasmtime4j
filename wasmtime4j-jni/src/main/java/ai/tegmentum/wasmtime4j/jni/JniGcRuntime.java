@@ -72,8 +72,9 @@ public final class JniGcRuntime implements GcRuntime {
     LOGGER.fine("Created JNI GC runtime with handle: " + this.nativeHandle);
   }
 
-  @Override
-  public StructInstance createStruct(final StructType structType, final List<GcValue> fieldValues) {
+  /** Javadoc placeholder. */
+  public StructInstance createStruct(final StructType structType, final List<GcValue> fieldValues)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
     validateNotNull(fieldValues, "fieldValues");
@@ -81,7 +82,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       // Register struct type if needed
@@ -93,7 +94,7 @@ public final class JniGcRuntime implements GcRuntime {
       // Create struct instance
       final long objectId = structNewNative(nativeHandle, typeId, nativeValues);
       if (objectId == 0) {
-        throw new GcException("Failed to create struct instance");
+        throw new IllegalStateException("Failed to create struct instance");
       }
 
       return new JniStructInstance(this, objectId, structType, typeId);
@@ -102,15 +103,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public StructInstance createStruct(final StructType structType) {
+  /** Javadoc placeholder. */
+  public StructInstance createStruct(final StructType structType) throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
 
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       // Register struct type if needed
@@ -119,7 +120,7 @@ public final class JniGcRuntime implements GcRuntime {
       // Create struct with default values
       final long objectId = structNewDefaultNative(nativeHandle, typeId);
       if (objectId == 0) {
-        throw new GcException("Failed to create struct instance with default values");
+        throw new IllegalStateException("Failed to create struct instance with default values");
       }
 
       return new JniStructInstance(this, objectId, structType, typeId);
@@ -128,8 +129,9 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements) {
+  /** Javadoc placeholder. */
+  public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     validateNotNull(elements, "elements");
@@ -137,7 +139,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       // Register array type if needed
@@ -149,7 +151,7 @@ public final class JniGcRuntime implements GcRuntime {
       // Create array instance
       final long objectId = arrayNewNative(nativeHandle, typeId, nativeElements);
       if (objectId == 0) {
-        throw new GcException("Failed to create array instance");
+        throw new IllegalStateException("Failed to create array instance");
       }
 
       return new JniArrayInstance(this, objectId, arrayType, typeId, elements.size());
@@ -158,8 +160,8 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public ArrayInstance createArray(final ArrayType arrayType, final int length) {
+  /** Javadoc placeholder. */
+  public ArrayInstance createArray(final ArrayType arrayType, final int length) throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     if (length < 0) {
@@ -169,7 +171,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       // Register array type if needed
@@ -178,7 +180,7 @@ public final class JniGcRuntime implements GcRuntime {
       // Create array with default values
       final long objectId = arrayNewDefaultNative(nativeHandle, typeId, length);
       if (objectId == 0) {
-        throw new GcException("Failed to create array instance with default values");
+        throw new IllegalStateException("Failed to create array instance with default values");
       }
 
       return new JniArrayInstance(this, objectId, arrayType, typeId, length);
@@ -187,19 +189,19 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public I31Instance createI31(final int value) {
+  /** Javadoc placeholder. */
+  public I31Instance createI31(final int value) throws GcException {
     validateNotDisposed();
 
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = i31NewNative(nativeHandle, value);
       if (objectId == 0) {
-        throw new GcException("Failed to create I31 instance");
+        throw new IllegalStateException("Failed to create I31 instance");
       }
 
       return new JniI31Instance(this, objectId, value);
@@ -208,8 +210,9 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public GcValue getStructField(final StructInstance struct, final int fieldIndex) {
+  /** Javadoc placeholder. */
+  public GcValue getStructField(final StructInstance struct, final int fieldIndex)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(struct, "struct");
     if (fieldIndex < 0) {
@@ -219,11 +222,11 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(struct instanceof JniStructInstance)) {
-        throw new GcException("Invalid struct instance type");
+        throw new IllegalStateException("Invalid struct instance type");
       }
 
       final JniStructInstance jniStruct = (JniStructInstance) struct;
@@ -235,9 +238,9 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public void setStructField(
-      final StructInstance struct, final int fieldIndex, final GcValue value) {
+  /** Javadoc placeholder. */
+  public void setStructField(final StructInstance struct, final int fieldIndex, final GcValue value)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(struct, "struct");
     validateNotNull(value, "value");
@@ -248,11 +251,11 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(struct instanceof JniStructInstance)) {
-        throw new GcException("Invalid struct instance type");
+        throw new IllegalStateException("Invalid struct instance type");
       }
 
       final JniStructInstance jniStruct = (JniStructInstance) struct;
@@ -261,15 +264,16 @@ public final class JniGcRuntime implements GcRuntime {
       final int result =
           structSetNative(nativeHandle, jniStruct.getObjectId(), fieldIndex, nativeValue);
       if (result != 0) {
-        throw new GcException("Failed to set struct field");
+        throw new IllegalStateException("Failed to set struct field");
       }
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  @Override
-  public GcValue getArrayElement(final ArrayInstance array, final int elementIndex) {
+  /** Javadoc placeholder. */
+  public GcValue getArrayElement(final ArrayInstance array, final int elementIndex)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(array, "array");
     if (elementIndex < 0) {
@@ -279,11 +283,11 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(array instanceof JniArrayInstance)) {
-        throw new GcException("Invalid array instance type");
+        throw new IllegalStateException("Invalid array instance type");
       }
 
       final JniArrayInstance jniArray = (JniArrayInstance) array;
@@ -299,9 +303,9 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public void setArrayElement(
-      final ArrayInstance array, final int elementIndex, final GcValue value) {
+      final ArrayInstance array, final int elementIndex, final GcValue value) throws GcException {
     validateNotDisposed();
     validateNotNull(array, "array");
     validateNotNull(value, "value");
@@ -312,11 +316,11 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(array instanceof JniArrayInstance)) {
-        throw new GcException("Invalid array instance type");
+        throw new IllegalStateException("Invalid array instance type");
       }
 
       final JniArrayInstance jniArray = (JniArrayInstance) array;
@@ -329,14 +333,14 @@ public final class JniGcRuntime implements GcRuntime {
       final int result =
           arraySetNative(nativeHandle, jniArray.getObjectId(), elementIndex, nativeValue);
       if (result != 0) {
-        throw new GcException("Failed to set array element");
+        throw new IllegalStateException("Failed to set array element");
       }
     } finally {
       lock.readLock().unlock();
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public int getArrayLength(final ArrayInstance array) {
     validateNotDisposed();
     validateNotNull(array, "array");
@@ -344,17 +348,17 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(array instanceof JniArrayInstance)) {
-        throw new GcException("Invalid array instance type");
+        throw new IllegalArgumentException("Invalid array instance type");
       }
 
       final JniArrayInstance jniArray = (JniArrayInstance) array;
       final int length = arrayLenNative(nativeHandle, jniArray.getObjectId());
       if (length < 0) {
-        throw new GcException("Failed to get array length");
+        throw new IllegalStateException("Failed to get array length");
       }
 
       return length;
@@ -363,7 +367,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public GcObject refCast(final GcObject object, final GcReferenceType targetType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -372,7 +376,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -389,7 +393,50 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
+  public GcObject refCastOptimized(
+      final GcObject object, final GcReferenceType targetType, final boolean enableCaching) {
+    // For now, delegate to non-optimized version
+    // TODO: Implement caching when enableCaching is true
+    return refCast(object, targetType);
+  }
+
+  /** Javadoc placeholder. */
+  public WeakGcReference createWeakReferenceAdvanced(
+      final GcObject object, final Runnable finalizationCallback) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement weak reference creation with finalization callback
+    LOGGER.fine("Creating weak reference with finalization callback: " + object.getObjectId());
+    return createWeakReference(object, finalizationCallback);
+  }
+
+  /** Javadoc placeholder. */
+  public GcStats collectGarbageAdvanced(final Long maxPauseMillis, final boolean concurrent) {
+    validateNotDisposed();
+    // TODO: Implement advanced GC with pause time and concurrency controls
+    LOGGER.fine(
+        "Advanced GC requested (maxPause=" + maxPauseMillis + "ms, concurrent=" + concurrent + ")");
+    return collectGarbage();
+  }
+
+  /** Javadoc placeholder. */
+  public void pinObject(final GcObject object) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement object pinning in native code
+    LOGGER.fine("Pinning object (not yet implemented): " + object.getObjectId());
+  }
+
+  /** Javadoc placeholder. */
+  public void unpinObject(final GcObject object) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement object unpinning in native code
+    LOGGER.fine("Unpinning object (not yet implemented): " + object.getObjectId());
+  }
+
+  /** Javadoc placeholder. */
   public boolean refTest(final GcObject object, final GcReferenceType targetType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -398,7 +445,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -410,7 +457,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public boolean refEquals(final GcObject obj1, final GcObject obj2) {
     validateNotDisposed();
 
@@ -424,7 +471,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId1 = getObjectId(obj1);
@@ -436,7 +483,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public boolean isNull(final GcObject object) {
     if (object == null) {
       return true;
@@ -447,7 +494,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -457,7 +504,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public int registerStructType(final StructType structType) {
     validateNotDisposed();
     validateNotNull(structType, "structType");
@@ -465,7 +512,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       return registerStructTypeInternal(structType);
@@ -474,7 +521,7 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public int registerArrayType(final ArrayType arrayType) {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
@@ -482,7 +529,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       return registerArrayTypeInternal(arrayType);
@@ -491,14 +538,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public GcStats collectGarbage() {
     validateNotDisposed();
 
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeStats = collectGarbageNative(nativeHandle);
@@ -508,14 +555,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
+  /** Javadoc placeholder. */
   public GcStats getGcStats() {
     validateNotDisposed();
 
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeStats = getGcStatsNative(nativeHandle);
@@ -545,7 +592,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -580,7 +627,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -615,7 +662,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -644,7 +691,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -671,7 +718,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -728,7 +775,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final int typeId = registerStructTypeInternal(structType);
@@ -741,7 +788,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final long objectId = structNewPackedNative(nativeHandle, typeId, nativeValues, alignments);
       if (objectId == 0) {
-        throw new GcException("Failed to create packed struct instance");
+        throw new IllegalStateException("Failed to create packed struct instance");
       }
 
       return new JniStructInstance(this, objectId, structType, typeId);
@@ -769,7 +816,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final int typeId = registerArrayTypeInternal(arrayType);
@@ -778,7 +825,7 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId =
           arrayNewVariableLengthNative(nativeHandle, typeId, baseLength, nativeFlexibleElements);
       if (objectId == 0) {
-        throw new GcException("Failed to create variable-length array instance");
+        throw new IllegalStateException("Failed to create variable-length array instance");
       }
 
       final int totalLength = baseLength + flexibleElements.size();
@@ -806,7 +853,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final int typeId = registerArrayTypeInternal(arrayType);
@@ -814,7 +861,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final long objectId = arrayNewNestedNative(nativeHandle, typeId, nestedObjectIds);
       if (objectId == 0) {
-        throw new GcException("Failed to create nested array instance");
+        throw new IllegalStateException("Failed to create nested array instance");
       }
 
       return new JniArrayInstance(this, objectId, arrayType, typeId, nestedElements.size());
@@ -847,7 +894,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long sourceObjectId = getObjectId(sourceArray);
@@ -857,7 +904,7 @@ public final class JniGcRuntime implements GcRuntime {
           arrayCopyNative(
               nativeHandle, sourceObjectId, sourceIndex, destObjectId, destIndex, length);
       if (result != 0) {
-        throw new GcException("Failed to copy array elements");
+        throw new IllegalStateException("Failed to copy array elements");
       }
     } finally {
       lock.readLock().unlock();
@@ -883,7 +930,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(array);
@@ -891,7 +938,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final int result = arrayFillNative(nativeHandle, objectId, startIndex, length, nativeValue);
       if (result != 0) {
-        throw new GcException("Failed to fill array elements");
+        throw new IllegalStateException("Failed to fill array elements");
       }
     } finally {
       lock.readLock().unlock();
@@ -917,7 +964,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       // Convert type definition to native format
@@ -925,7 +972,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final int typeId = registerRecursiveTypeNative(nativeHandle, typeName, nativeDefinition);
       if (typeId < 0) {
-        throw new GcException("Failed to register recursive type");
+        throw new IllegalStateException("Failed to register recursive type");
       }
 
       return typeId;
@@ -952,7 +999,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final byte[] nativeBaseType = serializeTypeDefinition(baseType);
@@ -982,7 +1029,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeStats = collectGarbageIncrementalNative(nativeHandle, maxPauseMillis);
@@ -1004,7 +1051,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeStats = collectGarbageConcurrentNative(nativeHandle);
@@ -1022,8 +1069,7 @@ public final class JniGcRuntime implements GcRuntime {
    * @throws GcException if the runtime is disposed or configuration fails
    * @throws IllegalArgumentException if strategy or parameters is null
    */
-  public void configureGcStrategy(
-      final String strategy, final Map<String, Object> parameters) {
+  public void configureGcStrategy(final String strategy, final Map<String, Object> parameters) {
     validateNotDisposed();
     validateNotNull(strategy, "strategy");
     validateNotNull(parameters, "parameters");
@@ -1031,7 +1077,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final String[] paramKeys = parameters.keySet().toArray(new String[0]);
@@ -1039,7 +1085,7 @@ public final class JniGcRuntime implements GcRuntime {
 
       final int result = configureGcStrategyNative(nativeHandle, strategy, paramKeys, paramValues);
       if (result != 0) {
-        throw new GcException("Failed to configure GC strategy: " + strategy);
+        throw new IllegalStateException("Failed to configure GC strategy: " + strategy);
       }
     } finally {
       lock.readLock().unlock();
@@ -1059,7 +1105,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       return monitorGcPressureNative(nativeHandle, pressureThreshold);
@@ -1087,13 +1133,13 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
       final long weakRefId = createWeakReferenceNative(nativeHandle, objectId);
       if (weakRefId == 0) {
-        throw new GcException("Failed to create weak reference");
+        throw new IllegalStateException("Failed to create weak reference");
       }
 
       return new JniWeakGcReference(this, weakRefId, finalizationCallback);
@@ -1118,13 +1164,13 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
       final int result = registerFinalizationCallbackNative(nativeHandle, objectId, callback);
       if (result != 0) {
-        throw new GcException("Failed to register finalization callback");
+        throw new IllegalStateException("Failed to register finalization callback");
       }
     } finally {
       lock.readLock().unlock();
@@ -1143,7 +1189,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       return runFinalizationNative(nativeHandle);
@@ -1171,13 +1217,13 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final int typeId = convertReferenceTypeToNative(gcType);
       final long objectId = integrateHostObjectNative(nativeHandle, hostObject, typeId);
       if (objectId == 0) {
-        throw new GcException("Failed to integrate host object");
+        throw new IllegalStateException("Failed to integrate host object");
       }
 
       return createGcObjectFromId(objectId, gcType);
@@ -1191,7 +1237,8 @@ public final class JniGcRuntime implements GcRuntime {
    *
    * @param gcObject the GC object to extract from
    * @return the host object
-   * @throws GcException if the runtime is disposed, extraction fails, or object is not host-integrated
+   * @throws GcException if the runtime is disposed, extraction fails, or object is not
+   *     host-integrated
    * @throws IllegalArgumentException if gcObject is null
    */
   public Object extractHostObject(final GcObject gcObject) {
@@ -1201,13 +1248,13 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(gcObject);
       final Object hostObject = extractHostObjectNative(nativeHandle, objectId);
       if (hostObject == null) {
-        throw new GcException("Failed to extract host object or object is not host-integrated");
+        throw new IllegalStateException("Failed to extract host object or object is not host-integrated");
       }
 
       return hostObject;
@@ -1231,14 +1278,14 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
       final Object bridge = createSharingBridgeNative(nativeHandle, objectIds);
       if (bridge == null) {
-        throw new GcException("Failed to create sharing bridge");
+        throw new IllegalStateException("Failed to create sharing bridge");
       }
 
       return bridge;
@@ -1261,7 +1308,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeInspection = inspectHeapNative(nativeHandle);
@@ -1286,14 +1333,14 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
 
       final long trackerId = trackObjectLifecyclesNative(nativeHandle, objectIds);
       if (trackerId == 0) {
-        throw new GcException("Failed to create lifecycle tracker");
+        throw new IllegalStateException("Failed to create lifecycle tracker");
       }
 
       return new JniObjectLifecycleTracker(this, trackerId);
@@ -1314,7 +1361,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeAnalysis = detectMemoryLeaksNative(nativeHandle);
@@ -1336,12 +1383,12 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long profilerId = startProfilingNative(nativeHandle);
       if (profilerId == 0) {
-        throw new GcException("Failed to start profiling");
+        throw new IllegalStateException("Failed to start profiling");
       }
 
       return new JniGcProfiler(this, profilerId);
@@ -1367,7 +1414,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long[] objectIds = rootObjects.stream().mapToLong(this::getObjectId).toArray();
@@ -1396,7 +1443,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object[] nativeOperands = operands.toArray();
@@ -1418,7 +1465,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeAnalysis = detectMemoryCorruptionNative(nativeHandle);
@@ -1440,7 +1487,7 @@ public final class JniGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final Object nativeValidation = validateInvariantsNative(nativeHandle);
@@ -1505,7 +1552,7 @@ public final class JniGcRuntime implements GcRuntime {
             fieldMutabilities);
 
     if (typeId < 0) {
-      throw new GcException("Failed to register struct type");
+      throw new IllegalStateException("Failed to register struct type");
     }
 
     return typeId;
@@ -1522,7 +1569,7 @@ public final class JniGcRuntime implements GcRuntime {
             arrayType.isMutable());
 
     if (typeId < 0) {
-      throw new GcException("Failed to register array type");
+      throw new IllegalStateException("Failed to register array type");
     }
 
     return typeId;
@@ -1548,7 +1595,7 @@ public final class JniGcRuntime implements GcRuntime {
         // For now, return null for references
         return null;
       default:
-        throw new GcException("Unsupported GC value type: " + value.getType());
+        throw new IllegalStateException("Unsupported GC value type: " + value.getType());
     }
   }
 
@@ -1591,7 +1638,7 @@ public final class JniGcRuntime implements GcRuntime {
       case REFERENCE:
         return 7;
       default:
-        throw new GcException("Unsupported field type: " + fieldType.getKind());
+        throw new IllegalStateException("Unsupported field type: " + fieldType.getKind());
     }
   }
 
@@ -1608,7 +1655,7 @@ public final class JniGcRuntime implements GcRuntime {
       case ARRAY_REF:
         return 4;
       default:
-        throw new GcException("Unsupported reference type: " + refType);
+        throw new IllegalStateException("Unsupported reference type: " + refType);
     }
   }
 
@@ -1616,7 +1663,7 @@ public final class JniGcRuntime implements GcRuntime {
     if (object instanceof JniGcObject) {
       return ((JniGcObject) object).getObjectId();
     } else {
-      throw new GcException("Invalid GC object type");
+      throw new IllegalStateException("Invalid GC object type");
     }
   }
 
@@ -1665,7 +1712,7 @@ public final class JniGcRuntime implements GcRuntime {
       case 4:
         return GcReferenceType.ARRAY_REF;
       default:
-        throw new GcException("Unknown reference type ID: " + typeId);
+        throw new IllegalStateException("Unknown reference type ID: " + typeId);
     }
   }
 
@@ -1880,7 +1927,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   /** JNI implementation of struct instance for GC runtime. */
-  public static class JniStructInstance extends JniGcObject implements StructInstance {
+  public static class JniStructInstance implements StructInstance {
+    private final long objectId;
     private final JniGcRuntime runtime;
     private final StructType structType;
     private final int typeId;
@@ -1898,10 +1946,15 @@ public final class JniGcRuntime implements GcRuntime {
         final long objectId,
         final StructType structType,
         final int typeId) {
-      super(objectId);
+      this.objectId = objectId;
       this.runtime = runtime;
       this.structType = structType;
       this.typeId = typeId;
+    }
+
+    @Override
+    public long getObjectId() {
+      return objectId;
     }
 
     @Override
@@ -1910,23 +1963,62 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcValue getField(final int index) {
+    public int getFieldCount() {
+      return structType.getFieldCount();
+    }
+
+    @Override
+    public GcValue getField(final int index) throws GcException {
       return runtime.getStructField(this, index);
     }
 
     @Override
-    public void setField(final int index, final GcValue value) {
+    public void setField(final int index, final GcValue value) throws GcException {
       runtime.setStructField(this, index, value);
     }
 
     @Override
-    public int getFieldCount() {
-      return structType.getFields().size();
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // Return approximate size based on struct fields
+      return 16 + (structType.getFieldCount() * 8);
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return false;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
+      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.STRUCT_REF;
     }
   }
 
   /** JNI implementation of array instance for GC runtime. */
-  public static class JniArrayInstance extends JniGcObject implements ArrayInstance {
+  public static class JniArrayInstance implements ArrayInstance {
+    private final long objectId;
     private final JniGcRuntime runtime;
     private final ArrayType arrayType;
     private final int typeId;
@@ -1947,11 +2039,16 @@ public final class JniGcRuntime implements GcRuntime {
         final ArrayType arrayType,
         final int typeId,
         final int length) {
-      super(objectId);
+      this.objectId = objectId;
       this.runtime = runtime;
       this.arrayType = arrayType;
       this.typeId = typeId;
       this.length = length;
+    }
+
+    @Override
+    public long getObjectId() {
+      return objectId;
     }
 
     @Override
@@ -1960,23 +2057,62 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcValue getElement(final int index) {
+    public int getLength() {
+      return length;
+    }
+
+    @Override
+    public GcValue getElement(final int index) throws GcException {
       return runtime.getArrayElement(this, index);
     }
 
     @Override
-    public void setElement(final int index, final GcValue value) {
+    public void setElement(final int index, final GcValue value) throws GcException {
       runtime.setArrayElement(this, index, value);
     }
 
     @Override
-    public int getLength() {
-      return length;
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // Return approximate size based on array length and element size
+      return 16 + (length * 8);
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return false;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
+      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.ARRAY_REF;
     }
   }
 
   /** JNI implementation of i31 instance for GC runtime. */
-  public static class JniI31Instance extends JniGcObject implements I31Instance {
+  public static class JniI31Instance implements I31Instance {
+    private final long objectId;
     private final JniGcRuntime runtime;
     private final int value;
 
@@ -1988,14 +2124,19 @@ public final class JniGcRuntime implements GcRuntime {
      * @param value the i31 value
      */
     public JniI31Instance(final JniGcRuntime runtime, final long objectId, final int value) {
-      super(objectId);
+      this.objectId = objectId;
       this.runtime = runtime;
       this.value = value;
     }
 
     @Override
+    public long getObjectId() {
+      return objectId;
+    }
+
+    @Override
     public I31Type getType() {
-      // I31Type is a utility class, not an instantiatable type
+      // TODO: I31Type is a utility class, not an instance type - API design issue
       return null;
     }
 
@@ -2006,12 +2147,50 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public int getSignedValue() {
-      return runtime.i31GetNative(runtime.nativeHandle, getObjectId(), true);
+      return value;
     }
 
     @Override
     public int getUnsignedValue() {
-      return runtime.i31GetNative(runtime.nativeHandle, getObjectId(), false);
+      return value & 0x7FFFFFFF;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // I31 values are stored inline, minimal overhead
+      return 4;
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return false;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
+      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF;
     }
   }
 

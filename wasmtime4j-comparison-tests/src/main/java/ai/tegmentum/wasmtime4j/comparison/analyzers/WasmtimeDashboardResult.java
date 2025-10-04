@@ -12,6 +12,13 @@ public final class WasmtimeDashboardResult {
   private final Path jsonReportPath;
   private final WasmtimeCoverageSummary summary;
 
+  /**
+   * Creates a new Wasmtime dashboard result.
+   *
+   * @param htmlDashboardPath path to generated HTML dashboard
+   * @param jsonReportPath path to generated JSON report
+   * @param summary coverage summary information
+   */
   public WasmtimeDashboardResult(
       final Path htmlDashboardPath,
       final Path jsonReportPath,

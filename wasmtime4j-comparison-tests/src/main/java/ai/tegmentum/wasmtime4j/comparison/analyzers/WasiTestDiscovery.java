@@ -89,6 +89,7 @@ public final class WasiTestDiscovery {
       return maxTestsPerCategory;
     }
 
+    /** Builder for creating WasiDiscoveryConfiguration instances. */
     public static final class Builder {
       private Path wasmtimeRootDirectory;
       private boolean includeExperimentalTests = false;
@@ -138,6 +139,11 @@ public final class WasiTestDiscovery {
         return this;
       }
 
+      /**
+       * Builds the discovery configuration.
+       *
+       * @return configured discovery configuration
+       */
       public WasiDiscoveryConfiguration build() {
         Objects.requireNonNull(wasmtimeRootDirectory, "wasmtimeRootDirectory must be specified");
         if (enabledCategories.isEmpty()) {
@@ -157,6 +163,15 @@ public final class WasiTestDiscovery {
     private final List<String> validationErrors;
     private final Instant discoveryTime;
 
+    /**
+     * Creates a discovery result with categorized tests and metadata.
+     *
+     * @param categorizedTests tests organized by category
+     * @param testMetadata metadata for each discovered test
+     * @param statistics discovery statistics
+     * @param discoveryWarnings warnings generated during discovery
+     * @param validationErrors validation errors encountered
+     */
     public WasiDiscoveryResult(
         final Map<WasiTestIntegrator.WasiTestCategory, List<WasmTestCase>> categorizedTests,
         final Map<String, WasiTestMetadata> testMetadata,
@@ -208,6 +223,19 @@ public final class WasiTestDiscovery {
     private final String description;
     private final Map<String, String> customAttributes;
 
+    /**
+     * Creates metadata for a WASI test with feature requirements.
+     *
+     * @param testName name of the test
+     * @param category test category
+     * @param previewVersion WASI preview version (1 or 2)
+     * @param requiredFeatures features required by this test
+     * @param environmentRequirements environment requirements for execution
+     * @param experimentalTest true if this is an experimental test
+     * @param performanceTest true if this is a performance test
+     * @param description test description
+     * @param customAttributes custom attributes for the test
+     */
     public WasiTestMetadata(
         final String testName,
         final WasiTestIntegrator.WasiTestCategory category,
@@ -277,6 +305,18 @@ public final class WasiTestDiscovery {
     private final int validTests;
     private final int invalidTests;
 
+    /**
+     * Creates discovery statistics summarizing found tests.
+     *
+     * @param totalTestsFound total number of tests found
+     * @param testsPerCategory count of tests per category
+     * @param preview1Tests number of Preview 1 tests
+     * @param preview2Tests number of Preview 2 tests
+     * @param experimentalTests number of experimental tests
+     * @param performanceTests number of performance tests
+     * @param validTests number of valid tests
+     * @param invalidTests number of invalid tests
+     */
     public WasiTestStatistics(
         final int totalTestsFound,
         final Map<WasiTestIntegrator.WasiTestCategory, Integer> testsPerCategory,

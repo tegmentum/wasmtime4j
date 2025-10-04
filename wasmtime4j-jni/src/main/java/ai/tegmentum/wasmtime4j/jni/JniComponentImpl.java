@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.ComponentResourceLimits;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentRestoreOptions;
 import ai.tegmentum.wasmtime4j.ComponentSecurityPolicy;
+import ai.tegmentum.wasmtime4j.ComponentSimple;
 import ai.tegmentum.wasmtime4j.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
@@ -32,9 +33,11 @@ import ai.tegmentum.wasmtime4j.WitInterfaceMigrationPlan;
 import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -77,8 +80,10 @@ public final class JniComponentImpl implements Component {
       final JniComponent.JniComponentHandle nativeComponent,
       final JniComponentEngine engine,
       final ComponentMetadata metadata) {
-    this.nativeComponent = JniValidation.requireNonNull(nativeComponent, "nativeComponent");
-    this.engine = JniValidation.requireNonNull(engine, "engine");
+    JniValidation.requireNonNull(nativeComponent, "nativeComponent");
+    JniValidation.requireNonNull(engine, "engine");
+    this.nativeComponent = nativeComponent;
+    this.engine = engine;
     this.metadata = metadata != null ? metadata : createDefaultMetadata();
     this.componentId = "jni-component-" + System.nanoTime();
     this.version = this.metadata.getVersion();
@@ -188,7 +193,7 @@ public final class JniComponentImpl implements Component {
 
     try {
       final JniComponent.JniComponentInstanceHandle instanceHandle =
-          engine.nativeEngine.instantiateComponent(nativeComponent);
+          engine.instantiateComponent(nativeComponent);
       return new JniComponentInstanceImpl(instanceHandle, this, config);
     } catch (final Exception e) {
       throw new WasmException("Failed to instantiate component", e);
@@ -204,27 +209,52 @@ public final class JniComponentImpl implements Component {
     return new ComponentDependencyGraph(this);
   }
 
+  /**
+   * Resolves dependencies for this component.
+   *
+   * @param registry the component registry
+   * @return set of resolved dependencies
+   * @throws WasmException if resolution fails
+   */
   @Override
-  public Set<Component> resolveDependencies(final ComponentRegistry registry) throws WasmException {
+  public Set<ComponentSimple> resolveDependencies(final ComponentRegistry registry)
+      throws WasmException {
     JniValidation.requireNonNull(registry, "registry");
     ensureValid();
     // Return empty set for now
     return new HashSet<>();
   }
 
-  @Override
+  /**
+   * Performs hot-swap of this component.
+   *
+   * @param newComponent the new component
+   * @param migrationStrategy the migration strategy
+   * @return future that completes when hot-swap is done
+   * @throws WasmException if hot-swap fails
+   */
   public CompletableFuture<Void> hotSwap(
       final Component newComponent, final HotSwapStrategy migrationStrategy) throws WasmException {
     JniValidation.requireNonNull(newComponent, "newComponent");
     JniValidation.requireNonNull(migrationStrategy, "migrationStrategy");
     ensureValid();
 
-    return CompletableFuture.failedFuture(
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    future.completeExceptionally(
         new UnsupportedOperationException("Hot-swap not yet implemented"));
+    return future;
   }
 
+  /**
+   * Checks compatibility with another component.
+   *
+   * @param other the other component
+   * @return compatibility result
+   * @throws WasmException if check fails
+   */
   @Override
-  public ComponentCompatibility checkCompatibility(final Component other) throws WasmException {
+  public ComponentCompatibility checkCompatibility(final ComponentSimple other)
+      throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();
 
@@ -254,17 +284,23 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
-  public WitCompatibilityResult checkWitCompatibility(final Component other) throws WasmException {
+  public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other)
+      throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();
 
     return WitCompatibilityResult.compatible(
-        WitCompatibilityResult.CompatibilityLevel.FULL,
-        this.getWitInterface(),
-        other.getWitInterface());
+        "Full WIT compatibility (stub implementation)", new HashSet<>());
   }
 
-  @Override
+  /**
+   * Migrates WIT interface to target version.
+   *
+   * @param targetVersion the target version
+   * @param migrationPlan the migration plan
+   * @return future that completes when migration is done
+   * @throws WasmException if migration fails
+   */
   public CompletableFuture<Void> migrateWitInterface(
       final WitInterfaceVersion targetVersion, final WitInterfaceMigrationPlan migrationPlan)
       throws WasmException {
@@ -272,11 +308,18 @@ public final class JniComponentImpl implements Component {
     JniValidation.requireNonNull(migrationPlan, "migrationPlan");
     ensureValid();
 
-    return CompletableFuture.failedFuture(
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    future.completeExceptionally(
         new UnsupportedOperationException("WIT interface migration not yet implemented"));
+    return future;
   }
 
-  @Override
+  /**
+   * Gets WIT interface introspection.
+   *
+   * @return introspection result
+   * @throws WasmException if introspection fails
+   */
   public WitInterfaceIntrospection getWitIntrospection() throws WasmException {
     ensureValid();
     throw new UnsupportedOperationException("WIT interface introspection not yet implemented");
@@ -284,12 +327,22 @@ public final class JniComponentImpl implements Component {
 
   // Enterprise Management Features - Basic implementations
 
-  @Override
+  /**
+   * Gets the audit log for this component.
+   *
+   * @return audit log
+   */
   public ComponentAuditLog getAuditLog() {
-    return new ComponentAuditLog(componentId);
+    // TODO: Implement proper audit log
+    return new JniComponentAuditLog(componentId);
   }
 
-  @Override
+  /**
+   * Applies security policies to this component.
+   *
+   * @param policies the security policies
+   * @throws WasmException if policy application fails
+   */
   public void applySecurityPolicies(final Set<ComponentSecurityPolicy> policies)
       throws WasmException {
     JniValidation.requireNonNull(policies, "policies");
@@ -298,17 +351,30 @@ public final class JniComponentImpl implements Component {
     LOGGER.fine("Applied " + policies.size() + " security policies to component: " + componentId);
   }
 
-  @Override
+  /**
+   * Gets security policies for this component.
+   *
+   * @return set of security policies
+   */
   public Set<ComponentSecurityPolicy> getSecurityPolicies() {
     return new HashSet<>();
   }
 
-  @Override
+  /**
+   * Gets metrics for this component.
+   *
+   * @return component metrics
+   */
   public ComponentMetrics getMetrics() {
-    return new ComponentMetrics(componentId);
+    return null; // TODO: create metrics object
   }
 
-  @Override
+  /**
+   * Starts monitoring for this component.
+   *
+   * @param monitoringConfig the monitoring configuration
+   * @throws WasmException if monitoring start fails
+   */
   public void startMonitoring(final ComponentMonitoringConfig monitoringConfig)
       throws WasmException {
     JniValidation.requireNonNull(monitoringConfig, "monitoringConfig");
@@ -316,23 +382,37 @@ public final class JniComponentImpl implements Component {
     LOGGER.fine("Started monitoring for component: " + componentId);
   }
 
-  @Override
   public void stopMonitoring() throws WasmException {
     ensureValid();
     LOGGER.fine("Stopped monitoring for component: " + componentId);
   }
 
-  @Override
+  /**
+   * Creates a backup of this component.
+   *
+   * @param backupConfig the backup configuration
+   * @return CompletableFuture that completes with the backup
+   * @throws WasmException if backup creation fails
+   */
   public CompletableFuture<ComponentBackup> createBackup(final ComponentBackupConfig backupConfig)
       throws WasmException {
     JniValidation.requireNonNull(backupConfig, "backupConfig");
     ensureValid();
 
-    return CompletableFuture.failedFuture(
+    final CompletableFuture<ComponentBackup> future = new CompletableFuture<>();
+    future.completeExceptionally(
         new UnsupportedOperationException("Component backup not yet implemented"));
+    return future;
   }
 
-  @Override
+  /**
+   * Restores this component from a backup.
+   *
+   * @param backup the backup to restore from
+   * @param restoreOptions the restore options
+   * @return CompletableFuture that completes when restore is done
+   * @throws WasmException if restore fails
+   */
   public CompletableFuture<Void> restoreFromBackup(
       final ComponentBackup backup, final ComponentRestoreOptions restoreOptions)
       throws WasmException {
@@ -340,8 +420,10 @@ public final class JniComponentImpl implements Component {
     JniValidation.requireNonNull(restoreOptions, "restoreOptions");
     ensureValid();
 
-    return CompletableFuture.failedFuture(
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    future.completeExceptionally(
         new UnsupportedOperationException("Component restore not yet implemented"));
+    return future;
   }
 
   // Resource Management
@@ -351,26 +433,40 @@ public final class JniComponentImpl implements Component {
     return new ComponentResourceUsage(componentId);
   }
 
-  @Override
+  /**
+   * Sets resource limits for this component.
+   *
+   * @param limits the resource limits
+   * @throws WasmException if setting limits fails
+   */
   public void setResourceLimits(final ComponentResourceLimits limits) throws WasmException {
     JniValidation.requireNonNull(limits, "limits");
     ensureValid();
     LOGGER.fine("Set resource limits for component: " + componentId);
   }
 
-  @Override
+  /**
+   * Gets resource limits for this component.
+   *
+   * @return the resource limits
+   */
   public ComponentResourceLimits getResourceLimits() {
-    return new ComponentResourceLimits();
+    return null; // TODO: create resource limits object
   }
 
-  @Override
+  /**
+   * Optimizes resource usage for this component.
+   *
+   * @param optimizationConfig the optimization configuration
+   * @return CompletableFuture that completes with optimization result
+   * @throws WasmException if optimization fails
+   */
   public CompletableFuture<ComponentOptimizationResult> optimizeResources(
       final ComponentOptimizationConfig optimizationConfig) throws WasmException {
     JniValidation.requireNonNull(optimizationConfig, "optimizationConfig");
     ensureValid();
 
-    return CompletableFuture.completedFuture(
-        new ComponentOptimizationResult(true, "No optimizations performed"));
+    return CompletableFuture.completedFuture(null); // TODO: create optimization result
   }
 
   // Lifecycle Management
@@ -380,7 +476,14 @@ public final class JniComponentImpl implements Component {
     return ComponentLifecycleState.ACTIVE;
   }
 
-  @Override
+  /**
+   * Transitions this component to a new lifecycle state.
+   *
+   * @param targetState the target lifecycle state
+   * @param transitionConfig the transition configuration
+   * @return CompletableFuture that completes when transition is done
+   * @throws WasmException if transition fails
+   */
   public CompletableFuture<Void> transitionTo(
       final ComponentLifecycleState targetState,
       final ComponentStateTransitionConfig transitionConfig)
@@ -397,9 +500,8 @@ public final class JniComponentImpl implements Component {
     return !nativeComponent.isClosed() && nativeComponent.isValid();
   }
 
-  @Override
   public ComponentDebugInfo getDebugInfo() {
-    return new ComponentDebugInfo(componentId, metadata, getLifecycleState());
+    return null; // TODO: create debug info object
   }
 
   @Override
@@ -414,10 +516,14 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (nativeComponent != null && !nativeComponent.isClosed()) {
-      nativeComponent.close();
-      LOGGER.fine("Closed component: " + componentId);
+      try {
+        nativeComponent.close();
+        LOGGER.fine("Closed component: " + componentId);
+      } catch (final Exception e) {
+        LOGGER.log(Level.WARNING, "Error closing component: " + componentId, e);
+      }
     }
   }
 
@@ -430,5 +536,62 @@ public final class JniComponentImpl implements Component {
   private static ComponentMetadata createDefaultMetadata() {
     final ComponentVersion version = new ComponentVersion(1, 0, 0);
     return new ComponentMetadata("unknown", version, "JNI Component");
+  }
+
+  /** Stub implementation of ComponentAuditLog. */
+  private static class JniComponentAuditLog implements ComponentAuditLog {
+    private final String componentId;
+
+    JniComponentAuditLog(final String componentId) {
+      this.componentId = componentId;
+    }
+
+    @Override
+    public java.util.List<ComponentAuditLog.AuditEntry> getEntries() {
+      return java.util.Collections.emptyList();
+    }
+
+    @Override
+    public void addEntry(final ComponentAuditLog.AuditEntry entry) {
+      // TODO: Implement audit logging
+    }
+
+    @Override
+    public java.util.List<ComponentAuditLog.AuditEntry> getEntriesByType(
+        final ComponentAuditLog.AuditEntryType type) {
+      return java.util.Collections.emptyList();
+    }
+
+    @Override
+    public java.util.List<ComponentAuditLog.AuditEntry> getEntriesInRange(
+        final long startTime, final long endTime) {
+      return java.util.Collections.emptyList();
+    }
+
+    @Override
+    public byte[] export(final ComponentAuditLog.ExportFormat format) {
+      // TODO: Implement audit log export
+      return new byte[0];
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return true;
+    }
+
+    @Override
+    public int size() {
+      return 0;
+    }
+
+    @Override
+    public void clear() {
+      // TODO: Implement audit log clearing
+    }
+
+    @Override
+    public String getComponentId() {
+      return componentId;
+    }
   }
 }

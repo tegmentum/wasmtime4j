@@ -46,7 +46,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  * Comprehensive integration tests for enterprise features validating: - Performance claims (>10x
  * pooling, >50% caching, <5% monitoring overhead) - Security policy enforcement and access control
  * - Resource management and optimization - Production monitoring and analytics - Cross-feature
- * integration and enterprise-scale operations
+ * integration and enterprise-scale operations.
  *
  * @since 1.0.0
  */

@@ -2,13 +2,14 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Results of a memory leak detection analysis for WebAssembly GC objects.
  *
- * <p>Provides detailed information about potential memory leaks, including objects that should have
- * been garbage collected but are still reachable, circular references, and other memory leak
- * patterns.
+ * <p>Provides detailed information about potential memory leaks, including objects that
+ * should have been garbage collected but are still reachable, circular references,
+ * and other memory leak patterns.
  *
  * @since 1.0.0
  */
@@ -84,7 +85,9 @@ public interface MemoryLeakAnalysis {
    */
   List<LeakRecommendation> getRecommendations();
 
-  /** Information about a potential memory leak. */
+  /**
+   * Information about a potential memory leak.
+   */
   interface PotentialLeak {
     /** Gets the object ID. */
     long getObjectId();
@@ -114,7 +117,9 @@ public interface MemoryLeakAnalysis {
     List<Long> getReferencePath();
   }
 
-  /** Information about a circular reference. */
+  /**
+   * Information about a circular reference.
+   */
   interface CircularReference {
     /** Gets the objects involved in the cycle. */
     List<Long> getCycleObjects();
@@ -129,7 +134,9 @@ public interface MemoryLeakAnalysis {
     List<ReferencePathElement> getReferencePath();
   }
 
-  /** Information about a long-lived object. */
+  /**
+   * Information about a long-lived object.
+   */
   interface LongLivedObject {
     /** Gets the object ID. */
     long getObjectId();
@@ -150,7 +157,9 @@ public interface MemoryLeakAnalysis {
     boolean isLegitimate();
   }
 
-  /** Information about a highly referenced object. */
+  /**
+   * Information about a highly referenced object.
+   */
   interface HighlyReferencedObject {
     /** Gets the object ID. */
     long getObjectId();
@@ -168,7 +177,9 @@ public interface MemoryLeakAnalysis {
     boolean isSuspicious();
   }
 
-  /** Memory usage trend analysis. */
+  /**
+   * Memory usage trend analysis.
+   */
   interface MemoryUsageTrend {
     /** Gets whether memory usage is increasing over time. */
     boolean isIncreasing();
@@ -186,7 +197,9 @@ public interface MemoryLeakAnalysis {
     boolean isLeakPattern();
   }
 
-  /** Element of a reference path. */
+  /**
+   * Element of a reference path.
+   */
   interface ReferencePathElement {
     /** Gets the source object ID. */
     long getSourceObjectId();
@@ -201,7 +214,9 @@ public interface MemoryLeakAnalysis {
     int getIndex();
   }
 
-  /** Types of memory leaks. */
+  /**
+   * Types of memory leaks.
+   */
   enum LeakType {
     /** Unreachable objects that should be collected. */
     UNREACHABLE_OBJECT,
@@ -217,7 +232,9 @@ public interface MemoryLeakAnalysis {
     RESOURCE_LEAK
   }
 
-  /** Severity of detected leaks. */
+  /**
+   * Severity of detected leaks.
+   */
   enum LeakSeverity {
     /** Minor leaks with low impact. */
     LOW,
@@ -229,7 +246,9 @@ public interface MemoryLeakAnalysis {
     CRITICAL
   }
 
-  /** Recommendation for addressing a memory leak. */
+  /**
+   * Recommendation for addressing a memory leak.
+   */
   interface LeakRecommendation {
     /** Gets the recommendation type. */
     RecommendationType getType();
@@ -247,7 +266,9 @@ public interface MemoryLeakAnalysis {
     RecommendationPriority getPriority();
   }
 
-  /** Types of leak recommendations. */
+  /**
+   * Types of leak recommendations.
+   */
   enum RecommendationType {
     /** Break circular references. */
     BREAK_CYCLE,
@@ -263,7 +284,9 @@ public interface MemoryLeakAnalysis {
     TUNE_GC
   }
 
-  /** Priority levels for recommendations. */
+  /**
+   * Priority levels for recommendations.
+   */
   enum RecommendationPriority {
     /** Should be addressed immediately. */
     URGENT,

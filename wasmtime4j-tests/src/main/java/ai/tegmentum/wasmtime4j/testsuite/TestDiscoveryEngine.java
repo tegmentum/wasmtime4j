@@ -29,6 +29,11 @@ public final class TestDiscoveryEngine {
   private final TestSuiteConfiguration configuration;
   private final ConcurrentMap<String, WebAssemblyTestCase> discoveredTestsCache;
 
+  /**
+   * Creates a new test discovery engine.
+   *
+   * @param configuration test suite configuration
+   */
   public TestDiscoveryEngine(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Configuration cannot be null");

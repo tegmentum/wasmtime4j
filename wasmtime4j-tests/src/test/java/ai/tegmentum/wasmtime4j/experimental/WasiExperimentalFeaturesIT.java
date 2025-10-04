@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.experimental;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.*;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -687,7 +686,7 @@ class WasiExperimentalFeaturesIT {
   @Test
   @Order(14)
   @DisplayName("Experimental Process - IPC Channel Creation")
-  void testExperimentalProcessIPCChannel() throws Exception {
+  void testExperimentalProcessIpcChannel() throws Exception {
     LOGGER.info("Testing experimental IPC channel creation");
 
     final long sourceProcessHandle = 1; // Mock source process

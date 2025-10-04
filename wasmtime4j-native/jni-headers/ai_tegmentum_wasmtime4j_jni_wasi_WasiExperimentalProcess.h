@@ -31,10 +31,10 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimental
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess
- * Method:    nativeCreateIPCChannel
- * Signature: (JJJJIIIZZ)Lai/tegmentum/wasmtime4j/jni/wasi/WasiExperimentalProcess/IPCCreationResult;
+ * Method:    nativeCreateIpcChannel
+ * Signature: (JJJJIIIZZ)Lai/tegmentum/wasmtime4j/jni/wasi/WasiExperimentalProcess/IpcCreationResult;
  */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess_nativeCreateIPCChannel
+JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess_nativeCreateIpcChannel
   (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jint, jint, jboolean, jboolean);
 
 /*
@@ -79,10 +79,10 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalPro
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess
- * Method:    nativeCloseIPCChannel
+ * Method:    nativeCloseIpcChannel
  * Signature: (JJ)I
  */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess_nativeCloseIPCChannel
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiExperimentalProcess_nativeCloseIpcChannel
   (JNIEnv *, jclass, jlong, jlong);
 
 /*

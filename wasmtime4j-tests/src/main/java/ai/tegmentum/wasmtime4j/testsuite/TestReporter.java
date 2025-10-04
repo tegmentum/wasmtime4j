@@ -20,6 +20,11 @@ public final class TestReporter {
   private final TestSuiteConfiguration configuration;
   private final ObjectMapper objectMapper;
 
+  /**
+   * Creates a new test reporter.
+   *
+   * @param configuration test suite configuration
+   */
   public TestReporter(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Configuration cannot be null");
@@ -136,7 +141,9 @@ public final class TestReporter {
       html.append("  <div class=\"container\">\n");
       html.append("    <h1>WebAssembly Test Suite Report</h1>\n");
       html.append("    <div class=\"timestamp\">Generated: ")
-          .append(results.getExecutionEndTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+          .append(
+              DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(
+                  results.getExecutionEndTime().atZone(java.time.ZoneId.systemDefault())))
           .append("</div>\n");
 
       // Summary section

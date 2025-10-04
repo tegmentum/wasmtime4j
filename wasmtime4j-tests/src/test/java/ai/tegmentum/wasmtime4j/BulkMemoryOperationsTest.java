@@ -467,7 +467,7 @@ class BulkMemoryOperationsTest {
       // Measure fill operation performance
       long startTime = System.nanoTime();
       memory.fill(srcOffset, fillValue, largeSize);
-      long fillTime = System.nanoTime() - startTime;
+      final long fillTime = System.nanoTime() - startTime;
 
       // Measure copy operation performance
       startTime = System.nanoTime();

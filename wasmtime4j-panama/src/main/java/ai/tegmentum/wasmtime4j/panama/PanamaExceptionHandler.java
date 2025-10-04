@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.panama;
+package ai.tegmentum.wasmtime4j.panama.experimental;
 
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmExceptionHandlingException;
-import ai.tegmentum.wasmtime4j.gc.GcRuntime;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaArena;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaGcBridge;
+import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -31,366 +27,230 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Panama Foreign Function API implementation of WebAssembly exception handling with GC integration.
+ * Panama implementation of WebAssembly exception handling.
  *
- * <p>This class provides Panama FFI-specific bindings for WebAssembly exception handling, using
- * Project Panama's Foreign Function and Memory API for type-safe native interoperability. It
- * integrates with both the native Rust implementation and the WebAssembly GC foundation.
- *
- * <p>Key features:
- *
- * <ul>
- *   <li>Type-safe exception handling using Panama FFI
- *   <li>Memory-safe arena-based resource management
- *   <li>GC-aware exception handling for exception payloads containing GC references
- *   <li>Cross-language exception propagation between WebAssembly and Java
- *   <li>Exception unwinding with proper resource cleanup
- *   <li>Stack trace capture and debugging support
- * </ul>
+ * <p>This class provides Panama Foreign Function API bindings for WebAssembly exception handling,
+ * integrating with the native Rust implementation while ensuring proper resource management and
+ * defensive programming practices.
  *
  * @since 1.0.0
  */
-public final class PanamaExceptionHandler implements AutoCloseable {
+public final class PanamaExceptionHandler {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaExceptionHandler.class.getName());
-  private static final AtomicLong NEXT_HANDLER_ID = new AtomicLong(1);
 
-  // Native function handles
+  private static final Linker LINKER = Linker.nativeLinker();
+  private static final SymbolLookup SYMBOL_LOOKUP;
   private static final MethodHandle CREATE_HANDLER;
-  private static final MethodHandle CREATE_EXCEPTION_TAG;
-  private static final MethodHandle THROW_EXCEPTION;
-  private static final MethodHandle REGISTER_EXCEPTION_HANDLER;
+  private static final MethodHandle CREATE_TAG;
   private static final MethodHandle CAPTURE_STACK_TRACE;
   private static final MethodHandle PERFORM_UNWINDING;
   private static final MethodHandle CLOSE_HANDLER;
   private static final MethodHandle FREE_STRING;
 
+  private final ConcurrentHashMap<Long, ExceptionHandler.ExceptionTag> tagCache;
+  private final Arena arena;
+
   static {
     try {
-      final SymbolLookup lookup = SymbolLookup.loaderLookup();
-      final Linker linker = Linker.nativeLinker();
+      // Load native library
+      System.loadLibrary("wasmtime4j_native");
+      SYMBOL_LOOKUP = SymbolLookup.loaderLookup();
 
+      // Initialize method handles
       CREATE_HANDLER =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_handler_create").orElseThrow(),
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_handler_create").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.JAVA_INT,
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.JAVA_BOOLEAN,
-                  ValueLayout.JAVA_BOOLEAN));
+                  ValueLayout.JAVA_BOOLEAN, // enable_nested
+                  ValueLayout.JAVA_BOOLEAN, // enable_unwinding
+                  ValueLayout.JAVA_INT, // max_depth
+                  ValueLayout.JAVA_BOOLEAN // validate_types
+                  ));
 
-      CREATE_EXCEPTION_TAG =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_tag_create").orElseThrow(),
+      CREATE_TAG =
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_tag_create").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_LONG,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_LONG,
-                  ValueLayout.JAVA_BOOLEAN));
-
-      THROW_EXCEPTION =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_throw").orElseThrow(),
-              FunctionDescriptor.ofVoid(
-                  ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_LONG,
-                  ValueLayout.ADDRESS,
-                  ValueLayout.JAVA_LONG,
-                  ValueLayout.ADDRESS));
-
-      REGISTER_EXCEPTION_HANDLER =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_register_handler").orElseThrow(),
-              FunctionDescriptor.ofVoid(
-                  ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+                  ValueLayout.ADDRESS, // handler
+                  ValueLayout.ADDRESS, // name
+                  ValueLayout.ADDRESS, // param_types
+                  ValueLayout.JAVA_LONG // param_count
+                  ));
 
       CAPTURE_STACK_TRACE =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_capture_stack_trace").orElseThrow(),
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_capture_stack_trace").orElseThrow(),
               FunctionDescriptor.of(
-                  ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+                  ValueLayout.ADDRESS,
+                  ValueLayout.ADDRESS, // handler
+                  ValueLayout.JAVA_LONG // tag_handle
+                  ));
 
       PERFORM_UNWINDING =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_perform_unwinding").orElseThrow(),
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_perform_unwinding").orElseThrow(),
               FunctionDescriptor.of(
-                  ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+                  ValueLayout.JAVA_BOOLEAN,
+                  ValueLayout.ADDRESS, // handler
+                  ValueLayout.JAVA_INT // current_depth
+                  ));
 
       CLOSE_HANDLER =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_handler_close").orElseThrow(),
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_handler_close").orElseThrow(),
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
       FREE_STRING =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_exception_free_string").orElseThrow(),
+          LINKER.downcallHandle(
+              SYMBOL_LOOKUP.find("wasmtime4j_exception_free_string").orElseThrow(),
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-      LOGGER.info("Loaded Panama FFI bindings for exception handling");
+      LOGGER.info("Initialized Panama exception handling bindings");
     } catch (final Exception e) {
-      LOGGER.severe("Failed to load Panama FFI bindings for exception handling: " + e.getMessage());
-      throw new RuntimeException("Failed to initialize Panama exception handler", e);
+      LOGGER.severe("Failed to initialize Panama exception handling: " + e.getMessage());
+      throw new RuntimeException("Failed to initialize Panama exception handling", e);
     }
   }
 
-  private final long handlerId;
-  private final MemorySegment nativeHandle;
-  private final GcRuntime gcRuntime;
-  private final Arena arena;
-  private final ConcurrentHashMap<Long, WasmExceptionHandlingException.ExceptionTag> tagCache;
-  private final ConcurrentHashMap<Long, ExceptionHandlerCallback> handlerCallbacks;
-  private volatile boolean closed = false;
+  /** Creates a new Panama exception handler. */
+  public PanamaExceptionHandler() {
+    this.tagCache = new ConcurrentHashMap<>();
+    this.arena = Arena.ofShared();
+  }
 
   /**
-   * Creates a new Panama exception handler.
+   * Creates a native exception handler with the given configuration.
    *
    * @param config the exception handling configuration
-   * @param gcRuntime the GC runtime for GC-aware exception handling
+   * @return the native memory segment for the exception handler
    * @throws IllegalArgumentException if config is null
-   * @throws WasmExceptionHandlingException if native creation fails
+   * @throws RuntimeException if native creation fails
    */
-  public PanamaExceptionHandler(final ExceptionHandlingConfig config, final GcRuntime gcRuntime) {
-    PanamaValidation.validateNotNull(config, "Exception handling config");
-
-    this.handlerId = NEXT_HANDLER_ID.getAndIncrement();
-    this.gcRuntime = gcRuntime; // Nullable - GC support is optional
-    this.arena = PanamaArena.createSharedArena();
-    this.tagCache = new ConcurrentHashMap<>();
-    this.handlerCallbacks = new ConcurrentHashMap<>();
-
-    try {
-      this.nativeHandle =
-          (MemorySegment)
-              CREATE_HANDLER.invokeExact(
-                  config.enableNestedTryCatch,
-                  config.enableExceptionUnwinding,
-                  config.maxUnwindDepth,
-                  config.validateExceptionTypes,
-                  config.enableStackTraces,
-                  config.enableExceptionPropagation,
-                  config.enableGcIntegration);
-
-      if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
-        throw new WasmExceptionHandlingException(
-            "Failed to create native exception handler",
-            WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED);
-      }
-
-      LOGGER.fine(
-          "Created Panama exception handler with ID: "
-              + handlerId
-              + ", native handle: "
-              + nativeHandle.address());
-    } catch (final WasmExceptionHandlingException e) {
-      arena.close();
-      throw e;
-    } catch (final Throwable t) {
-      arena.close();
-      throw new WasmExceptionHandlingException(
-          "Failed to create Panama exception handler",
-          t,
-          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.NATIVE_LIBRARY_ERROR,
-          null,
-          WasmExceptionHandlingException.ExceptionErrorCode.TAG_CREATION_FAILED,
-          null,
-          null,
-          0);
-    }
+  public MemorySegment createNativeHandler(final ExceptionHandler.ExceptionHandlingConfig config) {
+    PanamaValidation.requireNonNull(config, "Exception handling config");
+    // TODO: Implement when ExceptionHandlingConfig interface is fully defined
+    throw new UnsupportedOperationException(
+        "Exception handler creation not yet implemented - config methods not available");
   }
 
   /**
-   * Creates an exception tag for WebAssembly exception handling.
+   * Creates a native exception tag.
    *
-   * @param name the exception tag name
-   * @param parameterTypes the parameter types for this exception
-   * @param isGcAware whether this tag handles GC references
-   * @return the created exception tag
-   * @throws IllegalArgumentException if parameters are invalid
-   * @throws WasmExceptionHandlingException if tag creation fails
-   * @throws IllegalStateException if handler is closed
+   * @param handlerSegment the exception handler memory segment
+   * @param name the tag name
+   * @param parameterTypes the parameter types
+   * @return the native handle for the exception tag
+   * @throws IllegalArgumentException if any parameter is null or invalid
+   * @throws RuntimeException if native creation fails
    */
-  public WasmExceptionHandlingException.ExceptionTag createExceptionTag(
-      final String name, final List<WasmValueType> parameterTypes, final boolean isGcAware) {
-    validateNotClosed();
-    PanamaValidation.validateNotNull(name, "Exception tag name");
-    PanamaValidation.validateNotEmpty(name.trim(), "Exception tag name");
-    PanamaValidation.validateNotNull(parameterTypes, "Parameter types");
+  public long createNativeExceptionTag(
+      final MemorySegment handlerSegment,
+      final String name,
+      final List<WasmValueType> parameterTypes) {
+    PanamaValidation.requireNonNull(handlerSegment, "Handler segment");
+    PanamaValidation.requireNonNull(name, "Exception tag name");
+    PanamaValidation.requireNonNull(parameterTypes, "Parameter types");
+    PanamaValidation.requireNonBlank(name, "Exception tag name");
 
-    final String trimmedName = name.trim();
-
-    // Check if tag already exists
-    if (tagCache.values().stream().anyMatch(tag -> tag.getName().equals(trimmedName))) {
-      throw new IllegalArgumentException("Exception tag '" + trimmedName + "' already exists");
+    if (handlerSegment.address() == 0L) {
+      throw new IllegalArgumentException("Invalid handler segment");
     }
 
-    // Validate GC integration if requested
-    if (isGcAware && gcRuntime == null) {
-      throw new IllegalArgumentException("GC-aware exception tag requires GC runtime");
-    }
+    try {
+      // Allocate memory for the name
+      final MemorySegment nameSegment = arena.allocateFrom(name.trim());
 
-    try (final Arena tempArena = Arena.ofConfined()) {
-      // Allocate memory for name and parameter types
-      final MemorySegment nameSegment = tempArena.allocateFrom(trimmedName);
-      final MemorySegment typesSegment =
-          tempArena.allocateArray(ValueLayout.JAVA_BYTE, parameterTypes.size());
-
-      // Copy parameter types to native memory
+      // Convert parameter types to byte array
+      final byte[] typesArray = new byte[parameterTypes.size()];
       for (int i = 0; i < parameterTypes.size(); i++) {
-        typesSegment.setAtIndex(ValueLayout.JAVA_BYTE, i, (byte) parameterTypes.get(i).ordinal());
+        typesArray[i] = (byte) parameterTypes.get(i).ordinal();
       }
+      final MemorySegment typesSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, typesArray);
 
       final long tagHandle =
           (long)
-              CREATE_EXCEPTION_TAG.invokeExact(
-                  nativeHandle, nameSegment, typesSegment, (long) parameterTypes.size(), isGcAware);
+              CREATE_TAG.invoke(
+                  handlerSegment, nameSegment, typesSegment, (long) parameterTypes.size());
 
-      if (tagHandle == 0) {
-        throw new WasmExceptionHandlingException.TagCreationException(
-            "Native tag creation returned null handle", trimmedName);
+      if (tagHandle == 0L) {
+        throw new RuntimeException("Failed to create native exception tag: " + name);
       }
 
-      final WasmExceptionHandlingException.ExceptionTag tag =
-          new WasmExceptionHandlingException.ExceptionTag(
-              trimmedName, parameterTypes, tagHandle, isGcAware);
+      // TODO: Cache the tag when ExceptionTag implementation is available
+      // ExceptionTag is abstract and cannot be instantiated directly
+      // tagCache.put(tagHandle, tag);
 
-      tagCache.put(tagHandle, tag);
-
-      LOGGER.fine(
-          "Created exception tag '"
-              + trimmedName
-              + "' with handle: "
-              + tagHandle
-              + ", GC-aware: "
-              + isGcAware);
-      return tag;
-    } catch (final WasmExceptionHandlingException e) {
-      throw e;
-    } catch (final Throwable t) {
-      throw new WasmExceptionHandlingException.TagCreationException(
-          "Failed to create exception tag", t, trimmedName);
+      LOGGER.fine("Created native exception tag '" + name + "' with handle: " + tagHandle);
+      return tagHandle;
+    } catch (final Throwable e) {
+      throw new RuntimeException("Failed to create exception tag: " + name, e);
     }
   }
 
   /**
-   * Throws a WebAssembly exception with the given tag and payload.
+   * Captures a stack trace for an exception.
    *
-   * @param tag the exception tag
-   * @param payload the exception payload
-   * @throws IllegalArgumentException if parameters are invalid
-   * @throws WasmExceptionHandlingException the thrown WebAssembly exception
-   * @throws IllegalStateException if handler is closed
+   * @param handlerSegment the exception handler memory segment
+   * @param tagHandle the exception tag handle
+   * @return the stack trace string, or null if not available
+   * @throws IllegalArgumentException if handler segment is invalid
+   * @throws RuntimeException if capture fails
    */
-  public void throwException(
-      final WasmExceptionHandlingException.ExceptionTag tag,
-      final WasmExceptionHandlingException.ExceptionPayload payload) {
-    validateNotClosed();
-    PanamaValidation.validateNotNull(tag, "Exception tag");
-    PanamaValidation.validateNotNull(payload, "Exception payload");
+  public String captureStackTrace(final MemorySegment handlerSegment, final long tagHandle) {
+    PanamaValidation.requireNonNull(handlerSegment, "Handler segment");
 
-    // Validate payload matches tag parameter types
-    validatePayload(tag, payload);
-
-    // Handle GC references if present
-    final MemorySegment gcHandlesSegment = handleGcReferences(payload);
-
-    try (final Arena tempArena = Arena.ofConfined()) {
-      // Serialize payload for native call
-      final MemorySegment payloadSegment = serializePayload(tempArena, payload);
-
-      // Throw the exception natively
-      THROW_EXCEPTION.invokeExact(
-          nativeHandle,
-          tag.getNativeHandle(),
-          payloadSegment,
-          payloadSegment.byteSize(),
-          gcHandlesSegment != null ? gcHandlesSegment : MemorySegment.NULL);
-
-    } catch (final Throwable t) {
-      // Clean up GC handles on failure
-      if (gcHandlesSegment != null && gcRuntime != null) {
-        try {
-          PanamaGcBridge.releaseGcHandles(gcRuntime, gcHandlesSegment);
-        } catch (final Exception gcE) {
-          LOGGER.warning(
-              "Failed to release GC handles during exception cleanup: " + gcE.getMessage());
-        }
-      }
-
-      throw new WasmExceptionHandlingException(
-          "Failed to throw WebAssembly exception",
-          t,
-          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
-          null,
-          WasmExceptionHandlingException.ExceptionErrorCode.PROPAGATION_FAILED,
-          payload,
-          null,
-          0);
+    if (handlerSegment.address() == 0L) {
+      throw new IllegalArgumentException("Invalid handler segment");
     }
-  }
-
-  /**
-   * Registers an exception handler for a specific tag.
-   *
-   * @param tag the exception tag to handle
-   * @param handler the exception handler callback
-   * @throws IllegalArgumentException if parameters are invalid
-   * @throws WasmExceptionHandlingException if registration fails
-   * @throws IllegalStateException if handler is closed
-   */
-  public void registerExceptionHandler(
-      final WasmExceptionHandlingException.ExceptionTag tag,
-      final ExceptionHandlerCallback handler) {
-    validateNotClosed();
-    PanamaValidation.validateNotNull(tag, "Exception tag");
-    PanamaValidation.validateNotNull(handler, "Exception handler callback");
+    if (tagHandle == 0L) {
+      throw new IllegalArgumentException("Invalid tag handle");
+    }
 
     try {
-      // Store the callback for native code to invoke
-      handlerCallbacks.put(tag.getNativeHandle(), handler);
+      final MemorySegment traceSegment =
+          (MemorySegment) CAPTURE_STACK_TRACE.invoke(handlerSegment, tagHandle);
 
-      // Create a native callback stub using Panama
-      final MemorySegment callbackStub = createCallbackStub(tag.getNativeHandle());
+      if (traceSegment.address() == 0L) {
+        return null; // No stack trace available
+      }
 
-      REGISTER_EXCEPTION_HANDLER.invokeExact(nativeHandle, tag.getNativeHandle(), callbackStub);
+      // Convert C string to Java string
+      final String trace = traceSegment.reinterpret(Long.MAX_VALUE).getString(0);
 
-      LOGGER.fine("Registered exception handler for tag: " + tag.getName());
-    } catch (final Throwable t) {
-      handlerCallbacks.remove(tag.getNativeHandle());
-      throw new WasmExceptionHandlingException(
-          "Failed to register exception handler",
-          t,
-          ai.tegmentum.wasmtime4j.exception.WasmtimeException.ErrorCode.UNKNOWN,
-          null,
-          WasmExceptionHandlingException.ExceptionErrorCode.HANDLER_REGISTRATION_FAILED,
-          null,
-          null,
-          0);
+      // Free the native string
+      FREE_STRING.invoke(traceSegment);
+
+      LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
+      return trace;
+    } catch (final Throwable e) {
+      LOGGER.warning("Failed to capture stack trace: " + e.getMessage());
+      return null; // Return null instead of throwing for optional feature
     }
   }
 
   /**
-   * Performs exception unwinding with proper resource cleanup.
+   * Performs native exception unwinding.
    *
+   * @param handlerSegment the exception handler memory segment
    * @param currentDepth the current unwind depth
    * @return true if unwinding should continue, false if maximum depth reached
-   * @throws IllegalArgumentException if depth is negative
-   * @throws WasmExceptionHandlingException if unwinding fails
-   * @throws IllegalStateException if handler is closed
+   * @throws IllegalArgumentException if handler segment is invalid
+   * @throws RuntimeException if unwinding fails
    */
-  public boolean performUnwinding(final int currentDepth) {
-    validateNotClosed();
+  public boolean performNativeUnwinding(
+      final MemorySegment handlerSegment, final int currentDepth) {
+    PanamaValidation.requireNonNull(handlerSegment, "Handler segment");
+
+    if (handlerSegment.address() == 0L) {
+      throw new IllegalArgumentException("Invalid handler segment");
+    }
 
     if (currentDepth < 0) {
       throw new IllegalArgumentException("Current depth cannot be negative");
@@ -398,338 +258,114 @@ public final class PanamaExceptionHandler implements AutoCloseable {
 
     try {
       final boolean shouldContinue =
-          (boolean) PERFORM_UNWINDING.invokeExact(nativeHandle, currentDepth);
+          (boolean) PERFORM_UNWINDING.invoke(handlerSegment, currentDepth);
       LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
       return shouldContinue;
-    } catch (final Throwable t) {
-      throw new WasmExceptionHandlingException.UnwindingException(
-          "Failed to perform unwinding", t, currentDepth);
+    } catch (final Throwable e) {
+      throw new RuntimeException("Failed to perform unwinding", e);
     }
   }
 
   /**
-   * Captures a stack trace for the given exception tag.
+   * Closes a native exception handler and releases resources.
    *
-   * @param tag the exception tag
-   * @return the stack trace string, or null if not available
-   * @throws IllegalArgumentException if tag is null
-   * @throws IllegalStateException if handler is closed
+   * @param handlerSegment the exception handler memory segment
    */
-  public String captureStackTrace(final WasmExceptionHandlingException.ExceptionTag tag) {
-    validateNotClosed();
-    PanamaValidation.validateNotNull(tag, "Exception tag");
+  public void closeNativeHandler(final MemorySegment handlerSegment) {
+    if (handlerSegment == null || handlerSegment.address() == 0L) {
+      return; // Already closed or invalid
+    }
 
     try {
-      final MemorySegment traceSegment =
-          (MemorySegment) CAPTURE_STACK_TRACE.invokeExact(nativeHandle, tag.getNativeHandle());
+      // Clear all cached tags when closing handler
+      // Note: We cannot reliably determine which tags belong to this specific handler
+      // without additional metadata tracking, so we clear all tags for safety
+      tagCache.clear();
 
-      if (traceSegment == null || traceSegment.equals(MemorySegment.NULL)) {
-        return null;
-      }
+      final long handlerAddress = handlerSegment.address();
+      CLOSE_HANDLER.invoke(handlerSegment);
 
-      try {
-        final String trace = traceSegment.getString(0);
-        LOGGER.fine("Captured stack trace for tag: " + tag.getName());
-        return trace;
-      } finally {
-        // Free the native string
-        FREE_STRING.invokeExact(traceSegment);
-      }
-    } catch (final Throwable t) {
-      LOGGER.warning(
-          "Failed to capture stack trace for tag " + tag.getName() + ": " + t.getMessage());
-      return null; // Return null instead of throwing for optional feature
+      LOGGER.fine("Closed native exception handler at address: " + handlerAddress);
+    } catch (final Throwable e) {
+      LOGGER.warning("Failed to close native exception handler: " + e.getMessage());
     }
   }
 
   /**
-   * Gets the handler ID.
+   * Gets a cached exception tag by handle.
    *
-   * @return the handler ID
+   * @param tagHandle the tag handle
+   * @return the exception tag, or null if not found
    */
-  public long getHandlerId() {
-    return handlerId;
+  public ExceptionHandler.ExceptionTag getCachedTag(final long tagHandle) {
+    return tagCache.get(tagHandle);
   }
 
-  /**
-   * Gets the native handle address.
-   *
-   * @return the native handle address
-   */
-  public long getNativeHandle() {
-    return nativeHandle.address();
-  }
-
-  /**
-   * Checks if this handler is closed.
-   *
-   * @return true if closed, false otherwise
-   */
-  public boolean isClosed() {
-    return closed;
-  }
-
-  /** Closes this exception handler and releases native resources. */
-  @Override
+  /** Closes this Panama exception handler and releases all resources. */
   public void close() {
-    if (!closed) {
-      closed = true;
-
-      try {
-        // Clean up cached tags and callbacks
-        tagCache.clear();
-        handlerCallbacks.clear();
-
-        // Release native resources
-        if (nativeHandle != null && !nativeHandle.equals(MemorySegment.NULL)) {
-          CLOSE_HANDLER.invokeExact(nativeHandle);
-        }
-
-        // Close the arena to release all allocated memory
-        arena.close();
-
-        LOGGER.info("Closed Panama exception handler with ID: " + handlerId);
-      } catch (final Throwable t) {
-        LOGGER.warning("Error during exception handler cleanup: " + t.getMessage());
-      }
-    }
-  }
-
-  /**
-   * Validates that the payload matches the exception tag parameter types.
-   *
-   * @param tag the exception tag
-   * @param payload the payload to validate
-   * @throws WasmExceptionHandlingException.PayloadValidationException if validation fails
-   */
-  private void validatePayload(
-      final WasmExceptionHandlingException.ExceptionTag tag,
-      final WasmExceptionHandlingException.ExceptionPayload payload) {
-    final List<WasmValueType> expectedTypes = tag.getParameterTypes();
-    final List<WasmValue> values = payload.getValues();
-
-    if (values.size() != expectedTypes.size()) {
-      throw new WasmExceptionHandlingException.PayloadValidationException(
-          "Exception payload size ("
-              + values.size()
-              + ") doesn't match tag parameter count ("
-              + expectedTypes.size()
-              + ")",
-          payload);
-    }
-
-    for (int i = 0; i < values.size(); i++) {
-      final WasmValueType expectedType = expectedTypes.get(i);
-      final WasmValueType actualType = values.get(i).getType();
-
-      if (!expectedType.equals(actualType)) {
-        throw new WasmExceptionHandlingException.PayloadValidationException(
-            "Exception payload parameter "
-                + i
-                + " type mismatch. "
-                + "Expected: "
-                + expectedType
-                + ", Actual: "
-                + actualType,
-            payload);
-      }
-    }
-
-    // Validate GC consistency
-    if (tag.isGcAware() && !payload.hasGcValues()) {
-      throw new WasmExceptionHandlingException.PayloadValidationException(
-          "GC-aware exception tag requires GC values in payload", payload);
-    }
-
-    if (!tag.isGcAware() && payload.hasGcValues()) {
-      throw new WasmExceptionHandlingException.PayloadValidationException(
-          "Non-GC-aware exception tag cannot have GC values in payload", payload);
-    }
-  }
-
-  /**
-   * Handles GC references in the exception payload.
-   *
-   * @param payload the exception payload
-   * @return memory segment containing GC handles, or null if no GC references
-   */
-  private MemorySegment handleGcReferences(
-      final WasmExceptionHandlingException.ExceptionPayload payload) {
-    if (!payload.hasGcValues() || gcRuntime == null) {
-      return null;
-    }
-
     try {
-      return PanamaGcBridge.createGcHandles(arena, gcRuntime, payload.getGcValues());
+      tagCache.clear();
+      arena.close();
+      LOGGER.info("Closed Panama exception handler");
     } catch (final Exception e) {
-      throw new WasmExceptionHandlingException.GcReferenceException(
-          "Failed to handle GC references in exception payload", e, payload);
+      LOGGER.warning("Failed to close Panama exception handler: " + e.getMessage());
     }
   }
 
   /**
-   * Serializes the exception payload for native code.
+   * Converts WebAssembly value types to byte array for native calls.
    *
-   * @param tempArena the temporary arena for allocation
-   * @param payload the payload to serialize
-   * @return the serialized payload data
+   * @param types the value types
+   * @return byte array representation
    */
-  private MemorySegment serializePayload(
-      final Arena tempArena, final WasmExceptionHandlingException.ExceptionPayload payload) {
-    // This would use the ExceptionMarshaling utility
-    // For now, return empty segment as placeholder
-    return tempArena.allocateArray(ValueLayout.JAVA_BYTE, 0);
+  private byte[] convertTypesToBytes(final List<WasmValueType> types) {
+    final byte[] bytes = new byte[types.size()];
+    for (int i = 0; i < types.size(); i++) {
+      bytes[i] = (byte) types.get(i).ordinal();
+    }
+    return bytes;
   }
 
   /**
-   * Creates a native callback stub for exception handling.
+   * Validates that a memory segment is valid and not null.
    *
-   * @param tagHandle the exception tag handle
-   * @return the callback stub memory segment
+   * @param segment the memory segment
+   * @param name the parameter name for error messages
+   * @throws IllegalArgumentException if segment is invalid
    */
-  private MemorySegment createCallbackStub(final long tagHandle) {
-    // This would create a proper Panama callback using the Linker.upcallStub API
-    // For now, return null as placeholder - would need proper callback implementation
-    return MemorySegment.NULL;
+  private void validateMemorySegment(final MemorySegment segment, final String name) {
+    if (segment == null) {
+      throw new IllegalArgumentException(name + " cannot be null");
+    }
+    if (segment.address() == 0L) {
+      throw new IllegalArgumentException(name + " has invalid address");
+    }
   }
 
   /**
-   * Validates that the handler is not closed.
+   * Creates a scoped arena for temporary allocations.
    *
-   * @throws IllegalStateException if handler is closed
+   * @return a new confined arena
    */
-  private void validateNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Exception handler is closed");
-    }
+  public Arena createScopedArena() {
+    return Arena.ofConfined();
   }
 
-  /** Exception handling configuration. */
-  public static final class ExceptionHandlingConfig {
-    public final boolean enableNestedTryCatch;
-    public final boolean enableExceptionUnwinding;
-    public final int maxUnwindDepth;
-    public final boolean validateExceptionTypes;
-    public final boolean enableStackTraces;
-    public final boolean enableExceptionPropagation;
-    public final boolean enableGcIntegration;
-
-    private ExceptionHandlingConfig(final Builder builder) {
-      this.enableNestedTryCatch = builder.enableNestedTryCatch;
-      this.enableExceptionUnwinding = builder.enableExceptionUnwinding;
-      this.maxUnwindDepth = builder.maxUnwindDepth;
-      this.validateExceptionTypes = builder.validateExceptionTypes;
-      this.enableStackTraces = builder.enableStackTraces;
-      this.enableExceptionPropagation = builder.enableExceptionPropagation;
-      this.enableGcIntegration = builder.enableGcIntegration;
-    }
-
-    /** Creates a new builder. */
-    public static Builder builder() {
-      return new Builder();
-    }
-
-    /** Default configuration. */
-    public static ExceptionHandlingConfig defaultConfig() {
-      return new Builder().build();
-    }
-
-    /** Builder for exception handling configuration. */
-    public static final class Builder {
-      private boolean enableNestedTryCatch = true;
-      private boolean enableExceptionUnwinding = true;
-      private int maxUnwindDepth = 1000;
-      private boolean validateExceptionTypes = true;
-      private boolean enableStackTraces = true;
-      private boolean enableExceptionPropagation = true;
-      private boolean enableGcIntegration = false;
-
-      public Builder enableNestedTryCatch(final boolean enable) {
-        this.enableNestedTryCatch = enable;
-        return this;
-      }
-
-      public Builder enableExceptionUnwinding(final boolean enable) {
-        this.enableExceptionUnwinding = enable;
-        return this;
-      }
-
-      public Builder maxUnwindDepth(final int depth) {
-        if (depth <= 0) {
-          throw new IllegalArgumentException("Max unwind depth must be positive");
-        }
-        this.maxUnwindDepth = depth;
-        return this;
-      }
-
-      public Builder validateExceptionTypes(final boolean enable) {
-        this.validateExceptionTypes = enable;
-        return this;
-      }
-
-      public Builder enableStackTraces(final boolean enable) {
-        this.enableStackTraces = enable;
-        return this;
-      }
-
-      public Builder enableExceptionPropagation(final boolean enable) {
-        this.enableExceptionPropagation = enable;
-        return this;
-      }
-
-      public Builder enableGcIntegration(final boolean enable) {
-        this.enableGcIntegration = enable;
-        return this;
-      }
-
-      public ExceptionHandlingConfig build() {
-        return new ExceptionHandlingConfig(this);
-      }
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (obj == null || getClass() != obj.getClass()) {
-        return false;
-      }
-      final ExceptionHandlingConfig that = (ExceptionHandlingConfig) obj;
-      return enableNestedTryCatch == that.enableNestedTryCatch
-          && enableExceptionUnwinding == that.enableExceptionUnwinding
-          && maxUnwindDepth == that.maxUnwindDepth
-          && validateExceptionTypes == that.validateExceptionTypes
-          && enableStackTraces == that.enableStackTraces
-          && enableExceptionPropagation == that.enableExceptionPropagation
-          && enableGcIntegration == that.enableGcIntegration;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(
-          enableNestedTryCatch,
-          enableExceptionUnwinding,
-          maxUnwindDepth,
-          validateExceptionTypes,
-          enableStackTraces,
-          enableExceptionPropagation,
-          enableGcIntegration);
-    }
+  /**
+   * Gets the shared arena for this handler.
+   *
+   * @return the shared arena
+   */
+  public Arena getSharedArena() {
+    return arena;
   }
 
-  /** Functional interface for exception handler callbacks. */
-  @FunctionalInterface
-  public interface ExceptionHandlerCallback {
-    /**
-     * Handles a WebAssembly exception.
-     *
-     * @param tag the exception tag
-     * @param payload the exception payload
-     * @return true to continue execution, false to re-throw
-     */
-    boolean handle(
-        WasmExceptionHandlingException.ExceptionTag tag,
-        WasmExceptionHandlingException.ExceptionPayload payload);
+  /**
+   * Checks if the Panama exception handler is properly initialized.
+   *
+   * @return true if initialized, false otherwise
+   */
+  public boolean isInitialized() {
+    return arena.scope().isAlive();
   }
 }

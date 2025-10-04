@@ -394,6 +394,12 @@ public final class CrossRuntimeValidationRunner {
         return this;
       }
 
+      /**
+       * Sets the thread pool size for parallel test execution.
+       *
+       * @param threadPoolSize number of threads in the pool (must be positive)
+       * @return this builder instance
+       */
       public Builder threadPoolSize(final int threadPoolSize) {
         if (threadPoolSize <= 0) {
           throw new IllegalArgumentException("threadPoolSize must be positive");

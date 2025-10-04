@@ -73,7 +73,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 1: Official WebAssembly Test Suite Integration
+   * Test 1: Official WebAssembly Test Suite Integration.
    *
    * <p>Requirements from Task 311: - Implement actual WebAssembly Core test suite execution and
    * validation - Add working WebAssembly GC test suite integration with comprehensive coverage -
@@ -121,7 +121,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 2: Real WebAssembly Module Testing Framework
+   * Test 2: Real WebAssembly Module Testing Framework.
    *
    * <p>Requirements from Task 311: - Implement testing with actual production WebAssembly modules -
    * Add working validation with popular WebAssembly libraries and frameworks - Implement actual
@@ -161,7 +161,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 3: Integration Testing Framework
+   * Test 3: Integration Testing Framework.
    *
    * <p>Requirements from Task 311: - Implement actual end-to-end testing from bytecode to execution
    * results - Add working multi-runtime testing (JNI vs Panama) with comparison validation -
@@ -204,7 +204,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 4: Production Scenario Testing
+   * Test 4: Production Scenario Testing.
    *
    * <p>Requirements from Task 311: - Implement actual serverless function execution testing - Add
    * working plugin system testing with dynamic module loading - Implement actual data processing
@@ -249,7 +249,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 5: Security and Compliance Testing
+   * Test 5: Security and Compliance Testing.
    *
    * <p>Requirements from Task 311: - Implement actual security vulnerability testing and validation
    * - Add working sandbox escape testing and isolation validation - Implement actual
@@ -295,7 +295,7 @@ public class ComprehensiveTestSuiteRunner {
   }
 
   /**
-   * Test 6: Performance and Benchmark Validation
+   * Test 6: Performance and Benchmark Validation.
    *
    * <p>Requirements from Task 311: - Implement comprehensive performance benchmark validation - Add
    * working performance regression testing and monitoring - Implement actual memory usage and leak
@@ -590,12 +590,14 @@ public class ComprehensiveTestSuiteRunner {
 
   // Result classes
 
+  /** Test result container. */
   public static class TestResult {
     private final String testName;
     private final boolean success;
     private final Duration executionTime;
     private final String errorMessage;
 
+    /** Creates test result. */
     public TestResult(
         String testName, boolean success, Duration executionTime, String errorMessage) {
       this.testName = testName;
@@ -621,6 +623,7 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** WebAssembly test suite results. */
   public static class WebAssemblyTestSuiteResults {
     private final String suiteName;
     private final int totalTests;
@@ -628,6 +631,7 @@ public class ComprehensiveTestSuiteRunner {
     private final int failedTests;
     private final List<String> failures;
 
+    /** Creates test suite results. */
     public WebAssemblyTestSuiteResults(
         String suiteName,
         int totalTests,
@@ -666,12 +670,14 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Performance test results. */
   public static class PerformanceTestResults {
     private final double throughput;
     private final Duration averageLatency;
     private final long memoryUsage;
     private final Duration executionTime;
 
+    /** Creates performance test results. */
     public PerformanceTestResults(
         double throughput, Duration averageLatency, long memoryUsage, Duration executionTime) {
       this.throughput = throughput;
@@ -697,12 +703,14 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Integration test results. */
   public static class IntegrationTestResults {
     private final String testType;
     private final int totalTests;
     private final int successfulTests;
     private final int failedTests;
 
+    /** Creates integration test results. */
     public IntegrationTestResults(
         String testType, int totalTests, int successfulTests, int failedTests) {
       this.testType = testType;
@@ -732,11 +740,13 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Runtime comparison results. */
   public static class RuntimeComparisonResults {
     private final String comparisonType;
     private final boolean comparisonCompleted;
     private final Duration timeDifference;
 
+    /** Creates runtime comparison results. */
     public RuntimeComparisonResults(
         String comparisonType, boolean comparisonCompleted, Duration timeDifference) {
       this.comparisonType = comparisonType;
@@ -757,10 +767,12 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Cross-platform test results. */
   public static class CrossPlatformTestResults {
     private final List<String> platformsTested;
     private final int platformsCovered;
 
+    /** Creates cross-platform test results. */
     public CrossPlatformTestResults(List<String> platformsTested, int platformsCovered) {
       this.platformsTested = new ArrayList<>(platformsTested);
       this.platformsCovered = platformsCovered;
@@ -775,12 +787,14 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Production test results. */
   public static class ProductionTestResults {
     private final String scenarioType;
     private final int totalTests;
     private final int successfulTests;
     private final int failedTests;
 
+    /** Creates production test results. */
     public ProductionTestResults(
         String scenarioType, int totalTests, int successfulTests, int failedTests) {
       this.scenarioType = scenarioType;
@@ -810,6 +824,7 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Security test results. */
   public static class SecurityTestResults {
     private final String testType;
     private final SecurityLevel securityLevel;
@@ -817,10 +832,12 @@ public class ComprehensiveTestSuiteRunner {
     private final IsolationLevel isolationLevel;
     private final CapabilityLevel capabilityEnforcement;
 
+    /** Creates security test results. */
     public SecurityTestResults(String testType, SecurityLevel securityLevel, boolean passed) {
       this(testType, securityLevel, passed, IsolationLevel.BASIC, CapabilityLevel.BASIC);
     }
 
+    /** Creates security test results with isolation level. */
     public SecurityTestResults(
         String testType,
         SecurityLevel securityLevel,
@@ -829,6 +846,7 @@ public class ComprehensiveTestSuiteRunner {
       this(testType, securityLevel, passed, isolationLevel, CapabilityLevel.BASIC);
     }
 
+    /** Creates security test results with all parameters. */
     public SecurityTestResults(
         String testType,
         SecurityLevel securityLevel,
@@ -863,6 +881,7 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Benchmark results. */
   public static class BenchmarkResults {
     private final double throughput;
     private final Duration averageLatency;
@@ -870,6 +889,7 @@ public class ComprehensiveTestSuiteRunner {
     private final Duration p99Latency;
     private final Duration executionTime;
 
+    /** Creates benchmark results. */
     public BenchmarkResults(
         double throughput,
         Duration averageLatency,
@@ -904,11 +924,13 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Regression test results. */
   public static class RegressionTestResults {
     private final double baselinePerformance;
     private final double currentPerformance;
     private final double regressionRate;
 
+    /** Creates regression test results. */
     public RegressionTestResults(
         double baselinePerformance, double currentPerformance, double regressionRate) {
       this.baselinePerformance = baselinePerformance;
@@ -929,12 +951,14 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Memory test results. */
   public static class MemoryTestResults {
     private final long initialMemory;
     private final long finalMemory;
     private final long memoryDelta;
     private final boolean leakDetected;
 
+    /** Creates memory test results. */
     public MemoryTestResults(
         long initialMemory, long finalMemory, long memoryDelta, boolean leakDetected) {
       this.initialMemory = initialMemory;
@@ -960,12 +984,14 @@ public class ComprehensiveTestSuiteRunner {
     }
   }
 
+  /** Test suite execution report. */
   public static class TestSuiteExecutionReport {
     private final String reportName;
     private final List<WebAssemblyTestSuiteResults> suiteResults;
     private PerformanceTestResults performanceResults;
     private Duration executionTime;
 
+    /** Creates test suite execution report. */
     public TestSuiteExecutionReport(String reportName) {
       this.reportName = reportName;
       this.suiteResults = new ArrayList<>();
@@ -1015,6 +1041,7 @@ public class ComprehensiveTestSuiteRunner {
       this.executionTime = executionTime;
     }
 
+    /** Returns summary of test execution. */
     public String getSummary() {
       final int totalTests =
           suiteResults.stream().mapToInt(WebAssemblyTestSuiteResults::getTotalTests).sum();
@@ -1036,6 +1063,7 @@ public class ComprehensiveTestSuiteRunner {
 
   // Enums for security and capability levels
 
+  /** Security level enumeration. */
   public enum SecurityLevel {
     LOW,
     MEDIUM,
@@ -1043,6 +1071,7 @@ public class ComprehensiveTestSuiteRunner {
     CRITICAL
   }
 
+  /** Isolation level enumeration. */
   public enum IsolationLevel {
     BASIC,
     MODERATE,
@@ -1050,6 +1079,7 @@ public class ComprehensiveTestSuiteRunner {
     MAXIMUM
   }
 
+  /** Capability level enumeration. */
   public enum CapabilityLevel {
     BASIC,
     PARTIAL,

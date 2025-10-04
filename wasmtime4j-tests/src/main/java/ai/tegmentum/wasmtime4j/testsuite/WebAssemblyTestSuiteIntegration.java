@@ -27,6 +27,11 @@ public final class WebAssemblyTestSuiteIntegration {
   private final TestResultAnalyzer resultAnalyzer;
   private final TestReporter reporter;
 
+  /**
+   * Creates a new WebAssembly test suite integration.
+   *
+   * @param configuration test suite configuration
+   */
   public WebAssemblyTestSuiteIntegration(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Test suite configuration cannot be null");
@@ -113,7 +118,7 @@ public final class WebAssemblyTestSuiteIntegration {
 
           // Wait for all tests to complete
           final CompletableFuture<Void> allTests =
-              CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+              CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
           allTests.get(configuration.getTestTimeoutMinutes(), TimeUnit.MINUTES);
 
           // Collect results

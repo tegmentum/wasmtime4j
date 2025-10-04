@@ -2,11 +2,17 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import java.lang.foreign.*;
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -112,8 +118,10 @@ public final class WasiAdvancedNetworkOperations {
    */
   public WasiAdvancedNetworkOperations(
       final WasiContext wasiContext, final ExecutorService executorService) throws PanamaException {
-    this.wasiContext = PanamaValidation.requireNonNull(wasiContext, "WASI context");
-    this.executorService = PanamaValidation.requireNonNull(executorService, "Executor service");
+    PanamaValidation.requireNonNull(wasiContext, "WASI context");
+    PanamaValidation.requireNonNull(executorService, "Executor service");
+    this.wasiContext = wasiContext;
+    this.executorService = executorService;
     this.arena = Arena.ofConfined();
 
     try {
@@ -152,10 +160,7 @@ public final class WasiAdvancedNetworkOperations {
           LINKER.downcallHandle(
               SYMBOL_LOOKUP.find("advanced_networking_cleanup").orElseThrow(), INIT_DESC);
 
-      LOGGER.log(
-          Level.INFO,
-          "Advanced network operations initialized for WASI context: {0}",
-          wasiContext.getContextId());
+      LOGGER.log(Level.INFO, "Advanced network operations initialized for WASI context");
 
     } catch (final Throwable e) {
       arena.close();
@@ -217,7 +222,8 @@ public final class WasiAdvancedNetworkOperations {
             final int result = (int) websocketConnect.invokeExact(urlSegment, connectionIdOut);
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_WEBSOCKET);
-              throw new PanamaException("WebSocket connection failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("WebSocket connection failed: " + result));
             }
 
             final AdvancedNetworkConnection connection =
@@ -234,7 +240,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Throwable e) {
             metrics.incrementFailedConnections(PROTOCOL_WEBSOCKET);
-            throw new PanamaException("WebSocket connection failed", e);
+            throw new CompletionException(new PanamaException("WebSocket connection failed", e));
           }
         },
         executorService);
@@ -273,7 +279,8 @@ public final class WasiAdvancedNetworkOperations {
                         connectionId, messageType, dataSegment, data.remaining());
             if (result != 0) {
               metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-              throw new PanamaException("WebSocket send failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("WebSocket send failed: " + result));
             }
 
             final AdvancedNetworkConnection connection = activeConnections.get(connectionId);
@@ -285,7 +292,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Throwable e) {
             metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-            throw new PanamaException("WebSocket send failed", e);
+            throw new CompletionException(new PanamaException("WebSocket send failed", e));
           }
         },
         executorService);
@@ -332,7 +339,8 @@ public final class WasiAdvancedNetworkOperations {
                 return -1;
               }
               metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-              throw new PanamaException("WebSocket receive failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("WebSocket receive failed: " + result));
             }
 
             final int messageType = messageTypeOut.get(ValueLayout.JAVA_INT, 0);
@@ -355,7 +363,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Throwable e) {
             metrics.incrementErrors(PROTOCOL_WEBSOCKET);
-            throw new PanamaException("WebSocket receive failed", e);
+            throw new CompletionException(new PanamaException("WebSocket receive failed", e));
           }
         },
         executorService);
@@ -393,7 +401,8 @@ public final class WasiAdvancedNetworkOperations {
             final int result = (int) http2Connect.invokeExact(hostSegment, port, connectionIdOut);
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_HTTP2);
-              throw new PanamaException("HTTP/2 connection failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("HTTP/2 connection failed: " + result));
             }
 
             final AdvancedNetworkConnection connection =
@@ -410,7 +419,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Throwable e) {
             metrics.incrementFailedConnections(PROTOCOL_HTTP2);
-            throw new PanamaException("HTTP/2 connection failed", e);
+            throw new CompletionException(new PanamaException("HTTP/2 connection failed", e));
           }
         },
         executorService);
@@ -444,7 +453,8 @@ public final class WasiAdvancedNetworkOperations {
             final int result = (int) grpcConnect.invokeExact(endpointSegment, connectionIdOut);
             if (result != 0) {
               metrics.incrementFailedConnections(PROTOCOL_GRPC);
-              throw new PanamaException("gRPC connection failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("gRPC connection failed: " + result));
             }
 
             final AdvancedNetworkConnection connection =
@@ -461,7 +471,7 @@ public final class WasiAdvancedNetworkOperations {
 
           } catch (final Throwable e) {
             metrics.incrementFailedConnections(PROTOCOL_GRPC);
-            throw new PanamaException("gRPC connection failed", e);
+            throw new CompletionException(new PanamaException("gRPC connection failed", e));
           }
         },
         executorService);
@@ -483,7 +493,8 @@ public final class WasiAdvancedNetworkOperations {
           try {
             final int result = (int) closeConnection.invokeExact(connectionId);
             if (result != 0) {
-              throw new PanamaException("Connection close failed: " + result);
+              throw new CompletionException(
+                  new PanamaException("Connection close failed: " + result));
             }
 
             final AdvancedNetworkConnection connection = activeConnections.remove(connectionId);
@@ -496,7 +507,7 @@ public final class WasiAdvancedNetworkOperations {
             }
 
           } catch (final Throwable e) {
-            throw new PanamaException("Connection close failed", e);
+            throw new CompletionException(new PanamaException("Connection close failed", e));
           }
         },
         executorService);
@@ -682,10 +693,21 @@ public final class WasiAdvancedNetworkOperations {
       return protocolMetrics.get(protocol).messagesReceived.get();
     }
 
+    /**
+     * Retrieves the number of errors for a specific protocol.
+     *
+     * @param protocol the protocol identifier
+     * @return the number of errors
+     */
     public long getErrors(final int protocol) {
       return protocolMetrics.get(protocol).errors.get();
     }
 
+    /**
+     * Creates a copy of the metrics.
+     *
+     * @return a copy of the metrics
+     */
     public AdvancedNetworkMetrics copy() {
       final AdvancedNetworkMetrics copy = new AdvancedNetworkMetrics();
       for (final Map.Entry<Integer, ProtocolMetrics> entry : protocolMetrics.entrySet()) {
@@ -694,6 +716,7 @@ public final class WasiAdvancedNetworkOperations {
       return copy;
     }
 
+    /** Protocol-specific metrics tracking. */
     private static final class ProtocolMetrics {
       private final AtomicLong successfulConnections = new AtomicLong(0);
       private final AtomicLong failedConnections = new AtomicLong(0);
@@ -702,6 +725,11 @@ public final class WasiAdvancedNetworkOperations {
       private final AtomicLong messagesReceived = new AtomicLong(0);
       private final AtomicLong errors = new AtomicLong(0);
 
+      /**
+       * Creates a copy of the protocol metrics.
+       *
+       * @return a copy of the protocol metrics
+       */
       ProtocolMetrics copy() {
         final ProtocolMetrics copy = new ProtocolMetrics();
         copy.successfulConnections.set(successfulConnections.get());

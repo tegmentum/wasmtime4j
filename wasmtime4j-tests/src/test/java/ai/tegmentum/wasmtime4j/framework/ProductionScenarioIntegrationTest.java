@@ -601,6 +601,8 @@ public class ProductionScenarioIntegrationTest {
             return;
           }
           break;
+        default:
+          throw new IllegalStateException("Unexpected operation type: " + (operationType % 3));
       }
       final long operationTime = System.nanoTime() - startTime;
       totalOps.incrementAndGet();

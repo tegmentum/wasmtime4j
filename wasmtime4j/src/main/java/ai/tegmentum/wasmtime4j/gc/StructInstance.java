@@ -43,7 +43,7 @@ public interface StructInstance extends GcObject {
    * @throws IndexOutOfBoundsException if index is invalid
    * @throws GcException if field access fails
    */
-  GcValue getField(int index);
+  GcValue getField(int index) throws GcException;
 
   /**
    * Sets a field value by index.
@@ -54,5 +54,5 @@ public interface StructInstance extends GcObject {
    * @throws IllegalArgumentException if field is immutable or value type is incompatible
    * @throws GcException if field assignment fails
    */
-  void setField(int index, GcValue value);
+  void setField(int index, GcValue value) throws GcException;
 }

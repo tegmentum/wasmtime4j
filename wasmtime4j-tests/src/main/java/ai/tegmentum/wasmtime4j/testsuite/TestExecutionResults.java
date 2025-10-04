@@ -166,6 +166,13 @@ public final class TestExecutionResults {
     private Instant executionEndTime;
     private long totalExecutionTimeMs;
 
+    /**
+     * Adds runtime results to the builder.
+     *
+     * @param runtime the runtime
+     * @param results test results
+     * @return this builder
+     */
     public Builder addRuntimeResults(final TestRuntime runtime, final List<TestResult> results) {
       if (runtime == null) {
         throw new IllegalArgumentException("Runtime cannot be null");
@@ -177,21 +184,44 @@ public final class TestExecutionResults {
       return this;
     }
 
+    /**
+     * Sets the execution start time.
+     *
+     * @param executionStartTime start time
+     * @return this builder
+     */
     public Builder executionStartTime(final Instant executionStartTime) {
       this.executionStartTime = executionStartTime;
       return this;
     }
 
+    /**
+     * Sets the execution end time.
+     *
+     * @param executionEndTime end time
+     * @return this builder
+     */
     public Builder executionEndTime(final Instant executionEndTime) {
       this.executionEndTime = executionEndTime;
       return this;
     }
 
+    /**
+     * Sets the total execution time in milliseconds.
+     *
+     * @param totalExecutionTimeMs execution time
+     * @return this builder
+     */
     public Builder totalExecutionTimeMs(final long totalExecutionTimeMs) {
       this.totalExecutionTimeMs = totalExecutionTimeMs;
       return this;
     }
 
+    /**
+     * Builds the test execution results.
+     *
+     * @return test execution results
+     */
     public TestExecutionResults build() {
       if (runtimeResults.isEmpty()) {
         throw new IllegalStateException("At least one runtime result must be provided");

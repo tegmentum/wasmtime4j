@@ -96,6 +96,11 @@ public final class CiExecutionResults {
       return this;
     }
 
+    /**
+     * Builds the CI execution results.
+     *
+     * @return CI execution results
+     */
     public CiExecutionResults build() {
       if (executionResults == null) {
         throw new IllegalStateException("Execution results must be set");

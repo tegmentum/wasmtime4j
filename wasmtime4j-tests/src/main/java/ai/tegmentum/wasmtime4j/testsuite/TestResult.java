@@ -284,6 +284,11 @@ public final class TestResult {
       return this;
     }
 
+    /**
+     * Builds the test result.
+     *
+     * @return test result
+     */
     public TestResult build() {
       if (testCase == null) {
         throw new IllegalStateException("Test case must be set");

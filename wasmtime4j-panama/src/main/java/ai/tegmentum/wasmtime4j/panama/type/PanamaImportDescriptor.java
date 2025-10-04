@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.panama.type;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
-import ai.tegmentum.wasmtime4j.panama.ffi.WasmtimeBindings;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.logging.Logger;
 
@@ -52,9 +52,17 @@ public final class PanamaImportDescriptor implements ImportDescriptor {
    * @return the PanamaImportDescriptor instance
    * @throws IllegalArgumentException if nativeSegment is invalid
    */
-  public static PanamaImportDescriptor fromNative(final MemorySegment nativeSegment) {
+  public static PanamaImportDescriptor fromNative(
+      final MemorySegment nativeSegment, final Arena arena) {
     PanamaValidation.requireNonNull(nativeSegment, "nativeSegment");
+    PanamaValidation.requireNonNull(arena, "arena");
 
+    // TODO: Implement native import descriptor reading
+    // For now, throw UnsupportedOperationException
+    throw new UnsupportedOperationException(
+        "Import descriptor parsing from native not yet implemented");
+
+    /* Future implementation:
     final String[] stringInfo = WasmtimeBindings.getImportStringInfo(nativeSegment);
     if (stringInfo.length < 2) {
       throw new IllegalStateException("Invalid import string info from native");
@@ -72,9 +80,10 @@ public final class PanamaImportDescriptor implements ImportDescriptor {
     final MemorySegment typeSegment = WasmtimeBindings.getTypeHandle(typeInfo);
 
     final WasmTypeKind typeKind = WasmTypeKind.values()[typeKindOrdinal];
-    final WasmType type = createTypeFromNative(typeKind, typeSegment);
+    final WasmType type = createTypeFromNative(typeKind, typeSegment, arena);
 
     return new PanamaImportDescriptor(moduleName, name, type);
+    */
   }
 
   /**
@@ -82,19 +91,20 @@ public final class PanamaImportDescriptor implements ImportDescriptor {
    *
    * @param typeKind the kind of the type
    * @param typeSegment the native memory segment to the type
+   * @param arena the arena for memory allocation
    * @return the appropriate WasmType implementation
    */
   private static WasmType createTypeFromNative(
-      final WasmTypeKind typeKind, final MemorySegment typeSegment) {
+      final WasmTypeKind typeKind, final MemorySegment typeSegment, final Arena arena) {
     switch (typeKind) {
       case FUNCTION:
-        return PanamaFuncType.fromNative(typeSegment);
+        return PanamaFuncType.fromNative(typeSegment, arena);
       case GLOBAL:
-        return PanamaGlobalType.fromNative(typeSegment);
+        return PanamaGlobalType.fromNative(typeSegment, arena);
       case MEMORY:
-        return PanamaMemoryType.fromNative(typeSegment);
+        return PanamaMemoryType.fromNative(typeSegment, arena);
       case TABLE:
-        return PanamaTableType.fromNative(typeSegment);
+        return PanamaTableType.fromNative(typeSegment, arena);
       default:
         throw new IllegalArgumentException("Unknown type kind: " + typeKind);
     }

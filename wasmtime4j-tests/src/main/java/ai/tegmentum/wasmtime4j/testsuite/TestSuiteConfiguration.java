@@ -162,6 +162,12 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Sets the enabled runtimes.
+     *
+     * @param runtimes enabled runtimes
+     * @return this builder
+     */
     public Builder enabledRuntimes(final Set<TestRuntime> runtimes) {
       if (runtimes == null || runtimes.isEmpty()) {
         throw new IllegalArgumentException("Enabled runtimes cannot be null or empty");
@@ -170,6 +176,12 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Sets the maximum concurrent tests.
+     *
+     * @param maxConcurrentTests maximum concurrent tests
+     * @return this builder
+     */
     public Builder maxConcurrentTests(final int maxConcurrentTests) {
       if (maxConcurrentTests < 1) {
         throw new IllegalArgumentException("Max concurrent tests must be at least 1");
@@ -178,6 +190,12 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Sets the test timeout in minutes.
+     *
+     * @param timeoutMinutes timeout in minutes
+     * @return this builder
+     */
     public Builder testTimeoutMinutes(final int timeoutMinutes) {
       if (timeoutMinutes < 1) {
         throw new IllegalArgumentException("Test timeout must be at least 1 minute");
@@ -186,41 +204,89 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Enables or disables cross-runtime comparison.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableCrossRuntimeComparison(final boolean enabled) {
       this.crossRuntimeComparisonEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables performance analysis.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enablePerformanceAnalysis(final boolean enabled) {
       this.performanceAnalysisEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables coverage analysis.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableCoverageAnalysis(final boolean enabled) {
       this.coverageAnalysisEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables console report.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableConsoleReport(final boolean enabled) {
       this.consoleReportEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables HTML report.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableHtmlReport(final boolean enabled) {
       this.htmlReportEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables JSON report.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableJsonReport(final boolean enabled) {
       this.jsonReportEnabled = enabled;
       return this;
     }
 
+    /**
+     * Enables or disables XML report.
+     *
+     * @param enabled true to enable
+     * @return this builder
+     */
     public Builder enableXmlReport(final boolean enabled) {
       this.xmlReportEnabled = enabled;
       return this;
     }
 
+    /**
+     * Sets the test suite base directory.
+     *
+     * @param directory base directory path
+     * @return this builder
+     */
     public Builder testSuiteBaseDirectory(final Path directory) {
       if (directory == null) {
         throw new IllegalArgumentException("Test suite base directory cannot be null");
@@ -229,6 +295,12 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Sets the output directory.
+     *
+     * @param directory output directory path
+     * @return this builder
+     */
     public Builder outputDirectory(final Path directory) {
       if (directory == null) {
         throw new IllegalArgumentException("Output directory cannot be null");
@@ -237,16 +309,33 @@ public final class TestSuiteConfiguration {
       return this;
     }
 
+    /**
+     * Sets the test filters.
+     *
+     * @param filters test filter configuration
+     * @return this builder
+     */
     public Builder testFilters(final TestFilterConfiguration filters) {
       this.testFilters = filters;
       return this;
     }
 
+    /**
+     * Sets the regression configuration.
+     *
+     * @param config regression detection configuration
+     * @return this builder
+     */
     public Builder regressionConfig(final RegressionDetectionConfiguration config) {
       this.regressionConfig = config;
       return this;
     }
 
+    /**
+     * Builds the test suite configuration.
+     *
+     * @return test suite configuration
+     */
     public TestSuiteConfiguration build() {
       // Initialize default configurations if not provided
       if (testFilters == null) {

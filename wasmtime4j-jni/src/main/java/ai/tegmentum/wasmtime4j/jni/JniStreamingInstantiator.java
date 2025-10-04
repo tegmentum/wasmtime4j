@@ -1,7 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstantiationConfig;
+import ai.tegmentum.wasmtime4j.InstantiationProgressListener;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -33,8 +35,10 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @param config instantiation configuration
    */
   JniStreamingInstantiator(final Module module, final InstantiationConfig config) {
-    this.module = JniValidation.requireNonNull(module, "module");
-    this.config = JniValidation.requireNonNull(config, "config");
+    JniValidation.requireNonNull(module, "module");
+    JniValidation.requireNonNull(config, "config");
+    this.module = module;
+    this.config = config;
     LOGGER.fine("Created JNI streaming instantiator");
   }
 
@@ -48,7 +52,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @return a CompletableFuture that completes with the new instance
    * @throws IllegalArgumentException if store is null
    */
-  @Override
   public CompletableFuture<Instance> instantiate(final Store store) {
     JniValidation.requireNonNull(store, "store");
 
@@ -73,7 +76,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @return a CompletableFuture that completes with the new instance
    * @throws IllegalArgumentException if store or linker is null
    */
-  @Override
   public CompletableFuture<Instance> instantiate(final Store store, final Linker linker) {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
@@ -98,7 +100,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws WasmException if instantiation fails
    * @throws IllegalArgumentException if store is null
    */
-  @Override
   public Instance instantiateSync(final Store store) throws WasmException {
     JniValidation.requireNonNull(store, "store");
 
@@ -122,7 +123,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws WasmException if instantiation fails
    * @throws IllegalArgumentException if store or linker is null
    */
-  @Override
   public Instance instantiateSync(final Store store, final Linker linker) throws WasmException {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
@@ -141,7 +141,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return the compiled WebAssembly module
    */
-  @Override
   public Module getModule() {
     return module;
   }
@@ -151,7 +150,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return the instantiation configuration
    */
-  @Override
   public InstantiationConfig getConfig() {
     return config;
   }
@@ -164,7 +162,6 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return true if ready for instantiation
    */
-  @Override
   public boolean isReady() {
     return true; // Streaming instantiators are always ready after compilation
   }
@@ -174,10 +171,11 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return array of import information
    */
-  @Override
   public String[] getImports() {
     try {
-      return module.getImports();
+      return module.getImports().stream()
+          .map(Object::toString)
+          .toArray(String[]::new);
     } catch (final Exception e) {
       LOGGER.warning("Failed to get module imports: " + e.getMessage());
       return new String[0];
@@ -189,14 +187,27 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return array of export information
    */
-  @Override
   public String[] getExports() {
     try {
-      return module.getExports();
+      return module.getExports().stream()
+          .map(Object::toString)
+          .toArray(String[]::new);
     } catch (final Exception e) {
       LOGGER.warning("Failed to get module exports: " + e.getMessage());
       return new String[0];
     }
+  }
+
+  @Override
+  public void addProgressListener(final InstantiationProgressListener listener) {
+    // TODO: Implement progress listener support
+    LOGGER.fine("Progress listener added (not yet implemented)");
+  }
+
+  @Override
+  public void removeProgressListener(final InstantiationProgressListener listener) {
+    // TODO: Implement progress listener support
+    LOGGER.fine("Progress listener removed (not yet implemented)");
   }
 
   /**
@@ -204,17 +215,10 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    *
    * @return estimated memory usage in bytes
    */
-  @Override
   public long getEstimatedMemoryUsage() {
     // This is a rough estimate - in a real implementation, this would
     // analyze the module's memory requirements more precisely
-    try {
-      // Base estimate: module size plus some overhead
-      return module.getSerializedSize() + (1024 * 1024); // 1MB overhead
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to estimate memory usage: " + e.getMessage());
-      return 1024 * 1024; // Default 1MB estimate
-    }
+    return 1024 * 1024; // Default 1MB estimate
   }
 
   @Override
@@ -230,5 +234,87 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
         + getEstimatedMemoryUsage() / (1024 * 1024)
         + "MB"
         + '}';
+  }
+
+  @Override
+  public void close() {
+    // TODO: Implement resource cleanup if needed
+    LOGGER.fine("Closed streaming instantiator");
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    // TODO: Implement cancellation logic
+    LOGGER.fine("Cancellation requested: mayInterruptIfRunning=" + mayInterruptIfRunning);
+    return false;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.InstantiationStatistics getStatistics() {
+    // TODO: Implement statistics collection
+    return null;
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre>
+      preInstantiate(final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+    // TODO: Implement pre-instantiation
+    LOGGER.fine("Pre-instantiation not yet implemented");
+    return java.util.concurrent.CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre>
+      preInstantiate(
+          final ai.tegmentum.wasmtime4j.ImportMap imports,
+          final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+    // TODO: Implement pre-instantiation
+    LOGGER.fine("Pre-instantiation not yet implemented");
+    return java.util.concurrent.CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<Instance> instantiateStreaming(
+      final Store store, final InstantiationConfig config) {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(config, "config");
+    // TODO: Implement streaming instantiation
+    LOGGER.fine("Streaming instantiation not yet implemented");
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<Instance> instantiateStreaming(
+      final Store store, final ImportMap imports, final InstantiationConfig config) {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(imports, "imports");
+    JniValidation.requireNonNull(config, "config");
+    // TODO: Implement streaming instantiation with imports
+    LOGGER.fine("Streaming instantiation with imports not yet implemented");
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.StreamingInstanceHandle createStreamingInstance(
+      final ai.tegmentum.wasmtime4j.Store store,
+      final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(config, "config");
+    // TODO: Implement streaming instance creation
+    LOGGER.fine("Streaming instance creation not yet implemented");
+    return null;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.StreamingInstanceHandle createStreamingInstance(
+      final ai.tegmentum.wasmtime4j.Store store,
+      final ai.tegmentum.wasmtime4j.ImportMap imports,
+      final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(imports, "imports");
+    JniValidation.requireNonNull(config, "config");
+    // TODO: Implement streaming instance creation with imports
+    LOGGER.fine("Streaming instance creation with imports not yet implemented");
+    return null;
   }
 }

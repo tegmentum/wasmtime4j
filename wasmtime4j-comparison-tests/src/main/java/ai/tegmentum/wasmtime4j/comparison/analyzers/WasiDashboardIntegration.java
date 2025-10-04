@@ -75,6 +75,7 @@ public final class WasiDashboardIntegration {
       return customDashboardSettings;
     }
 
+    /** Builder for creating WasiDashboardConfiguration instances. */
     public static final class Builder {
       private boolean enableRealTimeUpdates = true;
       private boolean includePerformanceCharts = true;
@@ -129,6 +130,16 @@ public final class WasiDashboardIntegration {
     private final List<WasiRecommendation> recommendations;
     private final Instant generationTime;
 
+    /**
+     * Creates a dashboard report with comprehensive WASI test analysis.
+     *
+     * @param executionSummary summary of test execution metrics
+     * @param compatibilityMatrix runtime compatibility analysis matrix
+     * @param performanceCharts performance visualization data
+     * @param coverageHeatMap feature coverage heat map data
+     * @param trendAnalysis historical trend analysis results
+     * @param recommendations list of actionable recommendations
+     */
     public WasiDashboardReport(
         final WasiTestExecutionSummary executionSummary,
         final WasiCompatibilityMatrix compatibilityMatrix,
@@ -185,6 +196,18 @@ public final class WasiDashboardIntegration {
     private final long totalExecutionTime;
     private final Map<String, Object> additionalMetrics;
 
+    /**
+     * Creates a test execution summary with comprehensive metrics.
+     *
+     * @param totalTestsExecuted total number of tests executed
+     * @param successfulTests number of successful tests
+     * @param failedTests number of failed tests
+     * @param testsPerCategory count of tests per category
+     * @param runtimeSuccessRates success rate per runtime
+     * @param overallSuccessRate overall success rate
+     * @param totalExecutionTime total execution time in milliseconds
+     * @param additionalMetrics additional custom metrics
+     */
     public WasiTestExecutionSummary(
         final int totalTestsExecuted,
         final int successfulTests,
@@ -245,6 +268,14 @@ public final class WasiDashboardIntegration {
     private final Map<WasiTestIntegrator.WasiTestCategory, Double> categoryAverageScores;
     private final List<String> compatibilityIssues;
 
+    /**
+     * Creates a compatibility matrix with runtime compatibility scores.
+     *
+     * @param compatibilityScores per-runtime per-category compatibility scores
+     * @param overallRuntimeScores overall compatibility score for each runtime
+     * @param categoryAverageScores average score for each category across runtimes
+     * @param compatibilityIssues list of compatibility issues detected
+     */
     public WasiCompatibilityMatrix(
         final Map<RuntimeType, Map<WasiTestIntegrator.WasiTestCategory, Double>>
             compatibilityScores,
@@ -283,6 +314,14 @@ public final class WasiDashboardIntegration {
         categoryPerformance;
     private final Map<String, List<Double>> customMetricTrends;
 
+    /**
+     * Creates performance charts with runtime performance data.
+     *
+     * @param executionTimeTrends execution time trends per runtime
+     * @param memoryUsageTrends memory usage trends per runtime
+     * @param categoryPerformance performance metrics per category and runtime
+     * @param customMetricTrends custom metric trends for specialized analysis
+     */
     public WasiPerformanceCharts(
         final Map<RuntimeType, List<Double>> executionTimeTrends,
         final Map<RuntimeType, List<Long>> memoryUsageTrends,
@@ -320,6 +359,14 @@ public final class WasiDashboardIntegration {
     private final List<String> uncoveredFeatures;
     private final Map<String, Integer> featureTestCounts;
 
+    /**
+     * Creates a coverage heat map with feature coverage analysis.
+     *
+     * @param coverageMatrix coverage scores per category and runtime
+     * @param featureCoverageScores coverage score for each feature
+     * @param uncoveredFeatures list of features without test coverage
+     * @param featureTestCounts number of tests per feature
+     */
     public WasiCoverageHeatMap(
         final Map<WasiTestIntegrator.WasiTestCategory, Map<RuntimeType, Double>> coverageMatrix,
         final Map<String, Double> featureCoverageScores,
@@ -356,6 +403,15 @@ public final class WasiDashboardIntegration {
     private final List<String> decliningAreas;
     private final Map<String, String> trendSummaries;
 
+    /**
+     * Creates a trend analysis with historical performance data.
+     *
+     * @param historicalSuccessRates success rate history by metric
+     * @param historicalPerformanceMetrics performance metric history
+     * @param improvingAreas list of areas showing improvement
+     * @param decliningAreas list of areas showing decline
+     * @param trendSummaries textual summaries of key trends
+     */
     public WasiTrendAnalysis(
         final Map<String, List<Double>> historicalSuccessRates,
         final Map<String, List<Double>> historicalPerformanceMetrics,
@@ -398,6 +454,15 @@ public final class WasiDashboardIntegration {
     private final List<String> actionItems;
     private final Map<String, String> additionalContext;
 
+    /**
+     * Creates a WASI recommendation with actionable guidance.
+     *
+     * @param category recommendation category
+     * @param description detailed description of the issue
+     * @param priority priority level for implementation
+     * @param actionItems list of specific actions to take
+     * @param additionalContext additional context information
+     */
     public WasiRecommendation(
         final String category,
         final String description,

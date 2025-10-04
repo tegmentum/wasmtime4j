@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiException;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
@@ -94,7 +93,7 @@ public final class WasiProcessOperations {
    * @return the current process ID
    * @throws WasiException if the operation fails
    */
-  public long getCurrentProcessId() {
+  public long getCurrentProcessId() throws WasiException {
     LOGGER.fine("Getting current process ID");
 
     try {
@@ -107,7 +106,7 @@ public final class WasiProcessOperations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get current process ID", e);
-      throw new WasiException("Failed to get process ID: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Failed to get process ID: " + e.getMessage(), e);
     }
   }
 
@@ -127,14 +126,15 @@ public final class WasiProcessOperations {
       final String command,
       final List<String> arguments,
       final Map<String, String> environment,
-      final String workingDirectory) {
+      final String workingDirectory)
+      throws WasiException {
 
     PanamaValidation.requireNonEmpty(command, "command");
     PanamaValidation.requireNonNull(arguments, "arguments");
     PanamaValidation.requireNonNull(environment, "environment");
 
     if (childProcesses.size() >= MAX_CHILD_PROCESSES) {
-      throw new WasiException("Maximum number of child processes reached", WasiErrorCode.EMFILE);
+      throw new WasiException("Maximum number of child processes reached");
     }
 
     LOGGER.fine(
@@ -221,10 +221,10 @@ public final class WasiProcessOperations {
    * @throws WasiException if the wait operation fails
    */
   public CompletableFuture<Integer> waitForProcess(
-      final long processHandle, final int timeoutSeconds) {
+      final long processHandle, final int timeoutSeconds) throws WasiException {
     final ProcessInfo processInfo = childProcesses.get(processHandle);
     if (processInfo == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException("Invalid process handle: " + processHandle);
     }
 
     PanamaValidation.requireNonNegative(timeoutSeconds, "timeoutSeconds");
@@ -295,10 +295,10 @@ public final class WasiProcessOperations {
    * @param signal the signal to send (ignored on Windows)
    * @throws WasiException if the termination fails
    */
-  public void terminateProcess(final long processHandle, final int signal) {
+  public void terminateProcess(final long processHandle, final int signal) throws WasiException {
     final ProcessInfo processInfo = childProcesses.get(processHandle);
     if (processInfo == null) {
-      throw new WasiException("Invalid process handle: " + processHandle, WasiErrorCode.EBADF);
+      throw new WasiException("Invalid process handle: " + processHandle);
     }
 
     LOGGER.fine(
@@ -335,10 +335,10 @@ public final class WasiProcessOperations {
 
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new WasiException("Process termination interrupted", WasiErrorCode.EINTR);
+      throw new WasiException("Process termination interrupted");
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to terminate process", e);
-      throw new WasiException("Process termination failed: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Process termination failed: " + e.getMessage(), e);
     }
   }
 
@@ -351,7 +351,7 @@ public final class WasiProcessOperations {
    * @return the environment variable value, or null if not set
    * @throws WasiException if the operation fails
    */
-  public String getEnvironmentVariable(final String name) {
+  public String getEnvironmentVariable(final String name) throws WasiException {
     PanamaValidation.requireNonEmpty(name, "name");
 
     LOGGER.fine(() -> String.format("Getting environment variable: %s", name));
@@ -368,8 +368,7 @@ public final class WasiProcessOperations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get environment variable: " + name, e);
-      throw new WasiException(
-          "Failed to get environment variable: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Failed to get environment variable: " + e.getMessage(), e);
     }
   }
 
@@ -382,7 +381,7 @@ public final class WasiProcessOperations {
    * @param value the environment variable value (null to unset)
    * @throws WasiException if the operation fails
    */
-  public void setEnvironmentVariable(final String name, final String value) {
+  public void setEnvironmentVariable(final String name, final String value) throws WasiException {
     PanamaValidation.requireNonEmpty(name, "name");
 
     LOGGER.fine(() -> String.format("Setting environment variable: %s", name));
@@ -406,8 +405,7 @@ public final class WasiProcessOperations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to set environment variable: " + name, e);
-      throw new WasiException(
-          "Failed to set environment variable: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Failed to set environment variable: " + e.getMessage(), e);
     }
   }
 
@@ -417,7 +415,7 @@ public final class WasiProcessOperations {
    * @return a copy of all environment variables
    * @throws WasiException if the operation fails
    */
-  public Map<String, String> getAllEnvironmentVariables() {
+  public Map<String, String> getAllEnvironmentVariables() throws WasiException {
     LOGGER.fine("Getting all environment variables");
 
     try {
@@ -428,8 +426,7 @@ public final class WasiProcessOperations {
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get environment variables", e);
-      throw new WasiException(
-          "Failed to get environment variables: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Failed to get environment variables: " + e.getMessage(), e);
     }
   }
 
@@ -441,7 +438,7 @@ public final class WasiProcessOperations {
    * @param signal the signal to raise
    * @throws WasiException if the operation fails
    */
-  public void raiseSignal(final int signal) {
+  public void raiseSignal(final int signal) throws WasiException {
     LOGGER.fine(() -> String.format("Raising signal: %d", signal));
 
     try {
@@ -474,14 +471,14 @@ public final class WasiProcessOperations {
           break;
         default:
           LOGGER.warning("Unsupported signal: " + signal);
-          throw new WasiException("Unsupported signal: " + signal, WasiErrorCode.EINVAL);
+          throw new WasiException("Unsupported signal: " + signal);
       }
 
       LOGGER.fine(() -> String.format("Signal raised: %d", signal));
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to raise signal", e);
-      throw new WasiException("Failed to raise signal: " + e.getMessage(), WasiErrorCode.EIO);
+      throw new WasiException("Failed to raise signal: " + e.getMessage(), e);
     }
   }
 
@@ -625,6 +622,17 @@ public final class WasiProcessOperations {
     public volatile boolean terminated = false;
     public volatile int exitCode = -1;
 
+    /**
+     * Constructs a new process information object.
+     *
+     * @param handle the process handle
+     * @param process the Java Process object
+     * @param command the command executed
+     * @param arguments the command arguments
+     * @param environment the environment variables
+     * @param workingDirectory the working directory
+     * @param nativeProcessId the native process ID
+     */
     public ProcessInfo(
         final long handle,
         final Process process,

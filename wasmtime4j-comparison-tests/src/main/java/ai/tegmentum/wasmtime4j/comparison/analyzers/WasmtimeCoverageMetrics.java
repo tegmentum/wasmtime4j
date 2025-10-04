@@ -15,6 +15,15 @@ public final class WasmtimeCoverageMetrics {
   private final double compatibilityScore;
   private final double testSuiteCoveragePercentage;
 
+  /**
+   * Creates Wasmtime-specific coverage metrics.
+   *
+   * @param totalDetectedFeatures total number of Wasmtime features detected
+   * @param overallWasmtimeCoverage overall coverage percentage
+   * @param runtimeWasmtimeCoverage coverage percentage per runtime
+   * @param compatibilityScore compatibility score across runtimes
+   * @param testSuiteCoveragePercentage percentage of test suite covered
+   */
   public WasmtimeCoverageMetrics(
       final int totalDetectedFeatures,
       final double overallWasmtimeCoverage,

@@ -126,6 +126,12 @@ public final class SuiteConsistencyAnalysis {
     private int totalTests = 0;
     private int productionReadyTests = 0;
 
+    /**
+     * Sets the average consistency score for the suite.
+     *
+     * @param averageConsistencyScore average score between 0.0 and 1.0
+     * @return this builder instance
+     */
     public Builder averageConsistencyScore(final double averageConsistencyScore) {
       if (averageConsistencyScore < 0.0 || averageConsistencyScore > 1.0) {
         throw new IllegalArgumentException("averageConsistencyScore must be between 0.0 and 1.0");
@@ -134,6 +140,12 @@ public final class SuiteConsistencyAnalysis {
       return this;
     }
 
+    /**
+     * Sets the production readiness rate for the suite.
+     *
+     * @param productionReadinessRate readiness rate between 0.0 and 1.0
+     * @return this builder instance
+     */
     public Builder productionReadinessRate(final double productionReadinessRate) {
       if (productionReadinessRate < 0.0 || productionReadinessRate > 1.0) {
         throw new IllegalArgumentException("productionReadinessRate must be between 0.0 and 1.0");
@@ -142,6 +154,12 @@ public final class SuiteConsistencyAnalysis {
       return this;
     }
 
+    /**
+     * Sets the total number of tests in the suite.
+     *
+     * @param totalTests total test count (must be non-negative)
+     * @return this builder instance
+     */
     public Builder totalTests(final int totalTests) {
       if (totalTests < 0) {
         throw new IllegalArgumentException("totalTests must be non-negative");
@@ -150,6 +168,12 @@ public final class SuiteConsistencyAnalysis {
       return this;
     }
 
+    /**
+     * Sets the number of production ready tests in the suite.
+     *
+     * @param productionReadyTests production ready test count (must be non-negative)
+     * @return this builder instance
+     */
     public Builder productionReadyTests(final int productionReadyTests) {
       if (productionReadyTests < 0) {
         throw new IllegalArgumentException("productionReadyTests must be non-negative");
@@ -158,6 +182,11 @@ public final class SuiteConsistencyAnalysis {
       return this;
     }
 
+    /**
+     * Builds the suite consistency analysis instance.
+     *
+     * @return new suite consistency analysis
+     */
     public SuiteConsistencyAnalysis build() {
       if (productionReadyTests > totalTests) {
         throw new IllegalStateException("productionReadyTests cannot exceed totalTests");

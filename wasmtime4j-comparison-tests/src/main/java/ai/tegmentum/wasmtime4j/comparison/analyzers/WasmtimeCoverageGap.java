@@ -15,6 +15,15 @@ public final class WasmtimeCoverageGap {
   private final Set<RuntimeType> affectedRuntimes;
   private final GapSeverity severity;
 
+  /**
+   * Creates a Wasmtime coverage gap with affected features and runtimes.
+   *
+   * @param gapType type of coverage gap
+   * @param description detailed description of the gap
+   * @param affectedFeatures features affected by this gap
+   * @param affectedRuntimes runtimes affected by this gap
+   * @param severity severity level of the gap
+   */
   public WasmtimeCoverageGap(
       final WasmtimeGapType gapType,
       final String description,
@@ -47,13 +56,4 @@ public final class WasmtimeCoverageGap {
   public GapSeverity getSeverity() {
     return severity;
   }
-}
-
-/** Types of Wasmtime-specific coverage gaps. */
-enum WasmtimeGapType {
-  COMPATIBILITY_GAP,
-  RUNTIME_MISSING,
-  CATEGORY_UNTESTED,
-  FEATURE_INCOMPLETE,
-  TEST_SUITE_INCOMPLETE
 }

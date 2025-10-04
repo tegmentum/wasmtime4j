@@ -23,37 +23,44 @@ import ai.tegmentum.wasmtime4j.security.SecurityPolicy;
 public final class PanamaSecurityManagerBuilder implements SecurityManagerBuilder {
 
   private boolean auditLoggingEnabled = true;
-  private boolean requireSignatures = false;
-  private boolean strictSandboxMode = false;
+  private String accessControl;
+  private String complianceFramework;
+  private long sessionTimeoutMs;
   private SecurityPolicy securityPolicy;
 
   @Override
-  public SecurityManagerBuilder requireSignatures(final boolean required) {
-    this.requireSignatures = required;
-    return this;
-  }
-
-  @Override
-  public SecurityManagerBuilder auditLogging(final boolean enabled) {
-    this.auditLoggingEnabled = enabled;
-    return this;
-  }
-
-  @Override
-  public SecurityManagerBuilder strictSandboxMode(final boolean strict) {
-    this.strictSandboxMode = strict;
-    return this;
-  }
-
-  @Override
-  public SecurityManagerBuilder securityPolicy(final SecurityPolicy policy) {
+  public SecurityManagerBuilder withPolicy(final SecurityPolicy policy) {
     this.securityPolicy = policy;
     return this;
   }
 
   @Override
+  public SecurityManagerBuilder withAccessControl(final String accessControl) {
+    this.accessControl = accessControl;
+    return this;
+  }
+
+  @Override
+  public SecurityManagerBuilder withAuditEnabled(final boolean auditEnabled) {
+    this.auditLoggingEnabled = auditEnabled;
+    return this;
+  }
+
+  @Override
+  public SecurityManagerBuilder withComplianceFramework(final String framework) {
+    this.complianceFramework = framework;
+    return this;
+  }
+
+  @Override
+  public SecurityManagerBuilder withSessionTimeout(final long timeoutMs) {
+    this.sessionTimeoutMs = timeoutMs;
+    return this;
+  }
+
+  @Override
   public SecurityManager build() {
-    return new PanamaSecurityManagerImpl(
-        requireSignatures, auditLoggingEnabled, strictSandboxMode, securityPolicy);
+    // TODO: Implement PanamaSecurityManagerImpl (currently excluded due to interface method issues)
+    throw new UnsupportedOperationException("Panama security manager not yet implemented");
   }
 }

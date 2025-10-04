@@ -16,6 +16,14 @@ public final class CrossImplementationAnalysis {
   private final List<String> inconsistentFeatures;
   private final double crossImplementationScore;
 
+  /**
+   * Creates a new cross-implementation analysis instance.
+   *
+   * @param runtimeFeatures features available in each runtime
+   * @param consistentFeatures features with consistent behavior across runtimes
+   * @param inconsistentFeatures features with inconsistent behavior across runtimes
+   * @param crossImplementationScore overall cross-implementation consistency score
+   */
   public CrossImplementationAnalysis(
       final Map<RuntimeType, Set<String>> runtimeFeatures,
       final List<String> consistentFeatures,

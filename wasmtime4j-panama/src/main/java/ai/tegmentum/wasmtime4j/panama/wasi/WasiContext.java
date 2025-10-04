@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaResourceTracker;
+import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
 import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
@@ -149,8 +150,9 @@ public final class WasiContext implements AutoCloseable {
    * @return the environment variable value, or null if not set
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if the context is closed
+   * @throws WasiPermissionException if access is denied
    */
-  public String getEnvironmentVariable(final String name) {
+  public String getEnvironmentVariable(final String name) throws WasiPermissionException {
     ensureNotClosed();
 
     if (name == null || name.isEmpty()) {
@@ -221,8 +223,9 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalArgumentException if path is null or empty
    * @throws IllegalStateException if the context is closed
    * @throws RuntimeException if the path is not accessible or validation fails
+   * @throws WasiPermissionException if access is denied
    */
-  public Path validatePath(final String path) {
+  public Path validatePath(final String path) throws WasiPermissionException {
     ensureNotClosed();
 
     if (path == null || path.isEmpty()) {
@@ -250,7 +253,8 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    * @throws RuntimeException if the path is not accessible or validation fails
    */
-  public Path validatePath(final String path, final WasiFileOperation operation) {
+  public Path validatePath(final String path, final WasiFileOperation operation)
+      throws WasiPermissionException {
     ensureNotClosed();
 
     if (path == null || path.isEmpty()) {

@@ -521,7 +521,8 @@ class RuntimeErrorScenarioTest {
       // Force garbage collection and measure initial memory
       System.gc();
       Thread.yield();
-      long initialMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      final long initialMemory =
+          Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
       // Trigger many runtime errors
       for (int i = 0; i < 100; i++) {
