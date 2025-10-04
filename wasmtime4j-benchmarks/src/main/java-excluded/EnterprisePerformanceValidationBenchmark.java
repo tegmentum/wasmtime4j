@@ -44,7 +44,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * @since 1.0.0
  */
 @BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.OPERATIONS_PER_SECOND)
+@OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(
     value = 2,
     jvmArgs = {"-Xms2g", "-Xmx2g"})

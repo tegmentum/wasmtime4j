@@ -435,7 +435,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int getSize() {
-    return (int) sizeInPages();
+    return sizeInPages();
   }
 
   @Override

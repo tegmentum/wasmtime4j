@@ -76,7 +76,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @return a CompletableFuture that completes with the new instance
    * @throws IllegalArgumentException if store or linker is null
    */
-  public CompletableFuture<Instance> instantiate(final Store store, final Linker linker) {
+  public CompletableFuture<Instance> instantiate(final Store store, final Linker<?> linker) {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
 
@@ -123,7 +123,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    * @throws WasmException if instantiation fails
    * @throws IllegalArgumentException if store or linker is null
    */
-  public Instance instantiateSync(final Store store, final Linker linker) throws WasmException {
+  public Instance instantiateSync(final Store store, final Linker<?> linker) throws WasmException {
     JniValidation.requireNonNull(store, "store");
     JniValidation.requireNonNull(linker, "linker");
 
