@@ -1,10 +1,11 @@
 package ai.tegmentum.wasmtime4j.panama.memory;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SegmentScope;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
@@ -29,7 +30,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   // Native library symbols - loaded once per class
   private static final Linker LINKER = Linker.nativeLinker();
   private static final SymbolLookup LOOKUP =
-      SymbolLookup.libraryLookup("wasmtime4j_native", SegmentScope.global());
+      SymbolLookup.libraryLookup("wasmtime4j_native", Arena.ofAuto());
 
   // Native function handles
   private static final MethodHandle CREATE_ALLOCATOR;
@@ -88,12 +89,12 @@ public final class PlatformMemoryManager implements AutoCloseable {
       // Initialize native method handles
       CREATE_ALLOCATOR =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_allocator_create").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_allocator_create").orElseThrow(),
               FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
       ALLOCATE_MEMORY =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_allocate").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_allocate").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.ADDRESS,
                   ValueLayout.ADDRESS,
@@ -102,25 +103,25 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       DEALLOCATE_MEMORY =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_deallocate").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_deallocate").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
       GET_STATS =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_get_stats").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_get_stats").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
       GET_PLATFORM_INFO =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_get_info").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_get_info").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
       DETECT_LEAKS =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_detect_leaks").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_detect_leaks").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN,
                   ValueLayout.ADDRESS,
@@ -129,7 +130,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       PREFETCH_MEMORY =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_prefetch").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_prefetch").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN,
                   ValueLayout.ADDRESS,
@@ -138,7 +139,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       COMPRESS_MEMORY =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_compress").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_compress").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_BOOLEAN,
                   ValueLayout.ADDRESS,
@@ -149,7 +150,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       DEDUPLICATE_MEMORY =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_deduplicate").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_deduplicate").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.ADDRESS,
                   ValueLayout.ADDRESS,
@@ -158,7 +159,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       DESTROY_ALLOCATOR =
           LINKER.downcallHandle(
-              LOOKUP.lookup("wasmtime4j_platform_memory_allocator_destroy").orElseThrow(),
+              LOOKUP.find("wasmtime4j_platform_memory_allocator_destroy").orElseThrow(),
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
       LOGGER.log(Level.INFO, "PlatformMemoryManager Panama FFI initialized successfully");
@@ -170,7 +171,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
   // Native handle to the platform memory allocator
   private MemorySegment nativeHandle;
-  private final SegmentScope scope;
+  private final Arena arena;
   private boolean closed = false;
 
   /** Configuration for platform-specific memory management. */
@@ -296,11 +297,11 @@ public final class PlatformMemoryManager implements AutoCloseable {
       throw new IllegalArgumentException("Config cannot be null");
     }
 
-    this.scope = SegmentScope.global();
+    this.arena = Arena.ofAuto();
 
     try {
       // Create native configuration structure
-      MemorySegment configSegment = MemorySegment.allocateNative(PLATFORM_CONFIG_LAYOUT, scope);
+      MemorySegment configSegment = arena.allocate(PLATFORM_CONFIG_LAYOUT);
 
       configSegment.set(
           ValueLayout.JAVA_BOOLEAN,
@@ -434,7 +435,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     ensureNotClosed();
 
     try {
-      MemorySegment statsSegment = MemorySegment.allocateNative(MEMORY_STATS_LAYOUT, scope);
+      MemorySegment statsSegment = arena.allocate(MEMORY_STATS_LAYOUT);
       boolean success = (boolean) GET_STATS.invoke(nativeHandle, statsSegment);
 
       if (!success) {
@@ -499,7 +500,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
     ensureNotClosed();
 
     try {
-      MemorySegment infoSegment = MemorySegment.allocateNative(PLATFORM_INFO_LAYOUT, scope);
+      MemorySegment infoSegment = arena.allocate(PLATFORM_INFO_LAYOUT);
       boolean success = (boolean) GET_PLATFORM_INFO.invoke(nativeHandle, infoSegment);
 
       if (!success) {
@@ -591,12 +592,12 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
     try {
       // Allocate native memory for input data
-      MemorySegment inputSegment = MemorySegment.allocateNative(data.length, scope);
+      MemorySegment inputSegment = arena.allocate(data.length);
       inputSegment.copyFrom(MemorySegment.ofArray(data));
 
       // Allocate pointers for output
-      MemorySegment compressedPtrPtr = MemorySegment.allocateNative(ValueLayout.ADDRESS, scope);
-      MemorySegment compressedLenPtr = MemorySegment.allocateNative(ValueLayout.JAVA_LONG, scope);
+      MemorySegment compressedPtrPtr = arena.allocate(ValueLayout.ADDRESS);
+      MemorySegment compressedLenPtr = arena.allocate(ValueLayout.JAVA_LONG);
 
       boolean success =
           (boolean)
@@ -616,8 +617,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
       long compressedLen = compressedLenPtr.get(ValueLayout.JAVA_LONG, 0);
 
       byte[] compressed = new byte[(int) compressedLen];
-      MemorySegment.ofAddress(compressedPtr.address(), compressedLen, scope)
-          .copyFrom(MemorySegment.ofArray(compressed));
+      compressedPtr.reinterpret(compressedLen).asByteBuffer().get(compressed);
 
       LOGGER.log(
           Level.FINE,
@@ -647,7 +647,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
     try {
       // Allocate native memory for input data
-      MemorySegment inputSegment = MemorySegment.allocateNative(data.length, scope);
+      MemorySegment inputSegment = arena.allocate(data.length);
       inputSegment.copyFrom(MemorySegment.ofArray(data));
 
       MemorySegment ptr =

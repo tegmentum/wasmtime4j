@@ -103,7 +103,7 @@ public final class NativeObjectPool<T> {
   private final AtomicLong poolContention = new AtomicLong(0);
 
   /** Pool size optimization. */
-  private final AtomicInteger optimalSize = new AtomicInteger(minPoolSize);
+  private final AtomicInteger optimalSize;
 
   private volatile long lastOptimizationTime = System.currentTimeMillis();
   private static final long OPTIMIZATION_INTERVAL_MS = 10_000; // 10 seconds
@@ -164,6 +164,7 @@ public final class NativeObjectPool<T> {
     this.maxPoolSize = maxPoolSize;
     this.minPoolSize = minPoolSize;
     this.availableObjects = new LinkedBlockingQueue<>(maxPoolSize);
+    this.optimalSize = new AtomicInteger(minPoolSize);
 
     // Pre-populate pool with minimum objects
     for (int i = 0; i < minPoolSize; i++) {

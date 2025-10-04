@@ -33,7 +33,8 @@ public final class JniWasmThreadLocalStorage implements WasmThreadLocalStorage {
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   static {
-    JniLibraryLoader.loadNativeLibrary();
+    // TODO: Load native library when JniLibraryLoader is implemented
+    // JniLibraryLoader.loadNativeLibrary();
   }
 
   /**

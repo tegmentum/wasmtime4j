@@ -416,7 +416,7 @@ public final class ComplexPanamaTypeConverter {
     final StructuredLayoutBuilder builder = new StructuredLayoutBuilder(arenaManager.getArena());
 
     // Add layout strategy header
-    builder.addInt((int) MemoryLayoutStrategy.STRUCTURED_LAYOUT.ordinal());
+    builder.addInt(MemoryLayoutStrategy.STRUCTURED_LAYOUT.ordinal());
 
     // Add object type information
     builder.addString(object.getClass().getName());
@@ -468,7 +468,7 @@ public final class ComplexPanamaTypeConverter {
     final StructuredLayoutBuilder builder = new StructuredLayoutBuilder(arenaManager.getArena());
 
     // Add layout strategy header
-    builder.addInt((int) MemoryLayoutStrategy.HYBRID_LAYOUT.ordinal());
+    builder.addInt(MemoryLayoutStrategy.HYBRID_LAYOUT.ordinal());
 
     // Add object metadata
     builder.addString(object.getClass().getName());
@@ -570,12 +570,10 @@ public final class ComplexPanamaTypeConverter {
     final byte[] serializedData =
         memorySegment.asSlice(8, dataLength).toArray(ValueLayout.JAVA_BYTE);
 
-    // Create marshaled data and unmarshal
-    final ComplexMarshalingService.MarshaledData marshaledData =
-        new ComplexMarshalingService.MarshaledData(
-            ComplexMarshalingService.MarshalingStrategy.VALUE_BASED, serializedData, null);
-
-    return marshalingService.unmarshal(marshaledData, expectedType);
+    // TODO: MarshaledData constructor is not public - need alternative approach
+    throw new UnsupportedOperationException(
+        "Serialized blob reconstruction not yet implemented - MarshaledData constructor not"
+            + " accessible");
   }
 
   /**
@@ -599,12 +597,10 @@ public final class ComplexPanamaTypeConverter {
     // Read serialized data
     final byte[] serializedData = reader.readByteArray();
 
-    // Create marshaled data and unmarshal
-    final ComplexMarshalingService.MarshaledData marshaledData =
-        new ComplexMarshalingService.MarshaledData(
-            ComplexMarshalingService.MarshalingStrategy.VALUE_BASED, serializedData, null);
-
-    return marshalingService.unmarshal(marshaledData, expectedType);
+    // TODO: MarshaledData constructor is not public - need alternative approach
+    throw new UnsupportedOperationException(
+        "Serialized blob reconstruction not yet implemented - MarshaledData constructor not"
+            + " accessible");
   }
 
   // Additional helper methods and classes would be implemented here...

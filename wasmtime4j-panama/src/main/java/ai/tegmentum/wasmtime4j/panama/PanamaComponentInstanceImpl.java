@@ -1,96 +1,121 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
+import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.util.Objects;
-import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Panama FFI implementation of the ComponentInstance interface.
+ * Panama implementation of component instance.
  *
- * <p>This class wraps a native WebAssembly component instance handle and provides Component Model
- * instance functionality through Panama FFI calls to the native Wasmtime library.
+ * <p>TODO: Implement full component instance functionality.
  *
  * @since 1.0.0
  */
 public final class PanamaComponentInstanceImpl implements ComponentInstance {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(PanamaComponentInstanceImpl.class.getName());
-
-  private final PanamaComponent.PanamaComponentInstanceHandle nativeInstance;
-  private final Component parentComponent;
+  private final PanamaComponent.PanamaComponentInstanceHandle instanceHandle;
+  private final PanamaComponentImpl component;
   private final ArenaResourceManager resourceManager;
-  private final ComponentInstanceConfig config;
-  private final String instanceId;
+  private final Object config;
 
   /**
-   * Creates a new Panama component instance implementation.
+   * Creates a new Panama component instance.
    *
-   * @param nativeInstance the native component instance handle
-   * @param parentComponent the component that created this instance
-   * @param resourceManager the arena resource manager
-   * @param config the instance configuration
+   * @param instanceHandle the native instance handle
+   * @param component the component this instance belongs to
+   * @param resourceManager the resource manager
+   * @param config the configuration
    */
   public PanamaComponentInstanceImpl(
-      final PanamaComponent.PanamaComponentInstanceHandle nativeInstance,
-      final Component parentComponent,
+      final PanamaComponent.PanamaComponentInstanceHandle instanceHandle,
+      final PanamaComponentImpl component,
       final ArenaResourceManager resourceManager,
-      final ComponentInstanceConfig config) {
-    this.nativeInstance = Objects.requireNonNull(nativeInstance, "nativeInstance");
-    this.parentComponent = Objects.requireNonNull(parentComponent, "parentComponent");
-    this.resourceManager = Objects.requireNonNull(resourceManager, "resourceManager");
-    this.config = Objects.requireNonNull(config, "config");
-    this.instanceId = "panama-instance-" + System.nanoTime();
+      final Object config) {
+    this.instanceHandle = instanceHandle;
+    this.component = component;
+    this.resourceManager = resourceManager;
+    this.config = config;
   }
 
   @Override
   public String getId() {
-    return instanceId;
+    return String.valueOf(System.identityHashCode(this));
   }
 
   @Override
-  public Component getComponent() {
-    return parentComponent;
-  }
-
-  @Override
-  public ComponentInstanceConfig getConfig() {
-    return config;
+  public ComponentSimple getComponent() {
+    return component;
   }
 
   @Override
   public ComponentInstanceState getState() {
-    if (isValid()) {
-      return ComponentInstanceState.ACTIVE;
-    } else {
-      return ComponentInstanceState.DISPOSED;
-    }
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public Object invoke(final String functionName, final Object... args) throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public boolean hasFunction(final String functionName) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public Set<String> getExportedFunctions() {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public Map<String, WitInterfaceDefinition> getExportedInterfaces() throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public void bindInterface(final String interfaceName, final Object implementation)
+      throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public ComponentInstanceConfig getConfig() {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public ComponentResourceUsage getResourceUsage() {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
   public boolean isValid() {
-    return nativeInstance.isValid();
+    return true;
+  }
+
+  @Override
+  public void pause() throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public void resume() throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public void stop() throws WasmException {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
   public void close() {
-    try {
-      if (nativeInstance != null) {
-        nativeInstance.close();
-        LOGGER.fine("Closed Panama component instance: " + instanceId);
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing component instance: " + e.getMessage());
-    }
-  }
-
-  private void ensureValid() throws WasmException {
-    if (!isValid()) {
-      throw new WasmException("Component instance is no longer valid");
-    }
+    // TODO: Implement resource cleanup
   }
 }

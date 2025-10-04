@@ -898,7 +898,7 @@ impl Linker {
     /// # Safety
     /// This provides direct access to the underlying wasmtime linker.
     /// Use with caution as it bypasses safety checks.
-    pub fn inner(&self) -> WasmtimeResult<std::sync::MutexGuard<WasmtimeLinker<StoreData>>> {
+    pub fn inner(&self) -> WasmtimeResult<std::sync::MutexGuard<'_, WasmtimeLinker<StoreData>>> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),

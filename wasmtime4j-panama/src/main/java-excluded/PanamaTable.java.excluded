@@ -1,0 +1,1021 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.panama;
+
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.RuntimeException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Panama FFI implementation of the WebAssembly table interface.
+ *
+ * <p>This implementation provides direct access to WebAssembly table operations through the Panama
+ * Foreign Function API, offering zero-copy element access and high-performance table operations.
+ *
+ * <p>Tables in WebAssembly contain a homogeneous array of references that can be accessed by index.
+ * This implementation supports all standard table operations including size queries, element
+ * access, and table growth with comprehensive bounds checking and type safety.
+ *
+ * @since 1.0.0
+ */
+public final class PanamaTable implements WasmTable, AutoCloseable {
+  private static final Logger logger = Logger.getLogger(PanamaTable.class.getName());
+
+  private final MemorySegment tableHandle;
+  private final ArenaResourceManager arenaManager;
+  private final PanamaInstance parentInstance;
+  private final NativeFunctionBindings nativeBindings;
+  // Error handler is static, no field needed
+
+  private volatile boolean closed = false;
+
+  public boolean isValid() {
+    return !closed;
+  }
+
+  /**
+   * Creates a new Panama table wrapper with the given native table handle.
+   *
+   * @param tableHandle the native table handle from Wasmtime
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param parentInstance the parent instance for context
+   * @throws WasmException if table initialization fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  PanamaTable(
+      final MemorySegment tableHandle,
+      final ArenaResourceManager arenaManager,
+      final PanamaInstance parentInstance)
+      throws WasmException {
+    this(tableHandle, arenaManager, parentInstance, NativeFunctionBindings.getInstance());
+  }
+
+  /**
+   * Creates a new Panama table wrapper with the given native table handle and bindings. This
+   * constructor is primarily used for testing to allow dependency injection.
+   *
+   * @param tableHandle the native table handle from Wasmtime
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param parentInstance the parent instance for context
+   * @param nativeBindings the native function bindings for FFI calls
+   * @throws WasmException if table initialization fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  PanamaTable(
+      final MemorySegment tableHandle,
+      final ArenaResourceManager arenaManager,
+      final PanamaInstance parentInstance,
+      final NativeFunctionBindings nativeBindings)
+      throws WasmException {
+    this.tableHandle = Objects.requireNonNull(tableHandle, "Table handle cannot be null");
+    this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
+    this.parentInstance = Objects.requireNonNull(parentInstance, "Parent instance cannot be null");
+    this.nativeBindings = Objects.requireNonNull(nativeBindings, "Native bindings cannot be null");
+
+    try {
+      // Register this table for automatic resource cleanup
+      arenaManager.registerManagedNativeResource(this, tableHandle, this::closeNative);
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Created Panama table instance with handle: " + tableHandle);
+      }
+    } catch (Exception e) {
+      throw new WasmException("Failed to initialize table", e);
+    }
+  }
+
+  @Override
+  public int getSize() {
+    ensureNotClosed();
+
+    try {
+      final MethodHandle sizeHandle = nativeBindings.getTableSize();
+      if (sizeHandle == null) {
+        throw new RuntimeException("Table size function not available in native library");
+      }
+
+      final long size = (long) sizeHandle.invokeExact(tableHandle);
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Table size: " + size);
+      }
+
+      return (int) size;
+    } catch (Throwable t) {
+      logger.warning("Failed to get table size: " + t.getMessage());
+      return 0; // Default size
+    }
+  }
+
+  @Override
+  public Object get(final int index) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      throw new IllegalArgumentException("Table index cannot be negative: " + index);
+    }
+
+    try {
+      final MethodHandle getHandle = nativeBindings.getTableGet();
+      if (getHandle == null) {
+        throw new RuntimeException("Table get function not available in native library");
+      }
+
+      // Bounds check
+      final long tableSize = getSize();
+      if (index >= tableSize) {
+        throw new RuntimeException("Table index out of bounds: " + index + " >= " + tableSize);
+      }
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      // Allocate memory segments for out parameters
+      final MemorySegment refIdPresentPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment refIdPtr = arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          (int) getHandle.invokeExact(tableHandle, storePtr, index, refIdPresentPtr, refIdPtr);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get table element, error code: " + result);
+      }
+
+      // Check if element is null
+      final int refIdPresent = refIdPresentPtr.get(ValueLayout.JAVA_INT, 0);
+      if (refIdPresent == 0) {
+        if (logger.isLoggable(Level.FINE)) {
+          logger.fine("Table element at index " + index + " is null");
+        }
+        return null;
+      }
+
+      // Get the actual reference ID
+      final long refId = refIdPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      // Determine element type dynamically
+      final WasmValueType elementType = getElementType();
+
+      // Convert native element handle to appropriate Java object based on type
+      if (elementType == WasmValueType.FUNCREF) {
+        // Create a function handle from the ref_id - this will need to be implemented
+        // For now, create a placeholder function object
+        if (logger.isLoggable(Level.FINE)) {
+          logger.fine("Retrieved funcref element at index " + index + " with refId: " + refId);
+        }
+        // TODO: Create proper PanamaFunction from refId
+        return createFunctionFromRefId(refId);
+      } else if (elementType == WasmValueType.EXTERNREF) {
+        if (logger.isLoggable(Level.FINE)) {
+          logger.fine("Retrieved externref element at index " + index + " with refId: " + refId);
+        }
+        // TODO: Create proper external reference object from refId
+        return createExternalRefFromRefId(refId);
+      } else {
+        throw new RuntimeException("Unsupported table element type: " + elementType);
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException) {
+        throw (IndexOutOfBoundsException) t; // Re-throw bounds exceptions per interface
+      }
+      logger.warning("Failed to get table element at index " + index + ": " + t.getMessage());
+      return null; // Return null on failure
+    }
+  }
+
+  /**
+   * Creates a function object from a reference ID.
+   *
+   * @param refId the native function reference ID
+   * @return a function object
+   */
+  private Object createFunctionFromRefId(final long refId) {
+    // For now, create a simple wrapper - this needs proper implementation
+    // that reconstructs a PanamaFunction from the native reference ID
+    try {
+      // TODO: Implement proper function reconstruction from native refId
+      // This is a placeholder that will need actual FFI calls to reconstruct the function
+      logger.warning("Function reconstruction from refId not yet implemented: " + refId);
+      return null; // Return null until proper implementation
+    } catch (Exception e) {
+      logger.warning("Failed to create function from refId " + refId + ": " + e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Creates an external reference object from a reference ID.
+   *
+   * @param refId the native external reference ID
+   * @return an external reference object
+   */
+  private Object createExternalRefFromRefId(final long refId) {
+    // For now, create a simple wrapper - this needs proper implementation
+    // that reconstructs an external reference from the native reference ID
+    try {
+      // TODO: Implement proper external reference reconstruction from native refId
+      // This is a placeholder that will need actual FFI calls to reconstruct the reference
+      logger.warning("External reference reconstruction from refId not yet implemented: " + refId);
+      return null; // Return null until proper implementation
+    } catch (Exception e) {
+      logger.warning(
+          "Failed to create external reference from refId " + refId + ": " + e.getMessage());
+      return null;
+    }
+  }
+
+  @Override
+  public void set(final int index, final Object value) {
+    ensureNotClosed();
+
+    if (index < 0) {
+      throw new IllegalArgumentException("Table index cannot be negative: " + index);
+    }
+
+    try {
+      final MethodHandle setHandle = nativeBindings.getTableSet();
+      if (setHandle == null) {
+        throw new RuntimeException("Table set function not available in native library");
+      }
+
+      // Bounds check
+      final long tableSize = getSize();
+      if (index >= tableSize) {
+        throw new RuntimeException("Table index out of bounds: " + index + " >= " + tableSize);
+      }
+
+      // Get table element type for validation
+      final WasmValueType tableElementType = getElementType();
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      // Validate and convert Java object to native parameters
+      int elementType;
+      int refIdPresent;
+      long refId;
+
+      if (value == null) {
+        // Setting null - this is always valid for reference types
+        elementType = (tableElementType == WasmValueType.FUNCREF) ? 5 : 6;
+        refIdPresent = 0;
+        refId = 0;
+      } else {
+        // Validate value type against table element type
+        if (tableElementType == WasmValueType.FUNCREF) {
+          if (value instanceof PanamaFunction panamaFunction) {
+            elementType = 5; // FUNCREF
+            refIdPresent = 1;
+            refId = extractFunctionRefId(panamaFunction);
+          } else if (value instanceof WasmFunction) {
+            throw new IllegalArgumentException(
+                "Cannot set non-Panama function in Panama table. "
+                    + "Value must be null or a PanamaFunction instance.");
+          } else {
+            throw new IllegalArgumentException(
+                "Table with FUNCREF element type requires WebAssembly function or null. "
+                    + "Got: "
+                    + value.getClass().getName());
+          }
+        } else if (tableElementType == WasmValueType.EXTERNREF) {
+          elementType = 6; // EXTERNREF
+          refIdPresent = 1;
+          refId = extractExternalRefId(value);
+        } else {
+          throw new RuntimeException("Unsupported table element type: " + tableElementType);
+        }
+      }
+
+      final int result =
+          (int)
+              setHandle.invokeExact(tableHandle, storePtr, index, elementType, refIdPresent, refId);
+
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to set table element at index " + index + ", error code: " + result);
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Set table element at index "
+                + index
+                + " to "
+                + (value == null ? "null" : value.getClass().getSimpleName())
+                + " (type: "
+                + tableElementType
+                + ")");
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException) {
+        throw (IndexOutOfBoundsException) t; // Re-throw bounds exceptions per interface
+      }
+      logger.warning("Failed to set table element at index " + index + ": " + t.getMessage());
+    }
+  }
+
+  /**
+   * Extracts a reference ID from a PanamaFunction.
+   *
+   * @param function the function to extract the reference ID from
+   * @return the native function reference ID
+   */
+  private long extractFunctionRefId(final PanamaFunction function) {
+    try {
+      // TODO: Implement proper refId extraction from PanamaFunction
+      // This will need to be implemented when PanamaFunction has refId support
+      logger.warning("Function refId extraction not yet implemented");
+      return 0; // Return 0 as placeholder
+    } catch (Exception e) {
+      logger.warning("Failed to extract function refId: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /**
+   * Extracts a reference ID from an external reference object.
+   *
+   * @param externalRef the external reference to extract the reference ID from
+   * @return the native external reference ID
+   */
+  private long extractExternalRefId(final Object externalRef) {
+    try {
+      // TODO: Implement proper refId extraction from external reference
+      // This will need to be implemented when external reference support is added
+      logger.warning("External reference refId extraction not yet implemented");
+      return 0; // Return 0 as placeholder
+    } catch (Exception e) {
+      logger.warning("Failed to extract external reference refId: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /**
+   * Grows the table by the specified number of elements, initializing new elements with the given
+   * value.
+   *
+   * @param elements the number of elements to add
+   * @param initValue the initial value for new elements (can be null)
+   * @return the previous size of the table, or -1 if growth failed
+   */
+  @Override
+  public int grow(final int elements, final Object initValue) {
+    ensureNotClosed();
+
+    if (elements < 0) {
+      throw new IllegalArgumentException("Growth elements cannot be negative: " + elements);
+    }
+
+    try {
+      final MethodHandle growHandle = nativeBindings.getTableGrow();
+      if (growHandle == null) {
+        throw new RuntimeException("Table grow function not available in native library");
+      }
+
+      // Get table element type for validation
+      final WasmValueType tableElementType = getElementType();
+      final long previousSize = getSize();
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      // Validate and convert initial value to native parameters
+      int elementType;
+      int refIdPresent;
+      long refId;
+
+      if (initValue == null) {
+        // Setting null - this is always valid for reference types
+        elementType = (tableElementType == WasmValueType.FUNCREF) ? 5 : 6;
+        refIdPresent = 0;
+        refId = 0;
+      } else {
+        // Validate value type against table element type
+        if (tableElementType == WasmValueType.FUNCREF) {
+          if (initValue instanceof PanamaFunction panamaFunction) {
+            elementType = 5; // FUNCREF
+            refIdPresent = 1;
+            refId = extractFunctionRefId(panamaFunction);
+          } else if (initValue instanceof WasmFunction) {
+            throw new IllegalArgumentException(
+                "Cannot use non-Panama function for table growth. "
+                    + "Initial value must be null or a PanamaFunction instance.");
+          } else {
+            throw new IllegalArgumentException(
+                "Table with FUNCREF element type requires WebAssembly function or null for growth. "
+                    + "Got: "
+                    + initValue.getClass().getName());
+          }
+        } else if (tableElementType == WasmValueType.EXTERNREF) {
+          elementType = 6; // EXTERNREF
+          refIdPresent = 1;
+          refId = extractExternalRefId(initValue);
+        } else {
+          throw new RuntimeException("Unsupported table element type: " + tableElementType);
+        }
+      }
+
+      final int result =
+          (int)
+              growHandle.invokeExact(
+                  tableHandle, storePtr, elements, elementType, refIdPresent, refId);
+
+      if (result != 0) {
+        logger.warning("Failed to grow table by " + elements + " elements, error code: " + result);
+        return -1; // Interface specifies -1 on failure
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Grew table from "
+                + previousSize
+                + " to "
+                + getSize()
+                + " elements with "
+                + (initValue == null ? "null" : initValue.getClass().getSimpleName())
+                + " (type: "
+                + tableElementType
+                + ")");
+      }
+
+      return (int) previousSize;
+    } catch (Throwable t) {
+      logger.warning("Failed to grow table by " + elements + " elements: " + t.getMessage());
+      return -1; // Interface specifies -1 on failure
+    }
+  }
+
+  @Override
+  public void close() {
+    if (closed) {
+      return;
+    }
+
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+
+      try {
+        // Unregister from arena manager - this will call closeNative()
+        arenaManager.unregisterManagedResource(this);
+
+        if (logger.isLoggable(Level.FINE)) {
+          logger.fine("Closed Panama table instance");
+        }
+      } catch (Exception e) {
+        logger.severe("Failed to close table: " + e.getMessage());
+      } finally {
+        closed = true;
+      }
+    }
+  }
+
+  /**
+   * Gets the native table handle for direct FFI operations.
+   *
+   * <p>This method is intended for internal use by other Panama FFI components and should not be
+   * used by application code.
+   *
+   * @return the native table handle
+   * @throws IllegalStateException if the table has been closed
+   */
+  public MemorySegment getTableHandle() {
+    ensureNotClosed();
+    return tableHandle;
+  }
+
+  /**
+   * Fills a range of the table with the specified value.
+   *
+   * @param start the starting index
+   * @param count the number of elements to fill
+   * @param value the value to fill with
+   * @throws IllegalArgumentException if start or count is negative
+   * @throws IndexOutOfBoundsException if the range exceeds table bounds
+   * @throws RuntimeException if the fill operation fails
+   */
+  @Override
+  public void fill(final int start, final int count, final Object value) {
+    ensureNotClosed();
+
+    if (start < 0) {
+      throw new IllegalArgumentException("Table start index cannot be negative: " + start);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    try {
+      // TODO: Implement when nativeBindings.getTableFill() is available
+      throw new UnsupportedOperationException("Table fill not yet implemented in Panama backend");
+
+      /*
+      final MethodHandle fillHandle = nativeBindings.getTableFill();
+      if (fillHandle == null) {
+        throw new RuntimeException("Table fill function not available in native library");
+      }
+      */
+
+      // Bounds check
+      final long tableSize = getSize();
+      if (start + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Fill range [" + start + ", " + (start + count) + ") exceeds table size " + tableSize);
+      }
+
+      // Get table element type for validation
+      final WasmValueType tableElementType = getElementType();
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      // Validate and convert value to native parameters
+      int elementType;
+      int refIdPresent;
+      long refId;
+
+      if (value == null) {
+        elementType = (tableElementType == WasmValueType.FUNCREF) ? 5 : 6;
+        refIdPresent = 0;
+        refId = 0;
+      } else {
+        if (tableElementType == WasmValueType.FUNCREF) {
+          if (value instanceof PanamaFunction panamaFunction) {
+            elementType = 5;
+            refIdPresent = 1;
+            refId = extractFunctionRefId(panamaFunction);
+          } else if (value instanceof WasmFunction) {
+            throw new IllegalArgumentException(
+                "Cannot fill with non-Panama function. Value must be null or a PanamaFunction"
+                    + " instance.");
+          } else {
+            throw new IllegalArgumentException(
+                "Table with FUNCREF element type requires WebAssembly function or null. Got: "
+                    + value.getClass().getName());
+          }
+        } else if (tableElementType == WasmValueType.EXTERNREF) {
+          elementType = 6;
+          refIdPresent = 1;
+          refId = extractExternalRefId(value);
+        } else {
+          throw new RuntimeException("Unsupported table element type: " + tableElementType);
+        }
+      }
+
+      // fillHandle is not available - stubbed out above
+      throw new UnsupportedOperationException("Fill operation not implemented");
+
+      /*
+      final int result =
+          (int)
+              fillHandle.invokeExact(
+                  tableHandle, storePtr, start, count, elementType, refIdPresent, refId);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to fill table range, error code: " + result);
+      }
+      */
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "Filled table range ["
+                + start
+                + ", "
+                + (start + count)
+                + ") with "
+                + (value == null ? "null" : value.getClass().getSimpleName()));
+      }
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to fill table range: " + t.getMessage());
+      throw new RuntimeException("Failed to fill table range", t);
+    }
+  }
+
+  /**
+   * Copies elements from one region of the table to another.
+   *
+   * @param dst the destination starting index
+   * @param src the source starting index
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, src, or count is negative
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  @Override
+  public void copy(final int dst, final int src, final int count) {
+    ensureNotClosed();
+
+    if (dst < 0) {
+      throw new IllegalArgumentException("Table destination index cannot be negative: " + dst);
+    }
+    if (src < 0) {
+      throw new IllegalArgumentException("Table source index cannot be negative: " + src);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    try {
+      // TODO: Implement when nativeBindings.getTableCopy() is available
+      throw new UnsupportedOperationException("Table copy not yet implemented in Panama backend");
+
+      /*
+      final MethodHandle copyHandle = nativeBindings.getTableCopy();
+      if (copyHandle == null) {
+        throw new RuntimeException("Table copy function not available in native library");
+      }
+
+      // Bounds check
+
+      final long tableSize = getSize();
+      if (dst + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Destination range ["
+                + dst
+                + ", "
+                + (dst + count)
+                + ") exceeds table size "
+                + tableSize);
+      }
+      if (src + count > tableSize) {
+        throw new IndexOutOfBoundsException(
+            "Source range [" + src + ", " + (src + count) + ") exceeds table size " + tableSize);
+      }
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      final int result = (int) copyHandle.invokeExact(tableHandle, storePtr, dst, src, count);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to copy table elements, error code: " + result);
+      }
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Copied " + count + " elements from index " + src + " to index " + dst);
+      }
+      */
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to copy table elements: " + t.getMessage());
+      throw new RuntimeException("Failed to copy table elements", t);
+    }
+  }
+
+  /**
+   * Copies elements from another table to this table.
+   *
+   * @param dst the destination starting index in this table
+   * @param src the source table to copy from
+   * @param srcIndex the source starting index in the source table
+   * @param count the number of elements to copy
+   * @throws IllegalArgumentException if dst, srcIndex, or count is negative, or if src is null
+   * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
+   * @throws RuntimeException if the copy operation fails
+   */
+  @Override
+  public void copy(final int dst, final WasmTable src, final int srcIndex, final int count) {
+    ensureNotClosed();
+
+    if (src == null) {
+      throw new IllegalArgumentException("Source table cannot be null");
+    }
+    if (dst < 0) {
+      throw new IllegalArgumentException("Table destination index cannot be negative: " + dst);
+    }
+    if (srcIndex < 0) {
+      throw new IllegalArgumentException("Table source index cannot be negative: " + srcIndex);
+    }
+    if (count < 0) {
+      throw new IllegalArgumentException("Table count cannot be negative: " + count);
+    }
+
+    if (!(src instanceof PanamaTable)) {
+      throw new IllegalArgumentException(
+          "Source table must be PanamaTable instance for cross-table copy");
+    }
+
+    final PanamaTable srcTable = (PanamaTable) src;
+    srcTable.ensureNotClosed();
+
+    try {
+      // TODO: Implement when nativeBindings.getTableCopyFromTable() is available
+      throw new UnsupportedOperationException(
+          "Table copy from table not yet implemented in Panama backend");
+
+      /*
+      final MethodHandle copyFromTableHandle = nativeBindings.getTableCopyFromTable();
+      if (copyFromTableHandle == null) {
+        throw new RuntimeException(
+            "Table copy from table function not available in native library");
+      }
+
+
+      // Bounds check
+      final long dstTableSize = getSize();
+      if (dst + count > dstTableSize) {
+        throw new IndexOutOfBoundsException(
+            "Destination range ["
+                + dst
+                + ", "
+                + (dst + count)
+                + ") exceeds destination table size "
+                + dstTableSize);
+      }
+
+      final long srcTableSize = srcTable.getSize();
+      if (srcIndex + count > srcTableSize) {
+        throw new IndexOutOfBoundsException(
+            "Source range ["
+                + srcIndex
+                + ", "
+                + (srcIndex + count)
+                + ") exceeds source table size "
+                + srcTableSize);
+      }
+
+      // Validate type compatibility
+      if (!getElementType().equals(srcTable.getElementType())) {
+        throw new IllegalArgumentException(
+            "Table element types must match: this="
+                + getElementType()
+                + ", src="
+                + srcTable.getElementType());
+      }
+
+      // Get store handle from parent instance
+      final PanamaStore store = (PanamaStore) parentInstance.getStore();
+      final MemorySegment storePtr = store.getStorePointer();
+
+      final int result =
+          (int)
+              copyFromTableHandle.invokeExact(
+                  tableHandle, storePtr, dst, srcTable.getTableHandle(), srcIndex, count);
+
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to copy elements from source table, error code: " + result);
+      }
+
+            "Copied "
+                + count
+                + " elements from source table index "
+                + srcIndex
+                + " to index "
+                + dst);
+      }
+      */
+    } catch (Throwable t) {
+      if (t instanceof IndexOutOfBoundsException || t instanceof IllegalArgumentException) {
+        throw t;
+      }
+      logger.warning("Failed to copy from source table: " + t.getMessage());
+      throw new RuntimeException("Failed to copy from source table", t);
+    }
+  }
+
+  /**
+   * Gets the maximum size of this table.
+   *
+   * @return the maximum size, or -1 if unlimited
+   * @throws WasmException if the operation fails
+   */
+  @Override
+  public int getMaxSize() {
+    ensureNotClosed();
+
+    try {
+      final MethodHandle metadataHandle = nativeBindings.getTableMetadata();
+      if (metadataHandle == null) {
+        throw new java.lang.RuntimeException(
+            "Table metadata function not available in native library");
+      }
+
+      // Allocate memory segments for out parameters
+      final MemorySegment elementTypePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment hasMaximumPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment namePtr = arenaManager.getCurrentArena().allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              metadataHandle.invokeExact(
+                  tableHandle,
+                  elementTypePtr,
+                  initialSizePtr,
+                  hasMaximumPtr,
+                  maximumSizePtr,
+                  namePtr);
+
+      if (result != 0) {
+        throw new java.lang.RuntimeException("Failed to get table metadata, error code: " + result);
+      }
+
+      final int hasMaximum = hasMaximumPtr.get(ValueLayout.JAVA_INT, 0);
+      if (hasMaximum != 0) {
+        final int maximumSize = maximumSizePtr.get(ValueLayout.JAVA_INT, 0);
+        return maximumSize;
+      } else {
+        return -1; // Unlimited
+      }
+    } catch (Throwable t) {
+      logger.warning("Failed to get table maximum size: " + t.getMessage());
+      return -1; // Default to unlimited
+    }
+  }
+
+  /**
+   * Gets the element type of this table.
+   *
+   * @return the element type name (e.g., "funcref", "externref")
+   * @throws WasmException if the operation fails
+   */
+  @Override
+  public WasmValueType getElementType() {
+    ensureNotClosed();
+
+    try {
+      final MethodHandle metadataHandle = nativeBindings.getTableMetadata();
+      if (metadataHandle == null) {
+        throw new java.lang.RuntimeException(
+            "Table metadata function not available in native library");
+      }
+
+      // Allocate memory segments for out parameters
+      final MemorySegment elementTypePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment hasMaximumPtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizePtr =
+          arenaManager.getCurrentArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment namePtr = arenaManager.getCurrentArena().allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              metadataHandle.invokeExact(
+                  tableHandle,
+                  elementTypePtr,
+                  initialSizePtr,
+                  hasMaximumPtr,
+                  maximumSizePtr,
+                  namePtr);
+
+      if (result != 0) {
+        throw new java.lang.RuntimeException("Failed to get table metadata, error code: " + result);
+      }
+
+      final int elementTypeCode = elementTypePtr.get(ValueLayout.JAVA_INT, 0);
+
+      return switch (elementTypeCode) {
+        case 5 -> WasmValueType.FUNCREF;
+        case 6 -> WasmValueType.EXTERNREF;
+        default -> {
+          logger.warning(
+              "Unknown table element type code: " + elementTypeCode + ", defaulting to FUNCREF");
+          yield WasmValueType.FUNCREF;
+        }
+      };
+    } catch (Throwable t) {
+      logger.warning("Failed to get table element type: " + t.getMessage());
+      throw new java.lang.RuntimeException("Failed to get table element type", t);
+    }
+  }
+
+  @Override
+  public WasmValueType getType() {
+    return getElementType();
+  }
+
+  @Override
+  public void init(
+      final int destOffset, final int elementSegmentIndex, final int srcOffset, final int length) {
+    ensureNotClosed();
+
+    if (destOffset < 0) {
+      throw new IllegalArgumentException("Destination offset cannot be negative: " + destOffset);
+    }
+    if (elementSegmentIndex < 0) {
+      throw new IllegalArgumentException(
+          "Element segment index cannot be negative: " + elementSegmentIndex);
+    }
+    if (srcOffset < 0) {
+      throw new IllegalArgumentException("Source offset cannot be negative: " + srcOffset);
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("Length cannot be negative: " + length);
+    }
+
+    // TODO: Implement when native bindings are available
+    throw new UnsupportedOperationException(
+        "Element segment init not yet implemented in Panama backend");
+  }
+
+  @Override
+  public void dropElementSegment(final int elementSegmentIndex) {
+    if (elementSegmentIndex < 0) {
+      throw new IllegalArgumentException(
+          "Element segment index cannot be negative: " + elementSegmentIndex);
+    }
+
+    // TODO: Implement when native bindings are available
+    throw new UnsupportedOperationException(
+        "Element segment drop not yet implemented in Panama backend");
+  }
+
+  /**
+   * Checks if this table has been closed.
+   *
+   * @return true if the table has been closed
+   */
+  public boolean isClosed() {
+    return closed;
+  }
+
+  /**
+   * Native cleanup method called by the arena manager.
+   *
+   * <p>This method performs the actual native resource cleanup and is called automatically by the
+   * arena resource manager. It should not be called directly by application code.
+   */
+  private void closeNative() {
+    try {
+      final MethodHandle deleteHandle = nativeBindings.getTableDelete();
+      if (deleteHandle != null) {
+        deleteHandle.invokeExact(tableHandle);
+
+        if (logger.isLoggable(Level.FINE)) {
+          logger.fine("Released native table resources");
+        }
+      }
+    } catch (Throwable t) {
+      // Log but don't throw - cleanup methods should be resilient
+      logger.log(Level.WARNING, "Failed to release native table resources: " + t.getMessage(), t);
+    }
+  }
+
+  /**
+   * Ensures the table is not closed, throwing an exception if it is.
+   *
+   * @throws IllegalStateException if the table has been closed
+   */
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("Table has been closed and cannot be used");
+    }
+  }
+
+  @Override
+  public String toString() {
+    if (closed) {
+      return "PanamaTable{closed=true}";
+    }
+
+    try {
+      return String.format(
+          "PanamaTable{size=%d, elementType=%s, handle=%s}",
+          getSize(), getElementType(), tableHandle);
+    } catch (Exception e) {
+      return String.format("PanamaTable{handle=%s, error=%s}", tableHandle, e.getMessage());
+    }
+  }
+}

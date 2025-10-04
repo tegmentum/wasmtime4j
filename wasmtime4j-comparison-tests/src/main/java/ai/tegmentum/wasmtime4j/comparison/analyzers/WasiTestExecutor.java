@@ -55,6 +55,12 @@ public final class WasiTestExecutor {
     private final int previewVersion;
     private final Instant creationTime;
 
+    /**
+     * Creates a new WASI execution environment with the specified configuration.
+     *
+     * @param config the WASI environment configuration
+     * @throws IOException if environment setup fails
+     */
     public WasiExecutionEnvironment(final WasiTestIntegrator.WasiEnvironmentConfiguration config)
         throws IOException {
       this.workingDirectory = createTemporaryDirectory("wasi-test-wd-");
@@ -199,6 +205,22 @@ public final class WasiTestExecutor {
     private final String errorMessage;
     private final Instant executionTime;
 
+    /**
+     * Creates a new WASI execution result with detailed metrics.
+     *
+     * @param testName name of the test
+     * @param runtime runtime type used for execution
+     * @param successful whether execution was successful
+     * @param executionTimeNanos execution time in nanoseconds
+     * @param stdoutOutput captured stdout output
+     * @param stderrOutput captured stderr output
+     * @param exitCode process exit code
+     * @param memoryUsage memory usage in bytes
+     * @param systemCallCount number of system calls made
+     * @param performanceMetrics performance metrics collected
+     * @param wasiFeaturesCalled WASI features invoked during execution
+     * @param errorMessage error message if execution failed
+     */
     public WasiExecutionResult(
         final String testName,
         final RuntimeType runtime,

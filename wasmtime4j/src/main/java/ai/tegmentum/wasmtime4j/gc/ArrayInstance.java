@@ -43,7 +43,7 @@ public interface ArrayInstance extends GcObject {
    * @throws IndexOutOfBoundsException if index is invalid
    * @throws GcException if element access fails
    */
-  GcValue getElement(int index);
+  GcValue getElement(int index) throws GcException;
 
   /**
    * Sets an element value by index.
@@ -54,5 +54,5 @@ public interface ArrayInstance extends GcObject {
    * @throws IllegalArgumentException if array is immutable or value type is incompatible
    * @throws GcException if element assignment fails
    */
-  void setElement(int index, GcValue value);
+  void setElement(int index, GcValue value) throws GcException;
 }

@@ -262,8 +262,10 @@ public final class WasiTimeOperationsPreview2 {
   public CompletableFuture<Void> sleepAsync(final Duration duration) {
     JniValidation.requireNonNull(duration, "duration");
     if (duration.isNegative()) {
-      return CompletableFuture.failedFuture(
+      final CompletableFuture<Void> future = new CompletableFuture<>();
+      future.completeExceptionally(
           new WasiException("Sleep duration cannot be negative", WasiErrorCode.EINVAL));
+      return future;
     }
 
     final long nanos = duration.toNanos();

@@ -8,14 +8,16 @@ import java.util.Map;
 /**
  * Performance profiler for WebAssembly GC operations.
  *
- * <p>Provides detailed performance metrics and analysis for garbage collection operations, object
- * allocation, field access, and other GC-related activities.
+ * <p>Provides detailed performance metrics and analysis for garbage collection operations,
+ * object allocation, field access, and other GC-related activities.
  *
  * @since 1.0.0
  */
 public interface GcProfiler {
 
-  /** Starts profiling GC operations. */
+  /**
+   * Starts profiling GC operations.
+   */
   void start();
 
   /**
@@ -48,7 +50,9 @@ public interface GcProfiler {
    */
   void recordEvent(String eventName, Duration duration, Map<String, Object> metadata);
 
-  /** Results of GC profiling. */
+  /**
+   * Results of GC profiling.
+   */
   interface GcProfilingResults {
 
     /**
@@ -129,7 +133,9 @@ public interface GcProfiler {
     ProfilingTimeline getTimeline();
   }
 
-  /** Allocation performance statistics. */
+  /**
+   * Allocation performance statistics.
+   */
   interface AllocationStatistics {
     /** Gets total allocation count. */
     long getTotalAllocations();
@@ -150,7 +156,9 @@ public interface GcProfiler {
     double getMemoryThroughput();
   }
 
-  /** Field access performance statistics. */
+  /**
+   * Field access performance statistics.
+   */
   interface FieldAccessStatistics {
     /** Gets total field read count. */
     long getTotalFieldReads();
@@ -171,7 +179,9 @@ public interface GcProfiler {
     Map<String, FieldAccessPattern> getAccessPatterns();
   }
 
-  /** Array access performance statistics. */
+  /**
+   * Array access performance statistics.
+   */
   interface ArrayAccessStatistics {
     /** Gets total array element reads. */
     long getTotalElementReads();
@@ -192,7 +202,9 @@ public interface GcProfiler {
     double getOperationThroughput();
   }
 
-  /** Reference operation performance statistics. */
+  /**
+   * Reference operation performance statistics.
+   */
   interface ReferenceOperationStatistics {
     /** Gets total ref.cast operations. */
     long getTotalCastOperations();
@@ -213,7 +225,9 @@ public interface GcProfiler {
     Duration getTypeCheckingOverhead();
   }
 
-  /** GC performance statistics. */
+  /**
+   * GC performance statistics.
+   */
   interface GcPerformanceStatistics {
     /** Gets total GC collections. */
     long getTotalCollections();
@@ -234,7 +248,9 @@ public interface GcProfiler {
     double getCollectionEfficiency();
   }
 
-  /** Type operation performance statistics. */
+  /**
+   * Type operation performance statistics.
+   */
   interface TypeOperationStatistics {
     /** Gets total type registrations. */
     long getTotalTypeRegistrations();
@@ -249,7 +265,9 @@ public interface GcProfiler {
     Duration getValidationOverhead();
   }
 
-  /** A performance hotspot identified during profiling. */
+  /**
+   * A performance hotspot identified during profiling.
+   */
   interface PerformanceHotspot {
     /** Gets the hotspot name. */
     String getName();
@@ -273,7 +291,9 @@ public interface GcProfiler {
     Map<String, Object> getDetails();
   }
 
-  /** Types of performance hotspots. */
+  /**
+   * Types of performance hotspots.
+   */
   enum HotspotType {
     /** Allocation hotspot. */
     ALLOCATION,
@@ -289,7 +309,9 @@ public interface GcProfiler {
     REFERENCE_OPERATION
   }
 
-  /** Performance comparison with baseline measurements. */
+  /**
+   * Performance comparison with baseline measurements.
+   */
   interface PerformanceComparison {
     /** Gets the baseline duration. */
     Duration getBaselineDuration();
@@ -310,7 +332,9 @@ public interface GcProfiler {
     RegressionAnalysis getRegressionAnalysis();
   }
 
-  /** Comparison for a specific operation type. */
+  /**
+   * Comparison for a specific operation type.
+   */
   interface OperationComparison {
     /** Gets the operation name. */
     String getOperationName();
@@ -328,7 +352,9 @@ public interface GcProfiler {
     boolean isSignificant();
   }
 
-  /** Performance regression analysis. */
+  /**
+   * Performance regression analysis.
+   */
   interface RegressionAnalysis {
     /** Gets whether a performance regression was detected. */
     boolean hasRegression();
@@ -343,7 +369,9 @@ public interface GcProfiler {
     List<String> getRecommendations();
   }
 
-  /** Performance regression severity levels. */
+  /**
+   * Performance regression severity levels.
+   */
   enum RegressionSeverity {
     /** Minor performance regression. */
     MINOR,
@@ -355,7 +383,9 @@ public interface GcProfiler {
     CRITICAL
   }
 
-  /** Timeline of profiling events. */
+  /**
+   * Timeline of profiling events.
+   */
   interface ProfilingTimeline {
     /** Gets all profiling events in chronological order. */
     List<ProfilingEvent> getEvents();
@@ -367,7 +397,9 @@ public interface GcProfiler {
     Duration getSamplingInterval();
   }
 
-  /** A single profiling event. */
+  /**
+   * A single profiling event.
+   */
   interface ProfilingEvent {
     /** Gets the event timestamp. */
     Instant getTimestamp();
@@ -385,7 +417,9 @@ public interface GcProfiler {
     Map<String, Object> getMetadata();
   }
 
-  /** Field access pattern information. */
+  /**
+   * Field access pattern information.
+   */
   interface FieldAccessPattern {
     /** Gets the field name or index. */
     String getFieldIdentifier();

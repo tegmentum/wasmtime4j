@@ -299,7 +299,7 @@ public final class CompilationCache {
 
     final long startTime = System.nanoTime();
     final long startTimeForPerf = PanamaPerformanceMonitor.startOperation("cache_store");
-    try (Arena tempArena = Arena.ofConfined()) {
+    try {
       ARENA_ALLOCATIONS.incrementAndGet();
 
       // Check cache size limits
@@ -347,22 +347,24 @@ public final class CompilationCache {
               + (compilationTimeNs / 1_000_000)
               + "ms compilation time)");
 
+      final long storeTime = System.nanoTime() - startTime;
+      TOTAL_CACHE_STORE_TIME_NS.addAndGet(storeTime);
+      PanamaPerformanceMonitor.endOperation("cache_store", startTimeForPerf);
       return true;
 
     } catch (final IOException e) {
       LOGGER.warning("Failed to store in Panama cache: " + e.getMessage());
-      return false;
-    } finally {
       final long storeTime = System.nanoTime() - startTime;
       TOTAL_CACHE_STORE_TIME_NS.addAndGet(storeTime);
       PanamaPerformanceMonitor.endOperation("cache_store", startTimeForPerf);
+      return false;
     }
   }
 
   /** Generates a cache key using Panama-optimized memory operations. */
   private static String generateCacheKeyPanama(
       final MemorySegment wasmBytes, final String engineOptions) {
-    try (Arena tempArena = Arena.ofConfined()) {
+    try {
       final MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
       // Process WebAssembly bytes directly from memory segment
@@ -407,6 +409,12 @@ public final class CompilationCache {
 
     // For large files, use memory mapping if available
     if (entry != null && entry.shouldUseMemoryMapping() && arena != null) {
+      // TODO: Implement memory-mapped file access with Java 23 API
+      // Memory mapping API changed in Java 23 - need to use FileChannel directly
+      // For now, skip memory mapping and fall back to regular file reading
+      LOGGER.fine("Memory mapping not yet implemented for Java 23, using regular read");
+
+      /*
       try {
         // Memory map the file for zero-copy access
         final MemorySegment mappedSegment =
@@ -421,6 +429,7 @@ public final class CompilationCache {
       } catch (final IOException e) {
         LOGGER.fine("Memory mapping failed, falling back to regular read: " + e.getMessage());
       }
+      */
     }
 
     // Fall back to regular file reading

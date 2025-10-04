@@ -36,7 +36,7 @@ public interface WasiConfig {
    *
    * @return a new WasiConfigBuilder instance
    */
-  static WasiConfigBuilder builder() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiConfigBuilder builder() {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -50,7 +50,7 @@ public interface WasiConfig {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiConfigBuilder");
         return (WasiConfigBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
+        throw new RuntimeException(
             "No WasiConfigBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {
@@ -66,7 +66,7 @@ public interface WasiConfig {
    *
    * @return a default WasiConfig instance
    */
-  static WasiConfig defaultConfig() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiConfig defaultConfig() {
     return builder().build();
   }
 

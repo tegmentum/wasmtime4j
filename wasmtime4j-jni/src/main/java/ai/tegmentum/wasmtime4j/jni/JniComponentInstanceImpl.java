@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 
@@ -36,8 +37,10 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       final JniComponent.JniComponentInstanceHandle nativeInstance,
       final JniComponentImpl component,
       final ComponentInstanceConfig config) {
-    this.nativeInstance = JniValidation.requireNonNull(nativeInstance, "nativeInstance");
-    this.component = JniValidation.requireNonNull(component, "component");
+    JniValidation.requireNonNull(nativeInstance, "nativeInstance");
+    JniValidation.requireNonNull(component, "component");
+    this.nativeInstance = nativeInstance;
+    this.component = component;
     this.config = config != null ? config : new ComponentInstanceConfig();
     this.instanceId = "jni-instance-" + System.nanoTime();
   }
@@ -71,11 +74,70 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (nativeInstance != null && !nativeInstance.isClosed()) {
-      nativeInstance.close();
+      try {
+        nativeInstance.close();
+      } catch (final Exception e) {
+        LOGGER.warning("Error closing component instance: " + e.getMessage());
+      }
       LOGGER.fine("Closed component instance: " + instanceId);
     }
+  }
+
+  @Override
+  public void stop() {
+    // TODO: Implement stop functionality
+    LOGGER.fine("Stopped component instance: " + instanceId);
+  }
+
+  @Override
+  public void pause() throws WasmException {
+    // TODO: Implement pause functionality
+    LOGGER.fine("Pause not yet implemented for instance: " + instanceId);
+  }
+
+  public void resume() throws WasmException {
+    // TODO: Implement resume functionality
+    LOGGER.fine("Resume not yet implemented for instance: " + instanceId);
+  }
+
+  @Override
+  public void bindInterface(final String interfaceName, final Object implementation)
+      throws WasmException {
+    // TODO: Implement interface binding
+    LOGGER.fine(
+        "Interface binding not yet implemented: interface="
+            + interfaceName
+            + ", instance="
+            + instanceId);
+  }
+
+  @Override
+  public java.util.Map<String, ai.tegmentum.wasmtime4j.WitInterfaceDefinition>
+      getExportedInterfaces() {
+    // TODO: Implement exported interfaces retrieval
+    return java.util.Collections.emptyMap();
+  }
+
+  @Override
+  public java.util.Set<String> getExportedFunctions() {
+    // TODO: Implement exported functions retrieval
+    return java.util.Collections.emptySet();
+  }
+
+  @Override
+  public boolean hasFunction(final String functionName) {
+    // TODO: Implement function checking
+    return false;
+  }
+
+  @Override
+  public Object invoke(final String functionName, final Object... args)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    // TODO: Implement function invocation
+    throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+        "Function invocation not yet implemented: " + functionName);
   }
 
   /**

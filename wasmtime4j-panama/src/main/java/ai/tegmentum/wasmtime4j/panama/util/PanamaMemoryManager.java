@@ -205,6 +205,69 @@ public final class PanamaMemoryManager {
   }
 
   /**
+   * Allocates a memory segment for an int array and copies the data.
+   *
+   * @param data the int array data
+   * @return allocated memory segment containing the int array
+   * @throws IllegalArgumentException if data is null
+   */
+  public MemorySegment allocateIntArray(final int[] data) {
+    if (data == null) {
+      throw new IllegalArgumentException("Data cannot be null");
+    }
+
+    try {
+      final MemorySegment segment = allocate(ValueLayout.JAVA_INT.byteSize() * data.length);
+      for (int i = 0; i < data.length; i++) {
+        segment.setAtIndex(ValueLayout.JAVA_INT, i, data[i]);
+      }
+      logger.fine("Allocated int array with " + data.length + " elements");
+      return segment;
+    } catch (Exception e) {
+      logger.severe("Failed to allocate int array: " + e.getMessage());
+      throw e;
+    }
+  }
+
+  /**
+   * Allocates an array of pointer placeholders.
+   *
+   * @param count the number of pointers to allocate
+   * @return allocated memory segment for pointer array
+   * @throws IllegalArgumentException if count is negative
+   */
+  public MemorySegment allocatePointerArray(final int count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("Count cannot be negative");
+    }
+
+    try {
+      final MemorySegment segment = allocate(ValueLayout.ADDRESS.byteSize() * count);
+      logger.fine("Allocated pointer array with " + count + " elements");
+      return segment;
+    } catch (Exception e) {
+      logger.severe("Failed to allocate pointer array: " + e.getMessage());
+      throw e;
+    }
+  }
+
+  /**
+   * Allocates a memory segment for a single size_t value (long).
+   *
+   * @return allocated memory segment for a long value
+   */
+  public MemorySegment allocateSize() {
+    try {
+      final MemorySegment segment = allocate(ValueLayout.JAVA_LONG);
+      logger.fine("Allocated size_t (long) value");
+      return segment;
+    } catch (Exception e) {
+      logger.severe("Failed to allocate size: " + e.getMessage());
+      throw e;
+    }
+  }
+
+  /**
    * Creates a memory segment that references existing memory.
    *
    * <p>This method creates a segment that points to memory that is not managed by this manager's

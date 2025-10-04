@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +20,11 @@ public final class CiIntegrationTestRunner {
   private final TestSuiteConfiguration configuration;
   private final WebAssemblyTestSuiteIntegration testSuite;
 
+  /**
+   * Creates a new CI integration test runner.
+   *
+   * @param configuration test suite configuration
+   */
   public CiIntegrationTestRunner(final TestSuiteConfiguration configuration) {
     if (configuration == null) {
       throw new IllegalArgumentException("Configuration cannot be null");

@@ -9,83 +9,11 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeCreate
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeCreate
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDefineHostFunction
- * Signature: (JLjava/lang/String;Ljava/lang/String;[I[IJ)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction
-  (JNIEnv *, jclass, jlong, jstring, jstring, jintArray, jintArray, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDefineMemory
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineMemory
-  (JNIEnv *, jclass, jlong, jstring, jstring, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDefineTable
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineTable
-  (JNIEnv *, jclass, jlong, jstring, jstring, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDefineGlobal
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGlobal
-  (JNIEnv *, jclass, jlong, jstring, jstring, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDefineInstance
- * Signature: (JLjava/lang/String;J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineInstance
-  (JNIEnv *, jclass, jlong, jstring, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeAlias
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAlias
-  (JNIEnv *, jclass, jlong, jstring, jstring, jstring, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeInstantiate
- * Signature: (JJJ)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiate
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeEnableWasi
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeEnableWasi
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
- * Method:    nativeDestroy
+ * Method:    nativeDestroyLinker
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroy
-  (JNIEnv *, jclass, jlong);
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker
+  (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
 }

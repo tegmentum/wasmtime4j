@@ -33,6 +33,20 @@ public class JniExceptionHandler {
     return new WasmtimeException("Native error [" + errorCode + "]: " + message);
   }
 
+  /**
+   * Wraps an exception with a context message.
+   *
+   * @param exception the exception to wrap
+   * @param context the context message
+   * @return wrapped WebAssembly exception
+   */
+  public static WasmtimeException wrapException(final Exception exception, final String context) {
+    if (exception instanceof WasmtimeException) {
+      return (WasmtimeException) exception;
+    }
+    return new WasmtimeException(context + ": " + exception.getMessage(), exception);
+  }
+
   private JniExceptionHandler() {
     // Utility class
   }

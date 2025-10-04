@@ -143,6 +143,13 @@ public final class PerformanceConsistencyResult {
       return this;
     }
 
+    /**
+     * Sets the variance ratio for performance consistency.
+     *
+     * @param varianceRatio ratio of performance variance across runtimes
+     * @return this builder
+     * @throws IllegalArgumentException if varianceRatio is negative
+     */
     public Builder varianceRatio(final double varianceRatio) {
       if (varianceRatio < 0.0) {
         throw new IllegalArgumentException("varianceRatio must be non-negative");
@@ -151,6 +158,13 @@ public final class PerformanceConsistencyResult {
       return this;
     }
 
+    /**
+     * Sets the throughput parity metric for performance consistency.
+     *
+     * @param throughputParity ratio of throughput parity across runtimes
+     * @return this builder
+     * @throws IllegalArgumentException if throughputParity is negative
+     */
     public Builder throughputParity(final double throughputParity) {
       if (throughputParity < 0.0) {
         throw new IllegalArgumentException("throughputParity must be non-negative");
@@ -164,6 +178,12 @@ public final class PerformanceConsistencyResult {
       return this;
     }
 
+    /**
+     * Sets the regression status for performance analysis.
+     *
+     * @param regressionStatus status indicating performance regression level
+     * @return this builder
+     */
     public Builder regressionStatus(final PerformanceRegressionStatus regressionStatus) {
       this.regressionStatus =
           Objects.requireNonNull(regressionStatus, "regressionStatus cannot be null");

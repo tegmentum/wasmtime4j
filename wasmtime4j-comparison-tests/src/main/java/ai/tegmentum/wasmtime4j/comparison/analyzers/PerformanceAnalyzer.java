@@ -845,6 +845,12 @@ public final class PerformanceAnalyzer {
     private final boolean functionCallWithinPrecision;
     private final boolean memoryOperationWithinTolerance;
 
+    /**
+     * Creates runtime characteristics analysis for Wasmtime-specific performance validation.
+     *
+     * @param runtimeType type of runtime being analyzed
+     * @param metrics performance metrics to analyze
+     */
     public WasmtimeRuntimeCharacteristics(
         final String runtimeType, final PerformanceMetrics metrics) {
       this.runtimeType = runtimeType;
@@ -887,12 +893,27 @@ public final class PerformanceAnalyzer {
       return compilationWithinTolerance;
     }
 
+    private boolean isCompilationWithinTolerance(final PerformanceMetrics metrics) {
+      // Check if compilation time variance is within acceptable bounds
+      return metrics.getCoefficientOfVariation() <= WASMTIME_COMPILATION_OVERHEAD_THRESHOLD * 100;
+    }
+
     public boolean isFunctionCallWithinPrecision() {
       return functionCallWithinPrecision;
     }
 
+    private boolean isFunctionCallWithinPrecision(final PerformanceMetrics metrics) {
+      // Check if function call measurements are precise enough
+      return metrics.getCoefficientOfVariation() <= WASMTIME_FUNCTION_CALL_PRECISION * 100;
+    }
+
     public boolean isMemoryOperationWithinTolerance() {
       return memoryOperationWithinTolerance;
+    }
+
+    private boolean isMemoryOperationWithinTolerance(final PerformanceMetrics metrics) {
+      // Check if memory operation variance is acceptable
+      return metrics.getCoefficientOfVariation() <= WASMTIME_MEMORY_OPERATION_TOLERANCE * 100;
     }
 
     /** Checks if all performance characteristics are within expected bounds. */
@@ -904,21 +925,6 @@ public final class PerformanceAnalyzer {
           compilationWithinTolerance
           && functionCallWithinPrecision
           && memoryOperationWithinTolerance;
-    }
-
-    private boolean isCompilationWithinTolerance(final PerformanceMetrics metrics) {
-      // Check if compilation time variance is within acceptable bounds
-      return metrics.getCoefficientOfVariation() <= WASMTIME_COMPILATION_OVERHEAD_THRESHOLD * 100;
-    }
-
-    private boolean isFunctionCallWithinPrecision(final PerformanceMetrics metrics) {
-      // Check if function call measurements are precise enough
-      return metrics.getCoefficientOfVariation() <= WASMTIME_FUNCTION_CALL_PRECISION * 100;
-    }
-
-    private boolean isMemoryOperationWithinTolerance(final PerformanceMetrics metrics) {
-      // Check if memory operation variance is acceptable
-      return metrics.getCoefficientOfVariation() <= WASMTIME_MEMORY_OPERATION_TOLERANCE * 100;
     }
   }
 
@@ -1403,6 +1409,14 @@ public final class PerformanceAnalyzer {
     private final boolean matchesExpectedCharacteristics;
     private final Instant analysisTime;
 
+    /**
+     * Creates a Wasmtime performance analysis result with metrics and issues.
+     *
+     * @param testName name of the test analyzed
+     * @param wasmtimeMetrics performance metrics per runtime
+     * @param performanceIssues list of detected performance issues
+     * @param matchesExpectedCharacteristics true if performance matches expected characteristics
+     */
     public WasmtimePerformanceAnalysisResult(
         final String testName,
         final Map<String, PerformanceMetrics> wasmtimeMetrics,

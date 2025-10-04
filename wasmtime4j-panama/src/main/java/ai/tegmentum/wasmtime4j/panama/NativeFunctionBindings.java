@@ -1613,6 +1613,45 @@ public final class NativeFunctionBindings {
         "wasmtime4j_engine_is_debug_info",
         FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
 
+    addFunctionBinding(
+        "wasmtime4j_engine_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // wasm_bytes
+            ValueLayout.JAVA_LONG)); // wasm_size
+
+    addFunctionBinding(
+        "wasmtime4j_engine_supports_feature",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_INT)); // feature_id
+
+    addFunctionBinding(
+        "wasmtime4j_engine_memory_limit_pages",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_stack_size_limit",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_fuel_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_epoch_interruption_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_max_instances",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_engine_reference_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
+
     // Module functions
     addFunctionBinding(
         "wasmtime4j_module_compile",
@@ -2328,5 +2367,92 @@ public final class NativeFunctionBindings {
     }
 
     return components;
+  }
+
+  /**
+   * Validates WebAssembly bytes.
+   *
+   * @param enginePtr pointer to the engine
+   * @param wasmBytes pointer to WASM bytes
+   * @param wasmSize size of WASM bytes
+   * @return true if valid, false otherwise
+   */
+  public boolean engineValidate(
+      final MemorySegment enginePtr, final MemorySegment wasmBytes, final long wasmSize) {
+    return callNativeFunction(
+        "wasmtime4j_engine_validate", Boolean.class, enginePtr, wasmBytes, wasmSize);
+  }
+
+  /**
+   * Checks if engine supports a feature.
+   *
+   * @param enginePtr pointer to the engine
+   * @param featureId feature identifier
+   * @return true if supported, false otherwise
+   */
+  public boolean engineSupportsFeature(final MemorySegment enginePtr, final int featureId) {
+    return callNativeFunction(
+        "wasmtime4j_engine_supports_feature", Boolean.class, enginePtr, featureId);
+  }
+
+  /**
+   * Gets the memory limit in pages.
+   *
+   * @param enginePtr pointer to the engine
+   * @return memory limit in pages
+   */
+  public long engineMemoryLimitPages(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_engine_memory_limit_pages", Long.class, enginePtr);
+  }
+
+  /**
+   * Gets the stack size limit.
+   *
+   * @param enginePtr pointer to the engine
+   * @return stack size limit in bytes
+   */
+  public long engineStackSizeLimit(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_engine_stack_size_limit", Long.class, enginePtr);
+  }
+
+  /**
+   * Checks if fuel is enabled.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if fuel is enabled, false otherwise
+   */
+  public boolean engineFuelEnabled(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_engine_fuel_enabled", Boolean.class, enginePtr);
+  }
+
+  /**
+   * Checks if epoch interruption is enabled.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if epoch interruption is enabled, false otherwise
+   */
+  public boolean engineEpochInterruptionEnabled(final MemorySegment enginePtr) {
+    return callNativeFunction(
+        "wasmtime4j_engine_epoch_interruption_enabled", Boolean.class, enginePtr);
+  }
+
+  /**
+   * Gets the maximum number of instances.
+   *
+   * @param enginePtr pointer to the engine
+   * @return maximum number of instances
+   */
+  public long engineMaxInstances(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_engine_max_instances", Long.class, enginePtr);
+  }
+
+  /**
+   * Gets the reference count.
+   *
+   * @param enginePtr pointer to the engine
+   * @return reference count
+   */
+  public long engineReferenceCount(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_engine_reference_count", Long.class, enginePtr);
   }
 }

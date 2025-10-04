@@ -201,6 +201,12 @@ public final class PanamaWasiContext implements WasiContext {
     return !closed && resourceManager.isValid() && componentEngine.isValid();
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.wasi.WasiFilesystem getFilesystem() throws WasmException {
+    // TODO: Implement WASI filesystem access
+    throw new UnsupportedOperationException("WASI filesystem not yet implemented");
+  }
+
   /**
    * Gets the number of active component instances managed by this context.
    *

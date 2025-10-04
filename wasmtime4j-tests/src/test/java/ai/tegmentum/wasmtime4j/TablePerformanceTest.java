@@ -398,21 +398,21 @@ public class TablePerformanceTest {
 
     Module smallModule = runtime.compileModule(smallWat);
     Instance smallInstance = runtime.instantiate(smallModule, store);
-    WasmTable smallTable = smallInstance.getTable("small_table");
+    final WasmTable smallTable = smallInstance.getTable("small_table");
 
     jvmRuntime.gc();
     long afterSmallTable = jvmRuntime.totalMemory() - jvmRuntime.freeMemory();
 
     Module mediumModule = runtime.compileModule(mediumWat);
     Instance mediumInstance = runtime.instantiate(mediumModule, store);
-    WasmTable mediumTable = mediumInstance.getTable("medium_table");
+    final WasmTable mediumTable = mediumInstance.getTable("medium_table");
 
     jvmRuntime.gc();
     long afterMediumTable = jvmRuntime.totalMemory() - jvmRuntime.freeMemory();
 
     Module largeModule = runtime.compileModule(largeWat);
     Instance largeInstance = runtime.instantiate(largeModule, store);
-    WasmTable largeTable = largeInstance.getTable("large_table");
+    final WasmTable largeTable = largeInstance.getTable("large_table");
 
     jvmRuntime.gc();
     long afterLargeTable = jvmRuntime.totalMemory() - jvmRuntime.freeMemory();

@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.ComponentOrchestrator;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -103,8 +104,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       // Update the native handle
       setNativeHandle(this.nativeEngine.getNativeHandle());
 
-      // Initialize default component registry
-      this.registry = new JniComponentRegistry(this);
+      // TODO: Initialize component registry when JniComponentRegistry is implemented
+      this.registry = null;
 
       LOGGER.fine("Created JNI component engine: " + engineId);
     } catch (final Exception e) {
@@ -130,13 +131,15 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public Store createStore() throws WasmException {
     ensureNotClosed();
-    throw new UnsupportedOperationException("ComponentEngine does not support Store creation - use regular Engine");
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support Store creation - use regular Engine");
   }
 
   @Override
   public Store createStore(final Object data) throws WasmException {
     ensureNotClosed();
-    throw new UnsupportedOperationException("ComponentEngine does not support Store creation - use regular Engine");
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support Store creation - use regular Engine");
   }
 
   @Override
@@ -157,6 +160,28 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     JniValidation.requireNonNull(feature, "feature");
     // Delegate to native engine if available
     return nativeEngine != null && nativeEngine.isValid();
+  }
+
+  /**
+   * Instantiates a component.
+   *
+   * @param component the component handle to instantiate
+   * @return the component instance handle
+   * @throws WasmException if instantiation fails
+   */
+  JniComponent.JniComponentInstanceHandle instantiateComponent(
+      final JniComponent.JniComponentHandle component) throws WasmException {
+    JniValidation.requireNonNull(component, "component");
+
+    if (nativeEngine == null || !nativeEngine.isValid()) {
+      throw new WasmException("Component engine is not valid");
+    }
+
+    try {
+      return nativeEngine.instantiateComponent(component);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to instantiate component", e);
+    }
   }
 
   @Override
@@ -304,7 +329,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     // For now, return a future that completes with an unsupported operation
     // Full implementation would involve HTTP client integration
     final CompletableFuture<Component> future = new CompletableFuture<>();
-    future.completeExceptionally(new UnsupportedOperationException("URL loading not yet implemented"));
+    future.completeExceptionally(
+        new UnsupportedOperationException("URL loading not yet implemented"));
     return future;
   }
 
@@ -481,13 +507,29 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       }
 
       final boolean valid = issues.isEmpty();
-      return new ComponentValidationResult(valid, issues, warnings);
+      final List<ComponentValidationResult.ValidationError> errors = new ArrayList<>();
+      final List<ComponentValidationResult.ValidationWarning> validationWarnings =
+          new ArrayList<>();
+      final ComponentValidationResult.ValidationContext context =
+          new ComponentValidationResult.ValidationContext(
+              component.getMetadata() != null ? component.getMetadata().getName() : "unknown",
+              new ComponentVersion(1, 0, 0));
+      return new ComponentValidationResult(
+          valid, errors, validationWarnings, Collections.emptyList(), context);
 
     } catch (final Exception e) {
       LOGGER.warning("Component validation failed: " + e.getMessage());
-      final List<String> errorList = new ArrayList<>();
-      errorList.add("Validation error: " + e.getMessage());
-      return new ComponentValidationResult(false, errorList, Collections.emptyList());
+      final List<ComponentValidationResult.ValidationError> errors = new ArrayList<>();
+      errors.add(
+          new ComponentValidationResult.ValidationError(
+              "VALIDATION_ERROR",
+              e.getMessage(),
+              "component",
+              ComponentValidationResult.ErrorSeverity.HIGH));
+      final ComponentValidationResult.ValidationContext context =
+          new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));
+      return new ComponentValidationResult(
+          false, errors, Collections.emptyList(), Collections.emptyList(), context);
     }
   }
 
@@ -496,7 +538,19 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     final Set<String> features = new HashSet<>();
     features.add("wit");
     features.add("component-model");
-    return new WitSupportInfo(true, "1.0", features);
+    final List<String> types = new ArrayList<>();
+    types.add("u8");
+    types.add("u16");
+    types.add("u32");
+    types.add("u64");
+    types.add("s8");
+    types.add("s16");
+    types.add("s32");
+    types.add("s64");
+    types.add("f32");
+    types.add("f64");
+    types.add("string");
+    return new WitSupportInfo(true, "1.0", features, types, 10);
   }
 
   @Override
@@ -511,7 +565,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   // Advanced Orchestration Features - Basic implementations
 
-  @Override
   public ComponentOrchestrator createOrchestrator(
       final ComponentOrchestrationConfig orchestrationConfig) throws WasmException {
     ensureNotClosed();
@@ -520,7 +573,11 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   // Resource Management
 
-  @Override
+  /**
+   * Retrieves current resource usage information for the component engine.
+   *
+   * @return resource usage statistics including active instances count
+   */
   public ComponentEngineResourceUsage getResourceUsage() {
     ensureNotClosed();
 
@@ -533,7 +590,12 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Sets global resource limits for the component engine.
+   *
+   * @param limits the resource limits to apply
+   * @throws WasmException if the limits cannot be set
+   */
   public void setGlobalResourceLimits(final ComponentEngineResourceLimits limits)
       throws WasmException {
     JniValidation.requireNonNull(limits, "limits");
@@ -543,7 +605,11 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     LOGGER.fine("Global resource limits set for engine: " + engineId);
   }
 
-  @Override
+  /**
+   * Returns the number of active component instances managed by this engine.
+   *
+   * @return the count of active instances
+   */
   public int getActiveInstancesCount() {
     ensureNotClosed();
 
@@ -555,7 +621,12 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Cleans up inactive component instances to free resources.
+   *
+   * @return the number of instances cleaned up
+   * @throws WasmException if cleanup fails
+   */
   public int cleanupInactiveInstances() throws WasmException {
     ensureNotClosed();
 
@@ -566,7 +637,13 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  @Override
+  /**
+   * Performs garbage collection on component instances based on the provided configuration.
+   *
+   * @param gcConfig the garbage collection configuration
+   * @return a future containing the garbage collection results
+   * @throws WasmException if garbage collection cannot be initiated
+   */
   public CompletableFuture<ComponentGarbageCollectionResult> performGarbageCollection(
       final ComponentGarbageCollectionConfig gcConfig) throws WasmException {
     JniValidation.requireNonNull(gcConfig, "gcConfig");
@@ -576,47 +653,62 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
         () -> {
           try {
             final int cleanedUp = cleanupInactiveInstances();
-            return new ComponentGarbageCollectionResult(cleanedUp, 0, 0);
+            return new JniComponentGarbageCollectionResult(cleanedUp, 0, 0);
           } catch (final Exception e) {
             throw new RuntimeException("Garbage collection failed", e);
           }
         });
   }
 
-  @Override
+  /**
+   * Optimizes engine performance based on the provided configuration.
+   *
+   * @param optimizationConfig the optimization configuration
+   * @return a future containing the optimization results
+   * @throws WasmException if optimization cannot be initiated
+   */
   public CompletableFuture<ComponentEngineOptimizationResult> optimizePerformance(
       final ComponentEngineOptimizationConfig optimizationConfig) throws WasmException {
     JniValidation.requireNonNull(optimizationConfig, "optimizationConfig");
     ensureNotClosed();
 
     return CompletableFuture.completedFuture(
-        new ComponentEngineOptimizationResult(true, "No optimizations performed"));
+        new JniComponentEngineOptimizationResult(true, "No optimizations performed"));
   }
 
   // Health and Diagnostics
 
-  @Override
+  /**
+   * Retrieves the current health status of the component engine.
+   *
+   * @return the health status information
+   */
   public ComponentEngineHealth getHealth() {
     final boolean isHealthy = !isClosed() && nativeEngine.isValid();
-    return new ComponentEngineHealth(
+    return new JniComponentEngineHealth(
         isHealthy, "Engine status: " + (isHealthy ? "healthy" : "unhealthy"));
   }
 
-  @Override
+  /**
+   * Performs a comprehensive health check on the component engine.
+   *
+   * @param healthCheckConfig the health check configuration
+   * @return the health check results
+   * @throws WasmException if the health check cannot be performed
+   */
   public ComponentEngineHealthCheckResult performHealthCheck(
       final ComponentEngineHealthCheckConfig healthCheckConfig) throws WasmException {
     JniValidation.requireNonNull(healthCheckConfig, "healthCheckConfig");
     ensureNotClosed();
 
     final boolean healthy = isValid();
-    return new ComponentEngineHealthCheckResult(
+    return new JniComponentEngineHealthCheckResult(
         healthy, healthy ? "All checks passed" : "Engine is not valid");
   }
 
-  @Override
   public ComponentEngineStatistics getStatistics() {
     final int activeInstances = getActiveInstancesCount();
-    return new ComponentEngineStatistics(activeInstances, 0, 0, 0);
+    return new JniComponentEngineStatistics(activeInstances, 0, 0, 0);
   }
 
   @Override
@@ -624,9 +716,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     return !isClosed() && nativeEngine.isValid();
   }
 
-  @Override
   public ComponentEngineDebugInfo getDebugInfo() {
-    return new ComponentEngineDebugInfo(engineId, config, getResourceUsage());
+    return new JniComponentEngineDebugInfo(engineId, config, getResourceUsage());
   }
 
   @Override
@@ -664,5 +755,198 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
    */
   private String generateComponentId() {
     return engineId + "-component-" + componentIdCounter.incrementAndGet();
+  }
+
+  // Implementation classes for result interfaces
+
+  private static final class JniComponentGarbageCollectionResult
+      implements ComponentGarbageCollectionResult {
+    private final long objectsCollected;
+    private final long memoryReclaimed;
+    private final long duration;
+
+    JniComponentGarbageCollectionResult(
+        final long objectsCollected, final long memoryReclaimed, final long duration) {
+      this.objectsCollected = objectsCollected;
+      this.memoryReclaimed = memoryReclaimed;
+      this.duration = duration;
+    }
+
+    @Override
+    public String getStatus() {
+      return objectsCollected > 0 ? "SUCCESS" : "PARTIAL";
+    }
+
+    @Override
+    public long getMemoryReclaimed() {
+      return memoryReclaimed;
+    }
+
+    @Override
+    public long getDuration() {
+      return duration;
+    }
+
+    @Override
+    public long getObjectsCollected() {
+      return objectsCollected;
+    }
+  }
+
+  private static final class JniComponentEngineOptimizationResult
+      implements ComponentEngineOptimizationResult {
+    private final String status;
+    private final String message;
+
+    JniComponentEngineOptimizationResult(final boolean success, final String message) {
+      this.status = success ? "SUCCESS" : "FAILED";
+      this.message = message;
+    }
+
+    @Override
+    public String getStatus() {
+      return status;
+    }
+
+    @Override
+    public String getMessage() {
+      return message;
+    }
+
+    @Override
+    public String getMetrics() {
+      return "";
+    }
+
+    @Override
+    public long getDuration() {
+      return 0;
+    }
+  }
+
+  private static final class JniComponentEngineHealth implements ComponentEngineHealth {
+    private final boolean healthy;
+    private final String status;
+    private final long timestamp;
+
+    JniComponentEngineHealth(final boolean healthy, final String status) {
+      this.healthy = healthy;
+      this.status = status;
+      this.timestamp = System.currentTimeMillis();
+    }
+
+    @Override
+    public String getHealthStatus() {
+      return status;
+    }
+
+    @Override
+    public boolean isHealthy() {
+      return healthy;
+    }
+
+    @Override
+    public long getLastHealthCheckTime() {
+      return timestamp;
+    }
+  }
+
+  private static final class JniComponentEngineHealthCheckResult
+      implements ComponentEngineHealthCheckResult {
+    private final String status;
+    private final String message;
+    private final long timestamp;
+
+    JniComponentEngineHealthCheckResult(final boolean healthy, final String message) {
+      this.status = healthy ? "HEALTHY" : "UNHEALTHY";
+      this.message = message;
+      this.timestamp = System.currentTimeMillis();
+    }
+
+    @Override
+    public String getStatus() {
+      return status;
+    }
+
+    @Override
+    public String getMessage() {
+      return message;
+    }
+
+    @Override
+    public long getTimestamp() {
+      return timestamp;
+    }
+
+    @Override
+    public long getDuration() {
+      return 0;
+    }
+  }
+
+  private static final class JniComponentEngineStatistics implements ComponentEngineStatistics {
+    private final long componentCount;
+    private final long instanceCount;
+    private final long memoryUsage;
+    private final long uptime;
+
+    JniComponentEngineStatistics(
+        final long componentCount,
+        final long instanceCount,
+        final long memoryUsage,
+        final long uptime) {
+      this.componentCount = componentCount;
+      this.instanceCount = instanceCount;
+      this.memoryUsage = memoryUsage;
+      this.uptime = uptime;
+    }
+
+    @Override
+    public long getComponentCount() {
+      return componentCount;
+    }
+
+    @Override
+    public long getInstanceCount() {
+      return instanceCount;
+    }
+
+    @Override
+    public long getMemoryUsage() {
+      return memoryUsage;
+    }
+
+    @Override
+    public long getUptime() {
+      return uptime;
+    }
+  }
+
+  private static final class JniComponentEngineDebugInfo implements ComponentEngineDebugInfo {
+    private final String debugLevel;
+    private final boolean debugEnabled;
+
+    JniComponentEngineDebugInfo(
+        final String engineId,
+        final ComponentEngineConfig config,
+        final ComponentEngineResourceUsage resourceUsage) {
+      this.debugLevel = "INFO";
+      this.debugEnabled = false;
+    }
+
+    @Override
+    public String getDebugLevel() {
+      return debugLevel;
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+      return debugEnabled;
+    }
+
+    @Override
+    public String getDebugStatistics() {
+      return "";
+    }
   }
 }

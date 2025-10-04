@@ -13,6 +13,16 @@ public final class WasmtimeGlobalCoverageStatistics {
   private final int totalCategories;
   private final double compatibilityScore;
 
+  /**
+   * Creates global coverage statistics for Wasmtime test suite analysis.
+   *
+   * @param totalWasmtimeFeatures total number of Wasmtime features
+   * @param coveredWasmtimeFeatures number of covered Wasmtime features
+   * @param overallCoveragePercentage overall coverage percentage
+   * @param totalAnalyzedTests total number of tests analyzed
+   * @param totalCategories total number of categories
+   * @param compatibilityScore overall compatibility score
+   */
   public WasmtimeGlobalCoverageStatistics(
       final int totalWasmtimeFeatures,
       final int coveredWasmtimeFeatures,

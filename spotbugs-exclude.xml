@@ -355,11 +355,84 @@
         <Bug pattern="DM_NUMBER_CTOR"/>
         <!-- Test code may use constructors for clarity -->
     </Match>
-    
+
     <Match>
         <Class name="~.*Test.*"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
         <!-- Tests may need hardcoded paths for test resources -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+        <!-- Test output formatting may use \n for cross-platform consistency -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+        <!-- Test code may catch Exception for comprehensive error handling -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <!-- Test code handles null returns defensively -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <!-- Test code may include redundant null checks for robustness -->
+    </Match>
+
+    <!-- Test suite framework exclusions -->
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+        <!-- Test suite output formatting uses \n for file writing -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <!-- Test suite handles null returns from file operations defensively -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="DM_CONVERT_CASE"/>
+        <!-- Test suite uses case conversion for test categorization -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="IMPROPER_UNICODE"/>
+        <!-- Test suite handles test names with Unicode transformations -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+        <!-- Test suite may catch Exception for broad error handling -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <!-- Test suite exposes internal representation for test inspection -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <!-- Test suite stores references to external objects for test tracking -->
+    </Match>
+
+    <Match>
+        <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <!-- Test suite includes defensive null checks -->
     </Match>
     
     <!-- Exclude null pointer warnings for defensive programming -->

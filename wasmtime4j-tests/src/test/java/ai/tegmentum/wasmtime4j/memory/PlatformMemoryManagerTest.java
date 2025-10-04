@@ -3,7 +3,10 @@ package ai.tegmentum.wasmtime4j.memory;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -348,10 +351,11 @@ public class PlatformMemoryManagerTest {
     try (var manager = new MockJniPlatformMemoryManager(config)) {
       // Allocate memory without deallocating to simulate leak
       long ptr1 = manager.allocate(MEDIUM_ALLOCATION_SIZE, 0);
-      long ptr2 = manager.allocate(MEDIUM_ALLOCATION_SIZE, 0);
 
       // Deallocate one but not the other
       manager.deallocate(ptr1);
+
+      final long ptr2 = manager.allocate(MEDIUM_ALLOCATION_SIZE, 0);
 
       // Simulate time passing for leak detection
       try {
@@ -768,6 +772,7 @@ public class PlatformMemoryManagerTest {
     public int alignmentBytes = 64;
     public PageSize pageSize = PageSize.DEFAULT;
 
+    /** Page size options for memory allocation. */
     public enum PageSize {
       DEFAULT,
       SMALL,
@@ -790,12 +795,14 @@ public class PlatformMemoryManagerTest {
       this(new MockConfig());
     }
 
+    /** Creates manager with configuration. */
     public MockJniPlatformMemoryManager(MockConfig config) {
       if (config == null) {
         throw new IllegalArgumentException("Config cannot be null");
       }
     }
 
+    /** Allocates memory with specified size and alignment. */
     public long allocate(long size, int alignment) {
       ensureNotClosed();
       if (size <= 0) {
@@ -809,6 +816,7 @@ public class PlatformMemoryManagerTest {
       return ptr;
     }
 
+    /** Deallocates memory at the specified pointer. */
     public void deallocate(long ptr) {
       ensureNotClosed();
       if (ptr == 0) {
@@ -824,6 +832,7 @@ public class PlatformMemoryManagerTest {
       deallocationCount.incrementAndGet();
     }
 
+    /** Returns memory statistics. */
     public MockStats getStats() {
       ensureNotClosed();
       long currentUsage = totalAllocated.get() - totalFreed.get();
@@ -846,6 +855,7 @@ public class PlatformMemoryManagerTest {
       return new MockLeak[allocations.size()]; // Return array with size = current allocations
     }
 
+    /** Prefetches memory at the specified pointer. */
     public void prefetchMemory(long ptr, long size) {
       ensureNotClosed();
       if (ptr == 0) {
@@ -857,6 +867,7 @@ public class PlatformMemoryManagerTest {
       // Mock prefetch - no-op
     }
 
+    /** Compresses memory data. */
     public byte[] compressMemory(byte[] data) {
       ensureNotClosed();
       if (data == null || data.length == 0) {
@@ -868,6 +879,7 @@ public class PlatformMemoryManagerTest {
       return compressed;
     }
 
+    /** Deduplicates memory data. */
     public long deduplicateMemory(byte[] data) {
       ensureNotClosed();
       if (data == null || data.length == 0) {
@@ -943,7 +955,7 @@ public class PlatformMemoryManagerTest {
     }
   }
 
-  // Mock data classes
+  /** Mock memory statistics. */
   public static class MockStats {
     public final long totalAllocated;
     public final long totalFreed;
@@ -957,6 +969,7 @@ public class PlatformMemoryManagerTest {
     public final long hugePagesUsed = 0;
     public final double numaHitRate = 1.0;
 
+    /** Creates memory statistics. */
     public MockStats(
         long totalAllocated,
         long totalFreed,
@@ -973,6 +986,7 @@ public class PlatformMemoryManagerTest {
     }
   }
 
+  /** Mock platform information. */
   public static class MockPlatformInfo {
     public final long totalPhysicalMemory = 16L * 1024 * 1024 * 1024; // 16GB
     public final long availableMemory = 8L * 1024 * 1024 * 1024; // 8GB
@@ -985,6 +999,7 @@ public class PlatformMemoryManagerTest {
     public final boolean supportsNuma = true;
   }
 
+  /** Mock memory leak for testing. */
   public static class MockLeak {
     // Mock leak for testing
   }

@@ -56,6 +56,11 @@ public final class ComprehensiveTestResults {
       return this;
     }
 
+    /**
+     * Builds the comprehensive test results.
+     *
+     * @return comprehensive test results
+     */
     public ComprehensiveTestResults build() {
       if (executionResults == null) {
         throw new IllegalStateException("Execution results must be set");

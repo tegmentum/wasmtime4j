@@ -9,75 +9,11 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeCreateEngine
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngine
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeCompileModule
- * Signature: (J[B)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileModule
-  (JNIEnv *, jclass, jlong, jbyteArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeCreateStore
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeCreateStoreWithConfig
- * Signature: (JJJJIII)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStoreWithConfig
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jint, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeSetOptimizationLevel
- * Signature: (JI)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSetOptimizationLevel
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeGetOptimizationLevel
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetOptimizationLevel
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeSetDebugInfo
- * Signature: (JZ)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSetDebugInfo
-  (JNIEnv *, jclass, jlong, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeIsDebugInfo
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsDebugInfo
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeDestroyEngine
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
 }

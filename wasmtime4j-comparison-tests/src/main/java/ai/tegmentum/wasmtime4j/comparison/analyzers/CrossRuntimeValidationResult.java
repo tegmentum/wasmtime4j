@@ -88,6 +88,13 @@ public final class CrossRuntimeValidationResult {
     private PerformanceConsistencyResult performanceConsistency;
     private boolean crossRuntimeEquivalent = true;
 
+    /**
+     * Sets the consistency score for cross-runtime validation.
+     *
+     * @param consistencyScore consistency score between 0.0 and 1.0
+     * @return this builder
+     * @throws IllegalArgumentException if score is not between 0.0 and 1.0
+     */
     public Builder consistencyScore(final double consistencyScore) {
       if (consistencyScore < 0.0 || consistencyScore > 1.0) {
         throw new IllegalArgumentException("consistencyScore must be between 0.0 and 1.0");

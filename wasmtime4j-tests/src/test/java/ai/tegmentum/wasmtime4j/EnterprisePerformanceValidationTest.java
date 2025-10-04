@@ -241,7 +241,7 @@ public class EnterprisePerformanceValidationTest {
       // Simulate some work
       Math.sqrt(i * 1.0);
     }
-    long baselineTime = System.nanoTime() - startTime;
+    final long baselineTime = System.nanoTime() - startTime;
 
     // Test with monitoring enabled
     performanceMonitor.startMonitoring();

@@ -33,8 +33,7 @@ public interface WasiResourceLimits {
    *
    * @return a new WasiResourceLimitsBuilder instance
    */
-  static WasiResourceLimitsBuilder builder()
-      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiResourceLimitsBuilder builder() {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -48,7 +47,7 @@ public interface WasiResourceLimits {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiResourceLimitsBuilder");
         return (WasiResourceLimitsBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
+        throw new RuntimeException(
             "No WasiResourceLimitsBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {
@@ -64,8 +63,7 @@ public interface WasiResourceLimits {
    *
    * @return default resource limits
    */
-  static WasiResourceLimits defaultLimits()
-      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiResourceLimits defaultLimits() {
     return builder().build();
   }
 
@@ -77,7 +75,7 @@ public interface WasiResourceLimits {
    *
    * @return unlimited resource limits
    */
-  static WasiResourceLimits unlimited() throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiResourceLimits unlimited() {
     return builder().withUnlimited(true).build();
   }
 

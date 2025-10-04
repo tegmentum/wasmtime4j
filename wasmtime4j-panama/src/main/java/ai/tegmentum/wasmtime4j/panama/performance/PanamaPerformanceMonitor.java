@@ -433,7 +433,7 @@ public final class PanamaPerformanceMonitor {
    *
    * @return average FFI overhead per call
    */
-  public static double getAverageFFIOverhead() {
+  public static double getAverageFfiOverhead() {
     final long totalCalls = TOTAL_FFI_CALLS.get();
     final long totalTime = TOTAL_FFI_TIME_NS.get();
     return totalCalls > 0 ? (double) totalTime / totalCalls : 0.0;
@@ -445,7 +445,7 @@ public final class PanamaPerformanceMonitor {
    * @return true if overhead is below target
    */
   public static boolean meetsPerformanceTarget() {
-    return getAverageFFIOverhead() < SIMPLE_PANAMA_OPERATION_TARGET_NS;
+    return getAverageFfiOverhead() < SIMPLE_PANAMA_OPERATION_TARGET_NS;
   }
 
   /**
@@ -464,7 +464,7 @@ public final class PanamaPerformanceMonitor {
     // Overall metrics
     final long uptimeMs = System.currentTimeMillis() - MONITOR_START_TIME;
     final long totalCalls = TOTAL_FFI_CALLS.get();
-    final double avgOverhead = getAverageFFIOverhead();
+    final double avgOverhead = getAverageFfiOverhead();
     final boolean meetsTarget = avgOverhead < SIMPLE_PANAMA_OPERATION_TARGET_NS;
 
     sb.append(String.format("Uptime: %d ms\n", uptimeMs));
@@ -563,7 +563,7 @@ public final class PanamaPerformanceMonitor {
    */
   public static String getPanamaMetrics() {
     final long totalCalls = TOTAL_FFI_CALLS.get();
-    final double avgOverhead = getAverageFFIOverhead();
+    final double avgOverhead = getAverageFfiOverhead();
     final boolean meetsTarget = avgOverhead < SIMPLE_PANAMA_OPERATION_TARGET_NS;
     final long arenaOps = ARENA_ALLOCATIONS.get();
     final long memSegOps = MEMORY_SEGMENT_OPERATIONS.get();
@@ -689,7 +689,7 @@ public final class PanamaPerformanceMonitor {
     final StringBuilder issues = new StringBuilder();
 
     // Check FFI overhead
-    final double avgOverhead = getAverageFFIOverhead();
+    final double avgOverhead = getAverageFfiOverhead();
     if (avgOverhead > SIMPLE_PANAMA_OPERATION_TARGET_NS) {
       issues.append(
           String.format(

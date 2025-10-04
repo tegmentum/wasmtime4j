@@ -19,6 +19,17 @@ public final class WasmtimeComprehensiveCoverageReport {
   private final int totalAnalyzedTests;
   private final Instant generatedAt;
 
+  /**
+   * Creates a comprehensive coverage report with complete Wasmtime analysis results.
+   *
+   * @param wasmtimeCategoryCompleteness category-specific coverage completeness scores
+   * @param uncoveredWasmtimeFeatures list of Wasmtime features not yet covered
+   * @param wasmtimeCompatibilityScores compatibility scores by runtime type
+   * @param wasmtimeRecommendations recommendations for improving coverage
+   * @param testSuiteCoverage test suite coverage metrics
+   * @param totalAnalyzedTests total number of tests analyzed
+   * @param generatedAt timestamp when report was generated
+   */
   public WasmtimeComprehensiveCoverageReport(
       final Map<String, Double> wasmtimeCategoryCompleteness,
       final List<String> uncoveredWasmtimeFeatures,

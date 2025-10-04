@@ -1,0 +1,72 @@
+package ai.tegmentum.wasmtime4j.jni;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.ModuleExport;
+import ai.tegmentum.wasmtime4j.ModuleImport;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * JNI implementation of the Module interface.
+ *
+ * @since 1.0.0
+ */
+public class JniModule implements Module {
+  private final long nativeHandle;
+  private final Engine engine;
+  private volatile boolean closed = false;
+
+  /**
+   * Creates a new JNI module with the given native handle.
+   *
+   * @param nativeHandle the native handle
+   * @param engine the engine
+   */
+  public JniModule(final long nativeHandle, final Engine engine) {
+    this.nativeHandle = nativeHandle;
+    this.engine = engine;
+  }
+
+  /**
+   * Gets the native handle.
+   *
+   * @return the native handle
+   */
+  public long getNativeHandle() {
+    return nativeHandle;
+  }
+
+  @Override
+  public Engine getEngine() {
+    return engine;
+  }
+
+  @Override
+  public List<ModuleImport> getImports() {
+    // TODO: Implement imports retrieval
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<ModuleExport> getExports() {
+    // TODO: Implement exports retrieval
+    return Collections.emptyList();
+  }
+
+  @Override
+  public byte[] serialize() {
+    // TODO: Implement serialization
+    return new byte[0];
+  }
+
+  @Override
+  public void close() {
+    if (!closed) {
+      closed = true;
+      nativeDestroyModule(nativeHandle);
+    }
+  }
+
+  private native void nativeDestroyModule(long handle);
+}

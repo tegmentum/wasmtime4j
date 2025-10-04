@@ -167,7 +167,8 @@ public final class WasiPreview1Operations {
       }
 
       final int finalTotalBytesWritten = totalBytesWritten;
-      LOGGER.fine(() -> String.format("fd_write completed: %d bytes written", finalTotalBytesWritten));
+      LOGGER.fine(
+          () -> String.format("fd_write completed: %d bytes written", finalTotalBytesWritten));
       return totalBytesWritten;
 
     } catch (final Exception e) {
@@ -347,7 +348,9 @@ public final class WasiPreview1Operations {
       final int finalCount = count;
       final int finalTotalSize = totalSize;
       LOGGER.fine(
-          () -> String.format("environ_sizes_get: count=%d, totalSize=%d", finalCount, finalTotalSize));
+          () ->
+              String.format(
+                  "environ_sizes_get: count=%d, totalSize=%d", finalCount, finalTotalSize));
       return new int[] {count, totalSize};
 
     } catch (final Exception e) {
@@ -404,7 +407,10 @@ public final class WasiPreview1Operations {
 
       final int finalCount2 = count;
       final int finalTotalSize2 = totalSize;
-      LOGGER.fine(() -> String.format("args_sizes_get: count=%d, totalSize=%d", finalCount2, finalTotalSize2));
+      LOGGER.fine(
+          () ->
+              String.format(
+                  "args_sizes_get: count=%d, totalSize=%d", finalCount2, finalTotalSize2));
       return new int[] {count, totalSize};
 
     } catch (final Exception e) {

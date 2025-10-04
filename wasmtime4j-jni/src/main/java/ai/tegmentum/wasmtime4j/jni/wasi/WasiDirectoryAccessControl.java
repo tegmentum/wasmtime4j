@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiPermissionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -157,9 +158,9 @@ public final class WasiDirectoryAccessControl {
     final Path normalizedPath = normalizePath(Paths.get(directoryPath));
     validatePathBasics(normalizedPath);
 
+    final Set<WasiFileOperation> permissionSet = new HashSet<>(permissions);
     final DirectoryAccessRule rule =
-        new DirectoryAccessRule(
-            EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
+        new DirectoryAccessRule(Collections.unmodifiableSet(permissionSet), recursive, true);
 
     directoryRules.put(normalizedPath, rule);
 
@@ -185,7 +186,7 @@ public final class WasiDirectoryAccessControl {
     final DirectoryAccessRule existingRule = directoryRules.get(normalizedPath);
     if (existingRule != null) {
       final Set<WasiFileOperation> remainingPermissions =
-          EnumCollections.unmodifiableSet(new HashSet<>(existingRule.permissions));
+          new HashSet<>(existingRule.permissions);
       remainingPermissions.removeAll(permissions);
 
       if (remainingPermissions.isEmpty()) {
@@ -241,19 +242,22 @@ public final class WasiDirectoryAccessControl {
     // Check for explicit rule
     final DirectoryAccessRule explicitRule = directoryRules.get(normalizedPath);
     if (explicitRule != null && explicitRule.enabled) {
-      return EnumCollections.unmodifiableSet(new HashSet<>(explicitRule.permissions));
+      final Set<WasiFileOperation> perms = new HashSet<>(explicitRule.permissions);
+      return Collections.unmodifiableSet(perms);
     }
 
     // Check for inherited rule
     if (allowInheritance) {
       final DirectoryAccessRule inheritedRule = findInheritedRule(normalizedPath);
       if (inheritedRule != null) {
-        return EnumCollections.unmodifiableSet(new HashSet<>(inheritedRule.permissions));
+        final Set<WasiFileOperation> perms = new HashSet<>(inheritedRule.permissions);
+        return Collections.unmodifiableSet(perms);
       }
     }
 
     // Return global defaults
-    return EnumCollections.unmodifiableSet(new HashSet<>(globalDefaultPermissions));
+    final Set<WasiFileOperation> defaults = new HashSet<>(globalDefaultPermissions);
+    return Collections.unmodifiableSet(defaults);
   }
 
   /**
@@ -266,9 +270,8 @@ public final class WasiDirectoryAccessControl {
 
     for (final Map.Entry<Path, DirectoryAccessRule> entry : directoryRules.entrySet()) {
       if (entry.getValue().enabled) {
-        result.put(
-            entry.getKey().toString(),
-            EnumCollections.unmodifiableSet(new HashSet<>(entry.getValue()).permissions));
+        final Set<WasiFileOperation> perms = new HashSet<>(entry.getValue().permissions);
+        result.put(entry.getKey().toString(), Collections.unmodifiableSet(perms));
       }
     }
 
@@ -386,7 +389,8 @@ public final class WasiDirectoryAccessControl {
 
     DirectoryAccessRule(
         final Set<WasiFileOperation> permissions, final boolean recursive, final boolean enabled) {
-      this.permissions = EnumCollections.unmodifiableSet(new HashSet<>(permissions));
+      final Set<WasiFileOperation> permSet = new HashSet<>(permissions);
+      this.permissions = Collections.unmodifiableSet(permSet);
       this.recursive = recursive;
       this.enabled = enabled;
     }
@@ -464,9 +468,9 @@ public final class WasiDirectoryAccessControl {
       JniValidation.requireNonNull(permissions, "permissions");
 
       final Path path = Paths.get(directoryPath).toAbsolutePath().normalize();
+      final Set<WasiFileOperation> permSet = new HashSet<>(permissions);
       final DirectoryAccessRule rule =
-          new DirectoryAccessRule(
-              EnumCollections.unmodifiableSet(new HashSet<>(permissions)), recursive, true);
+          new DirectoryAccessRule(Collections.unmodifiableSet(permSet), recursive, true);
       directoryRules.put(path, rule);
       return this;
     }

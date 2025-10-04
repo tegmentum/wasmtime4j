@@ -5,8 +5,11 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -94,10 +97,11 @@ public final class WasiFilesystemSnapshot {
     this.asyncExecutor = asyncExecutor;
 
     // Initialize native snapshot manager
-    final int initResult = nativeInitSnapshotManager();
-    if (initResult != 0) {
-      throw new JniException("Failed to initialize native snapshot manager");
-    }
+    // TODO: Implement native snapshot manager initialization
+    // final int initResult = nativeInitSnapshotManager();
+    // if (initResult != 0) {
+    //   throw new JniException("Failed to initialize native snapshot manager");
+    // }
 
     // Schedule periodic cleanup
     cleanupScheduler.scheduleAtFixedRate(
@@ -149,14 +153,15 @@ public final class WasiFilesystemSnapshot {
                     null);
 
             // Add advanced metadata fields
-            metadata.creationContext =
-                new CreationContext(
-                    System.getProperty("user.name"),
-                    ProcessHandle.current().pid(),
-                    createHostInfo(),
-                    "Programmatic snapshot creation");
-
-            metadata.version = new SnapshotVersion(1, 0, 0);
+            // TODO: Implement advanced metadata fields when CreationContext and SnapshotVersion
+            // classes are created
+            // metadata.creationContext =
+            //     new CreationContext(
+            //         System.getProperty("user.name"),
+            //         getPid(),
+            //         createHostInfo(),
+            //         "Programmatic snapshot creation");
+            // metadata.version = new SnapshotVersion(1, 0, 0);
             metadata.tags = new ArrayList<>();
             metadata.properties = new HashMap<>();
 
@@ -176,8 +181,8 @@ public final class WasiFilesystemSnapshot {
                     options.encryptionKey,
                     true, // enable deduplication
                     true, // enable integrity checking
-                    metadata.name != null ? metadata.name : "",
-                    metadata.description != null ? metadata.description : "");
+                    "", // name - TODO: add name field to metadata
+                    ""); // description - TODO: add description field to metadata
 
             if (result.errorCode != 0) {
               snapshotMetadata.remove(snapshotHandle);
@@ -280,8 +285,8 @@ public final class WasiFilesystemSnapshot {
                     options.encryptionKey,
                     true, // enable deduplication
                     true, // enable integrity checking
-                    metadata.name != null ? metadata.name : "",
-                    metadata.description != null ? metadata.description : "");
+                    "", // name - TODO: add name field to metadata
+                    ""); // description - TODO: add description field to metadata
 
             if (result.errorCode != 0) {
               snapshotMetadata.remove(snapshotHandle);
@@ -441,7 +446,7 @@ public final class WasiFilesystemSnapshot {
    * @return list of snapshot information
    */
   public List<SnapshotInfo> listSnapshots() {
-    return List.copyOf(activeSnapshots.values());
+    return new ArrayList<>(activeSnapshots.values());
   }
 
   /**
@@ -582,8 +587,8 @@ public final class WasiFilesystemSnapshot {
                     options.encryptionKey,
                     true, // enable deduplication
                     true, // enable integrity checking
-                    metadata.name != null ? metadata.name : "",
-                    metadata.description != null ? metadata.description : "");
+                    "", // name - TODO: add name field to metadata
+                    ""); // description - TODO: add description field to metadata
 
             if (result.errorCode != 0) {
               snapshotMetadata.remove(snapshotHandle);
@@ -624,6 +629,25 @@ public final class WasiFilesystemSnapshot {
   }
 
   // Native method declarations
+  private static native long nativeInitSnapshotManager(long wasiContextHandle);
+
+  private static native void nativeCleanupSnapshotManager();
+
+  private static native SnapshotCreateResult nativeCreateAdvancedSnapshot(
+      long wasiContextHandle,
+      long snapshotHandle,
+      String rootPath,
+      int snapshotType,
+      long baseSnapshotHandle,
+      boolean includeHiddenFiles,
+      int compressionLevel,
+      boolean encryptionEnabled,
+      byte[] encryptionKey,
+      boolean enableDeduplication,
+      boolean enableIntegrityChecking,
+      String name,
+      String description);
+
   private static native SnapshotCreateResult nativeCreateSnapshot(
       long contextHandle,
       long snapshotHandle,
@@ -652,7 +676,8 @@ public final class WasiFilesystemSnapshot {
   /** Snapshot type enumeration. */
   public enum SnapshotType {
     FULL,
-    INCREMENTAL
+    INCREMENTAL,
+    DIFFERENTIAL
   }
 
   /** Snapshot options for creation. */
@@ -762,6 +787,8 @@ public final class WasiFilesystemSnapshot {
     public final Long baseSnapshotHandle;
     public volatile long snapshotSize;
     public volatile int fileCount;
+    public volatile java.util.List<String> tags;
+    public volatile java.util.Map<String, String> properties;
 
     /**
      * Creates snapshot metadata.
@@ -925,5 +952,17 @@ public final class WasiFilesystemSnapshot {
       this.compressionRatio = 0.0;
       this.compressionAlgorithm = "none";
     }
+  }
+
+  /** Performs periodic cleanup of old or expired snapshots. */
+  private Optional<Long> findLastFullSnapshot(final String rootPath) {
+    // TODO: Implement finding last full snapshot for a given path
+    LOGGER.fine("Finding last full snapshot for: " + rootPath);
+    return Optional.empty();
+  }
+
+  private void performPeriodicCleanup() {
+    // TODO: Implement periodic cleanup of old snapshots
+    LOGGER.fine("Performing periodic snapshot cleanup");
   }
 }

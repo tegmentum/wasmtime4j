@@ -31,7 +31,7 @@ import org.junit.jupiter.api.condition.JRE;
  * Comprehensive test suite for advanced SIMD operations including: - Extended vector types (V256,
  * V512) - Advanced arithmetic (FMA, reciprocal, square root) - Advanced logical operations
  * (popcount, variable shifts) - Vector reductions (sum, min, max) - Selection and blending
- * operations - Platform-specific optimizations (AVX-512, ARM NEON) - Relaxed SIMD operations
+ * operations - Platform-specific optimizations (AVX-512, ARM NEON) - Relaxed SIMD operations.
  */
 class AdvancedSimdOperationsTest {
 

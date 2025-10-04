@@ -63,6 +63,78 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nati
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeDispose
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDispose
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeIsDisposed
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsDisposed
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetCreatedAtMicros
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetCreatedAtMicros
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetMetadataExportCount
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMetadataExportCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeCallI32Function
+ * Signature: (JLjava/lang/String;[I)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32Function
+  (JNIEnv *, jclass, jlong, jstring, jintArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeCallI32FunctionNoParams
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32FunctionNoParams
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetState
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetState
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeCleanupResources
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeValidateThreadAccess
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeValidateThreadAccess
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

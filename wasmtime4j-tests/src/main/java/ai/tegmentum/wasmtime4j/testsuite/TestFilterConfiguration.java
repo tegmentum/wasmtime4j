@@ -217,28 +217,58 @@ public final class TestFilterConfiguration {
     private boolean skipKnownFailures = false;
     private List<Predicate<WebAssemblyTestCase>> customFilters = Collections.emptyList();
 
+    /**
+     * Sets the included test categories.
+     *
+     * @param categories categories to include
+     * @return this builder
+     */
     public Builder includedCategories(final Set<TestCategory> categories) {
       this.includedCategories =
           categories != null ? Set.copyOf(categories) : Collections.emptySet();
       return this;
     }
 
+    /**
+     * Sets the excluded test categories.
+     *
+     * @param categories categories to exclude
+     * @return this builder
+     */
     public Builder excludedCategories(final Set<TestCategory> categories) {
       this.excludedCategories =
           categories != null ? Set.copyOf(categories) : Collections.emptySet();
       return this;
     }
 
+    /**
+     * Sets the included tags.
+     *
+     * @param tags tags to include
+     * @return this builder
+     */
     public Builder includedTags(final List<String> tags) {
       this.includedTags = tags != null ? List.copyOf(tags) : Collections.emptyList();
       return this;
     }
 
+    /**
+     * Sets the excluded tags.
+     *
+     * @param tags tags to exclude
+     * @return this builder
+     */
     public Builder excludedTags(final List<String> tags) {
       this.excludedTags = tags != null ? List.copyOf(tags) : Collections.emptyList();
       return this;
     }
 
+    /**
+     * Sets the test name patterns to include.
+     *
+     * @param patterns name patterns to match
+     * @return this builder
+     */
     public Builder testNamePatterns(final List<String> patterns) {
       if (patterns == null || patterns.isEmpty()) {
         this.testNamePatterns = Collections.emptyList();
@@ -249,6 +279,12 @@ public final class TestFilterConfiguration {
       return this;
     }
 
+    /**
+     * Sets the test name patterns to exclude.
+     *
+     * @param patterns name patterns to exclude
+     * @return this builder
+     */
     public Builder excludedNamePatterns(final List<String> patterns) {
       if (patterns == null || patterns.isEmpty()) {
         this.excludedNamePatterns = Collections.emptyList();
@@ -259,6 +295,12 @@ public final class TestFilterConfiguration {
       return this;
     }
 
+    /**
+     * Sets the allowed test complexities.
+     *
+     * @param complexities allowed complexities
+     * @return this builder
+     */
     public Builder allowedComplexities(final Set<TestComplexity> complexities) {
       this.allowedComplexities =
           complexities != null ? Set.copyOf(complexities) : EnumSet.allOf(TestComplexity.class);

@@ -55,6 +55,366 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_native
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDestroyRuntime
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeIsSimdSupported
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsSimdSupported
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeGetSimdCapabilities
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeGetSimdCapabilities
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdAdd
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdAdd
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdSubtract
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSubtract
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdMultiply
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdMultiply
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdDivide
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdDivide
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdAddSaturated
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdAddSaturated
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdAnd
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdAnd
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdOr
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdOr
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdXor
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdXor
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdNot
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdNot
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdEquals
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdEquals
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdLessThan
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLessThan
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdGreaterThan
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdGreaterThan
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdLoad
+ * Signature: (JJI)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoad
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdLoadAligned
+ * Signature: (JJII)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoadAligned
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdStore
+ * Signature: (JJI[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStore
+  (JNIEnv *, jclass, jlong, jlong, jint, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdStoreAligned
+ * Signature: (JJI[BI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStoreAligned
+  (JNIEnv *, jclass, jlong, jlong, jint, jbyteArray, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdConvertI32ToF32
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdConvertI32ToF32
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdConvertF32ToI32
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdConvertF32ToI32
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdExtractLaneI32
+ * Signature: (J[BI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdExtractLaneI32
+  (JNIEnv *, jclass, jlong, jbyteArray, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdReplaceLaneI32
+ * Signature: (J[BII)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdReplaceLaneI32
+  (JNIEnv *, jclass, jlong, jbyteArray, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdSplatI32
+ * Signature: (JI)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSplatI32
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdSplatF32
+ * Signature: (JF)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSplatF32
+  (JNIEnv *, jclass, jlong, jfloat);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdShuffle
+ * Signature: (J[B[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShuffle
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdFma
+ * Signature: (J[B[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdFma
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdFms
+ * Signature: (J[B[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdFms
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdReciprocal
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdReciprocal
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdSqrt
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSqrt
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdRsqrt
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdRsqrt
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdPopcount
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdPopcount
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdShlVariable
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShlVariable
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdShrVariable
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShrVariable
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdHorizontalSum
+ * Signature: (J[B)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalSum
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdHorizontalMin
+ * Signature: (J[B)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalMin
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdHorizontalMax
+ * Signature: (J[B)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalMax
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdSelect
+ * Signature: (J[B[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSelect
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdBlend
+ * Signature: (J[B[BI)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdBlend
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSimdRelaxedAdd
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdRelaxedAdd
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeCreateWasiContext
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateWasiContext
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeCreateLinker
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateLinker
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeAddWasiToLinker
+ * Signature: (JJJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiToLinker
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeAddWasiPreview2ToLinker
+ * Signature: (JJJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiPreview2ToLinker
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeAddComponentModelToLinker
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddComponentModelToLinker
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeSupportsComponentModel
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSupportsComponentModel
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

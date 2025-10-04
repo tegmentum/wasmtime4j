@@ -149,6 +149,12 @@ public final class OverallValidationResult {
     private boolean meetsProductionRequirements = false;
     private boolean achievesZeroDiscrepancy = false;
 
+    /**
+     * Sets the total number of tests executed.
+     *
+     * @param totalTests total test count (must be non-negative)
+     * @return this builder instance
+     */
     public Builder totalTests(final int totalTests) {
       if (totalTests < 0) {
         throw new IllegalArgumentException("totalTests must be non-negative");
@@ -157,6 +163,12 @@ public final class OverallValidationResult {
       return this;
     }
 
+    /**
+     * Sets the total number of test suites executed.
+     *
+     * @param totalSuites total suite count (must be non-negative)
+     * @return this builder instance
+     */
     public Builder totalSuites(final int totalSuites) {
       if (totalSuites < 0) {
         throw new IllegalArgumentException("totalSuites must be non-negative");
@@ -165,6 +177,12 @@ public final class OverallValidationResult {
       return this;
     }
 
+    /**
+     * Sets the overall consistency score.
+     *
+     * @param overallConsistencyScore consistency score between 0.0 and 1.0
+     * @return this builder instance
+     */
     public Builder overallConsistencyScore(final double overallConsistencyScore) {
       if (overallConsistencyScore < 0.0 || overallConsistencyScore > 1.0) {
         throw new IllegalArgumentException("overallConsistencyScore must be between 0.0 and 1.0");
@@ -173,6 +191,12 @@ public final class OverallValidationResult {
       return this;
     }
 
+    /**
+     * Sets the number of tests meeting production readiness criteria.
+     *
+     * @param productionReadyTests production ready test count (must be non-negative)
+     * @return this builder instance
+     */
     public Builder productionReadyTests(final int productionReadyTests) {
       if (productionReadyTests < 0) {
         throw new IllegalArgumentException("productionReadyTests must be non-negative");
@@ -186,11 +210,22 @@ public final class OverallValidationResult {
       return this;
     }
 
+    /**
+     * Sets whether zero discrepancy requirement was achieved.
+     *
+     * @param achievesZeroDiscrepancy true if zero discrepancy achieved
+     * @return this builder instance
+     */
     public Builder achievesZeroDiscrepancy(final boolean achievesZeroDiscrepancy) {
       this.achievesZeroDiscrepancy = achievesZeroDiscrepancy;
       return this;
     }
 
+    /**
+     * Builds the overall validation result instance.
+     *
+     * @return new overall validation result
+     */
     public OverallValidationResult build() {
       if (productionReadyTests > totalTests) {
         throw new IllegalStateException("productionReadyTests cannot exceed totalTests");

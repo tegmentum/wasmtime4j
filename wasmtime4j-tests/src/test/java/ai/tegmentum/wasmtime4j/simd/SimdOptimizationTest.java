@@ -2,7 +2,9 @@ package ai.tegmentum.wasmtime4j.simd;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.Arrays;
 import java.util.Random;
@@ -403,25 +405,25 @@ class SimdOptimizationTest {
   void testConcurrentSimdOperations() throws Exception {
     logger.info("Testing concurrent SIMD operations");
 
-    final int THREAD_COUNT = 4;
-    final int OPERATIONS_PER_THREAD = 100;
+    final int threadCount = 4;
+    final int operationsPerThread = 100;
 
-    ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
-    CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+    ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    CountDownLatch latch = new CountDownLatch(threadCount);
 
     // Create separate instances for each thread (if supported)
-    Instance[] instances = new Instance[THREAD_COUNT];
-    for (int i = 0; i < THREAD_COUNT; i++) {
+    Instance[] instances = new Instance[threadCount];
+    for (int i = 0; i < threadCount; i++) {
       instances[i] = Instance.create(runtime, simdModule);
     }
 
     try {
-      for (int threadId = 0; threadId < THREAD_COUNT; threadId++) {
+      for (int threadId = 0; threadId < threadCount; threadId++) {
         final int tid = threadId;
         executor.submit(
             () -> {
               try {
-                for (int op = 0; op < OPERATIONS_PER_THREAD; op++) {
+                for (int op = 0; op < operationsPerThread; op++) {
                   // Generate unique test data for each thread and operation
                   int base = tid * 1000 + op;
                   WasmValue[] args = {

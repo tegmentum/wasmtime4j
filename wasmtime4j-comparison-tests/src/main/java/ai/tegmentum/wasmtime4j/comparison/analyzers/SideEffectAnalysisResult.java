@@ -116,6 +116,12 @@ public final class SideEffectAnalysisResult {
     private double consistencyScore = 1.0;
     private boolean sideEffectsConsistent = true;
 
+    /**
+     * Sets the memory state changes for each runtime.
+     *
+     * @param memoryStateChanges map of memory state changes by runtime type
+     * @return this builder instance
+     */
     public Builder memoryStateChanges(
         final Map<RuntimeType, MemoryStateChange> memoryStateChanges) {
       this.memoryStateChanges =
@@ -123,6 +129,12 @@ public final class SideEffectAnalysisResult {
       return this;
     }
 
+    /**
+     * Sets the system state changes for each runtime.
+     *
+     * @param systemStateChanges map of system state changes by runtime type
+     * @return this builder instance
+     */
     public Builder systemStateChanges(
         final Map<RuntimeType, SystemStateChange> systemStateChanges) {
       this.systemStateChanges =
@@ -130,6 +142,12 @@ public final class SideEffectAnalysisResult {
       return this;
     }
 
+    /**
+     * Sets the consistency score for side effect analysis.
+     *
+     * @param consistencyScore consistency score between 0.0 and 1.0
+     * @return this builder instance
+     */
     public Builder consistencyScore(final double consistencyScore) {
       if (consistencyScore < 0.0 || consistencyScore > 1.0) {
         throw new IllegalArgumentException("consistencyScore must be between 0.0 and 1.0");

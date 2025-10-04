@@ -169,6 +169,12 @@ public final class CrossRuntimeValidationResults {
       return this;
     }
 
+    /**
+     * Sets the total execution duration.
+     *
+     * @param executionDuration total duration of validation execution
+     * @return this builder instance
+     */
     public Builder executionDuration(final Duration executionDuration) {
       this.executionDuration =
           Objects.requireNonNull(executionDuration, "executionDuration cannot be null");

@@ -442,7 +442,7 @@ class CrossPlatformErrorHandlingTest {
       Engine engine = runtime.createEngine();
 
       // Measure initial memory
-      long initialMemory = memoryBean.getHeapMemoryUsage().getUsed();
+      final long initialMemory = memoryBean.getHeapMemoryUsage().getUsed();
 
       // Perform many error operations
       for (int i = 0; i < 100; i++) {

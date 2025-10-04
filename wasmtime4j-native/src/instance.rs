@@ -1574,9 +1574,9 @@ pub unsafe extern "C" fn wasmtime4j_instance_export_count(instance_ptr: *const c
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_dispose(instance_ptr: *mut c_void) -> c_int {
     match ffi_core::get_instance_mut(instance_ptr) {
-        Ok(instance) => {
-            core::dispose_instance(instance);
-            FFI_SUCCESS
+        Ok(instance) => match core::dispose_instance(instance) {
+            Ok(_) => FFI_SUCCESS,
+            Err(_) => FFI_ERROR,
         },
         Err(_) => FFI_ERROR,
     }

@@ -114,7 +114,7 @@ public final class PanaNativeObjectPool<T> {
   private final AtomicLong memorySegmentOperations = new AtomicLong(0);
 
   /** Pool size optimization. */
-  private final AtomicInteger optimalSize = new AtomicInteger(minPoolSize);
+  private final AtomicInteger optimalSize;
 
   private volatile long lastOptimizationTime = System.currentTimeMillis();
   private static final long OPTIMIZATION_INTERVAL_MS = 10_000; // 10 seconds
@@ -176,6 +176,7 @@ public final class PanaNativeObjectPool<T> {
     this.maxPoolSize = maxPoolSize;
     this.minPoolSize = minPoolSize;
     this.availableObjects = new LinkedBlockingQueue<>(maxPoolSize);
+    this.optimalSize = new AtomicInteger(minPoolSize);
 
     // Pre-populate pool with minimum objects using a temporary arena
     try (Arena initArena = Arena.ofConfined()) {

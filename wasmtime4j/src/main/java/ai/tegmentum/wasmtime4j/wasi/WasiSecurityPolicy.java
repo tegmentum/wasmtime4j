@@ -23,8 +23,7 @@ public interface WasiSecurityPolicy {
    *
    * @return a new WasiSecurityPolicyBuilder instance
    */
-  static WasiSecurityPolicyBuilder builder()
-      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiSecurityPolicyBuilder builder() {
     // Use runtime selection pattern to find appropriate implementation
     try {
       // Try Panama implementation first
@@ -38,7 +37,7 @@ public interface WasiSecurityPolicy {
             Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.JniWasiSecurityPolicyBuilder");
         return (WasiSecurityPolicyBuilder) builderClass.getDeclaredConstructor().newInstance();
       } catch (final ClassNotFoundException e2) {
-        throw new ai.tegmentum.wasmtime4j.exception.ResourceException(
+        throw new RuntimeException(
             "No WasiSecurityPolicyBuilder implementation available. "
                 + "Ensure wasmtime4j-panama or wasmtime4j-jni is on the classpath.");
       } catch (final Exception e2) {
@@ -54,8 +53,7 @@ public interface WasiSecurityPolicy {
    *
    * @return permissive security policy
    */
-  static WasiSecurityPolicy permissive()
-      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiSecurityPolicy permissive() {
     return builder().withPermissiveMode(true).build();
   }
 
@@ -64,8 +62,7 @@ public interface WasiSecurityPolicy {
    *
    * @return restrictive security policy
    */
-  static WasiSecurityPolicy restrictive()
-      throws ai.tegmentum.wasmtime4j.exception.ResourceException {
+  static WasiSecurityPolicy restrictive() {
     return builder().withRestrictiveMode(true).build();
   }
 

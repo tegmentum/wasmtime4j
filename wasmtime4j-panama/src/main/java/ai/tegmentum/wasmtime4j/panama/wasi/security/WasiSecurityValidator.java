@@ -107,7 +107,7 @@ public final class WasiSecurityValidator {
    * @throws WasiPermissionException if the path is not safe
    * @throws IllegalArgumentException if path is null
    */
-  public void validatePath(final Path path) {
+  public void validatePath(final Path path) throws WasiPermissionException {
     PanamaValidation.requireNonNull(path, "path");
 
     final String pathString = path.toString();
@@ -159,7 +159,7 @@ public final class WasiSecurityValidator {
    * @throws WasiPermissionException if the environment variable is not accessible
    * @throws IllegalArgumentException if name is null or empty
    */
-  public void validateEnvironmentAccess(final String name) {
+  public void validateEnvironmentAccess(final String name) throws WasiPermissionException {
     PanamaValidation.requireNonEmpty(name, "name");
 
     LOGGER.fine(String.format("Validating environment variable access: %s", name));
@@ -198,7 +198,7 @@ public final class WasiSecurityValidator {
    * @param resourceId the resource identifier to validate
    * @throws WasiPermissionException if the resource identifier is not safe
    */
-  public void validateResourceAccess(final String resourceId) {
+  public void validateResourceAccess(final String resourceId) throws WasiPermissionException {
     PanamaValidation.requireNonEmpty(resourceId, "resourceId");
 
     LOGGER.fine(String.format("Validating resource access: %s", resourceId));

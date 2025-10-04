@@ -172,6 +172,12 @@ public final class WebAssemblyTestCase {
     private TestComplexity complexity = TestComplexity.SIMPLE;
     private long estimatedExecutionTimeMs = 1000;
 
+    /**
+     * Sets the test ID.
+     *
+     * @param testId test ID
+     * @return this builder
+     */
     public Builder testId(final String testId) {
       if (testId == null || testId.trim().isEmpty()) {
         throw new IllegalArgumentException("Test ID cannot be null or empty");
@@ -180,6 +186,12 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Sets the test name.
+     *
+     * @param testName test name
+     * @return this builder
+     */
     public Builder testName(final String testName) {
       if (testName == null || testName.trim().isEmpty()) {
         throw new IllegalArgumentException("Test name cannot be null or empty");
@@ -188,6 +200,12 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Sets the test category.
+     *
+     * @param category test category
+     * @return this builder
+     */
     public Builder category(final TestCategory category) {
       if (category == null) {
         throw new IllegalArgumentException("Category cannot be null");
@@ -196,16 +214,34 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Sets the test file path.
+     *
+     * @param testFilePath test file path
+     * @return this builder
+     */
     public Builder testFilePath(final Path testFilePath) {
       this.testFilePath = testFilePath;
       return this;
     }
 
+    /**
+     * Sets the test description.
+     *
+     * @param description test description
+     * @return this builder
+     */
     public Builder description(final String description) {
       this.description = description != null ? description : "";
       return this;
     }
 
+    /**
+     * Sets the expected test result.
+     *
+     * @param expected expected result
+     * @return this builder
+     */
     public Builder expected(final TestExpectedResult expected) {
       if (expected == null) {
         throw new IllegalArgumentException("Expected result cannot be null");
@@ -214,21 +250,45 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Sets the test tags.
+     *
+     * @param tags test tags
+     * @return this builder
+     */
     public Builder tags(final List<String> tags) {
       this.tags = tags != null ? List.copyOf(tags) : List.of();
       return this;
     }
 
+    /**
+     * Sets the test metadata.
+     *
+     * @param metadata test metadata
+     * @return this builder
+     */
     public Builder metadata(final Map<String, Object> metadata) {
       this.metadata = metadata != null ? Map.copyOf(metadata) : Map.of();
       return this;
     }
 
+    /**
+     * Sets the sub-tests.
+     *
+     * @param subTests sub-tests
+     * @return this builder
+     */
     public Builder subTests(final List<WebAssemblyTestCase> subTests) {
       this.subTests = subTests != null ? List.copyOf(subTests) : List.of();
       return this;
     }
 
+    /**
+     * Sets the test complexity.
+     *
+     * @param complexity test complexity
+     * @return this builder
+     */
     public Builder complexity(final TestComplexity complexity) {
       if (complexity == null) {
         throw new IllegalArgumentException("Complexity cannot be null");
@@ -237,6 +297,12 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Sets the estimated execution time in milliseconds.
+     *
+     * @param estimatedExecutionTimeMs estimated execution time
+     * @return this builder
+     */
     public Builder estimatedExecutionTimeMs(final long estimatedExecutionTimeMs) {
       if (estimatedExecutionTimeMs < 0) {
         throw new IllegalArgumentException("Estimated execution time cannot be negative");
@@ -245,6 +311,11 @@ public final class WebAssemblyTestCase {
       return this;
     }
 
+    /**
+     * Builds the WebAssembly test case.
+     *
+     * @return WebAssembly test case
+     */
     public WebAssemblyTestCase build() {
       if (testId == null || testId.trim().isEmpty()) {
         throw new IllegalStateException("Test ID must be set");

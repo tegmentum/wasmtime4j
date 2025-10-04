@@ -74,6 +74,16 @@ public class WasiException extends JniException {
   }
 
   /**
+   * Creates a new WASI exception with the specified message and error code.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code
+   */
+  public WasiException(final String message, final WasiErrorCode errorCode) {
+    this(message, errorCode, null, null);
+  }
+
+  /**
    * Creates a new WASI exception with the specified error code and operation.
    *
    * @param errorCode the WASI error code

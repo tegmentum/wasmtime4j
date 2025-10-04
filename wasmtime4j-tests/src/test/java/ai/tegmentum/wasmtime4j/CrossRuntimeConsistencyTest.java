@@ -230,11 +230,11 @@ class CrossRuntimeConsistencyTest {
 
   private RuntimeTestResults executeTestSuite() throws Exception {
     RuntimeTestResults results = new RuntimeTestResults();
-    long startTime = System.currentTimeMillis();
 
     // Get memory baseline
     Runtime.getRuntime().gc();
-    long startMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    final long startMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    final long startTime = System.currentTimeMillis();
 
     Engine engine = Engine.builder().withFuelEnabled(true).withEpochInterruption(true).build();
 
@@ -360,7 +360,7 @@ class CrossRuntimeConsistencyTest {
       Instance instance, Store<TestContext> store, RuntimeTestResults results)
       throws WasmException {
     Function testFunction = instance.getFunction("test_multi_value").orElseThrow();
-    WasmValue[] results_ = testFunction.call(store, WasmValue.i32(5), WasmValue.i32(7));
+    WasmValue[] callResults = testFunction.call(store, WasmValue.i32(5), WasmValue.i32(7));
     // Results are recorded in the host function
   }
 

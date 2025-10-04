@@ -360,9 +360,9 @@ public final class PanamaBatchProcessor {
     final long estimatedArenaSize = batchArena.scope().isAlive() ? 64 * 1024 : 0; // Estimate
     final long maxElementsInArena = estimatedArenaSize / Math.max(elementSize, 1);
 
-    int optimalBatchSize = (int) Math.min(maxElementsInArena, DEFAULT_BATCH_SIZE);
-    optimalBatchSize = Math.min(optimalBatchSize, MAX_BATCH_SIZE);
-    optimalBatchSize = Math.max(optimalBatchSize, 1);
+    final int optimalBatchSize =
+        Math.max(
+            1, Math.min(MAX_BATCH_SIZE, (int) Math.min(maxElementsInArena, DEFAULT_BATCH_SIZE)));
 
     LOGGER.fine(
         () ->

@@ -687,7 +687,7 @@ impl<T> AdvancedRwLock<T> {
     }
 
     /// Acquire read lock with priority and timeout
-    pub fn read_with_priority(&self, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<parking_lot::RwLockReadGuard<T>> {
+    pub fn read_with_priority(&self, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<parking_lot::RwLockReadGuard<'_, T>> {
         let start_time = Instant::now();
         let thread_id = thread::current().id();
 
@@ -730,7 +730,7 @@ impl<T> AdvancedRwLock<T> {
     }
 
     /// Acquire write lock with priority and timeout
-    pub fn write_with_priority(&self, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<parking_lot::RwLockWriteGuard<T>> {
+    pub fn write_with_priority(&self, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<parking_lot::RwLockWriteGuard<'_, T>> {
         let start_time = Instant::now();
         let thread_id = thread::current().id();
 
@@ -753,17 +753,17 @@ impl<T> AdvancedRwLock<T> {
     }
 
     /// Regular read lock (normal priority, no timeout)
-    pub fn read(&self) -> parking_lot::RwLockReadGuard<T> {
+    pub fn read(&self) -> parking_lot::RwLockReadGuard<'_, T> {
         self.read_with_priority(ThreadPriority::Normal, None).unwrap()
     }
 
     /// Regular write lock (normal priority, no timeout)
-    pub fn write(&self) -> parking_lot::RwLockWriteGuard<T> {
+    pub fn write(&self) -> parking_lot::RwLockWriteGuard<'_, T> {
         self.write_with_priority(ThreadPriority::Normal, None).unwrap()
     }
 
     /// Enqueue reader with priority
-    fn enqueue_reader(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockReadGuard<T>> {
+    fn enqueue_reader(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockReadGuard<'_, T>> {
         let condition = Arc::new(Condvar::new());
         let waiting_reader = WaitingReader {
             thread_id,
@@ -806,7 +806,7 @@ impl<T> AdvancedRwLock<T> {
     }
 
     /// Enqueue writer with priority
-    fn enqueue_writer(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockWriteGuard<T>> {
+    fn enqueue_writer(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockWriteGuard<'_, T>> {
         let condition = Arc::new(Condvar::new());
         let waiting_writer = WaitingWriter {
             thread_id,
@@ -1151,7 +1151,7 @@ impl AdvancedSemaphore {
     }
 
     /// Acquire permits with priority and timeout
-    pub fn acquire_with_priority(&self, permits: u32, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<SemaphorePermit> {
+    pub fn acquire_with_priority(&self, permits: u32, priority: ThreadPriority, timeout: Option<Duration>) -> WasmtimeResult<SemaphorePermit<'_>> {
         let start_time = Instant::now();
         let thread_id = thread::current().id();
 
@@ -1201,12 +1201,12 @@ impl AdvancedSemaphore {
     }
 
     /// Acquire single permit
-    pub fn acquire(&self) -> WasmtimeResult<SemaphorePermit> {
+    pub fn acquire(&self) -> WasmtimeResult<SemaphorePermit<'_>> {
         self.acquire_with_priority(1, ThreadPriority::Normal, None)
     }
 
     /// Try to acquire permits without blocking
-    pub fn try_acquire(&self, permits: u32) -> Option<SemaphorePermit> {
+    pub fn try_acquire(&self, permits: u32) -> Option<SemaphorePermit<'_>> {
         let current_permits = self.permits.load(Ordering::Acquire);
         if current_permits >= permits as i32 {
             match self.permits.compare_exchange(
@@ -1244,7 +1244,7 @@ impl AdvancedSemaphore {
     }
 
     /// Enqueue semaphore request
-    fn enqueue_request(&self, thread_id: ThreadId, permits: u32, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<SemaphorePermit> {
+    fn enqueue_request(&self, thread_id: ThreadId, permits: u32, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<SemaphorePermit<'_>> {
         let condition = Arc::new(Condvar::new());
         let mutex = Arc::new(ParkingMutex::new(()));
 

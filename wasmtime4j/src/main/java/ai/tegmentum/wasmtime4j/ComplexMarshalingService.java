@@ -655,7 +655,7 @@ public final class ComplexMarshalingService {
   }
 
   /** Enumeration of marshaling strategies. */
-  private enum MarshalingStrategy {
+  public enum MarshalingStrategy {
     /** Marshal as direct parameter values. */
     VALUE_BASED,
     /** Marshal through shared memory. */
@@ -681,6 +681,24 @@ public final class ComplexMarshalingService {
 
     public MarshalingStrategy getStrategy() {
       return strategy;
+    }
+
+    /**
+     * Gets the strategy as an integer code for compatibility.
+     *
+     * @return 0 for VALUE_BASED, 1 for MEMORY_BASED, 2 for HYBRID
+     */
+    public int getStrategyCode() {
+      switch (strategy) {
+        case VALUE_BASED:
+          return 0;
+        case MEMORY_BASED:
+          return 1;
+        case HYBRID:
+          return 2;
+        default:
+          throw new IllegalStateException("Unknown strategy: " + strategy);
+      }
     }
 
     public byte[] getValueData() {

@@ -13,6 +13,14 @@ public final class WasmtimeRecommendation {
   private final RecommendationPriority priority;
   private final Set<String> targetAreas;
 
+  /**
+   * Creates a Wasmtime-specific recommendation for improving coverage or compatibility.
+   *
+   * @param type type of recommendation
+   * @param description detailed description of the recommendation
+   * @param priority priority level for implementation
+   * @param targetAreas specific areas targeted by this recommendation
+   */
   public WasmtimeRecommendation(
       final WasmtimeRecommendationType type,
       final String description,
@@ -39,13 +47,4 @@ public final class WasmtimeRecommendation {
   public Set<String> getTargetAreas() {
     return targetAreas;
   }
-}
-
-/** Types of Wasmtime-specific recommendations. */
-enum WasmtimeRecommendationType {
-  INCREASE_CATEGORY_COVERAGE,
-  IMPROVE_COMPATIBILITY,
-  ADD_TEST_CASES,
-  FIX_RUNTIME_ISSUES,
-  ENHANCE_FEATURE_SUPPORT
 }

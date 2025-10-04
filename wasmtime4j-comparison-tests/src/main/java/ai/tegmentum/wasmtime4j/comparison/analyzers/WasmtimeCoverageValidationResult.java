@@ -15,6 +15,15 @@ public final class WasmtimeCoverageValidationResult {
   private final double actualCompatibilityScore;
   private final List<WasmtimeRecommendation> recommendations;
 
+  /**
+   * Creates a coverage validation result with target compliance metrics.
+   *
+   * @param meets95PercentTarget true if 95% coverage target is met
+   * @param is100PercentCompatible true if 100% compatibility is achieved
+   * @param actualCoveragePercentage actual coverage percentage achieved
+   * @param actualCompatibilityScore actual compatibility score achieved
+   * @param recommendations list of recommendations for improvement
+   */
   public WasmtimeCoverageValidationResult(
       final boolean meets95PercentTarget,
       final boolean is100PercentCompatible,

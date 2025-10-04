@@ -332,7 +332,7 @@ class ErrorHandlingPerformanceTest {
 
       ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-      long testStart = System.nanoTime();
+      final long testStart = System.nanoTime();
 
       for (int i = 0; i < threadCount; i++) {
         executor.submit(
@@ -399,7 +399,8 @@ class ErrorHandlingPerformanceTest {
       // Force garbage collection and measure initial memory
       System.gc();
       Thread.yield();
-      long initialMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+      final long initialMemory =
+          Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
       // Perform many error operations
       List<Long> allocationTimes = new ArrayList<>();
@@ -491,7 +492,7 @@ class ErrorHandlingPerformanceTest {
 
     ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-    long start = System.nanoTime();
+    final long start = System.nanoTime();
 
     for (int i = 0; i < threadCount; i++) {
       executor.submit(

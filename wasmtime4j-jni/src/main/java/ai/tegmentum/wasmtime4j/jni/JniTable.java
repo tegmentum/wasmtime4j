@@ -456,7 +456,8 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   @Override
-  public void init(final int destOffset, final int srcOffset, final int srcSegmentIndex, final int length) {
+  public void init(
+      final int destOffset, final int srcOffset, final int srcSegmentIndex, final int length) {
     JniValidation.requireNonNegative(destOffset, "destOffset");
     JniValidation.requireNonNegative(srcOffset, "srcOffset");
     JniValidation.requireNonNegative(srcSegmentIndex, "srcSegmentIndex");
