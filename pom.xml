@@ -108,9 +108,8 @@
         <module>wasmtime4j-jni</module>
         <module>wasmtime4j-panama</module>
         <module>wasmtime4j-tests</module>
-        <!-- TODO: Re-enable after fixing dependencies on excluded classes -->
-        <!-- <module>wasmtime4j-benchmarks</module> -->
-        <!-- <module>wasmtime4j-comparison-tests</module> -->
+        <module>wasmtime4j-benchmarks</module>
+        <module>wasmtime4j-comparison-tests</module>
     </modules>
 
     <dependencyManagement>

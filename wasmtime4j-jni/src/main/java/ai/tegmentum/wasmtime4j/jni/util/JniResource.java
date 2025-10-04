@@ -91,6 +91,7 @@ public abstract class JniResource implements AutoCloseable {
    * @param nativeHandle the native handle/pointer for this resource
    * @throws JniResourceException if the native handle is invalid
    */
+  @SuppressWarnings("this-escape")
   protected JniResource(final long nativeHandle) {
     JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
@@ -103,7 +104,8 @@ public abstract class JniResource implements AutoCloseable {
                 .getSimpleName(), // Use class name instead of getResourceType() to avoid 'this'
             // escape
             this::doCleanupSafely);
-    this.phantomRef = new PhantomReference<>(this, REFERENCE_QUEUE);
+    final PhantomReference<JniResource> phantom = new PhantomReference<>(this, REFERENCE_QUEUE);
+    this.phantomRef = phantom;
     PHANTOM_REFS.put(this.phantomRef, cleanupData);
 
     LOGGER.fine(String.format("Created JNI resource with handle: 0x%x", nativeHandle));
@@ -188,6 +190,7 @@ public abstract class JniResource implements AutoCloseable {
     while (true) {
       try {
         // Block until a phantom reference is available
+        @SuppressWarnings("unchecked")
         final PhantomReference<JniResource> ref =
             (PhantomReference<JniResource>) REFERENCE_QUEUE.remove();
 
