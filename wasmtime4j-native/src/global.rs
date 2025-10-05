@@ -387,7 +387,7 @@ pub mod core {
             ValType::Ref(ref ref_type) => {
                 use wasmtime::HeapType;
 
-                // Match on dereferenced heap_type
+                // Match on dereferenced heap_type to distinguish funcref/externref
                 match *ref_type.heap_type() {
                     HeapType::Func | HeapType::ConcreteFunc(_) => GlobalValue::FuncRef(ref_id),
                     HeapType::Extern => GlobalValue::ExternRef(ref_id),
