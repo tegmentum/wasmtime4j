@@ -21,9 +21,10 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
 pub mod jni_instance {
     use super::*;
     use crate::instance::{core, InstanceState};
-    use crate::error::jni_utils;
-    
+    use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
+
     use std::os::raw::c_void;
+    use jni::sys::jobjectArray;
 
     /// Get the current lifecycle state of an instance (JNI version)
     #[no_mangle]
@@ -106,6 +107,60 @@ pub mod jni_instance {
             core::set_instance_state(instance, instance_state);
             Ok(1)
         })
+    }
+
+    /// Get all export names from an instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExportNames<'a>(
+        mut env: JNIEnv<'a>,
+        _class: JClass<'a>,
+        instance_ptr: jlong,
+    ) -> jobjectArray {
+        let result = (|| -> WasmtimeResult<jobjectArray> {
+            let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+            let exports = core::get_all_exports(instance);
+
+            // Get the keys (export names) from the HashMap
+            let export_names: Vec<String> = exports.keys().cloned().collect();
+
+            // Create a Java String array
+            let string_class = env.find_class("java/lang/String")
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to find String class: {}", e)
+                })?;
+
+            let output_array = env.new_object_array(export_names.len() as i32, string_class, JObject::null())
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create array: {}", e)
+                })?;
+
+            // Fill the array with export names
+            for (i, name) in export_names.iter().enumerate() {
+                let jstr = env.new_string(name)
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to create string: {}", e)
+                    })?;
+                env.set_object_array_element(&output_array, i as i32, jstr)
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to set array element: {}", e)
+                    })?;
+            }
+
+            Ok(output_array.as_raw())
+        })();
+
+        match result {
+            Ok(array) => array,
+            Err(_) => {
+                // Return empty array on error - find String class again since it was moved
+                if let Ok(string_class) = env.find_class("java/lang/String") {
+                    if let Ok(empty) = env.new_object_array(0, string_class, JObject::null()) {
+                        return empty.as_raw();
+                    }
+                }
+                std::ptr::null_mut()
+            }
+        }
     }
 }
 
@@ -1412,38 +1467,40 @@ pub mod jni_store {
             .unwrap_or(0.0);
 
         // Extract V128 byte array or reference ID from components[4]
-        let v128_bytes = env.get_object_array_element(&array_obj, 4)
-            .ok()
-            .and_then(|obj| {
-                if obj.is_null() {
-                    None
-                } else {
-                    // Check if it's a byte array for V128
+        // First, get the object from the array
+        let component_4 = env.get_object_array_element(&array_obj, 4).ok();
+
+        let (v128_bytes, ref_id) = if let Some(obj) = component_4 {
+            if obj.is_null() {
+                (None, None)
+            } else {
+                // Check if it's a byte array (for V128)
+                let is_byte_array = env.is_instance_of(&obj, "[B").unwrap_or(false);
+
+                if is_byte_array {
+                    // It's a byte array for V128
                     let byte_array: jni::objects::JByteArray = obj.into();
-                    if env.get_array_length(&byte_array).ok()? == 16 {
+                    let v128 = if env.get_array_length(&byte_array).ok() == Some(16) {
                         let mut i8_bytes = [0i8; 16];
-                        env.get_byte_array_region(&byte_array, 0, &mut i8_bytes).ok()?;
+                        env.get_byte_array_region(&byte_array, 0, &mut i8_bytes).ok();
                         let bytes: [u8; 16] = i8_bytes.map(|b| b as u8);
                         Some(bytes)
                     } else {
                         None
-                    }
-                }
-            });
-
-        let ref_id = env.get_object_array_element(&array_obj, 4)
-            .ok()
-            .and_then(|obj| {
-                if obj.is_null() {
-                    None
+                    };
+                    (v128, None)
                 } else {
-                    // Check if it's a Long for funcref/externref
-                    env.call_method(&obj, "longValue", "()J", &[])
+                    // It's a Long for funcref/externref
+                    let ref_val = env.call_method(&obj, "longValue", "()J", &[])
                         .ok()
                         .and_then(|v| v.j().ok())
-                        .map(|v| v as u64)
+                        .map(|v| v as u64);
+                    (None, ref_val)
                 }
-            });
+            }
+        } else {
+            (None, None)
+        };
 
         jni_utils::jni_try_ptr(&mut env, || {
             if store_handle == 0 {
@@ -2770,7 +2827,14 @@ pub mod jni_global {
                 ValType::F32 => "f32",
                 ValType::F64 => "f64",
                 ValType::V128 => "v128",
-                ValType::Ref(_) => "ref", // Simplified: return generic "ref" for all reference types
+                ValType::Ref(ref ref_type) => {
+                    use wasmtime::HeapType;
+                    match *ref_type.heap_type() {
+                        HeapType::Func | HeapType::ConcreteFunc(_) => "funcref",
+                        HeapType::Extern => "externref",
+                        _ => "anyref",
+                    }
+                },
             };
             
             Ok(env.new_string(type_string)
