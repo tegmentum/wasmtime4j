@@ -1,0 +1,363 @@
+package ai.tegmentum.wasmtime4j.validation;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Function;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.validation.metrics.BasicMetricsCollector;
+import ai.tegmentum.wasmtime4j.validation.reporting.CsvReporter;
+import ai.tegmentum.wasmtime4j.validation.reporting.JsonReporter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.io.TempDir;
+
+/**
+ * Performance validation tests with metrics collection and reporting.
+ *
+ * <p>This test class demonstrates the use of BasicMetricsCollector and reporting functionality to
+ * validate WebAssembly performance characteristics and export results for CI/CD integration.
+ *
+ * @since 1.0.0
+ */
+@DisplayName("Performance Validation Tests")
+public final class PerformanceValidationTests {
+
+  private static final Logger logger = Logger.getLogger(PerformanceValidationTests.class.getName());
+
+  @TempDir Path tempDir;
+
+  private Engine engine;
+  private Store store;
+  private BasicMetricsCollector metricsCollector;
+  private List<AutoCloseable> resources;
+
+  @BeforeEach
+  void setUp(final TestInfo testInfo) throws WasmException {
+    logger.info("Setting up performance test: " + testInfo.getDisplayName());
+    resources = new ArrayList<>();
+    metricsCollector = new BasicMetricsCollector();
+
+    // Create engine and store
+    engine = Engine.create();
+    resources.add(engine);
+
+    store = engine.createStore();
+    resources.add(store);
+
+    logger.info("Performance test setup completed");
+  }
+
+  @AfterEach
+  void tearDown(final TestInfo testInfo) throws IOException {
+    logger.info("Cleaning up performance test: " + testInfo.getDisplayName());
+
+    // Export metrics to files for CI/CD integration
+    if (metricsCollector != null) {
+      exportMetricsToFiles(testInfo.getDisplayName());
+    }
+
+    // Close all resources
+    for (int i = resources.size() - 1; i >= 0; i--) {
+      try {
+        final AutoCloseable resource = resources.get(i);
+        if (resource != null) {
+          resource.close();
+        }
+      } catch (final Exception e) {
+        logger.warning("Failed to close resource during cleanup: " + e.getMessage());
+      }
+    }
+
+    resources.clear();
+    store = null;
+    engine = null;
+    metricsCollector = null;
+
+    logger.info("Performance test cleanup completed");
+  }
+
+  @Test
+  @DisplayName("Engine Creation Performance")
+  void testEngineCreationPerformance() throws Exception {
+    // Test engine creation performance
+    final String result =
+        metricsCollector.recordOperation(
+            "engine_creation",
+            () -> {
+              try (final Engine testEngine = Engine.create()) {
+                return testEngine.isValid() ? "success" : "failure";
+              }
+            });
+
+    assertEquals("success", result, "Engine creation should succeed");
+
+    // Verify metrics were recorded
+    final BasicMetricsCollector.OperationMetrics metrics =
+        metricsCollector.getOperationMetrics("engine_creation");
+    assertNotNull(metrics, "Metrics should be recorded for engine creation");
+    assertEquals(1, metrics.getSuccessCount(), "Should have one successful operation");
+    assertEquals(0, metrics.getFailureCount(), "Should have no failed operations");
+    assertTrue(metrics.getAvgTime().toMillis() >= 0, "Average time should be non-negative");
+
+    logger.info("Engine creation performance: " + metrics);
+  }
+
+  @Test
+  @DisplayName("Module Compilation Performance")
+  void testModuleCompilationPerformance() throws Exception {
+    final byte[] wasmBytes = loadSimpleWasmModule();
+
+    // Test module compilation performance
+    final Boolean result =
+        metricsCollector.recordOperation(
+            "module_compilation",
+            () -> {
+              final Module module = engine.compileModule(wasmBytes);
+              try (module) {
+                return module.isValid();
+              }
+            });
+
+    assertTrue(result, "Module compilation should succeed");
+
+    // Verify metrics
+    final BasicMetricsCollector.OperationMetrics metrics =
+        metricsCollector.getOperationMetrics("module_compilation");
+    assertNotNull(metrics, "Metrics should be recorded for module compilation");
+    assertEquals(1, metrics.getSuccessCount(), "Should have one successful compilation");
+    assertTrue(metrics.getAvgTime().toMillis() >= 0, "Compilation time should be recorded");
+
+    logger.info("Module compilation performance: " + metrics);
+  }
+
+  @Test
+  @DisplayName("Instance Creation Performance")
+  void testInstanceCreationPerformance() throws Exception {
+    final byte[] wasmBytes = loadSimpleWasmModule();
+    final Module module = engine.compileModule(wasmBytes);
+    resources.add(module);
+
+    // Test instance creation performance
+    final Boolean result =
+        metricsCollector.recordOperation(
+            "instance_creation",
+            () -> {
+              final Instance instance = module.instantiate(store);
+              try (instance) {
+                return instance != null;
+              }
+            });
+
+    assertTrue(result, "Instance creation should succeed");
+
+    // Verify metrics
+    final BasicMetricsCollector.OperationMetrics metrics =
+        metricsCollector.getOperationMetrics("instance_creation");
+    assertNotNull(metrics, "Metrics should be recorded for instance creation");
+    assertEquals(1, metrics.getSuccessCount(), "Should have one successful instantiation");
+
+    logger.info("Instance creation performance: " + metrics);
+  }
+
+  @Test
+  @DisplayName("Function Call Performance")
+  void testFunctionCallPerformance() throws Exception {
+    final byte[] wasmBytes = loadSimpleWasmModule();
+    final Module module = engine.compileModule(wasmBytes);
+    resources.add(module);
+
+    final Instance instance = module.instantiate(store);
+    resources.add(instance);
+
+    final Function addFunction = instance.getFunction("add");
+
+    // Test multiple function calls for better performance measurement
+    final int callCount = 10;
+    for (int i = 0; i < callCount; i++) {
+      final Integer result =
+          metricsCollector.recordOperation(
+              "function_call",
+              () -> {
+                final WasmValue[] params = {WasmValue.createI32(5), WasmValue.createI32(3)};
+                final WasmValue[] results = addFunction.call(params);
+                return results[0].getI32();
+              });
+
+      assertEquals(8, result, "Function should return correct result");
+    }
+
+    // Verify metrics
+    final BasicMetricsCollector.OperationMetrics metrics =
+        metricsCollector.getOperationMetrics("function_call");
+    assertNotNull(metrics, "Metrics should be recorded for function calls");
+    assertEquals(
+        callCount, metrics.getSuccessCount(), "Should have " + callCount + " successful calls");
+    assertEquals(0, metrics.getFailureCount(), "Should have no failed calls");
+    assertTrue(metrics.getMinTime().toNanos() >= 0, "Min time should be non-negative");
+    assertTrue(
+        metrics.getMaxTime().compareTo(metrics.getMinTime()) >= 0,
+        "Max time should be >= min time");
+
+    logger.info("Function call performance (" + callCount + " calls): " + metrics);
+  }
+
+  @Test
+  @DisplayName("Error Handling Performance")
+  void testErrorHandlingPerformance() throws Exception {
+    // Test error handling performance with invalid WASM
+    final byte[] invalidWasm = {0x00, 0x61, 0x73, 0x6D}; // Incomplete header
+
+    try {
+      metricsCollector.recordOperation(
+          "invalid_compilation",
+          () -> {
+            return engine.compileModule(invalidWasm);
+          });
+      fail("Should have thrown exception for invalid WASM");
+    } catch (final Exception e) {
+      // Expected exception
+    }
+
+    // Verify error was recorded
+    final BasicMetricsCollector.OperationMetrics metrics =
+        metricsCollector.getOperationMetrics("invalid_compilation");
+    assertNotNull(metrics, "Metrics should be recorded for failed compilation");
+    assertEquals(0, metrics.getSuccessCount(), "Should have no successful operations");
+    assertEquals(1, metrics.getFailureCount(), "Should have one failed operation");
+
+    logger.info("Error handling performance: " + metrics);
+  }
+
+  @Test
+  @DisplayName("Overall Performance Metrics")
+  void testOverallPerformanceMetrics() throws Exception {
+    // Perform multiple operations to generate overall metrics
+    metricsCollector.recordSuccess("test_operation_1", Duration.ofMillis(10));
+    metricsCollector.recordSuccess("test_operation_1", Duration.ofMillis(15));
+    metricsCollector.recordSuccess("test_operation_2", Duration.ofMillis(5));
+    metricsCollector.recordFailure("test_operation_2", Duration.ofMillis(20));
+
+    final BasicMetricsCollector.OverallMetrics overall = metricsCollector.getOverallMetrics();
+
+    assertEquals(4, overall.getTotalOperations(), "Should have 4 total operations");
+    assertEquals(3, overall.getSuccessfulOperations(), "Should have 3 successful operations");
+    assertEquals(1, overall.getFailedOperations(), "Should have 1 failed operation");
+    assertEquals(0.75, overall.getOverallSuccessRate(), 0.001, "Success rate should be 75%");
+    assertEquals(2, metricsCollector.getOperationCount(), "Should have 2 unique operations");
+
+    logger.info("Overall performance metrics: " + overall);
+  }
+
+  @Test
+  @DisplayName("Metrics Export to CSV")
+  void testMetricsExportToCsv() throws Exception {
+    // Generate some test metrics
+    metricsCollector.recordSuccess("csv_test", Duration.ofMillis(100));
+    metricsCollector.recordSuccess("csv_test", Duration.ofMillis(120));
+    metricsCollector.recordFailure("csv_test", Duration.ofMillis(200));
+
+    // Export to CSV
+    final Path csvFile = tempDir.resolve("test-metrics.csv");
+    CsvReporter.exportToFile(metricsCollector, csvFile);
+
+    // Verify file was created and has content
+    assertTrue(Files.exists(csvFile), "CSV file should be created");
+    final String csvContent = Files.readString(csvFile);
+    assertFalse(csvContent.isEmpty(), "CSV file should have content");
+    assertTrue(csvContent.contains("csv_test"), "CSV should contain operation name");
+    assertTrue(csvContent.contains("Timestamp"), "CSV should have header");
+
+    logger.info("CSV export completed to: " + csvFile);
+    logger.info(
+        "CSV content preview: " + csvContent.substring(0, Math.min(200, csvContent.length())));
+  }
+
+  @Test
+  @DisplayName("Metrics Export to JSON")
+  void testMetricsExportToJson() throws Exception {
+    // Generate some test metrics
+    metricsCollector.recordSuccess("json_test", Duration.ofMillis(50));
+    metricsCollector.recordSuccess("json_test", Duration.ofMillis(75));
+
+    // Export to JSON
+    final Path jsonFile = tempDir.resolve("test-metrics.json");
+    JsonReporter.exportToFile(metricsCollector, jsonFile);
+
+    // Verify file was created and has content
+    assertTrue(Files.exists(jsonFile), "JSON file should be created");
+    final String jsonContent = Files.readString(jsonFile);
+    assertFalse(jsonContent.isEmpty(), "JSON file should have content");
+    assertTrue(jsonContent.contains("json_test"), "JSON should contain operation name");
+    assertTrue(jsonContent.contains("timestamp"), "JSON should have timestamp");
+    assertTrue(jsonContent.contains("overall"), "JSON should have overall metrics");
+
+    logger.info("JSON export completed to: " + jsonFile);
+    logger.info(
+        "JSON content preview: " + jsonContent.substring(0, Math.min(300, jsonContent.length())));
+  }
+
+  @Test
+  @DisplayName("Compact Status Export")
+  void testCompactStatusExport() throws Exception {
+    // Generate metrics with high success rate
+    for (int i = 0; i < 19; i++) {
+      metricsCollector.recordSuccess("status_test", Duration.ofMillis(10));
+    }
+    metricsCollector.recordFailure("status_test", Duration.ofMillis(50));
+
+    final String compactStatus = JsonReporter.exportCompactStatus(metricsCollector);
+
+    assertNotNull(compactStatus, "Compact status should be generated");
+    assertTrue(compactStatus.contains("\"status\""), "Should contain status field");
+    assertTrue(compactStatus.contains("\"successRate\""), "Should contain success rate");
+    assertTrue(compactStatus.contains("PASS"), "Should indicate PASS status for 95% success rate");
+
+    logger.info("Compact status: " + compactStatus);
+  }
+
+  private void exportMetricsToFiles(final String testName) throws IOException {
+    final String sanitizedTestName = testName.replaceAll("[^a-zA-Z0-9]", "_");
+
+    // Export CSV
+    final Path csvFile = tempDir.resolve(sanitizedTestName + "_metrics.csv");
+    CsvReporter.exportToFile(metricsCollector, csvFile);
+
+    // Export JSON
+    final Path jsonFile = tempDir.resolve(sanitizedTestName + "_metrics.json");
+    JsonReporter.exportToFile(metricsCollector, jsonFile);
+
+    // Export overall metrics
+    final Path overallFile = tempDir.resolve(sanitizedTestName + "_overall.json");
+    JsonReporter.exportOverallMetrics(metricsCollector.getOverallMetrics(), overallFile);
+
+    logger.info("Metrics exported for test '" + testName + "':");
+    logger.info("  CSV: " + csvFile);
+    logger.info("  JSON: " + jsonFile);
+    logger.info("  Overall: " + overallFile);
+  }
+
+  private byte[] loadSimpleWasmModule() throws IOException {
+    try (final InputStream inputStream = getClass().getResourceAsStream("/wasm/simple.wat")) {
+      if (inputStream == null) {
+        throw new IOException("Simple WASM module not found");
+      }
+      return inputStream.readAllBytes();
+    }
+  }
+}
