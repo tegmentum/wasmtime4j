@@ -22,8 +22,8 @@ import java.util.Objects;
 /**
  * Configuration for component pipeline processing.
  *
- * <p>This class defines settings for data flow through component pipelines, including buffer
- * sizes, timeouts, and processing strategies.
+ * <p>This class defines settings for data flow through component pipelines, including buffer sizes,
+ * timeouts, and processing strategies.
  *
  * @since 1.0.0
  */

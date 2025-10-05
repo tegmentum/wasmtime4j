@@ -104,7 +104,6 @@ public interface WasiFileHandle extends Closeable {
    *
    * <p>After calling this method, the handle becomes invalid and should not be used. Any attempt to
    * use the handle after closing may result in exceptions.
-   *
    */
   @Override
   void close();

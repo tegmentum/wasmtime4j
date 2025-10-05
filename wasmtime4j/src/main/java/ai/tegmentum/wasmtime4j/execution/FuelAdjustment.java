@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.execution;
 
-/**
- * Represents a fuel consumption adjustment with an amount and reason.
- */
+/** Represents a fuel consumption adjustment with an amount and reason. */
 public final class FuelAdjustment {
   private final long amount;
   private final String reason;

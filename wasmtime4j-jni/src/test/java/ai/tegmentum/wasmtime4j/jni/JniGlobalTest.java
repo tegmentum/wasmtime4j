@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 /**
  * Unit tests for {@link JniGlobal}.
@@ -21,11 +20,12 @@ import org.mockito.Mockito;
 class JniGlobalTest {
 
   private static final long VALID_HANDLE = 0xFEDCBA98L;
-  private static final JniStore MOCK_STORE = Mockito.mock(JniStore.class);
+  private static final JniStore STUB_STORE =
+      new JniStore(VALID_HANDLE, new JniEngine(VALID_HANDLE));
 
   @Test
   void testConstructorWithValidHandle() {
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, MOCK_STORE);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
 
     assertThat(global.getResourceType()).isEqualTo("Global");
     assertFalse(global.isClosed());
@@ -35,7 +35,7 @@ class JniGlobalTest {
   @Test
   void testConstructorWithInvalidHandle() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniGlobal(0L, MOCK_STORE));
+        assertThrows(JniValidationException.class, () -> new JniGlobal(0L, STUB_STORE));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -43,7 +43,7 @@ class JniGlobalTest {
 
   @Test
   void testResourceManagement() {
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, MOCK_STORE);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
     assertFalse(global.isClosed());
 
     // Test that resource starts in open state
@@ -53,7 +53,7 @@ class JniGlobalTest {
 
   @Test
   void testCloseIsIdempotent() {
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, null);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
     assertFalse(global.isClosed());
 
     // Note: Actual close() idempotency testing requires native methods
@@ -63,7 +63,7 @@ class JniGlobalTest {
 
   @Test
   void testTryWithResources() {
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, null);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
     assertFalse(global.isClosed());
     // Note: Not using try-with-resources in unit test since close() requires native methods
   }
@@ -74,7 +74,7 @@ class JniGlobalTest {
     // Since close() requires native methods, this is covered in integration tests
     // This unit test verifies parameter validation only
 
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, null);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
     assertFalse(global.isClosed());
 
     // Test that operations work on open global (would call native methods in real implementation)
@@ -83,7 +83,7 @@ class JniGlobalTest {
 
   @Test
   void testToString() {
-    final JniGlobal global = new JniGlobal(VALID_HANDLE, null);
+    final JniGlobal global = new JniGlobal(VALID_HANDLE, STUB_STORE);
     final String toString = global.toString();
 
     assertThat(toString).contains("Global");

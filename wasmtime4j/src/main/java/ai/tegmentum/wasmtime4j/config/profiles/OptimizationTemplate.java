@@ -65,13 +65,14 @@ public final class OptimizationTemplate {
    * Apply this optimization template to an engine configuration.
    *
    * @param config the engine configuration to modify
-   * @return the modified engine configuration
+   * @return a new modified engine configuration (original is unchanged)
    * @throws IllegalArgumentException if config is null
    */
   public EngineConfig applyTo(final EngineConfig config) {
     Objects.requireNonNull(config, "Engine configuration cannot be null");
 
-    EngineConfig modifiedConfig = config;
+    // Create a copy to preserve immutability
+    EngineConfig modifiedConfig = config.copy();
 
     // Apply type-specific optimizations
     switch (type) {
@@ -243,9 +244,13 @@ public final class OptimizationTemplate {
     settings.put("enable_alias_analysis", "true");
     settings.put("regalloc", "linear_scan");
 
+    final Set<WasmFeature> microserviceFeatures =
+        EnumSet.of(WasmFeature.REFERENCE_TYPES, WasmFeature.BULK_MEMORY);
+
     return config
         .optimizationLevel(OptimizationLevel.SPEED)
         .parallelCompilation(true)
+        .setWasmFeatures(microserviceFeatures)
         .setMaxWasmStack(1024 * 1024) // 1MB stack for moderate memory usage
         .setFuelConsumption(true) // Enable for resource limiting
         .setEpochInterruption(true)

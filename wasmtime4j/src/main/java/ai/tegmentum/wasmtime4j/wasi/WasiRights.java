@@ -150,11 +150,11 @@ public enum WasiRights {
    *
    * @param rights the rights to combine
    * @return a new rights set containing all the specified rights
-   * @throws IllegalArgumentException if rights array is null or empty
+   * @throws IllegalArgumentException if rights array is null
    */
   public static WasiRightsSet of(final WasiRights... rights) {
-    if (rights == null || rights.length == 0) {
-      throw new IllegalArgumentException("Rights array cannot be null or empty");
+    if (rights == null) {
+      throw new IllegalArgumentException("Rights array cannot be null");
     }
 
     long combined = 0;

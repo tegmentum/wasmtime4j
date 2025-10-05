@@ -320,7 +320,7 @@ class WitTypeTest {
   @Test
   @DisplayName("Test WitTypeCategory values")
   void testWitTypeCategory() {
-    assertEquals(8, WitTypeCategory.values().length);
+    assertEquals(9, WitTypeCategory.values().length);
 
     // Verify all expected categories exist
     assertNotNull(WitTypeCategory.PRIMITIVE);

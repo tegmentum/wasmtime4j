@@ -13,9 +13,7 @@ import ai.tegmentum.wasmtime4j.ComponentVersion;
  */
 public final class PanamaComponentEngine {
 
-  /**
-   * Creates a new Panama component engine.
-   */
+  /** Creates a new Panama component engine. */
   public PanamaComponentEngine() {
     // TODO: Implement
   }
@@ -38,8 +36,7 @@ public final class PanamaComponentEngine {
   public ComponentValidationResult validateComponent(final ComponentSimple component) {
     // TODO: Implement actual component validation
     final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext(
-            "unknown", new ComponentVersion(1, 0, 0));
+        new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));
     return ComponentValidationResult.success(context);
   }
 }

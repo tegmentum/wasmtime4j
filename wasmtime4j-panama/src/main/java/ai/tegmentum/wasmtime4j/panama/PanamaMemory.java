@@ -107,7 +107,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void writeBytes(final int offset, final byte[] src, final int srcOffset, final int length) {
+  public void writeBytes(
+      final int offset, final byte[] src, final int srcOffset, final int length) {
     if (offset < 0) {
       throw new IndexOutOfBoundsException("Offset cannot be negative");
     }
@@ -299,7 +300,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void readBytes64(final long offset, final byte[] dest, final int destOffset, final int length) {
+  public void readBytes64(
+      final long offset, final byte[] dest, final int destOffset, final int length) {
     if (offset < 0) {
       throw new IndexOutOfBoundsException("Offset cannot be negative");
     }
@@ -317,7 +319,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public void writeBytes64(final long offset, final byte[] src, final int srcOffset, final int length) {
+  public void writeBytes64(
+      final long offset, final byte[] src, final int srcOffset, final int length) {
     if (offset < 0) {
       throw new IndexOutOfBoundsException("Offset cannot be negative");
     }
@@ -387,9 +390,7 @@ public final class PanamaMemory implements WasmMemory {
     throw new UnsupportedOperationException("Atomic wait64 not yet implemented");
   }
 
-  /**
-   * Closes the memory and releases resources.
-   */
+  /** Closes the memory and releases resources. */
   public void close() {
     if (closed) {
       return;

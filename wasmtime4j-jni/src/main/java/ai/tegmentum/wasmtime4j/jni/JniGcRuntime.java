@@ -1254,7 +1254,8 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = getObjectId(gcObject);
       final Object hostObject = extractHostObjectNative(nativeHandle, objectId);
       if (hostObject == null) {
-        throw new IllegalStateException("Failed to extract host object or object is not host-integrated");
+        throw new IllegalStateException(
+            "Failed to extract host object or object is not host-integrated");
       }
 
       return hostObject;

@@ -262,11 +262,40 @@ public final class WitValueMarshaler {
     if (value instanceof Map) {
       @SuppressWarnings("unchecked")
       final Map<String, Object> recordMap = (Map<String, Object>) value;
-      return new WitRecord(recordMap);
+
+      // Get field types from the WIT type to recursively marshal nested values
+      final Map<String, WitType> fieldTypes = getRecordFieldTypes(witType);
+      final Map<String, Object> marshaledFields = new java.util.HashMap<>();
+
+      for (final Map.Entry<String, Object> entry : recordMap.entrySet()) {
+        final String fieldName = entry.getKey();
+        final Object fieldValue = entry.getValue();
+        final WitType fieldType = fieldTypes.get(fieldName);
+
+        if (fieldType != null) {
+          // Recursively marshal the field value
+          marshaledFields.put(fieldName, marshalToWit(fieldValue, fieldType));
+        } else {
+          // Field not in type definition, pass through as-is
+          marshaledFields.put(fieldName, fieldValue);
+        }
+      }
+
+      return new WitRecord(marshaledFields);
     } else {
       // Use reflection to extract fields from Java object
       return marshalObjectToRecord(value);
     }
+  }
+
+  /**
+   * Gets the field types from a record WIT type.
+   *
+   * @param witType the record type
+   * @return map of field names to types
+   */
+  private Map<String, WitType> getRecordFieldTypes(final WitType witType) {
+    return witType.getKind().getRecordFields();
   }
 
   /**

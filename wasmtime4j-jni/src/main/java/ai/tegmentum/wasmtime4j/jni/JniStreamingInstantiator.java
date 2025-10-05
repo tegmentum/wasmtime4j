@@ -173,9 +173,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    */
   public String[] getImports() {
     try {
-      return module.getImports().stream()
-          .map(Object::toString)
-          .toArray(String[]::new);
+      return module.getImports().stream().map(Object::toString).toArray(String[]::new);
     } catch (final Exception e) {
       LOGGER.warning("Failed to get module imports: " + e.getMessage());
       return new String[0];
@@ -189,9 +187,7 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
    */
   public String[] getExports() {
     try {
-      return module.getExports().stream()
-          .map(Object::toString)
-          .toArray(String[]::new);
+      return module.getExports().stream().map(Object::toString).toArray(String[]::new);
     } catch (final Exception e) {
       LOGGER.warning("Failed to get module exports: " + e.getMessage());
       return new String[0];
@@ -256,18 +252,17 @@ public final class JniStreamingInstantiator implements StreamingInstantiator {
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre>
-      preInstantiate(final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre> preInstantiate(
+      final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
     // TODO: Implement pre-instantiation
     LOGGER.fine("Pre-instantiation not yet implemented");
     return java.util.concurrent.CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre>
-      preInstantiate(
-          final ai.tegmentum.wasmtime4j.ImportMap imports,
-          final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.InstancePre> preInstantiate(
+      final ai.tegmentum.wasmtime4j.ImportMap imports,
+      final ai.tegmentum.wasmtime4j.InstantiationConfig config) {
     // TODO: Implement pre-instantiation
     LOGGER.fine("Pre-instantiation not yet implemented");
     return java.util.concurrent.CompletableFuture.completedFuture(null);

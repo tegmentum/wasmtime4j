@@ -79,11 +79,7 @@ final class WasiOpenFlagsTest {
 
     assertThatThrownBy(() -> WasiOpenFlags.of((WasiOpenFlags[]) null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Flags array cannot be null or empty");
-
-    assertThatThrownBy(() -> WasiOpenFlags.of())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Flags array cannot be null or empty");
+        .hasMessageContaining("Flags array cannot be null");
   }
 
   @Test

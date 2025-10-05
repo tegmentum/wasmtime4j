@@ -34,6 +34,7 @@ class PerformanceOptimizationTest {
   void testPerformanceMonitoringBasics() {
     // Arrange
     PerformanceMonitor.setEnabled(true);
+    PerformanceMonitor.setLowOverheadMode(false); // Disable sampling for test
 
     // Act
     final long startTime = PerformanceMonitor.startOperation("test_operation", "unit_test");

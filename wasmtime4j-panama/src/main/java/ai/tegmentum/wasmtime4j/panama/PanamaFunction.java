@@ -62,9 +62,7 @@ public final class PanamaFunction implements WasmFunction {
     return name;
   }
 
-  /**
-   * Closes the function and releases resources.
-   */
+  /** Closes the function and releases resources. */
   public void close() {
     if (closed) {
       return;

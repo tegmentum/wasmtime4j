@@ -182,8 +182,8 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.Instance createInstance(final ai.tegmentum.wasmtime4j.Module module)
-      throws WasmException {
+  public ai.tegmentum.wasmtime4j.Instance createInstance(
+      final ai.tegmentum.wasmtime4j.Module module) throws WasmException {
     ensureNotClosed();
     // TODO: Implement instance creation
     throw new UnsupportedOperationException("Instance creation not yet implemented");

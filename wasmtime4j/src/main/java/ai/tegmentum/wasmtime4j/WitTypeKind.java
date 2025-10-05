@@ -166,6 +166,15 @@ public abstract class WitTypeKind {
    */
   public abstract WitTypeCategory getCategory();
 
+  /**
+   * Gets the record field types (only for record types).
+   *
+   * @return map of field names to types, or empty map for non-record types
+   */
+  public Map<String, WitType> getRecordFields() {
+    return Map.of(); // Default implementation for non-record types
+  }
+
   /** Primitive type kind implementation. */
   private static final class PrimitiveTypeKind extends WitTypeKind {
     private final WitPrimitiveType primitive;
@@ -184,7 +193,8 @@ public abstract class WitTypeKind {
 
     @Override
     public Optional<Integer> getSizeBytes() {
-      return Optional.of(primitive.getSizeBytes());
+      final int size = primitive.getSizeBytes();
+      return size < 0 ? Optional.empty() : Optional.of(size);
     }
 
     @Override
@@ -269,6 +279,11 @@ public abstract class WitTypeKind {
     @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.RECORD;
+    }
+
+    @Override
+    public Map<String, WitType> getRecordFields() {
+      return fields;
     }
 
     public Map<String, WitType> getFields() {

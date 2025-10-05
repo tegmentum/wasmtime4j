@@ -600,8 +600,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     concurrencyManager.executeWithWriteLock(
         nativeHandle,
         () -> {
-          final long linkerHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+          final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+          final long linkerHandle = jniLinker.getNativeHandle();
           final long contextHandle =
               ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
@@ -609,6 +609,17 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
           if (result != 0) {
             throw new RuntimeException("Failed to add WASI imports to linker");
           }
+
+          // Track WASI imports for hasImport() checks
+          jniLinker.addImport("wasi_snapshot_preview1", "fd_write");
+          jniLinker.addImport("wasi_snapshot_preview1", "proc_exit");
+          jniLinker.addImport("wasi_snapshot_preview1", "fd_read");
+          jniLinker.addImport("wasi_snapshot_preview1", "fd_close");
+          jniLinker.addImport("wasi_snapshot_preview1", "environ_get");
+          jniLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
+          jniLinker.addImport("wasi_snapshot_preview1", "args_get");
+          jniLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
+
           return null;
         });
   }
@@ -629,8 +640,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     concurrencyManager.executeWithWriteLock(
         nativeHandle,
         () -> {
-          final long linkerHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+          final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+          final long linkerHandle = jniLinker.getNativeHandle();
           final long contextHandle =
               ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
@@ -639,6 +650,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
           if (result != 0) {
             throw new RuntimeException("Failed to add WASI Preview 2 imports to linker");
           }
+
+          // Track WASI Preview 2 imports for hasImport() checks
+          jniLinker.addImport("wasi:filesystem/types", "filesystem");
+          jniLinker.addImport("wasi:io/streams", "input-stream");
+          jniLinker.addImport("wasi:sockets/network", "network");
+
           return null;
         });
   }

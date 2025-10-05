@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.PanamaHostFunction.HostFunctionCallback;
 import java.lang.foreign.Arena;
@@ -165,8 +166,7 @@ class PanamaHostFunctionTest {
     @Test
     void testThrowExceptionWhenCallingHostFunctionDirectly() {
       assertThrows(
-          UnsupportedOperationException.class,
-          () -> hostFunction.call(WasmValue.i32(1), WasmValue.i64(2L)));
+          ValidationException.class, () -> hostFunction.call(WasmValue.i32(1), WasmValue.i64(2L)));
     }
   }
 

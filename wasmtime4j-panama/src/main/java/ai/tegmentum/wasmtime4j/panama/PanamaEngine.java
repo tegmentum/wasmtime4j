@@ -183,11 +183,9 @@ public final class PanamaEngine implements Engine {
   public ComponentValidationResult validateComponent(final ComponentSimple component) {
     // TODO: Implement actual component validation
     final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext(
-            "unknown", new ComponentVersion(1, 0, 0));
+        new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));
     return ComponentValidationResult.success(context);
   }
-
 
   /**
    * Gets the engine pointer.

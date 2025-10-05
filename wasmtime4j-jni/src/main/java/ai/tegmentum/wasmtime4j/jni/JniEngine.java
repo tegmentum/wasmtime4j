@@ -42,11 +42,11 @@ public class JniEngine implements Engine {
       throw new IllegalStateException("Engine has invalid native handle");
     }
 
-    // TODO: Call native method to create store
-    // long storeHandle = nativeCreateStore(nativeHandle);
-    // return new JniStore(storeHandle, this);
-    throw new UnsupportedOperationException(
-        "Store creation not yet implemented - native library required");
+    final long storeHandle = nativeCreateStore(nativeHandle);
+    if (storeHandle == 0) {
+      throw new WasmException("Failed to create store");
+    }
+    return new JniStore(storeHandle, this);
   }
 
   @Override
@@ -197,6 +197,8 @@ public class JniEngine implements Engine {
       nativeDestroyEngine(nativeHandle);
     }
   }
+
+  private native long nativeCreateStore(long engineHandle);
 
   private native void nativeDestroyEngine(long handle);
 }

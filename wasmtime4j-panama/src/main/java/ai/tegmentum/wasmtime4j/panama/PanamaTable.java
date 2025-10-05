@@ -141,7 +141,8 @@ public final class PanamaTable implements WasmTable {
   }
 
   @Override
-  public void init(final int destIndex, final int elementSegmentIndex, final int srcIndex, final int count) {
+  public void init(
+      final int destIndex, final int elementSegmentIndex, final int srcIndex, final int count) {
     if (destIndex < 0) {
       throw new IndexOutOfBoundsException("Destination index cannot be negative");
     }
@@ -169,9 +170,7 @@ public final class PanamaTable implements WasmTable {
     throw new UnsupportedOperationException("Element segment drop not yet implemented");
   }
 
-  /**
-   * Closes the table and releases resources.
-   */
+  /** Closes the table and releases resources. */
   public void close() {
     if (closed) {
       return;

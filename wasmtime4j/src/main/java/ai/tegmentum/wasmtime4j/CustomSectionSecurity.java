@@ -92,32 +92,44 @@ public final class CustomSectionSecurity {
 
     final CustomSectionValidationResult.Builder builder = CustomSectionValidationResult.builder();
 
+    // Track all errors and warnings
+    final List<CustomSectionValidationResult.ValidationIssue> allErrors =
+        new java.util.ArrayList<>();
+    final List<CustomSectionValidationResult.ValidationIssue> allWarnings =
+        new java.util.ArrayList<>();
+
     // Validate section count
     if (sections.size() > MAX_CUSTOM_SECTION_COUNT) {
-      builder.addError(
-          "*",
-          String.format(
-              "Number of custom sections %d exceeds maximum allowed count %d",
-              sections.size(), MAX_CUSTOM_SECTION_COUNT));
+      allErrors.add(
+          CustomSectionValidationResult.ValidationIssue.error(
+              "*",
+              String.format(
+                  "Number of custom sections %d exceeds maximum allowed count %d",
+                  sections.size(), MAX_CUSTOM_SECTION_COUNT)));
     }
 
     // Validate total size
     final long totalSize = sections.stream().mapToLong(CustomSection::getSize).sum();
 
     if (totalSize > MAX_TOTAL_CUSTOM_SECTIONS_SIZE) {
-      builder.addError(
-          "*",
-          String.format(
-              "Total custom sections size %d exceeds maximum allowed size %d",
-              totalSize, MAX_TOTAL_CUSTOM_SECTIONS_SIZE));
+      allErrors.add(
+          CustomSectionValidationResult.ValidationIssue.error(
+              "*",
+              String.format(
+                  "Total custom sections size %d exceeds maximum allowed size %d",
+                  totalSize, MAX_TOTAL_CUSTOM_SECTIONS_SIZE)));
     }
 
     // Validate individual sections
     for (final CustomSection section : sections) {
       final CustomSectionValidationResult sectionResult = validateSecurity(section);
-      builder.setErrors(combineIssues(builder, sectionResult.getErrors()));
-      builder.setWarnings(combineIssues(builder, sectionResult.getWarnings()));
+      allErrors.addAll(sectionResult.getErrors());
+      allWarnings.addAll(sectionResult.getWarnings());
     }
+
+    // Set combined errors and warnings
+    builder.setErrors(allErrors);
+    builder.setWarnings(allWarnings);
 
     // Check for duplicate section names (warning only)
     validateDuplicateNames(sections, builder);
@@ -177,11 +189,14 @@ public final class CustomSectionSecurity {
     }
 
     // Check for executable file headers
-    if (data.length >= 4) {
+    if (data.length >= 2) {
       // Check for common executable formats
-      if (startsWithMagic(data, new byte[] {0x4D, 0x5A})
-          || // PE/EXE
-          startsWithMagic(data, new byte[] {0x7F, 0x45, 0x4C, 0x46})
+      if (startsWithMagic(data, new byte[] {0x4D, 0x5A})) { // PE/EXE (2 bytes)
+        return true;
+      }
+    }
+    if (data.length >= 4) {
+      if (startsWithMagic(data, new byte[] {0x7F, 0x45, 0x4C, 0x46})
           || // ELF
           startsWithMagic(data, new byte[] {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})
           || // Mach-O
@@ -297,10 +312,13 @@ public final class CustomSectionSecurity {
     return data;
   }
 
-  private static <T> List<T> combineIssues(
-      final CustomSectionValidationResult.Builder builder, final List<T> newIssues) {
-    // This is a helper method - in practice the builder would handle combining issues
-    return newIssues;
+  private static List<CustomSectionValidationResult.ValidationIssue> combineIssues(
+      final List<CustomSectionValidationResult.ValidationIssue> existingIssues,
+      final List<CustomSectionValidationResult.ValidationIssue> newIssues) {
+    final List<CustomSectionValidationResult.ValidationIssue> combined =
+        new java.util.ArrayList<>(existingIssues);
+    combined.addAll(newIssues);
+    return combined;
   }
 
   /** Security configuration for custom section handling. */

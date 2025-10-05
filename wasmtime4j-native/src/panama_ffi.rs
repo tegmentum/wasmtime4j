@@ -1690,11 +1690,12 @@ pub mod global {
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
 
             let initial_value = core::create_global_value(
-                val_type.clone(), 
-                i32_value, 
-                i64_value as i64, 
-                f32_value as f32, 
+                val_type.clone(),
+                i32_value,
+                i64_value as i64,
+                f32_value as f32,
                 f64_value,
+                None, // v128_bytes - not supported in this call path
                 ref_id_opt,
             )?;
 
@@ -1779,11 +1780,12 @@ pub mod global {
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
 
             let value = core::create_global_value(
-                val_type, 
-                i32_value, 
-                i64_value as i64, 
-                f32_value as f32, 
+                val_type,
+                i32_value,
+                i64_value as i64,
+                f32_value as f32,
                 f64_value,
+                None, // v128_bytes - not supported in this call path
                 ref_id_opt,
             )?;
 

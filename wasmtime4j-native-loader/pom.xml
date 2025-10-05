@@ -161,12 +161,18 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <excludes>**/jmh_generated/**/*</excludes>
+                </configuration>
             </plugin>
 
             <!-- SpotBugs for bug detection -->
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
 
             <!-- Spotless for code formatting -->

@@ -28,7 +28,8 @@ public final class PanamaGlobal implements WasmGlobal {
    * @param mutable whether this global is mutable
    * @param initialValue the initial value
    */
-  public PanamaGlobal(final WasmValueType type, final boolean mutable, final WasmValue initialValue) {
+  public PanamaGlobal(
+      final WasmValueType type, final boolean mutable, final WasmValue initialValue) {
     if (type == null) {
       throw new IllegalArgumentException("Type cannot be null");
     }
@@ -83,9 +84,7 @@ public final class PanamaGlobal implements WasmGlobal {
     return closed;
   }
 
-  /**
-   * Closes the global and releases resources.
-   */
+  /** Closes the global and releases resources. */
   public void close() {
     if (closed) {
       return;

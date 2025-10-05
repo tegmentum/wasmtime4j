@@ -45,8 +45,7 @@ public final class ComponentPipelineSpec {
       final ComponentPipelineConfig config) {
     this.pipelineName = Objects.requireNonNull(pipelineName, "pipelineName cannot be null");
     this.stageNames = List.copyOf(Objects.requireNonNull(stageNames, "stageNames cannot be null"));
-    this.config =
-        config != null ? config : new ComponentPipelineConfig();
+    this.config = config != null ? config : new ComponentPipelineConfig();
   }
 
   /**

@@ -189,14 +189,25 @@ public final class Memory64Config {
     }
 
     final long newSize = (long) Math.ceil(currentPages * growthFactor);
-    final long clampedSize = Math.min(newSize, growthLimitPages);
 
+    // Determine the maximum allowed size (either growthLimit or maximumPages, whichever is
+    // relevant)
+    long targetSize;
     if (getMaximumPages().isPresent()) {
-      final long maxAllowed = Math.min(clampedSize, getMaximumPages().get());
-      return maxAllowed > currentPages ? Optional.of(maxAllowed) : Optional.empty();
+      // If we have a maximum, use the minimum of calculated size, growth limit, and maximum
+      targetSize = Math.min(Math.min(newSize, growthLimitPages), getMaximumPages().get());
+
+      // Special case: if current size already exceeds growth limit but is below maximum,
+      // allow growth up to maximum
+      if (currentPages >= growthLimitPages && currentPages < getMaximumPages().get()) {
+        targetSize = getMaximumPages().get();
+      }
+    } else {
+      // No maximum, just apply growth limit
+      targetSize = Math.min(newSize, growthLimitPages);
     }
 
-    return clampedSize > currentPages ? Optional.of(clampedSize) : Optional.empty();
+    return targetSize > currentPages ? Optional.of(targetSize) : Optional.empty();
   }
 
   /**

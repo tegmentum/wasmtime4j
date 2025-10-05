@@ -732,6 +732,9 @@ public final class PerformanceMonitor {
    */
   public static void setLowOverheadMode(final boolean enabled) {
     lowOverheadMode = enabled;
+    if (!enabled) {
+      MONITORED_OPERATIONS.set(0);
+    }
     LOGGER.info("Low overhead monitoring mode " + (enabled ? "enabled" : "disabled"));
   }
 
