@@ -150,6 +150,13 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
+  public Module compileWat(final String wat) throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support WAT compilation - use compileComponent() instead");
+  }
+
+  @Override
   public StreamingCompiler createStreamingCompiler() throws WasmException {
     ensureNotClosed();
     throw new UnsupportedOperationException("ComponentEngine does not support StreamingCompiler");

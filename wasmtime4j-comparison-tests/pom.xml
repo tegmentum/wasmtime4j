@@ -26,7 +26,7 @@
         
         <!-- Test suite selection -->
         <comparison.suite>smoke</comparison.suite> <!-- smoke, full, custom -->
-        <comparison.targets>native,jni,panama</comparison.targets>
+        <comparison.targets>jni,panama</comparison.targets>
     </properties>
 
     <dependencies>
@@ -34,6 +34,13 @@
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- wasmtime4j-tests for test infrastructure -->
+        <dependency>
+            <groupId>ai.tegmentum</groupId>
+            <artifactId>wasmtime4j-tests</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -125,6 +132,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <showWarnings>true</showWarnings>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                        <!-- Temporarily disable -Werror for testing generated code -->
+                    </compilerArgs>
+                </configuration>
             </plugin>
 
             <!-- Resources plugin -->
@@ -267,13 +281,6 @@
         </profile>
 
         <!-- Target runtime profiles -->
-        <profile>
-            <id>native-only</id>
-            <properties>
-                <comparison.targets>native</comparison.targets>
-            </properties>
-        </profile>
-
         <profile>
             <id>jni-only</id>
             <properties>

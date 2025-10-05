@@ -154,6 +154,30 @@ public class JniEngine implements Engine {
   }
 
   @Override
+  public Module compileWat(final String wat) throws WasmException {
+    if (wat == null) {
+      throw new IllegalArgumentException("wat cannot be null");
+    }
+    if (wat.isEmpty()) {
+      throw new IllegalArgumentException("wat cannot be empty");
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Engine has invalid native handle");
+    }
+
+    final long moduleHandle = nativeCompileWat(nativeHandle, wat);
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to compile WAT");
+    }
+    return new JniModule(moduleHandle, this);
+  }
+
+  private native long nativeCompileWat(long engineHandle, String wat);
+
+  @Override
   public ai.tegmentum.wasmtime4j.StreamingCompiler createStreamingCompiler() throws WasmException {
     if (closed) {
       throw new IllegalStateException("Engine has been closed");

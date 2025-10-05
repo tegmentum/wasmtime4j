@@ -13,8 +13,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Comprehensive WebAssembly test suite integration for wasmtime4j. Provides automatic test
- * discovery, execution, and reporting across JNI and Panama implementations.
+ * WebAssembly test suite integration for wasmtime4j. Provides automatic test discovery,
+ * execution, and reporting for individual runtime implementations.
+ *
+ * <p>This class handles single-runtime testing. For cross-runtime comparison testing (JNI vs
+ * Panama), use CrossRuntimeTestSuiteIntegration from wasmtime4j-comparison-tests module.
  */
 public final class WebAssemblyTestSuiteIntegration {
 
@@ -161,14 +164,6 @@ public final class WebAssemblyTestSuiteIntegration {
     try {
       final TestAnalysisReport.Builder reportBuilder = TestAnalysisReport.builder();
 
-      // Perform cross-runtime comparison
-      if (configuration.isCrossRuntimeComparisonEnabled()
-          && results.getRuntimeResults().size() > 1) {
-        final CrossRuntimeAnalysis crossRuntimeAnalysis =
-            resultAnalyzer.performCrossRuntimeAnalysis(results);
-        reportBuilder.crossRuntimeAnalysis(crossRuntimeAnalysis);
-      }
-
       // Detect performance regressions
       if (configuration.isPerformanceAnalysisEnabled()) {
         final PerformanceAnalysis performanceAnalysis = resultAnalyzer.analyzePerformance(results);
@@ -305,7 +300,6 @@ public final class WebAssemblyTestSuiteIntegration {
         .enabledRuntimes(EnumSet.allOf(TestRuntime.class))
         .maxConcurrentTests(Runtime.getRuntime().availableProcessors())
         .testTimeoutMinutes(30)
-        .enableCrossRuntimeComparison(true)
         .enablePerformanceAnalysis(true)
         .enableCoverageAnalysis(true)
         .enableConsoleReport(true)
@@ -328,7 +322,6 @@ public final class WebAssemblyTestSuiteIntegration {
         .enabledRuntimes(EnumSet.allOf(TestRuntime.class))
         .maxConcurrentTests(2) // Conservative for CI environments
         .testTimeoutMinutes(15)
-        .enableCrossRuntimeComparison(true)
         .enablePerformanceAnalysis(false) // Skip in CI
         .enableCoverageAnalysis(true)
         .enableConsoleReport(true)

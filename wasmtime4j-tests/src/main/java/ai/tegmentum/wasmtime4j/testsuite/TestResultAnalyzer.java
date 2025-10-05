@@ -26,61 +26,6 @@ public final class TestResultAnalyzer {
   }
 
   /**
-   * Performs cross-runtime analysis comparing results between different runtimes.
-   *
-   * @param results test execution results
-   * @return cross-runtime analysis
-   */
-  public CrossRuntimeAnalysis performCrossRuntimeAnalysis(final TestExecutionResults results) {
-    LOGGER.info("Performing cross-runtime analysis");
-
-    final Map<String, List<TestResult>> resultsByTestCase = results.getResultsByTestCase();
-    final List<String> discrepancies = new ArrayList<>();
-    final Map<TestRuntime, Integer> runtimeSuccessRates = new HashMap<>();
-
-    // Calculate success rates per runtime
-    for (final TestRuntime runtime : results.getRuntimeResults().keySet()) {
-      final List<TestResult> runtimeResults = results.getResultsForRuntime(runtime);
-      final long successCount =
-          runtimeResults.stream().mapToLong(result -> result.isSuccess() ? 1 : 0).sum();
-      final int successRate = (int) ((double) successCount / runtimeResults.size() * 100);
-      runtimeSuccessRates.put(runtime, successRate);
-    }
-
-    // Find discrepancies between runtimes
-    for (final Map.Entry<String, List<TestResult>> entry : resultsByTestCase.entrySet()) {
-      final String testId = entry.getKey();
-      final List<TestResult> testResults = entry.getValue();
-
-      if (testResults.size() > 1) {
-        // Check if results differ between runtimes
-        final boolean hasSuccesses = testResults.stream().anyMatch(TestResult::isSuccess);
-        final boolean hasFailures = testResults.stream().anyMatch(TestResult::isFailure);
-
-        if (hasSuccesses && hasFailures) {
-          final StringBuilder discrepancy = new StringBuilder();
-          discrepancy
-              .append("Test ")
-              .append(testId)
-              .append(" has different results across runtimes: ");
-
-          for (final TestResult result : testResults) {
-            discrepancy
-                .append(result.getRuntime().getId())
-                .append("=")
-                .append(result.getStatus())
-                .append(" ");
-          }
-
-          discrepancies.add(discrepancy.toString().trim());
-        }
-      }
-    }
-
-    return new CrossRuntimeAnalysis(runtimeSuccessRates, discrepancies);
-  }
-
-  /**
    * Analyzes performance metrics and detects regressions.
    *
    * @param results test execution results

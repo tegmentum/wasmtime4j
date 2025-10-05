@@ -77,14 +77,6 @@ public final class TestReporter {
     if (analysisReport != null) {
       report.append("\nAnalysis Summary:\n");
 
-      if (analysisReport.getCrossRuntimeAnalysis() != null
-          && analysisReport.getCrossRuntimeAnalysis().hasDiscrepancies()) {
-        report
-            .append("  Cross-runtime discrepancies detected: ")
-            .append(analysisReport.getCrossRuntimeAnalysis().getDiscrepancies().size())
-            .append("\n");
-      }
-
       if (analysisReport.getPerformanceAnalysis() != null
           && analysisReport.getPerformanceAnalysis().hasSignificantRegressions()) {
         report
@@ -345,16 +337,6 @@ public final class TestReporter {
     html.append("    <div class=\"analysis\">\n");
     html.append("      <h2>Analysis Results</h2>\n");
 
-    if (analysisReport.getCrossRuntimeAnalysis() != null
-        && analysisReport.getCrossRuntimeAnalysis().hasDiscrepancies()) {
-      html.append("      <h3>Cross-Runtime Discrepancies</h3>\n");
-      html.append("      <ul>\n");
-      for (final String discrepancy : analysisReport.getCrossRuntimeAnalysis().getDiscrepancies()) {
-        html.append("        <li>").append(escapeHtml(discrepancy)).append("</li>\n");
-      }
-      html.append("      </ul>\n");
-    }
-
     if (analysisReport.getInsights() != null && analysisReport.getInsights().hasInsights()) {
       html.append("      <h3>Insights</h3>\n");
       html.append("      <ul>\n");
@@ -402,15 +384,6 @@ public final class TestReporter {
 
   private Map<String, Object> createAnalysisData(final TestAnalysisReport analysisReport) {
     final Map<String, Object> analysisData = new HashMap<>();
-
-    if (analysisReport.getCrossRuntimeAnalysis() != null) {
-      final Map<String, Object> crossRuntimeData = new HashMap<>();
-      crossRuntimeData.put(
-          "hasDiscrepancies", analysisReport.getCrossRuntimeAnalysis().hasDiscrepancies());
-      crossRuntimeData.put(
-          "discrepancies", analysisReport.getCrossRuntimeAnalysis().getDiscrepancies());
-      analysisData.put("crossRuntime", crossRuntimeData);
-    }
 
     if (analysisReport.getInsights() != null) {
       final Map<String, Object> insightsData = new HashMap<>();

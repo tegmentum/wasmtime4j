@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCompileWat
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileWat
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateStore
  * Signature: (J)J
  */

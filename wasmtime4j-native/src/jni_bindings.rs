@@ -264,7 +264,38 @@ pub mod jni_engine {
             crate::shared_ffi::module::compile_module_shared(engine, byte_converter)
         }) as jlong
     }
-    
+
+    /// Compile WAT to module
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileWat(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        wat_string: JString,
+    ) -> jlong {
+        // Extract string before moving env into jni_try_ptr
+        let wat_data_result = env.get_string(&wat_string)
+            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert Java string: {}", e),
+            });
+
+        let wat_jstr = match wat_data_result {
+            Ok(jstr) => jstr,
+            Err(_) => return 0 as jlong, // Return null on error
+        };
+
+        // Convert JavaStr to String immediately
+        let string_converter = match jni_module::JStringConverter::new(wat_jstr) {
+            Ok(converter) => converter,
+            Err(_) => return 0 as jlong, // Return null on error
+        };
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            crate::shared_ffi::module::compile_module_wat_shared(engine, string_converter)
+        }) as jlong
+    }
+
     /// Create a new store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore(
@@ -1578,8 +1609,9 @@ pub mod jni_module {
     use super::*;
     use crate::module::core;
     use crate::error::jni_utils;
-    use crate::shared_ffi::module::ByteArrayConverter;
+    use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
     use jni::sys::{jobjectArray, jstring};
+    use jni::strings::JavaStr;
 
     /// Vec<u8> byte array converter implementation for JNI
     pub struct VecByteArrayConverter {
@@ -1603,7 +1635,34 @@ pub mod jni_module {
         }
     }
 
-    
+    /// String converter implementation for JNI
+    pub struct JStringConverter {
+        data: String,
+    }
+
+    impl JStringConverter {
+        /// Creates a new JStringConverter from JavaStr
+        pub fn new(java_str: JavaStr) -> crate::error::WasmtimeResult<Self> {
+            let string = java_str.to_str()
+                .map(|s| s.to_string())
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert Java string to Rust string: {}", e),
+                })?;
+            Ok(Self { data: string })
+        }
+    }
+
+    impl StringConverter for JStringConverter {
+        unsafe fn get_string(&self) -> crate::error::WasmtimeResult<String> {
+            Ok(self.data.clone())
+        }
+
+        fn is_empty(&self) -> bool {
+            self.data.is_empty()
+        }
+    }
+
+
     /// Instantiate a module within a store context
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModule(

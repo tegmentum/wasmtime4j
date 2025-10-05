@@ -79,6 +79,19 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public Module compileWat(final String wat) throws WasmException {
+    if (wat == null) {
+      throw new IllegalArgumentException("wat cannot be null");
+    }
+    if (wat.isEmpty()) {
+      throw new IllegalArgumentException("wat cannot be empty");
+    }
+    ensureNotClosed();
+    // TODO: Implement WAT compilation
+    throw new UnsupportedOperationException("WAT compilation not yet implemented");
+  }
+
+  @Override
   public StreamingCompiler createStreamingCompiler() throws WasmException {
     ensureNotClosed();
     // TODO: Implement streaming compiler

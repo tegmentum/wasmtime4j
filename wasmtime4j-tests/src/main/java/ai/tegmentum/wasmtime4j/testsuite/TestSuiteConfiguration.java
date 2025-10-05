@@ -17,7 +17,6 @@ public final class TestSuiteConfiguration {
   private final Set<TestRuntime> enabledRuntimes;
   private final int maxConcurrentTests;
   private final int testTimeoutMinutes;
-  private final boolean crossRuntimeComparisonEnabled;
   private final boolean performanceAnalysisEnabled;
   private final boolean coverageAnalysisEnabled;
   private final boolean consoleReportEnabled;
@@ -36,7 +35,6 @@ public final class TestSuiteConfiguration {
     this.enabledRuntimes = Set.copyOf(builder.enabledRuntimes);
     this.maxConcurrentTests = builder.maxConcurrentTests;
     this.testTimeoutMinutes = builder.testTimeoutMinutes;
-    this.crossRuntimeComparisonEnabled = builder.crossRuntimeComparisonEnabled;
     this.performanceAnalysisEnabled = builder.performanceAnalysisEnabled;
     this.coverageAnalysisEnabled = builder.coverageAnalysisEnabled;
     this.consoleReportEnabled = builder.consoleReportEnabled;
@@ -72,10 +70,6 @@ public final class TestSuiteConfiguration {
 
   public int getTestTimeoutMinutes() {
     return testTimeoutMinutes;
-  }
-
-  public boolean isCrossRuntimeComparisonEnabled() {
-    return crossRuntimeComparisonEnabled;
   }
 
   public boolean isPerformanceAnalysisEnabled() {
@@ -135,7 +129,6 @@ public final class TestSuiteConfiguration {
     private Set<TestRuntime> enabledRuntimes = EnumSet.allOf(TestRuntime.class);
     private int maxConcurrentTests = Runtime.getRuntime().availableProcessors();
     private int testTimeoutMinutes = 30;
-    private boolean crossRuntimeComparisonEnabled = true;
     private boolean performanceAnalysisEnabled = true;
     private boolean coverageAnalysisEnabled = true;
     private boolean consoleReportEnabled = true;
@@ -201,17 +194,6 @@ public final class TestSuiteConfiguration {
         throw new IllegalArgumentException("Test timeout must be at least 1 minute");
       }
       this.testTimeoutMinutes = timeoutMinutes;
-      return this;
-    }
-
-    /**
-     * Enables or disables cross-runtime comparison.
-     *
-     * @param enabled true to enable
-     * @return this builder
-     */
-    public Builder enableCrossRuntimeComparison(final boolean enabled) {
-      this.crossRuntimeComparisonEnabled = enabled;
       return this;
     }
 

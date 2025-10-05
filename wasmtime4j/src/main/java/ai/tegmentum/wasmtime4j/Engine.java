@@ -52,6 +52,21 @@ public interface Engine extends Closeable {
   Module compileModule(final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Compiles WebAssembly Text format (WAT) into a module using this engine.
+   *
+   * <p>This method parses the WAT text format and compiles it into a WebAssembly module. The
+   * compilation process includes WAT parsing, validation, and optimization.
+   *
+   * @param wat the WebAssembly text format (WAT) source code
+   * @return a compiled Module
+   * @throws WasmException if compilation fails due to invalid WAT syntax, validation errors, or
+   *     engine issues
+   * @throws IllegalArgumentException if wat is null or empty
+   * @since 1.0.0
+   */
+  Module compileWat(final String wat) throws WasmException;
+
+  /**
    * Creates a streaming compiler for progressive WebAssembly module compilation.
    *
    * <p>This method creates a StreamingCompiler that can compile WebAssembly modules progressively

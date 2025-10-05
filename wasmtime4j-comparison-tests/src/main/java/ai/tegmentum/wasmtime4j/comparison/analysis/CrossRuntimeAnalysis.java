@@ -1,5 +1,6 @@
-package ai.tegmentum.wasmtime4j.testsuite;
+package ai.tegmentum.wasmtime4j.comparison.analysis;
 
+import ai.tegmentum.wasmtime4j.testsuite.TestRuntime;
 import java.util.List;
 import java.util.Map;
 
