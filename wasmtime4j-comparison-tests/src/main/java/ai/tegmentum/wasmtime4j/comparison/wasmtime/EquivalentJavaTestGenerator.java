@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.comparison.wasmtime;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,7 +19,11 @@ public final class EquivalentJavaTestGenerator {
   private static final Logger LOGGER =
       Logger.getLogger(EquivalentJavaTestGenerator.class.getName());
 
+  // Threshold for storing WAT in external file (50KB)
+  private static final int WAT_FILE_THRESHOLD = 50 * 1024;
+
   private final Path outputDirectory;
+  private final Path resourcesDirectory;
 
   /**
    * Creates a new test generator.
@@ -29,6 +35,9 @@ public final class EquivalentJavaTestGenerator {
       throw new IllegalArgumentException("outputDirectory cannot be null");
     }
     this.outputDirectory = outputDirectory;
+    // Resources go in src/test/resources relative to the test directory
+    this.resourcesDirectory =
+        outputDirectory.getParent().getParent().resolve("resources/wasmtime-tests");
   }
 
   /**
@@ -143,6 +152,7 @@ public final class EquivalentJavaTestGenerator {
     code.append("import org.junit.jupiter.api.Test;\n");
     code.append("import org.junit.jupiter.api.DisplayName;\n");
     code.append("import static org.junit.jupiter.api.Assertions.*;\n\n");
+    code.append("import java.io.InputStream;\n");
     code.append("import ai.tegmentum.wasmtime4j.*;\n\n");
 
     // Class documentation
@@ -173,17 +183,43 @@ public final class EquivalentJavaTestGenerator {
     code.append("  public void test").append(className.replace("Test", "")).append("() {\n");
     code.append("    // WAT code from original Wasmtime test:\n");
 
-    // Add WAT code as comment
-    final String[] watLines = metadata.getWatCode().split("\n");
-    for (final String line : watLines) {
-      code.append("    // ").append(line).append("\n");
+    // Add WAT code as comment (truncated if too large)
+    final String watCode = metadata.getWatCode();
+    final int watSize = watCode.getBytes(StandardCharsets.UTF_8).length;
+    final boolean useExternalFile = watSize > WAT_FILE_THRESHOLD;
+
+    if (useExternalFile) {
+      code.append("    // WAT code is large (")
+          .append(watSize / 1024)
+          .append(" KB), loaded from external resource file\n\n");
+    } else {
+      final String[] watLines = watCode.split("\n");
+      for (final String line : watLines) {
+        code.append("    // ").append(line).append("\n");
+      }
+      code.append("\n");
+    }
+
+    // Generate WAT loading code
+    try {
+      if (useExternalFile) {
+        // Save WAT to external file and generate load code
+        final String resourcePath = saveWatToFile(watCode, metadata.getCategory(), metadata.getTestName());
+        code.append(indent(generateWatLoadCode(resourcePath), 4));
+      } else {
+        // Inline WAT string
+        code.append("    final String wat = \"\"\"\n");
+        code.append(indent(escapeWatCode(watCode), 8));
+        code.append("    \"\"\";\n");
+      }
+    } catch (final IOException e) {
+      LOGGER.warning("Failed to save WAT to file, falling back to inline: " + e.getMessage());
+      // Fallback to inline
+      code.append("    final String wat = \"\"\"\n");
+      code.append(indent(escapeWatCode(watCode), 8));
+      code.append("    \"\"\";\n");
     }
     code.append("\n");
-
-    // Generate test body
-    code.append("    final String wat = \"\"\"\n");
-    code.append(indent(escapeWatCode(metadata.getWatCode()), 8));
-    code.append("    \"\"\";\n\n");
 
     code.append("    // TODO: Implement equivalent wasmtime4j test logic\n");
     code.append("    // 1. Create Engine\n");
@@ -232,5 +268,53 @@ public final class EquivalentJavaTestGenerator {
   private String indent(final String text, final int spaces) {
     final String indentation = " ".repeat(spaces);
     return text.lines().map(line -> indentation + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+  }
+
+  /**
+   * Saves WAT code to an external resource file.
+   *
+   * @param watCode the WAT code to save
+   * @param category test category (e.g., "misc_testsuite")
+   * @param testName test name
+   * @return path to the resource file relative to resources directory
+   * @throws IOException if file cannot be written
+   */
+  private String saveWatToFile(final String watCode, final String category, final String testName)
+      throws IOException {
+    // Create category directory
+    final Path categoryDir = resourcesDirectory.resolve(category);
+    Files.createDirectories(categoryDir);
+
+    // Save WAT file
+    final String fileName = testName.toLowerCase().replace('_', '-') + ".wat";
+    final Path watFile = categoryDir.resolve(fileName);
+    Files.writeString(watFile, watCode, StandardCharsets.UTF_8);
+
+    LOGGER.info("Saved large WAT to resource file: " + watFile);
+
+    // Return resource path for loading
+    return "/wasmtime-tests/" + category + "/" + fileName;
+  }
+
+  /**
+   * Generates code to load WAT from a resource file.
+   *
+   * @param resourcePath path to the resource file
+   * @return Java code to load WAT from file
+   */
+  private String generateWatLoadCode(final String resourcePath) {
+    return String.format(
+        """
+        final String wat;
+        try (final InputStream is = getClass().getResourceAsStream("%s")) {
+          if (is == null) {
+            throw new AssertionError("WAT resource not found: %s");
+          }
+          wat = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (final java.io.IOException e) {
+          throw new AssertionError("Failed to load WAT resource: " + e.getMessage(), e);
+        }
+        """,
+        resourcePath, resourcePath);
   }
 }
