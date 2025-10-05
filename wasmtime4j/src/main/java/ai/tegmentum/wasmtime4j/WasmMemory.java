@@ -529,6 +529,9 @@ public interface WasmMemory {
    * @since 1.1.0
    */
   default byte readByte64(final long offset) {
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
     if (offset > Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException("Offset exceeds 32-bit memory addressing: " + offset);
     }
@@ -547,6 +550,9 @@ public interface WasmMemory {
    * @since 1.1.0
    */
   default void writeByte64(final long offset, final byte value) {
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
     if (offset > Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException("Offset exceeds 32-bit memory addressing: " + offset);
     }

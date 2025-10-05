@@ -23,7 +23,11 @@ public enum PerformanceProfile {
       "Maximum Performance", "Aggressive optimizations for CPU-intensive workloads") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SPEED)
           .parallelCompilation(true)
           .craneliftDebugVerifier(false)
@@ -54,7 +58,11 @@ public enum PerformanceProfile {
   BALANCED("Balanced Performance", "Optimized balance of performance and resource usage") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SPEED)
           .parallelCompilation(true)
           .craneliftDebugVerifier(false)
@@ -83,7 +91,11 @@ public enum PerformanceProfile {
   MEMORY_OPTIMIZED("Memory Optimized", "Minimized memory usage and compilation overhead") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SIZE)
           .parallelCompilation(false)
           .craneliftDebugVerifier(false)
@@ -114,7 +126,11 @@ public enum PerformanceProfile {
   FAST_COMPILATION("Fast Compilation", "Optimized for quick compilation during development") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.NONE)
           .parallelCompilation(true)
           .craneliftDebugVerifier(false)
@@ -143,7 +159,11 @@ public enum PerformanceProfile {
   POWER_EFFICIENT("Power Efficient", "Balanced performance with power consumption awareness") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SIZE)
           .parallelCompilation(false)
           .craneliftDebugVerifier(false)
@@ -174,7 +194,11 @@ public enum PerformanceProfile {
   SECURITY_HARDENED("Security Hardened", "Enhanced security with comprehensive validation") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SPEED)
           .parallelCompilation(false) // Single-threaded for deterministic behavior
           .craneliftDebugVerifier(true)
@@ -206,7 +230,11 @@ public enum PerformanceProfile {
   DEBUG_OPTIMIZED("Debug Optimized", "Comprehensive debugging support with minimal optimizations") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.NONE)
           .parallelCompilation(false)
           .craneliftDebugVerifier(true)
@@ -237,7 +265,11 @@ public enum PerformanceProfile {
   LATENCY_OPTIMIZED("Latency Optimized", "Optimized for consistent, low-latency execution") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SPEED)
           .parallelCompilation(true)
           .craneliftDebugVerifier(false)
@@ -270,7 +302,11 @@ public enum PerformanceProfile {
       "Throughput Optimized", "Maximized throughput for batch processing workloads") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
+      if (config == null) {
+        throw new IllegalArgumentException("Engine configuration cannot be null");
+      }
       return config
+          .copy()
           .optimizationLevel(OptimizationLevel.SPEED)
           .parallelCompilation(true)
           .craneliftDebugVerifier(false)

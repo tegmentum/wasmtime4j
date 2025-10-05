@@ -145,10 +145,7 @@ public final class PanamaLinker<T> implements Linker<T> {
 
   @Override
   public void alias(
-      final String fromModule,
-      final String fromName,
-      final String toModule,
-      final String toName)
+      final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
     if (fromModule == null) {
       throw new IllegalArgumentException("From module cannot be null");

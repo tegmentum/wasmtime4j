@@ -391,7 +391,10 @@ pub mod core {
                 match *ref_type.heap_type() {
                     HeapType::Func | HeapType::ConcreteFunc(_) => GlobalValue::FuncRef(ref_id),
                     HeapType::Extern => GlobalValue::ExternRef(ref_id),
-                    _ => GlobalValue::AnyRef(ref_id),
+                    _ => {
+                        // This should never happen for FUNCREF or EXTERNREF
+                        panic!("UNEXPECTED: HeapType {:?} not matched for RefType", ref_type.heap_type());
+                    },
                 }
             },
         };

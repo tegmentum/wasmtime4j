@@ -91,11 +91,11 @@ public enum WasiOpenFlags {
    *
    * @param flags the flags to combine
    * @return a new flags set containing all the specified flags
-   * @throws IllegalArgumentException if flags array is null or empty
+   * @throws IllegalArgumentException if flags array is null
    */
   public static WasiOpenFlagsSet of(final WasiOpenFlags... flags) {
-    if (flags == null || flags.length == 0) {
-      throw new IllegalArgumentException("Flags array cannot be null or empty");
+    if (flags == null) {
+      throw new IllegalArgumentException("Flags array cannot be null");
     }
 
     int combined = 0;

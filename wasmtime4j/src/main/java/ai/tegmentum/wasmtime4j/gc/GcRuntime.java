@@ -220,8 +220,9 @@ public interface GcRuntime {
    * @return the new struct instance
    * @throws GcException if creation fails
    */
-  StructInstance createPackedStruct(StructType structType, List<GcValue> fieldValues,
-                                   Map<Integer, Integer> customAlignment) throws GcException;
+  StructInstance createPackedStruct(
+      StructType structType, List<GcValue> fieldValues, Map<Integer, Integer> customAlignment)
+      throws GcException;
 
   /**
    * Creates a variable-length array with flexible members.
@@ -232,8 +233,8 @@ public interface GcRuntime {
    * @return the new variable-length array instance
    * @throws GcException if creation fails
    */
-  ArrayInstance createVariableLengthArray(ArrayType arrayType, int baseLength,
-                                         List<GcValue> flexibleElements) throws GcException;
+  ArrayInstance createVariableLengthArray(
+      ArrayType arrayType, int baseLength, List<GcValue> flexibleElements) throws GcException;
 
   /**
    * Creates an array with nested struct or array elements.
@@ -243,7 +244,8 @@ public interface GcRuntime {
    * @return the new nested array instance
    * @throws GcException if creation fails
    */
-  ArrayInstance createNestedArray(ArrayType arrayType, List<GcObject> nestedElements) throws GcException;
+  ArrayInstance createNestedArray(ArrayType arrayType, List<GcObject> nestedElements)
+      throws GcException;
 
   /**
    * Copies array elements between arrays with type compatibility checking.
@@ -255,8 +257,13 @@ public interface GcRuntime {
    * @param length the number of elements to copy
    * @throws GcException if copy operation fails
    */
-  void copyArrayElements(ArrayInstance sourceArray, int sourceIndex,
-                        ArrayInstance destArray, int destIndex, int length) throws GcException;
+  void copyArrayElements(
+      ArrayInstance sourceArray,
+      int sourceIndex,
+      ArrayInstance destArray,
+      int destIndex,
+      int length)
+      throws GcException;
 
   /**
    * Fills array elements with a specific value.
@@ -267,7 +274,8 @@ public interface GcRuntime {
    * @param value the fill value
    * @throws GcException if fill operation fails
    */
-  void fillArrayElements(ArrayInstance array, int startIndex, int length, GcValue value) throws GcException;
+  void fillArrayElements(ArrayInstance array, int startIndex, int length, GcValue value)
+      throws GcException;
 
   // ========== Type Registration and Management ==========
 
@@ -307,7 +315,8 @@ public interface GcRuntime {
    * @return the type hierarchy mapping
    * @throws GcException if hierarchy creation fails
    */
-  Map<String, Integer> createTypeHierarchy(Object baseType, List<Object> derivedTypes) throws GcException;
+  Map<String, Integer> createTypeHierarchy(Object baseType, List<Object> derivedTypes)
+      throws GcException;
 
   // ========== Garbage Collection Control ==========
 

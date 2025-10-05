@@ -563,5 +563,27 @@ public final class EngineConfig {
         .addWasmFeature(WasmFeature.STRING_IMPORTS);
   }
 
+  /**
+   * Creates a deep copy of this configuration.
+   *
+   * <p>This method creates a new EngineConfig with all the same settings as this configuration.
+   * Changes to the copy will not affect the original configuration.
+   *
+   * @return a new configuration with the same settings
+   */
+  public EngineConfig copy() {
+    return new EngineConfig()
+        .optimizationLevel(this.optimizationLevel)
+        .parallelCompilation(this.parallelCompilation)
+        .craneliftDebugVerifier(this.craneliftDebugVerifier)
+        .setGenerateDebugInfo(this.generateDebugInfo)
+        .setFuelConsumption(this.consumeFuel)
+        .setEpochInterruption(this.epochInterruption)
+        .setMaxWasmStack(this.maxWasmStack)
+        .setAsyncStackSize(this.asyncStackSize)
+        .setCraneliftSettings(new java.util.HashMap<>(this.craneliftSettings))
+        .setWasmFeatures(new java.util.HashSet<>(this.wasmFeatures));
+  }
+
   // Note: Experimental features methods moved to advanced package
 }

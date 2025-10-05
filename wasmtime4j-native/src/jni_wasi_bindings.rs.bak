@@ -570,3 +570,4 @@ pub mod jni_wasi {
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeCleanup(
         _env: JNIEnv, _class: JClass, _context_handle: jlong) {}
+}

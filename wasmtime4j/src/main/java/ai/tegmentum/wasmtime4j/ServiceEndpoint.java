@@ -2,9 +2,7 @@ package ai.tegmentum.wasmtime4j;
 
 import java.util.Objects;
 
-/**
- * Represents a service endpoint with network address information.
- */
+/** Represents a service endpoint with network address information. */
 public final class ServiceEndpoint {
   private final String serviceId;
   private final String address;

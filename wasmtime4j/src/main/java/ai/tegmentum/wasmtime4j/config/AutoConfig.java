@@ -419,7 +419,7 @@ public final class AutoConfig {
     final Map<String, Object> adjustments = new HashMap<>();
 
     // Analyze compilation time
-    if (metrics.getCompilationTimeMs() > 5000) { // > 5 seconds
+    if (metrics.getCompilationTimeMs() >= 5000) { // >= 5 seconds
       recommendations.add(
           "Consider using FAST_COMPILATION profile for faster development iterations");
       adjustments.put("optimization_level", OptimizationLevel.NONE);

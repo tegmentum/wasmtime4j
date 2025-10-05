@@ -392,7 +392,7 @@ public final class PanamaErrorHandler {
     if (errorCode != NATIVE_ERROR_NONE) {
       final String description = getErrorDescription(errorCode);
       final String message = createDetailedErrorMessage(operation, errorCode, context);
-      throw new WasmException(message);
+      throwAppropriateException(errorCode, message);
     }
   }
 

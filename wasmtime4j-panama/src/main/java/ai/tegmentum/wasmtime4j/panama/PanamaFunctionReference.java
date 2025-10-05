@@ -20,9 +20,7 @@ public final class PanamaFunctionReference implements FunctionReference {
   private final FunctionType functionType;
   private final PanamaStore store;
 
-  /**
-   * Creates a new Panama function reference.
-   */
+  /** Creates a new Panama function reference. */
   public PanamaFunctionReference() {
     this.id = 0L;
     this.hostFunction = null;
@@ -78,9 +76,7 @@ public final class PanamaFunctionReference implements FunctionReference {
     return "function_" + id;
   }
 
-  /**
-   * Closes the function reference and releases resources.
-   */
+  /** Closes the function reference and releases resources. */
   public void close() {
     // TODO: Implement resource cleanup
   }

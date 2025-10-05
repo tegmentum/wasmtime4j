@@ -96,7 +96,7 @@ public enum Memory64Instruction {
   // Memory Control Instructions with 64-bit addressing
 
   /** Get current memory size in pages (memory.size with 64-bit result). */
-  MEMORY_SIZE_64(0x40, "memory.size", 0, true),
+  MEMORY_SIZE_64(0x40, "memory.size", 0, false),
 
   /** Grow memory by given number of pages (memory.grow with 64-bit operands). */
   MEMORY_GROW_64(0x41, "memory.grow", 0, false),
@@ -246,9 +246,9 @@ public enum Memory64Instruction {
           "Memory does not support 64-bit addressing for instruction: " + mnemonic);
     }
 
-    // Validate alignment and bounds
-    validateAlignment(offset);
+    // Validate bounds first (security), then alignment (performance)
     validateBounds(offset, memory.getSizeInBytes64());
+    validateAlignment(offset);
 
     switch (this) {
       case I32_LOAD_64:

@@ -2,14 +2,12 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Results of GC invariant validation for WebAssembly GC runtime.
  *
- * <p>Validates critical invariants that must hold for the garbage collector to function
- * correctly, including type safety, reference consistency, heap integrity, and other
- * fundamental assumptions.
+ * <p>Validates critical invariants that must hold for the garbage collector to function correctly,
+ * including type safety, reference consistency, heap integrity, and other fundamental assumptions.
  *
  * @since 1.0.0
  */
@@ -71,9 +69,7 @@ public interface GcInvariantValidation {
    */
   ValidationPerformanceImpact getPerformanceImpact();
 
-  /**
-   * Information about an invariant violation.
-   */
+  /** Information about an invariant violation. */
   interface InvariantViolation {
     /** Gets the violation ID. */
     long getViolationId();
@@ -106,9 +102,7 @@ public interface GcInvariantValidation {
     List<String> getRemediationActions();
   }
 
-  /**
-   * Categories of GC invariants.
-   */
+  /** Categories of GC invariants. */
   enum InvariantCategory {
     /** Type safety invariants. */
     TYPE_SAFETY,
@@ -128,9 +122,7 @@ public interface GcInvariantValidation {
     PERFORMANCE
   }
 
-  /**
-   * Severity levels for violations.
-   */
+  /** Severity levels for violations. */
   enum ViolationSeverity {
     /** Informational - not a serious issue. */
     INFO,
@@ -142,9 +134,7 @@ public interface GcInvariantValidation {
     CRITICAL
   }
 
-  /**
-   * Context information for a violation.
-   */
+  /** Context information for a violation. */
   interface ViolationContext {
     /** Gets the operation that triggered the violation. */
     String getTriggeringOperation();
@@ -162,9 +152,7 @@ public interface GcInvariantValidation {
     Map<String, Object> getContextData();
   }
 
-  /**
-   * Validation result for an invariant category.
-   */
+  /** Validation result for an invariant category. */
   interface CategoryValidation {
     /** Gets the category name. */
     InvariantCategory getCategory();
@@ -185,9 +173,7 @@ public interface GcInvariantValidation {
     List<SpecificInvariantResult> getInvariantResults();
   }
 
-  /**
-   * Result for a specific invariant.
-   */
+  /** Result for a specific invariant. */
   interface SpecificInvariantResult {
     /** Gets the invariant name. */
     String getInvariantName();
@@ -211,9 +197,7 @@ public interface GcInvariantValidation {
     List<ViolationRecord> getViolationHistory();
   }
 
-  /**
-   * How frequently an invariant is checked.
-   */
+  /** How frequently an invariant is checked. */
   enum CheckFrequency {
     /** Checked on every operation. */
     ALWAYS,
@@ -227,9 +211,7 @@ public interface GcInvariantValidation {
     DEBUG_ONLY
   }
 
-  /**
-   * Record of a past violation.
-   */
+  /** Record of a past violation. */
   interface ViolationRecord {
     /** Gets when the violation occurred. */
     java.time.Instant getTimestamp();
@@ -244,9 +226,7 @@ public interface GcInvariantValidation {
     String getResolutionMethod();
   }
 
-  /**
-   * Result for a critical invariant.
-   */
+  /** Result for a critical invariant. */
   interface CriticalInvariantResult {
     /** Gets the invariant name. */
     String getInvariantName();
@@ -267,9 +247,7 @@ public interface GcInvariantValidation {
     java.time.Instant getLastSuccessfulCheck();
   }
 
-  /**
-   * Criticality levels for invariants.
-   */
+  /** Criticality levels for invariants. */
   enum CriticalityLevel {
     /** Must never be violated - system will crash. */
     ABSOLUTELY_CRITICAL,
@@ -281,9 +259,7 @@ public interface GcInvariantValidation {
     LOW_CRITICAL
   }
 
-  /**
-   * Performance impact of invariant validation.
-   */
+  /** Performance impact of invariant validation. */
   interface ValidationPerformanceImpact {
     /** Gets the total time spent on validation. */
     java.time.Duration getTotalValidationTime();
@@ -301,9 +277,7 @@ public interface GcInvariantValidation {
     List<String> getOptimizationRecommendations();
   }
 
-  /**
-   * Information about an expensive invariant check.
-   */
+  /** Information about an expensive invariant check. */
   interface ExpensiveInvariant {
     /** Gets the invariant name. */
     String getInvariantName();
@@ -326,9 +300,7 @@ public interface GcInvariantValidation {
 
   // ========== Specific Invariant Categories ==========
 
-  /**
-   * Type safety invariant checks.
-   */
+  /** Type safety invariant checks. */
   interface TypeSafetyInvariants {
     /** Validates that all type casts are safe. */
     boolean validateTypeCasts();
@@ -346,9 +318,7 @@ public interface GcInvariantValidation {
     boolean validateTypeHierarchy();
   }
 
-  /**
-   * Reference consistency invariant checks.
-   */
+  /** Reference consistency invariant checks. */
   interface ReferenceConsistencyInvariants {
     /** Validates that all references point to valid objects. */
     boolean validateReferenceTargets();
@@ -366,9 +336,7 @@ public interface GcInvariantValidation {
     boolean validateWeakReferences();
   }
 
-  /**
-   * Memory layout invariant checks.
-   */
+  /** Memory layout invariant checks. */
   interface MemoryLayoutInvariants {
     /** Validates that object headers are intact. */
     boolean validateObjectHeaders();
@@ -386,9 +354,7 @@ public interface GcInvariantValidation {
     boolean validateHeapMetadata();
   }
 
-  /**
-   * Object lifecycle invariant checks.
-   */
+  /** Object lifecycle invariant checks. */
   interface ObjectLifecycleInvariants {
     /** Validates that finalized objects are not accessible. */
     boolean validateFinalizedObjects();

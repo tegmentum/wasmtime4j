@@ -8,9 +8,8 @@ import java.util.Set;
 /**
  * Results of memory corruption detection analysis for WebAssembly GC objects.
  *
- * <p>Provides detailed information about potential memory corruption issues, including
- * buffer overflows, use-after-free conditions, double-free errors, and other memory
- * safety violations.
+ * <p>Provides detailed information about potential memory corruption issues, including buffer
+ * overflows, use-after-free conditions, double-free errors, and other memory safety violations.
  *
  * @since 1.0.0
  */
@@ -72,9 +71,7 @@ public interface MemoryCorruptionAnalysis {
    */
   List<CorruptionRecommendation> getRecommendations();
 
-  /**
-   * Information about a memory corruption issue.
-   */
+  /** Information about a memory corruption issue. */
   interface CorruptionIssue {
     /** Gets the issue ID. */
     long getIssueId();
@@ -107,9 +104,7 @@ public interface MemoryCorruptionAnalysis {
     CorruptionEvidence getEvidence();
   }
 
-  /**
-   * Types of memory corruption.
-   */
+  /** Types of memory corruption. */
   enum CorruptionType {
     /** Buffer overflow detected. */
     BUFFER_OVERFLOW,
@@ -131,9 +126,7 @@ public interface MemoryCorruptionAnalysis {
     LAYOUT_CORRUPTION
   }
 
-  /**
-   * Severity levels for corruption.
-   */
+  /** Severity levels for corruption. */
   enum CorruptionSeverity {
     /** Potential corruption that needs investigation. */
     POTENTIAL,
@@ -147,9 +140,7 @@ public interface MemoryCorruptionAnalysis {
     CRITICAL
   }
 
-  /**
-   * Evidence supporting a corruption detection.
-   */
+  /** Evidence supporting a corruption detection. */
   interface CorruptionEvidence {
     /** Gets the expected value. */
     Object getExpectedValue();
@@ -167,9 +158,7 @@ public interface MemoryCorruptionAnalysis {
     Map<String, Object> getForensicData();
   }
 
-  /**
-   * Results of memory integrity checking.
-   */
+  /** Results of memory integrity checking. */
   interface MemoryIntegrityResult {
     /** Gets whether memory integrity is intact. */
     boolean isIntegrityIntact();
@@ -187,9 +176,7 @@ public interface MemoryCorruptionAnalysis {
     Map<String, Boolean> getChecksumResults();
   }
 
-  /**
-   * An integrity violation.
-   */
+  /** An integrity violation. */
   interface IntegrityViolation {
     /** Gets the violation type. */
     String getViolationType();
@@ -207,9 +194,7 @@ public interface MemoryCorruptionAnalysis {
     ViolationSeverity getSeverity();
   }
 
-  /**
-   * Results of heap consistency checking.
-   */
+  /** Results of heap consistency checking. */
   interface HeapConsistencyResult {
     /** Gets whether the heap is consistent. */
     boolean isConsistent();
@@ -227,9 +212,7 @@ public interface MemoryCorruptionAnalysis {
     ObjectGraphValidation getObjectGraphValidation();
   }
 
-  /**
-   * A heap consistency error.
-   */
+  /** A heap consistency error. */
   interface ConsistencyError {
     /** Gets the error type. */
     String getErrorType();
@@ -244,9 +227,7 @@ public interface MemoryCorruptionAnalysis {
     ErrorSeverity getSeverity();
   }
 
-  /**
-   * Results of lifecycle violation checking.
-   */
+  /** Results of lifecycle violation checking. */
   interface LifecycleViolationResult {
     /** Gets whether lifecycle violations were found. */
     boolean hasViolations();
@@ -261,9 +242,7 @@ public interface MemoryCorruptionAnalysis {
     Map<Long, ObjectStateValidation> getStateValidations();
   }
 
-  /**
-   * A lifecycle violation.
-   */
+  /** A lifecycle violation. */
   interface LifecycleViolation {
     /** Gets the violation type. */
     LifecycleViolationType getViolationType();
@@ -281,9 +260,7 @@ public interface MemoryCorruptionAnalysis {
     String getDescription();
   }
 
-  /**
-   * Types of lifecycle violations.
-   */
+  /** Types of lifecycle violations. */
   enum LifecycleViolationType {
     /** Object used after finalization. */
     USE_AFTER_FINALIZATION,
@@ -297,9 +274,7 @@ public interface MemoryCorruptionAnalysis {
     PREMATURE_CLEANUP
   }
 
-  /**
-   * A memory region description.
-   */
+  /** A memory region description. */
   interface MemoryRegion {
     /** Gets the start address. */
     long getStartAddress();
@@ -317,9 +292,7 @@ public interface MemoryCorruptionAnalysis {
     Set<MemoryPermission> getPermissions();
   }
 
-  /**
-   * Memory permissions.
-   */
+  /** Memory permissions. */
   enum MemoryPermission {
     /** Read permission. */
     READ,
@@ -329,9 +302,7 @@ public interface MemoryCorruptionAnalysis {
     EXECUTE
   }
 
-  /**
-   * Validation of the free list structure.
-   */
+  /** Validation of the free list structure. */
   interface FreeListValidation {
     /** Gets whether the free list is valid. */
     boolean isValid();
@@ -346,9 +317,7 @@ public interface MemoryCorruptionAnalysis {
     List<String> getErrors();
   }
 
-  /**
-   * Validation of the object reference graph.
-   */
+  /** Validation of the object reference graph. */
   interface ObjectGraphValidation {
     /** Gets whether the object graph is valid. */
     boolean isValid();
@@ -363,9 +332,7 @@ public interface MemoryCorruptionAnalysis {
     List<String> getErrors();
   }
 
-  /**
-   * Validation of object state.
-   */
+  /** Validation of object state. */
   interface ObjectStateValidation {
     /** Gets whether the object state is valid. */
     boolean isValid();
@@ -380,9 +347,7 @@ public interface MemoryCorruptionAnalysis {
     List<String> getStateHistory();
   }
 
-  /**
-   * Severity levels for various violations and errors.
-   */
+  /** Severity levels for various violations and errors. */
   enum ViolationSeverity {
     /** Informational level. */
     INFO,
@@ -394,9 +359,7 @@ public interface MemoryCorruptionAnalysis {
     CRITICAL
   }
 
-  /**
-   * Error severity levels.
-   */
+  /** Error severity levels. */
   enum ErrorSeverity {
     /** Minor error. */
     MINOR,
@@ -406,9 +369,7 @@ public interface MemoryCorruptionAnalysis {
     CRITICAL
   }
 
-  /**
-   * A recommendation for addressing memory corruption.
-   */
+  /** A recommendation for addressing memory corruption. */
   interface CorruptionRecommendation {
     /** Gets the recommendation type. */
     RecommendationType getType();
@@ -426,9 +387,7 @@ public interface MemoryCorruptionAnalysis {
     String getExpectedImpact();
   }
 
-  /**
-   * Types of corruption recommendations.
-   */
+  /** Types of corruption recommendations. */
   enum RecommendationType {
     /** Add bounds checking. */
     ADD_BOUNDS_CHECKING,
@@ -444,9 +403,7 @@ public interface MemoryCorruptionAnalysis {
     ADD_INTEGRITY_CHECKING
   }
 
-  /**
-   * Recommendation priorities.
-   */
+  /** Recommendation priorities. */
   enum Priority {
     /** Low priority. */
     LOW,

@@ -6,7 +6,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -42,7 +41,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setArgv(String[] argv) {
-    Objects.requireNonNull(argv, "Command line arguments cannot be null");
+    if (argv == null) {
+      throw new IllegalArgumentException("Command line arguments cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -61,8 +62,12 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setEnv(String key, String value) {
-    Objects.requireNonNull(key, "Environment variable key cannot be null");
-    Objects.requireNonNull(value, "Environment variable value cannot be null");
+    if (key == null) {
+      throw new IllegalArgumentException("Environment variable key cannot be null");
+    }
+    if (value == null) {
+      throw new IllegalArgumentException("Environment variable value cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -81,7 +86,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setEnv(Map<String, String> env) {
-    Objects.requireNonNull(env, "Environment variables map cannot be null");
+    if (env == null) {
+      throw new IllegalArgumentException("Environment variables map cannot be null");
+    }
     ensureNotClosed();
 
     for (Map.Entry<String, String> entry : env.entrySet()) {
@@ -128,7 +135,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setStdin(Path path) {
-    Objects.requireNonNull(path, "Stdin path cannot be null");
+    if (path == null) {
+      throw new IllegalArgumentException("Stdin path cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -147,7 +156,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setStdout(Path path) {
-    Objects.requireNonNull(path, "Stdout path cannot be null");
+    if (path == null) {
+      throw new IllegalArgumentException("Stdout path cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -166,7 +177,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setStderr(Path path) {
-    Objects.requireNonNull(path, "Stderr path cannot be null");
+    if (path == null) {
+      throw new IllegalArgumentException("Stderr path cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -185,8 +198,12 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext preopenedDir(Path hostPath, String guestPath) throws WasmException {
-    Objects.requireNonNull(hostPath, "Host path cannot be null");
-    Objects.requireNonNull(guestPath, "Guest path cannot be null");
+    if (hostPath == null) {
+      throw new IllegalArgumentException("Host path cannot be null");
+    }
+    if (guestPath == null) {
+      throw new IllegalArgumentException("Guest path cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -205,8 +222,12 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext preopenedDirReadOnly(Path hostPath, String guestPath) throws WasmException {
-    Objects.requireNonNull(hostPath, "Host path cannot be null");
-    Objects.requireNonNull(guestPath, "Guest path cannot be null");
+    if (hostPath == null) {
+      throw new IllegalArgumentException("Host path cannot be null");
+    }
+    if (guestPath == null) {
+      throw new IllegalArgumentException("Guest path cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -225,7 +246,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setWorkingDirectory(String workingDir) {
-    Objects.requireNonNull(workingDir, "Working directory cannot be null");
+    if (workingDir == null) {
+      throw new IllegalArgumentException("Working directory cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -381,7 +404,9 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setFilesystemWorkingDir(Path workingDir) {
-    Objects.requireNonNull(workingDir, "Filesystem working directory cannot be null");
+    if (workingDir == null) {
+      throw new IllegalArgumentException("Filesystem working directory cannot be null");
+    }
     ensureNotClosed();
 
     try {
@@ -401,9 +426,15 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   @Override
   public WasiContext preopenedDirWithPermissions(
       Path hostPath, String guestPath, WasiDirectoryPermissions permissions) throws WasmException {
-    Objects.requireNonNull(hostPath, "Host path cannot be null");
-    Objects.requireNonNull(guestPath, "Guest path cannot be null");
-    Objects.requireNonNull(permissions, "Permissions cannot be null");
+    if (hostPath == null) {
+      throw new IllegalArgumentException("Host path cannot be null");
+    }
+    if (guestPath == null) {
+      throw new IllegalArgumentException("Guest path cannot be null");
+    }
+    if (permissions == null) {
+      throw new IllegalArgumentException("Permissions cannot be null");
+    }
     ensureNotClosed();
 
     try {

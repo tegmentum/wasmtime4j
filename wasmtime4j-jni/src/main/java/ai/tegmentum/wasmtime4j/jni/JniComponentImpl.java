@@ -33,7 +33,6 @@ import ai.tegmentum.wasmtime4j.WitInterfaceMigrationPlan;
 import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -240,8 +239,7 @@ public final class JniComponentImpl implements Component {
     ensureValid();
 
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    future.completeExceptionally(
-        new UnsupportedOperationException("Hot-swap not yet implemented"));
+    future.completeExceptionally(new UnsupportedOperationException("Hot-swap not yet implemented"));
     return future;
   }
 

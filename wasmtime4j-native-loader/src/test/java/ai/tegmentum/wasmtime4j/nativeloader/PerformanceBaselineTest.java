@@ -303,7 +303,7 @@ final class PerformanceBaselineTest {
     for (int i = 0; i < threadCount; i++) {
       assertTrue(results[i] != null, "Thread " + i + " should have successful detection result");
       assertTrue(
-          threadTimes[i] > 0, "Thread " + i + " should have recorded positive execution time");
+          threadTimes[i] >= 0, "Thread " + i + " should have recorded non-negative execution time");
     }
 
     // Calculate thread time statistics

@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.debug.DebugInfo;
 import ai.tegmentum.wasmtime4j.debug.DebugOptions;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniExceptionHandler;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

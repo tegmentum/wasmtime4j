@@ -33,8 +33,9 @@ class MemoryLayoutsTest {
     assertEquals(1, MemoryLayouts.WASM_I64);
     assertEquals(2, MemoryLayouts.WASM_F32);
     assertEquals(3, MemoryLayouts.WASM_F64);
-    assertEquals(4, MemoryLayouts.WASM_ANYREF);
-    assertEquals(5, MemoryLayouts.WASM_FUNCREF);
+    assertEquals(4, MemoryLayouts.WASM_V128);
+    assertEquals(5, MemoryLayouts.WASM_ANYREF);
+    assertEquals(6, MemoryLayouts.WASM_FUNCREF);
   }
 
   @Test

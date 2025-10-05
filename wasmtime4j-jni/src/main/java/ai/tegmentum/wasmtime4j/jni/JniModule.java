@@ -66,7 +66,8 @@ public class JniModule implements Module {
       final ai.tegmentum.wasmtime4j.Store store, final ai.tegmentum.wasmtime4j.ImportMap imports)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     // TODO: Implement instantiation with imports
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Instantiation with imports not yet implemented");
+    throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+        "Instantiation with imports not yet implemented");
   }
 
   @Override
@@ -130,25 +131,29 @@ public class JniModule implements Module {
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.FuncType> getFunctionType(final String functionName) {
+  public java.util.Optional<ai.tegmentum.wasmtime4j.FuncType> getFunctionType(
+      final String functionName) {
     // TODO: Implement function type retrieval
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.GlobalType> getGlobalType(final String globalName) {
+  public java.util.Optional<ai.tegmentum.wasmtime4j.GlobalType> getGlobalType(
+      final String globalName) {
     // TODO: Implement global type retrieval
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.MemoryType> getMemoryType(final String memoryName) {
+  public java.util.Optional<ai.tegmentum.wasmtime4j.MemoryType> getMemoryType(
+      final String memoryName) {
     // TODO: Implement memory type retrieval
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.TableType> getTableType(final String tableName) {
+  public java.util.Optional<ai.tegmentum.wasmtime4j.TableType> getTableType(
+      final String tableName) {
     // TODO: Implement table type retrieval
     return java.util.Optional.empty();
   }

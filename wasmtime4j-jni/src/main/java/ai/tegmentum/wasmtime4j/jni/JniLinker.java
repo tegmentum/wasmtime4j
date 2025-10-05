@@ -11,6 +11,8 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * JNI implementation of the Linker interface.
@@ -22,6 +24,7 @@ public class JniLinker<T> implements Linker<T> {
   private final long nativeHandle;
   private final Engine engine;
   private volatile boolean closed = false;
+  private final Set<String> imports = new HashSet<>();
 
   /**
    * Creates a new JNI linker with the given native handle.
@@ -126,8 +129,17 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    // TODO: Implement import checking
-    return false;
+    return imports.contains(moduleName + "::" + name);
+  }
+
+  /**
+   * Adds an import to the tracking set.
+   *
+   * @param moduleName the module name
+   * @param name the import name
+   */
+  void addImport(final String moduleName, final String name) {
+    imports.add(moduleName + "::" + name);
   }
 
   @Override

@@ -38,20 +38,25 @@ import java.util.regex.Pattern;
 public final class WitInterfaceParser {
 
   private static final Pattern INTERFACE_PATTERN =
-      Pattern.compile("interface\\s+(\\w+)\\s*\\{([^}]*)\\}");
+      Pattern.compile("interface\\s+([a-zA-Z0-9_-]+)\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
   private static final Pattern FUNCTION_PATTERN =
-      Pattern.compile("(\\w+)\\s*:\\s*func\\s*\\(([^)]*)\\)\\s*(?:->\\s*([^;]+))?");
+      Pattern.compile("([a-zA-Z0-9_-]+)\\s*:\\s*func\\s*\\(([^)]*)\\)\\s*(?:->\\s*([^;]+))?");
 
-  private static final Pattern TYPE_PATTERN = Pattern.compile("type\\s+(\\w+)\\s*=\\s*([^;]+)");
+  private static final Pattern TYPE_PATTERN =
+      Pattern.compile("type\\s+([a-zA-Z0-9_-]+)\\s*=\\s*([^;]+)", Pattern.DOTALL);
 
-  private static final Pattern RECORD_PATTERN = Pattern.compile("record\\s*\\{([^}]*)\\}");
+  private static final Pattern RECORD_PATTERN =
+      Pattern.compile("record\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
-  private static final Pattern VARIANT_PATTERN = Pattern.compile("variant\\s*\\{([^}]*)\\}");
+  private static final Pattern VARIANT_PATTERN =
+      Pattern.compile("variant\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
-  private static final Pattern ENUM_PATTERN = Pattern.compile("enum\\s*\\{([^}]*)\\}");
+  private static final Pattern ENUM_PATTERN =
+      Pattern.compile("enum\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
-  private static final Pattern FLAGS_PATTERN = Pattern.compile("flags\\s*\\{([^}]*)\\}");
+  private static final Pattern FLAGS_PATTERN =
+      Pattern.compile("flags\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
   private final Map<String, WitType> typeCache;
   private final WitTypeValidator validator;
@@ -398,7 +403,7 @@ public final class WitInterfaceParser {
       return parameters;
     }
 
-    final String[] paramDefs = parametersText.split(",");
+    final String[] paramDefs = splitRespectingBraces(parametersText);
     for (final String paramDef : paramDefs) {
       final String trimmed = paramDef.trim();
       if (trimmed.isEmpty()) {
@@ -496,6 +501,13 @@ public final class WitInterfaceParser {
       // Not a primitive type
     }
 
+    // Try to parse as inline type definition (list<T>, option<T>, etc.)
+    try {
+      return parseTypeDefinition(typeName, typeName);
+    } catch (final WasmException e) {
+      // Not a parseable type definition
+    }
+
     throw new WasmException("Unknown type: " + typeName);
   }
 
@@ -506,6 +518,46 @@ public final class WitInterfaceParser {
       typeCache.put(primitive.getWitTypeName(), type);
       typeCache.put(primitive.name().toLowerCase(), type);
     }
+  }
+
+  /**
+   * Splits a comma-separated string while respecting braces and angle brackets.
+   *
+   * @param text the text to split
+   * @return array of split parts
+   */
+  private static String[] splitRespectingBraces(final String text) {
+    final List<String> parts = new ArrayList<>();
+    final StringBuilder current = new StringBuilder();
+    int braceDepth = 0;
+    int angleDepth = 0;
+
+    for (final char c : text.toCharArray()) {
+      if (c == '{') {
+        braceDepth++;
+        current.append(c);
+      } else if (c == '}') {
+        braceDepth--;
+        current.append(c);
+      } else if (c == '<') {
+        angleDepth++;
+        current.append(c);
+      } else if (c == '>') {
+        angleDepth--;
+        current.append(c);
+      } else if (c == ',' && braceDepth == 0 && angleDepth == 0) {
+        parts.add(current.toString());
+        current.setLength(0);
+      } else {
+        current.append(c);
+      }
+    }
+
+    if (current.length() > 0) {
+      parts.add(current.toString());
+    }
+
+    return parts.toArray(new String[0]);
   }
 
   /** WIT function representation. */

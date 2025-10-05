@@ -185,8 +185,7 @@ public final class WasiDirectoryAccessControl {
 
     final DirectoryAccessRule existingRule = directoryRules.get(normalizedPath);
     if (existingRule != null) {
-      final Set<WasiFileOperation> remainingPermissions =
-          new HashSet<>(existingRule.permissions);
+      final Set<WasiFileOperation> remainingPermissions = new HashSet<>(existingRule.permissions);
       remainingPermissions.removeAll(permissions);
 
       if (remainingPermissions.isEmpty()) {

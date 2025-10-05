@@ -90,11 +90,7 @@ final class WasiRightsTest {
 
     assertThatThrownBy(() -> WasiRights.of((WasiRights[]) null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Rights array cannot be null or empty");
-
-    assertThatThrownBy(() -> WasiRights.of())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Rights array cannot be null or empty");
+        .hasMessageContaining("Rights array cannot be null");
 
     final WasiRights.WasiRightsSet set = WasiRights.of(WasiRights.FD_READ);
 

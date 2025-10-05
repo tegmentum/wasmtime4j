@@ -232,8 +232,10 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
       enabledFeatures.put(feature, true);
       LOGGER.info("Enabled experimental feature: " + feature.getFeatureName());
     } catch (final Throwable e) {
-      LOGGER.log(Level.WARNING, "Failed to enable experimental feature: " + feature.getFeatureName(), e);
-      throw new RuntimeException("Failed to enable experimental feature: " + feature.getFeatureName(), e);
+      LOGGER.log(
+          Level.WARNING, "Failed to enable experimental feature: " + feature.getFeatureName(), e);
+      throw new RuntimeException(
+          "Failed to enable experimental feature: " + feature.getFeatureName(), e);
     }
   }
 
