@@ -111,3 +111,31 @@ The fix correctly implements WebAssembly reference type detection according to t
 - Validation: `wasmtime4j-native/src/global.rs:160-167`
 - JNI extraction: `wasmtime4j-native/src/jni_bindings.rs:1434-1446`
 - Java conversion: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/JniGlobal.java:395-410`
+
+## Investigation Status
+
+The RefType detection fix has been correctly implemented according to Wasmtime 36.0.2 API specification:
+- HeapType pattern matching uses `*ref_type.heap_type()` to match `HeapType::Func` and `HeapType::Extern`
+- Type code mappings are correct: 5=FUNCREF, 6=EXTERNREF in both JNI and Panama FFI
+- All code compiles and builds successfully
+
+However, tests continue to fail with "Value type AnyRef(None) does not match expected type (ref null func/extern)" despite:
+- Multiple clean rebuilds with all caches cleared
+- Forcing create_global_value to ALWAYS return FuncRef (still got AnyRef in tests)
+- Verification that the correct code is in the source files and JAR
+- Confirmation that the correct native method is being called
+
+This suggests a deeper architectural issue beyond the RefType detection logic itself, possibly related to:
+- Native library loading order or caching mechanisms
+- Alternative code paths not yet identified in the execution flow
+- Build system configuration affecting which library version is actually loaded at runtime
+
+**Commits:**
+- a05a48c: Initial HeapType matching implementation
+- 27003d3: Fixed type code mappings in shared_ffi.rs
+- 3f64033: Added debugging error messages
+- a4eb28a: Restored proper implementation after investigation
+
+**Test Status:** 6 failures remain (3 V128, 2 FuncRef, 1 ExternRef)
+
+Further investigation required beyond Rust native code layer.
