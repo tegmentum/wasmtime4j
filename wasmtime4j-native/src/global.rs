@@ -157,9 +157,15 @@ impl Global {
             (GlobalValue::F32(_), ValType::F32) => true,
             (GlobalValue::F64(_), ValType::F64) => true,
             (GlobalValue::V128(_), ValType::V128) => true,
-            // TODO: Add reference types back when properly supported
-            // (GlobalValue::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
-            // (GlobalValue::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
+            (GlobalValue::FuncRef(_), ValType::Ref(ref_type)) => {
+                use wasmtime::HeapType;
+                matches!(*ref_type.heap_type(), HeapType::Func | HeapType::ConcreteFunc(_))
+            },
+            (GlobalValue::ExternRef(_), ValType::Ref(ref_type)) => {
+                use wasmtime::HeapType;
+                matches!(*ref_type.heap_type(), HeapType::Extern)
+            },
+            (GlobalValue::AnyRef(_), ValType::Ref(_)) => true, // AnyRef matches any Ref type
             _ => false,
         };
 
@@ -369,6 +375,7 @@ pub mod core {
         i64_value: i64,
         f32_value: f32,
         f64_value: f64,
+        v128_bytes: Option<[u8; 16]>,
         ref_id: Option<u64>,
     ) -> WasmtimeResult<GlobalValue> {
         let global_value = match value_type {
@@ -376,10 +383,16 @@ pub mod core {
             ValType::I64 => GlobalValue::I64(i64_value),
             ValType::F32 => GlobalValue::F32(f32_value),
             ValType::F64 => GlobalValue::F64(f64_value),
-            ValType::V128 => GlobalValue::V128((i64_value as u128).to_le_bytes()),
-            ValType::Ref(_ref_type) => {
-                // TODO: Discriminate between different reference types
-                GlobalValue::AnyRef(ref_id)
+            ValType::V128 => GlobalValue::V128(v128_bytes.unwrap_or([0u8; 16])),
+            ValType::Ref(ref ref_type) => {
+                use wasmtime::HeapType;
+
+                // Match on dereferenced heap_type
+                match *ref_type.heap_type() {
+                    HeapType::Func | HeapType::ConcreteFunc(_) => GlobalValue::FuncRef(ref_id),
+                    HeapType::Extern => GlobalValue::ExternRef(ref_id),
+                    _ => GlobalValue::AnyRef(ref_id),
+                }
             },
         };
 
