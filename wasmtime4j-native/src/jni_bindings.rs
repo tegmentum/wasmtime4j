@@ -5,7 +5,7 @@
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JByteArray, JString, JObject};
+use jni::objects::{JClass, JByteArray, JString, JObject, JValue};
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
 
@@ -163,35 +163,145 @@ pub mod jni_instance {
         }
     }
 
-    /// Get an exported function by name from an instance (JNI version)
+    /// Call a WebAssembly function directly without extracting a Function object
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFunction(
         mut env: JNIEnv,
         _class: JClass,
         instance_ptr: jlong,
         store_ptr: jlong,
-        name: JString,
-    ) -> jlong {
-        let result = (|| -> WasmtimeResult<jlong> {
+        function_name: JString,
+        params: jobjectArray,
+    ) -> jobjectArray {
+        let result = (|| -> WasmtimeResult<jobjectArray> {
             let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
-            let name_str: String = env.get_string(&name)
+
+            let name_str: String = env.get_string(&function_name)
                 .map_err(|e| WasmtimeError::InvalidParameter {
                     message: format!("Failed to convert function name: {}", e)
                 })?.into();
 
             // Get the function from the instance
-            match instance.get_func(store, &name_str)? {
-                Some(func) => {
-                    // Box the function and return it as a pointer
-                    let func_box = Box::new(func);
-                    Ok(Box::into_raw(func_box) as jlong)
+            let func = instance.get_func(store, &name_str)?
+                .ok_or_else(|| WasmtimeError::ExportNotFound {
+                    name: name_str.clone()
+                })?;
+
+            // Convert Java params to Wasmtime Vals
+            let param_count = unsafe { env.get_array_length(&params).unwrap_or(0) };
+            let mut wasm_params = Vec::with_capacity(param_count as usize);
+
+            for i in 0..param_count {
+                let param_obj = unsafe { env.get_object_array_element(&params, i) }
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to get parameter {}: {}", i, e)
+                    })?;
+
+                // Convert Java object to Wasmtime Val
+                if env.is_instance_of(&param_obj, "java/lang/Integer").unwrap_or(false) {
+                    let value = env.call_method(&param_obj, "intValue", "()I", &[])
+                        .and_then(|v| v.i())
+                        .map_err(|e| WasmtimeError::InvalidParameter {
+                            message: format!("Failed to extract int value: {}", e)
+                        })?;
+                    wasm_params.push(wasmtime::Val::I32(value));
+                } else if env.is_instance_of(&param_obj, "java/lang/Long").unwrap_or(false) {
+                    let value = env.call_method(&param_obj, "longValue", "()J", &[])
+                        .and_then(|v| v.j())
+                        .map_err(|e| WasmtimeError::InvalidParameter {
+                            message: format!("Failed to extract long value: {}", e)
+                        })?;
+                    wasm_params.push(wasmtime::Val::I64(value));
+                } else if env.is_instance_of(&param_obj, "java/lang/Float").unwrap_or(false) {
+                    let value = env.call_method(&param_obj, "floatValue", "()F", &[])
+                        .and_then(|v| v.f())
+                        .map_err(|e| WasmtimeError::InvalidParameter {
+                            message: format!("Failed to extract float value: {}", e)
+                        })?;
+                    wasm_params.push(wasmtime::Val::F32(value.to_bits()));
+                } else if env.is_instance_of(&param_obj, "java/lang/Double").unwrap_or(false) {
+                    let value = env.call_method(&param_obj, "doubleValue", "()D", &[])
+                        .and_then(|v| v.d())
+                        .map_err(|e| WasmtimeError::InvalidParameter {
+                            message: format!("Failed to extract double value: {}", e)
+                        })?;
+                    wasm_params.push(wasmtime::Val::F64(value.to_bits()));
                 }
-                None => Ok(0),
             }
+
+            // Call the function
+            let mut wasm_results = vec![wasmtime::Val::I32(0); func.ty(store).results().len()];
+            func.call(store, &wasm_params, &mut wasm_results)
+                .map_err(|e| WasmtimeError::ExecutionError {
+                    message: format!("Function call failed: {}", e)
+                })?;
+
+            // Convert results to Java Object array
+            let object_class = env.find_class("java/lang/Object")
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to find Object class: {}", e)
+                })?;
+
+            let result_array = env.new_object_array(wasm_results.len() as i32, object_class, JObject::null())
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create result array: {}", e)
+                })?;
+
+            for (i, val) in wasm_results.iter().enumerate() {
+                let java_obj = match val {
+                    wasmtime::Val::I32(v) => {
+                        let integer_class = env.find_class("java/lang/Integer")?;
+                        env.new_object(integer_class, "(I)V", &[JValue::from(*v)])
+                            .map_err(|e| WasmtimeError::InvalidParameter {
+                                message: format!("Failed to create Integer: {}", e)
+                            })?
+                    }
+                    wasmtime::Val::I64(v) => {
+                        let long_class = env.find_class("java/lang/Long")?;
+                        env.new_object(long_class, "(J)V", &[JValue::from(*v)])
+                            .map_err(|e| WasmtimeError::InvalidParameter {
+                                message: format!("Failed to create Long: {}", e)
+                            })?
+                    }
+                    wasmtime::Val::F32(v) => {
+                        let float_class = env.find_class("java/lang/Float")?;
+                        env.new_object(float_class, "(F)V", &[JValue::from(f32::from_bits(*v))])
+                            .map_err(|e| WasmtimeError::InvalidParameter {
+                                message: format!("Failed to create Float: {}", e)
+                            })?
+                    }
+                    wasmtime::Val::F64(v) => {
+                        let double_class = env.find_class("java/lang/Double")?;
+                        env.new_object(double_class, "(D)V", &[JValue::from(f64::from_bits(*v))])
+                            .map_err(|e| WasmtimeError::InvalidParameter {
+                                message: format!("Failed to create Double: {}", e)
+                            })?
+                    }
+                    _ => continue, // Skip unsupported types
+                };
+
+                env.set_object_array_element(&result_array, i as i32, java_obj)
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to set array element: {}", e)
+                    })?;
+            }
+
+            Ok(result_array.as_raw())
         })();
 
-        result.unwrap_or(0) as jlong
+        match result {
+            Ok(array) => array,
+            Err(_) => {
+                // Return empty array on error
+                if let Ok(object_class) = env.find_class("java/lang/Object") {
+                    if let Ok(empty) = env.new_object_array(0, object_class, JObject::null()) {
+                        return empty.as_raw();
+                    }
+                }
+                std::ptr::null_mut()
+            }
+        }
     }
 }
 

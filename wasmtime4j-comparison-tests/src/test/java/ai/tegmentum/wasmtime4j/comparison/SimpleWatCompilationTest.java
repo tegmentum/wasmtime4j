@@ -43,10 +43,13 @@ public final class SimpleWatCompilationTest {
       final Instance instance = module.instantiate(store);
       assertNotNull(instance, "Instance should not be null");
 
-      // TODO: Function calling requires completing native bindings
-      // The nativeGetFunction binding has lifetime issues with Wasmtime's ownership model
-      // Need to implement direct function calling without extracting Function objects
-      System.out.println("✅ Module compiled and instantiated successfully!");
+      // Call the function using instance.callFunction()
+      final WasmValue[] results = instance.callFunction("add", WasmValue.i32(5), WasmValue.i32(7));
+      assertNotNull(results, "Function results should not be null");
+      assertEquals(1, results.length, "Function should return 1 value");
+      assertEquals(12, results[0].asInt(), "5 + 7 should equal 12");
+
+      System.out.println("✅ Module compiled, instantiated, and function executed successfully!");
 
       // Clean up
       instance.close();
@@ -80,10 +83,14 @@ public final class SimpleWatCompilationTest {
       final Store store = engine.createStore();
       final Instance instance = module.instantiate(store);
 
-      // TODO: Function calling requires completing native bindings
-      // The nativeGetFunction binding has lifetime issues with Wasmtime's ownership model
-      // Need to implement direct function calling without extracting Function objects
-      System.out.println("✅ Module with global compiled and instantiated successfully!");
+      // Call the function multiple times to test global mutation
+      final WasmValue[] result1 = instance.callFunction("increment");
+      assertEquals(1, result1[0].asInt(), "First call should return 1");
+
+      final WasmValue[] result2 = instance.callFunction("increment");
+      assertEquals(2, result2[0].asInt(), "Second call should return 2");
+
+      System.out.println("✅ Module with global compiled, instantiated, and function executed successfully!");
 
       instance.close();
       store.close();

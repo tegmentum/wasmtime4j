@@ -512,11 +512,49 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public WasmValue[] callFunction(final String functionName, final WasmValue... params)
       throws WasmException {
-    final Optional<WasmFunction> function = getFunction(functionName);
-    if (!function.isPresent()) {
-      throw new WasmException("Function not found: " + functionName);
+    JniValidation.requireNonBlank(functionName, "functionName");
+    JniValidation.requireNonNull(params, "params");
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
     }
-    return function.get().call(params);
+
+    final JniStore jniStore = (JniStore) store;
+
+    // Convert WasmValue[] to Object[] for native call
+    final Object[] nativeParams = new Object[params.length];
+    for (int i = 0; i < params.length; i++) {
+      nativeParams[i] = params[i].getValue();
+    }
+
+    final Object[] nativeResults = nativeCallFunction(
+        getNativeHandle(),
+        jniStore.getNativeHandle(),
+        functionName,
+        nativeParams);
+
+    if (nativeResults == null) {
+      return new WasmValue[0];
+    }
+
+    // Convert Object[] results back to WasmValue[]
+    final WasmValue[] results = new WasmValue[nativeResults.length];
+    for (int i = 0; i < nativeResults.length; i++) {
+      if (nativeResults[i] instanceof Integer) {
+        results[i] = WasmValue.i32((Integer) nativeResults[i]);
+      } else if (nativeResults[i] instanceof Long) {
+        results[i] = WasmValue.i64((Long) nativeResults[i]);
+      } else if (nativeResults[i] instanceof Float) {
+        results[i] = WasmValue.f32((Float) nativeResults[i]);
+      } else if (nativeResults[i] instanceof Double) {
+        results[i] = WasmValue.f64((Double) nativeResults[i]);
+      } else {
+        throw new WasmException("Unsupported return type: " + nativeResults[i].getClass());
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -895,6 +933,18 @@ public final class JniInstance extends JniResource implements Instance {
    * @return the number of metadata exports
    */
   private static native long nativeGetMetadataExportCount(long instanceHandle);
+
+  /**
+   * Calls a WebAssembly function directly without extracting a Function object.
+   *
+   * @param instanceHandle the native instance handle
+   * @param storeHandle the native store handle
+   * @param functionName the name of the function to call
+   * @param params array of parameters (Integer, Long, Float, Double)
+   * @return array of results (Integer, Long, Float, Double)
+   */
+  private static native Object[] nativeCallFunction(
+      long instanceHandle, long storeHandle, String functionName, Object[] params);
 
   /**
    * Calls a 32-bit integer function with parameters.
