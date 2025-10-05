@@ -57,17 +57,51 @@ public class JniModule implements Module {
   @Override
   public ai.tegmentum.wasmtime4j.Instance instantiate(final ai.tegmentum.wasmtime4j.Store store)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    // TODO: Implement instantiation
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Instantiation not yet implemented");
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("store must be a JniStore instance");
+    }
+    ensureNotClosed();
+
+    final JniStore jniStore = (JniStore) store;
+    final long instanceHandle = nativeInstantiateModule(nativeHandle, jniStore.getNativeHandle());
+
+    if (instanceHandle == 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to instantiate module - native instantiation returned null");
+    }
+
+    return new JniInstance(instanceHandle, this, store);
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.Instance instantiate(
       final ai.tegmentum.wasmtime4j.Store store, final ai.tegmentum.wasmtime4j.ImportMap imports)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    // TODO: Implement instantiation with imports
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-        "Instantiation with imports not yet implemented");
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (imports == null) {
+      throw new IllegalArgumentException("imports cannot be null");
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("store must be a JniStore instance");
+    }
+    ensureNotClosed();
+
+    final JniStore jniStore = (JniStore) store;
+    // For now, use simple instantiation - proper ImportMap support can be added later
+    final long instanceHandle =
+        nativeInstantiateModuleWithImports(nativeHandle, jniStore.getNativeHandle(), 0);
+
+    if (instanceHandle == 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to instantiate module with imports - native instantiation returned null");
+    }
+
+    return new JniInstance(instanceHandle, this, store);
   }
 
   @Override
@@ -194,6 +228,37 @@ public class JniModule implements Module {
       nativeDestroyModule(nativeHandle);
     }
   }
+
+  /**
+   * Ensures this module has not been closed.
+   *
+   * @throws IllegalStateException if the module is closed
+   */
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("Module has been closed");
+    }
+  }
+
+  /**
+   * Native method to instantiate a module without imports.
+   *
+   * @param moduleHandle the native module handle
+   * @param storeHandle the native store handle
+   * @return the native instance handle, or 0 on failure
+   */
+  private static native long nativeInstantiateModule(long moduleHandle, long storeHandle);
+
+  /**
+   * Native method to instantiate a module with imports.
+   *
+   * @param moduleHandle the native module handle
+   * @param storeHandle the native store handle
+   * @param importMapHandle the native import map handle (0 if no imports)
+   * @return the native instance handle, or 0 on failure
+   */
+  private static native long nativeInstantiateModuleWithImports(
+      long moduleHandle, long storeHandle, long importMapHandle);
 
   private native void nativeDestroyModule(long handle);
 }

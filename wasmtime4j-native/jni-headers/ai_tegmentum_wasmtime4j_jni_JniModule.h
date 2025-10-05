@@ -9,6 +9,22 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeInstantiateModule
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModule
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeInstantiateModuleWithImports
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModuleWithImports
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeDestroyModule
  * Signature: (J)V
  */
