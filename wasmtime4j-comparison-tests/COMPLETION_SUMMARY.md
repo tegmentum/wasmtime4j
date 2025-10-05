@@ -133,11 +133,11 @@ Successfully implemented and validated `Engine.compileWat(String wat)` method fo
 - **Priority**: Medium - Panama users need this functionality
 - **Workaround**: Use JNI runtime on Java 23+
 
-### 3. Large WAT Strings (Java Limitation)
-- **Status**: Some tests exceed 65535-byte constant pool limit
-- **Impact**: ~12 generated tests cannot compile
-- **Priority**: Low - affects benchmark tests primarily
-- **Solution**: Store WAT in external resource files
+### 3. Large WAT Strings (Resolved)
+- **Status**: ✅ RESOLVED - WAT strings >50KB now stored in external resource files
+- **Impact**: All 136 generated tests compile successfully
+- **Solution**: Implemented automatic detection and extraction to `src/resources/wasmtime-tests/`
+- **Files Created**: 7 WAT resource files (453KB, 446KB, 433KB, 426KB, 94KB, 75KB, 61KB)
 
 ### 4. Checkstyle Violations (Minor)
 - **Status**: Generated tests have style issues
@@ -231,7 +231,8 @@ docs: add build guide and restore generated test files
 
 ### Test Coverage
 - **Total Tests Discovered**: 144 (from Wasmtime v36.0.2)
-- **Tests Generated**: 132 (12 excluded due to Java limitations)
+- **Tests Generated**: 136 (all compilable with external WAT resource files)
+- **WAT Resource Files**: 7 external files for tests >50KB
 - **Tests Implemented**: 1 (SimpleWatCompilationTest with 5 test methods)
 - **Tests Passing**: 2/5 (input validation tests)
 - **Tests Blocked**: 3/5 (by unimplemented instantiation)
@@ -296,23 +297,18 @@ public void testExecution() throws Exception {
    - Blocks execution of compiled WAT modules
    - Estimated effort: 2-3 days
 
-2. **Fix Large WAT String Issue** (Medium Priority)
-   - Store WAT in external resource files
-   - Or implement string concatenation at runtime
-   - Estimated effort: 1 day
-
 ### Future Enhancements
-3. **Complete Panama Java Layer** (Medium Priority)
+2. **Complete Panama Java Layer** (Medium Priority)
    - Native FFI already exists
    - Implement Java integration
    - Estimated effort: 1-2 days
 
-4. **Implement WAST Parser** (Low Priority)
+3. **Implement WAST Parser** (Low Priority)
    - Parse `assert_return` statements
    - Generate proper test assertions
    - Estimated effort: 3-5 days
 
-5. **Fix Checkstyle Violations** (Low Priority)
+4. **Fix Checkstyle Violations** (Low Priority)
    - Update test generator
    - Or exclude generated tests
    - Estimated effort: 0.5 day
