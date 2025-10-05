@@ -388,16 +388,10 @@ pub mod core {
                 use wasmtime::HeapType;
 
                 // Match on dereferenced heap_type
-                let heap = ref_type.heap_type();
-                match *heap {
+                match *ref_type.heap_type() {
                     HeapType::Func | HeapType::ConcreteFunc(_) => GlobalValue::FuncRef(ref_id),
                     HeapType::Extern => GlobalValue::ExternRef(ref_id),
-                    _ => {
-                        // Return error with heap type info to debug
-                        return Err(WasmtimeError::Type {
-                            message: format!("Unexpected HeapType for RefType - got {:?}, expected Func or Extern", heap),
-                        });
-                    }
+                    _ => GlobalValue::AnyRef(ref_id),
                 }
             },
         };
