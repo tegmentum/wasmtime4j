@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
@@ -91,7 +92,20 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved
    */
   public WasmValue getValue() {
-    return get();
+    ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+    try {
+      final Object value = nativeGetValue(getNativeHandle(), store.getNativeHandle());
+      final String typeString = getValueType();
+      // Convert Object value and type string to WasmValue
+      return convertToWasmValue(value, typeString);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting global value", e);
+    }
   }
 
   /**
@@ -315,16 +329,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   @Override
   public WasmValue get() {
-    ensureNotClosed();
-    try {
-      final Object value = getValue();
-      final String typeString = getValueType();
-
-      // Convert Object value and type string to WasmValue
-      return convertToWasmValue(value, typeString);
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to get global value as WasmValue", e);
-    }
+    return getValue();
   }
 
   @Override
@@ -332,6 +337,14 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     JniValidation.requireNonNull(value, "value");
     ensureNotClosed();
     validateMutable();
+
+    // Validate type compatibility
+    final WasmValueType globalType = getType();
+    final WasmValueType valueType = value.getType();
+    if (globalType != valueType) {
+      throw new ai.tegmentum.wasmtime4j.WasmTypeException(
+          "Type mismatch: cannot set " + valueType + " value on " + globalType + " global");
+    }
 
     try {
       final Object objectValue = convertFromWasmValue(value);
@@ -366,10 +379,6 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   }
 
   private WasmValue convertToWasmValue(final Object value, final String typeString) {
-    if (value == null) {
-      return WasmValue.i32(0); // Default for null
-    }
-
     switch (typeString.toLowerCase()) {
       case "i32":
         return WasmValue.i32(((Number) value).intValue());
@@ -379,8 +388,29 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
         return WasmValue.f32(((Number) value).floatValue());
       case "f64":
         return WasmValue.f64(((Number) value).doubleValue());
+      case "v128":
+        if (value instanceof byte[]) {
+          return WasmValue.v128((byte[]) value);
+        }
+        throw new WasmTypeException("Expected byte array for v128, got " + value.getClass());
+      case "funcref":
+        if (value == null) {
+          return WasmValue.funcref(null);
+        }
+        if (value instanceof Long) {
+          return WasmValue.funcref(((Long) value).longValue());
+        }
+        throw new WasmTypeException("Expected Long or null for funcref, got " + value.getClass());
+      case "externref":
+        if (value == null) {
+          return WasmValue.externref(null);
+        }
+        if (value instanceof Long) {
+          return WasmValue.externref(((Long) value).longValue());
+        }
+        throw new WasmTypeException("Expected Long or null for externref, got " + value.getClass());
       default:
-        return WasmValue.i32(0); // Default fallback
+        throw new WasmTypeException("Unknown type: " + typeString);
     }
   }
 
@@ -412,11 +442,11 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   /**
    * Validates that this global is mutable.
    *
-   * @throws JniResourceException if this global is immutable
+   * @throws UnsupportedOperationException if this global is immutable
    */
   private void validateMutable() {
     if (!isMutable()) {
-      throw new JniResourceException("Global is immutable");
+      throw new UnsupportedOperationException("Cannot modify immutable global");
     }
   }
 

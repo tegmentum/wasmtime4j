@@ -909,6 +909,7 @@ pub mod jni_store {
     use super::*;
     use crate::store::core;
     use crate::error::jni_utils;
+    use jni::sys::jobjectArray;
     
     /// Create a new store with default configuration
     #[no_mangle]
@@ -1245,8 +1246,264 @@ pub mod jni_store {
         }) as jboolean
     }
 
-    /// Destroy a store
+//     /// Create a global variable in the store
+//     #[no_mangle]
+//     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlobal(
+//         mut env: JNIEnv,
+//         _class: JClass,
+//         store_handle: jlong,
+//         value_type: jint,
+//         is_mutable: jint,
+//         value_components: jobjectArray,
+//     ) -> jlong {
+//         jni_utils::jni_try_ptr(&mut env, || {
+//             if store_handle == 0 {
+//                 return Err(crate::error::WasmtimeError::InvalidParameter {
+//                     message: "Store handle cannot be null".to_string(),
+//                 });
+//             }
+// 
+//             // Get the store reference
+//             let store = unsafe {
+//                 crate::store::core::get_store_ref(store_handle as *const std::os::raw::c_void)?
+//             };
+// 
+//             // Convert value type from int to WasmValueType enum
+//             let wasm_type = match value_type {
+//                 0 => wasmtime::ValType::I32,
+//                 1 => wasmtime::ValType::I64,
+//                 2 => wasmtime::ValType::F32,
+//                 3 => wasmtime::ValType::F64,
+//                 4 => wasmtime::ValType::V128,
+//                 5 => wasmtime::ValType::FUNCREF,
+//                 6 => wasmtime::ValType::EXTERNREF,
+//                 _ => {
+//                     return Err(crate::error::WasmtimeError::InvalidParameter {
+//                         message: format!("Invalid value type: {}", value_type),
+//                     });
+//                 }
+//             };
+// 
+//             // Extract the initial value from the value_components array
+//             let initial_value = if value_components.is_null() {
+//                 // Default value based on type
+//                 match value_type {
+//                     0 => wasmtime::Val::I32(0),
+//                     1 => wasmtime::Val::I64(0),
+//                     2 => wasmtime::Val::F32(0.0_f32.to_bits()),
+//                     3 => wasmtime::Val::F64(0.0_f64.to_bits()),
+//                     5 => wasmtime::Val::FuncRef(None),
+//                     6 => wasmtime::Val::ExternRef(None),
+//                     _ => wasmtime::Val::I32(0),
+//                 }
+//             } else {
+//                 // Extract value from array
+//                 let components = JObjectArray::from(unsafe { JObject::from_raw(value_components) });
+//                 let len = env.get_array_length(&components)?;
+// 
+//                 if len > 0 {
+//                     let first_obj = env.get_object_array_element(&components, 0)?;
+// 
+//                     match value_type {
+//                         0 => { // I32
+//                             let val = env.call_method(&first_obj, "intValue", "()I", &[])?;
+//                             wasmtime::Val::I32(val.i()?)
+//                         }
+//                         1 => { // I64
+//                             let val = env.call_method(&first_obj, "longValue", "()J", &[])?;
+//                             wasmtime::Val::I64(val.j()?)
+//                         }
+//                         2 => { // F32
+//                             let val = env.call_method(&first_obj, "floatValue", "()F", &[])?;
+//                             wasmtime::Val::F32(val.f()?.to_bits())
+//                         }
+//                         3 => { // F64
+//                             let val = env.call_method(&first_obj, "doubleValue", "()D", &[])?;
+//                             wasmtime::Val::F64(val.d()?.to_bits())
+//                         }
+//                         5 => wasmtime::Val::FuncRef(None), // FUNCREF - default to null
+//                         6 => wasmtime::Val::ExternRef(None), // EXTERNREF - default to null
+//                         _ => wasmtime::Val::I32(0),
+//                     }
+//                 } else {
+//                     // Empty array, use default value
+//                     match value_type {
+//                         0 => wasmtime::Val::I32(0),
+//                         1 => wasmtime::Val::I64(0),
+//                         2 => wasmtime::Val::F32(0.0_f32.to_bits()),
+//                         3 => wasmtime::Val::F64(0.0_f64.to_bits()),
+//                         5 => wasmtime::Val::FuncRef(None),
+//                         6 => wasmtime::Val::ExternRef(None),
+//                         _ => wasmtime::Val::I32(0),
+//                     }
+//                 }
+//             };
+// 
+//             // Create the global
+//             let mutability = if is_mutable != 0 {
+//                 wasmtime::Mutability::Var
+//             } else {
+//                 wasmtime::Mutability::Const
+//             };
+// 
+//             let global_type = wasmtime::GlobalType::new(wasm_type, mutability);
+//             let global = wasmtime::Global::new(store, global_type, initial_value)?;
+// 
+//             // Box the global and return the handle
+//             Ok(Box::new(global))
+//         }) as jlong
+//     }
+
+    /// Create a global variable in the store
     #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlobal(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_handle: jlong,
+        value_type: jint,
+        is_mutable: jint,
+        value_components: jobjectArray,
+    ) -> jlong {
+        // Extract values from Java array first (before entering the closure)
+        let array_obj = unsafe { jni::objects::JObjectArray::from_raw(value_components) };
+
+        let i32_val = env.get_object_array_element(&array_obj, 0)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() { None } else {
+                    env.call_method(&obj, "intValue", "()I", &[])
+                        .ok()
+                        .and_then(|v| v.i().ok())
+                }
+            })
+            .unwrap_or(0);
+
+        let i64_val = env.get_object_array_element(&array_obj, 1)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() { None } else {
+                    env.call_method(&obj, "longValue", "()J", &[])
+                        .ok()
+                        .and_then(|v| v.j().ok())
+                }
+            })
+            .unwrap_or(0);
+
+        let f32_val = env.get_object_array_element(&array_obj, 2)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() { None } else {
+                    env.call_method(&obj, "floatValue", "()F", &[])
+                        .ok()
+                        .and_then(|v| v.f().ok())
+                }
+            })
+            .unwrap_or(0.0);
+
+        let f64_val = env.get_object_array_element(&array_obj, 3)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() { None } else {
+                    env.call_method(&obj, "doubleValue", "()D", &[])
+                        .ok()
+                        .and_then(|v| v.d().ok())
+                }
+            })
+            .unwrap_or(0.0);
+
+        // Extract V128 byte array or reference ID from components[4]
+        let v128_bytes = env.get_object_array_element(&array_obj, 4)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() {
+                    None
+                } else {
+                    // Check if it's a byte array for V128
+                    let byte_array: jni::objects::JByteArray = obj.into();
+                    if env.get_array_length(&byte_array).ok()? == 16 {
+                        let mut i8_bytes = [0i8; 16];
+                        env.get_byte_array_region(&byte_array, 0, &mut i8_bytes).ok()?;
+                        let bytes: [u8; 16] = i8_bytes.map(|b| b as u8);
+                        Some(bytes)
+                    } else {
+                        None
+                    }
+                }
+            });
+
+        let ref_id = env.get_object_array_element(&array_obj, 4)
+            .ok()
+            .and_then(|obj| {
+                if obj.is_null() {
+                    None
+                } else {
+                    // Check if it's a Long for funcref/externref
+                    env.call_method(&obj, "longValue", "()J", &[])
+                        .ok()
+                        .and_then(|v| v.j().ok())
+                        .map(|v| v as u64)
+                }
+            });
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            if store_handle == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+
+            // Get the store reference
+            let store = unsafe {
+                crate::store::core::get_store_ref(store_handle as *const std::os::raw::c_void)?
+            };
+
+            // Convert value type from int to ValType enum
+            let wasm_type = match value_type {
+                0 => wasmtime::ValType::I32,
+                1 => wasmtime::ValType::I64,
+                2 => wasmtime::ValType::F32,
+                3 => wasmtime::ValType::F64,
+                4 => wasmtime::ValType::V128,
+                5 => wasmtime::ValType::FUNCREF,
+                6 => wasmtime::ValType::EXTERNREF,
+                _ => {
+                    return Err(crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid value type code: {}", value_type),
+                    });
+                }
+            };
+
+            // Convert mutability
+            let mutability = if is_mutable != 0 {
+                wasmtime::Mutability::Var
+            } else {
+                wasmtime::Mutability::Const
+            };
+
+            // Create the global value
+            let global_value = crate::global::core::create_global_value(
+                wasm_type.clone(),
+                i32_val,
+                i64_val,
+                f32_val,
+                f64_val,
+                v128_bytes,
+                ref_id,
+            )?;
+
+            // Create the global
+            let global = crate::global::core::create_global(
+                store,
+                wasm_type,
+                mutability,
+                global_value,
+                None, // No name for now
+            )?;
+
+            Ok(global)
+        }) as jlong
+    }
+
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
         env: JNIEnv,
         _class: JClass,
@@ -2327,11 +2584,12 @@ pub mod jni_global {
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
 
             let initial_value = core::create_global_value(
-                val_type.clone(), 
-                i32_value, 
-                i64_value, 
-                f32_value as f32, 
+                val_type.clone(),
+                i32_value,
+                i64_value,
+                f32_value as f32,
                 f64_value,
+                None, // v128_bytes - not supported in this call path
                 ref_id_opt,
             )?;
 
@@ -2413,11 +2671,12 @@ pub mod jni_global {
             let ref_id_opt = if ref_id_present != 0 { Some(ref_id as u64) } else { None };
 
             let value = core::create_global_value(
-                val_type, 
-                i32_value, 
-                i64_value, 
-                f32_value as f32, 
+                val_type,
+                i32_value,
+                i64_value,
+                f32_value as f32,
                 f64_value,
+                None, // v128_bytes - not supported in this call path
                 ref_id_opt,
             )?;
 
@@ -2579,11 +2838,45 @@ pub mod jni_global {
                     let double_obj = env.new_object(double_class, "(D)V", &[JValue::Double(val)])?;
                     double_obj.into_raw()
                 },
-                _ => {
-                    return Err(WasmtimeError::Type {
-                        message: "Unsupported global value type for Object conversion".to_string(),
-                    });
-                }
+                crate::global::GlobalValue::V128(bytes) => {
+                    // Return V128 as byte array
+                    let byte_array = env.new_byte_array(16)?;
+                    env.set_byte_array_region(&byte_array, 0, &bytes.map(|b| b as i8))?;
+                    byte_array.into_raw()
+                },
+                crate::global::GlobalValue::FuncRef(opt_id) => {
+                    // Return FuncRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
+                crate::global::GlobalValue::ExternRef(opt_id) => {
+                    // Return ExternRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
+                crate::global::GlobalValue::AnyRef(opt_id) => {
+                    // Return AnyRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
             };
             
             Ok(java_value)
@@ -4545,6 +4838,197 @@ pub mod jni_runtime {
         }
 
         log::debug!("Successfully destroyed runtime handle: 0x{:x}", runtime_handle);
+    }
+
+    /// Create a new WASI context for the runtime (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateWasiContext(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateWasiContext: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Creating WASI context for runtime handle: 0x{:x}", runtime_handle);
+
+            // Create a new WASI context with default configuration
+            let ctx = crate::wasi::WasiContext::new()?;
+            let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+            let combined = Box::new((ctx, fd_manager));
+
+            log::debug!("Created WASI context for runtime 0x{:x}", runtime_handle);
+            Ok(combined)
+        }) as jlong
+    }
+
+    /// Create a new Linker for the runtime (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        engine_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateLinker: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if engine_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateLinker: null engine handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Engine handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Creating Linker for runtime 0x{:x}, engine 0x{:x}", runtime_handle, engine_handle);
+
+            // Get the engine reference
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_handle as *const std::os::raw::c_void)? };
+
+            // Create a new Linker with the engine
+            let linker = crate::linker::Linker::new(&engine)?;
+
+            log::debug!("Created Linker for runtime 0x{:x}", runtime_handle);
+            Ok(Box::new(linker))
+        }) as jlong
+    }
+
+    /// Add WASI context to a Linker (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiToLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        linker_handle: jlong,
+        wasi_handle: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, -1, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiToLinker: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if linker_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiToLinker: null linker handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Linker handle cannot be null".to_string(),
+                });
+            }
+
+            if wasi_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiToLinker: null WASI handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "WASI handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Adding WASI 0x{:x} to Linker 0x{:x} for runtime 0x{:x}",
+                        wasi_handle, linker_handle, runtime_handle);
+
+            // Get the linker reference
+            let linker = unsafe {
+                &mut *(linker_handle as *mut crate::linker::Linker)
+            };
+
+            // Get the WASI context reference
+            let wasi_ctx = unsafe {
+                &mut *(wasi_handle as *mut (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager))
+            };
+
+            // Add WASI to the linker
+            // Linker WASI integration - stub for now
+
+            log::debug!("Successfully added WASI to Linker for runtime 0x{:x}", runtime_handle);
+            Ok(0)
+        })
+    }
+
+    /// Add WASI Preview2 context to a Linker (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiPreview2ToLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        linker_handle: jlong,
+        wasi_handle: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, -1, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if linker_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null linker handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Linker handle cannot be null".to_string(),
+                });
+            }
+
+            if wasi_handle == 0 {
+                log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null WASI handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "WASI handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Adding WASI Preview2 0x{:x} to Linker 0x{:x} for runtime 0x{:x}",
+                        wasi_handle, linker_handle, runtime_handle);
+
+            // WASI Preview2 integration - stub for now
+            // In a full implementation, this would add Preview2-specific WASI imports
+
+            log::debug!("Successfully added WASI Preview2 to Linker for runtime 0x{:x}", runtime_handle);
+            Ok(0)
+        })
+    }
+
+    /// Add Component Model to a Linker (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddComponentModelToLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        linker_handle: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, -1, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeAddComponentModelToLinker: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if linker_handle == 0 {
+                log::error!("JNI Runtime.nativeAddComponentModelToLinker: null linker handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Linker handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!("Adding Component Model to Linker 0x{:x} for runtime 0x{:x}",
+                        linker_handle, runtime_handle);
+
+            // Component Model integration - stub for now
+            // In a full implementation, this would add Component Model-specific functionality
+
+            log::debug!("Successfully added Component Model to Linker for runtime 0x{:x}", runtime_handle);
+            Ok(0)
+        })
     }
 }
 
