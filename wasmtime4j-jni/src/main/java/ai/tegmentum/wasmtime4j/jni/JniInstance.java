@@ -95,8 +95,14 @@ public final class JniInstance extends JniResource implements Instance {
     JniValidation.requireNonBlank(name, "name");
     ensureNotClosed();
 
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
+    }
+
     try {
-      final long functionHandle = nativeGetFunction(getNativeHandle(), name);
+      final JniStore jniStore = (JniStore) store;
+      final long functionHandle =
+          nativeGetFunction(getNativeHandle(), jniStore.getNativeHandle(), name);
       if (functionHandle == 0) {
         return Optional.empty();
       }
@@ -801,10 +807,11 @@ public final class JniInstance extends JniResource implements Instance {
    * Gets a function export from an instance.
    *
    * @param instanceHandle the native instance handle
+   * @param storeHandle the native store handle
    * @param name the function name
    * @return native function handle or 0 if not found
    */
-  private static native long nativeGetFunction(long instanceHandle, String name);
+  private static native long nativeGetFunction(long instanceHandle, long storeHandle, String name);
 
   /**
    * Gets a memory export from an instance.

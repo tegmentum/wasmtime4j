@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeGetFunction
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JJLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance

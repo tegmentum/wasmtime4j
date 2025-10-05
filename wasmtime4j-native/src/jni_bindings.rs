@@ -162,6 +162,37 @@ pub mod jni_instance {
             }
         }
     }
+
+    /// Get an exported function by name from an instance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        store_ptr: jlong,
+        name: JString,
+    ) -> jlong {
+        let result = (|| -> WasmtimeResult<jlong> {
+            let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+            let name_str: String = env.get_string(&name)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert function name: {}", e)
+                })?.into();
+
+            // Get the function from the instance
+            match instance.get_func(store, &name_str)? {
+                Some(func) => {
+                    // Box the function and return it as a pointer
+                    let func_box = Box::new(func);
+                    Ok(Box::into_raw(func_box) as jlong)
+                }
+                None => Ok(0),
+            }
+        })();
+
+        result.unwrap_or(0) as jlong
+    }
 }
 
 /// JNI bindings for Engine operations

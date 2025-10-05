@@ -299,11 +299,12 @@ public void testExecution() throws Exception {
    - 4/5 tests in SimpleWatCompilationTest now passing
 
 ### Immediate Next Priorities
-2. **Implement Instance Function Calling** (High Priority)
-   - Requires native JNI bindings for `Instance.getFunction()`
-   - Need bindings for `WasmFunction.call()`
-   - Would enable full end-to-end testing
-   - Estimated effort: 2-3 days
+2. **Implement Direct Function Calling** (High Priority)
+   - **Challenge Identified**: `Instance.getFunction()` has Wasmtime ownership/lifetime issues
+   - Wasmtime's `Func` objects are tied to Store lifetime and cannot be boxed/extracted
+   - **Solution**: Implement direct function calling without extracting Function objects
+   - Pattern: `instance.call(storeName, "function_name", args)` instead of `instance.getFunction("name").call(args)`
+   - Estimated effort: 1-2 days
 
 ### Future Enhancements
 3. **Complete Panama Java Layer** (Medium Priority)

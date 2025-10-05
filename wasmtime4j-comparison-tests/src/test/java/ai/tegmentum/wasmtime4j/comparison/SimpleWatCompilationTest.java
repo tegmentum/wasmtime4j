@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import java.util.Optional;
 
 /**
  * Simple test to verify WAT compilation functionality.
@@ -42,8 +43,9 @@ public final class SimpleWatCompilationTest {
       final Instance instance = module.instantiate(store);
       assertNotNull(instance, "Instance should not be null");
 
-      // TODO: Function calling requires native bindings for Instance.getFunction()
-      // For now, just verify instantiation succeeds
+      // TODO: Function calling requires completing native bindings
+      // The nativeGetFunction binding has lifetime issues with Wasmtime's ownership model
+      // Need to implement direct function calling without extracting Function objects
       System.out.println("✅ Module compiled and instantiated successfully!");
 
       // Clean up
@@ -78,8 +80,9 @@ public final class SimpleWatCompilationTest {
       final Store store = engine.createStore();
       final Instance instance = module.instantiate(store);
 
-      // TODO: Function calling requires native bindings for Instance.getFunction()
-      // For now, just verify instantiation succeeds
+      // TODO: Function calling requires completing native bindings
+      // The nativeGetFunction binding has lifetime issues with Wasmtime's ownership model
+      // Need to implement direct function calling without extracting Function objects
       System.out.println("✅ Module with global compiled and instantiated successfully!");
 
       instance.close();
