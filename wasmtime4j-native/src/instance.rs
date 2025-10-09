@@ -217,7 +217,36 @@ impl Instance {
     ) -> WasmtimeResult<Self> {
         Self::new(store, module, &[])
     }
-    
+
+    /// Wrap an existing wasmtime::Instance (for use with Linker)
+    ///
+    /// This constructor is used when the instance was created by a Linker,
+    /// which automatically resolves and applies imports.
+    pub fn from_wasmtime_instance(
+        wasmtime_instance: WasmtimeInstance,
+        store: &mut Store,
+        module: &Module,
+    ) -> WasmtimeResult<Self> {
+        // Build metadata using the module info
+        let mut store_guard = store.lock_store();
+        use wasmtime::AsContextMut;
+        let (metadata, imports_map, exports_map) = Self::build_instance_data(
+            &wasmtime_instance,
+            &mut (*store_guard).as_context_mut(),
+            module,
+            0, // Import count is 0 since linker handled them
+        )?;
+        drop(store_guard);
+
+        Ok(Instance {
+            inner: Arc::new(ReentrantLock::new(wasmtime_instance)),
+            metadata,
+            imports_map,
+            exports_map,
+            store_weak: std::sync::Weak::new(), // Will be set later if needed
+        })
+    }
+
     /// Build comprehensive instance metadata and binding maps
     fn build_instance_data(
         _instance: &WasmtimeInstance,

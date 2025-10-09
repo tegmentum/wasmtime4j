@@ -1995,8 +1995,9 @@ pub mod jni_linker {
             drop(linker_lock);
             drop(store_lock);
 
-            // Create Instance wrapper using new_without_imports since linker handled imports
-            let instance = crate::instance::Instance::new_without_imports(
+            // Create Instance wrapper from the wasmtime instance created by the linker
+            let instance = crate::instance::Instance::from_wasmtime_instance(
+                wasmtime_instance,
                 store,
                 module,
             )?;
@@ -2189,13 +2190,14 @@ pub mod jni_linker {
                     message: format!("Failed to lock global: {}", e),
                 })?;
 
-            store.with_context(|ctx| {
-                linker_lock
-                    .define(ctx, &module_name_str, &name_str, wasmtime::Extern::Global(*wasmtime_global_lock))
-                    .map_err(|e| WasmtimeError::Linker {
-                        message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
-                    })
-            })?;
+            // Use lock_store() and AsContextMut for mutable context
+            let mut store_lock = store.lock_store();
+            use wasmtime::AsContextMut;
+            linker_lock
+                .define(&mut (*store_lock).as_context_mut(), &module_name_str, &name_str, wasmtime::Extern::Global(*wasmtime_global_lock))
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
+                })?;
 
             Ok(1) // JNI_TRUE
         })
@@ -2268,6 +2270,18 @@ pub mod jni_linker {
                 backtrace: None
             })
         })
+    }
+
+    /// Destroy a linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker(
+        _env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+    ) {
+        unsafe {
+            linker_core::destroy_linker(linker_handle as *mut c_void);
+        }
     }
 }
 
