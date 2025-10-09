@@ -338,7 +338,7 @@ public class TablesTest {
 
     // Define table for second module
     final Linker linker = Linker.create(engine);
-    linker.defineTable("mod1", "shared", sharedTable);
+    linker.defineTable(store, "mod1", "shared", sharedTable);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);

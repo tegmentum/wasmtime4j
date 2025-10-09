@@ -122,7 +122,7 @@ public class LinkerTest {
 
     final Linker linker = Linker.create(engine);
     final WasmMemory sharedMemory = instance1.getDefaultMemory().orElseThrow();
-    linker.defineMemory("mod1", "shared_mem", sharedMemory);
+    linker.defineMemory(store, "mod1", "shared_mem", sharedMemory);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);
@@ -178,7 +178,7 @@ public class LinkerTest {
 
     final Linker linker = Linker.create(engine);
     final WasmGlobal sharedGlobal = instance1.getGlobal("counter").orElseThrow();
-    linker.defineGlobal("mod1", "counter", sharedGlobal);
+    linker.defineGlobal(store, "mod1", "counter", sharedGlobal);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);
@@ -243,7 +243,7 @@ public class LinkerTest {
 
     final Linker linker = Linker.create(engine);
     final WasmTable sharedTable = instance1.getTable("funcs").orElseThrow();
-    linker.defineTable("mod1", "funcs", sharedTable);
+    linker.defineTable(store, "mod1", "funcs", sharedTable);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);
@@ -483,11 +483,11 @@ public class LinkerTest {
 
     // Create two instances with different globals
     final Linker linker1 = Linker.create(engine);
-    linker1.defineGlobal("env", "value", global1);
+    linker1.defineGlobal(store, "env", "value", global1);
     final Instance instance1 = linker1.instantiate(store, module);
 
     final Linker linker2 = Linker.create(engine);
-    linker2.defineGlobal("env", "value", global2);
+    linker2.defineGlobal(store, "env", "value", global2);
     final Instance instance2 = linker2.instantiate(store, module);
 
     // Instances should have independent state

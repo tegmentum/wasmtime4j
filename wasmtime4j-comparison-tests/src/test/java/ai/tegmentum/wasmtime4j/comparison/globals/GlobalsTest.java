@@ -210,7 +210,7 @@ public class GlobalsTest {
 
     // Create linker and define the global
     final Linker linker = Linker.create(engine);
-    linker.defineGlobal("env", "imported_const", importedGlobal);
+    linker.defineGlobal(store, "env", "imported_const", importedGlobal);
 
     final String wat =
         """
@@ -240,7 +240,7 @@ public class GlobalsTest {
         store.createMutableGlobal(WasmValueType.I32, WasmValue.i32(0));
 
     final Linker linker = Linker.create(engine);
-    linker.defineGlobal("env", "shared_counter", importedGlobal);
+    linker.defineGlobal(store, "env", "shared_counter", importedGlobal);
 
     final String wat =
         """
@@ -291,7 +291,7 @@ public class GlobalsTest {
         store.createMutableGlobal(WasmValueType.I64, WasmValue.i64(1000000000000L));
 
     final Linker linker = Linker.create(engine);
-    linker.defineGlobal("env", "big_num", importedGlobal);
+    linker.defineGlobal(store, "env", "big_num", importedGlobal);
 
     final String wat =
         """
@@ -328,7 +328,7 @@ public class GlobalsTest {
         store.createMutableGlobal(WasmValueType.F32, WasmValue.f32(1.5f));
 
     final Linker linker = Linker.create(engine);
-    linker.defineGlobal("env", "scale", importedGlobal);
+    linker.defineGlobal(store, "env", "scale", importedGlobal);
 
     final String wat =
         """
@@ -359,7 +359,7 @@ public class GlobalsTest {
         store.createMutableGlobal(WasmValueType.I32, WasmValue.i32(5));
 
     final Linker linker = Linker.create(engine);
-    linker.defineGlobal("env", "input", importedGlobal);
+    linker.defineGlobal(store, "env", "input", importedGlobal);
 
     final String wat =
         """
