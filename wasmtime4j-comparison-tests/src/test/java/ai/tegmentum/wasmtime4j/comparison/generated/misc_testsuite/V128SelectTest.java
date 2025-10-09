@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::v128-select
  *
- * Original source: v128-select.wast:1
- * Category: misc_testsuite
+ * <p>Original source: v128-select.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class V128SelectTest {
 
@@ -29,20 +27,21 @@ public final class V128SelectTest {
     //     local.get 2
     //     select)
     // )
-    // 
+    //
     // (assert_return (invoke "select"
     //                        (v128.const i64x2 1 1)
     //                        (v128.const i64x2 2 2)
     //                        (i32.const 0))
     //                (v128.const i64x2 2 2))
-    // 
+    //
     // (assert_return (invoke "select"
     //                        (v128.const i64x2 1 1)
     //                        (v128.const i64x2 2 2)
     //                        (i32.const 1))
     //                (v128.const i64x2 1 1))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (export "select") (param v128 v128 i32) (result v128)
             local.get 0
@@ -50,13 +49,13 @@ public final class V128SelectTest {
             local.get 2
             select)
         )
-        
+
         (assert_return (invoke "select"
                                (v128.const i64x2 1 1)
                                (v128.const i64x2 2 2)
                                (i32.const 0))
                        (v128.const i64x2 2 2))
-        
+
         (assert_return (invoke "select"
                                (v128.const i64x2 1 1)
                                (v128.const i64x2 2 2)

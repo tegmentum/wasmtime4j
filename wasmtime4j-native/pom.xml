@@ -95,6 +95,31 @@
                             <overwrite>true</overwrite>
                         </configuration>
                     </execution>
+
+                    <!-- Copy built native library to source resources for packaging -->
+                    <execution>
+                        <id>copy-built-library-to-resources</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${native.resources.path}/${native.platform}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${native.cargo.target.dir}/${native.target}/${cargo.build.mode}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>*.dll</include>
+                                        <include>*.so</include>
+                                        <include>*.dylib</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <skip>${native.compile.skip}</skip>
+                            <overwrite>true</overwrite>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 

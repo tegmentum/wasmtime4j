@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::externref-id-function
  *
- * Original source: externref-id-function.wast:1
- * Category: misc_testsuite
+ * <p>Original source: externref-id-function.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ExternrefIdFunctionTest {
 
@@ -25,17 +23,18 @@ public final class ExternrefIdFunctionTest {
     // (module
     //   (func (export "identity") (param externref) (result externref)
     //     local.get 0))
-    // 
+    //
     // (assert_return (invoke "identity" (ref.null extern))
     //                (ref.null extern))
     // (assert_return (invoke "identity" (ref.extern 1))
     //                (ref.extern 1))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (export "identity") (param externref) (result externref)
             local.get 0))
-        
+
         (assert_return (invoke "identity" (ref.null extern))
                        (ref.null extern))
         (assert_return (invoke "identity" (ref.extern 1))

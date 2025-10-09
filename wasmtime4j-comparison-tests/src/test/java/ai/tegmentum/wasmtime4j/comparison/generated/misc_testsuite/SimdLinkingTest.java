@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::_simd_linking
  *
- * Original source: _simd_linking.wast:1
- * Category: misc_testsuite
+ * <p>Original source: _simd_linking.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class SimdLinkingTest {
 
@@ -27,7 +25,7 @@ public final class SimdLinkingTest {
     //   (global (export "mg-v128") (mut v128) (v128.const i64x2 0 0))
     // )
     // (register "Mv128")
-    // 
+    //
     // (module
     //   ;; TODO: Reactivate once the fix for https://bugs.chromium.org/p/v8/issues/detail?id=13732
     //   ;; has made it to the downstream node.js that we use on CI.
@@ -35,13 +33,14 @@ public final class SimdLinkingTest {
     //   (import "Mv128" "mg-v128" (global (mut v128)))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (global (export "g-v128") v128 (v128.const i64x2 0 0))
           (global (export "mg-v128") (mut v128) (v128.const i64x2 0 0))
         )
         (register "Mv128")
-        
+
         (module
           ;; TODO: Reactivate once the fix for https://bugs.chromium.org/p/v8/issues/detail?id=13732
           ;; has made it to the downstream node.js that we use on CI.

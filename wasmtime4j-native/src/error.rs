@@ -1657,7 +1657,7 @@ pub mod jni_utils {
     /// Convert WasmtimeError to JNI exception class name
     pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
         match error {
-            WasmtimeError::Compilation { .. } => "ai/tegmentum/wasmtime4j/WasmCompilationException",
+            WasmtimeError::Compilation { .. } => "ai/tegmentum/wasmtime4j/exception/CompilationException",
             WasmtimeError::Validation { .. } => "ai/tegmentum/wasmtime4j/WasmValidationException",
             WasmtimeError::Runtime { .. } => "ai/tegmentum/wasmtime4j/WasmRuntimeException",
             WasmtimeError::Memory { .. } => "ai/tegmentum/wasmtime4j/WasmMemoryException",

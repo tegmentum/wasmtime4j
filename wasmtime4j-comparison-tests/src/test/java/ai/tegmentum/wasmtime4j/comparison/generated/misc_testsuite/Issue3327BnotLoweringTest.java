@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::issue_3327_bnot_lowering
  *
- * Original source: issue_3327_bnot_lowering.wast:1
- * Category: misc_testsuite
+ * <p>Original source: issue_3327_bnot_lowering.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class Issue3327BnotLoweringTest {
 
@@ -23,16 +21,16 @@ public final class Issue3327BnotLoweringTest {
   public void testIssue3327BnotLowering() {
     // WAT code from original Wasmtime test:
     // (; See issue https://github.com/bytecodealliance/wasmtime/issues/3327 ;)
-    // 
+    //
     // (module
     //   (func $v128_not (export "v128_not") (result v128)
     //     v128.const f32x4 0 0 0 0
     //     f32x4.abs
     //     v128.not)
     // )
-    // 
+    //
     // (assert_return (invoke "v128_not") (v128.const i32x4 -1 -1 -1 -1))
-    // 
+    //
     // ;; from #3327
     // (module
     //   (func (result i32)
@@ -54,7 +52,7 @@ public final class Issue3327BnotLoweringTest {
     // ;; on the NaN in the first operation. This leads to one of two results depending
     // ;; on how platforms propagate NaN bits.
     // (assert_return (invoke "") (either (i32.const 0) (i32.const 1)))
-    // 
+    //
     // ;; from #3327
     // (module
     //   (type (func (param i32) (result i32)))
@@ -66,7 +64,7 @@ public final class Issue3327BnotLoweringTest {
     //     i64x2.bitmask)
     //   (export "1" (func 0)))
     // (assert_return (invoke "1" (i32.const 0)) (i32.const 3))
-    // 
+    //
     // (module
     //   (type (;0;) (func (result v128)))
     //   (func (;0;) (type 0) (result v128)
@@ -82,18 +80,19 @@ public final class Issue3327BnotLoweringTest {
     //   (export "x" (func 0)))
     // (assert_return (invoke "x") (v128.const i32x4 0x01fe01fe 0x01fe01fe 0x01fe01fe 0x01fe01fe))
 
-    final String wat = """
+    final String wat =
+        """
         (; See issue https://github.com/bytecodealliance/wasmtime/issues/3327 ;)
-        
+
         (module
           (func $v128_not (export "v128_not") (result v128)
             v128.const f32x4 0 0 0 0
             f32x4.abs
             v128.not)
         )
-        
+
         (assert_return (invoke "v128_not") (v128.const i32x4 -1 -1 -1 -1))
-        
+
         ;; from #3327
         (module
           (func (result i32)
@@ -115,7 +114,7 @@ public final class Issue3327BnotLoweringTest {
         ;; on the NaN in the first operation. This leads to one of two results depending
         ;; on how platforms propagate NaN bits.
         (assert_return (invoke "") (either (i32.const 0) (i32.const 1)))
-        
+
         ;; from #3327
         (module
           (type (func (param i32) (result i32)))
@@ -127,7 +126,7 @@ public final class Issue3327BnotLoweringTest {
             i64x2.bitmask)
           (export "1" (func 0)))
         (assert_return (invoke "1" (i32.const 0)) (i32.const 3))
-        
+
         (module
           (type (;0;) (func (result v128)))
           (func (;0;) (type 0) (result v128)

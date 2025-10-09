@@ -528,11 +528,9 @@ public final class JniInstance extends JniResource implements Instance {
       nativeParams[i] = params[i].getValue();
     }
 
-    final Object[] nativeResults = nativeCallFunction(
-        getNativeHandle(),
-        jniStore.getNativeHandle(),
-        functionName,
-        nativeParams);
+    final Object[] nativeResults =
+        nativeCallFunction(
+            getNativeHandle(), jniStore.getNativeHandle(), functionName, nativeParams);
 
     if (nativeResults == null) {
       return new WasmValue[0];

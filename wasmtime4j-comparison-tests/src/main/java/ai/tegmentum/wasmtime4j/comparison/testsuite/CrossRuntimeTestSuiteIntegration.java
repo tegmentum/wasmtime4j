@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.testsuite;
 
 import ai.tegmentum.wasmtime4j.comparison.analysis.CrossRuntimeAnalysis;
-import ai.tegmentum.wasmtime4j.testsuite.TestAnalysisReport;
 import ai.tegmentum.wasmtime4j.testsuite.TestDiscoveryEngine;
 import ai.tegmentum.wasmtime4j.testsuite.TestExecutionEngine;
 import ai.tegmentum.wasmtime4j.testsuite.TestExecutionResults;
@@ -12,7 +11,6 @@ import ai.tegmentum.wasmtime4j.testsuite.TestRuntime;
 import ai.tegmentum.wasmtime4j.testsuite.TestSuiteConfiguration;
 import ai.tegmentum.wasmtime4j.testsuite.TestSuiteException;
 import ai.tegmentum.wasmtime4j.testsuite.WebAssemblyTestCase;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -161,8 +159,8 @@ public final class CrossRuntimeTestSuiteIntegration {
       }
 
       final TestExecutionResults results = resultsBuilder.build();
-      LOGGER.info("Cross-runtime test execution completed. Total results: "
-          + results.getTotalTestCount());
+      LOGGER.info(
+          "Cross-runtime test execution completed. Total results: " + results.getTotalTestCount());
 
       return results;
 
@@ -183,10 +181,12 @@ public final class CrossRuntimeTestSuiteIntegration {
     LOGGER.info("Starting cross-runtime analysis");
 
     try {
-      final CrossRuntimeAnalysis analysis = crossRuntimeAnalyzer.performCrossRuntimeAnalysis(results);
+      final CrossRuntimeAnalysis analysis =
+          crossRuntimeAnalyzer.performCrossRuntimeAnalysis(results);
 
-      LOGGER.info("Cross-runtime analysis completed. Discrepancies found: "
-          + analysis.getDiscrepancies().size());
+      LOGGER.info(
+          "Cross-runtime analysis completed. Discrepancies found: "
+              + analysis.getDiscrepancies().size());
 
       return analysis;
 
@@ -247,7 +247,9 @@ public final class CrossRuntimeTestSuiteIntegration {
 
     // Discrepancies
     if (analysis.hasDiscrepancies()) {
-      report.append("\nCross-Runtime Discrepancies (").append(analysis.getDiscrepancies().size())
+      report
+          .append("\nCross-Runtime Discrepancies (")
+          .append(analysis.getDiscrepancies().size())
           .append("):\n");
       for (final String discrepancy : analysis.getDiscrepancies()) {
         report.append("  - ").append(discrepancy).append("\n");
@@ -288,8 +290,7 @@ public final class CrossRuntimeTestSuiteIntegration {
       final long duration = System.currentTimeMillis() - startTime;
 
       final CrossRuntimeComparisonResults results =
-          new CrossRuntimeComparisonResults(
-              executionResults, crossRuntimeAnalysis, duration);
+          new CrossRuntimeComparisonResults(executionResults, crossRuntimeAnalysis, duration);
 
       LOGGER.info("Complete cross-runtime comparison finished in " + duration + " ms");
 

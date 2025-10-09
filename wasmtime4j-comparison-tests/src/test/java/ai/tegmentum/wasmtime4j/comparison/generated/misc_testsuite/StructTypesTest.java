@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::struct-types
  *
- * Original source: struct-types.wast:1
- * Category: misc_testsuite
+ * <p>Original source: struct-types.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class StructTypesTest {
 
@@ -29,11 +27,13 @@ public final class StructTypesTest {
     //   (type (struct (field i8 i8 i8 i8)))
     //   (type (struct (field $x1 i32) (field $y1 i32)))
     //   (type (struct (field i8 i16 i32 i64 f32 f64 anyref funcref (ref 0) (ref null 1))))
-    //   (type (struct (field i32 i64 i8) (field) (field) (field (ref null i31) anyref structref arrayref)))
+    //   (type (struct (field i32 i64 i8) (field) (field) (field (ref null i31) anyref structref
+    // arrayref)))
     //   (type (struct (field $x2 i32) (field f32 f64) (field $y2 i32)))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (type (struct))
           (type (struct (field)))

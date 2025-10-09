@@ -13,8 +13,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * WebAssembly test suite integration for wasmtime4j. Provides automatic test discovery,
- * execution, and reporting for individual runtime implementations.
+ * WebAssembly test suite integration for wasmtime4j. Provides automatic test discovery, execution,
+ * and reporting for individual runtime implementations.
  *
  * <p>This class handles single-runtime testing. For cross-runtime comparison testing (JNI vs
  * Panama), use CrossRuntimeTestSuiteIntegration from wasmtime4j-comparison-tests module.

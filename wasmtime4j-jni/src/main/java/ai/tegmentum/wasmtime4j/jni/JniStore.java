@@ -514,6 +514,96 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final WasmValueType elementType, final int initialSize, final int maxSize)
+      throws WasmException {
+    JniValidation.requireNonNull(elementType, "elementType");
+    if (initialSize < 0) {
+      throw new IllegalArgumentException("Initial size cannot be negative: " + initialSize);
+    }
+    if (maxSize < -1) {
+      throw new IllegalArgumentException("Max size must be -1 (unlimited) or >= 0: " + maxSize);
+    }
+    if (maxSize != -1 && maxSize < initialSize) {
+      throw new IllegalArgumentException(
+          "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
+    }
+    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    ensureNotClosed();
+
+    try {
+      final long tableHandle =
+          nativeCreateTable(
+              getNativeHandle(), elementType.toNativeTypeCode(), initialSize, maxSize);
+
+      if (tableHandle == 0) {
+        throw new JniException("Native table creation returned null handle");
+      }
+
+      final JniTable table = new JniTable(tableHandle);
+      LOGGER.fine(
+          "Created table with element type "
+              + elementType
+              + ", size="
+              + initialSize
+              + ", max="
+              + maxSize
+              + ", handle=0x"
+              + Long.toHexString(tableHandle));
+      return table;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create table", e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < -1) {
+      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or >= 0: " + maxPages);
+    }
+    if (maxPages != -1 && maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final long memoryHandle = nativeCreateMemory(getNativeHandle(), initialPages, maxPages);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native memory creation returned null handle");
+      }
+
+      final JniMemory memory = new JniMemory(memoryHandle);
+      LOGGER.fine(
+          "Created memory with initial="
+              + initialPages
+              + " pages, max="
+              + maxPages
+              + " pages, handle=0x"
+              + Long.toHexString(memoryHandle));
+      return memory;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create memory", e);
+    }
+  }
+
+  @Override
   public FunctionReference createFunctionReference(
       final HostFunction implementation, final FunctionType functionType) throws WasmException {
     Objects.requireNonNull(implementation, "Host function implementation cannot be null");
@@ -1097,6 +1187,28 @@ public final class JniStore extends JniResource implements Store {
    */
   private static native long nativeCreateGlobal(
       long storeHandle, int valueType, int isMutable, Object[] valueComponents);
+
+  /**
+   * Creates a new WebAssembly table.
+   *
+   * @param storeHandle the native store handle
+   * @param elementType the element type code (FUNCREF or EXTERNREF)
+   * @param initialSize the initial number of elements
+   * @param maxSize the maximum number of elements (-1 for unlimited)
+   * @return the native table handle, or 0 on failure
+   */
+  private static native long nativeCreateTable(
+      long storeHandle, int elementType, int initialSize, int maxSize);
+
+  /**
+   * Creates a new WebAssembly linear memory.
+   *
+   * @param storeHandle the native store handle
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages (-1 for unlimited)
+   * @return the native memory handle, or 0 on failure
+   */
+  private static native long nativeCreateMemory(long storeHandle, int initialPages, int maxPages);
 
   /**
    * Destroys a native store and releases all associated resources.

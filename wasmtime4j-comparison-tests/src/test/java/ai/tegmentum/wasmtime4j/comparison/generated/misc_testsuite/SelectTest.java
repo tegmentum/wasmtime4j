@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::select
  *
- * Original source: select.wast:1
- * Category: misc_testsuite
+ * <p>Original source: select.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class SelectTest {
 
@@ -27,7 +25,7 @@ public final class SelectTest {
     //   (func $dummy)
     //   (table $tab funcref (elem $dummy))
     //   (memory 1)
-    // 
+    //
     //   (func (export "select-i32") (param i32 i32 i32) (result i32)
     //     (select (local.get 0) (local.get 1) (local.get 2))
     //   )
@@ -40,7 +38,7 @@ public final class SelectTest {
     //   (func (export "select-f64") (param f64 f64 i32) (result f64)
     //     (select (local.get 0) (local.get 1) (local.get 2))
     //   )
-    // 
+    //
     //   (func (export "as-select-first") (param i32) (result i32)
     //     (select (select (i32.const 0) (i32.const 1) (local.get 0)) (i32.const 2) (i32.const 3))
     //   )
@@ -50,43 +48,52 @@ public final class SelectTest {
     //   (func (export "as-select-last") (param i32) (result i32)
     //     (select (i32.const 2) (i32.const 3) (select (i32.const 0) (i32.const 1) (local.get 0)))
     //   )
-    // 
+    //
     //   (func (export "as-loop-first") (param i32) (result i32)
-    //     (loop (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (call $dummy) (call $dummy))
+    //     (loop (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (call $dummy) (call
+    // $dummy))
     //   )
     //   (func (export "as-loop-mid") (param i32) (result i32)
-    //     (loop (result i32) (call $dummy) (select (i32.const 2) (i32.const 3) (local.get 0)) (call $dummy))
+    //     (loop (result i32) (call $dummy) (select (i32.const 2) (i32.const 3) (local.get 0)) (call
+    // $dummy))
     //   )
     //   (func (export "as-loop-last") (param i32) (result i32)
-    //     (loop (result i32) (call $dummy) (call $dummy) (select (i32.const 2) (i32.const 3) (local.get 0)))
+    //     (loop (result i32) (call $dummy) (call $dummy) (select (i32.const 2) (i32.const 3)
+    // (local.get 0)))
     //   )
-    // 
+    //
     //   (func (export "as-br_table-first") (param i32) (result i32)
-    //     (block (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (i32.const 2) (br_table 0 0))
+    //     (block (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (i32.const 2)
+    // (br_table 0 0))
     //   )
     //   (func (export "as-br_table-last") (param i32) (result i32)
-    //     (block (result i32) (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get 0)) (br_table 0 0))
+    //     (block (result i32) (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get 0))
+    // (br_table 0 0))
     //   )
-    // 
+    //
     //   (func (export "as-if-condition") (param i32)
     //     (select (i32.const 2) (i32.const 3) (local.get 0)) (if (then (call $dummy)))
     //   )
     //   (func (export "as-if-then") (param i32) (result i32)
-    //     (if (result i32) (i32.const 1) (then (select (i32.const 2) (i32.const 3) (local.get 0))) (else (i32.const 4)))
+    //     (if (result i32) (i32.const 1) (then (select (i32.const 2) (i32.const 3) (local.get 0)))
+    // (else (i32.const 4)))
     //   )
     //   (func (export "as-if-else") (param i32) (result i32)
-    //     (if (result i32) (i32.const 0) (then (i32.const 2)) (else (select (i32.const 2) (i32.const 3) (local.get 0))))
+    //     (if (result i32) (i32.const 0) (then (i32.const 2)) (else (select (i32.const 2)
+    // (i32.const 3) (local.get 0))))
     //   )
-    // 
+    //
     //   (func (export "as-br_if-first") (param i32) (result i32)
-    //     (block (result i32) (br_if 0 (select (i32.const 2) (i32.const 3) (local.get 0)) (i32.const 4)))
+    //     (block (result i32) (br_if 0 (select (i32.const 2) (i32.const 3) (local.get 0))
+    // (i32.const 4)))
     //   )
     //   (func (export "as-br_if-last") (param i32) (result i32)
-    //     (block (result i32) (br_if 0 (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get 0))))
+    //     (block (result i32) (br_if 0 (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get
+    // 0))))
     //   )
-    // 
+    //
     //   (func $f (param i32) (result i32) (local.get 0))
-    // 
+    //
     //   (func (export "as-call-value") (param i32) (result i32)
     //     (call $f (select (i32.const 1) (i32.const 2) (local.get 0)))
     //   )
@@ -100,7 +107,8 @@ public final class SelectTest {
     //     (block (result i32) (br 0 (select (i32.const 1) (i32.const 2) (local.get 0))))
     //   )
     //   (func (export "as-local.set-value") (param i32) (result i32)
-    //     (local i32) (local.set 0 (select (i32.const 1) (i32.const 2) (local.get 0))) (local.get 0)
+    //     (local i32) (local.set 0 (select (i32.const 1) (i32.const 2) (local.get 0))) (local.get
+    // 0)
     //   )
     //   (func (export "as-local.tee-value") (param i32) (result i32)
     //     (local.tee 0 (select (i32.const 1) (i32.const 2) (local.get 0)))
@@ -110,7 +118,7 @@ public final class SelectTest {
     //     (global.set $a (select (i32.const 1) (i32.const 2) (local.get 0)))
     //     (global.get $a)
     //   )
-    // 
+    //
     //   (func (export "as-unary-operand") (param i32) (result i32)
     //     (i32.eqz (select (i32.const 0) (i32.const 1) (local.get 0)))
     //   )
@@ -125,7 +133,7 @@ public final class SelectTest {
     //       (i32.eqz (select (i32.const 0) (i32.const 1) (local.get 0)))
     //     )
     //   )
-    // 
+    //
     //   (func (export "as-compare-left") (param i32) (result i32)
     //     (block (result i32)
     //       (i32.le_s (select (i32.const 1) (i32.const 2) (local.get 0)) (i32.const 1))
@@ -146,61 +154,79 @@ public final class SelectTest {
     //     (i32.const 8) (select (i32.const 1) (i32.const 2) (local.get 0)) (i32.store)
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "select-i32" (i32.const 1) (i32.const 2) (i32.const 1)) (i32.const 1))
     // (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const 1)) (i64.const 2))
     // (assert_return (invoke "select-f32" (f32.const 1) (f32.const 2) (i32.const 1)) (f32.const 1))
     // (assert_return (invoke "select-f64" (f64.const 1) (f64.const 2) (i32.const 1)) (f64.const 1))
-    // 
+    //
     // (assert_return (invoke "select-i32" (i32.const 1) (i32.const 2) (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "select-i32" (i32.const 2) (i32.const 1) (i32.const 0)) (i32.const 1))
-    // (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const -1)) (i64.const 2))
-    // (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const 0xf0f0f0f0)) (i64.const 2))
-    // 
-    // (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 1)) (f32.const nan))
-    // (assert_return (invoke "select-f32" (f32.const nan:0x20304) (f32.const 1) (i32.const 1)) (f32.const nan:0x20304))
-    // (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 0)) (f32.const 1))
-    // (assert_return (invoke "select-f32" (f32.const nan:0x20304) (f32.const 1) (i32.const 0)) (f32.const 1))
-    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan) (i32.const 1)) (f32.const 2))
-    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 1)) (f32.const 2))
-    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan) (i32.const 0)) (f32.const nan))
-    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 0)) (f32.const nan:0x20304))
-    // 
-    // (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 1)) (f64.const nan))
-    // (assert_return (invoke "select-f64" (f64.const nan:0x20304) (f64.const 1) (i32.const 1)) (f64.const nan:0x20304))
-    // (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 0)) (f64.const 1))
-    // (assert_return (invoke "select-f64" (f64.const nan:0x20304) (f64.const 1) (i32.const 0)) (f64.const 1))
-    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan) (i32.const 1)) (f64.const 2))
-    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 1)) (f64.const 2))
-    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan) (i32.const 0)) (f64.const nan))
-    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 0)) (f64.const nan:0x20304))
-    // 
+    // (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const -1)) (i64.const
+    // 2))
+    // (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const 0xf0f0f0f0))
+    // (i64.const 2))
+    //
+    // (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 1)) (f32.const
+    // nan))
+    // (assert_return (invoke "select-f32" (f32.const nan:0x20304) (f32.const 1) (i32.const 1))
+    // (f32.const nan:0x20304))
+    // (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 0)) (f32.const
+    // 1))
+    // (assert_return (invoke "select-f32" (f32.const nan:0x20304) (f32.const 1) (i32.const 0))
+    // (f32.const 1))
+    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan) (i32.const 1)) (f32.const
+    // 2))
+    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 1))
+    // (f32.const 2))
+    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan) (i32.const 0)) (f32.const
+    // nan))
+    // (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 0))
+    // (f32.const nan:0x20304))
+    //
+    // (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 1)) (f64.const
+    // nan))
+    // (assert_return (invoke "select-f64" (f64.const nan:0x20304) (f64.const 1) (i32.const 1))
+    // (f64.const nan:0x20304))
+    // (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 0)) (f64.const
+    // 1))
+    // (assert_return (invoke "select-f64" (f64.const nan:0x20304) (f64.const 1) (i32.const 0))
+    // (f64.const 1))
+    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan) (i32.const 1)) (f64.const
+    // 2))
+    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 1))
+    // (f64.const 2))
+    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan) (i32.const 0)) (f64.const
+    // nan))
+    // (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 0))
+    // (f64.const nan:0x20304))
+    //
     // (assert_return (invoke "as-select-first" (i32.const 0)) (i32.const 1))
     // (assert_return (invoke "as-select-first" (i32.const 1)) (i32.const 0))
     // (assert_return (invoke "as-select-mid" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-select-mid" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-select-last" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-select-last" (i32.const 1)) (i32.const 3))
-    // 
+    //
     // (assert_return (invoke "as-loop-first" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-loop-first" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-loop-mid" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-loop-mid" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-loop-last" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-loop-last" (i32.const 1)) (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-if-condition" (i32.const 0)))
     // (assert_return (invoke "as-if-condition" (i32.const 1)))
     // (assert_return (invoke "as-if-then" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-if-then" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-if-else" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-if-else" (i32.const 1)) (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-br_if-first" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-br_if-first" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-br_if-last" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-br_if-last" (i32.const 1)) (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-call-value" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-call-value" (i32.const 1)) (i32.const 1))
     // (assert_return (invoke "as-return-value" (i32.const 0)) (i32.const 2))
@@ -215,7 +241,7 @@ public final class SelectTest {
     // (assert_return (invoke "as-local.tee-value" (i32.const 1)) (i32.const 1))
     // (assert_return (invoke "as-global.set-value" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-global.set-value" (i32.const 1)) (i32.const 1))
-    // 
+    //
     // (assert_return (invoke "as-unary-operand" (i32.const 0)) (i32.const 0))
     // (assert_return (invoke "as-unary-operand" (i32.const 1)) (i32.const 1))
     // (assert_return (invoke "as-binary-operand" (i32.const 0)) (i32.const 4))
@@ -226,12 +252,12 @@ public final class SelectTest {
     // (assert_return (invoke "as-compare-left" (i32.const 1)) (i32.const 1))
     // (assert_return (invoke "as-compare-right" (i32.const 0)) (i32.const 0))
     // (assert_return (invoke "as-compare-right" (i32.const 1)) (i32.const 1))
-    // 
+    //
     // (assert_return (invoke "as-br_table-first" (i32.const 0)) (i32.const 3))
     // (assert_return (invoke "as-br_table-first" (i32.const 1)) (i32.const 2))
     // (assert_return (invoke "as-br_table-last" (i32.const 0)) (i32.const 2))
     // (assert_return (invoke "as-br_table-last" (i32.const 1)) (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-store-first" (i32.const 0)))
     // (assert_return (invoke "as-store-first" (i32.const 1)))
     // (assert_return (invoke "as-store-last" (i32.const 0)))
@@ -239,13 +265,14 @@ public final class SelectTest {
     // (assert_return (invoke "as-load-operand" (i32.const 0)) (i32.const 1))
     // (assert_return (invoke "as-load-operand" (i32.const 1)) (i32.const 1))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           ;; Auxiliary
           (func $dummy)
           (table $tab funcref (elem $dummy))
           (memory 1)
-        
+
           (func (export "select-i32") (param i32 i32 i32) (result i32)
             (select (local.get 0) (local.get 1) (local.get 2))
           )
@@ -258,7 +285,7 @@ public final class SelectTest {
           (func (export "select-f64") (param f64 f64 i32) (result f64)
             (select (local.get 0) (local.get 1) (local.get 2))
           )
-        
+
           (func (export "as-select-first") (param i32) (result i32)
             (select (select (i32.const 0) (i32.const 1) (local.get 0)) (i32.const 2) (i32.const 3))
           )
@@ -268,7 +295,7 @@ public final class SelectTest {
           (func (export "as-select-last") (param i32) (result i32)
             (select (i32.const 2) (i32.const 3) (select (i32.const 0) (i32.const 1) (local.get 0)))
           )
-        
+
           (func (export "as-loop-first") (param i32) (result i32)
             (loop (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (call $dummy) (call $dummy))
           )
@@ -278,14 +305,14 @@ public final class SelectTest {
           (func (export "as-loop-last") (param i32) (result i32)
             (loop (result i32) (call $dummy) (call $dummy) (select (i32.const 2) (i32.const 3) (local.get 0)))
           )
-        
+
           (func (export "as-br_table-first") (param i32) (result i32)
             (block (result i32) (select (i32.const 2) (i32.const 3) (local.get 0)) (i32.const 2) (br_table 0 0))
           )
           (func (export "as-br_table-last") (param i32) (result i32)
             (block (result i32) (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get 0)) (br_table 0 0))
           )
-        
+
           (func (export "as-if-condition") (param i32)
             (select (i32.const 2) (i32.const 3) (local.get 0)) (if (then (call $dummy)))
           )
@@ -295,16 +322,16 @@ public final class SelectTest {
           (func (export "as-if-else") (param i32) (result i32)
             (if (result i32) (i32.const 0) (then (i32.const 2)) (else (select (i32.const 2) (i32.const 3) (local.get 0))))
           )
-        
+
           (func (export "as-br_if-first") (param i32) (result i32)
             (block (result i32) (br_if 0 (select (i32.const 2) (i32.const 3) (local.get 0)) (i32.const 4)))
           )
           (func (export "as-br_if-last") (param i32) (result i32)
             (block (result i32) (br_if 0 (i32.const 2) (select (i32.const 2) (i32.const 3) (local.get 0))))
           )
-        
+
           (func $f (param i32) (result i32) (local.get 0))
-        
+
           (func (export "as-call-value") (param i32) (result i32)
             (call $f (select (i32.const 1) (i32.const 2) (local.get 0)))
           )
@@ -328,7 +355,7 @@ public final class SelectTest {
             (global.set $a (select (i32.const 1) (i32.const 2) (local.get 0)))
             (global.get $a)
           )
-        
+
           (func (export "as-unary-operand") (param i32) (result i32)
             (i32.eqz (select (i32.const 0) (i32.const 1) (local.get 0)))
           )
@@ -343,7 +370,7 @@ public final class SelectTest {
               (i32.eqz (select (i32.const 0) (i32.const 1) (local.get 0)))
             )
           )
-        
+
           (func (export "as-compare-left") (param i32) (result i32)
             (block (result i32)
               (i32.le_s (select (i32.const 1) (i32.const 2) (local.get 0)) (i32.const 1))
@@ -364,17 +391,17 @@ public final class SelectTest {
             (i32.const 8) (select (i32.const 1) (i32.const 2) (local.get 0)) (i32.store)
           )
         )
-        
+
         (assert_return (invoke "select-i32" (i32.const 1) (i32.const 2) (i32.const 1)) (i32.const 1))
         (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const 1)) (i64.const 2))
         (assert_return (invoke "select-f32" (f32.const 1) (f32.const 2) (i32.const 1)) (f32.const 1))
         (assert_return (invoke "select-f64" (f64.const 1) (f64.const 2) (i32.const 1)) (f64.const 1))
-        
+
         (assert_return (invoke "select-i32" (i32.const 1) (i32.const 2) (i32.const 0)) (i32.const 2))
         (assert_return (invoke "select-i32" (i32.const 2) (i32.const 1) (i32.const 0)) (i32.const 1))
         (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const -1)) (i64.const 2))
         (assert_return (invoke "select-i64" (i64.const 2) (i64.const 1) (i32.const 0xf0f0f0f0)) (i64.const 2))
-        
+
         (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 1)) (f32.const nan))
         (assert_return (invoke "select-f32" (f32.const nan:0x20304) (f32.const 1) (i32.const 1)) (f32.const nan:0x20304))
         (assert_return (invoke "select-f32" (f32.const nan) (f32.const 1) (i32.const 0)) (f32.const 1))
@@ -383,7 +410,7 @@ public final class SelectTest {
         (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 1)) (f32.const 2))
         (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan) (i32.const 0)) (f32.const nan))
         (assert_return (invoke "select-f32" (f32.const 2) (f32.const nan:0x20304) (i32.const 0)) (f32.const nan:0x20304))
-        
+
         (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 1)) (f64.const nan))
         (assert_return (invoke "select-f64" (f64.const nan:0x20304) (f64.const 1) (i32.const 1)) (f64.const nan:0x20304))
         (assert_return (invoke "select-f64" (f64.const nan) (f64.const 1) (i32.const 0)) (f64.const 1))
@@ -392,33 +419,33 @@ public final class SelectTest {
         (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 1)) (f64.const 2))
         (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan) (i32.const 0)) (f64.const nan))
         (assert_return (invoke "select-f64" (f64.const 2) (f64.const nan:0x20304) (i32.const 0)) (f64.const nan:0x20304))
-        
+
         (assert_return (invoke "as-select-first" (i32.const 0)) (i32.const 1))
         (assert_return (invoke "as-select-first" (i32.const 1)) (i32.const 0))
         (assert_return (invoke "as-select-mid" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-select-mid" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-select-last" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-select-last" (i32.const 1)) (i32.const 3))
-        
+
         (assert_return (invoke "as-loop-first" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-loop-first" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-loop-mid" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-loop-mid" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-loop-last" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-loop-last" (i32.const 1)) (i32.const 2))
-        
+
         (assert_return (invoke "as-if-condition" (i32.const 0)))
         (assert_return (invoke "as-if-condition" (i32.const 1)))
         (assert_return (invoke "as-if-then" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-if-then" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-if-else" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-if-else" (i32.const 1)) (i32.const 2))
-        
+
         (assert_return (invoke "as-br_if-first" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-br_if-first" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-br_if-last" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-br_if-last" (i32.const 1)) (i32.const 2))
-        
+
         (assert_return (invoke "as-call-value" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-call-value" (i32.const 1)) (i32.const 1))
         (assert_return (invoke "as-return-value" (i32.const 0)) (i32.const 2))
@@ -433,7 +460,7 @@ public final class SelectTest {
         (assert_return (invoke "as-local.tee-value" (i32.const 1)) (i32.const 1))
         (assert_return (invoke "as-global.set-value" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-global.set-value" (i32.const 1)) (i32.const 1))
-        
+
         (assert_return (invoke "as-unary-operand" (i32.const 0)) (i32.const 0))
         (assert_return (invoke "as-unary-operand" (i32.const 1)) (i32.const 1))
         (assert_return (invoke "as-binary-operand" (i32.const 0)) (i32.const 4))
@@ -444,19 +471,19 @@ public final class SelectTest {
         (assert_return (invoke "as-compare-left" (i32.const 1)) (i32.const 1))
         (assert_return (invoke "as-compare-right" (i32.const 0)) (i32.const 0))
         (assert_return (invoke "as-compare-right" (i32.const 1)) (i32.const 1))
-        
+
         (assert_return (invoke "as-br_table-first" (i32.const 0)) (i32.const 3))
         (assert_return (invoke "as-br_table-first" (i32.const 1)) (i32.const 2))
         (assert_return (invoke "as-br_table-last" (i32.const 0)) (i32.const 2))
         (assert_return (invoke "as-br_table-last" (i32.const 1)) (i32.const 2))
-        
+
         (assert_return (invoke "as-store-first" (i32.const 0)))
         (assert_return (invoke "as-store-first" (i32.const 1)))
         (assert_return (invoke "as-store-last" (i32.const 0)))
         (assert_return (invoke "as-store-last" (i32.const 1)))
         (assert_return (invoke "as-load-operand" (i32.const 0)) (i32.const 1))
         (assert_return (invoke "as-load-operand" (i32.const 1)) (i32.const 1))
-        
+
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

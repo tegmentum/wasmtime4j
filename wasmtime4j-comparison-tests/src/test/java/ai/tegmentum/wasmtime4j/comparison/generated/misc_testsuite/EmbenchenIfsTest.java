@@ -1,20 +1,19 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import java.io.InputStream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::embenchen_ifs
  *
- * Original source: embenchen_ifs.wast:1
- * Category: misc_testsuite
+ * <p>Original source: embenchen_ifs.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class EmbenchenIfsTest {
 
@@ -25,9 +24,11 @@ public final class EmbenchenIfsTest {
     // WAT code is large (433 KB), loaded from external resource file
 
     final String wat;
-    try (final InputStream is = getClass().getResourceAsStream("/wasmtime-tests/misc_testsuite/embenchen-ifs.wat")) {
+    try (final InputStream is =
+        getClass().getResourceAsStream("/wasmtime-tests/misc_testsuite/embenchen-ifs.wat")) {
       if (is == null) {
-        throw new AssertionError("WAT resource not found: /wasmtime-tests/misc_testsuite/embenchen-ifs.wat");
+        throw new AssertionError(
+            "WAT resource not found: /wasmtime-tests/misc_testsuite/embenchen-ifs.wat");
       }
       wat = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
     } catch (final java.io.IOException e) {

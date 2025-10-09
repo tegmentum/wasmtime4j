@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::elem_drop
  *
- * Original source: elem_drop.wast:1
- * Category: misc_testsuite
+ * <p>Original source: elem_drop.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ElemDropTest {
 
@@ -27,16 +25,17 @@ public final class ElemDropTest {
     //   (elem (i32.const 0) funcref (ref.func 0))
     //   (func (export "elem.drop non-passive element")
     //     (elem.drop 0)))
-    // 
+    //
     // (invoke "elem.drop non-passive element")
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (table 1 1 funcref)
           (elem (i32.const 0) funcref (ref.func 0))
           (func (export "elem.drop non-passive element")
             (elem.drop 0)))
-        
+
         (invoke "elem.drop non-passive element")
     """;
 

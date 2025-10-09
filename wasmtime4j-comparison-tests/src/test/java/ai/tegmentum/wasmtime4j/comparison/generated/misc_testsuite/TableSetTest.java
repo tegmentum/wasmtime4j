@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::table_set
  *
- * Original source: table_set.wast:1
- * Category: misc_testsuite
+ * <p>Original source: table_set.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TableSetTest {
 
@@ -29,7 +27,7 @@ public final class TableSetTest {
     //   (table $t4 1 (ref null $res-i32))
     //   (elem (table $t3) (i32.const 1) func $returns-five)
     //   (func $returns-five (result i32) (i32.const 5))
-    // 
+    //
     //   (func (export "get-externref") (param $i i32) (result externref)
     //     (table.get $t2 (local.get $i))
     //   )
@@ -39,7 +37,7 @@ public final class TableSetTest {
     //   (func $f4 (export "get-typed-func") (param $i i32) (result (ref null $res-i32))
     //     (table.get $t4 (local.get $i))
     //   )
-    // 
+    //
     //   (func (export "set-externref") (param $i i32) (param $r externref)
     //     (table.set $t2 (local.get $i) (local.get $r))
     //   )
@@ -52,7 +50,7 @@ public final class TableSetTest {
     //   (func $f5 (export "set-typed-func") (param $i i32) (param $r (ref $res-i32))
     //     (table.set $t4 (local.get $i) (local.get $r))
     //   )
-    // 
+    //
     //   (func (export "is_null-funcref") (param $i i32) (result i32)
     //     (ref.is_null (call $f3 (local.get $i)))
     //   )
@@ -62,40 +60,49 @@ public final class TableSetTest {
     //   (func (export "set-returns-five") (param $i i32)
     //     (call $f5 (local.get $i) (ref.func $returns-five))
     //   )
-    //   (func (export "get-typed-and-call") (param $i i32) (result i32) (call_ref $res-i32 (call $f4 (local.get $i))))
+    //   (func (export "get-typed-and-call") (param $i i32) (result i32) (call_ref $res-i32 (call
+    // $f4 (local.get $i))))
     // )
-    // 
+    //
     // (assert_return (invoke "get-externref" (i32.const 0)) (ref.null extern))
     // (assert_return (invoke "set-externref" (i32.const 0) (ref.extern 1)))
     // (assert_return (invoke "get-externref" (i32.const 0)) (ref.extern 1))
     // (assert_return (invoke "set-externref" (i32.const 0) (ref.null extern)))
     // (assert_return (invoke "get-externref" (i32.const 0)) (ref.null extern))
-    // 
+    //
     // (assert_return (invoke "get-funcref" (i32.const 0)) (ref.null func))
     // (assert_return (invoke "set-funcref-from" (i32.const 0) (i32.const 1)))
     // (assert_return (invoke "is_null-funcref" (i32.const 0)) (i32.const 0))
     // (assert_return (invoke "set-funcref" (i32.const 0) (ref.null func)))
     // (assert_return (invoke "get-funcref" (i32.const 0)) (ref.null func))
-    // 
+    //
     // (assert_return (invoke "is_null-typed-func" (i32.const 0)) (i32.const 1))
     // (invoke "set-returns-five" (i32.const 0))
     // (assert_return (invoke "get-typed-and-call" (i32.const 0)) (i32.const 5))
-    // 
-    // (assert_trap (invoke "set-externref" (i32.const 2) (ref.null extern)) "out of bounds table access")
-    // (assert_trap (invoke "set-funcref" (i32.const 3) (ref.null func)) "out of bounds table access")
+    //
+    // (assert_trap (invoke "set-externref" (i32.const 2) (ref.null extern)) "out of bounds table
+    // access")
+    // (assert_trap (invoke "set-funcref" (i32.const 3) (ref.null func)) "out of bounds table
+    // access")
     // (assert_trap (invoke "set-returns-five" (i32.const 2)) "out of bounds table access")
-    // (assert_trap (invoke "set-externref" (i32.const -1) (ref.null extern)) "out of bounds table access")
-    // (assert_trap (invoke "set-funcref" (i32.const -1) (ref.null func)) "out of bounds table access")
+    // (assert_trap (invoke "set-externref" (i32.const -1) (ref.null extern)) "out of bounds table
+    // access")
+    // (assert_trap (invoke "set-funcref" (i32.const -1) (ref.null func)) "out of bounds table
+    // access")
     // (assert_trap (invoke "set-returns-five" (i32.const -1)) "out of bounds table access")
-    // 
-    // (assert_trap (invoke "set-externref" (i32.const 2) (ref.extern 0)) "out of bounds table access")
-    // (assert_trap (invoke "set-funcref-from" (i32.const 3) (i32.const 1)) "out of bounds table access")
-    // (assert_trap (invoke "set-externref" (i32.const -1) (ref.extern 0)) "out of bounds table access")
-    // (assert_trap (invoke "set-funcref-from" (i32.const -1) (i32.const 1)) "out of bounds table access")
-    // 
-    // 
+    //
+    // (assert_trap (invoke "set-externref" (i32.const 2) (ref.extern 0)) "out of bounds table
+    // access")
+    // (assert_trap (invoke "set-funcref-from" (i32.const 3) (i32.const 1)) "out of bounds table
+    // access")
+    // (assert_trap (invoke "set-externref" (i32.const -1) (ref.extern 0)) "out of bounds table
+    // access")
+    // (assert_trap (invoke "set-funcref-from" (i32.const -1) (i32.const 1)) "out of bounds table
+    // access")
+    //
+    //
     // ;; Type errors
-    // 
+    //
     // (assert_invalid
     //   (module
     //     (table $t 10 externref)
@@ -141,7 +148,7 @@ public final class TableSetTest {
     //   )
     //   "type mismatch"
     // )
-    // 
+    //
     // (assert_invalid
     //   (module
     //     (table $t1 1 externref)
@@ -152,7 +159,7 @@ public final class TableSetTest {
     //   )
     //   "type mismatch"
     // )
-    // 
+    //
     // (assert_invalid
     //   (module
     //     (table $t 10 externref)
@@ -163,7 +170,8 @@ public final class TableSetTest {
     //   "type mismatch"
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (type $res-i32 (func (result i32)))
           (table $t2 1 externref)
@@ -171,7 +179,7 @@ public final class TableSetTest {
           (table $t4 1 (ref null $res-i32))
           (elem (table $t3) (i32.const 1) func $returns-five)
           (func $returns-five (result i32) (i32.const 5))
-        
+
           (func (export "get-externref") (param $i i32) (result externref)
             (table.get $t2 (local.get $i))
           )
@@ -181,7 +189,7 @@ public final class TableSetTest {
           (func $f4 (export "get-typed-func") (param $i i32) (result (ref null $res-i32))
             (table.get $t4 (local.get $i))
           )
-        
+
           (func (export "set-externref") (param $i i32) (param $r externref)
             (table.set $t2 (local.get $i) (local.get $r))
           )
@@ -194,7 +202,7 @@ public final class TableSetTest {
           (func $f5 (export "set-typed-func") (param $i i32) (param $r (ref $res-i32))
             (table.set $t4 (local.get $i) (local.get $r))
           )
-        
+
           (func (export "is_null-funcref") (param $i i32) (result i32)
             (ref.is_null (call $f3 (local.get $i)))
           )
@@ -206,38 +214,38 @@ public final class TableSetTest {
           )
           (func (export "get-typed-and-call") (param $i i32) (result i32) (call_ref $res-i32 (call $f4 (local.get $i))))
         )
-        
+
         (assert_return (invoke "get-externref" (i32.const 0)) (ref.null extern))
         (assert_return (invoke "set-externref" (i32.const 0) (ref.extern 1)))
         (assert_return (invoke "get-externref" (i32.const 0)) (ref.extern 1))
         (assert_return (invoke "set-externref" (i32.const 0) (ref.null extern)))
         (assert_return (invoke "get-externref" (i32.const 0)) (ref.null extern))
-        
+
         (assert_return (invoke "get-funcref" (i32.const 0)) (ref.null func))
         (assert_return (invoke "set-funcref-from" (i32.const 0) (i32.const 1)))
         (assert_return (invoke "is_null-funcref" (i32.const 0)) (i32.const 0))
         (assert_return (invoke "set-funcref" (i32.const 0) (ref.null func)))
         (assert_return (invoke "get-funcref" (i32.const 0)) (ref.null func))
-        
+
         (assert_return (invoke "is_null-typed-func" (i32.const 0)) (i32.const 1))
         (invoke "set-returns-five" (i32.const 0))
         (assert_return (invoke "get-typed-and-call" (i32.const 0)) (i32.const 5))
-        
+
         (assert_trap (invoke "set-externref" (i32.const 2) (ref.null extern)) "out of bounds table access")
         (assert_trap (invoke "set-funcref" (i32.const 3) (ref.null func)) "out of bounds table access")
         (assert_trap (invoke "set-returns-five" (i32.const 2)) "out of bounds table access")
         (assert_trap (invoke "set-externref" (i32.const -1) (ref.null extern)) "out of bounds table access")
         (assert_trap (invoke "set-funcref" (i32.const -1) (ref.null func)) "out of bounds table access")
         (assert_trap (invoke "set-returns-five" (i32.const -1)) "out of bounds table access")
-        
+
         (assert_trap (invoke "set-externref" (i32.const 2) (ref.extern 0)) "out of bounds table access")
         (assert_trap (invoke "set-funcref-from" (i32.const 3) (i32.const 1)) "out of bounds table access")
         (assert_trap (invoke "set-externref" (i32.const -1) (ref.extern 0)) "out of bounds table access")
         (assert_trap (invoke "set-funcref-from" (i32.const -1) (i32.const 1)) "out of bounds table access")
-        
-        
+
+
         ;; Type errors
-        
+
         (assert_invalid
           (module
             (table $t 10 externref)
@@ -283,7 +291,7 @@ public final class TableSetTest {
           )
           "type mismatch"
         )
-        
+
         (assert_invalid
           (module
             (table $t1 1 externref)
@@ -294,7 +302,7 @@ public final class TableSetTest {
           )
           "type mismatch"
         )
-        
+
         (assert_invalid
           (module
             (table $t 10 externref)

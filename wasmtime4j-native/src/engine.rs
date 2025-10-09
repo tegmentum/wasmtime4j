@@ -292,22 +292,37 @@ impl EngineBuilder {
         // Set production-optimized defaults
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::Speed);
-        
-        // Enable commonly used WebAssembly features directly on Config
+
+        // Enable commonly used WebAssembly features
         config.wasm_reference_types(true);
         config.wasm_bulk_memory(true);
         config.wasm_multi_value(true);
         config.wasm_simd(true);
 
-        // FIX: Enable fuel consumption by default for Store operations
-        config.consume_fuel(true);
+        // Configure stack size - increase from default 512 KiB to 2 MiB for JNI safety
+        config.max_wasm_stack(2 * 1024 * 1024);
+
+        // Enable debug info for better backtraces during development
+        config.debug_info(true);
+
+        // Enable WASM backtraces for better error diagnostics
+        config.wasm_backtrace(true);
+        config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
+
+        // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
+        // JVM and Wasmtime both install SIGSEGV handlers which conflict
+        // This forces explicit bounds checks instead of using signals
+        config.signals_based_traps(false);
+
+        // Note: Fuel consumption is opt-in via StoreBuilder.fuel_limit()
+        // config.consume_fuel(true);
 
         EngineBuilder {
             config,
             strategy: Some(Strategy::Cranelift),
             opt_level: Some(OptLevel::Speed),
-            debug_info: false,
-            fuel_enabled: true,
+            debug_info: true,
+            fuel_enabled: false,
             max_memory_pages: None,
             max_stack_size: None,
             epoch_interruption: false,

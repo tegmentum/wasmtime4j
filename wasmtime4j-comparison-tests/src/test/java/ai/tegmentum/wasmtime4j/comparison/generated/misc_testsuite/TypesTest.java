@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::types
  *
- * Original source: types.wast:1
- * Category: misc_testsuite
+ * <p>Original source: types.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TypesTest {
 
@@ -31,21 +29,21 @@ public final class TypesTest {
     //   (type (result $u))
     //   (type (result (error $u)))
     //   (type (result))
-    // 
+    //
     //   (type (func (param "a" $e) (result (option $r))))
-    // 
+    //
     //   (type (variant
     //     (case "a" string)
     //     (case "b" u32)
     //     (case "c" float32)
     //     (case "d" float64)
     //   ))
-    // 
+    //
     //   (type $errno (enum "a" "b" "e"))
     //   (type (list $errno))
     //   (type $oflags (flags "read" "write" "exclusive"))
     //   (type (tuple $oflags $errno $r))
-    // 
+    //
     //   ;; primitives in functions
     //   (type (func
     //     (param "a" bool)
@@ -60,7 +58,7 @@ public final class TypesTest {
     //     (param "j" char)
     //     (param "k" string)
     //   ))
-    // 
+    //
     //   ;; primitives in types
     //   (type bool)
     //   (type u8)
@@ -74,7 +72,7 @@ public final class TypesTest {
     //   (type char)
     //   (type string)
     // )
-    // 
+    //
     // (component
     //   (type $empty (func))
     //   (type (func (param "a" string) (result u32)))
@@ -82,29 +80,29 @@ public final class TypesTest {
     //   (core type (module))
     //   (core type (func))
     //   (type (instance))
-    // 
+    //
     //   (type (component
     //     (import "x" (func (type $empty)))
     //     (import "y" (func))
     //     (import "z" (component))
-    // 
+    //
     //     (type $t (instance))
-    // 
+    //
     //     (export "a" (core module))
     //     (export "b" (instance (type $t)))
     //   ))
-    // 
+    //
     //   (type (instance
     //     (export "x" (func (type $empty)))
     //     (export "y" (func))
     //     (export "z" (component))
-    // 
+    //
     //     (type $t (instance))
-    // 
+    //
     //     (export "a" (core module))
     //     (export "b" (instance (type $t)))
     //   ))
-    // 
+    //
     //   (core type (module
     //     (import "" "" (func (param i32)))
     //     (import "" "1" (func (result i32)))
@@ -113,12 +111,12 @@ public final class TypesTest {
     //     (export "3" (table 1 funcref))
     //   ))
     // )
-    // 
+    //
     // ;; outer core aliases work
     // (component $C
     //   (core type $f (func))
     //   (core type $m (module))
-    // 
+    //
     //   (component $C2
     //     (alias outer $C $f (core type $my_f))
     //     (import "a" (core module (type $m)))
@@ -128,7 +126,7 @@ public final class TypesTest {
     //     ))
     //   )
     // )
-    // 
+    //
     // ;; type exports work
     // (component $C
     //   (component $C2
@@ -139,7 +137,7 @@ public final class TypesTest {
     //   (alias export 0 "x" (type))
     //   (export "x" (type 0))
     // )
-    // 
+    //
     // (component
     //   (core module $m (func (export "") (param i32) (result i32) local.get 0))
     //   (core instance $m (instantiate $m))
@@ -164,7 +162,7 @@ public final class TypesTest {
     // (assert_return (invoke "i-to-s16" (u32.const 0)) (s16.const 0))
     // (assert_return (invoke "i-to-s16" (u32.const 1)) (s16.const 1))
     // (assert_return (invoke "i-to-s16" (u32.const 0xffffffff)) (s16.const -1))
-    // 
+    //
     // (assert_invalid
     //   (component
     //     (type $t1 string)
@@ -271,7 +269,7 @@ public final class TypesTest {
     //     (export "t" (type $t101))
     //   )
     //   "type nesting is too deep")
-    // 
+    //
     // (component
     //   (type (instance
     //     (export $x "x" (instance
@@ -281,7 +279,7 @@ public final class TypesTest {
     //     (alias export $x "y" (type $t))
     //     (export "my-y" (type (eq $t)))
     //   ))
-    // 
+    //
     //   (type (component
     //     (import "x" (instance $x
     //       (type $t u32)
@@ -291,14 +289,14 @@ public final class TypesTest {
     //     (export "my-y" (type (eq $t)))
     //   ))
     // )
-    // 
+    //
     // (component
     //   (type $t u32)
     //   (export $t2 "t" (type $t))
     //   (type $r (record (field "x" $t2)))
     //   (export "r" (type $r))
     // )
-    // 
+    //
     // (component
     //   (component
     //     (import "x" (instance $i
@@ -309,7 +307,7 @@ public final class TypesTest {
     //     (export "i" (type $i))
     //   )
     // )
-    // 
+    //
     // (component
     //   (type $u u32)
     //   (instance $i
@@ -318,7 +316,7 @@ public final class TypesTest {
     //   (alias export $i "i" (type $i))
     //   (export "i" (type $i))
     // )
-    // 
+    //
     // (component
     //   (component $c
     //     (type $t u32)
@@ -327,7 +325,7 @@ public final class TypesTest {
     //   (instance $c (instantiate $c))
     //   (export "i" (type $c "t"))
     // )
-    // 
+    //
     // (component
     //   (component $c
     //     (import "x" (component $c
@@ -337,21 +335,21 @@ public final class TypesTest {
     //     (instance $c (instantiate $c))
     //     (export "i" (type $c "t"))
     //   )
-    // 
+    //
     //   (component $x
     //     (type $t u32)
     //     (export "t" (type $t))
     //   )
-    // 
+    //
     //   (instance $c (instantiate $c (with "x" (component $x))))
     // )
-    // 
+    //
     // (component
     //   (type $t1 u64)
     //   (import "a" (type $t2 (eq $t1)))
     //   (import "b" (type $t3 (eq $t2)))
     // )
-    // 
+    //
     // (component
     //   (import "a" (instance
     //     (type $t1 u64)
@@ -360,7 +358,8 @@ public final class TypesTest {
     //   ))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (component
           (type string)
           (type (func (param "a" string)))
@@ -370,21 +369,21 @@ public final class TypesTest {
           (type (result $u))
           (type (result (error $u)))
           (type (result))
-        
+
           (type (func (param "a" $e) (result (option $r))))
-        
+
           (type (variant
             (case "a" string)
             (case "b" u32)
             (case "c" float32)
             (case "d" float64)
           ))
-        
+
           (type $errno (enum "a" "b" "e"))
           (type (list $errno))
           (type $oflags (flags "read" "write" "exclusive"))
           (type (tuple $oflags $errno $r))
-        
+
           ;; primitives in functions
           (type (func
             (param "a" bool)
@@ -399,7 +398,7 @@ public final class TypesTest {
             (param "j" char)
             (param "k" string)
           ))
-        
+
           ;; primitives in types
           (type bool)
           (type u8)
@@ -413,7 +412,7 @@ public final class TypesTest {
           (type char)
           (type string)
         )
-        
+
         (component
           (type $empty (func))
           (type (func (param "a" string) (result u32)))
@@ -421,29 +420,29 @@ public final class TypesTest {
           (core type (module))
           (core type (func))
           (type (instance))
-        
+
           (type (component
             (import "x" (func (type $empty)))
             (import "y" (func))
             (import "z" (component))
-        
+
             (type $t (instance))
-        
+
             (export "a" (core module))
             (export "b" (instance (type $t)))
           ))
-        
+
           (type (instance
             (export "x" (func (type $empty)))
             (export "y" (func))
             (export "z" (component))
-        
+
             (type $t (instance))
-        
+
             (export "a" (core module))
             (export "b" (instance (type $t)))
           ))
-        
+
           (core type (module
             (import "" "" (func (param i32)))
             (import "" "1" (func (result i32)))
@@ -452,12 +451,12 @@ public final class TypesTest {
             (export "3" (table 1 funcref))
           ))
         )
-        
+
         ;; outer core aliases work
         (component $C
           (core type $f (func))
           (core type $m (module))
-        
+
           (component $C2
             (alias outer $C $f (core type $my_f))
             (import "a" (core module (type $m)))
@@ -467,7 +466,7 @@ public final class TypesTest {
             ))
           )
         )
-        
+
         ;; type exports work
         (component $C
           (component $C2
@@ -478,7 +477,7 @@ public final class TypesTest {
           (alias export 0 "x" (type))
           (export "x" (type 0))
         )
-        
+
         (component
           (core module $m (func (export "") (param i32) (result i32) local.get 0))
           (core instance $m (instantiate $m))
@@ -503,7 +502,7 @@ public final class TypesTest {
         (assert_return (invoke "i-to-s16" (u32.const 0)) (s16.const 0))
         (assert_return (invoke "i-to-s16" (u32.const 1)) (s16.const 1))
         (assert_return (invoke "i-to-s16" (u32.const 0xffffffff)) (s16.const -1))
-        
+
         (assert_invalid
           (component
             (type $t1 string)
@@ -610,7 +609,7 @@ public final class TypesTest {
             (export "t" (type $t101))
           )
           "type nesting is too deep")
-        
+
         (component
           (type (instance
             (export $x "x" (instance
@@ -620,7 +619,7 @@ public final class TypesTest {
             (alias export $x "y" (type $t))
             (export "my-y" (type (eq $t)))
           ))
-        
+
           (type (component
             (import "x" (instance $x
               (type $t u32)
@@ -630,14 +629,14 @@ public final class TypesTest {
             (export "my-y" (type (eq $t)))
           ))
         )
-        
+
         (component
           (type $t u32)
           (export $t2 "t" (type $t))
           (type $r (record (field "x" $t2)))
           (export "r" (type $r))
         )
-        
+
         (component
           (component
             (import "x" (instance $i
@@ -648,7 +647,7 @@ public final class TypesTest {
             (export "i" (type $i))
           )
         )
-        
+
         (component
           (type $u u32)
           (instance $i
@@ -657,7 +656,7 @@ public final class TypesTest {
           (alias export $i "i" (type $i))
           (export "i" (type $i))
         )
-        
+
         (component
           (component $c
             (type $t u32)
@@ -666,7 +665,7 @@ public final class TypesTest {
           (instance $c (instantiate $c))
           (export "i" (type $c "t"))
         )
-        
+
         (component
           (component $c
             (import "x" (component $c
@@ -676,21 +675,21 @@ public final class TypesTest {
             (instance $c (instantiate $c))
             (export "i" (type $c "t"))
           )
-        
+
           (component $x
             (type $t u32)
             (export "t" (type $t))
           )
-        
+
           (instance $c (instantiate $c (with "x" (component $x))))
         )
-        
+
         (component
           (type $t1 u64)
           (import "a" (type $t2 (eq $t1)))
           (import "b" (type $t3 (eq $t2)))
         )
-        
+
         (component
           (import "a" (instance
             (type $t1 u64)

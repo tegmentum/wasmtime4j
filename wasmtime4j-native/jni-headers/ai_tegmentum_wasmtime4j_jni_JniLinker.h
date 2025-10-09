@@ -9,6 +9,62 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineHostFunction
+ * Signature: (JLjava/lang/String;Ljava/lang/String;[I[IJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction
+  (JNIEnv *, jobject, jlong, jstring, jstring, jintArray, jintArray, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineMemory
+ * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineMemory
+  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineTable
+ * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineTable
+  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineGlobal
+ * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGlobal
+  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineInstance
+ * Signature: (JLjava/lang/String;J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineInstance
+  (JNIEnv *, jobject, jlong, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeInstantiate
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiate
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeInstantiateNamed
+ * Signature: (JJLjava/lang/String;J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiateNamed
+  (JNIEnv *, jobject, jlong, jlong, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDestroyLinker
  * Signature: (J)V
  */

@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::wait_notify
  *
- * Original source: wait_notify.wast:1
- * Category: misc_testsuite
+ * <p>Original source: wait_notify.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class WaitNotifyTest {
 
@@ -26,7 +24,7 @@ public final class WaitNotifyTest {
     // (module $Mem
     //   (memory (export "shared") 1 1 shared)
     // )
-    // 
+    //
     // (thread $T1 (shared (module $Mem))
     //   (register "mem" $Mem)
     //   (module
@@ -38,7 +36,7 @@ public final class WaitNotifyTest {
     //   ;; test that this thread eventually gets unblocked
     //   (assert_return (invoke "run") (i32.const 0))
     // )
-    // 
+    //
     // (thread $T2 (shared (module $Mem))
     //   (register "mem" $Mem)
     //   (module
@@ -60,16 +58,17 @@ public final class WaitNotifyTest {
     //   ;; loop until something is notified
     //   (assert_return (invoke "notify-1-while"))
     // )
-    // 
+    //
     // (wait $T1)
     // (wait $T2)
 
-    final String wat = """
+    final String wat =
+        """
         ;; test that looping notify eventually unblocks a parallel waiting thread
         (module $Mem
           (memory (export "shared") 1 1 shared)
         )
-        
+
         (thread $T1 (shared (module $Mem))
           (register "mem" $Mem)
           (module
@@ -81,7 +80,7 @@ public final class WaitNotifyTest {
           ;; test that this thread eventually gets unblocked
           (assert_return (invoke "run") (i32.const 0))
         )
-        
+
         (thread $T2 (shared (module $Mem))
           (register "mem" $Mem)
           (module
@@ -103,7 +102,7 @@ public final class WaitNotifyTest {
           ;; loop until something is notified
           (assert_return (invoke "notify-1-while"))
         )
-        
+
         (wait $T1)
         (wait $T2)
     """;

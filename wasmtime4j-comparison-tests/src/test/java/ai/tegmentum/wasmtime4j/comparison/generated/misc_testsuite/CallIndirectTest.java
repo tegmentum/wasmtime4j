@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::call_indirect
  *
- * Original source: call_indirect.wast:1
- * Category: misc_testsuite
+ * <p>Original source: call_indirect.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallIndirectTest {
 
@@ -26,7 +24,7 @@ public final class CallIndirectTest {
     //   (table $t1 2 funcref)
     //   (elem (table $t1) (i32.const 0) func $nop)
     //   (func $nop)
-    // 
+    //
     //   (func (export "t1") (param i32)
     //     local.get 0
     //     call_indirect $t1)
@@ -34,11 +32,11 @@ public final class CallIndirectTest {
     //     i32.const 0
     //     local.get 0
     //     call_indirect $t1 (param i32))
-    // 
+    //
     //   (type $empty (func))
     //   (table $t2 2 (ref null $empty))
     //   (elem (table $t2) (i32.const 0) (ref null $empty) (ref.func $nop))
-    // 
+    //
     //   (func (export "t2") (param i32)
     //     local.get 0
     //     call_indirect $t2)
@@ -46,9 +44,9 @@ public final class CallIndirectTest {
     //     i32.const 0
     //     local.get 0
     //     call_indirect $t2 (param i32))
-    // 
+    //
     //   (table $t3 2 (ref $empty) (ref.func $nop))
-    // 
+    //
     //   (func (export "t3") (param i32)
     //     local.get 0
     //     call_indirect $t3)
@@ -57,7 +55,7 @@ public final class CallIndirectTest {
     //     local.get 0
     //     call_indirect $t3 (param i32))
     // )
-    // 
+    //
     // (assert_return (invoke "t1" (i32.const 0)))
     // (assert_trap (invoke "t1" (i32.const 1)) "uninitialized element")
     // (assert_trap (invoke "t1" (i32.const 2)) "out of bounds")
@@ -77,12 +75,13 @@ public final class CallIndirectTest {
     // (assert_trap (invoke "t3-wrong-type" (i32.const 1)) "call type mismatch")
     // (assert_trap (invoke "t3-wrong-type" (i32.const 2)) "out of bounds")
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (table $t1 2 funcref)
           (elem (table $t1) (i32.const 0) func $nop)
           (func $nop)
-        
+
           (func (export "t1") (param i32)
             local.get 0
             call_indirect $t1)
@@ -90,11 +89,11 @@ public final class CallIndirectTest {
             i32.const 0
             local.get 0
             call_indirect $t1 (param i32))
-        
+
           (type $empty (func))
           (table $t2 2 (ref null $empty))
           (elem (table $t2) (i32.const 0) (ref null $empty) (ref.func $nop))
-        
+
           (func (export "t2") (param i32)
             local.get 0
             call_indirect $t2)
@@ -102,9 +101,9 @@ public final class CallIndirectTest {
             i32.const 0
             local.get 0
             call_indirect $t2 (param i32))
-        
+
           (table $t3 2 (ref $empty) (ref.func $nop))
-        
+
           (func (export "t3") (param i32)
             local.get 0
             call_indirect $t3)
@@ -113,7 +112,7 @@ public final class CallIndirectTest {
             local.get 0
             call_indirect $t3 (param i32))
         )
-        
+
         (assert_return (invoke "t1" (i32.const 0)))
         (assert_trap (invoke "t1" (i32.const 1)) "uninitialized element")
         (assert_trap (invoke "t1" (i32.const 2)) "out of bounds")

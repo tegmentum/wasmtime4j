@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::int-to-float-splat
  *
- * Original source: int-to-float-splat.wast:1
- * Category: misc_testsuite
+ * <p>Original source: int-to-float-splat.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class IntToFloatSplatTest {
 
@@ -29,7 +27,7 @@ public final class IntToFloatSplatTest {
     //     f64x2.convert_low_i32x4_u
     //   )
     // )
-    // 
+    //
     // (module
     //   (func (result v128)
     //     i32.const 0
@@ -38,7 +36,8 @@ public final class IntToFloatSplatTest {
     //   )
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (param i32) (result v128)
             local.get 0
@@ -46,7 +45,7 @@ public final class IntToFloatSplatTest {
             f64x2.convert_low_i32x4_u
           )
         )
-        
+
         (module
           (func (result v128)
             i32.const 0

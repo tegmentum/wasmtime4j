@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.host_funcs;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: host_funcs::call_import_many_args
  *
- * Original source: host_funcs.rs:325
- * Category: host_funcs
+ * <p>Original source: host_funcs.rs:325 Category: host_funcs
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallImportManyArgsTest {
 
@@ -25,7 +23,8 @@ public final class CallImportManyArgsTest {
     // (import "" "host" (func (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)))
     //             (func (export "run
 
-    final String wat = """
+    final String wat =
+        """
         (import "" "host" (func (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)))
                     (func (export "run
     """;

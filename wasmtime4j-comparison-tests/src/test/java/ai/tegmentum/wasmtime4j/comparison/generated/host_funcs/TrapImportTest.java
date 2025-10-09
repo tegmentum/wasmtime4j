@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.host_funcs;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: host_funcs::trap_import
  *
- * Original source: host_funcs.rs:476
- * Category: host_funcs
+ * <p>Original source: host_funcs.rs:476 Category: host_funcs
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TrapImportTest {
 
@@ -26,17 +24,18 @@ public final class TrapImportTest {
     //             (start 0)
     //         "#,
     //     )?;
-    // 
+    //
     //     let engine = Engine::default();
     //     let mut linker = Linker::new(&engine);
     //     linker.func_wrap("", "", || -> Result<()> { bail!("foo
 
-    final String wat = """
+    final String wat =
+        """
         (import "" "" (func))
                     (start 0)
                 "#,
             )?;
-        
+
             let engine = Engine::default();
             let mut linker = Linker::new(&engine);
             linker.func_wrap("", "", || -> Result<()> { bail!("foo

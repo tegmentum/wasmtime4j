@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::spillslot-size-fuzzbug
  *
- * Original source: spillslot-size-fuzzbug.wast:1
- * Category: misc_testsuite
+ * <p>Original source: spillslot-size-fuzzbug.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class SpillslotSizeFuzzbugTest {
 
@@ -31,10 +29,11 @@ public final class SpillslotSizeFuzzbugTest {
     //     f32x4.extract_lane 0
     //     data.drop 0)
     //   (data ""))
-    // 
+    //
     // (assert_return (invoke "test") (f32.const 0.0) (f32.const 0.0))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (export "test") (result f32 f32)
             i32.const 0
@@ -44,7 +43,7 @@ public final class SpillslotSizeFuzzbugTest {
             f32x4.extract_lane 0
             data.drop 0)
           (data ""))
-        
+
         (assert_return (invoke "test") (f32.const 0.0) (f32.const 0.0))
     """;
 

@@ -641,6 +641,10 @@ impl GcTypeConverter {
                 // Exception references are treated as opaque GC references
                 Ok(GcValue::Reference(None)) // Placeholder for exception ref conversion
             },
+            Val::ContRef(_) => {
+                // Continuation references are treated as opaque GC references
+                Ok(GcValue::Reference(None)) // Placeholder for continuation ref conversion
+            },
         }
     }
 

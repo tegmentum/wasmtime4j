@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::import
  *
- * Original source: import.wast:1
- * Category: misc_testsuite
+ * <p>Original source: import.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ImportTest {
 
@@ -27,13 +25,13 @@ public final class ImportTest {
     //     (import "host-return-two" (func $f (result u32)))
     //     (export "x" (func $f)))
     //   "component export `x` is a reexport of an imported function which is not implemented")
-    // 
+    //
     // (assert_invalid
     //   (component
     //     (import "host-return-two" (instance))
     //   )
     //   "expected instance found func")
-    // 
+    //
     // ;; empty instances don't need to be supplied by the host, even recursively
     // ;; empty instances.
     // (component
@@ -43,19 +41,20 @@ public final class ImportTest {
     //   ))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (assert_invalid
           (component
             (import "host-return-two" (func $f (result u32)))
             (export "x" (func $f)))
           "component export `x` is a reexport of an imported function which is not implemented")
-        
+
         (assert_invalid
           (component
             (import "host-return-two" (instance))
           )
           "expected instance found func")
-        
+
         ;; empty instances don't need to be supplied by the host, even recursively
         ;; empty instances.
         (component

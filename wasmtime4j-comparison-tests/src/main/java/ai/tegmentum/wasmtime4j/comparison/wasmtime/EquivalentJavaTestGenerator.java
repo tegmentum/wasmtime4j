@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.comparison.wasmtime;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -177,9 +176,7 @@ public final class EquivalentJavaTestGenerator {
 
     // Test method
     code.append("  @Test\n");
-    code.append("  @DisplayName(\"")
-        .append(metadata.getTestId())
-        .append("\")\n");
+    code.append("  @DisplayName(\"").append(metadata.getTestId()).append("\")\n");
     code.append("  public void test").append(className.replace("Test", "")).append("() {\n");
     code.append("    // WAT code from original Wasmtime test:\n");
 
@@ -204,7 +201,8 @@ public final class EquivalentJavaTestGenerator {
     try {
       if (useExternalFile) {
         // Save WAT to external file and generate load code
-        final String resourcePath = saveWatToFile(watCode, metadata.getCategory(), metadata.getTestName());
+        final String resourcePath =
+            saveWatToFile(watCode, metadata.getCategory(), metadata.getTestName());
         code.append(indent(generateWatLoadCode(resourcePath), 4));
       } else {
         // Inline WAT string
@@ -267,7 +265,10 @@ public final class EquivalentJavaTestGenerator {
    */
   private String indent(final String text, final int spaces) {
     final String indentation = " ".repeat(spaces);
-    return text.lines().map(line -> indentation + line).collect(java.util.stream.Collectors.joining("\n")) + "\n";
+    return text.lines()
+            .map(line -> indentation + line)
+            .collect(java.util.stream.Collectors.joining("\n"))
+        + "\n";
   }
 
   /**

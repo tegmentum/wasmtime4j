@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::mutable_externref_globals
  *
- * Original source: mutable_externref_globals.wast:1
- * Category: misc_testsuite
+ * <p>Original source: mutable_externref_globals.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class MutableExternrefGlobalsTest {
 
@@ -25,28 +23,29 @@ public final class MutableExternrefGlobalsTest {
     // ;; This test contains the changes in
     // ;; https://github.com/WebAssembly/reference-types/pull/104, and can be deleted
     // ;; once that merges and we update our upstream tests.
-    // 
+    //
     // (module
     //   (global $mr (mut externref) (ref.null extern))
     //   (func (export "get-mr") (result externref) (global.get $mr))
     //   (func (export "set-mr") (param externref) (global.set $mr (local.get 0)))
     // )
-    // 
+    //
     // (assert_return (invoke "get-mr") (ref.null extern))
     // (assert_return (invoke "set-mr" (ref.extern 10)))
     // (assert_return (invoke "get-mr") (ref.extern 10))
 
-    final String wat = """
+    final String wat =
+        """
         ;; This test contains the changes in
         ;; https://github.com/WebAssembly/reference-types/pull/104, and can be deleted
         ;; once that merges and we update our upstream tests.
-        
+
         (module
           (global $mr (mut externref) (ref.null extern))
           (func (export "get-mr") (result externref) (global.get $mr))
           (func (export "set-mr") (param externref) (global.set $mr (local.get 0)))
         )
-        
+
         (assert_return (invoke "get-mr") (ref.null extern))
         (assert_return (invoke "set-mr" (ref.extern 10)))
         (assert_return (invoke "get-mr") (ref.extern 10))

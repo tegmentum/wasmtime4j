@@ -62,36 +62,189 @@ public class JniLinker<T> implements Linker<T> {
       final FunctionType functionType,
       final HostFunction implementation)
       throws WasmException {
-    // TODO: Implement host function definition
-    throw new UnsupportedOperationException("Host function definition not yet implemented");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Function name cannot be null or empty");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // Convert FunctionType to native representation
+    final int[] paramTypes = toNativeTypes(functionType.getParamTypes());
+    final int[] returnTypes = toNativeTypes(functionType.getReturnTypes());
+
+    // Create a callback wrapper that will be invoked from native code
+    final long callbackId =
+        registerHostFunctionCallback(moduleName, name, implementation, functionType);
+
+    try {
+      final boolean success =
+          nativeDefineHostFunction(
+              nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+
+      if (!success) {
+        throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
+      }
+
+      addImport(moduleName, name);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining host function: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override
   public void defineMemory(final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
-    // TODO: Implement memory definition
-    throw new UnsupportedOperationException("Memory definition not yet implemented");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Memory name cannot be null or empty");
+    }
+    if (memory == null) {
+      throw new IllegalArgumentException("Memory cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(memory instanceof JniMemory)) {
+      throw new IllegalArgumentException("Memory must be a JniMemory instance for JNI linker");
+    }
+
+    final JniMemory jniMemory = (JniMemory) memory;
+    final long memoryHandle = jniMemory.getNativeHandle();
+
+    try {
+      final boolean success = nativeDefineMemory(nativeHandle, moduleName, name, memoryHandle);
+
+      if (!success) {
+        throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
+      }
+
+      addImport(moduleName, name);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining memory: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override
   public void defineTable(final String moduleName, final String name, final WasmTable table)
       throws WasmException {
-    // TODO: Implement table definition
-    throw new UnsupportedOperationException("Table definition not yet implemented");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Table name cannot be null or empty");
+    }
+    if (table == null) {
+      throw new IllegalArgumentException("Table cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(table instanceof JniTable)) {
+      throw new IllegalArgumentException("Table must be a JniTable instance for JNI linker");
+    }
+
+    final JniTable jniTable = (JniTable) table;
+    final long tableHandle = jniTable.getNativeHandle();
+
+    try {
+      final boolean success = nativeDefineTable(nativeHandle, moduleName, name, tableHandle);
+
+      if (!success) {
+        throw new WasmException("Failed to define table: " + moduleName + "::" + name);
+      }
+
+      addImport(moduleName, name);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining table: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override
   public void defineGlobal(final String moduleName, final String name, final WasmGlobal global)
       throws WasmException {
-    // TODO: Implement global definition
-    throw new UnsupportedOperationException("Global definition not yet implemented");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Global name cannot be null or empty");
+    }
+    if (global == null) {
+      throw new IllegalArgumentException("Global cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(global instanceof JniGlobal)) {
+      throw new IllegalArgumentException("Global must be a JniGlobal instance for JNI linker");
+    }
+
+    final JniGlobal jniGlobal = (JniGlobal) global;
+    final long globalHandle = jniGlobal.getNativeHandle();
+
+    try {
+      final boolean success = nativeDefineGlobal(nativeHandle, moduleName, name, globalHandle);
+
+      if (!success) {
+        throw new WasmException("Failed to define global: " + moduleName + "::" + name);
+      }
+
+      addImport(moduleName, name);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining global: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override
   public void defineInstance(final String moduleName, final Instance instance)
       throws WasmException {
-    // TODO: Implement instance definition
-    throw new UnsupportedOperationException("Instance definition not yet implemented");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(instance instanceof JniInstance)) {
+      throw new IllegalArgumentException("Instance must be a JniInstance for JNI linker");
+    }
+
+    final JniInstance jniInstance = (JniInstance) instance;
+    final long instanceHandle = jniInstance.getNativeHandle();
+
+    try {
+      final boolean success = nativeDefineInstance(nativeHandle, moduleName, instanceHandle);
+
+      if (!success) {
+        throw new WasmException("Failed to define instance: " + moduleName);
+      }
+
+      addImport(moduleName, "*");
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining instance: " + moduleName, e);
+    }
   }
 
   @Override
@@ -149,15 +302,86 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
-    // TODO: Implement module instantiation
-    throw new UnsupportedOperationException("Module instantiation not yet implemented");
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final JniModule jniModule = (JniModule) module;
+
+    try {
+      final long instanceHandle =
+          nativeInstantiate(nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to instantiate module");
+      }
+
+      return new JniInstance(instanceHandle, jniModule, jniStore);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error instantiating module", e);
+    }
   }
 
   @Override
   public Instance instantiate(final Store store, final String moduleName, final Module module)
       throws WasmException {
-    // TODO: Implement named module instantiation
-    throw new UnsupportedOperationException("Named module instantiation not yet implemented");
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final JniModule jniModule = (JniModule) module;
+
+    try {
+      final long instanceHandle =
+          nativeInstantiateNamed(
+              nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
+
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to instantiate named module: " + moduleName);
+      }
+
+      final JniInstance instance = new JniInstance(instanceHandle, jniModule, jniStore);
+
+      // Define the instance in the linker so it can be used by other modules
+      defineInstance(moduleName, instance);
+
+      return instance;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error instantiating named module: " + moduleName, e);
+    }
   }
 
   @Override
@@ -175,5 +399,183 @@ public class JniLinker<T> implements Linker<T> {
     }
   }
 
+  /**
+   * Ensures the linker is not closed.
+   *
+   * @throws IllegalStateException if closed
+   */
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("Linker has been closed");
+    }
+  }
+
+  /**
+   * Converts WasmValueType array to native type codes.
+   *
+   * @param types the types to convert
+   * @return array of native type codes
+   */
+  private int[] toNativeTypes(final ai.tegmentum.wasmtime4j.WasmValueType[] types) {
+    if (types == null || types.length == 0) {
+      return new int[0];
+    }
+
+    final int[] nativeTypes = new int[types.length];
+    for (int i = 0; i < types.length; i++) {
+      nativeTypes[i] = types[i].toNativeTypeCode();
+    }
+    return nativeTypes;
+  }
+
+  /**
+   * Registers a host function callback.
+   *
+   * @param moduleName the module name
+   * @param name the function name
+   * @param implementation the implementation
+   * @param functionType the function type
+   * @return callback ID for native code to invoke
+   */
+  private long registerHostFunctionCallback(
+      final String moduleName,
+      final String name,
+      final HostFunction implementation,
+      final FunctionType functionType) {
+    // For now, create a simple wrapper and store it
+    // In a full implementation, this would register with a callback manager
+    // that can be invoked from native code
+    final HostFunctionWrapper wrapper =
+        new HostFunctionWrapper(moduleName, name, implementation, functionType);
+    return wrapper.getId();
+  }
+
+  /** Wrapper for host function callbacks. */
+  private static class HostFunctionWrapper {
+    private static final java.util.concurrent.atomic.AtomicLong nextId =
+        new java.util.concurrent.atomic.AtomicLong(1);
+
+    private final long id;
+    private final String moduleName;
+    private final String name;
+    private final HostFunction implementation;
+    private final FunctionType functionType;
+
+    HostFunctionWrapper(
+        final String moduleName,
+        final String name,
+        final HostFunction implementation,
+        final FunctionType functionType) {
+      this.id = nextId.getAndIncrement();
+      this.moduleName = moduleName;
+      this.name = name;
+      this.implementation = implementation;
+      this.functionType = functionType;
+    }
+
+    long getId() {
+      return id;
+    }
+
+    HostFunction getImplementation() {
+      return implementation;
+    }
+  }
+
+  // Native method declarations
+
+  /**
+   * Defines a host function in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param name the function name
+   * @param paramTypes array of parameter type codes
+   * @param returnTypes array of return type codes
+   * @param callbackId callback ID for invoking the Java implementation
+   * @return true on success
+   */
+  private native boolean nativeDefineHostFunction(
+      long linkerHandle,
+      String moduleName,
+      String name,
+      int[] paramTypes,
+      int[] returnTypes,
+      long callbackId);
+
+  /**
+   * Defines a memory in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param name the memory name
+   * @param memoryHandle the memory handle
+   * @return true on success
+   */
+  private native boolean nativeDefineMemory(
+      long linkerHandle, String moduleName, String name, long memoryHandle);
+
+  /**
+   * Defines a table in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param name the table name
+   * @param tableHandle the table handle
+   * @return true on success
+   */
+  private native boolean nativeDefineTable(
+      long linkerHandle, String moduleName, String name, long tableHandle);
+
+  /**
+   * Defines a global in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param name the global name
+   * @param globalHandle the global handle
+   * @return true on success
+   */
+  private native boolean nativeDefineGlobal(
+      long linkerHandle, String moduleName, String name, long globalHandle);
+
+  /**
+   * Defines an instance in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param instanceHandle the instance handle
+   * @return true on success
+   */
+  private native boolean nativeDefineInstance(
+      long linkerHandle, String moduleName, long instanceHandle);
+
+  /**
+   * Instantiates a module using the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleHandle the module handle
+   * @return instance handle or 0 on failure
+   */
+  private native long nativeInstantiate(long linkerHandle, long storeHandle, long moduleHandle);
+
+  /**
+   * Instantiates a named module using the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleName the module name
+   * @param moduleHandle the module handle
+   * @return instance handle or 0 on failure
+   */
+  private native long nativeInstantiateNamed(
+      long linkerHandle, long storeHandle, String moduleName, long moduleHandle);
+
+  /**
+   * Destroys the linker.
+   *
+   * @param handle the linker handle
+   */
   private native void nativeDestroyLinker(long handle);
 }

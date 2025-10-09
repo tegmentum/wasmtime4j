@@ -462,6 +462,7 @@ impl CallerContext {
             Val::ExternRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF),
             Val::AnyRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::ANYREF),
             Val::ExnRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF), // Approximation for exception refs
+            Val::ContRef(_) => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF), // Approximation for continuation refs
         }
     }
 

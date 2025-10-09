@@ -37,7 +37,8 @@ public final class WasmtimeTestGeneratorCli {
       printTestSummary(tests);
 
       // Generate Java tests
-      final EquivalentJavaTestGenerator generator = new EquivalentJavaTestGenerator(outputDirectory);
+      final EquivalentJavaTestGenerator generator =
+          new EquivalentJavaTestGenerator(outputDirectory);
       final List<Path> generatedFiles = generator.generateAllTests(tests);
 
       LOGGER.info("\n========================================");

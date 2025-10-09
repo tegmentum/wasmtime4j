@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::trap_start_function_import
  *
- * Original source: traps.rs:373
- * Category: traps
+ * <p>Original source: traps.rs:373 Category: traps
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TrapStartFunctionImportTest {
 
@@ -28,19 +26,20 @@ public final class TrapStartFunctionImportTest {
     //             )
     //         "#,
     //     )?;
-    // 
+    //
     //     let module = Module::new(store.engine(), &binary)?;
     //     let sig = FuncType::new(store.engine(), None, None);
     //     let func = Func::new(&mut store, sig, |_, _, _| bail!("user trap
 
-    final String wat = """
+    final String wat =
+        """
         (module $a
                         (import "" "" (func $foo))
                         (start $foo)
                     )
                 "#,
             )?;
-        
+
             let module = Module::new(store.engine(), &binary)?;
             let sig = FuncType::new(store.engine(), None, None);
             let func = Func::new(&mut store, sig, |_, _, _| bail!("user trap

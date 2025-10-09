@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::call_signature_mismatch
  *
- * Original source: traps.rs:548
- * Category: traps
+ * <p>Original source: traps.rs:548 Category: traps
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallSignatureMismatchTest {
 
@@ -28,13 +26,13 @@ public final class CallSignatureMismatchTest {
     //                     call_indirect)
     //                 (func $bar (param i32))
     //                 (start $foo)
-    // 
+    //
     //                 (table 1 funcref)
     //                 (elem (i32.const 0) 1)
     //             )
     //         "#,
     //     )?;
-    // 
+    //
     //     let module = Module::new(store.engine(), &binary)?;
     //     let err = Instance::new(&mut store, &module, &[])
     //         .err()
@@ -45,20 +43,21 @@ public final class CallSignatureMismatchTest {
     //         .to_string()
     //         .contains("wasm trap: indirect call type mismatch
 
-    final String wat = """
+    final String wat =
+        """
         (module $a
                         (func $foo
                             i32.const 0
                             call_indirect)
                         (func $bar (param i32))
                         (start $foo)
-        
+
                         (table 1 funcref)
                         (elem (i32.const 0) 1)
                     )
                 "#,
             )?;
-        
+
             let module = Module::new(store.engine(), &binary)?;
             let err = Instance::new(&mut store, &module, &[])
                 .err()

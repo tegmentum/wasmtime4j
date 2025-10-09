@@ -158,6 +158,25 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.WasmValueType elementType,
+      final int initialSize,
+      final int maxSize)
+      throws WasmException {
+    ensureNotClosed();
+    // TODO: Implement table creation
+    throw new UnsupportedOperationException("Table creation not yet implemented");
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    ensureNotClosed();
+    // TODO: Implement memory creation
+    throw new UnsupportedOperationException("Memory creation not yet implemented");
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.HostFunction implementation,
       final ai.tegmentum.wasmtime4j.FunctionType functionType)

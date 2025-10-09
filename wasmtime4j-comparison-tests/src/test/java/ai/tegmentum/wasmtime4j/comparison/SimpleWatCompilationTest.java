@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import java.util.Optional;
 
 /**
  * Simple test to verify WAT compilation functionality.
@@ -90,7 +89,8 @@ public final class SimpleWatCompilationTest {
       final WasmValue[] result2 = instance.callFunction("increment");
       assertEquals(2, result2[0].asInt(), "Second call should return 2");
 
-      System.out.println("✅ Module with global compiled, instantiated, and function executed successfully!");
+      System.out.println(
+          "✅ Module with global compiled, instantiated, and function executed successfully!");
 
       instance.close();
       store.close();

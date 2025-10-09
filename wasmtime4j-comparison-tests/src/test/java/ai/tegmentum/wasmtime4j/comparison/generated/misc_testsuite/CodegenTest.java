@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::codegen
  *
- * Original source: codegen.wast:1
- * Category: misc_testsuite
+ * <p>Original source: codegen.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CodegenTest {
 
@@ -31,7 +29,7 @@ public final class CodegenTest {
     //     i64.const 0 i32.const 0 i32.const 0 memory.init $seg
     //     memory.size drop
     //     i64.const 0 memory.grow drop
-    // 
+    //
     //     i64.const 0 i32.load drop
     //     i64.const 0 i64.load drop
     //     i64.const 0 f32.load drop
@@ -56,12 +54,13 @@ public final class CodegenTest {
     //     i64.const 0 i64.const 0 i64.store16
     //     i64.const 0 i64.const 0 i64.store32
     //   )
-    // 
+    //
     //   (data $seg "..")
     // )
     // (assert_return (invoke "run"))
 
-    final String wat = """
+    final String wat =
+        """
         ;; make sure everything codegens correctly and has no cranelift verifier errors
         (module
           (memory i64 1)
@@ -71,7 +70,7 @@ public final class CodegenTest {
             i64.const 0 i32.const 0 i32.const 0 memory.init $seg
             memory.size drop
             i64.const 0 memory.grow drop
-        
+
             i64.const 0 i32.load drop
             i64.const 0 i64.load drop
             i64.const 0 f32.load drop
@@ -96,7 +95,7 @@ public final class CodegenTest {
             i64.const 0 i64.const 0 i64.store16
             i64.const 0 i64.const 0 i64.store32
           )
-        
+
           (data $seg "..")
         )
         (assert_return (invoke "run"))

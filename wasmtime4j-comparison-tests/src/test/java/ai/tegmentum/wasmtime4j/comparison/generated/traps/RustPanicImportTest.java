@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::rust_panic_import
  *
- * Original source: traps.rs:393
- * Category: traps
+ * <p>Original source: traps.rs:393 Category: traps
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class RustPanicImportTest {
 
@@ -27,7 +25,8 @@ public final class RustPanicImportTest {
     //                 (import "" "" (func $bar))
     //                 (func (export "foo
 
-    final String wat = """
+    final String wat =
+        """
         (module $a
                         (import "" "" (func $foo))
                         (import "" "" (func $bar))

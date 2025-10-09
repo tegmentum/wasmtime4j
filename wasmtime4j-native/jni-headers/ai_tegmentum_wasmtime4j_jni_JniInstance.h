@@ -97,6 +97,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeCallFunction
+ * Signature: (JJLjava/lang/String;[Ljava/lang/Object;)[Ljava/lang/Object;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFunction
+  (JNIEnv *, jclass, jlong, jlong, jstring, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeCallI32Function
  * Signature: (JLjava/lang/String;[I)I
  */

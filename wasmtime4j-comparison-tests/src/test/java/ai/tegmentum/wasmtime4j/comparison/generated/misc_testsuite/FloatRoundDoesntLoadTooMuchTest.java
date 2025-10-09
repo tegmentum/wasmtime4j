@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::float-round-doesnt-load-too-much
  *
- * Original source: float-round-doesnt-load-too-much.wast:1
- * Category: misc_testsuite
+ * <p>Original source: float-round-doesnt-load-too-much.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class FloatRoundDoesntLoadTooMuchTest {
 
@@ -45,13 +43,14 @@ public final class FloatRoundDoesntLoadTooMuchTest {
     //     f64.nearest
     //     return)
     // )
-    // 
+    //
     // (assert_return (invoke "ceil" (i32.const 0xfff8)) (f64.const 0))
     // (assert_return (invoke "trunc" (i32.const 0xfff8)) (f64.const 0))
     // (assert_return (invoke "floor" (i32.const 0xfff8)) (f64.const 0))
     // (assert_return (invoke "nearest" (i32.const 0xfff8)) (f64.const 0))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (memory 1)
           (func (export "ceil") (param i32) (result f64)
@@ -75,7 +74,7 @@ public final class FloatRoundDoesntLoadTooMuchTest {
             f64.nearest
             return)
         )
-        
+
         (assert_return (invoke "ceil" (i32.const 0xfff8)) (f64.const 0))
         (assert_return (invoke "trunc" (i32.const 0xfff8)) (f64.const 0))
         (assert_return (invoke "floor" (i32.const 0xfff8)) (f64.const 0))

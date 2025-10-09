@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::misc
  *
- * Original source: misc.wast:1
- * Category: misc_testsuite
+ * <p>Original source: misc.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class MiscTest {
 
@@ -23,7 +21,7 @@ public final class MiscTest {
   public void testMisc() {
     // WAT code from original Wasmtime test:
     // ;; Additional run tests for Winch not covered in the official spec test suite.
-    // 
+    //
     // (module
     //   (func (export "br-table-ensure-sp") (result i32)
     //     (block (result i32)
@@ -34,12 +32,13 @@ public final class MiscTest {
     //     (br_table 0)
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "br-table-ensure-sp") (i32.const 0))
 
-    final String wat = """
+    final String wat =
+        """
         ;; Additional run tests for Winch not covered in the official spec test suite.
-        
+
         (module
           (func (export "br-table-ensure-sp") (result i32)
             (block (result i32)
@@ -50,7 +49,7 @@ public final class MiscTest {
             (br_table 0)
           )
         )
-        
+
         (assert_return (invoke "br-table-ensure-sp") (i32.const 0))
     """;
 

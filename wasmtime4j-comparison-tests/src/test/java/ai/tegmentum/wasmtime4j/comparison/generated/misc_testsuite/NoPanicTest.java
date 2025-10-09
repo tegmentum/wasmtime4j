@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::no-panic
  *
- * Original source: no-panic.wast:1
- * Category: misc_testsuite
+ * <p>Original source: no-panic.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class NoPanicTest {
 
@@ -34,7 +32,7 @@ public final class NoPanicTest {
     //   (table 4 externref)
     //   (export "test" (func $test))
     // )
-    // 
+    //
     // (module
     //   (func $test (param i32)
     //         i32.const 0
@@ -49,7 +47,8 @@ public final class NoPanicTest {
     //   (export "test" (func $test))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func $test (param i32) (result externref)
                 i32.const 0
@@ -62,7 +61,7 @@ public final class NoPanicTest {
           (table 4 externref)
           (export "test" (func $test))
         )
-        
+
         (module
           (func $test (param i32)
                 i32.const 0

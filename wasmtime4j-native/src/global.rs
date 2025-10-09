@@ -236,6 +236,12 @@ impl Global {
                     message: "ExnRef type not supported in globals".to_string(),
                 });
             },
+            Val::ContRef(_) => {
+                // ContRef is not supported in GlobalValue, return error
+                return Err(WasmtimeError::Type {
+                    message: "ContRef type not supported in globals".to_string(),
+                });
+            },
         };
 
         Ok(global_value)

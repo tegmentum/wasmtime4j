@@ -1,0 +1,465 @@
+package ai.tegmentum.wasmtime4j.comparison.hostfunc;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/** Comprehensive tests for host functions - Java functions callable from WebAssembly. */
+public class HostFunctionTest {
+
+  private Engine engine;
+  private Store store;
+  private Linker linker;
+
+  @BeforeEach
+  public void setUp() throws Exception {
+    engine = Engine.create();
+    store = engine.createStore();
+    linker = Linker.create(engine);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    if (linker != null) {
+      linker.close();
+    }
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+  }
+
+  @Test
+  @DisplayName("Simple host function returning i32")
+  public void testSimpleHostFunction() throws Exception {
+    // Create host function that adds two numbers
+    final HostFunction addFunction =
+        HostFunction.singleValue(
+            params -> {
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
+              return WasmValue.i32(a + b);
+            });
+
+    // Define function type: (i32, i32) -> i32
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32});
+
+    // Register host function
+    linker.defineHostFunction("env", "add", funcType, addFunction);
+
+    // WASM module that imports and calls the host function
+    final String wat =
+        """
+        (module
+          (import "env" "add" (func $host_add (param i32 i32) (result i32)))
+          (func (export "test") (result i32)
+            i32.const 10
+            i32.const 32
+            call $host_add
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+
+    assertEquals(1, results.length);
+    assertEquals(42, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function with no parameters")
+  public void testNoParamHostFunction() throws Exception {
+    final HostFunction getConstant = HostFunction.singleValue(params -> WasmValue.i32(42));
+
+    final FunctionType funcType =
+        FunctionType.multiValue(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "get_const", funcType, getConstant);
+
+    final String wat =
+        """
+        (module
+          (import "env" "get_const" (func $get_const (result i32)))
+          (func (export "test") (result i32)
+            call $get_const
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(42, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Void host function (no return value)")
+  public void testVoidHostFunction() throws Exception {
+    final int[] counter = {0};
+
+    final HostFunction increment =
+        HostFunction.voidFunction(
+            params -> {
+              counter[0]++;
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(new WasmValueType[0], new WasmValueType[0]);
+
+    linker.defineHostFunction("env", "increment", funcType, increment);
+
+    final String wat =
+        """
+        (module
+          (import "env" "increment" (func $increment))
+          (func (export "test")
+            call $increment
+            call $increment
+            call $increment
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    assertEquals(0, counter[0]);
+    instance.callFunction("test");
+    assertEquals(3, counter[0]);
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Multi-value host function")
+  public void testMultiValueHostFunction() throws Exception {
+    final HostFunction mathOps =
+        HostFunction.multiValue(
+            params -> {
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
+              return new WasmValue[] {
+                WasmValue.i32(a + b), // sum
+                WasmValue.i32(a - b), // difference
+                WasmValue.i32(a * b) // product
+              };
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32});
+
+    linker.defineHostFunction("env", "math_ops", funcType, mathOps);
+
+    final String wat =
+        """
+        (module
+          (import "env" "math_ops" (func $math_ops (param i32 i32) (result i32 i32 i32)))
+          (func (export "test") (result i32)
+            i32.const 10
+            i32.const 3
+            call $math_ops
+            ;; Stack now has: sum(13), diff(7), product(30)
+            ;; Add them: 13 + 7 + 30 = 50
+            i32.add
+            i32.add
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(1, results.length);
+    assertEquals(50, results[0].asInt()); // 13 + 7 + 30
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function with different types")
+  public void testMixedTypeHostFunction() throws Exception {
+    final HostFunction mixedTypes =
+        HostFunction.singleValue(
+            params -> {
+              final int i = params[0].asInt();
+              final long l = params[1].asLong();
+              final float f = params[2].asFloat();
+              final double d = params[3].asDouble();
+              // Return sum as f64
+              return WasmValue.f64(i + l + f + d);
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {
+              WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
+            },
+            new WasmValueType[] {WasmValueType.F64});
+
+    linker.defineHostFunction("env", "mixed", funcType, mixedTypes);
+
+    final String wat =
+        """
+        (module
+          (import "env" "mixed" (func $mixed (param i32 i64 f32 f64) (result f64)))
+          (func (export "test") (result f64)
+            i32.const 1
+            i64.const 2
+            f32.const 3.5
+            f64.const 4.5
+            call $mixed
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(1, results.length);
+    assertEquals(11.0, results[0].asDouble(), 0.001); // 1 + 2 + 3.5 + 4.5
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function called multiple times")
+  public void testMultipleHostFunctionCalls() throws Exception {
+    final int[] callCount = {0};
+
+    final HostFunction counter =
+        HostFunction.singleValue(
+            params -> {
+              callCount[0]++;
+              return WasmValue.i32(callCount[0]);
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "counter", funcType, counter);
+
+    final String wat =
+        """
+        (module
+          (import "env" "counter" (func $counter (result i32)))
+          (func (export "test") (result i32)
+            call $counter
+            call $counter
+            call $counter
+            ;; Returns the last call result (3)
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    assertEquals(0, callCount[0]);
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(3, callCount[0]);
+    assertEquals(3, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Multiple host functions")
+  public void testMultipleHostFunctions() throws Exception {
+    final HostFunction add =
+        HostFunction.singleValue(params -> WasmValue.i32(params[0].asInt() + params[1].asInt()));
+
+    final HostFunction multiply =
+        HostFunction.singleValue(params -> WasmValue.i32(params[0].asInt() * params[1].asInt()));
+
+    final FunctionType binaryOp =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "add", binaryOp, add);
+    linker.defineHostFunction("env", "mul", binaryOp, multiply);
+
+    final String wat =
+        """
+        (module
+          (import "env" "add" (func $add (param i32 i32) (result i32)))
+          (import "env" "mul" (func $mul (param i32 i32) (result i32)))
+          (func (export "test") (result i32)
+            ;; (10 + 5) * 3 = 45
+            i32.const 10
+            i32.const 5
+            call $add
+            i32.const 3
+            call $mul
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(45, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function with state")
+  public void testStatefulHostFunction() throws Exception {
+    final java.util.concurrent.atomic.AtomicInteger state =
+        new java.util.concurrent.atomic.AtomicInteger(0);
+
+    final HostFunction increment =
+        HostFunction.singleValue(
+            params -> {
+              final int delta = params[0].asInt();
+              return WasmValue.i32(state.addAndGet(delta));
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "increment", funcType, increment);
+
+    final String wat =
+        """
+        (module
+          (import "env" "increment" (func $increment (param i32) (result i32)))
+          (func (export "test") (result i32)
+            i32.const 10
+            call $increment
+            drop
+            i32.const 20
+            call $increment
+            drop
+            i32.const 12
+            call $increment
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    assertEquals(0, state.get());
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(42, state.get());
+    assertEquals(42, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function with validation")
+  public void testHostFunctionWithValidation() throws Exception {
+    final HostFunction safeDiv =
+        HostFunction.withFullValidation(
+            params -> {
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
+              if (b == 0) {
+                throw new IllegalArgumentException("Division by zero");
+              }
+              return new WasmValue[] {WasmValue.i32(a / b)};
+            },
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            WasmValueType.I32);
+
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "safe_div", funcType, safeDiv);
+
+    final String wat =
+        """
+        (module
+          (import "env" "safe_div" (func $div (param i32 i32) (result i32)))
+          (func (export "test") (result i32)
+            i32.const 42
+            i32.const 2
+            call $div
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(21, results[0].asInt());
+
+    instance.close();
+  }
+
+  @Test
+  @DisplayName("Host function with string operations")
+  public void testStringHostFunction() throws Exception {
+    // Host function that computes length of a string stored in WASM memory
+    final HostFunction strlen =
+        HostFunction.singleValue(
+            params -> {
+              // In a real implementation, we'd read from WASM memory
+              // For this test, we'll simulate with the input value
+              final int mockStrLen = params[0].asInt();
+              return WasmValue.i32(mockStrLen);
+            });
+
+    final FunctionType funcType =
+        FunctionType.multiValue(
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+
+    linker.defineHostFunction("env", "strlen", funcType, strlen);
+
+    final String wat =
+        """
+        (module
+          (import "env" "strlen" (func $strlen (param i32) (result i32)))
+          (func (export "test") (result i32)
+            i32.const 5
+            call $strlen
+          )
+        )
+        """;
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = linker.instantiate(store, module);
+
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(5, results[0].asInt());
+
+    instance.close();
+  }
+}

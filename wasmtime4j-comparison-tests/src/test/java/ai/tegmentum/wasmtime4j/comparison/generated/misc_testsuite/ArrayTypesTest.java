@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::array-types
  *
- * Original source: array-types.wast:1
- * Category: misc_testsuite
+ * <p>Original source: array-types.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ArrayTypesTest {
 
@@ -45,7 +43,8 @@ public final class ArrayTypesTest {
     //   (type (array (mut (ref null i31))))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (type (array i8))
           (type (array i16))

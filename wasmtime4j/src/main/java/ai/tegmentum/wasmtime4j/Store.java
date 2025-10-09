@@ -195,6 +195,39 @@ public interface Store extends Closeable {
   }
 
   /**
+   * Creates a new WebAssembly table with the specified element type and size.
+   *
+   * <p>Tables are resizable arrays of references (like function references) that can be accessed by
+   * WebAssembly code. They provide a way to implement indirect function calls and other dynamic
+   * behavior.
+   *
+   * @param elementType the type of elements this table will store (FUNCREF or EXTERNREF)
+   * @param initialSize the initial number of elements
+   * @param maxSize the maximum number of elements, or -1 for unlimited
+   * @return a new WasmTable that can be used in import maps or accessed directly
+   * @throws WasmException if table creation fails
+   * @throws IllegalArgumentException if any parameter is invalid
+   * @since 1.0.0
+   */
+  WasmTable createTable(WasmValueType elementType, int initialSize, int maxSize)
+      throws WasmException;
+
+  /**
+   * Creates a new WebAssembly linear memory with the specified size.
+   *
+   * <p>Linear memory is a contiguous, mutable array of raw bytes that can be read and written by
+   * WebAssembly code. Memory is measured in pages, where each page is 64 KiB (65,536 bytes).
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages, or -1 for unlimited
+   * @return a new WasmMemory that can be used in import maps or accessed directly
+   * @throws WasmException if memory creation fails
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @since 1.0.0
+   */
+  WasmMemory createMemory(int initialPages, int maxPages) throws WasmException;
+
+  /**
    * Creates a function reference from a host function.
    *
    * <p>Function references enable dynamic function dispatch and callbacks in WebAssembly programs.

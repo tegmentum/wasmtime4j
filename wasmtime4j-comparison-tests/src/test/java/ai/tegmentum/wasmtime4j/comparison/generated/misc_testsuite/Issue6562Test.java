@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::issue6562
  *
- * Original source: issue6562.wast:1
- * Category: misc_testsuite
+ * <p>Original source: issue6562.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class Issue6562Test {
 
@@ -31,7 +29,8 @@ public final class Issue6562Test {
     //   (memory 0 1)
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (result v128)
             i32.const 0

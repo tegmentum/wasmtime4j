@@ -152,8 +152,21 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <includes>
+                        <include>**/comparison/types/**/*Test.java</include>
+                        <include>**/comparison/memory/**/*Test.java</include>
+                        <include>**/comparison/lifecycle/**/*Test.java</include>
+                        <include>**/comparison/concurrency/**/*Test.java</include>
+                        <include>**/comparison/hostfunc/**/*Test.java</include>
+                        <include>**/comparison/globals/**/*Test.java</include>
+                        <include>**/comparison/tables/**/*Test.java</include>
+                        <include>**/comparison/wasi/**/*Test.java</include>
+                        <include>**/comparison/linker/**/*Test.java</include>
+                        <include>**/comparison/Simple*Test.java</include>
+                    </includes>
                     <excludes>
-                        <exclude>**/comparison/**</exclude>
+                        <exclude>**/comparison/generated/**</exclude>
+                        <exclude>**/comparison/analyzers/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

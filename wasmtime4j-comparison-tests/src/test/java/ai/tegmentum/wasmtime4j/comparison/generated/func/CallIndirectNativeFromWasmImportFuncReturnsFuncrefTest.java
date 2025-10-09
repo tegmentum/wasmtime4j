@@ -1,20 +1,19 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
- * Equivalent Java test for Wasmtime test: func::call_indirect_native_from_wasm_import_func_returns_funcref
+ * Equivalent Java test for Wasmtime test:
+ * func::call_indirect_native_from_wasm_import_func_returns_funcref
  *
- * Original source: func.rs:302
- * Category: func
+ * <p>Original source: func.rs:302 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest {
 
@@ -27,7 +26,8 @@ public final class CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest {
     //             (table 1 1 funcref)
     //             (func (export "run
 
-    final String wat = """
+    final String wat =
+        """
         (module
                     (import "" "" (func (result funcref)))
                     (table 1 1 funcref)

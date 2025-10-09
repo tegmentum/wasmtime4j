@@ -10,16 +10,21 @@ use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext,
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
+use crate::interop::ReentrantLock;
 use once_cell::sync::Lazy;
 
 /// Store ID counter for unique identification
 static STORE_ID_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
 
 /// Thread-safe wrapper around Wasmtime store with resource management
+///
+/// CRITICAL: Uses custom ReentrantLock to allow same-thread reentrant access during WASM execution.
+/// This is essential because Wasmtime needs to access the Store context multiple times
+/// during function calls, and non-reentrant Mutex causes traps at function entry.
 pub struct Store {
     /// Unique identifier for this store
     id: u64,
-    inner: Arc<Mutex<WasmtimeStore<StoreData>>>,
+    inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
     metadata: StoreMetadata,
 }
 
@@ -118,17 +123,31 @@ impl Store {
         StoreBuilder::new()
     }
 
+    /// Get direct mutable access to the underlying Store
+    ///
+    /// This provides direct access to the WasmtimeStore without closure-based
+    /// context wrapping. Uses custom ReentrantLock to allow same-thread reentrant access.
+    ///
+    /// CRITICAL: This method is essential for avoiding WASM execution traps.
+    /// The ReentrantLock allows Wasmtime to access the Store multiple times
+    /// during function execution on the same thread.
+    pub fn lock_store(&self) -> crate::interop::ReentrantLockGuard<WasmtimeStore<StoreData>> {
+        self.inner.lock()
+    }
+
     /// Execute function with store context
+    ///
+    /// NOTE: This method creates temporary context lifetimes and should NOT be
+    /// used for WASM function calls in JNI/Panama environments. Use `lock_store()`
+    /// instead for direct Store access.
     pub fn with_context<T, F>(&self, func: F) -> WasmtimeResult<T>
     where
         F: FnOnce(&mut StoreContextMut<StoreData>) -> WasmtimeResult<T>,
     {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         let start_time = Instant::now();
-        
+
         // Check timeout before execution
         if let Some(timeout) = self.metadata.execution_timeout {
             let elapsed = start_time.duration_since(self.metadata.created_at);
@@ -147,7 +166,7 @@ impl Store {
         store.data_mut().execution_state.execution_count += 1;
         store.data_mut().execution_state.last_execution = Some(start_time);
         store.data_mut().execution_state.total_execution_time += execution_time;
-        
+
         result
     }
 
@@ -156,10 +175,7 @@ impl Store {
     where
         F: FnOnce(&StoreContext<StoreData>) -> WasmtimeResult<T>,
     {
-        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
-
+        let store = self.inner.lock();
         func(&store.as_context())
     }
 
@@ -170,9 +186,7 @@ impl Store {
 
     /// Add fuel to the store for execution limiting
     pub fn add_fuel(&self, fuel: u64) -> WasmtimeResult<()> {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         store.set_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to set fuel: {}", e),
@@ -184,18 +198,14 @@ impl Store {
 
     /// Get remaining fuel
     pub fn fuel_remaining(&self) -> WasmtimeResult<Option<u64>> {
-        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let store = self.inner.lock();
 
         Ok(Some(store.get_fuel().unwrap_or(0)))
     }
 
     /// Consume fuel from the store
     pub fn consume_fuel(&self, fuel: u64) -> WasmtimeResult<u64> {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         let current_fuel = store.get_fuel().unwrap_or(0);
         if current_fuel >= fuel {
@@ -215,23 +225,20 @@ impl Store {
 
     /// Set epoch deadline for interruption
     pub fn set_epoch_deadline(&self, ticks: u64) {
-        if let Ok(mut store) = self.inner.lock() {
-            store.set_epoch_deadline(ticks);
-        }
+        let mut store = self.inner.lock();
+        store.set_epoch_deadline(ticks);
     }
 
     /// Get execution statistics
     pub fn execution_stats(&self) -> WasmtimeResult<ExecutionState> {
-        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let store = self.inner.lock();
 
         Ok(store.data().execution_state.clone())
     }
 
     /// Validate store is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
-        if let Ok(_guard) = self.inner.try_lock() {
+        if let Some(_guard) = self.inner.try_lock() {
             Ok(())
         } else {
             Err(WasmtimeError::Concurrency {
@@ -242,9 +249,7 @@ impl Store {
 
     /// Force garbage collection in the store
     pub fn gc(&self) -> WasmtimeResult<()> {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         store.gc(None); // Pass None for manual GC trigger
         Ok(())
@@ -252,9 +257,7 @@ impl Store {
 
     /// Get memory usage statistics
     pub fn memory_usage(&self) -> WasmtimeResult<MemoryUsage> {
-        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let store = self.inner.lock();
 
         // Note: Wasmtime doesn't provide direct memory usage stats
         // We approximate based on what we can measure
@@ -280,9 +283,7 @@ impl Store {
         
         // Create the Wasmtime Func
         let wasmtime_func = {
-            let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-                message: format!("Failed to acquire store lock: {}", e),
-            })?;
+            let mut store = self.inner.lock();
             host_function.create_wasmtime_func(&mut store)?
         };
         
@@ -295,9 +296,7 @@ impl Store {
         wasi_context: crate::wasi::WasiContext,
         fd_manager: crate::wasi::WasiFileDescriptorManager,
     ) -> WasmtimeResult<()> {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         let wasi_data = Arc::new(Mutex::new((wasi_context, fd_manager)));
         store.data_mut().wasi_context = Some(wasi_data);
@@ -309,20 +308,15 @@ impl Store {
     pub fn get_wasi_context(
         &self,
     ) -> WasmtimeResult<Option<Arc<Mutex<(crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)>>>> {
-        let store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let store = self.inner.lock();
 
         Ok(store.data().wasi_context.clone())
     }
 
     /// Check if this store has WASI context
     pub fn has_wasi_context(&self) -> bool {
-        if let Ok(store) = self.inner.lock() {
-            store.data().wasi_context.is_some()
-        } else {
-            false
-        }
+        let store = self.inner.lock();
+        store.data().wasi_context.is_some()
     }
 
     /// Execute WASI operation with context
@@ -344,9 +338,7 @@ impl Store {
 
     /// Remove WASI context from this store
     pub fn remove_wasi_context(&self) -> WasmtimeResult<()> {
-        let mut store = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire store lock: {}", e),
-        })?;
+        let mut store = self.inner.lock();
 
         store.data_mut().wasi_context = None;
         Ok(())
@@ -434,9 +426,10 @@ impl StoreBuilder {
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
 
-        // Configure fuel if specified
-        if let Some(fuel_limit) = self.fuel_limit {
-            wasmtime_store.set_fuel(fuel_limit).map_err(|e| WasmtimeError::Store {
+        // Configure fuel if specified OR if Engine requires it
+        if engine.fuel_enabled() {
+            let fuel = self.fuel_limit.unwrap_or(u64::MAX);
+            wasmtime_store.set_fuel(fuel).map_err(|e| WasmtimeError::Store {
                 message: format!("Failed to set initial fuel: {}", e),
             })?;
         }
@@ -451,7 +444,7 @@ impl StoreBuilder {
 
         Ok(Store {
             id: store_id,
-            inner: Arc::new(Mutex::new(wasmtime_store)),
+            inner: Arc::new(ReentrantLock::new(wasmtime_store)),
             metadata,
         })
     }

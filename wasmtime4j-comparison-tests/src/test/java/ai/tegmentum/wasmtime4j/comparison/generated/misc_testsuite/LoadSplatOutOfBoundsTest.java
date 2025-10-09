@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::load_splat_out_of_bounds
  *
- * Original source: load_splat_out_of_bounds.wast:1
- * Category: misc_testsuite
+ * <p>Original source: load_splat_out_of_bounds.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class LoadSplatOutOfBoundsTest {
 
@@ -35,7 +33,7 @@ public final class LoadSplatOutOfBoundsTest {
     //   (export "x" (func 0))
     // )
     // (assert_trap (invoke "x") "out of bounds memory access")
-    // 
+    //
     // ;; unaligned an in bounds
     // (module
     //   (func
@@ -50,7 +48,8 @@ public final class LoadSplatOutOfBoundsTest {
     // )
     // (assert_return (invoke "x"))
 
-    final String wat = """
+    final String wat =
+        """
         ;; aligned and out of bounds
         (module
           (func
@@ -64,7 +63,7 @@ public final class LoadSplatOutOfBoundsTest {
           (export "x" (func 0))
         )
         (assert_trap (invoke "x") "out of bounds memory access")
-        
+
         ;; unaligned an in bounds
         (module
           (func

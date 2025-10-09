@@ -5,12 +5,13 @@
 //! marshalling, type validation, and callback management with defensive programming
 //! practices throughout.
 
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Weak, Mutex};
 use std::collections::HashMap;
 use wasmtime::{Func, FuncType, Val, ValType, RefType};
 use crate::store::StoreData;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
+use crate::interop::ReentrantLock;
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -42,7 +43,7 @@ pub struct HostFunction {
     pub func_type: FuncType,
     /// Weak reference to avoid circular dependency with store
     #[allow(dead_code)]
-    store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
+    store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
     /// Callback interface for language-specific implementations
     callback: Box<dyn HostFunctionCallback>,
     /// Optimization hints for caller context usage
@@ -146,7 +147,7 @@ impl HostFunction {
     pub fn new(
         name: String,
         func_type: FuncType,
-        store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
+        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<Arc<Self>> {
         Self::new_with_optimization(
@@ -163,7 +164,7 @@ impl HostFunction {
     pub fn new_with_optimization(
         name: String,
         func_type: FuncType,
-        store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
+        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
         caller_context_usage: CallerContextUsage,
         requires_caller_context: bool,
@@ -316,7 +317,7 @@ impl HostFunctionBuilder {
     pub fn build(
         self,
         engine: &wasmtime::Engine,
-        store_weak: Weak<Mutex<wasmtime::Store<StoreData>>>,
+        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
     ) -> WasmtimeResult<Arc<HostFunction>> {
         let callback = self.callback.ok_or_else(|| WasmtimeError::Validation {
             message: "Host function callback not set".to_string(),
@@ -343,6 +344,7 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
             Val::ExternRef(_) => return Err(anyhow::anyhow!("ExternRef parameters not yet supported")),
             Val::AnyRef(_) => return Err(anyhow::anyhow!("AnyRef parameters not yet supported")),
             Val::ExnRef(_) => return Err(anyhow::anyhow!("ExnRef parameters not yet supported")),
+            Val::ContRef(_) => return Err(anyhow::anyhow!("ContRef parameters not yet supported")),
         };
         wasm_params.push(wasm_value);
     }

@@ -3,9 +3,10 @@
 //! This module provides Instance lifecycle management with complete import resolution,
 //! export access, resource cleanup, and defensive programming practices for safe execution.
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::interop::ReentrantLock;
 use wasmtime::{
     Instance as WasmtimeInstance, 
     Extern, 
@@ -23,14 +24,16 @@ use crate::module::{Module, ModuleValueType, FunctionSignature, ImportKind, Expo
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
+///
+/// CRITICAL: Uses custom ReentrantLock to allow same-thread reentrant access during WASM execution.
 #[derive(Debug)]
 pub struct Instance {
-    inner: Arc<Mutex<WasmtimeInstance>>,
+    inner: Arc<ReentrantLock<WasmtimeInstance>>,
     metadata: InstanceMetadata,
     imports_map: HashMap<String, ImportBinding>,
     exports_map: HashMap<String, ExportBinding>,
     /// Weak reference to the Store that created this instance
-    store_weak: std::sync::Weak<std::sync::Mutex<Store>>,
+    store_weak: std::sync::Weak<ReentrantLock<Store>>,
 }
 
 /// Lifecycle state of a WebAssembly instance
@@ -154,20 +157,22 @@ impl Instance {
         }
         
         // Create instance with defensive error handling
-        let instance = store.with_context(|mut ctx| {
-            WasmtimeInstance::new(&mut ctx, module.inner(), imports)
-                .map_err(|e| WasmtimeError::Instance {
-                    message: format!("Failed to create instance: {}", e),
-                })
-        })?;
-        
+        // CRITICAL: Use direct Store access with ReentrantMutex for reentrant access
+        eprintln!("DEBUG: Creating instance on thread: {:?}", std::thread::current().id());
+        let mut store_guard = store.lock_store();
+
+        let instance = WasmtimeInstance::new(&mut *store_guard, module.inner(), imports)
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to create instance: {}", e),
+            })?;
+
         // Build comprehensive metadata and mappings
-        let (metadata, imports_map, exports_map) = store.with_context(|mut ctx| {
-            Self::build_instance_data(&instance, &mut ctx, module, imports.len())
-        })?;
+        // Need to create a mutable context from the store
+        use wasmtime::AsContextMut;
+        let (metadata, imports_map, exports_map) = Self::build_instance_data(&instance, &mut (*store_guard).as_context_mut(), module, imports.len())?;
         
         Ok(Instance {
-            inner: Arc::new(Mutex::new(instance)),
+            inner: Arc::new(ReentrantLock::new(instance)),
             metadata,
             imports_map,
             exports_map,
@@ -316,6 +321,77 @@ impl Instance {
         }
     }
     
+    /// EXPERIMENTAL: Call function by re-instantiating (tests context lifetime theory)
+    pub fn call_export_function_with_reinstantiation(
+        &mut self,
+        store: &mut Store,
+        module: &Module,
+        name: &str,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<ExecutionResult> {
+        eprintln!("DEBUG: Re-instantiating module for function call");
+
+        // Create a fresh instance in this store context
+        let mut wasm_params_converted = Vec::new();
+        for param in params {
+            wasm_params_converted.push(Self::wasm_value_to_val(param)?);
+        }
+
+        let result = store.with_context(|mut ctx| {
+            // Fresh instantiation
+            let fresh_instance = WasmtimeInstance::new(&mut ctx, module.inner(), &[])
+                .map_err(|e| WasmtimeError::Instance {
+                    message: format!("Failed to create fresh instance: {}", e),
+                })?;
+
+            let export = fresh_instance.get_export(&mut ctx, name)
+                .ok_or_else(|| WasmtimeError::ImportExport {
+                    message: format!("Export '{}' not found", name),
+                })?;
+
+            match export {
+                Extern::Func(func) => {
+                    let func_type = func.ty(&ctx);
+                    let mut results = Vec::with_capacity(func_type.results().len());
+                    for return_type in func_type.results() {
+                        let default_val = match return_type {
+                            WasmtimeValType::I32 => Val::I32(0),
+                            WasmtimeValType::I64 => Val::I64(0),
+                            WasmtimeValType::F32 => Val::F32(0.0_f32.to_bits()),
+                            WasmtimeValType::F64 => Val::F64(0.0_f64.to_bits()),
+                            WasmtimeValType::V128 => Val::V128(wasmtime::V128::from(0u128)),
+                            WasmtimeValType::Ref(_) => Val::ExternRef(None),
+                        };
+                        results.push(default_val);
+                    }
+
+                    eprintln!("DEBUG: Calling fresh instance with {} params", wasm_params_converted.len());
+                    func.call(&mut ctx, &wasm_params_converted, &mut results)
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: e.to_string(),
+                            backtrace: None
+                        })?;
+                    eprintln!("DEBUG: Fresh instance call SUCCESS!");
+                    Ok(results)
+                },
+                _ => Err(WasmtimeError::Function {
+                    message: format!("Export '{}' is not a function", name),
+                })
+            }
+        })?;
+
+        // Convert results back
+        let wasm_values: Vec<WasmValue> = result.iter()
+            .map(|v| Self::val_to_wasm_value(v.clone()))
+            .collect::<WasmtimeResult<Vec<_>>>()?;
+
+        Ok(ExecutionResult {
+            values: wasm_values,
+            fuel_consumed: None,
+            execution_time_ns: 0,
+        })
+    }
+
     /// Call exported function with comprehensive type checking and parameter conversion
     pub fn call_export_function(
         &mut self,
@@ -372,54 +448,133 @@ impl Instance {
                     ),
                 });
             }
-            wasm_params.push(Self::wasm_value_to_val(provided)?);
+            let val = Self::wasm_value_to_val(provided)?;
+            wasm_params.push(val);
         }
         
         // Get function and execute with timing
+        eprintln!("DEBUG: Calling function on thread: {:?}", std::thread::current().id());
         let start_time = Instant::now();
-        let instance = self.inner.lock().map_err(|e| {
-            // Restore state on error
-            self.metadata.state = previous_state;
-            WasmtimeError::Concurrency {
-                message: format!("Failed to acquire instance lock: {}", e),
-            }
-        })?;
+        let instance = self.inner.lock();
 
         // Get fuel before execution for tracking
         let fuel_before = store.fuel_remaining().ok().flatten();
 
-        let result = store.with_context(|mut ctx| {
-            let export = instance.get_export(&mut ctx, name)
-                .ok_or_else(|| WasmtimeError::ImportExport {
-                    message: format!("Export '{}' not found", name),
-                })?;
-                
-            match export {
-                Extern::Func(func) => {
-                    // Initialize results with proper default values based on return types
-                    let mut results = Vec::with_capacity(function_sig.returns.len());
-                    for return_type in &function_sig.returns {
-                        let default_val = match return_type {
-                            ModuleValueType::I32 => Val::I32(0),
-                            ModuleValueType::I64 => Val::I64(0),
-                            ModuleValueType::F32 => Val::F32(0.0_f32.to_bits()),
-                            ModuleValueType::F64 => Val::F64(0.0_f64.to_bits()),
-                            ModuleValueType::V128 => Val::V128(wasmtime::V128::from(0u128)),
-                            ModuleValueType::ExternRef => Val::ExternRef(None),
-                            ModuleValueType::FuncRef => Val::FuncRef(None),
-                        };
-                        results.push(default_val);
-                    }
+        // CRITICAL: Use direct Store access with ReentrantMutex
+        // This allows same-thread reentrant access needed by Wasmtime during function execution
+        let mut store_guard = store.lock_store();
 
-                    func.call(&mut ctx, &wasm_params, &mut results)
-                        .map_err(|e| WasmtimeError::Runtime { message: e.to_string(), backtrace: None })?;
-                    Ok(results)
+        eprintln!("DEBUG: Getting export '{}' from instance", name);
+        let export = instance.get_export(&mut *store_guard, name)
+            .ok_or_else(|| WasmtimeError::ImportExport {
+                message: format!("Export '{}' not found", name),
+            })?;
+        eprintln!("DEBUG: Got export, type: {:?}", export);
+
+        let result = match export {
+            Extern::Func(func) => {
+                // Get function type to determine result types
+                let func_type = func.ty(&*store_guard);
+                eprintln!("DEBUG: Function type - params: {:?}, results: {:?}",
+                    func_type.params().collect::<Vec<_>>(),
+                    func_type.results().collect::<Vec<_>>());
+
+                // Pre-allocate results with correct types
+                let mut results = Vec::with_capacity(func_type.results().len());
+                for return_type in func_type.results() {
+                    let default_val = match return_type {
+                        WasmtimeValType::I32 => Val::I32(0),
+                        WasmtimeValType::I64 => Val::I64(0),
+                        WasmtimeValType::F32 => Val::F32(0.0_f32.to_bits()),
+                        WasmtimeValType::F64 => Val::F64(0.0_f64.to_bits()),
+                        WasmtimeValType::V128 => Val::V128(wasmtime::V128::from(0u128)),
+                        WasmtimeValType::Ref(_) => Val::ExternRef(None),
+                    };
+                    results.push(default_val);
                 }
-                _ => Err(WasmtimeError::Function {
-                    message: format!("Export '{}' is not a function", name),
-                })
+
+                eprintln!("DEBUG: About to call func.call() with {} params and {} result slots",
+                    wasm_params.len(), results.len());
+                eprintln!("DEBUG: Params: {:?}", wasm_params);
+                eprintln!("DEBUG: Results (pre-call): {:?}", results);
+
+                // Try using typed function for no-param i32 return case
+                if wasm_params.is_empty() && results.len() == 1 {
+                    if let Val::I32(_) = results[0] {
+                        eprintln!("DEBUG: Using typed function for () -> i32");
+                        match func.typed::<(), i32>(&*store_guard) {
+                            Ok(typed_func) => {
+                                match typed_func.call(&mut *store_guard, ()) {
+                                    Ok(result) => {
+                                        eprintln!("DEBUG: Typed call SUCCESS! Result: {}", result);
+                                        Ok(vec![Val::I32(result)])
+                                    },
+                                    Err(e) => {
+                                        eprintln!("DEBUG: Typed call FAILED: {:?}", e);
+                                        Err(WasmtimeError::Runtime {
+                                            message: e.to_string(),
+                                            backtrace: None
+                                        })
+                                    }
+                                }
+                            },
+                            Err(e) => {
+                                eprintln!("DEBUG: Failed to create typed func: {:?}", e);
+                                // Fall through to untyped call
+                                match func.call(&mut *store_guard, &wasm_params, &mut results) {
+                                    Ok(_) => {
+                                        eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
+                                        Ok(results)
+                                    },
+                                    Err(e) => {
+                                        eprintln!("DEBUG: func.call() FAILED: {:?}", e);
+                                        Err(WasmtimeError::Runtime {
+                                            message: e.to_string(),
+                                            backtrace: None
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        match func.call(&mut *store_guard, &wasm_params, &mut results) {
+                            Ok(_) => {
+                                eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
+                                Ok(results)
+                            },
+                            Err(e) => {
+                                eprintln!("DEBUG: func.call() FAILED: {:?}", e);
+                                Err(WasmtimeError::Runtime {
+                                    message: e.to_string(),
+                                    backtrace: None
+                                })
+                            }
+                        }
+                    }
+                } else {
+                    match func.call(&mut *store_guard, &wasm_params, &mut results) {
+                        Ok(_) => {
+                            eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
+                            Ok(results)
+                        },
+                        Err(e) => {
+                            eprintln!("DEBUG: func.call() FAILED: {:?}", e);
+
+                            // Note: Cannot extract WasmBacktrace as it doesn't implement Clone
+                            // The backtrace is already included in e.to_string()
+
+                            Err(WasmtimeError::Runtime {
+                                message: e.to_string(),
+                                backtrace: None
+                            })
+                        }
+                    }
+                }
             }
-        }).map_err(|e| {
+            _ => Err(WasmtimeError::Function {
+                message: format!("Export '{}' is not a function", name),
+            })
+        }.map_err(|e| {
             // Set error state on execution failure
             self.metadata.state = InstanceState::Error;
             e
@@ -455,76 +610,61 @@ impl Instance {
     
     /// Get exported function by name (for direct Wasmtime usage)
     pub fn get_func(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Func>> {
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
-        })?;
-        
-        store.with_context(|mut ctx| {
-            let export = instance.get_export(&mut ctx, name);
-            match export {
-                Some(Extern::Func(func)) => Ok(Some(func)),
-                _ => Ok(None),
-            }
-        })
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::Func(func)) => Ok(Some(func)),
+            _ => Ok(None),
+        }
     }
-    
+
     /// Get exported global by name
     pub fn get_global(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Global>> {
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
-        })?;
-        
-        store.with_context(|mut ctx| {
-            let export = instance.get_export(&mut ctx, name);
-            match export {
-                Some(Extern::Global(global)) => Ok(Some(global)),
-                _ => Ok(None),
-            }
-        })
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::Global(global)) => Ok(Some(global)),
+            _ => Ok(None),
+        }
     }
-    
+
     /// Get exported memory by name
     pub fn get_memory(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Memory>> {
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
-        })?;
-        
-        store.with_context(|mut ctx| {
-            let export = instance.get_export(&mut ctx, name);
-            match export {
-                Some(Extern::Memory(memory)) => Ok(Some(memory)),
-                _ => Ok(None),
-            }
-        })
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::Memory(memory)) => Ok(Some(memory)),
+            _ => Ok(None),
+        }
     }
-    
+
     /// Get exported table by name
     pub fn get_table(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Table>> {
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
-        })?;
-        
-        store.with_context(|mut ctx| {
-            let export = instance.get_export(&mut ctx, name);
-            match export {
-                Some(Extern::Table(table)) => Ok(Some(table)),
-                _ => Ok(None),
-            }
-        })
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::Table(table)) => Ok(Some(table)),
+            _ => Ok(None),
+        }
     }
-    
+
     /// List all exports
     pub fn exports(&self, store: &mut Store) -> WasmtimeResult<Vec<String>> {
-        let instance = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire instance lock: {}", e),
-        })?;
-        
-        store.with_context(|mut ctx| {
-            let exports = instance.exports(&mut ctx)
-                .map(|export| export.name().to_string())
-                .collect();
-            Ok(exports)
-        })
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let exports = instance.exports(&mut *store_guard)
+            .map(|export| export.name().to_string())
+            .collect();
+        Ok(exports)
     }
     
     /// Dispose instance and clean up resources
@@ -630,7 +770,7 @@ impl Instance {
             });
         }
         
-        if let Ok(_guard) = self.inner.try_lock() {
+        if let Some(_guard) = self.inner.try_lock() {
             Ok(())
         } else {
             Err(WasmtimeError::Concurrency {
@@ -747,6 +887,7 @@ impl Instance {
             Val::FuncRef(_) => Ok(WasmValue::FuncRef),
             Val::AnyRef(_) => Ok(WasmValue::ExternRef), // Treat AnyRef as ExternRef for now
             Val::ExnRef(_) => Ok(WasmValue::ExternRef), // Treat ExnRef as ExternRef for now
+            Val::ContRef(_) => Ok(WasmValue::ExternRef), // Treat ContRef as ExternRef for now
         }
     }
     
@@ -1257,6 +1398,7 @@ pub mod core {
             wasmtime::Val::ExternRef(_) => WasmValue::ExternRef,
             wasmtime::Val::AnyRef(_) => WasmValue::ExternRef,
             wasmtime::Val::ExnRef(_) => WasmValue::ExternRef,
+            wasmtime::Val::ContRef(_) => WasmValue::ExternRef,
         })
     }
 

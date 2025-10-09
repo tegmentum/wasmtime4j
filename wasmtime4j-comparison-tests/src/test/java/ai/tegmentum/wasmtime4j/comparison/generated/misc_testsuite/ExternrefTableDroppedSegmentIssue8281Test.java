@@ -1,20 +1,19 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
- * Equivalent Java test for Wasmtime test: misc_testsuite::externref-table-dropped-segment-issue-8281
+ * Equivalent Java test for Wasmtime test:
+ * misc_testsuite::externref-table-dropped-segment-issue-8281
  *
- * Original source: externref-table-dropped-segment-issue-8281.wast:1
- * Category: misc_testsuite
+ * <p>Original source: externref-table-dropped-segment-issue-8281.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ExternrefTableDroppedSegmentIssue8281Test {
 
@@ -24,81 +23,82 @@ public final class ExternrefTableDroppedSegmentIssue8281Test {
     // WAT code from original Wasmtime test:
     // (module
     //   (table $t 0 0 externref)
-    // 
+    //
     //   (func (export "f1")
     //     (i32.const 0)
     //     (i32.const 0)
     //     (i32.const 0)
     //     (table.init $t $declared)
     //   )
-    // 
+    //
     //   (func (export "f2")
     //     (i32.const 0)
     //     (i32.const 0)
     //     (i32.const 0)
     //     (table.init $t $passive)
-    // 
+    //
     //     (elem.drop $passive)
-    // 
+    //
     //     (i32.const 0)
     //     (i32.const 0)
     //     (i32.const 0)
     //     (table.init $t $passive)
     //   )
-    // 
+    //
     //   (func (export "f3")
     //     (i32.const 0)
     //     (i32.const 0)
     //     (i32.const 0)
     //     (table.init $t $active)
     //   )
-    // 
+    //
     //   (elem $declared declare externref)
     //   (elem $passive externref)
     //   (elem $active (i32.const 0) externref)
     // )
-    // 
+    //
     // (assert_return (invoke "f1"))
     // (assert_return (invoke "f2"))
     // (assert_return (invoke "f3"))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (table $t 0 0 externref)
-        
+
           (func (export "f1")
             (i32.const 0)
             (i32.const 0)
             (i32.const 0)
             (table.init $t $declared)
           )
-        
+
           (func (export "f2")
             (i32.const 0)
             (i32.const 0)
             (i32.const 0)
             (table.init $t $passive)
-        
+
             (elem.drop $passive)
-        
+
             (i32.const 0)
             (i32.const 0)
             (i32.const 0)
             (table.init $t $passive)
           )
-        
+
           (func (export "f3")
             (i32.const 0)
             (i32.const 0)
             (i32.const 0)
             (table.init $t $active)
           )
-        
+
           (elem $declared declare externref)
           (elem $passive externref)
           (elem $active (i32.const 0) externref)
         )
-        
+
         (assert_return (invoke "f1"))
         (assert_return (invoke "f2"))
         (assert_return (invoke "f3"))

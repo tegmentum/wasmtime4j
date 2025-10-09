@@ -399,6 +399,7 @@ impl ModuleMetadata {
         // Extract exports
         for export in module.exports() {
             let export_type = convert_export_type(export.ty())?;
+            eprintln!("DEBUG: Export '{}' type: {:?}", export.name(), export.ty());
             exports.push(ExportInfo {
                 name: export.name().to_string(),
                 export_type,
@@ -519,10 +520,12 @@ fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> 
     let params = func_type.params()
         .map(|vt| convert_val_type(vt))
         .collect::<Result<Vec<_>, _>>()?;
-    
+
     let returns = func_type.results()
         .map(|vt| convert_val_type(vt))
         .collect::<Result<Vec<_>, _>>()?;
+
+    eprintln!("DEBUG: Function signature - {} params, {} returns", params.len(), returns.len());
 
     Ok(FunctionSignature { params, returns })
 }

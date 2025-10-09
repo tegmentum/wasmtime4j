@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::import_works
  *
- * Original source: func.rs:560
- * Category: func
+ * <p>Original source: func.rs:560 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ImportWorksTest {
 
@@ -25,16 +23,18 @@ public final class ImportWorksTest {
     // (import "" "" (func))
     //             (import "" "" (func (param i32) (result i32)))
     //             (import "" "" (func (param i32) (param i64)))
-    //             (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref anyref i31ref)))
-    // 
+    //             (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref
+    // anyref i31ref)))
+    //
     //             (func (export "run
 
-    final String wat = """
+    final String wat =
+        """
         (import "" "" (func))
                     (import "" "" (func (param i32) (result i32)))
                     (import "" "" (func (param i32) (param i64)))
                     (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref anyref i31ref)))
-        
+
                     (func (export "run
     """;
 

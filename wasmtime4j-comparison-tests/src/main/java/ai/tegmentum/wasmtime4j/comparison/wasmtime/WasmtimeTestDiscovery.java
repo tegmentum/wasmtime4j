@@ -14,8 +14,8 @@ import java.util.stream.Stream;
 /**
  * Discovers tests from the upstream Wasmtime repository.
  *
- * <p>This class parses Rust test files from https://github.com/bytecodealliance/wasmtime to
- * extract test metadata that can be used to generate equivalent wasmtime4j tests.
+ * <p>This class parses Rust test files from https://github.com/bytecodealliance/wasmtime to extract
+ * test metadata that can be used to generate equivalent wasmtime4j tests.
  */
 public final class WasmtimeTestDiscovery {
 
@@ -26,8 +26,7 @@ public final class WasmtimeTestDiscovery {
       Pattern.compile("^\\s*#\\[(wasmtime_test|test)\\]");
 
   // Pattern to match function declaration after test annotation
-  private static final Pattern FUNCTION_PATTERN =
-      Pattern.compile("^\\s*fn\\s+(\\w+)\\s*\\(");
+  private static final Pattern FUNCTION_PATTERN = Pattern.compile("^\\s*fn\\s+(\\w+)\\s*\\(");
 
   // Pattern to match WAT code in wat::parse_str
   // Handles both r#"..."# and r"..." formats
@@ -35,8 +34,7 @@ public final class WasmtimeTestDiscovery {
       Pattern.compile("wat::parse_str\\s*\\(\\s*r#?\"([\\s\\S]*?)\"#?\\s*\\)", Pattern.DOTALL);
 
   // Pattern to match assert_eq! statements
-  private static final Pattern ASSERT_PATTERN =
-      Pattern.compile("assert_eq!\\s*\\(([^)]+)\\)");
+  private static final Pattern ASSERT_PATTERN = Pattern.compile("assert_eq!\\s*\\(([^)]+)\\)");
 
   private final Path wasmtimeRepoPath;
 
@@ -110,8 +108,7 @@ public final class WasmtimeTestDiscovery {
                 try {
                   tests.addAll(parseRustTestFile(path));
                 } catch (final IOException e) {
-                  LOGGER.warning(
-                      "Failed to parse test file " + path + ": " + e.getMessage());
+                  LOGGER.warning("Failed to parse test file " + path + ": " + e.getMessage());
                 }
               });
     }
@@ -143,8 +140,7 @@ public final class WasmtimeTestDiscovery {
                 try {
                   tests.add(parseWastFile(path));
                 } catch (final IOException e) {
-                  LOGGER.warning(
-                      "Failed to parse WAST file " + path + ": " + e.getMessage());
+                  LOGGER.warning("Failed to parse WAST file " + path + ": " + e.getMessage());
                 }
               });
     }

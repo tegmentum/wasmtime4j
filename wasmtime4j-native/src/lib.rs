@@ -36,6 +36,7 @@ use std::os::raw::c_char;
 
 // Core modules - foundational WebAssembly runtime components
 pub mod error;
+pub mod interop;  // FFI interop utilities
 pub mod engine;
 pub mod module;
 pub mod store;

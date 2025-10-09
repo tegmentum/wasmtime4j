@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::call_wasm_to_native
  *
- * Original source: func.rs:39
- * Category: func
+ * <p>Original source: func.rs:39 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallWasmToNativeTest {
 
@@ -26,7 +24,8 @@ public final class CallWasmToNativeTest {
     //             (import "" "" (func (result i32 i32 i32)))
     //             (func (export "run
 
-    final String wat = """
+    final String wat =
+        """
         (module
                     (import "" "" (func (result i32 i32 i32)))
                     (func (export "run

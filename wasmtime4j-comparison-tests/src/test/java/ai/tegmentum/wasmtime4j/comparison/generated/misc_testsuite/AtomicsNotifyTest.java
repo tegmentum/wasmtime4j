@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::atomics_notify
  *
- * Original source: atomics_notify.wast:1
- * Category: misc_testsuite
+ * <p>Original source: atomics_notify.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class AtomicsNotifyTest {
 
@@ -24,40 +22,42 @@ public final class AtomicsNotifyTest {
     // WAT code from original Wasmtime test:
     // ;; From https://github.com/bytecodealliance/wasmtime/pull/5255
     // ;;
-    // 
+    //
     // (module
     //   (memory 1 1)
     //   (func (export "notify") (result i32) (memory.atomic.notify (i32.const 0) (i32.const -1)))
     // )
-    // 
+    //
     // ;; notify returns 0 on unshared memories
     // (assert_return (invoke "notify") (i32.const 0))
-    // 
+    //
     // (module
     //   (memory 1 1 shared)
-    //   (func (export "notify_shared") (result i32) (memory.atomic.notify (i32.const 0) (i32.const -1)))
+    //   (func (export "notify_shared") (result i32) (memory.atomic.notify (i32.const 0) (i32.const
+    // -1)))
     // )
-    // 
+    //
     // ;; notify returns 0 with 0 waiters
     // (assert_return (invoke "notify_shared") (i32.const 0))
 
-    final String wat = """
+    final String wat =
+        """
         ;; From https://github.com/bytecodealliance/wasmtime/pull/5255
         ;;
-        
+
         (module
           (memory 1 1)
           (func (export "notify") (result i32) (memory.atomic.notify (i32.const 0) (i32.const -1)))
         )
-        
+
         ;; notify returns 0 on unshared memories
         (assert_return (invoke "notify") (i32.const 0))
-        
+
         (module
           (memory 1 1 shared)
           (func (export "notify_shared") (result i32) (memory.atomic.notify (i32.const 0) (i32.const -1)))
         )
-        
+
         ;; notify returns 0 with 0 waiters
         (assert_return (invoke "notify_shared") (i32.const 0))
     """;

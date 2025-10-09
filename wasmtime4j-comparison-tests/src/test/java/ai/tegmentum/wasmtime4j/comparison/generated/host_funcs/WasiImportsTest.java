@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.host_funcs;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: host_funcs::wasi_imports
  *
- * Original source: host_funcs.rs:716
- * Category: host_funcs
+ * <p>Original source: host_funcs.rs:716 Category: host_funcs
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class WasiImportsTest {
 
@@ -25,7 +23,8 @@ public final class WasiImportsTest {
     // (import "wasi_snapshot_preview1" "proc_exit" (func $__wasi_proc_exit (param i32)))
     //         (memory (export "memory
 
-    final String wat = """
+    final String wat =
+        """
         (import "wasi_snapshot_preview1" "proc_exit" (func $__wasi_proc_exit (param i32)))
                 (memory (export "memory
     """;

@@ -1,20 +1,18 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misc_testsuite;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStream;
 import ai.tegmentum.wasmtime4j.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::table_grow_with_funcref
  *
- * Original source: table_grow_with_funcref.wast:1
- * Category: misc_testsuite
+ * <p>Original source: table_grow_with_funcref.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TableGrowWithFuncrefTest {
 
@@ -31,12 +29,13 @@ public final class TableGrowWithFuncrefTest {
     //     (table.grow $t (ref.func $f) (i32.const 1))
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "size") (i32.const 0))
     // (assert_return (invoke "grow-by-1") (i32.const 0))
     // (assert_return (invoke "size") (i32.const 1))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (table $t 0 funcref)
           (func (export "size") (result i32)
@@ -46,7 +45,7 @@ public final class TableGrowWithFuncrefTest {
             (table.grow $t (ref.func $f) (i32.const 1))
           )
         )
-        
+
         (assert_return (invoke "size") (i32.const 0))
         (assert_return (invoke "grow-by-1") (i32.const 0))
         (assert_return (invoke "size") (i32.const 1))
