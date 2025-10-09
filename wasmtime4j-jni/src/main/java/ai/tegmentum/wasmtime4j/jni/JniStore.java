@@ -543,7 +543,7 @@ public final class JniStore extends JniResource implements Store {
         throw new JniException("Native table creation returned null handle");
       }
 
-      final JniTable table = new JniTable(tableHandle);
+      final JniTable table = new JniTable(tableHandle, this);
       LOGGER.fine(
           "Created table with element type "
               + elementType

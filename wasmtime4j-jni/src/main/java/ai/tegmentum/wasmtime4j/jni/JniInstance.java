@@ -226,7 +226,7 @@ public final class JniInstance extends JniResource implements Instance {
       if (tableHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniTable(tableHandle));
+      return Optional.of(new JniTable(tableHandle, (JniStore) store));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

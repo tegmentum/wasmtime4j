@@ -4138,29 +4138,16 @@ pub mod jni_table {
         env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
+        store_ptr: jlong,
     ) -> jint {
         jni_utils::jni_try_default(&env, 0, || {
-            if table_ptr == 0 {
-                log::error!("JNI Table.nativeGetSize: null table handle provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Table handle cannot be null. Ensure table is properly initialized before getting size.".to_string(),
-                });
-            }
+            use std::os::raw::c_void;
 
-            if table_ptr < 0x1000 || table_ptr == -1 {
-                log::error!("JNI Table.nativeGetSize: invalid table handle 0x{:x}", table_ptr);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
-                        table_ptr
-                    ),
-                });
-            }
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
 
-            // Use realistic table size to enable proper test execution
-            // TODO: Integrate with actual table instance when store context available  
-            log::debug!("JNI Table.nativeGetSize: returning size 5 for table 0x{:x}", table_ptr);
-            Ok(5) // Return realistic size to make validation work
+            let size = crate::table::core::get_table_size(table, store)?;
+            Ok(size as jint)
         })
     }
 
@@ -4170,31 +4157,16 @@ pub mod jni_table {
         env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
+        store_ptr: jlong,
     ) -> jint {
         jni_utils::jni_try_default(&env, -1, || {
-            // Comprehensive parameter validation with detailed error context
-            if table_ptr == 0 {
-                log::error!("JNI Table.nativeGetMaxSize: null table handle provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Table handle cannot be null. Ensure table is properly initialized before calling max size operations.".to_string(),
-                });
-            }
+            use std::os::raw::c_void;
 
-            // Check for obviously invalid pointers (basic sanity check)
-            if table_ptr < 0x1000 || table_ptr == -1 {
-                log::error!("JNI Table.nativeGetMaxSize: invalid table handle 0x{:x}", table_ptr);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
-                        table_ptr
-                    ),
-                });
-            }
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
 
-            // For now, return -1 to indicate unlimited size (this matches Wasmtime's behavior when no maximum is set)
-            // TODO: Implement proper table metadata retrieval when Wasmtime API provides access to table limits
-            log::debug!("JNI Table.nativeGetMaxSize: returning -1 for unlimited table size");
-            Ok(-1)
+            let max_size = crate::table::core::get_table_max_size(table, store)?;
+            Ok(max_size as jint)
         })
     }
 
@@ -5345,6 +5317,7 @@ pub mod jni_memory {
         env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
+        _store_ptr: jlong,
     ) -> jstring {
         let null_string = std::ptr::null_mut();
         match (|| -> crate::error::WasmtimeResult<jstring> {

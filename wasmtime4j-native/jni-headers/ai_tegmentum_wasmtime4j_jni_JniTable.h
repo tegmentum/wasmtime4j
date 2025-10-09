@@ -10,26 +10,26 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeGetSize
- * Signature: (J)I
+ * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeGetMaxSize
- * Signature: (J)I
+ * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMaxSize
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeGetElementType
- * Signature: (J)Ljava/lang/String;
+ * Signature: (JJ)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElementType
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable

@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 public final class JniTable extends JniResource implements WasmTable {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
+  private final JniStore store;
 
   // Load native library when this class is first loaded
   static {
@@ -32,13 +33,17 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   /**
-   * Creates a new JNI table with the given native handle.
+   * Creates a new JNI table with the given native handle and store.
    *
    * @param nativeHandle the native table handle
+   * @param store the store that owns this table
    * @throws JniResourceException if nativeHandle is invalid
+   * @throws IllegalArgumentException if store is null
    */
-  JniTable(final long nativeHandle) {
+  JniTable(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
+    JniValidation.requireNonNull(store, "store");
+    this.store = store;
     LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -50,8 +55,11 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int getSize() {
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
-      return nativeGetSize(getNativeHandle());
+      return nativeGetSize(getNativeHandle(), store.getNativeHandle());
     } catch (final JniResourceException e) {
       throw e;
     } catch (final Exception e) {
@@ -67,8 +75,11 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the max size cannot be retrieved
    */
   public int getMaxSize() {
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
-      return nativeGetMaxSize(getNativeHandle());
+      return nativeGetMaxSize(getNativeHandle(), store.getNativeHandle());
     } catch (final JniResourceException e) {
       throw e;
     } catch (final Exception e) {
@@ -84,8 +95,11 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the type cannot be retrieved
    */
   public WasmValueType getElementType() {
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
     try {
-      final String typeString = nativeGetElementType(getNativeHandle());
+      final String typeString = nativeGetElementType(getNativeHandle(), store.getNativeHandle());
       if (typeString == null) {
         return WasmValueType.EXTERNREF;
       }
@@ -354,25 +368,28 @@ public final class JniTable extends JniResource implements WasmTable {
    * Gets the size of a table.
    *
    * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
    * @return the number of elements in the table
    */
-  private static native int nativeGetSize(long tableHandle);
+  private static native int nativeGetSize(long tableHandle, long storeHandle);
 
   /**
    * Gets the maximum size of a table.
    *
    * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
    * @return the maximum number of elements, or -1 if unlimited
    */
-  private static native int nativeGetMaxSize(long tableHandle);
+  private static native int nativeGetMaxSize(long tableHandle, long storeHandle);
 
   /**
    * Gets the element type of a table.
    *
    * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
    * @return the element type name or null on error
    */
-  private static native String nativeGetElementType(long tableHandle);
+  private static native String nativeGetElementType(long tableHandle, long storeHandle);
 
   /**
    * Gets an element from a table.

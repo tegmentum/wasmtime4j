@@ -44,8 +44,7 @@ public class TablesTest {
         (module
           (table (export "funcs") 10 funcref)
           (func (export "get_size") (result i32)
-            i32.const 0
-            table.size
+            table.size 0
           )
         )
         """;
@@ -71,8 +70,8 @@ public class TablesTest {
         (module
           (table (export "t") 5 20 funcref)
           (func (export "grow_table") (param i32) (result i32)
-            local.get 0
             ref.null func
+            local.get 0
             table.grow 0
           )
           (func (export "get_size") (result i32)
@@ -110,6 +109,7 @@ public class TablesTest {
           (table (export "funcs") 5 funcref)
           (func $f1 (result i32) i32.const 42)
           (func $f2 (result i32) i32.const 99)
+          (elem declare func $f1 $f2)
 
           (func (export "store_func1")
             i32.const 0
@@ -155,6 +155,7 @@ public class TablesTest {
         (module
           (table (export "t") 10 funcref)
           (func $dummy (result i32) i32.const 1)
+          (elem declare func $dummy)
 
           (func (export "fill_table") (param i32 i32)
             local.get 0  ;; start
@@ -209,6 +210,7 @@ public class TablesTest {
           (table (export "src") 5 funcref)
           (table (export "dst") 5 funcref)
           (func $f1 (result i32) i32.const 42)
+          (elem declare func $f1)
 
           (func (export "init_src")
             i32.const 0
@@ -264,6 +266,7 @@ public class TablesTest {
         (module
           (import "env" "shared_table" (table 5 funcref))
           (func $local_func (result i32) i32.const 42)
+          (elem declare func $local_func)
 
           (func (export "store_in_table")
             i32.const 2
@@ -305,6 +308,7 @@ public class TablesTest {
         (module
           (table (export "shared") 10 funcref)
           (func $f1 (result i32) i32.const 42)
+          (elem declare func $f1)
 
           (func (export "populate")
             i32.const 0
@@ -434,14 +438,14 @@ public class TablesTest {
           (table (export "limited") 2 5 funcref)
 
           (func (export "grow_to_max") (result i32)
-            i32.const 3
             ref.null func
+            i32.const 3
             table.grow 0
           )
 
           (func (export "grow_beyond_max") (result i32)
-            i32.const 10
             ref.null func
+            i32.const 10
             table.grow 0
           )
         )

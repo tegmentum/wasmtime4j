@@ -771,6 +771,15 @@ pub mod core {
         table.size(store).map(|s| s as u32)
     }
 
+    /// Core function to get table maximum size (-1 if unlimited)
+    pub fn get_table_max_size(table: &Table, store: &Store) -> WasmtimeResult<i32> {
+        let table_type = table.table_type(store)?;
+        match table_type.maximum() {
+            Some(max) => Ok(max as i32),
+            None => Ok(-1), // -1 indicates unlimited
+        }
+    }
+
     /// Core function to get table element
     pub fn get_table_element(table: &Table, store: &Store, index: u32) -> WasmtimeResult<TableElement> {
         table.get(store, index as u64)
