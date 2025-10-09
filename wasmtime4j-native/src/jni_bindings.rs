@@ -4140,15 +4140,27 @@ pub mod jni_table {
         table_ptr: jlong,
         store_ptr: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&env, 0, || {
+        log::debug!("JNI Table.nativeGetSize: table_ptr=0x{:x}, store_ptr=0x{:x}", table_ptr, store_ptr);
+
+        let result = jni_utils::jni_try_default(&env, 0, || {
             use std::os::raw::c_void;
 
+            log::debug!("Getting table reference...");
             let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
-            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+            log::debug!("Got table reference");
 
+            log::debug!("Getting store reference...");
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+            log::debug!("Got store reference");
+
+            log::debug!("Calling get_table_size...");
             let size = crate::table::core::get_table_size(table, store)?;
+            log::debug!("Table size: {}", size);
             Ok(size as jint)
-        })
+        });
+
+        log::debug!("JNI Table.nativeGetSize returning: {}", result);
+        result
     }
 
     /// Get table maximum size (JNI version)
