@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +22,9 @@ import java.util.Set;
  * @since 1.0.0
  */
 public class JniLinker<T> implements Linker<T> {
+  private static final java.util.concurrent.ConcurrentHashMap<Long, HostFunctionWrapper>
+      HOST_FUNCTION_CALLBACKS = new java.util.concurrent.ConcurrentHashMap<>();
+
   private final long nativeHandle;
   private final Engine engine;
   private volatile boolean closed = false;
@@ -466,12 +470,42 @@ public class JniLinker<T> implements Linker<T> {
       final String name,
       final HostFunction implementation,
       final FunctionType functionType) {
-    // For now, create a simple wrapper and store it
-    // In a full implementation, this would register with a callback manager
-    // that can be invoked from native code
     final HostFunctionWrapper wrapper =
         new HostFunctionWrapper(moduleName, name, implementation, functionType);
-    return wrapper.getId();
+    final long id = wrapper.getId();
+    HOST_FUNCTION_CALLBACKS.put(id, wrapper);
+    return id;
+  }
+
+  /**
+   * Invokes a host function callback from native code. This method is called by the native layer
+   * when a WASM module calls a host function.
+   *
+   * @param callbackId the callback ID registered earlier
+   * @param params array of parameter values (i32/i64/f32/f64 as long/double)
+   * @return array of return values
+   * @throws WasmException if the callback fails
+   */
+  @SuppressWarnings("unused") // Called from native code
+  private static WasmValue[] invokeHostFunctionCallback(
+      final long callbackId, final WasmValue[] params) throws WasmException {
+    final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    if (wrapper == null) {
+      throw new WasmException("Host function callback not found: " + callbackId);
+    }
+
+    try {
+      return wrapper.getImplementation().execute(params);
+    } catch (final Exception e) {
+      throw new WasmException(
+          "Host function '"
+              + wrapper.moduleName
+              + "::"
+              + wrapper.name
+              + "' threw exception: "
+              + e.getMessage(),
+          e);
+    }
   }
 
   /** Wrapper for host function callbacks. */

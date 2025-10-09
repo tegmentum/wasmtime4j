@@ -7,7 +7,7 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JByteArray, JString, JObject, JValue};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject};
+use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject, jintArray};
 
 // Instance is imported locally in each module that needs it
 
@@ -2127,6 +2127,36 @@ pub mod jni_linker {
                 })?;
 
             Ok(1) // JNI_TRUE
+        })
+    }
+
+    /// Define a host function in the linker (NOT YET IMPLEMENTED)
+    ///
+    /// This is a stub implementation. Full implementation requires:
+    /// - Creating a JavaVM global reference
+    /// - Storing callback ID in a thread-safe registry
+    /// - Creating a Rust closure that calls back into Java via JNI
+    /// - Converting parameters from wasmtime::Val to Java WasmValue
+    /// - Converting return values from Java WasmValue back to wasmtime::Val
+    /// - Proper error handling across the JNI boundary
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(
+        mut env: JNIEnv,
+        _obj: jobject,
+        _linker_handle: jlong,
+        _module_name: JString,
+        _name: JString,
+        _param_types: jintArray,
+        _return_types: jintArray,
+        _callback_id: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            // TODO: Implement host function registration with callback support
+            // For now, return false to indicate not implemented
+            Err(WasmtimeError::Runtime {
+                message: "Host function registration not yet implemented in native layer".to_string(),
+                backtrace: None
+            })
         })
     }
 }
