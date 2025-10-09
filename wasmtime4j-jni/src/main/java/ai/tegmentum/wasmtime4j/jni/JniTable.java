@@ -55,27 +55,17 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int getSize() {
-    System.err.println("DEBUG: JniTable.getSize() ENTERED");
-    System.err.flush();
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
     }
     try {
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
-      System.err.println("DEBUG: JniTable.getSize() calling nativeGetSize(table=0x" + Long.toHexString(tableHandle) + ", store=0x" + Long.toHexString(storeHandle) + ")");
-      System.err.flush();
       final int size = nativeGetSize(tableHandle, storeHandle);
-      System.err.println("DEBUG: JniTable.getSize() returned: " + size);
-      System.err.flush();
       return size;
     } catch (final JniResourceException e) {
-      System.err.println("DEBUG: JniTable.getSize() caught JniResourceException: " + e.getMessage());
-      System.err.flush();
       throw e;
     } catch (final Exception e) {
-      System.err.println("DEBUG: JniTable.getSize() caught Exception: " + e.getMessage());
-      System.err.flush();
       throw new RuntimeException("Unexpected error getting table size", e);
     }
   }
