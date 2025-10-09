@@ -50,7 +50,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("my_const");
+    final WasmGlobal global = instance.getGlobal("my_const").orElseThrow();
     assertNotNull(global);
     assertFalse(global.isMutable());
     assertEquals(WasmValueType.I32, global.getType());
@@ -78,7 +78,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("counter");
+    final WasmGlobal global = instance.getGlobal("counter").orElseThrow();
     assertNotNull(global);
     assertTrue(global.isMutable());
     assertEquals(0, global.get().asInt());
@@ -111,7 +111,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("big_num");
+    final WasmGlobal global = instance.getGlobal("big_num").orElseThrow();
     assertEquals(WasmValueType.I64, global.getType());
     assertEquals(9223372036854775807L, global.get().asLong());
 
@@ -134,7 +134,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("pi");
+    final WasmGlobal global = instance.getGlobal("pi").orElseThrow();
     assertEquals(WasmValueType.F32, global.getType());
     assertEquals(3.14159f, global.get().asFloat(), 0.00001f);
 
@@ -157,7 +157,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("e");
+    final WasmGlobal global = instance.getGlobal("e").orElseThrow();
     assertEquals(WasmValueType.F64, global.getType());
     assertEquals(2.718281828, global.get().asDouble(), 0.000000001);
 
@@ -183,10 +183,10 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal a = instance.getGlobal("a");
-    final WasmGlobal b = instance.getGlobal("b");
-    final WasmGlobal c = instance.getGlobal("c");
-    final WasmGlobal d = instance.getGlobal("d");
+    final WasmGlobal a = instance.getGlobal("a").orElseThrow();
+    final WasmGlobal b = instance.getGlobal("b").orElseThrow();
+    final WasmGlobal c = instance.getGlobal("c").orElseThrow();
+    final WasmGlobal d = instance.getGlobal("d").orElseThrow();
 
     assertFalse(a.isMutable());
     assertTrue(b.isMutable());
@@ -378,7 +378,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = linker.instantiate(store, module);
 
-    final WasmGlobal output = instance.getGlobal("output");
+    final WasmGlobal output = instance.getGlobal("output").orElseThrow();
 
     // Process
     instance.callFunction("process");
@@ -422,7 +422,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal state = instance.getGlobal("state");
+    final WasmGlobal state = instance.getGlobal("state").orElseThrow();
 
     // (0 + 10) = 10
     instance.callFunction("add", WasmValue.i32(10));
@@ -456,7 +456,7 @@ public class GlobalsTest {
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
-    final WasmGlobal global = instance.getGlobal("const");
+    final WasmGlobal global = instance.getGlobal("const").orElseThrow();
     assertThrows(Exception.class, () -> global.set(WasmValue.i32(100)));
 
     instance.close();

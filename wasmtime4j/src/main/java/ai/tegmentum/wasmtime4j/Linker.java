@@ -61,7 +61,8 @@ public interface Linker<T> extends Closeable {
    * @throws WasmException if the memory cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineMemory(final Store store, final String moduleName, final String name, final WasmMemory memory)
+  void defineMemory(
+      final Store store, final String moduleName, final String name, final WasmMemory memory)
       throws WasmException;
 
   /**
@@ -77,7 +78,8 @@ public interface Linker<T> extends Closeable {
    * @throws WasmException if the table cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineTable(final Store store, final String moduleName, final String name, final WasmTable table)
+  void defineTable(
+      final Store store, final String moduleName, final String name, final WasmTable table)
       throws WasmException;
 
   /**
@@ -93,7 +95,8 @@ public interface Linker<T> extends Closeable {
    * @throws WasmException if the global cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineGlobal(final Store store, final String moduleName, final String name, final WasmGlobal global)
+  void defineGlobal(
+      final Store store, final String moduleName, final String name, final WasmGlobal global)
       throws WasmException;
 
   /**
