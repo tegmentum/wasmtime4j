@@ -1745,6 +1745,93 @@ pub mod jni_store {
         }) as jlong
     }
 
+    /// Create a new WebAssembly table with the specified element type and size
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTable(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_handle: jlong,
+        element_type: jint,
+        initial_size: jint,
+        max_size: jint,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use wasmtime::{ValType, RefType};
+            use std::os::raw::c_void;
+            use crate::error::WasmtimeError;
+
+            // Extract store from handle
+            let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Convert element type from native type code
+            let val_type = match element_type {
+                0x70 => ValType::Ref(RefType::FUNCREF), // FUNCREF
+                0x6F => ValType::Ref(RefType::EXTERNREF), // EXTERNREF
+                _ => return Err(WasmtimeError::Type {
+                    message: format!("Invalid element type code: {}", element_type),
+                }),
+            };
+
+            // Convert max_size (-1 means unlimited)
+            let max_size_opt = if max_size == -1 {
+                None
+            } else {
+                Some(max_size as u32)
+            };
+
+            // Create the table
+            let table = crate::table::core::create_table(
+                store,
+                val_type,
+                initial_size as u32,
+                max_size_opt,
+                None, // No name for now
+            )?;
+
+            // Return the table as a pointer
+            Ok(Box::into_raw(table) as jlong)
+        })
+    }
+
+    /// Create a new WebAssembly linear memory with the specified page size
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemory(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_handle: jlong,
+        initial_pages: jint,
+        max_pages: jint,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            // Extract store from handle
+            let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Convert max_pages (-1 means unlimited)
+            let max_pages_opt = if max_pages == -1 {
+                None
+            } else {
+                Some(max_pages as u64)
+            };
+
+            // Create memory using Memory::new or builder pattern
+            let memory_config = crate::memory::MemoryConfig {
+                initial_pages: initial_pages as u64,
+                maximum_pages: max_pages_opt,
+                is_shared: false,
+                memory_index: 0,
+                name: None,
+            };
+
+            // Create the memory
+            let memory = crate::memory::Memory::new_with_config(store, memory_config)?;
+
+            // Return the memory as a pointer
+            Ok(Box::into_raw(Box::new(memory)) as jlong)
+        })
+    }
+
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
         env: JNIEnv,
         _class: JClass,
