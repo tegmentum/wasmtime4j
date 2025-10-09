@@ -1843,7 +1843,119 @@ pub mod jni_store {
     }
 }
 
-/// JNI bindings for Module operations  
+/// JNI bindings for Linker operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_linker {
+    use super::*;
+    use crate::linker::ffi_core as linker_core;
+    use crate::error::{jni_utils, WasmtimeError};
+    use std::os::raw::c_void;
+
+    /// Instantiate a module using the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiate(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            // Extract linker from handle
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+
+            // Extract store from handle
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Extract module from handle
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+            // Instantiate the module using the linker
+            // We need to access the inner wasmtime::Linker
+            let mut store_lock = store.lock_store();
+            let linker_lock = linker.inner()?;
+
+            // Use wasmtime::Linker::instantiate
+            let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
+                .map_err(|e| WasmtimeError::Instantiation {
+                    message: format!("Failed to instantiate module: {}", e),
+                })?;
+
+            // Drop locks before creating Instance
+            drop(linker_lock);
+            drop(store_lock);
+
+            // Create Instance wrapper using new_without_imports since linker handled imports
+            let instance = crate::instance::Instance::new_without_imports(
+                store,
+                module,
+            )?;
+
+            // Return the instance as a pointer
+            Ok(Box::into_raw(Box::new(instance)) as jlong)
+        })
+    }
+
+    /// Instantiate a named module using the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiateNamed(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_name: JString,
+        module_handle: jlong,
+    ) -> jlong {
+        // Convert module name before the closure to avoid borrow checker issues
+        let module_name_str: String = match env.get_string(&module_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            // Extract linker from handle
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+
+            // Extract store from handle
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Extract module from handle
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+            // Instantiate the module using the linker with a name
+            let mut store_lock = store.lock_store();
+            let linker_lock = linker.inner()?;
+
+            // Use wasmtime::Linker::instantiate to create instance
+            let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
+                .map_err(|e| WasmtimeError::Instantiation {
+                    message: format!("Failed to instantiate named module '{}': {}", module_name_str, e),
+                })?;
+
+            // Define the instance exports in the linker for future linking
+            // This allows other modules to import from this instance
+            drop(linker_lock); // Drop the lock before we modify the linker
+            let mut linker_mut_lock = linker.inner()?;
+            linker_mut_lock.instance(&mut *store_lock, &module_name_str, wasmtime_instance)
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!("Failed to define instance '{}': {}", module_name_str, e),
+                })?;
+            drop(linker_mut_lock);
+            drop(store_lock);
+
+            // Create Instance wrapper using new_without_imports since linker handled imports
+            let instance = crate::instance::Instance::new_without_imports(
+                store,
+                module,
+            )?;
+
+            // Return the instance as a pointer
+            Ok(Box::into_raw(Box::new(instance)) as jlong)
+        })
+    }
+}
+
+/// JNI bindings for Module operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_module {
     use super::*;
