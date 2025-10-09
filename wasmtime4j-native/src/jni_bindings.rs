@@ -2015,8 +2015,14 @@ pub mod jni_linker {
         }
 
         fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
+            // JavaVM doesn't implement Clone, but it can be safely shared
+            // Get a new reference by cloning the internal pointer
+            let jvm_clone = unsafe {
+                let ptr = &self.jvm as *const JavaVM;
+                std::ptr::read(ptr)
+            };
             Box::new(JniHostFunctionCallback {
-                jvm: self.jvm.clone(),
+                jvm: jvm_clone,
                 callback_id: self.callback_id,
             })
         }
@@ -2038,7 +2044,7 @@ pub mod jni_linker {
     }
 
     /// Convert Rust WasmValue slice to Java WasmValue array
-    fn wasm_values_to_java_array(env: &mut jni::JNIEnv, values: &[WasmValue]) -> WasmtimeResult<jni::objects::JObject> {
+    fn wasm_values_to_java_array<'local>(env: &mut jni::JNIEnv<'local>, values: &[WasmValue]) -> WasmtimeResult<jni::objects::JObject<'local>> {
         // Find WasmValue class
         let wasm_value_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValue")
             .map_err(|e| WasmtimeError::Runtime {
@@ -2068,7 +2074,10 @@ pub mod jni_linker {
 
     /// Convert Java WasmValue array to Rust WasmValue vector
     fn java_array_to_wasm_values(env: &mut jni::JNIEnv, array: &jni::objects::JObject) -> WasmtimeResult<Vec<WasmValue>> {
-        let array_len = env.get_array_length(array.into())
+        let array_obj: &jni::objects::JObjectArray = unsafe {
+            &*(array as *const jni::objects::JObject as *const jni::objects::JObjectArray)
+        };
+        let array_len = env.get_array_length(array_obj)
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to get array length: {}", e),
                 backtrace: None
@@ -2076,7 +2085,7 @@ pub mod jni_linker {
 
         let mut result = Vec::with_capacity(array_len as usize);
         for i in 0..array_len {
-            let element = env.get_object_array_element(array.into(), i)
+            let element = env.get_object_array_element(array_obj, i)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to get array element: {}", e),
                     backtrace: None
@@ -2088,7 +2097,7 @@ pub mod jni_linker {
     }
 
     /// Convert Rust WasmValue to Java WasmValue object
-    fn wasm_value_to_java(env: &mut jni::JNIEnv, value: &WasmValue) -> WasmtimeResult<jni::objects::JObject> {
+    fn wasm_value_to_java<'local>(env: &mut jni::JNIEnv<'local>, value: &WasmValue) -> WasmtimeResult<jni::objects::JObject<'local>> {
         let wasm_value_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValue")
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to find WasmValue class: {}", e),
@@ -2097,15 +2106,10 @@ pub mod jni_linker {
 
         match value {
             WasmValue::I32(v) => {
-                let method_id = env.get_static_method_id(wasm_value_class, "i32", "(I)Lai/tegmentum/wasmtime4j/WasmValue;")
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to get i32 method: {}", e),
-                        backtrace: None
-                    })?;
-                env.call_static_method_unchecked(
+                env.call_static_method(
                     wasm_value_class,
-                    method_id,
-                    jni::signature::ReturnType::Object,
+                    "i32",
+                    "(I)Lai/tegmentum/wasmtime4j/WasmValue;",
                     &[jni::objects::JValue::Int(*v)]
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to call i32 method: {}", e),
@@ -2116,15 +2120,10 @@ pub mod jni_linker {
                 })
             },
             WasmValue::I64(v) => {
-                let method_id = env.get_static_method_id(wasm_value_class, "i64", "(J)Lai/tegmentum/wasmtime4j/WasmValue;")
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to get i64 method: {}", e),
-                        backtrace: None
-                    })?;
-                env.call_static_method_unchecked(
+                env.call_static_method(
                     wasm_value_class,
-                    method_id,
-                    jni::signature::ReturnType::Object,
+                    "i64",
+                    "(J)Lai/tegmentum/wasmtime4j/WasmValue;",
                     &[jni::objects::JValue::Long(*v)]
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to call i64 method: {}", e),
@@ -2135,15 +2134,10 @@ pub mod jni_linker {
                 })
             },
             WasmValue::F32(v) => {
-                let method_id = env.get_static_method_id(wasm_value_class, "f32", "(F)Lai/tegmentum/wasmtime4j/WasmValue;")
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to get f32 method: {}", e),
-                        backtrace: None
-                    })?;
-                env.call_static_method_unchecked(
+                env.call_static_method(
                     wasm_value_class,
-                    method_id,
-                    jni::signature::ReturnType::Object,
+                    "f32",
+                    "(F)Lai/tegmentum/wasmtime4j/WasmValue;",
                     &[jni::objects::JValue::Float(*v)]
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to call f32 method: {}", e),
@@ -2154,15 +2148,10 @@ pub mod jni_linker {
                 })
             },
             WasmValue::F64(v) => {
-                let method_id = env.get_static_method_id(wasm_value_class, "f64", "(D)Lai/tegmentum/wasmtime4j/WasmValue;")
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to get f64 method: {}", e),
-                        backtrace: None
-                    })?;
-                env.call_static_method_unchecked(
+                env.call_static_method(
                     wasm_value_class,
-                    method_id,
-                    jni::signature::ReturnType::Object,
+                    "f64",
+                    "(D)Lai/tegmentum/wasmtime4j/WasmValue;",
                     &[jni::objects::JValue::Double(*v)]
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to call f64 method: {}", e),
@@ -2572,41 +2561,55 @@ pub mod jni_linker {
             Err(_) => return 0,
         };
 
+        // Get JavaVM before the closure to avoid borrow issues
+        let jvm = match env.get_java_vm() {
+            Ok(vm) => vm,
+            Err(_) => return 0,
+        };
+
+        // Extract array data before the closure
+        let param_array = unsafe { jni::objects::JIntArray::from_raw(param_types) };
+        let param_len = match env.get_array_length(&param_array) {
+            Ok(len) => len as usize,
+            Err(_) => return 0,
+        };
+        let mut param_vals = vec![0i32; param_len];
+        if env.get_int_array_region(&param_array, 0, &mut param_vals).is_err() {
+            return 0;
+        }
+
+        let return_array = unsafe { jni::objects::JIntArray::from_raw(return_types) };
+        let return_len = match env.get_array_length(&return_array) {
+            Ok(len) => len as usize,
+            Err(_) => return 0,
+        };
+        let mut return_vals = vec![0i32; return_len];
+        if env.get_int_array_region(&return_array, 0, &mut return_vals).is_err() {
+            return 0;
+        }
+
         jni_utils::jni_try_with_default(&mut env, 0, || {
             use std::os::raw::c_void;
             use wasmtime::{ValType, FuncType};
             use crate::hostfunc::{HostFunction, HostFunctionCallback};
             use crate::instance::WasmValue;
 
-            // Get JavaVM for callbacks
-            let jvm = env.get_java_vm().map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to get JavaVM reference: {}", e),
-                backtrace: None
-            })?;
-
             // Convert parameter types
-            let param_vals = env.get_int_array_elements(&param_types, jni::objects::ReleaseMode::NoCopyBack)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get param types: {}", e),
-                    backtrace: None
-                })?;
-            let param_val_types: Vec<ValType> = unsafe {
-                std::slice::from_raw_parts(param_vals.as_ptr(), param_vals.len())
-            }.iter().map(|&t| int_to_valtype(t)).collect::<Result<Vec<_>, _>>()?;
+            let param_val_types: Vec<ValType> = param_vals.iter()
+                .map(|&t| int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
 
             // Convert return types
-            let return_vals = env.get_int_array_elements(&return_types, jni::objects::ReleaseMode::NoCopyBack)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get return types: {}", e),
-                    backtrace: None
-                })?;
-            let return_val_types: Vec<ValType> = unsafe {
-                std::slice::from_raw_parts(return_vals.as_ptr(), return_vals.len())
-            }.iter().map(|&t| int_to_valtype(t)).collect::<Result<Vec<_>, _>>()?;
+            let return_val_types: Vec<ValType> = return_vals.iter()
+                .map(|&t| int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
 
-            // Get linker and engine
-            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
-            let engine = linker.engine();
+            // Get linker (mutable because define_host_function needs &mut)
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+
+            // Get engine from wasmtime linker
+            let linker_lock = linker.inner()?;
+            let engine = linker_lock.engine();
 
             // Create function type
             let func_type = FuncType::new(
@@ -2615,9 +2618,12 @@ pub mod jni_linker {
                 return_val_types
             );
 
+            // Drop lock before creating host function
+            drop(linker_lock);
+
             // Create JNI callback
             let callback = JniHostFunctionCallback {
-                jvm: jvm.clone(),
+                jvm,
                 callback_id,
             };
 
@@ -2627,10 +2633,11 @@ pub mod jni_linker {
                 func_type,
                 std::sync::Weak::new(), // Empty weak ref for now
                 Box::new(callback),
-            );
+            )?;
 
-            // Register host function
-            linker.define_host_function(&module_name_str, &name_str, host_func.func_type().clone(), host_func)?;
+            // Register host function - host_func is Arc<HostFunction>, clone it
+            let host_func_clone = (*host_func).clone();
+            linker.define_host_function(&module_name_str, &name_str, host_func.func_type().clone(), host_func_clone)?;
 
             Ok(1) // JNI_TRUE
         })
