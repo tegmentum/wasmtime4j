@@ -322,6 +322,7 @@ pub mod jni_instance {
         mut env: JNIEnv,
         _class: JClass,
         instance_handle: jlong,
+        store_handle: jlong,
         name: JString,
     ) -> jlong {
         let name_str: String = match env.get_string(&name) {
@@ -333,20 +334,17 @@ pub mod jni_instance {
             use std::os::raw::c_void;
 
             let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
-
-            // Get Store from instance
-            let store_arc = instance.get_store()?;
-            let mut store_guard = store_arc.lock();
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
             // Get the global export
-            let global_opt = instance.get_global(&mut *store_guard, &name_str)?;
+            let global_opt = instance.get_global(store, &name_str)?;
 
             match global_opt {
                 Some(global) => {
                     // Create a new Global wrapper and return its pointer
                     let global_wrapper = crate::global::Global::from_wasmtime_global(
                         global,
-                        &*store_guard,
+                        store,
                         Some(name_str),
                     )?;
                     Ok(Box::into_raw(Box::new(global_wrapper)) as jlong)
@@ -362,6 +360,7 @@ pub mod jni_instance {
         mut env: JNIEnv,
         _class: JClass,
         instance_handle: jlong,
+        store_handle: jlong,
         name: JString,
     ) -> jlong {
         let name_str: String = match env.get_string(&name) {
@@ -373,13 +372,10 @@ pub mod jni_instance {
             use std::os::raw::c_void;
 
             let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
-
-            // Get Store from instance
-            let store_arc = instance.get_store()?;
-            let mut store_guard = store_arc.lock();
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
             // Get the memory export
-            let memory_opt = instance.get_memory(&mut *store_guard, &name_str)?;
+            let memory_opt = instance.get_memory(store, &name_str)?;
 
             match memory_opt {
                 Some(memory) => {
@@ -398,6 +394,7 @@ pub mod jni_instance {
         mut env: JNIEnv,
         _class: JClass,
         instance_handle: jlong,
+        store_handle: jlong,
         name: JString,
     ) -> jlong {
         let name_str: String = match env.get_string(&name) {
@@ -409,20 +406,17 @@ pub mod jni_instance {
             use std::os::raw::c_void;
 
             let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
-
-            // Get Store from instance
-            let store_arc = instance.get_store()?;
-            let mut store_guard = store_arc.lock();
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
             // Get the table export
-            let table_opt = instance.get_table(&mut *store_guard, &name_str)?;
+            let table_opt = instance.get_table(store, &name_str)?;
 
             match table_opt {
                 Some(table) => {
                     // Create a new Table wrapper and return its pointer
                     let table_wrapper = crate::table::Table::from_wasmtime_table(
                         table,
-                        &*store_guard,
+                        store,
                         Some(name_str),
                     )?;
                     Ok(Box::into_raw(Box::new(table_wrapper)) as jlong)

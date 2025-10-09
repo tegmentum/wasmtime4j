@@ -18,26 +18,26 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFu
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeGetMemory
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JJLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMemory
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeGetTable
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JJLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTable
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeGetGlobal
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JJLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGlobal
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance

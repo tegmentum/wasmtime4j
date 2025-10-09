@@ -161,7 +161,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final long memoryHandle = nativeGetMemory(getNativeHandle(), name);
+      final long memoryHandle =
+          nativeGetMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
       if (memoryHandle == 0) {
         return Optional.empty();
       }
@@ -220,7 +221,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final long tableHandle = nativeGetTable(getNativeHandle(), name);
+      final long tableHandle =
+          nativeGetTable(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
       if (tableHandle == 0) {
         return Optional.empty();
       }
@@ -390,7 +392,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final long globalHandle = nativeGetGlobal(getNativeHandle(), name);
+      final long globalHandle =
+          nativeGetGlobal(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
       if (globalHandle == 0) {
         return Optional.empty();
       }
@@ -856,7 +859,7 @@ public final class JniInstance extends JniResource implements Instance {
    * @param name the memory name
    * @return native memory handle or 0 if not found
    */
-  private static native long nativeGetMemory(long instanceHandle, String name);
+  private static native long nativeGetMemory(long instanceHandle, long storeHandle, String name);
 
   /**
    * Gets a table export from an instance.
@@ -865,7 +868,7 @@ public final class JniInstance extends JniResource implements Instance {
    * @param name the table name
    * @return native table handle or 0 if not found
    */
-  private static native long nativeGetTable(long instanceHandle, String name);
+  private static native long nativeGetTable(long instanceHandle, long storeHandle, String name);
 
   /**
    * Gets a global export from an instance.
@@ -874,7 +877,7 @@ public final class JniInstance extends JniResource implements Instance {
    * @param name the global name
    * @return native global handle or 0 if not found
    */
-  private static native long nativeGetGlobal(long instanceHandle, String name);
+  private static native long nativeGetGlobal(long instanceHandle, long storeHandle, String name);
 
   /**
    * Checks if an instance has an export with the given name.
