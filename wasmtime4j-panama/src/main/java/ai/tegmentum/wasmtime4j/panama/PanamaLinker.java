@@ -79,8 +79,11 @@ public final class PanamaLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineMemory(final String moduleName, final String name, final WasmMemory memory)
+  public void defineMemory(final Store store, final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
@@ -96,8 +99,11 @@ public final class PanamaLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineTable(final String moduleName, final String name, final WasmTable table)
+  public void defineTable(final Store store, final String moduleName, final String name, final WasmTable table)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
@@ -113,8 +119,11 @@ public final class PanamaLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineGlobal(final String moduleName, final String name, final WasmGlobal global)
+  public void defineGlobal(final Store store, final String moduleName, final String name, final WasmGlobal global)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }

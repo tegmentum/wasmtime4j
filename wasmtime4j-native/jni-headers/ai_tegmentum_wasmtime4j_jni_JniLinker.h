@@ -18,26 +18,26 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefi
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDefineMemory
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;J)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineMemory
-  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jstring, jstring, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDefineTable
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;J)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineTable
-  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jstring, jstring, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDefineGlobal
- * Signature: (JLjava/lang/String;Ljava/lang/String;J)Z
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;J)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGlobal
-  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jstring, jstring, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker

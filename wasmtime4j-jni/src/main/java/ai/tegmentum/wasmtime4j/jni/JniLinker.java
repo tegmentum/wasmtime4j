@@ -103,8 +103,11 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineMemory(final String moduleName, final String name, final WasmMemory memory)
+  public void defineMemory(final Store store, final String moduleName, final String name, final WasmMemory memory)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null || moduleName.isEmpty()) {
       throw new IllegalArgumentException("Module name cannot be null or empty");
     }
@@ -119,12 +122,17 @@ public class JniLinker<T> implements Linker<T> {
     if (!(memory instanceof JniMemory)) {
       throw new IllegalArgumentException("Memory must be a JniMemory instance for JNI linker");
     }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
+    }
 
     final JniMemory jniMemory = (JniMemory) memory;
+    final JniStore jniStore = (JniStore) store;
     final long memoryHandle = jniMemory.getNativeHandle();
+    final long storeHandle = jniStore.getNativeHandle();
 
     try {
-      final boolean success = nativeDefineMemory(nativeHandle, moduleName, name, memoryHandle);
+      final boolean success = nativeDefineMemory(nativeHandle, storeHandle, moduleName, name, memoryHandle);
 
       if (!success) {
         throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
@@ -140,8 +148,11 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineTable(final String moduleName, final String name, final WasmTable table)
+  public void defineTable(final Store store, final String moduleName, final String name, final WasmTable table)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null || moduleName.isEmpty()) {
       throw new IllegalArgumentException("Module name cannot be null or empty");
     }
@@ -156,12 +167,17 @@ public class JniLinker<T> implements Linker<T> {
     if (!(table instanceof JniTable)) {
       throw new IllegalArgumentException("Table must be a JniTable instance for JNI linker");
     }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
+    }
 
     final JniTable jniTable = (JniTable) table;
+    final JniStore jniStore = (JniStore) store;
     final long tableHandle = jniTable.getNativeHandle();
+    final long storeHandle = jniStore.getNativeHandle();
 
     try {
-      final boolean success = nativeDefineTable(nativeHandle, moduleName, name, tableHandle);
+      final boolean success = nativeDefineTable(nativeHandle, storeHandle, moduleName, name, tableHandle);
 
       if (!success) {
         throw new WasmException("Failed to define table: " + moduleName + "::" + name);
@@ -177,8 +193,11 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void defineGlobal(final String moduleName, final String name, final WasmGlobal global)
+  public void defineGlobal(final Store store, final String moduleName, final String name, final WasmGlobal global)
       throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null || moduleName.isEmpty()) {
       throw new IllegalArgumentException("Module name cannot be null or empty");
     }
@@ -193,12 +212,17 @@ public class JniLinker<T> implements Linker<T> {
     if (!(global instanceof JniGlobal)) {
       throw new IllegalArgumentException("Global must be a JniGlobal instance for JNI linker");
     }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
+    }
 
     final JniGlobal jniGlobal = (JniGlobal) global;
+    final JniStore jniStore = (JniStore) store;
     final long globalHandle = jniGlobal.getNativeHandle();
+    final long storeHandle = jniStore.getNativeHandle();
 
     try {
-      final boolean success = nativeDefineGlobal(nativeHandle, moduleName, name, globalHandle);
+      final boolean success = nativeDefineGlobal(nativeHandle, storeHandle, moduleName, name, globalHandle);
 
       if (!success) {
         throw new WasmException("Failed to define global: " + moduleName + "::" + name);
@@ -507,37 +531,40 @@ public class JniLinker<T> implements Linker<T> {
    * Defines a memory in the linker.
    *
    * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
    * @param moduleName the module name
    * @param name the memory name
    * @param memoryHandle the memory handle
    * @return true on success
    */
   private native boolean nativeDefineMemory(
-      long linkerHandle, String moduleName, String name, long memoryHandle);
+      long linkerHandle, long storeHandle, String moduleName, String name, long memoryHandle);
 
   /**
    * Defines a table in the linker.
    *
    * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
    * @param moduleName the module name
    * @param name the table name
    * @param tableHandle the table handle
    * @return true on success
    */
   private native boolean nativeDefineTable(
-      long linkerHandle, String moduleName, String name, long tableHandle);
+      long linkerHandle, long storeHandle, String moduleName, String name, long tableHandle);
 
   /**
    * Defines a global in the linker.
    *
    * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
    * @param moduleName the module name
    * @param name the global name
    * @param globalHandle the global handle
    * @return true on success
    */
   private native boolean nativeDefineGlobal(
-      long linkerHandle, String moduleName, String name, long globalHandle);
+      long linkerHandle, long storeHandle, String moduleName, String name, long globalHandle);
 
   /**
    * Defines an instance in the linker.

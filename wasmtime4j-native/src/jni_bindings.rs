@@ -1953,6 +1953,182 @@ pub mod jni_linker {
             Ok(Box::into_raw(Box::new(instance)) as jlong)
         })
     }
+
+    /// Define a memory import in the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineMemory(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_name: JString,
+        name: JString,
+        memory_handle: jlong,
+    ) -> jboolean {
+        // Convert strings before the closure to avoid borrow checker issues
+        let module_name_str: String = match env.get_string(&module_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_handle as *const c_void)? };
+
+            let mut linker_lock = linker.inner()?;
+            let wasmtime_memory = memory.inner();
+
+            store.with_context(|ctx| {
+                linker_lock
+                    .define(ctx, &module_name_str, &name_str, wasmtime::Extern::Memory(*wasmtime_memory))
+                    .map_err(|e| WasmtimeError::Linker {
+                        message: format!("Failed to define memory '{}::{}': {}", module_name_str, name_str, e),
+                    })
+            })?;
+
+            Ok(1) // JNI_TRUE
+        })
+    }
+
+    /// Define a table import in the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineTable(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_name: JString,
+        name: JString,
+        table_handle: jlong,
+    ) -> jboolean {
+        // Convert strings before the closure to avoid borrow checker issues
+        let module_name_str: String = match env.get_string(&module_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+            let table = unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+
+            let mut linker_lock = linker.inner()?;
+            let wasmtime_table_arc = table.wasmtime_table();
+            let wasmtime_table_lock = wasmtime_table_arc.lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock table: {}", e),
+                })?;
+
+            store.with_context(|ctx| {
+                linker_lock
+                    .define(ctx, &module_name_str, &name_str, wasmtime::Extern::Table(*wasmtime_table_lock))
+                    .map_err(|e| WasmtimeError::Linker {
+                        message: format!("Failed to define table '{}::{}': {}", module_name_str, name_str, e),
+                    })
+            })?;
+
+            Ok(1) // JNI_TRUE
+        })
+    }
+
+    /// Define a global import in the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGlobal(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_name: JString,
+        name: JString,
+        global_handle: jlong,
+    ) -> jboolean {
+        // Convert strings before the closure to avoid borrow checker issues
+        let module_name_str: String = match env.get_string(&module_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+            let global = unsafe { crate::global::core::get_global_ref(global_handle as *const c_void)? };
+
+            let mut linker_lock = linker.inner()?;
+            let wasmtime_global_arc = global.wasmtime_global();
+            let wasmtime_global_lock = wasmtime_global_arc.lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock global: {}", e),
+                })?;
+
+            store.with_context(|ctx| {
+                linker_lock
+                    .define(ctx, &module_name_str, &name_str, wasmtime::Extern::Global(*wasmtime_global_lock))
+                    .map_err(|e| WasmtimeError::Linker {
+                        message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
+                    })
+            })?;
+
+            Ok(1) // JNI_TRUE
+        })
+    }
+
+    /// Define an instance in the linker (register all its exports)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineInstance(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_name: JString,
+        instance_handle: jlong,
+    ) -> jboolean {
+        // Convert module name before the closure to avoid borrow checker issues
+        let module_name_str: String = match env.get_string(&module_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_handle as *const c_void)? };
+
+            let mut store_lock = store.lock_store();
+            let mut linker_lock = linker.inner()?;
+
+            // Get the wasmtime instance from our wrapper using inner()
+            let wasmtime_instance_guard = instance.inner().lock();
+
+            // Define all exports from the instance in the linker
+            linker_lock.instance(&mut *store_lock, &module_name_str, *wasmtime_instance_guard)
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!("Failed to define instance '{}': {}", module_name_str, e),
+                })?;
+
+            Ok(1) // JNI_TRUE
+        })
+    }
 }
 
 /// JNI bindings for Module operations

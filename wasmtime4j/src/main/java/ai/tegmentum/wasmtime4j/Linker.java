@@ -54,13 +54,14 @@ public interface Linker<T> extends Closeable {
    * <p>The memory will be available to any module instantiated through this linker that imports a
    * memory with the specified module and name.
    *
+   * @param store the store context (required for wasmtime's type system)
    * @param moduleName the module name for the import
    * @param name the memory name for the import
    * @param memory the WebAssembly memory to provide
    * @throws WasmException if the memory cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineMemory(final String moduleName, final String name, final WasmMemory memory)
+  void defineMemory(final Store store, final String moduleName, final String name, final WasmMemory memory)
       throws WasmException;
 
   /**
@@ -69,13 +70,14 @@ public interface Linker<T> extends Closeable {
    * <p>The table will be available to any module instantiated through this linker that imports a
    * table with the specified module and name.
    *
+   * @param store the store context (required for wasmtime's type system)
    * @param moduleName the module name for the import
    * @param name the table name for the import
    * @param table the WebAssembly table to provide
    * @throws WasmException if the table cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineTable(final String moduleName, final String name, final WasmTable table)
+  void defineTable(final Store store, final String moduleName, final String name, final WasmTable table)
       throws WasmException;
 
   /**
@@ -84,13 +86,14 @@ public interface Linker<T> extends Closeable {
    * <p>The global will be available to any module instantiated through this linker that imports a
    * global with the specified module and name.
    *
+   * @param store the store context (required for wasmtime's type system)
    * @param moduleName the module name for the import
    * @param name the global name for the import
    * @param global the WebAssembly global to provide
    * @throws WasmException if the global cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineGlobal(final String moduleName, final String name, final WasmGlobal global)
+  void defineGlobal(final Store store, final String moduleName, final String name, final WasmGlobal global)
       throws WasmException;
 
   /**

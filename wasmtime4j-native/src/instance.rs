@@ -762,6 +762,11 @@ impl Instance {
         &self.imports_map
     }
     
+    /// Get access to the inner wasmtime instance (for internal use)
+    pub(crate) fn inner(&self) -> &Arc<ReentrantLock<WasmtimeInstance>> {
+        &self.inner
+    }
+
     /// Validate instance is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
         if self.metadata.disposed {
@@ -769,7 +774,7 @@ impl Instance {
                 message: "Instance has been disposed".to_string(),
             });
         }
-        
+
         if let Some(_guard) = self.inner.try_lock() {
             Ok(())
         } else {
