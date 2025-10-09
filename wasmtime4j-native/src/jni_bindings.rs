@@ -315,6 +315,122 @@ pub mod jni_instance {
             }
         }
     }
+
+    /// Get a global export from the instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGlobal(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+
+            // Get Store from instance
+            let store_arc = instance.get_store()?;
+            let mut store_guard = store_arc.lock();
+
+            // Get the global export
+            let global_opt = instance.get_global(&mut *store_guard, &name_str)?;
+
+            match global_opt {
+                Some(global) => {
+                    // Create a new Global wrapper and return its pointer
+                    let global_wrapper = crate::global::Global::from_wasmtime_global(
+                        global,
+                        &*store_guard,
+                        Some(name_str),
+                    )?;
+                    Ok(Box::into_raw(Box::new(global_wrapper)) as jlong)
+                }
+                None => Ok(0), // Return 0 for not found
+            }
+        })
+    }
+
+    /// Get a memory export from the instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMemory(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+
+            // Get Store from instance
+            let store_arc = instance.get_store()?;
+            let mut store_guard = store_arc.lock();
+
+            // Get the memory export
+            let memory_opt = instance.get_memory(&mut *store_guard, &name_str)?;
+
+            match memory_opt {
+                Some(memory) => {
+                    // Create a new Memory wrapper and return its pointer
+                    let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory);
+                    Ok(Box::into_raw(Box::new(memory_wrapper)) as jlong)
+                }
+                None => Ok(0), // Return 0 for not found
+            }
+        })
+    }
+
+    /// Get a table export from the instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTable(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+
+            // Get Store from instance
+            let store_arc = instance.get_store()?;
+            let mut store_guard = store_arc.lock();
+
+            // Get the table export
+            let table_opt = instance.get_table(&mut *store_guard, &name_str)?;
+
+            match table_opt {
+                Some(table) => {
+                    // Create a new Table wrapper and return its pointer
+                    let table_wrapper = crate::table::Table::from_wasmtime_table(
+                        table,
+                        &*store_guard,
+                        Some(name_str),
+                    )?;
+                    Ok(Box::into_raw(Box::new(table_wrapper)) as jlong)
+                }
+                None => Ok(0), // Return 0 for not found
+            }
+        })
+    }
 }
 
 /// JNI bindings for Engine operations

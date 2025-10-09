@@ -767,6 +767,15 @@ impl Instance {
         &self.inner
     }
 
+    /// Get the Store associated with this instance
+    pub(crate) fn get_store(&self) -> WasmtimeResult<Arc<ReentrantLock<Store>>> {
+        self.store_weak.upgrade()
+            .ok_or_else(|| WasmtimeError::Runtime {
+                message: "Store has been dropped".to_string(),
+                backtrace: None,
+            })
+    }
+
     /// Validate instance is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
         if self.metadata.disposed {
