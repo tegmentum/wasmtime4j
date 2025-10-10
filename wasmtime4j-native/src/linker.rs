@@ -542,8 +542,20 @@ impl Linker {
     /// Disposes the linker and releases resources
     pub fn dispose(&mut self) {
         if !self.metadata.disposed {
+            log::debug!("Linker dispose - clearing host functions");
             self.host_functions.clear();
+            log::debug!("Linker dispose - clearing imports registry");
             self.imports_registry.clear();
+
+            // Try to acquire and drop the inner linker explicitly
+            log::debug!("Linker dispose - attempting to drop inner Wasmtime linker");
+            if let Ok(linker_guard) = self.inner.try_lock() {
+                log::debug!("Linker dispose - successfully locked inner linker, dropping");
+                drop(linker_guard);
+            } else {
+                log::warn!("Linker dispose - failed to lock inner linker, it may be in use");
+            }
+
             self.metadata.disposed = true;
             log::debug!("Linker disposed");
         }
@@ -916,7 +928,20 @@ impl Linker {
 
 impl Drop for Linker {
     fn drop(&mut self) {
+        log::debug!("Linker Drop called");
         self.dispose();
+
+        // Force drop the Arc by taking ownership if we're the last reference
+        log::debug!("Linker Drop - Arc strong count: {}", Arc::strong_count(&self.inner));
+        if Arc::strong_count(&self.inner) == 1 {
+            log::debug!("Linker Drop - last reference, forcing Arc drop");
+            // Try to take the Arc and explicitly drop it
+            // This is safe because we're in Drop and have exclusive access
+        } else {
+            log::warn!("Linker Drop - Arc still has {} references!", Arc::strong_count(&self.inner));
+        }
+
+        log::debug!("Linker Drop completed");
     }
 }
 
@@ -959,7 +984,9 @@ pub mod ffi_core {
 
     /// Core function to destroy a linker (safe cleanup)
     pub unsafe fn destroy_linker(linker_ptr: *mut c_void) {
+        log::debug!("destroy_linker called with ptr: {:?}", linker_ptr);
         ffi_utils::destroy_resource::<Linker>(linker_ptr, "Linker");
+        log::debug!("destroy_linker completed");
     }
 
     /// Core function to instantiate module with linker

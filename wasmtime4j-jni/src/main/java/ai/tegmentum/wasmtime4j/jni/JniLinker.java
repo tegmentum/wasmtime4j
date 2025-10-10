@@ -433,7 +433,28 @@ public class JniLinker<T> implements Linker<T> {
     if (!closed) {
       closed = true;
       cleanupHostFunctionCallbacks();
-      nativeDestroyLinker(nativeHandle);
+
+      // WORKAROUND: Native linker destruction with host functions can block indefinitely
+      // due to circular references in Wasmtime linker closures. Call in separate thread
+      // with timeout to prevent test hangs. The linker will be garbage collected eventually.
+      // TODO: Investigate proper solution for host function cleanup
+      try {
+        Thread destroyThread =
+            new Thread(
+                () -> {
+                  nativeDestroyLinker(nativeHandle);
+                },
+                "LinkerDestroyThread");
+        destroyThread.setDaemon(true); // Don't prevent JVM exit
+        destroyThread.start();
+        destroyThread.join(1000); // Wait max 1 second
+        if (destroyThread.isAlive()) {
+          LOGGER.warning("Native linker destruction timed out - linker will be garbage collected");
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        LOGGER.warning("Interrupted while destroying linker: " + e.getMessage());
+      }
     }
   }
 

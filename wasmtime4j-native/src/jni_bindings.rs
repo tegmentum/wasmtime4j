@@ -2662,9 +2662,11 @@ pub mod jni_linker {
         _class: JClass,
         linker_handle: jlong,
     ) {
+        log::debug!("JNI nativeDestroyLinker called with handle: {}", linker_handle);
         unsafe {
             linker_core::destroy_linker(linker_handle as *mut c_void);
         }
+        log::debug!("JNI nativeDestroyLinker completed");
     }
 }
 
