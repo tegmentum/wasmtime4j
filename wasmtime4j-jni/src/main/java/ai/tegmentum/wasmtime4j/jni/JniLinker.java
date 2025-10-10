@@ -14,6 +14,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * JNI implementation of the Linker interface.
@@ -22,6 +23,7 @@ import java.util.Set;
  * @since 1.0.0
  */
 public class JniLinker<T> implements Linker<T> {
+  private static final Logger LOGGER = Logger.getLogger(JniLinker.class.getName());
   private static final java.util.concurrent.ConcurrentHashMap<Long, HostFunctionWrapper>
       HOST_FUNCTION_CALLBACKS = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -29,6 +31,7 @@ public class JniLinker<T> implements Linker<T> {
   private final Engine engine;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
+  private final Set<Long> registeredCallbackIds = new HashSet<>();
 
   /**
    * Creates a new JNI linker with the given native handle.
@@ -429,8 +432,17 @@ public class JniLinker<T> implements Linker<T> {
   public void close() {
     if (!closed) {
       closed = true;
+      cleanupHostFunctionCallbacks();
       nativeDestroyLinker(nativeHandle);
     }
+  }
+
+  /** Cleans up host function callbacks registered by this linker instance. */
+  private void cleanupHostFunctionCallbacks() {
+    for (final Long callbackId : registeredCallbackIds) {
+      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+    }
+    registeredCallbackIds.clear();
   }
 
   /**
@@ -480,6 +492,7 @@ public class JniLinker<T> implements Linker<T> {
         new HostFunctionWrapper(moduleName, name, implementation, functionType);
     final long id = wrapper.getId();
     HOST_FUNCTION_CALLBACKS.put(id, wrapper);
+    registeredCallbackIds.add(id);
     return id;
   }
 
@@ -495,14 +508,28 @@ public class JniLinker<T> implements Linker<T> {
   @SuppressWarnings("unused") // Called from native code
   private static WasmValue[] invokeHostFunctionCallback(
       final long callbackId, final WasmValue[] params) throws WasmException {
+    LOGGER.info(
+        "invokeHostFunctionCallback - Called with callbackId="
+            + callbackId
+            + ", params.length="
+            + params.length);
+
     final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
     if (wrapper == null) {
+      LOGGER.severe("Host function callback not found for callbackId=" + callbackId);
       throw new WasmException("Host function callback not found: " + callbackId);
     }
 
+    LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
     try {
-      return wrapper.getImplementation().execute(params);
+      final WasmValue[] results = wrapper.getImplementation().execute(params);
+      LOGGER.info(
+          "invokeHostFunctionCallback - Completed successfully with "
+              + results.length
+              + " results");
+      return results;
     } catch (final Exception e) {
+      LOGGER.severe("Host function execution failed: " + e.getMessage());
       throw new WasmException(
           "Host function '"
               + wrapper.moduleName

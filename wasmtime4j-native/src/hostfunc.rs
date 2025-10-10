@@ -366,17 +366,18 @@ fn marshal_results_to_wasmtime(
     }
 
     for (wasm_result, wasmtime_result) in wasm_results.iter().zip(results.iter_mut()) {
-        match (wasm_result, wasmtime_result) {
-            (WasmValue::I32(v), Val::I32(ref mut r)) => *r = *v,
-            (WasmValue::I64(v), Val::I64(ref mut r)) => *r = *v,
-            (WasmValue::F32(v), Val::F32(ref mut r)) => *r = v.to_bits(),
-            (WasmValue::F64(v), Val::F64(ref mut r)) => *r = v.to_bits(),
-            (WasmValue::V128(v), Val::V128(ref mut r)) => *r = wasmtime::V128::from(u128::from_le_bytes(*v)),
+        log::debug!("Marshalling result: wasm_result={:?}, wasmtime_result={:?}", wasm_result, &*wasmtime_result);
+        *wasmtime_result = match wasm_result {
+            WasmValue::I32(v) => Val::I32(*v),
+            WasmValue::I64(v) => Val::I64(*v),
+            WasmValue::F32(v) => Val::F32(v.to_bits()),
+            WasmValue::F64(v) => Val::F64(v.to_bits()),
+            WasmValue::V128(v) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(*v))),
             _ => return Err(anyhow::anyhow!(
-                "Type mismatch in host function result: {:?}",
+                "Unsupported type in host function result: {:?}",
                 wasm_result
             )),
-        }
+        };
     }
     
     Ok(())

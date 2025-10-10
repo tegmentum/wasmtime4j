@@ -2947,3 +2947,191 @@ pub mod caller {
         })
     }
 }
+
+/// Panama FFI bindings for Linker operations
+pub mod linker {
+    use super::*;
+    use crate::linker::ffi_core as linker_core;
+    use crate::error::ffi_utils;
+    use crate::hostfunc::{HostFunction, HostFunctionCallback};
+    use crate::instance::WasmValue;
+    use wasmtime::{ValType, FuncType};
+    use std::sync::Arc;
+
+    /// Type for Panama callback function pointer
+    ///
+    /// This function pointer is called from Rust back into Java when a host function is invoked.
+    ///
+    /// Parameters:
+    /// - callback_id: i64 - The unique identifier for this callback
+    /// - params_ptr: *const c_void - Pointer to array of WasmValue parameters
+    /// - params_len: c_uint - Number of parameters
+    /// - results_ptr: *mut c_void - Pointer to buffer for WasmValue results
+    /// - results_len: c_uint - Expected number of results
+    ///
+    /// Returns: c_int - 0 on success, non-zero on error
+    type PanamaHostFunctionCallback = extern "C" fn(
+        callback_id: i64,
+        params_ptr: *const c_void,
+        params_len: c_uint,
+        results_ptr: *mut c_void,
+        results_len: c_uint,
+    ) -> c_int;
+
+    /// Panama-specific host function callback implementation
+    struct PanamaHostFunctionCallbackImpl {
+        callback_fn: PanamaHostFunctionCallback,
+        callback_id: i64,
+        result_count: usize,
+    }
+
+    impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
+        fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
+            log::debug!("Panama host function callback - callback_id={}, params.len={}", self.callback_id, params.len());
+
+            // Allocate result buffer based on function signature
+            let expected_results = self.result_count;
+            let mut results = vec![WasmValue::I32(0); expected_results];
+
+            // Call the Panama function pointer
+            let result_code = (self.callback_fn)(
+                self.callback_id,
+                params.as_ptr() as *const c_void,
+                params.len() as c_uint,
+                results.as_mut_ptr() as *mut c_void,
+                expected_results as c_uint,
+            );
+
+            if result_code != 0 {
+                return Err(crate::error::WasmtimeError::Function {
+                    message: format!("Panama host function callback failed with code: {}", result_code),
+                });
+            }
+
+            Ok(results)
+        }
+
+        fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
+            Box::new(PanamaHostFunctionCallbackImpl {
+                callback_fn: self.callback_fn,
+                callback_id: self.callback_id,
+                result_count: self.result_count,
+            })
+        }
+    }
+
+    unsafe impl Send for PanamaHostFunctionCallbackImpl {}
+    unsafe impl Sync for PanamaHostFunctionCallbackImpl {}
+
+    /// Create a new Wasmtime linker (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_create(engine_ptr: *mut c_void) -> *mut c_void {
+        ffi_utils::ffi_try_ptr(|| {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+            linker_core::create_linker(engine)
+        })
+    }
+
+    /// Define a host function in the linker (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
+        linker_ptr: *mut c_void,
+        module_name: *const c_char,
+        name: *const c_char,
+        param_types: *const c_int,
+        param_count: c_uint,
+        return_types: *const c_int,
+        return_count: c_uint,
+        callback_fn: PanamaHostFunctionCallback,
+        callback_id: i64,
+    ) -> c_int {
+        if linker_ptr.is_null() || module_name.is_null() || name.is_null() {
+            return -1; // Error: null pointer
+        }
+
+        ffi_utils::ffi_try_code(|| {
+            // Convert C strings
+            let module_name_str = unsafe { std::ffi::CStr::from_ptr(module_name) }
+                .to_str()
+                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let name_str = unsafe { std::ffi::CStr::from_ptr(name) }
+                .to_str()
+                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+            // Convert parameter types
+            let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
+            let param_val_types: Vec<ValType> = param_slice.iter()
+                .map(|&t| int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            // Convert return types
+            let return_slice = unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
+            let return_val_types: Vec<ValType> = return_slice.iter()
+                .map(|&t| int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            // Store result count before moving return_val_types
+            let result_count = return_val_types.len();
+
+            // Get linker
+            let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
+
+            // Get engine from linker
+            let linker_lock = linker.inner()?;
+            let engine = linker_lock.engine();
+
+            // Create function type
+            let func_type = FuncType::new(
+                engine,
+                param_val_types,
+                return_val_types
+            );
+
+            // Drop lock before creating host function
+            drop(linker_lock);
+
+            // Create Panama callback with result count from function type
+            let callback = PanamaHostFunctionCallbackImpl {
+                callback_fn,
+                callback_id,
+                result_count,
+            };
+
+            // Create host function
+            let host_func = HostFunction::new(
+                format!("{}::{}", module_name_str, name_str),
+                func_type,
+                std::sync::Weak::new(), // Empty weak ref for now
+                Box::new(callback),
+            )?;
+
+            // Register host function
+            let host_func_clone = (*host_func).clone();
+            linker.define_host_function(module_name_str, name_str, host_func.func_type().clone(), host_func_clone)?;
+
+            Ok(())
+        })
+    }
+
+    /// Destroy a linker (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
+        unsafe {
+            linker_core::destroy_linker(linker_ptr);
+        }
+    }
+
+    /// Helper: Convert int to ValType
+    fn int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
+        match val {
+            0 => Ok(ValType::I32),
+            1 => Ok(ValType::I64),
+            2 => Ok(ValType::F32),
+            3 => Ok(ValType::F64),
+            4 => Ok(ValType::V128),
+            _ => Err(crate::error::WasmtimeError::Type {
+                message: format!("Unknown value type: {}", val),
+            }),
+        }
+    }
+}

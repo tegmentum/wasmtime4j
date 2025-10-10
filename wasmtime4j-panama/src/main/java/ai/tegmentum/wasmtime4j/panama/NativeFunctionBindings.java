@@ -2177,6 +2177,99 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.JAVA_LONG, // return reference count
             ValueLayout.ADDRESS)); // engine_ptr
+
+    // Panama Linker functions
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return linker*
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS, // param_types (int array)
+            ValueLayout.JAVA_INT, // param_count
+            ValueLayout.ADDRESS, // return_types (int array)
+            ValueLayout.JAVA_INT, // return_count
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG)); // callback_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
+  }
+
+  // Panama Linker Functions
+
+  /**
+   * Creates a new Panama linker.
+   *
+   * @param enginePtr pointer to the engine
+   * @return pointer to the linker, or null on failure
+   */
+  public MemorySegment panamaLinkerCreate(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_panama_linker_create", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Defines a host function in the Panama linker.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param moduleName module name (C string)
+   * @param name function name (C string)
+   * @param paramTypes parameter types array
+   * @param paramCount number of parameters
+   * @param returnTypes return types array
+   * @param returnCount number of returns
+   * @param callbackFn callback function pointer
+   * @param callbackId callback ID
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaLinkerDefineHostFunction(
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment paramTypes,
+      final int paramCount,
+      final MemorySegment returnTypes,
+      final int returnCount,
+      final MemorySegment callbackFn,
+      final long callbackId) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(paramTypes, "paramTypes");
+    validatePointer(returnTypes, "returnTypes");
+    validatePointer(callbackFn, "callbackFn");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_host_function",
+        Integer.class,
+        linkerPtr,
+        moduleName,
+        name,
+        paramTypes,
+        paramCount,
+        returnTypes,
+        returnCount,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
+   * Destroys a Panama linker.
+   *
+   * @param linkerPtr pointer to the linker to destroy
+   */
+  public void panamaLinkerDestroy(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    callNativeFunction("wasmtime4j_panama_linker_destroy", Void.class, linkerPtr);
   }
 
   /**

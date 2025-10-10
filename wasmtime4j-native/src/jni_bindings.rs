@@ -1962,35 +1962,45 @@ pub mod jni_linker {
     use crate::hostfunc::HostFunctionCallback;
     use crate::instance::WasmValue;
     use std::os::raw::c_void;
+    use std::sync::Arc;
     use jni::JavaVM;
     use wasmtime::ValType;
 
     /// JNI callback implementation for host functions
     struct JniHostFunctionCallback {
-        jvm: JavaVM,
+        jvm: std::sync::Arc<JavaVM>,
         callback_id: i64,
     }
 
     impl HostFunctionCallback for JniHostFunctionCallback {
         fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
+            log::info!("JniHostFunctionCallback::execute - Starting callback execution for callback_id={}", self.callback_id);
+
             // Attach to current thread and get JNI environment
+            log::debug!("Attaching to JVM thread");
             let mut env = self.jvm.attach_current_thread()
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to attach to JVM thread: {}", e),
                     backtrace: None
                 })?;
+            log::debug!("Successfully attached to JVM thread");
 
             // Find the JniLinker class
+            log::debug!("Finding JniLinker class");
             let linker_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniLinker")
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to find JniLinker class: {}", e),
                     backtrace: None
                 })?;
+            log::debug!("Found JniLinker class");
 
             // Convert parameters to Java WasmValue array
+            log::debug!("Converting {} parameters to Java array", params.len());
             let java_params = wasm_values_to_java_array(&mut env, params)?;
+            log::debug!("Successfully converted parameters");
 
             // Call the static invokeHostFunctionCallback method
+            log::debug!("Calling Java invokeHostFunctionCallback method");
             let callback_result = env.call_static_method(
                 linker_class,
                 "invokeHostFunctionCallback",
@@ -2003,26 +2013,25 @@ pub mod jni_linker {
                 message: format!("Failed to invoke Java callback: {}", e),
                 backtrace: None
             })?;
+            log::debug!("Java callback completed");
 
             // Convert Java WasmValue array back to Rust
+            log::debug!("Converting result array back to Rust");
             let result_array = callback_result.l()
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to get return value: {}", e),
                     backtrace: None
                 })?;
 
-            java_array_to_wasm_values(&mut env, &result_array)
+            let results = java_array_to_wasm_values(&mut env, &result_array)?;
+            log::info!("JniHostFunctionCallback::execute - Completed successfully with {} results", results.len());
+            Ok(results)
         }
 
         fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
-            // JavaVM doesn't implement Clone, but it can be safely shared
-            // Get a new reference by cloning the internal pointer
-            let jvm_clone = unsafe {
-                let ptr = &self.jvm as *const JavaVM;
-                std::ptr::read(ptr)
-            };
+            // Clone the Arc, not the JavaVM itself
             Box::new(JniHostFunctionCallback {
-                jvm: jvm_clone,
+                jvm: Arc::clone(&self.jvm),
                 callback_id: self.callback_id,
             })
         }
@@ -2624,9 +2633,9 @@ pub mod jni_linker {
             // Drop lock before creating host function
             drop(linker_lock);
 
-            // Create JNI callback
+            // Create JNI callback with Arc-wrapped JavaVM
             let callback = JniHostFunctionCallback {
-                jvm,
+                jvm: std::sync::Arc::new(jvm),
                 callback_id,
             };
 
