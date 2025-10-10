@@ -2268,8 +2268,8 @@ pub mod jni_linker {
         module_handle: jlong,
     ) -> jlong {
         jni_utils::jni_try_with_default(&mut env, 0, || {
-            // Extract linker from handle
-            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            // Extract linker from handle (mutable because we need to call instantiate_host_functions)
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
             // Extract store from handle
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -2278,11 +2278,12 @@ pub mod jni_linker {
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
             // Instantiate the module using the linker
-            // We need to access the inner wasmtime::Linker
+            // First, instantiate any registered host functions
             let mut store_lock = store.lock_store();
-            let linker_lock = linker.inner()?;
+            linker.instantiate_host_functions(&mut *store_lock)?;
 
-            // Use wasmtime::Linker::instantiate
+            // Then use wasmtime::Linker::instantiate
+            let linker_lock = linker.inner()?;
             let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
                 .map_err(|e| WasmtimeError::Instantiation {
                     message: format!("Failed to instantiate module: {}", e),
@@ -2321,8 +2322,8 @@ pub mod jni_linker {
         };
 
         jni_utils::jni_try_with_default(&mut env, 0, || {
-            // Extract linker from handle
-            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+            // Extract linker from handle (mutable because we need to call instantiate_host_functions)
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
             // Extract store from handle
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -2331,10 +2332,12 @@ pub mod jni_linker {
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
             // Instantiate the module using the linker with a name
+            // First, instantiate any registered host functions
             let mut store_lock = store.lock_store();
-            let linker_lock = linker.inner()?;
+            linker.instantiate_host_functions(&mut *store_lock)?;
 
-            // Use wasmtime::Linker::instantiate to create instance
+            // Then use wasmtime::Linker::instantiate to create instance
+            let linker_lock = linker.inner()?;
             let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
                 .map_err(|e| WasmtimeError::Instantiation {
                     message: format!("Failed to instantiate named module '{}': {}", module_name_str, e),
