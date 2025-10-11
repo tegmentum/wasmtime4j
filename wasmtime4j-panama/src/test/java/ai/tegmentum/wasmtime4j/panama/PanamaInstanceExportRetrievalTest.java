@@ -432,4 +432,84 @@ final class PanamaInstanceExportRetrievalTest {
         () -> instance.getGlobalNames(),
         "Getting global names from closed instance should throw");
   }
+
+  @Test
+  void testGetFunctionCount() {
+    final int count = instance.getFunctionCount();
+    assertEquals(1, count, "Should have exactly 1 function");
+  }
+
+  @Test
+  void testGetMemoryCount() {
+    final int count = instance.getMemoryCount();
+    assertEquals(1, count, "Should have exactly 1 memory");
+  }
+
+  @Test
+  void testGetTableCount() {
+    final int count = instance.getTableCount();
+    assertEquals(1, count, "Should have exactly 1 table");
+  }
+
+  @Test
+  void testGetGlobalCount() {
+    final int count = instance.getGlobalCount();
+    assertEquals(3, count, "Should have exactly 3 globals");
+  }
+
+  @Test
+  void testGetFunctionCountWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getFunctionCount(),
+        "Getting function count from closed instance should throw");
+  }
+
+  @Test
+  void testGetMemoryCountWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getMemoryCount(),
+        "Getting memory count from closed instance should throw");
+  }
+
+  @Test
+  void testGetTableCountWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getTableCount(),
+        "Getting table count from closed instance should throw");
+  }
+
+  @Test
+  void testGetGlobalCountWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getGlobalCount(),
+        "Getting global count from closed instance should throw");
+  }
+
+  @Test
+  void testCountsMatchNameListSizes() {
+    assertEquals(
+        instance.getFunctionNames().size(),
+        instance.getFunctionCount(),
+        "Function count should match function names list size");
+    assertEquals(
+        instance.getMemoryNames().size(),
+        instance.getMemoryCount(),
+        "Memory count should match memory names list size");
+    assertEquals(
+        instance.getTableNames().size(),
+        instance.getTableCount(),
+        "Table count should match table names list size");
+    assertEquals(
+        instance.getGlobalNames().size(),
+        instance.getGlobalCount(),
+        "Global count should match global names list size");
+  }
 }

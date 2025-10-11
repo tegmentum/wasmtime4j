@@ -582,6 +582,86 @@ public final class PanamaInstance implements Instance {
     return Collections.unmodifiableList(globalNames);
   }
 
+  /**
+   * Gets the count of exported functions.
+   *
+   * @return number of function exports
+   */
+  public int getFunctionCount() {
+    ensureNotClosed();
+    int count = 0;
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmFunction> function = getFunction(name);
+      if (function.isPresent()) {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   * Gets the count of exported memories.
+   *
+   * @return number of memory exports
+   */
+  public int getMemoryCount() {
+    ensureNotClosed();
+    int count = 0;
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmMemory> memory = getMemory(name);
+      if (memory.isPresent()) {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   * Gets the count of exported tables.
+   *
+   * @return number of table exports
+   */
+  public int getTableCount() {
+    ensureNotClosed();
+    int count = 0;
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmTable> table = getTable(name);
+      if (table.isPresent()) {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   * Gets the count of exported globals.
+   *
+   * @return number of global exports
+   */
+  public int getGlobalCount() {
+    ensureNotClosed();
+    int count = 0;
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmGlobal> global = getGlobal(name);
+      if (global.isPresent()) {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
   @Override
   public void setImports(final Map<String, Object> imports) throws WasmException {
     if (imports == null) {
