@@ -654,8 +654,35 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Function name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement optimized i32 function call
-    throw new UnsupportedOperationException("I32 function call not yet implemented");
+
+    // Convert int parameters to WasmValue array
+    final WasmValue[] wasmParams;
+    if (params != null && params.length > 0) {
+      wasmParams = new WasmValue[params.length];
+      for (int i = 0; i < params.length; i++) {
+        wasmParams[i] = WasmValue.i32(params[i]);
+      }
+    } else {
+      wasmParams = new WasmValue[0];
+    }
+
+    // Call the function
+    final WasmValue[] results = callFunction(functionName, wasmParams);
+
+    // Validate and extract result
+    if (results == null || results.length == 0) {
+      throw new WasmException("Function " + functionName + " did not return a value");
+    }
+    if (results.length > 1) {
+      throw new WasmException(
+          "Function " + functionName + " returned multiple values, expected single i32");
+    }
+    if (results[0].getType() != WasmValueType.I32) {
+      throw new WasmException(
+          "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
+    }
+
+    return results[0].asI32();
   }
 
   @Override
@@ -664,8 +691,24 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Function name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement optimized i32 function call with no parameters
-    throw new UnsupportedOperationException("I32 function call not yet implemented");
+
+    // Call the function with no parameters
+    final WasmValue[] results = callFunction(functionName);
+
+    // Validate and extract result
+    if (results == null || results.length == 0) {
+      throw new WasmException("Function " + functionName + " did not return a value");
+    }
+    if (results.length > 1) {
+      throw new WasmException(
+          "Function " + functionName + " returned multiple values, expected single i32");
+    }
+    if (results[0].getType() != WasmValueType.I32) {
+      throw new WasmException(
+          "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
+    }
+
+    return results[0].asI32();
   }
 
   @Override
