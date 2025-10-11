@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
@@ -14,9 +12,11 @@ import java.util.logging.Logger;
 public final class PanamaMemory implements WasmMemory {
   private static final Logger LOGGER = Logger.getLogger(PanamaMemory.class.getName());
   private static final int PAGE_SIZE = 65536; // 64KB
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
-  private final Arena arena;
-  private final MemorySegment nativeMemory;
+  private final String memoryName;
+  private final PanamaInstance instance;
   private volatile boolean closed = false;
 
   /**
@@ -29,33 +29,38 @@ public final class PanamaMemory implements WasmMemory {
     if (initialPages < 0) {
       throw new IllegalArgumentException("Initial pages cannot be negative");
     }
-    this.arena = Arena.ofShared();
+    this.instance = null;
+    this.memoryName = null;
 
     // TODO: Create native memory via Panama FFI
-    this.nativeMemory = MemorySegment.NULL;
-
-    LOGGER.fine("Created Panama memory");
+    throw new UnsupportedOperationException("Creating new memories not yet implemented");
   }
 
   /**
-   * Package-private constructor for wrapping an existing native memory pointer.
+   * Package-private constructor for wrapping an exported memory.
    *
-   * @param nativeMemory the native memory pointer from Wasmtime
+   * @param memoryName the name of the memory export
+   * @param instance the instance that owns this memory
    */
-  PanamaMemory(final MemorySegment nativeMemory) {
-    if (nativeMemory == null || nativeMemory.equals(MemorySegment.NULL)) {
-      throw new IllegalArgumentException("Native memory pointer cannot be null");
+  PanamaMemory(final String memoryName, final PanamaInstance instance) {
+    if (memoryName == null || memoryName.isEmpty()) {
+      throw new IllegalArgumentException("Memory name cannot be null or empty");
     }
-    this.arena = Arena.ofShared();
-    this.nativeMemory = nativeMemory;
-    LOGGER.fine("Wrapped native memory pointer");
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    this.memoryName = memoryName;
+    this.instance = instance;
+    LOGGER.fine("Created memory wrapper for export: " + memoryName);
   }
 
   @Override
   public int getSize() {
     ensureNotClosed();
-    // TODO: Implement size retrieval
-    return 0;
+    if (instance == null) {
+      throw new IllegalStateException("Cannot get size: memory not associated with an instance");
+    }
+    return instance.getMemorySize(this);
   }
 
   @Override
@@ -64,8 +69,10 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Pages cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement memory growth
-    return -1;
+    if (instance == null) {
+      throw new IllegalStateException("Cannot grow: memory not associated with an instance");
+    }
+    return instance.growMemory(this, pages);
   }
 
   @Override
@@ -78,8 +85,10 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public ByteBuffer getBuffer() {
     ensureNotClosed();
-    // TODO: Implement buffer view
-    return ByteBuffer.allocate(0);
+    if (instance == null) {
+      throw new IllegalStateException("Cannot get buffer: memory not associated with an instance");
+    }
+    return instance.getMemoryBuffer(this);
   }
 
   @Override
@@ -116,8 +125,20 @@ public final class PanamaMemory implements WasmMemory {
     if (length < 0) {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
+    if (destOffset + length > dest.length) {
+      throw new IndexOutOfBoundsException(
+          "Destination array bounds exceeded: destOffset="
+              + destOffset
+              + ", length="
+              + length
+              + ", array length="
+              + dest.length);
+    }
     ensureNotClosed();
-    // TODO: Implement bytes read
+    if (instance == null) {
+      throw new IllegalStateException("Cannot read: memory not associated with an instance");
+    }
+    instance.readMemoryBytes(this, offset, dest, destOffset, length);
   }
 
   @Override
@@ -135,8 +156,20 @@ public final class PanamaMemory implements WasmMemory {
     if (length < 0) {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
+    if (srcOffset + length > src.length) {
+      throw new IndexOutOfBoundsException(
+          "Source array bounds exceeded: srcOffset="
+              + srcOffset
+              + ", length="
+              + length
+              + ", array length="
+              + src.length);
+    }
     ensureNotClosed();
-    // TODO: Implement bytes write
+    if (instance == null) {
+      throw new IllegalStateException("Cannot write: memory not associated with an instance");
+    }
+    instance.writeMemoryBytes(this, offset, src, srcOffset, length);
   }
 
   @Override
@@ -410,23 +443,17 @@ public final class PanamaMemory implements WasmMemory {
       return;
     }
 
-    try {
-      // TODO: Destroy native memory
-      arena.close();
-      closed = true;
-      LOGGER.fine("Closed Panama memory");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing memory: " + e.getMessage());
-    }
+    closed = true;
+    LOGGER.fine("Closed Panama memory");
   }
 
   /**
-   * Gets the native memory pointer.
+   * Gets the memory name.
    *
-   * @return native memory segment
+   * @return memory export name
    */
-  public MemorySegment getNativeMemory() {
-    return nativeMemory;
+  String getMemoryName() {
+    return memoryName;
   }
 
   /**

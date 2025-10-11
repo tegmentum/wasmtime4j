@@ -2015,7 +2015,11 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
     match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
             match core::get_exported_memory(instance, store, name_str) {
-                Ok(Some(memory)) => Box::into_raw(Box::new(memory)) as *mut c_void,
+                Ok(Some(memory)) => {
+                    // Return the raw wasmtime::Memory directly without wrapping
+                    // This avoids store context issues since wasmtime::Memory is just an ID
+                    Box::into_raw(Box::new(memory)) as *mut c_void
+                }
                 _ => std::ptr::null_mut(),
             }
         }

@@ -1355,15 +1355,19 @@ pub mod memory {
         size_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
-            
-            let size = memory.size_pages(store)?;
-            
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+
+            // Call wasmtime::Memory::size directly with store context
+            let size = store.with_context_ro(|ctx| {
+                Ok(memory.size(ctx))
+            })?;
+
             unsafe {
                 *size_out = size as c_uint;
             }
-            
+
             Ok(())
         })
     }
@@ -1376,15 +1380,19 @@ pub mod memory {
         size_out: *mut usize,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
-            
-            let size = memory.size_bytes(store)?;
-            
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+
+            // Call wasmtime::Memory::data_size directly with store context
+            let size = store.with_context_ro(|ctx| {
+                Ok(memory.data_size(ctx))
+            })?;
+
             unsafe {
                 *size_out = size;
             }
-            
+
             Ok(())
         })
     }
@@ -1398,15 +1406,23 @@ pub mod memory {
         previous_pages_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
-            
-            let previous_pages = memory.grow(store, additional_pages as u64)?;
-            
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            // Call wasmtime::Memory::grow directly with store context
+            let previous_pages = store.with_context(|mut ctx| {
+                memory.grow(&mut ctx, additional_pages as u64)
+                    .map_err(|e| crate::error::WasmtimeError::Runtime {
+                        message: format!("Failed to grow memory: {}", e),
+                        backtrace: None,
+                    })
+            })?;
+
             unsafe {
                 *previous_pages_out = previous_pages as c_uint;
             }
-            
+
             Ok(())
         })
     }
@@ -1421,22 +1437,31 @@ pub mod memory {
         buffer: *mut u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
-            
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+
             if buffer.is_null() {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Buffer cannot be null".to_string(),
                 });
             }
-            
-            let data = memory.read_bytes(store, offset, length)?;
-            
-            unsafe {
-                std::ptr::copy_nonoverlapping(data.as_ptr(), buffer, length);
-            }
-            
-            Ok(())
+
+            // Read bytes directly from wasmtime::Memory
+            store.with_context_ro(|ctx| {
+                let data = memory.data(ctx);
+                if offset + length > data.len() {
+                    return Err(crate::error::WasmtimeError::Memory {
+                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    });
+                }
+
+                unsafe {
+                    std::ptr::copy_nonoverlapping(data.as_ptr().add(offset), buffer, length);
+                }
+
+                Ok(())
+            })
         })
     }
 
@@ -1450,19 +1475,271 @@ pub mod memory {
         buffer: *const u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
-            
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
             if buffer.is_null() {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Buffer cannot be null".to_string(),
                 });
             }
-            
-            let data = unsafe { std::slice::from_raw_parts(buffer, length) };
-            memory.write_bytes(store, offset, data)?;
-            
+
+            // Write bytes directly to wasmtime::Memory
+            store.with_context(|mut ctx| {
+                let data = memory.data_mut(&mut ctx);
+                if offset + length > data.len() {
+                    return Err(crate::error::WasmtimeError::Memory {
+                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    });
+                }
+
+                unsafe {
+                    std::ptr::copy_nonoverlapping(buffer, data.as_mut_ptr().add(offset), length);
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Check if instance has a memory export with the given name
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_has_memory_export(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            match crate::instance::core::get_exported_memory(instance, store, name_str)? {
+                Some(_) => Ok(()),
+                None => Err(crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                }),
+            }
+        })
+    }
+
+    /// Get memory size in pages by looking up memory fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_get_memory_size_pages(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        size_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                })?;
+
+            let size = store.with_context_ro(|ctx| Ok(memory.size(ctx)))?;
+
+            unsafe {
+                *size_out = size as c_uint;
+            }
+
             Ok(())
+        })
+    }
+
+    /// Get memory size in bytes by looking up memory fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_get_memory_size_bytes(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        size_out: *mut usize,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                })?;
+
+            let size = store.with_context_ro(|ctx| Ok(memory.data_size(ctx)))?;
+
+            unsafe {
+                *size_out = size;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Grow memory by looking up memory fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_grow_memory(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        additional_pages: c_uint,
+        previous_pages_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                })?;
+
+            let previous_pages = store.with_context(|mut ctx| {
+                memory.grow(&mut ctx, additional_pages as u64)
+                    .map_err(|e| crate::error::WasmtimeError::Runtime {
+                        message: format!("Failed to grow memory: {}", e),
+                        backtrace: None,
+                    })
+            })?;
+
+            unsafe {
+                *previous_pages_out = previous_pages as c_uint;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Read bytes from memory by looking up memory fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_read_memory_bytes(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        offset: usize,
+        length: usize,
+        buffer: *mut u8,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            if buffer.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer cannot be null".to_string(),
+                });
+            }
+
+            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                })?;
+
+            store.with_context_ro(|ctx| {
+                let data = memory.data(ctx);
+                if offset + length > data.len() {
+                    return Err(crate::error::WasmtimeError::Memory {
+                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    });
+                }
+
+                unsafe {
+                    std::ptr::copy_nonoverlapping(data.as_ptr().add(offset), buffer, length);
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Write bytes to memory by looking up memory fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_write_memory_bytes(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        offset: usize,
+        length: usize,
+        buffer: *const u8,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in memory name".to_string(),
+                    })?
+            };
+
+            if buffer.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Buffer cannot be null".to_string(),
+                });
+            }
+
+            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Memory '{}' not found", name_str),
+                })?;
+
+            store.with_context(|mut ctx| {
+                let data = memory.data_mut(&mut ctx);
+                if offset + length > data.len() {
+                    return Err(crate::error::WasmtimeError::Memory {
+                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    });
+                }
+
+                unsafe {
+                    std::ptr::copy_nonoverlapping(buffer, data.as_mut_ptr().add(offset), length);
+                }
+
+                Ok(())
+            })
         })
     }
 

@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -182,17 +183,21 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
+    // Check if the memory export exists by calling native
     final MemorySegment nameSegment =
         arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final MemorySegment memoryPtr =
-        NATIVE_BINDINGS.instanceGetMemoryByName(
+    final int result =
+        NATIVE_BINDINGS.instanceHasMemoryExport(
             nativeInstance, store.getNativeStore(), nameSegment);
 
-    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+    // Result is 0 on success (memory exists), non-zero on error/not found
+    if (result != 0) {
       return Optional.empty();
     }
 
-    return Optional.of(new PanamaMemory(memoryPtr));
+    // Return a PanamaMemory that stores just the name
+    // The actual memory will be looked up fresh for each operation
+    return Optional.of(new PanamaMemory(name, this));
   }
 
   @Override
@@ -1008,6 +1013,159 @@ public final class PanamaInstance implements Instance {
     }
     if (disposed.get()) {
       throw new IllegalStateException("Instance has been disposed");
+    }
+  }
+
+  // Memory delegation methods - called by PanamaMemory to ensure single store context
+
+  /**
+   * Gets the size of a memory in pages.
+   *
+   * @param memory the memory to query
+   * @return size in pages
+   */
+  int getMemorySize(final PanamaMemory memory) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result =
+          NATIVE_BINDINGS.instanceGetMemorySizePages(
+              nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get memory size: error code " + result);
+      }
+
+      return sizeOut.get(ValueLayout.JAVA_INT, 0);
+    }
+  }
+
+  /**
+   * Grows a memory by the specified number of pages.
+   *
+   * @param memory the memory to grow
+   * @param pages number of pages to grow
+   * @return previous size in pages, or -1 if growth failed
+   */
+  int growMemory(final PanamaMemory memory, final int pages) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result =
+          NATIVE_BINDINGS.instanceGrowMemory(
+              nativeInstance, store.getNativeStore(), nameSegment, pages, previousPagesOut);
+
+      if (result != 0) {
+        return -1; // Growth failed
+      }
+
+      return previousPagesOut.get(ValueLayout.JAVA_INT, 0);
+    }
+  }
+
+  /**
+   * Reads bytes from memory.
+   *
+   * @param memory the memory to read from
+   * @param offset offset in memory
+   * @param dest destination array
+   * @param destOffset offset in destination array
+   * @param length number of bytes to read
+   */
+  void readMemoryBytes(
+      final PanamaMemory memory,
+      final int offset,
+      final byte[] dest,
+      final int destOffset,
+      final int length) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment buffer = tempArena.allocate(length);
+
+      final int result =
+          NATIVE_BINDINGS.instanceReadMemoryBytes(
+              nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to read bytes: error code " + result);
+      }
+
+      // Copy from native buffer to Java array
+      MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, dest, destOffset, length);
+    }
+  }
+
+  /**
+   * Writes bytes to memory.
+   *
+   * @param memory the memory to write to
+   * @param offset offset in memory
+   * @param src source array
+   * @param srcOffset offset in source array
+   * @param length number of bytes to write
+   */
+  void writeMemoryBytes(
+      final PanamaMemory memory,
+      final int offset,
+      final byte[] src,
+      final int srcOffset,
+      final int length) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment buffer = tempArena.allocate(length);
+
+      // Copy from Java array to native buffer
+      MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
+
+      final int result =
+          NATIVE_BINDINGS.instanceWriteMemoryBytes(
+              nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to write bytes: error code " + result);
+      }
+    }
+  }
+
+  /**
+   * Gets a ByteBuffer view of memory.
+   *
+   * @param memory the memory to get buffer for
+   * @return ByteBuffer view
+   */
+  ByteBuffer getMemoryBuffer(final PanamaMemory memory) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+      // Get memory size in bytes
+      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.instanceGetMemorySizeBytes(
+              nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get memory size: error code " + result);
+      }
+
+      final long sizeBytes = sizeOut.get(ValueLayout.JAVA_LONG, 0);
+
+      // Allocate a buffer and read all memory into it
+      final byte[] buffer = new byte[(int) sizeBytes];
+      readMemoryBytes(memory, 0, buffer, 0, (int) sizeBytes);
+
+      return java.nio.ByteBuffer.wrap(buffer).asReadOnlyBuffer();
     }
   }
 }

@@ -896,6 +896,173 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Checks if an instance has a memory export with the given name.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @return 1 if exists, 0 if not found
+   */
+  public int instanceHasMemoryExport(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_has_memory_export", Integer.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets memory size in pages by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param sizeOut pointer to store the size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetMemorySizePages(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment sizeOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(sizeOut, "sizeOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_size_pages",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        sizeOut);
+  }
+
+  /**
+   * Gets memory size in bytes by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param sizeOut pointer to store the size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetMemorySizeBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment sizeOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(sizeOut, "sizeOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_size_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        sizeOut);
+  }
+
+  /**
+   * Grows memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param pages number of pages to grow
+   * @param previousPagesOut pointer to store previous size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGrowMemory(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final int pages,
+      final MemorySegment previousPagesOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(previousPagesOut, "previousPagesOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_grow_memory",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        pages,
+        previousPagesOut);
+  }
+
+  /**
+   * Reads bytes from memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param offset offset in memory
+   * @param length number of bytes to read
+   * @param buffer pointer to buffer to read into
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceReadMemoryBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final long offset,
+      final long length,
+      final MemorySegment buffer) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(buffer, "buffer");
+    return callNativeFunction(
+        "wasmtime4j_instance_read_memory_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        offset,
+        length,
+        buffer);
+  }
+
+  /**
+   * Writes bytes to memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param offset offset in memory
+   * @param length number of bytes to write
+   * @param buffer pointer to buffer to write from
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceWriteMemoryBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final long offset,
+      final long length,
+      final MemorySegment buffer) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(buffer, "buffer");
+    return callNativeFunction(
+        "wasmtime4j_instance_write_memory_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        offset,
+        length,
+        buffer);
+  }
+
+  /**
    * Gets a table export by name from an instance.
    *
    * @param instancePtr pointer to the instance
@@ -1466,6 +1633,131 @@ public final class NativeFunctionBindings {
     validatePointer(globalPtr, "globalPtr");
     validatePointer(directPtr, "directPtr");
     callNativeFunction("wasmtime4j_global_release_direct_access", Void.class, globalPtr, directPtr);
+  }
+
+  // Memory Functions
+
+  /**
+   * Gets memory size in pages (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param sizeOutPtr pointer to store the size in pages
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemorySizePages(
+      final MemorySegment memoryPtr, final MemorySegment storePtr, final MemorySegment sizeOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(sizeOutPtr, "sizeOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_size_pages", Integer.class, memoryPtr, storePtr, sizeOutPtr);
+  }
+
+  /**
+   * Grows memory by additional pages (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param additionalPages number of pages to grow
+   * @param previousPagesOutPtr pointer to store the previous size in pages
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGrow(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final int additionalPages,
+      final MemorySegment previousPagesOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(previousPagesOutPtr, "previousPagesOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_grow",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        additionalPages,
+        previousPagesOutPtr);
+  }
+
+  /**
+   * Reads bytes from memory (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset offset in memory to read from
+   * @param length number of bytes to read
+   * @param bufferPtr pointer to buffer to read into
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryReadBytes(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long length,
+      final MemorySegment bufferPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(bufferPtr, "bufferPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_read_bytes",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        length,
+        bufferPtr);
+  }
+
+  /**
+   * Writes bytes to memory (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset offset in memory to write to
+   * @param length number of bytes to write
+   * @param bufferPtr pointer to buffer to write from
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryWriteBytes(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long length,
+      final MemorySegment bufferPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(bufferPtr, "bufferPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_write_bytes",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        length,
+        bufferPtr);
+  }
+
+  /**
+   * Gets memory size in bytes (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param sizeOutPtr pointer to store the size in bytes
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemorySizeBytes(
+      final MemorySegment memoryPtr, final MemorySegment storePtr, final MemorySegment sizeOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(sizeOutPtr, "sizeOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_size_bytes", Integer.class, memoryPtr, storePtr, sizeOutPtr);
   }
 
   // Error Handling Functions
@@ -2115,6 +2407,65 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS)); // name (C string)
 
+    // Instance memory operations with fresh lookup
+    addFunctionBinding(
+        "wasmtime4j_instance_has_memory_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_size_pages",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS)); // size_out
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_size_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS)); // size_out
+
+    addFunctionBinding(
+        "wasmtime4j_instance_grow_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.JAVA_INT, // pages
+            ValueLayout.ADDRESS)); // previous_pages_out
+
+    addFunctionBinding(
+        "wasmtime4j_instance_read_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // length
+            ValueLayout.ADDRESS)); // buffer
+
+    addFunctionBinding(
+        "wasmtime4j_instance_write_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // length
+            ValueLayout.ADDRESS)); // buffer
+
     addFunctionBinding(
         "wasmtime4j_instance_get_table_by_name",
         FunctionDescriptor.of(
@@ -2343,6 +2694,52 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // global
             ValueLayout.ADDRESS, // type_info (out)
             ValueLayout.ADDRESS)); // mutability (out)
+
+    // Panama FFI memory functions
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_size_pages",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // size_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_grow",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // additional_pages
+            ValueLayout.ADDRESS)); // previous_pages_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_read_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // length
+            ValueLayout.ADDRESS)); // buffer
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_write_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // length
+            ValueLayout.ADDRESS)); // buffer
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_size_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // size_out
 
     // Cross-module global sharing functions
     addFunctionBinding(
