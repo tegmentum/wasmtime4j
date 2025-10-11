@@ -397,6 +397,98 @@ public final class PanamaInstance implements Instance {
     }
   }
 
+  /**
+   * Checks if the instance has a function export with the given name.
+   *
+   * @param name the name to check
+   * @return true if a function export with this name exists, false otherwise
+   * @throws IllegalArgumentException if name is null
+   */
+  public boolean hasFunction(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      return exportKind == 1;
+    }
+  }
+
+  /**
+   * Checks if the instance has a memory export with the given name.
+   *
+   * @param name the name to check
+   * @return true if a memory export with this name exists, false otherwise
+   * @throws IllegalArgumentException if name is null
+   */
+  public boolean hasMemory(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      return exportKind == 3;
+    }
+  }
+
+  /**
+   * Checks if the instance has a table export with the given name.
+   *
+   * @param name the name to check
+   * @return true if a table export with this name exists, false otherwise
+   * @throws IllegalArgumentException if name is null
+   */
+  public boolean hasTable(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      return exportKind == 4;
+    }
+  }
+
+  /**
+   * Checks if the instance has a global export with the given name.
+   *
+   * @param name the name to check
+   * @return true if a global export with this name exists, false otherwise
+   * @throws IllegalArgumentException if name is null
+   */
+  public boolean hasGlobal(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      return exportKind == 2;
+    }
+  }
+
   @Override
   public Module getModule() {
     return module;

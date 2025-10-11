@@ -512,4 +512,126 @@ final class PanamaInstanceExportRetrievalTest {
         instance.getGlobalCount(),
         "Global count should match global names list size");
   }
+
+  @Test
+  void testHasFunction() {
+    assertTrue(instance.hasFunction("test"), "Should have 'test' function");
+    assertFalse(instance.hasFunction("nonexistent"), "Should not have nonexistent function");
+  }
+
+  @Test
+  void testHasMemory() {
+    assertTrue(instance.hasMemory("memory"), "Should have 'memory' export");
+    assertFalse(instance.hasMemory("nonexistent"), "Should not have nonexistent memory");
+  }
+
+  @Test
+  void testHasTable() {
+    assertTrue(instance.hasTable("table"), "Should have 'table' export");
+    assertFalse(instance.hasTable("nonexistent"), "Should not have nonexistent table");
+  }
+
+  @Test
+  void testHasGlobal() {
+    assertTrue(instance.hasGlobal("g_i32"), "Should have 'g_i32' global");
+    assertTrue(instance.hasGlobal("g_i64"), "Should have 'g_i64' global");
+    assertTrue(instance.hasGlobal("g_f32"), "Should have 'g_f32' global");
+    assertFalse(instance.hasGlobal("nonexistent"), "Should not have nonexistent global");
+  }
+
+  @Test
+  void testHasFunctionReturnsFalseForWrongType() {
+    assertFalse(instance.hasFunction("memory"), "Should return false for memory export");
+    assertFalse(instance.hasFunction("table"), "Should return false for table export");
+    assertFalse(instance.hasFunction("g_i32"), "Should return false for global export");
+  }
+
+  @Test
+  void testHasMemoryReturnsFalseForWrongType() {
+    assertFalse(instance.hasMemory("test"), "Should return false for function export");
+    assertFalse(instance.hasMemory("table"), "Should return false for table export");
+    assertFalse(instance.hasMemory("g_i32"), "Should return false for global export");
+  }
+
+  @Test
+  void testHasTableReturnsFalseForWrongType() {
+    assertFalse(instance.hasTable("test"), "Should return false for function export");
+    assertFalse(instance.hasTable("memory"), "Should return false for memory export");
+    assertFalse(instance.hasTable("g_i32"), "Should return false for global export");
+  }
+
+  @Test
+  void testHasGlobalReturnsFalseForWrongType() {
+    assertFalse(instance.hasGlobal("test"), "Should return false for function export");
+    assertFalse(instance.hasGlobal("memory"), "Should return false for memory export");
+    assertFalse(instance.hasGlobal("table"), "Should return false for table export");
+  }
+
+  @Test
+  void testHasFunctionNullName() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> instance.hasFunction(null),
+        "Null name should throw IllegalArgumentException");
+  }
+
+  @Test
+  void testHasMemoryNullName() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> instance.hasMemory(null),
+        "Null name should throw IllegalArgumentException");
+  }
+
+  @Test
+  void testHasTableNullName() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> instance.hasTable(null),
+        "Null name should throw IllegalArgumentException");
+  }
+
+  @Test
+  void testHasGlobalNullName() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> instance.hasGlobal(null),
+        "Null name should throw IllegalArgumentException");
+  }
+
+  @Test
+  void testHasFunctionWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.hasFunction("test"),
+        "Checking function on closed instance should throw");
+  }
+
+  @Test
+  void testHasMemoryWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.hasMemory("memory"),
+        "Checking memory on closed instance should throw");
+  }
+
+  @Test
+  void testHasTableWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.hasTable("table"),
+        "Checking table on closed instance should throw");
+  }
+
+  @Test
+  void testHasGlobalWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.hasGlobal("g_i32"),
+        "Checking global on closed instance should throw");
+  }
 }
