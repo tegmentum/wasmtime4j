@@ -73,9 +73,19 @@ public final class NativeLibraryLoader {
       throw new IllegalStateException("Failed to load native library for Panama FFI", cause);
     }
 
-    // Initialize symbol lookup
-    this.symbolLookup = SymbolLookup.loaderLookup();
-    LOGGER.info("Successfully loaded native library for Panama: " + loadInfo);
+    // Initialize symbol lookup using the loaded library path
+    // Use libraryLookup() with the path since the library was loaded via System.load()
+    try {
+      final java.nio.file.Path libraryPath = loadInfo.getExtractedPath();
+      this.symbolLookup = SymbolLookup.libraryLookup(libraryPath, libraryArena);
+      LOGGER.info("Successfully loaded native library for Panama: " + loadInfo);
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.SEVERE,
+          "Failed to create symbol lookup for library: " + loadInfo.getExtractedPath(),
+          e);
+      throw new IllegalStateException("Failed to create symbol lookup for Panama FFI", e);
+    }
   }
 
   /**

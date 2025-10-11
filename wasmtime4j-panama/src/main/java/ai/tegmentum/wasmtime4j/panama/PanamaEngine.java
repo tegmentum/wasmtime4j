@@ -21,6 +21,8 @@ import java.util.logging.Logger;
  */
 public final class PanamaEngine implements Engine {
   private static final Logger LOGGER = Logger.getLogger(PanamaEngine.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   private final Arena arena;
   private final MemorySegment nativeEngine;
@@ -49,8 +51,13 @@ public final class PanamaEngine implements Engine {
     this.config = config;
     this.arena = Arena.ofShared();
 
-    // TODO: Create native engine via Panama FFI
-    this.nativeEngine = MemorySegment.NULL;
+    // Create native engine via Panama FFI
+    this.nativeEngine = NATIVE_BINDINGS.engineCreate();
+
+    if (this.nativeEngine == null || this.nativeEngine.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to create native engine");
+    }
 
     LOGGER.fine("Created Panama engine");
   }
@@ -160,7 +167,10 @@ public final class PanamaEngine implements Engine {
     }
 
     try {
-      // TODO: Destroy native engine
+      // Destroy native engine
+      if (nativeEngine != null && !nativeEngine.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.engineDestroy(nativeEngine);
+      }
       arena.close();
       closed = true;
       LOGGER.fine("Closed Panama engine");

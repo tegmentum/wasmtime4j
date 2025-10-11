@@ -721,6 +721,12 @@ pub unsafe extern "C" fn wasmtime4j_engine_new() -> *mut c_void {
     }
 }
 
+/// Alias for wasmtime4j_engine_new (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
+    wasmtime4j_engine_new()
+}
+
 /// Create a new engine with custom configuration
 ///
 /// # Safety
