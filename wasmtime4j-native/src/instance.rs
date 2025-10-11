@@ -1887,3 +1887,100 @@ pub unsafe extern "C" fn wasmtime4j_instance_metadata_export_count(instance_ptr:
         Err(_) => 0,
     }
 }
+
+/// Call instance function with WasmValue parameters (Panama FFI compatibility)
+///
+/// # Safety
+///
+/// All pointers must be valid, params must point to WasmValue array of size param_count
+/// Results buffer must have space for at least max_results WasmValues
+///
+/// Returns number of actual results (0 on error), fills results_ptr with return values
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_call_function(
+    instance_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    function_name: *const c_char,
+    params_ptr: *const c_void,
+    param_count: usize,
+    results_ptr: *mut c_void,
+    max_results: usize,
+) -> usize {
+    if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+        return 0;
+    }
+
+    match (
+        ffi_core::get_instance_mut(instance_ptr),
+        crate::store::core::get_store_mut(store_ptr),
+        CStr::from_ptr(function_name).to_str()
+    ) {
+        (Ok(instance), Ok(store), Ok(name_str)) => {
+            // Convert parameters from FFI WasmValue array
+            let params: Vec<WasmValue> = if param_count > 0 && !params_ptr.is_null() {
+                std::slice::from_raw_parts(params_ptr as *const WasmValue, param_count)
+                    .to_vec()
+            } else {
+                Vec::new()
+            };
+
+            // Call the function
+            match instance.call_export_function(store, name_str, &params) {
+                Ok(execution_result) => {
+                    let result_values = execution_result.values;
+                    let actual_count = result_values.len().min(max_results);
+
+                    // Copy results to output buffer
+                    // Layout: tag (4 bytes) + value (16 bytes max) = 20 bytes per WasmValue
+                    if actual_count > 0 && !results_ptr.is_null() {
+                        for (i, value) in result_values.iter().take(actual_count).enumerate() {
+                            let base_offset = i * 20;
+                            let dest_ptr = results_ptr as *mut u8;
+
+                            // Write tag and value based on type
+                            match value {
+                                WasmValue::I32(val) => {
+                                    // tag = 0
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 0);
+                                    // value at offset +4
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i32, *val);
+                                }
+                                WasmValue::I64(val) => {
+                                    // tag = 1
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 1);
+                                    // value at offset +4
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, *val);
+                                }
+                                WasmValue::F32(val) => {
+                                    // tag = 2
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 2);
+                                    // value at offset +4
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut f32, *val);
+                                }
+                                WasmValue::F64(val) => {
+                                    // tag = 3
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 3);
+                                    // value at offset +4
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut f64, *val);
+                                }
+                                WasmValue::V128(bytes) => {
+                                    // tag = 4
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 4);
+                                    // value at offset +4 (16 bytes)
+                                    std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest_ptr.add(base_offset + 4), 16);
+                                }
+                                _ => {
+                                    // Unsupported types (ExternRef, FuncRef) - skip
+                                }
+                            }
+                        }
+                    }
+
+                    actual_count
+                },
+                Err(_) => 0,
+            }
+        },
+        _ => 0,
+    }
+}

@@ -1,0 +1,183 @@
+package ai.tegmentum.wasmtime4j.panama;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/** Test for Panama instance function calls. */
+public class PanamaInstanceCallFunctionTest {
+
+  @Test
+  @DisplayName("Call function with no parameters returning i32")
+  public void testCallFunctionNoParams() throws WasmException {
+    // WASM bytecode for: (module (func (export "get42") (result i32) i32.const 42))
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x05, 0x01, 0x60, 0x00, 0x01,
+          0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x67, 0x65, 0x74, 0x34, 0x32,
+          0x00, 0x00, 0x0a, 0x06, 0x01, 0x04, 0x00, 0x41, 0x2a, 0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    final WasmValue[] results = instance.callFunction("get42");
+
+    assertNotNull(results, "Results should not be null");
+    assertEquals(1, results.length, "Should return 1 value");
+    assertEquals(42, results[0].asI32(), "Should return 42");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("Call add function with two i32 parameters")
+  public void testCallFunctionWithParams() throws WasmException {
+    // WASM bytecode for: (module (func (export "add") (param i32 i32) (result i32)
+    //   local.get 0 local.get 1 i32.add))
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f,
+          0x7f, 0x01, 0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64,
+          0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    final WasmValue[] results =
+        instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(32));
+
+    assertNotNull(results, "Results should not be null");
+    assertEquals(1, results.length, "Should return 1 value");
+    assertEquals(42, results[0].asI32(), "Should return 10 + 32 = 42");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("Call function with i64 parameters")
+  public void testCallFunctionI64() throws WasmException {
+    // WASM bytecode for: (module (func (export "add64") (param i64 i64) (result i64)
+    //   local.get 0 local.get 1 i64.add))
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7e,
+          0x7e, 0x01, 0x7e, 0x03, 0x02, 0x01, 0x00, 0x07, 0x0a, 0x01, 0x06, 0x61, 0x64, 0x64,
+          0x36, 0x34, 0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x7c,
+          0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    final WasmValue[] results =
+        instance.callFunction("add64", WasmValue.i64(1000000000000L), WasmValue.i64(234567890L));
+
+    assertNotNull(results, "Results should not be null");
+    assertEquals(1, results.length, "Should return 1 value");
+    assertEquals(1000234567890L, results[0].asI64(), "Should return correct sum");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("Call function with f32 parameters")
+  public void testCallFunctionF32() throws WasmException {
+    // WASM bytecode for: (module (func (export "addf") (param f32 f32) (result f32)
+    //   local.get 0 local.get 1 f32.add))
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7d,
+          0x7d, 0x01, 0x7d, 0x03, 0x02, 0x01, 0x00, 0x07, 0x08, 0x01, 0x04, 0x61, 0x64, 0x64,
+          0x66, 0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, (byte) 0x92, 0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    final WasmValue[] results =
+        instance.callFunction("addf", WasmValue.f32(10.5f), WasmValue.f32(31.5f));
+
+    assertNotNull(results, "Results should not be null");
+    assertEquals(1, results.length, "Should return 1 value");
+    assertEquals(42.0f, results[0].asF32(), 0.001f, "Should return 10.5 + 31.5 = 42.0");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("Call nonexistent function throws exception")
+  public void testCallNonexistentFunction() throws WasmException {
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x05, 0x01, 0x60, 0x00, 0x01,
+          0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x67, 0x65, 0x74, 0x34, 0x32,
+          0x00, 0x00, 0x0a, 0x06, 0x01, 0x04, 0x00, 0x41, 0x2a, 0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    assertThrows(
+        WasmException.class,
+        () -> instance.callFunction("nonexistent"),
+        "Should throw exception for nonexistent function");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+
+  @Test
+  @DisplayName("Call function with null name throws exception")
+  public void testCallFunctionNullName() throws WasmException {
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x05, 0x01, 0x60, 0x00, 0x01,
+          0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x67, 0x65, 0x74, 0x34, 0x32,
+          0x00, 0x00, 0x0a, 0x06, 0x01, 0x04, 0x00, 0x41, 0x2a, 0x0b
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> instance.callFunction(null),
+        "Should throw exception for null function name");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
+}

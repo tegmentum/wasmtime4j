@@ -766,6 +766,41 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Calls a WebAssembly function in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName name of the function to call
+   * @param paramsPtr pointer to array of WasmValue parameters
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to buffer for WasmValue results
+   * @param maxResults maximum number of results to return
+   * @return number of actual results (0 on error)
+   */
+  public long instanceCallFunction(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long maxResults) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(functionName, "functionName");
+    return callNativeFunction(
+        "wasmtime4j_instance_call_function",
+        Long.class,
+        instancePtr,
+        storePtr,
+        functionName,
+        paramsPtr,
+        paramCount,
+        resultsPtr,
+        maxResults);
+  }
+
+  /**
    * Gets the number of exports in an instance.
    *
    * @param instancePtr pointer to the instance
@@ -1834,6 +1869,18 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,       // return result count
+            ValueLayout.ADDRESS,         // instance_ptr
+            ValueLayout.ADDRESS,         // store_ptr
+            ValueLayout.ADDRESS,         // function_name (C string)
+            ValueLayout.ADDRESS,         // params_ptr (WasmValue array)
+            ValueLayout.JAVA_LONG,       // param_count
+            ValueLayout.ADDRESS,         // results_ptr (WasmValue array)
+            ValueLayout.JAVA_LONG));     // max_results
 
     addFunctionBinding(
         "wasmtime4j_instance_exports_len",

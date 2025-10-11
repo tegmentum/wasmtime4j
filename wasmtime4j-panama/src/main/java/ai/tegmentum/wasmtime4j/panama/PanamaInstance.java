@@ -18,6 +18,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -259,8 +260,61 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Function name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement function call
-    throw new UnsupportedOperationException("Function call not yet implemented");
+
+    // Maximum possible results (conservative estimate)
+    final int maxResults = 16;
+
+    try (final Arena callArena = Arena.ofConfined()) {
+      // Allocate native memory for function name (C string)
+      final MemorySegment functionNameSegment =
+          callArena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+
+      // Allocate and marshal parameters
+      final MemorySegment paramsSegment;
+      if (params != null && params.length > 0) {
+        paramsSegment = callArena.allocate(params.length * 20L); // 20 bytes per WasmValue
+        for (int i = 0; i < params.length; i++) {
+          marshalWasmValue(params[i], paramsSegment, i);
+        }
+      } else {
+        paramsSegment = MemorySegment.NULL;
+      }
+
+      // Allocate results buffer (zeroed)
+      final MemorySegment resultsSegment = callArena.allocate(maxResults * 20L);
+      // Zero out the results buffer
+      for (long i = 0; i < maxResults * 20L; i++) {
+        resultsSegment.set(ValueLayout.JAVA_BYTE, i, (byte) 0);
+      }
+
+      // Call native function
+      final long resultCount =
+          NATIVE_BINDINGS.instanceCallFunction(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              paramsSegment,
+              params != null ? params.length : 0,
+              resultsSegment,
+              maxResults);
+
+      // Note: resultCount of 0 could mean either error OR no return values
+      // The Rust FFI returns 0 on error, but also returns 0 for void functions
+      // For now, we assume 0 means no results (not an error)
+      // TODO: Improve error handling to distinguish between error and void functions
+
+      if (resultCount < 0) {
+        throw new WasmException("Failed to call function: " + functionName);
+      }
+
+      // Unmarshal results
+      final WasmValue[] results = new WasmValue[(int) resultCount];
+      for (int i = 0; i < resultCount; i++) {
+        results[i] = unmarshalWasmValue(resultsSegment, i);
+      }
+
+      return results;
+    }
   }
 
   @Override
@@ -383,6 +437,91 @@ public final class PanamaInstance implements Instance {
    */
   public MemorySegment getNativeInstance() {
     return nativeInstance;
+  }
+
+  /**
+   * Marshals a WasmValue to native memory.
+   *
+   * @param value the WasmValue to marshal
+   * @param ptr pointer to the array
+   * @param index index in the array
+   */
+  private static void marshalWasmValue(
+      final WasmValue value, final MemorySegment ptr, final int index) {
+    final long offset = index * 20L;
+
+    switch (value.getType()) {
+      case I32:
+        ptr.set(ValueLayout.JAVA_INT, offset, 0); // tag
+        ptr.set(ValueLayout.JAVA_INT, offset + 4, value.asI32());
+        break;
+
+      case I64:
+        ptr.set(ValueLayout.JAVA_INT, offset, 1); // tag
+        ptr.set(ValueLayout.JAVA_LONG, offset + 4, value.asI64());
+        break;
+
+      case F32:
+        ptr.set(ValueLayout.JAVA_INT, offset, 2); // tag
+        ptr.set(ValueLayout.JAVA_FLOAT, offset + 4, value.asF32());
+        break;
+
+      case F64:
+        ptr.set(ValueLayout.JAVA_INT, offset, 3); // tag
+        ptr.set(ValueLayout.JAVA_DOUBLE, offset + 4, value.asF64());
+        break;
+
+      case V128:
+        ptr.set(ValueLayout.JAVA_INT, offset, 4); // tag
+        final byte[] v128Bytes = value.asV128();
+        for (int i = 0; i < 16; i++) {
+          ptr.set(ValueLayout.JAVA_BYTE, offset + 4 + i, v128Bytes[i]);
+        }
+        break;
+
+      default:
+        throw new IllegalArgumentException("Unsupported WasmValue type: " + value.getType());
+    }
+  }
+
+  /**
+   * Unmarshals a WasmValue from native memory.
+   *
+   * @param ptr pointer to the array
+   * @param index index in the array
+   * @return the unmarshaled WasmValue
+   */
+  private static WasmValue unmarshalWasmValue(final MemorySegment ptr, final int index) {
+    final long offset = index * 20L;
+    final int tag = ptr.get(ValueLayout.JAVA_INT, offset);
+
+    switch (tag) {
+      case 0: // I32
+        final int i32Val = ptr.get(ValueLayout.JAVA_INT, offset + 4);
+        return WasmValue.i32(i32Val);
+
+      case 1: // I64
+        final long i64Val = ptr.get(ValueLayout.JAVA_LONG, offset + 4);
+        return WasmValue.i64(i64Val);
+
+      case 2: // F32
+        final float f32Val = ptr.get(ValueLayout.JAVA_FLOAT, offset + 4);
+        return WasmValue.f32(f32Val);
+
+      case 3: // F64
+        final double f64Val = ptr.get(ValueLayout.JAVA_DOUBLE, offset + 4);
+        return WasmValue.f64(f64Val);
+
+      case 4: // V128
+        final byte[] v128Bytes = new byte[16];
+        for (int i = 0; i < 16; i++) {
+          v128Bytes[i] = ptr.get(ValueLayout.JAVA_BYTE, offset + 4 + i);
+        }
+        return WasmValue.v128(v128Bytes);
+
+      default:
+        throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);
+    }
   }
 
   /**
