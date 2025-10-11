@@ -17,6 +17,8 @@ import java.util.logging.Logger;
  */
 public final class PanamaStore implements Store {
   private static final Logger LOGGER = Logger.getLogger(PanamaStore.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   private final PanamaEngine engine;
   private final Arena arena;
@@ -34,11 +36,20 @@ public final class PanamaStore implements Store {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
+
     this.engine = engine;
     this.arena = Arena.ofConfined();
 
-    // TODO: Create native store via Panama FFI
-    this.nativeStore = MemorySegment.NULL;
+    // Create native store via Panama FFI
+    this.nativeStore = NATIVE_BINDINGS.storeCreate(engine.getNativeEngine());
+
+    if (this.nativeStore == null || this.nativeStore.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to create native store");
+    }
 
     LOGGER.fine("Created Panama store");
   }
@@ -239,7 +250,10 @@ public final class PanamaStore implements Store {
     }
 
     try {
-      // TODO: Destroy native store
+      // Destroy native store
+      if (nativeStore != null && !nativeStore.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.storeDestroy(nativeStore);
+      }
       arena.close();
       closed = true;
       LOGGER.fine("Closed Panama store");

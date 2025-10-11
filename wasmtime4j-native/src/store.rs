@@ -1205,6 +1205,12 @@ pub unsafe extern "C" fn wasmtime4j_store_destroy(store_ptr: *mut c_void) {
     }
 }
 
+/// Alias for wasmtime4j_store_new (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_create(engine_ptr: *const c_void) -> *mut c_void {
+    wasmtime4j_store_new(engine_ptr)
+}
+
 /// Validate store is still functional
 ///
 /// # Safety

@@ -341,17 +341,14 @@ public final class NativeFunctionBindings {
   // Store Functions
 
   /**
-   * Creates a WebAssembly store.
+   * Creates a new Wasmtime store.
    *
    * @param enginePtr pointer to the engine
-   * @param storePtr pointer to store the created store
-   * @return 0 on success, negative error code on failure
+   * @return memory segment pointer to the store, or null on failure
    */
-  public int storeCreate(final MemorySegment enginePtr, final MemorySegment storePtr) {
+  public MemorySegment storeCreate(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
-    validatePointer(storePtr, "storePtr");
-
-    return callNativeFunction("wasmtime4j_store_create", Integer.class, enginePtr, storePtr);
+    return callNativeFunction("wasmtime4j_store_create", MemorySegment.class, enginePtr);
   }
 
   /**
@@ -1710,12 +1707,12 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG)); // imports_count
 
     // Store functions
+    // Panama FFI binding: returns store pointer directly
     addFunctionBinding(
         "wasmtime4j_store_create",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS)); // store_ptr
+            ValueLayout.ADDRESS,      // return store*
+            ValueLayout.ADDRESS));    // engine_ptr
 
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
