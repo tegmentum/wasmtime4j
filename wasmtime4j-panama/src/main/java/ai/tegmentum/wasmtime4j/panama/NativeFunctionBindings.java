@@ -742,23 +742,17 @@ public final class NativeFunctionBindings {
   // Instance Functions
 
   /**
-   * Creates a WebAssembly instance.
+   * Creates a WebAssembly instance (Panama FFI).
    *
    * @param storePtr pointer to the store
    * @param modulePtr pointer to the module
-   * @param instancePtr pointer to store the created instance
-   * @return 0 on success, negative error code on failure
+   * @return memory segment pointer to the instance, or null on failure
    */
-  public int instanceCreate(
-      final MemorySegment storePtr,
-      final MemorySegment modulePtr,
-      final MemorySegment instancePtr) {
+  public MemorySegment instanceCreate(
+      final MemorySegment storePtr, final MemorySegment modulePtr) {
     validatePointer(storePtr, "storePtr");
     validatePointer(modulePtr, "modulePtr");
-    validatePointer(instancePtr, "instancePtr");
-
-    return callNativeFunction(
-        "wasmtime4j_instance_create", Integer.class, storePtr, modulePtr, instancePtr);
+    return callNativeFunction("wasmtime4j_instance_create", MemorySegment.class, storePtr, modulePtr);
   }
 
   /**
@@ -1830,14 +1824,13 @@ public final class NativeFunctionBindings {
         "wasmtime4j_store_validate",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
-    // Instance functions
+    // Instance functions - Panama FFI: return instance pointer directly
     addFunctionBinding(
         "wasmtime4j_instance_create",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS, // module_ptr
-            ValueLayout.ADDRESS)); // instance_ptr
+            ValueLayout.ADDRESS,      // return instance*
+            ValueLayout.ADDRESS,      // store_ptr
+            ValueLayout.ADDRESS));    // module_ptr
 
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));

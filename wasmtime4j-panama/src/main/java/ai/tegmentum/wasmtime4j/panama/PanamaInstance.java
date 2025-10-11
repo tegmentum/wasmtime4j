@@ -32,6 +32,8 @@ import java.util.logging.Logger;
  */
 public final class PanamaInstance implements Instance {
   private static final Logger LOGGER = Logger.getLogger(PanamaInstance.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   private final PanamaModule module;
   private final PanamaStore store;
@@ -52,16 +54,29 @@ public final class PanamaInstance implements Instance {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
+    if (!module.isValid()) {
+      throw new IllegalStateException("Module is not valid");
+    }
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
+    if (!store.isValid()) {
+      throw new IllegalStateException("Store is not valid");
+    }
+
     this.module = module;
     this.store = store;
     this.arena = Arena.ofConfined();
     this.createdAtMicros = System.currentTimeMillis() * 1000L;
 
-    // TODO: Create native instance via Panama FFI
-    this.nativeInstance = MemorySegment.NULL;
+    // Create native instance via Panama FFI
+    this.nativeInstance =
+        NATIVE_BINDINGS.instanceCreate(store.getNativeStore(), module.getNativeModule());
+
+    if (this.nativeInstance == null || this.nativeInstance.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to create native instance");
+    }
 
     LOGGER.fine("Created Panama instance");
   }
@@ -349,7 +364,10 @@ public final class PanamaInstance implements Instance {
 
     try {
       disposed.set(true);
-      // TODO: Destroy native instance
+      // Destroy native instance
+      if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.instanceDestroy(nativeInstance);
+      }
       arena.close();
       closed = true;
       LOGGER.fine("Closed Panama instance");

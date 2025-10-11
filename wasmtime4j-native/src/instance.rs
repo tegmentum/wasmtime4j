@@ -1711,6 +1711,15 @@ pub unsafe extern "C" fn wasmtime4j_instance_destroy(instance_ptr: *mut c_void) 
     }
 }
 
+/// Alias for wasmtime4j_instance_new_without_imports (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_create(
+    store_ptr: *mut c_void,
+    module_ptr: *const c_void,
+) -> *mut c_void {
+    wasmtime4j_instance_new_without_imports(store_ptr, module_ptr)
+}
+
 /// Check if instance has specific export
 ///
 /// # Safety
