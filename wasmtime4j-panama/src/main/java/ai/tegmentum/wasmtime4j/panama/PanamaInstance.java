@@ -149,7 +149,7 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    return Optional.of(new PanamaGlobal(globalPtr));
+    return Optional.of(new PanamaGlobal(globalPtr, store));
   }
 
   @Override

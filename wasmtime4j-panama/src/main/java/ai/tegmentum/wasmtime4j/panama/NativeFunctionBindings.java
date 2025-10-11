@@ -1301,6 +1301,91 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets the value of a WebAssembly global (Panama FFI version).
+   *
+   * @param globalPtr pointer to the global
+   * @param storePtr pointer to the store
+   * @param i32ValueOutPtr pointer to store i32 value
+   * @param i64ValueOutPtr pointer to store i64 value
+   * @param f32ValueOutPtr pointer to store f32 value
+   * @param f64ValueOutPtr pointer to store f64 value
+   * @param refIdPresentOutPtr pointer to store reference presence flag
+   * @param refIdOutPtr pointer to store reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaGlobalGet(
+      final MemorySegment globalPtr,
+      final MemorySegment storePtr,
+      final MemorySegment i32ValueOutPtr,
+      final MemorySegment i64ValueOutPtr,
+      final MemorySegment f32ValueOutPtr,
+      final MemorySegment f64ValueOutPtr,
+      final MemorySegment refIdPresentOutPtr,
+      final MemorySegment refIdOutPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(i32ValueOutPtr, "i32ValueOutPtr");
+    validatePointer(i64ValueOutPtr, "i64ValueOutPtr");
+    validatePointer(f32ValueOutPtr, "f32ValueOutPtr");
+    validatePointer(f64ValueOutPtr, "f64ValueOutPtr");
+    validatePointer(refIdPresentOutPtr, "refIdPresentOutPtr");
+    validatePointer(refIdOutPtr, "refIdOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_global_get",
+        Integer.class,
+        globalPtr,
+        storePtr,
+        i32ValueOutPtr,
+        i64ValueOutPtr,
+        f32ValueOutPtr,
+        f64ValueOutPtr,
+        refIdPresentOutPtr,
+        refIdOutPtr);
+  }
+
+  /**
+   * Sets the value of a WebAssembly global (Panama FFI version).
+   *
+   * @param globalPtr pointer to the global
+   * @param storePtr pointer to the store
+   * @param valueType the value type (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FuncRef, 6=ExternRef)
+   * @param i32Value i32 value
+   * @param i64Value i64 value
+   * @param f32Value f32 value
+   * @param f64Value f64 value
+   * @param refIdPresent reference presence flag
+   * @param refId reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaGlobalSet(
+      final MemorySegment globalPtr,
+      final MemorySegment storePtr,
+      final int valueType,
+      final int i32Value,
+      final long i64Value,
+      final double f32Value,
+      final double f64Value,
+      final int refIdPresent,
+      final long refId) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(storePtr, "storePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_global_set",
+        Integer.class,
+        globalPtr,
+        storePtr,
+        valueType,
+        i32Value,
+        i64Value,
+        f32Value,
+        f64Value,
+        refIdPresent,
+        refId);
+  }
+
+  /**
    * Gets type information for a WebAssembly global.
    *
    * @param globalPtr pointer to the global
@@ -2222,6 +2307,34 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_global_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
+
+    // Panama FFI global get/set functions
+    addFunctionBinding(
+        "wasmtime4j_panama_global_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // global_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // i32_value out
+            ValueLayout.ADDRESS, // i64_value out
+            ValueLayout.ADDRESS, // f32_value out
+            ValueLayout.ADDRESS, // f64_value out
+            ValueLayout.ADDRESS, // ref_id_present out
+            ValueLayout.ADDRESS)); // ref_id out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_global_set",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // global_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.JAVA_INT, // i32_value
+            ValueLayout.JAVA_LONG, // i64_value
+            ValueLayout.JAVA_DOUBLE, // f32_value
+            ValueLayout.JAVA_DOUBLE, // f64_value
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_global_get_type_info",
