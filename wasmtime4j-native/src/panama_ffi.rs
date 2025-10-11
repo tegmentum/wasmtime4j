@@ -1743,6 +1743,205 @@ pub mod memory {
         })
     }
 
+    /// Check if global export exists
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_has_global_export(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in global name".to_string(),
+                    })?
+            };
+
+            match crate::instance::core::get_exported_global(instance, store, name_str)? {
+                Some(_) => Ok(()),
+                None => Err(crate::error::WasmtimeError::ImportExport {
+                    message: format!("Global '{}' not found", name_str),
+                }),
+            }
+        })
+    }
+
+    /// Get value from global by looking up global fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_get_global_value(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        i32_out: *mut i32,
+        i64_out: *mut i64,
+        f32_out: *mut f64,
+        f64_out: *mut f64,
+        ref_id_present_out: *mut i32,
+        ref_id_out: *mut i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in global name".to_string(),
+                    })?
+            };
+
+            let global = crate::instance::core::get_exported_global(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Global '{}' not found", name_str),
+                })?;
+
+            store.with_context(|mut ctx| {
+                let value = global.get(&mut ctx);
+
+                // Initialize all outputs to 0
+                unsafe {
+                    if !i32_out.is_null() {
+                        *i32_out = 0;
+                    }
+                    if !i64_out.is_null() {
+                        *i64_out = 0;
+                    }
+                    if !f32_out.is_null() {
+                        *f32_out = 0.0;
+                    }
+                    if !f64_out.is_null() {
+                        *f64_out = 0.0;
+                    }
+                    if !ref_id_present_out.is_null() {
+                        *ref_id_present_out = 0;
+                    }
+                    if !ref_id_out.is_null() {
+                        *ref_id_out = 0;
+                    }
+
+                    // Set the appropriate output based on type
+                    match value {
+                        wasmtime::Val::I32(v) => {
+                            if !i32_out.is_null() {
+                                *i32_out = v;
+                            }
+                        }
+                        wasmtime::Val::I64(v) => {
+                            if !i64_out.is_null() {
+                                *i64_out = v;
+                            }
+                        }
+                        wasmtime::Val::F32(v) => {
+                            if !f32_out.is_null() {
+                                *f32_out = f32::from_bits(v) as f64;
+                            }
+                        }
+                        wasmtime::Val::F64(v) => {
+                            if !f64_out.is_null() {
+                                *f64_out = f64::from_bits(v);
+                            }
+                        }
+                        wasmtime::Val::FuncRef(maybe_func) => {
+                            if !ref_id_present_out.is_null() {
+                                *ref_id_present_out = if maybe_func.is_some() { 1 } else { 0 };
+                            }
+                        }
+                        wasmtime::Val::ExternRef(maybe_ref) => {
+                            if !ref_id_present_out.is_null() {
+                                *ref_id_present_out = if maybe_ref.is_some() { 1 } else { 0 };
+                            }
+                        }
+                        _ => {
+                            return Err(crate::error::WasmtimeError::Type {
+                                message: format!("Unsupported global value type: {:?}", value),
+                            });
+                        }
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Set value for global by looking up global fresh
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_set_global_value(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        value_type_code: i32,
+        i32_value: i32,
+        i64_value: i64,
+        f32_value: f64,
+        f64_value: f64,
+        ref_id_present: i32,
+        _ref_id: i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in global name".to_string(),
+                    })?
+            };
+
+            let global = crate::instance::core::get_exported_global(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Global '{}' not found", name_str),
+                })?;
+
+            let value = match value_type_code {
+                0 => wasmtime::Val::I32(i32_value),
+                1 => wasmtime::Val::I64(i64_value),
+                2 => wasmtime::Val::F32((f32_value as f32).to_bits()),
+                3 => wasmtime::Val::F64(f64_value.to_bits()),
+                5 => {
+                    // FuncRef
+                    if ref_id_present != 0 {
+                        return Err(crate::error::WasmtimeError::Type {
+                            message: "Setting funcref values not yet supported".to_string(),
+                        });
+                    }
+                    wasmtime::Val::FuncRef(None)
+                }
+                6 => {
+                    // ExternRef
+                    if ref_id_present != 0 {
+                        return Err(crate::error::WasmtimeError::Type {
+                            message: "Setting externref values not yet supported".to_string(),
+                        });
+                    }
+                    wasmtime::Val::ExternRef(None)
+                }
+                _ => {
+                    return Err(crate::error::WasmtimeError::Type {
+                        message: format!("Invalid value type code: {}", value_type_code),
+                    });
+                }
+            };
+
+            store.with_context(|mut ctx| {
+                global
+                    .set(&mut ctx, value)
+                    .map_err(|e| crate::error::WasmtimeError::Runtime {
+                        message: format!("Failed to set global value: {}", e),
+                        backtrace: None,
+                    })
+            })
+        })
+    }
+
     /// Read typed value from memory with alignment checking (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_memory_read_u32(

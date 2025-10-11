@@ -103,17 +103,19 @@ public final class GlobalRegistry implements AutoCloseable {
         throw new WasmException("Global name already registered: " + name);
       }
 
+      // TODO: Re-implement with fresh-lookup architecture
       // Register through native FFI
-      ArenaResourceManager.ManagedMemorySegment nameSegment = resourceManager.allocateString(name);
+      // ArenaResourceManager.ManagedMemorySegment nameSegment =
+      // resourceManager.allocateString(name);
 
-      int result =
-          nativeFunctions.globalRegisterShared(
-              global.getGlobalHandle(),
-              nameSegment.getSegment(),
-              registryResource.getNativePointer());
+      // int result =
+      //     nativeFunctions.globalRegisterShared(
+      //         global.getGlobalHandle(),
+      //         nameSegment.getSegment(),
+      //         registryResource.getNativePointer());
 
-      PanamaErrorHandler.safeCheckError(
-          result, "Global registration", "Failed to register global: " + name);
+      // PanamaErrorHandler.safeCheckError(
+      //     result, "Global registration", "Failed to register global: " + name);
 
       // Add to Java-side registry
       globalMap.put(name, global);

@@ -1063,6 +1063,108 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Checks if a global export exists in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return 0 if global exists, non-zero if not found or error
+   */
+  public int instanceHasGlobalExport(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_has_global_export", Integer.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets the value of a global by looking it up fresh from the instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param i32Out output for i32 value
+   * @param i64Out output for i64 value
+   * @param f32Out output for f32 value (as double)
+   * @param f64Out output for f64 value
+   * @param refIdPresentOut output for reference presence flag
+   * @param refIdOut output for reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetGlobalValue(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment i32Out,
+      final MemorySegment i64Out,
+      final MemorySegment f32Out,
+      final MemorySegment f64Out,
+      final MemorySegment refIdPresentOut,
+      final MemorySegment refIdOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_value",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        i32Out,
+        i64Out,
+        f32Out,
+        f64Out,
+        refIdPresentOut,
+        refIdOut);
+  }
+
+  /**
+   * Sets the value of a global by looking it up fresh from the instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param valueTypeCode type code (0=I32, 1=I64, 2=F32, 3=F64, 5=FuncRef, 6=ExternRef)
+   * @param i32Value i32 value
+   * @param i64Value i64 value
+   * @param f32Value f32 value (as double)
+   * @param f64Value f64 value
+   * @param refIdPresent reference presence flag
+   * @param refId reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceSetGlobalValue(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final int valueTypeCode,
+      final int i32Value,
+      final long i64Value,
+      final double f32Value,
+      final double f64Value,
+      final int refIdPresent,
+      final long refId) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_set_global_value",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        valueTypeCode,
+        i32Value,
+        i64Value,
+        f32Value,
+        f64Value,
+        refIdPresent,
+        refId);
+  }
+
+  /**
    * Gets a table export by name from an instance.
    *
    * @param instancePtr pointer to the instance
@@ -2465,6 +2567,43 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG, // offset
             ValueLayout.JAVA_LONG, // length
             ValueLayout.ADDRESS)); // buffer
+
+    addFunctionBinding(
+        "wasmtime4j_instance_has_global_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_value",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS, // i32_out
+            ValueLayout.ADDRESS, // i64_out
+            ValueLayout.ADDRESS, // f32_out
+            ValueLayout.ADDRESS, // f64_out
+            ValueLayout.ADDRESS, // ref_id_present_out
+            ValueLayout.ADDRESS)); // ref_id_out
+
+    addFunctionBinding(
+        "wasmtime4j_instance_set_global_value",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.JAVA_INT, // value_type_code
+            ValueLayout.JAVA_INT, // i32_value
+            ValueLayout.JAVA_LONG, // i64_value
+            ValueLayout.JAVA_DOUBLE, // f32_value
+            ValueLayout.JAVA_DOUBLE, // f64_value
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
 
     addFunctionBinding(
         "wasmtime4j_instance_get_table_by_name",
