@@ -274,7 +274,8 @@ public final class NativeFunctionBindings {
   public MemorySegment moduleCreateWat(final MemorySegment enginePtr, final MemorySegment watText) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(watText, "watText");
-    return callNativeFunction("wasmtime4j_module_create_wat", MemorySegment.class, enginePtr, watText);
+    return callNativeFunction(
+        "wasmtime4j_module_create_wat", MemorySegment.class, enginePtr, watText);
   }
 
   /**
@@ -366,6 +367,46 @@ public final class NativeFunctionBindings {
     validatePointer(importsPtr, "importsPtr");
     return callNativeFunction(
         "wasmtime4j_module_validate_imports", Integer.class, modulePtr, importsPtr, importsCount);
+  }
+
+  /**
+   * Gets the number of exports in a module.
+   *
+   * @param modulePtr pointer to the module
+   * @return the number of exports
+   */
+  public long moduleExportCount(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_module_export_count", Long.class, modulePtr);
+  }
+
+  /**
+   * Gets export names from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param namesOut pointer to array that will hold char* pointers
+   * @param maxCount maximum number of names to retrieve
+   * @return actual number of exports retrieved
+   */
+  public long moduleGetExportNames(
+      final MemorySegment modulePtr, final MemorySegment namesOut, final long maxCount) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(namesOut, "namesOut");
+    return callNativeFunction(
+        "wasmtime4j_module_get_export_names", Long.class, modulePtr, namesOut, maxCount);
+  }
+
+  /**
+   * Gets the kind of a specific export by name.
+   *
+   * @param modulePtr pointer to the module
+   * @param name pointer to null-terminated C string name
+   * @return 0=not found, 1=function, 2=global, 3=memory, 4=table
+   */
+  public int moduleGetExportKind(final MemorySegment modulePtr, final MemorySegment name) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(name, "name");
+    return callNativeFunction("wasmtime4j_module_get_export_kind", Integer.class, modulePtr, name);
   }
 
   // Store Functions
@@ -748,11 +789,11 @@ public final class NativeFunctionBindings {
    * @param modulePtr pointer to the module
    * @return memory segment pointer to the instance, or null on failure
    */
-  public MemorySegment instanceCreate(
-      final MemorySegment storePtr, final MemorySegment modulePtr) {
+  public MemorySegment instanceCreate(final MemorySegment storePtr, final MemorySegment modulePtr) {
     validatePointer(storePtr, "storePtr");
     validatePointer(modulePtr, "modulePtr");
-    return callNativeFunction("wasmtime4j_instance_create", MemorySegment.class, storePtr, modulePtr);
+    return callNativeFunction(
+        "wasmtime4j_instance_create", MemorySegment.class, storePtr, modulePtr);
   }
 
   /**
@@ -1313,6 +1354,17 @@ public final class NativeFunctionBindings {
     }
   }
 
+  /**
+   * Frees a C string allocated by Rust.
+   *
+   * @param stringPtr pointer to the C string to free
+   */
+  public void freeString(final MemorySegment stringPtr) {
+    if (stringPtr != null && !stringPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_free_string", Void.class, stringPtr);
+    }
+  }
+
   /** Clears any stored error state in the native library. */
   public void clearErrorState() {
     callNativeFunction("wasmtime4j_clear_error_state", Void.class);
@@ -1720,21 +1772,42 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasmtime4j_module_export_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_module_get_export_names",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return actual count
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // names_out (array of char*)
+            ValueLayout.JAVA_LONG)); // max_count
+
+    addFunctionBinding(
+        "wasmtime4j_module_get_export_kind",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return kind (0=not found, 1=function, etc)
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
     // Panama FFI bindings: return module pointer directly
     addFunctionBinding(
         "wasmtime4j_module_create",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS,      // return module*
-            ValueLayout.ADDRESS,      // engine_ptr
-            ValueLayout.ADDRESS,      // wasm_bytes
-            ValueLayout.JAVA_LONG));  // wasm_size
+            ValueLayout.ADDRESS, // return module*
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // wasm_bytes
+            ValueLayout.JAVA_LONG)); // wasm_size
 
     addFunctionBinding(
         "wasmtime4j_module_create_wat",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS,      // return module*
-            ValueLayout.ADDRESS,      // engine_ptr
-            ValueLayout.ADDRESS));    // wat_text (null-terminated string)
+            ValueLayout.ADDRESS, // return module*
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // wat_text (null-terminated string)
 
     // Module introspection functions
     addFunctionBinding(
@@ -1786,8 +1859,8 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_store_create",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS,      // return store*
-            ValueLayout.ADDRESS));    // engine_ptr
+            ValueLayout.ADDRESS, // return store*
+            ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -1863,9 +1936,9 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_instance_create",
         FunctionDescriptor.of(
-            ValueLayout.ADDRESS,      // return instance*
-            ValueLayout.ADDRESS,      // store_ptr
-            ValueLayout.ADDRESS));    // module_ptr
+            ValueLayout.ADDRESS, // return instance*
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -1873,14 +1946,14 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_instance_call_function",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG,       // return result count
-            ValueLayout.ADDRESS,         // instance_ptr
-            ValueLayout.ADDRESS,         // store_ptr
-            ValueLayout.ADDRESS,         // function_name (C string)
-            ValueLayout.ADDRESS,         // params_ptr (WasmValue array)
-            ValueLayout.JAVA_LONG,       // param_count
-            ValueLayout.ADDRESS,         // results_ptr (WasmValue array)
-            ValueLayout.JAVA_LONG));     // max_results
+            ValueLayout.JAVA_LONG, // return result count
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // function_name (C string)
+            ValueLayout.ADDRESS, // params_ptr (WasmValue array)
+            ValueLayout.JAVA_LONG, // param_count
+            ValueLayout.ADDRESS, // results_ptr (WasmValue array)
+            ValueLayout.JAVA_LONG)); // max_results
 
     addFunctionBinding(
         "wasmtime4j_instance_exports_len",
@@ -2119,6 +2192,10 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_free_error_message",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // message_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_free_string",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
 
     addFunctionBinding(
         "wasmtime4j_clear_error_state", FunctionDescriptor.ofVoid()); // no parameters

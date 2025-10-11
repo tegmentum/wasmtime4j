@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.FuncType;
+import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
@@ -15,6 +16,7 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -88,8 +90,22 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement function lookup
-    return Optional.empty();
+
+    // Check if the export exists and is a function
+    final int exportKind =
+        NATIVE_BINDINGS.moduleGetExportKind(
+            module.getNativeModule(),
+            arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+    if (exportKind != 1) {
+      return Optional.empty();
+    }
+
+    // TODO: Get the actual function type from the module
+    // For now, use a placeholder type - the actual signature will be validated at call time
+    final FunctionType functionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+    return Optional.of(new PanamaFunction(this, name, functionType));
   }
 
   @Override
@@ -98,7 +114,21 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Index cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement function lookup by index
+
+    // Get all export names and find the index-th function export
+    final String[] exportNames = getExportNames();
+    int functionIndex = 0;
+
+    for (final String exportName : exportNames) {
+      final Optional<WasmFunction> function = getFunction(exportName);
+      if (function.isPresent()) {
+        if (functionIndex == index) {
+          return function;
+        }
+        functionIndex++;
+      }
+    }
+
     return Optional.empty();
   }
 
@@ -172,14 +202,48 @@ public final class PanamaInstance implements Instance {
   @Override
   public String[] getExportNames() {
     ensureNotClosed();
-    // TODO: Implement export names extraction
-    return new String[0];
+
+    // Get the export count
+    final long exportCount = NATIVE_BINDINGS.moduleExportCount(module.getNativeModule());
+    if (exportCount <= 0) {
+      return new String[0];
+    }
+
+    try (final Arena exportArena = Arena.ofConfined()) {
+      // Allocate array of pointers to hold C string pointers
+      final MemorySegment namesArray = exportArena.allocate(ValueLayout.ADDRESS, (int) exportCount);
+
+      // Call native function to populate the array
+      final long actualCount =
+          NATIVE_BINDINGS.moduleGetExportNames(
+              module.getNativeModule(), namesArray, exportCount);
+
+      if (actualCount <= 0) {
+        return new String[0];
+      }
+
+      // Convert C strings to Java strings
+      final String[] exportNames = new String[(int) actualCount];
+      for (int i = 0; i < actualCount; i++) {
+        final MemorySegment cStringPtr = namesArray.getAtIndex(ValueLayout.ADDRESS, i);
+        if (cStringPtr != null && !cStringPtr.equals(MemorySegment.NULL)) {
+          // Reinterpret as unbounded segment to read null-terminated string
+          final MemorySegment unboundedPtr = cStringPtr.reinterpret(Long.MAX_VALUE);
+          exportNames[i] = unboundedPtr.getString(0);
+          // Free the C string allocated by Rust
+          NATIVE_BINDINGS.freeString(cStringPtr);
+        }
+      }
+
+      return exportNames;
+    }
   }
 
   @Override
   public List<ExportDescriptor> getExportDescriptors() {
     ensureNotClosed();
-    // TODO: Implement export descriptors
+    // TODO: Implement full export descriptors with proper type information
+    // This requires additional native functions to get type details
     return Collections.emptyList();
   }
 
@@ -189,7 +253,7 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement export descriptor lookup
+    // TODO: Implement export descriptor lookup with proper type information
     return Optional.empty();
   }
 
@@ -239,8 +303,15 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement export check
-    return false;
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      return exportKind > 0;
+    }
   }
 
   @Override
@@ -297,11 +368,6 @@ public final class PanamaInstance implements Instance {
               params != null ? params.length : 0,
               resultsSegment,
               maxResults);
-
-      // Note: resultCount of 0 could mean either error OR no return values
-      // The Rust FFI returns 0 on error, but also returns 0 for void functions
-      // For now, we assume 0 means no results (not an error)
-      // TODO: Improve error handling to distinguish between error and void functions
 
       if (resultCount < 0) {
         throw new WasmException("Failed to call function: " + functionName);
@@ -386,8 +452,8 @@ public final class PanamaInstance implements Instance {
   @Override
   public int getMetadataExportCount() {
     ensureNotClosed();
-    // TODO: Implement metadata export count
-    return 0;
+    final long count = NATIVE_BINDINGS.moduleExportCount(module.getNativeModule());
+    return (int) count;
   }
 
   @Override

@@ -74,7 +74,7 @@ public final class NativeLibraryLoader {
     }
 
     // Initialize symbol lookup using the loaded library path
-    // Use libraryLookup() with the path since the library was loaded via System.load()
+    // Use libraryLookup() with the path - this sees all symbols unlike loaderLookup()
     try {
       final java.nio.file.Path libraryPath = loadInfo.getExtractedPath();
       this.symbolLookup = SymbolLookup.libraryLookup(libraryPath, libraryArena);
@@ -162,25 +162,11 @@ public final class NativeLibraryLoader {
     }
 
     try {
-      // Try to find the symbol, first with the original name, then with platform-specific prefixes
+      // libraryLookup() handles platform-specific symbol naming internally
       Optional<MemorySegment> symbol = symbolLookup.find(functionName);
 
-      // On macOS, C symbols are prefixed with underscore
-      if (symbol.isEmpty() && System.getProperty("os.name").toLowerCase().contains("mac")) {
-        symbol = symbolLookup.find("_" + functionName);
-        if (symbol.isPresent()) {
-          LOGGER.fine("Found symbol with macOS underscore prefix: _" + functionName);
-        }
-      }
-
       if (symbol.isEmpty()) {
-        LOGGER.warning(
-            "Function symbol not found (tried: "
-                + functionName
-                + (System.getProperty("os.name").toLowerCase().contains("mac")
-                    ? ", _" + functionName
-                    : "")
-                + ")");
+        LOGGER.warning("Function symbol not found: " + functionName);
         return Optional.empty();
       }
 

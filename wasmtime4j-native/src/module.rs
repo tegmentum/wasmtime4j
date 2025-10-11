@@ -399,7 +399,6 @@ impl ModuleMetadata {
         // Extract exports
         for export in module.exports() {
             let export_type = convert_export_type(export.ty())?;
-            eprintln!("DEBUG: Export '{}' type: {:?}", export.name(), export.ty());
             exports.push(ExportInfo {
                 name: export.name().to_string(),
                 export_type,
@@ -524,8 +523,6 @@ fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> 
     let returns = func_type.results()
         .map(|vt| convert_val_type(vt))
         .collect::<Result<Vec<_>, _>>()?;
-
-    eprintln!("DEBUG: Function signature - {} params, {} returns", params.len(), returns.len());
 
     Ok(FunctionSignature { params, returns })
 }
@@ -1096,5 +1093,91 @@ pub unsafe extern "C" fn wasmtime4j_module_size_bytes(module_ptr: *const c_void)
     match ffi_core::get_module_ref(module_ptr) {
         Ok(module) => core::get_metadata(module).size_bytes,
         Err(_) => 0,
+    }
+}
+/// Get export names from a module
+///
+/// # Safety
+///
+/// module_ptr must be a valid pointer from wasmtime4j_module_compile
+/// names_out must point to a buffer large enough to hold all export names
+/// Returns the number of exports, or 0 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_get_export_names(
+    module_ptr: *const c_void,
+    names_out: *mut *mut c_char,
+    max_count: usize,
+) -> usize {
+    if module_ptr.is_null() || names_out.is_null() {
+        return 0;
+    }
+
+    match ffi_core::get_module_ref(module_ptr) {
+        Ok(module) => {
+            let exports = &core::get_metadata(module).exports;
+            let count = exports.len().min(max_count);
+
+            for (i, export) in exports.iter().take(count).enumerate() {
+                // Allocate C string for export name
+                let c_str = match std::ffi::CString::new(export.name.clone()) {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+                // Write pointer to output array
+                let ptr = c_str.into_raw();
+                std::ptr::write(names_out.add(i), ptr);
+            }
+
+            count
+        }
+        Err(_) => 0,
+    }
+}
+
+/// Get export information for a specific export by name
+///
+/// # Safety
+///
+/// module_ptr must be a valid pointer
+/// name must be a valid C string
+/// Returns 0=not found, 1=function, 2=global, 3=memory, 4=table
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_get_export_kind(
+    module_ptr: *const c_void,
+    name: *const c_char,
+) -> i32 {
+    if module_ptr.is_null() || name.is_null() {
+        return 0;
+    }
+
+    match (ffi_core::get_module_ref(module_ptr), std::ffi::CStr::from_ptr(name).to_str()) {
+        (Ok(module), Ok(name_str)) => {
+            let exports = &core::get_metadata(module).exports;
+            for export in exports {
+                if export.name == name_str {
+                    return match export.export_type {
+                        ExportKind::Function(_) => 1,
+                        ExportKind::Global(_, _) => 2,
+                        ExportKind::Memory(_, _, _) => 3,
+                        ExportKind::Table(_, _, _) => 4,
+                    };
+                }
+            }
+            0 // Not found
+        }
+        _ => 0,
+    }
+}
+
+/// Free a C string allocated by Rust
+///
+/// # Safety
+///
+/// ptr must be a valid pointer to a C string allocated by CString::into_raw
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_free_string(ptr: *mut c_char) {
+    if !ptr.is_null() {
+        // Reconstruct CString from raw pointer and drop it
+        let _ = std::ffi::CString::from_raw(ptr);
     }
 }

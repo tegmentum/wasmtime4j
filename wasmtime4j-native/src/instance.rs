@@ -158,7 +158,6 @@ impl Instance {
         
         // Create instance with defensive error handling
         // CRITICAL: Use direct Store access with ReentrantMutex for reentrant access
-        eprintln!("DEBUG: Creating instance on thread: {:?}", std::thread::current().id());
         let mut store_guard = store.lock_store();
 
         let instance = WasmtimeInstance::new(&mut *store_guard, module.inner(), imports)
@@ -358,8 +357,6 @@ impl Instance {
         name: &str,
         params: &[WasmValue],
     ) -> WasmtimeResult<ExecutionResult> {
-        eprintln!("DEBUG: Re-instantiating module for function call");
-
         // Create a fresh instance in this store context
         let mut wasm_params_converted = Vec::new();
         for param in params {
@@ -394,13 +391,11 @@ impl Instance {
                         results.push(default_val);
                     }
 
-                    eprintln!("DEBUG: Calling fresh instance with {} params", wasm_params_converted.len());
                     func.call(&mut ctx, &wasm_params_converted, &mut results)
                         .map_err(|e| WasmtimeError::Runtime {
                             message: e.to_string(),
                             backtrace: None
                         })?;
-                    eprintln!("DEBUG: Fresh instance call SUCCESS!");
                     Ok(results)
                 },
                 _ => Err(WasmtimeError::Function {
@@ -482,7 +477,6 @@ impl Instance {
         }
         
         // Get function and execute with timing
-        eprintln!("DEBUG: Calling function on thread: {:?}", std::thread::current().id());
         let start_time = Instant::now();
         let instance = self.inner.lock();
 
@@ -493,20 +487,15 @@ impl Instance {
         // This allows same-thread reentrant access needed by Wasmtime during function execution
         let mut store_guard = store.lock_store();
 
-        eprintln!("DEBUG: Getting export '{}' from instance", name);
         let export = instance.get_export(&mut *store_guard, name)
             .ok_or_else(|| WasmtimeError::ImportExport {
                 message: format!("Export '{}' not found", name),
             })?;
-        eprintln!("DEBUG: Got export, type: {:?}", export);
 
         let result = match export {
             Extern::Func(func) => {
                 // Get function type to determine result types
                 let func_type = func.ty(&*store_guard);
-                eprintln!("DEBUG: Function type - params: {:?}, results: {:?}",
-                    func_type.params().collect::<Vec<_>>(),
-                    func_type.results().collect::<Vec<_>>());
 
                 // Pre-allocate results with correct types
                 let mut results = Vec::with_capacity(func_type.results().len());
@@ -522,24 +511,16 @@ impl Instance {
                     results.push(default_val);
                 }
 
-                eprintln!("DEBUG: About to call func.call() with {} params and {} result slots",
-                    wasm_params.len(), results.len());
-                eprintln!("DEBUG: Params: {:?}", wasm_params);
-                eprintln!("DEBUG: Results (pre-call): {:?}", results);
-
                 // Try using typed function for no-param i32 return case
                 if wasm_params.is_empty() && results.len() == 1 {
                     if let Val::I32(_) = results[0] {
-                        eprintln!("DEBUG: Using typed function for () -> i32");
                         match func.typed::<(), i32>(&*store_guard) {
                             Ok(typed_func) => {
                                 match typed_func.call(&mut *store_guard, ()) {
                                     Ok(result) => {
-                                        eprintln!("DEBUG: Typed call SUCCESS! Result: {}", result);
                                         Ok(vec![Val::I32(result)])
                                     },
                                     Err(e) => {
-                                        eprintln!("DEBUG: Typed call FAILED: {:?}", e);
                                         Err(WasmtimeError::Runtime {
                                             message: e.to_string(),
                                             backtrace: None
@@ -547,16 +528,13 @@ impl Instance {
                                     }
                                 }
                             },
-                            Err(e) => {
-                                eprintln!("DEBUG: Failed to create typed func: {:?}", e);
+                            Err(_e) => {
                                 // Fall through to untyped call
                                 match func.call(&mut *store_guard, &wasm_params, &mut results) {
                                     Ok(_) => {
-                                        eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
                                         Ok(results)
                                     },
                                     Err(e) => {
-                                        eprintln!("DEBUG: func.call() FAILED: {:?}", e);
                                         Err(WasmtimeError::Runtime {
                                             message: e.to_string(),
                                             backtrace: None
@@ -568,11 +546,9 @@ impl Instance {
                     } else {
                         match func.call(&mut *store_guard, &wasm_params, &mut results) {
                             Ok(_) => {
-                                eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
                                 Ok(results)
                             },
                             Err(e) => {
-                                eprintln!("DEBUG: func.call() FAILED: {:?}", e);
                                 Err(WasmtimeError::Runtime {
                                     message: e.to_string(),
                                     backtrace: None
@@ -583,11 +559,9 @@ impl Instance {
                 } else {
                     match func.call(&mut *store_guard, &wasm_params, &mut results) {
                         Ok(_) => {
-                            eprintln!("DEBUG: func.call() SUCCESS! Results: {:?}", results);
                             Ok(results)
                         },
                         Err(e) => {
-                            eprintln!("DEBUG: func.call() FAILED: {:?}", e);
 
                             // Note: Cannot extract WasmBacktrace as it doesn't implement Clone
                             // The backtrace is already included in e.to_string()
@@ -1895,7 +1869,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_metadata_export_count(instance_ptr:
 /// All pointers must be valid, params must point to WasmValue array of size param_count
 /// Results buffer must have space for at least max_results WasmValues
 ///
-/// Returns number of actual results (0 on error), fills results_ptr with return values
+/// Returns number of actual results (>= 0), or -1 on error. Fills results_ptr with return values
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_call_function(
     instance_ptr: *mut c_void,
@@ -1905,9 +1879,9 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
     param_count: usize,
     results_ptr: *mut c_void,
     max_results: usize,
-) -> usize {
+) -> isize {
     if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
-        return 0;
+        return -1;
     }
 
     match (
@@ -1917,9 +1891,45 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
     ) {
         (Ok(instance), Ok(store), Ok(name_str)) => {
             // Convert parameters from FFI WasmValue array
+            // Layout: tag (4 bytes) + value (16 bytes max) = 20 bytes per WasmValue
             let params: Vec<WasmValue> = if param_count > 0 && !params_ptr.is_null() {
-                std::slice::from_raw_parts(params_ptr as *const WasmValue, param_count)
-                    .to_vec()
+                let mut result = Vec::with_capacity(param_count);
+                let base_ptr = params_ptr as *const u8;
+
+                for i in 0..param_count {
+                    let offset = i * 20;
+                    let tag = std::ptr::read(base_ptr.add(offset) as *const i32);
+
+                    let value = match tag {
+                        0 => { // I32
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i32);
+                            WasmValue::I32(val)
+                        }
+                        1 => { // I64
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::I64(val)
+                        }
+                        2 => { // F32
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const f32);
+                            WasmValue::F32(val)
+                        }
+                        3 => { // F64
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const f64);
+                            WasmValue::F64(val)
+                        }
+                        4 => { // V128
+                            let mut bytes = [0u8; 16];
+                            std::ptr::copy_nonoverlapping(base_ptr.add(offset + 4), bytes.as_mut_ptr(), 16);
+                            WasmValue::V128(bytes)
+                        }
+                        _ => {
+                            // Invalid tag - return error
+                            return 0;
+                        }
+                    };
+                    result.push(value);
+                }
+                result
             } else {
                 Vec::new()
             };
@@ -1976,11 +1986,11 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
                         }
                     }
 
-                    actual_count
+                    actual_count as isize
                 },
-                Err(_) => 0,
+                Err(_) => -1,
             }
         },
-        _ => 0,
+        _ => -1,
     }
 }

@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
 import java.util.logging.Logger;
 
 /**
@@ -16,30 +14,34 @@ import java.util.logging.Logger;
 public final class PanamaFunction implements WasmFunction {
   private static final Logger LOGGER = Logger.getLogger(PanamaFunction.class.getName());
 
-  private final Arena arena;
-  private final MemorySegment nativeFunction;
+  private final PanamaInstance instance;
   private final FunctionType functionType;
   private final String name;
   private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama function.
+   * Creates a new Panama function that delegates to an instance.
    *
+   * @param instance the instance containing this function
+   * @param name the function name
    * @param functionType the function type signature
-   * @param name the function name (may be null)
    */
-  public PanamaFunction(final FunctionType functionType, final String name) {
+  public PanamaFunction(
+      final PanamaInstance instance, final String name, final FunctionType functionType) {
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
     if (functionType == null) {
       throw new IllegalArgumentException("Function type cannot be null");
     }
+    this.instance = instance;
     this.functionType = functionType;
     this.name = name;
-    this.arena = Arena.ofShared();
 
-    // TODO: Create native function via Panama FFI
-    this.nativeFunction = MemorySegment.NULL;
-
-    LOGGER.fine("Created Panama function");
+    LOGGER.fine("Created Panama function: " + name);
   }
 
   @Override
@@ -48,8 +50,8 @@ public final class PanamaFunction implements WasmFunction {
       throw new IllegalArgumentException("Parameters cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement function call
-    throw new UnsupportedOperationException("Function call not yet implemented");
+    // Delegate to the instance's callFunction method
+    return instance.callFunction(name, params);
   }
 
   @Override
@@ -69,22 +71,11 @@ public final class PanamaFunction implements WasmFunction {
     }
 
     try {
-      // TODO: Destroy native function
-      arena.close();
       closed = true;
-      LOGGER.fine("Closed Panama function");
+      LOGGER.fine("Closed Panama function: " + name);
     } catch (final Exception e) {
       LOGGER.warning("Error closing function: " + e.getMessage());
     }
-  }
-
-  /**
-   * Gets the native function pointer.
-   *
-   * @return native function segment
-   */
-  public MemorySegment getNativeFunction() {
-    return nativeFunction;
   }
 
   /**
