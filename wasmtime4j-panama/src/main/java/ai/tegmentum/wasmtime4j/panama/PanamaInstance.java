@@ -502,6 +502,86 @@ public final class PanamaInstance implements Instance {
     return Collections.unmodifiableMap(exports);
   }
 
+  /**
+   * Gets all exported function names.
+   *
+   * @return list of exported function names
+   */
+  public List<String> getFunctionNames() {
+    ensureNotClosed();
+    final List<String> functionNames = new java.util.ArrayList<>();
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmFunction> function = getFunction(name);
+      if (function.isPresent()) {
+        functionNames.add(name);
+      }
+    }
+
+    return Collections.unmodifiableList(functionNames);
+  }
+
+  /**
+   * Gets all exported memory names.
+   *
+   * @return list of exported memory names
+   */
+  public List<String> getMemoryNames() {
+    ensureNotClosed();
+    final List<String> memoryNames = new java.util.ArrayList<>();
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmMemory> memory = getMemory(name);
+      if (memory.isPresent()) {
+        memoryNames.add(name);
+      }
+    }
+
+    return Collections.unmodifiableList(memoryNames);
+  }
+
+  /**
+   * Gets all exported table names.
+   *
+   * @return list of exported table names
+   */
+  public List<String> getTableNames() {
+    ensureNotClosed();
+    final List<String> tableNames = new java.util.ArrayList<>();
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmTable> table = getTable(name);
+      if (table.isPresent()) {
+        tableNames.add(name);
+      }
+    }
+
+    return Collections.unmodifiableList(tableNames);
+  }
+
+  /**
+   * Gets all exported global names.
+   *
+   * @return list of exported global names
+   */
+  public List<String> getGlobalNames() {
+    ensureNotClosed();
+    final List<String> globalNames = new java.util.ArrayList<>();
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      final Optional<WasmGlobal> global = getGlobal(name);
+      if (global.isPresent()) {
+        globalNames.add(name);
+      }
+    }
+
+    return Collections.unmodifiableList(globalNames);
+  }
+
   @Override
   public void setImports(final Map<String, Object> imports) throws WasmException {
     if (imports == null) {

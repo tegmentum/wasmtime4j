@@ -322,4 +322,114 @@ final class PanamaInstanceExportRetrievalTest {
         () -> instance.getAllExports(),
         "Getting all exports from closed instance should throw");
   }
+
+  @Test
+  void testGetFunctionNames() {
+    final java.util.List<String> functionNames = instance.getFunctionNames();
+    assertNotNull(functionNames, "Function names list should not be null");
+    assertFalse(functionNames.isEmpty(), "Function names list should not be empty");
+    assertTrue(functionNames.contains("test"), "Should have 'test' function");
+    assertEquals(1, functionNames.size(), "Should have exactly 1 function");
+  }
+
+  @Test
+  void testGetMemoryNames() {
+    final java.util.List<String> memoryNames = instance.getMemoryNames();
+    assertNotNull(memoryNames, "Memory names list should not be null");
+    assertFalse(memoryNames.isEmpty(), "Memory names list should not be empty");
+    assertTrue(memoryNames.contains("memory"), "Should have 'memory' export");
+    assertEquals(1, memoryNames.size(), "Should have exactly 1 memory");
+  }
+
+  @Test
+  void testGetTableNames() {
+    final java.util.List<String> tableNames = instance.getTableNames();
+    assertNotNull(tableNames, "Table names list should not be null");
+    assertFalse(tableNames.isEmpty(), "Table names list should not be empty");
+    assertTrue(tableNames.contains("table"), "Should have 'table' export");
+    assertEquals(1, tableNames.size(), "Should have exactly 1 table");
+  }
+
+  @Test
+  void testGetGlobalNames() {
+    final java.util.List<String> globalNames = instance.getGlobalNames();
+    assertNotNull(globalNames, "Global names list should not be null");
+    assertFalse(globalNames.isEmpty(), "Global names list should not be empty");
+    assertTrue(globalNames.contains("g_i32"), "Should have 'g_i32' global");
+    assertTrue(globalNames.contains("g_i64"), "Should have 'g_i64' global");
+    assertTrue(globalNames.contains("g_f32"), "Should have 'g_f32' global");
+    assertEquals(3, globalNames.size(), "Should have exactly 3 globals");
+  }
+
+  @Test
+  void testGetFunctionNamesIsUnmodifiable() {
+    final java.util.List<String> functionNames = instance.getFunctionNames();
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> functionNames.add("new_function"),
+        "Function names list should be unmodifiable");
+  }
+
+  @Test
+  void testGetMemoryNamesIsUnmodifiable() {
+    final java.util.List<String> memoryNames = instance.getMemoryNames();
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> memoryNames.add("new_memory"),
+        "Memory names list should be unmodifiable");
+  }
+
+  @Test
+  void testGetTableNamesIsUnmodifiable() {
+    final java.util.List<String> tableNames = instance.getTableNames();
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> tableNames.add("new_table"),
+        "Table names list should be unmodifiable");
+  }
+
+  @Test
+  void testGetGlobalNamesIsUnmodifiable() {
+    final java.util.List<String> globalNames = instance.getGlobalNames();
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> globalNames.add("new_global"),
+        "Global names list should be unmodifiable");
+  }
+
+  @Test
+  void testGetFunctionNamesWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getFunctionNames(),
+        "Getting function names from closed instance should throw");
+  }
+
+  @Test
+  void testGetMemoryNamesWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getMemoryNames(),
+        "Getting memory names from closed instance should throw");
+  }
+
+  @Test
+  void testGetTableNamesWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getTableNames(),
+        "Getting table names from closed instance should throw");
+  }
+
+  @Test
+  void testGetGlobalNamesWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getGlobalNames(),
+        "Getting global names from closed instance should throw");
+  }
 }
