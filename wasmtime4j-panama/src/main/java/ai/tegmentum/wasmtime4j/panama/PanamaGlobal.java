@@ -46,6 +46,23 @@ public final class PanamaGlobal implements WasmGlobal {
     LOGGER.fine("Created Panama global");
   }
 
+  /**
+   * Package-private constructor for wrapping an existing native global pointer.
+   *
+   * @param nativeGlobal the native global pointer from Wasmtime
+   */
+  PanamaGlobal(final MemorySegment nativeGlobal) {
+    if (nativeGlobal == null || nativeGlobal.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native global pointer cannot be null");
+    }
+    this.arena = Arena.ofShared();
+    this.nativeGlobal = nativeGlobal;
+    // Type and mutability will be determined when needed (TODO: may need to query from native)
+    this.type = WasmValueType.I32;
+    this.mutable = true;
+    LOGGER.fine("Wrapped native global pointer");
+  }
+
   @Override
   public WasmValue get() {
     ensureNotClosed();

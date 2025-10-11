@@ -1994,3 +1994,87 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
         _ => -1,
     }
 }
+
+/// Get exported memory by name
+/// Returns memory handle or null if not found
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name_str = match std::ffi::CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+        (Ok(instance), Ok(store)) => {
+            match core::get_exported_memory(instance, store, name_str) {
+                Ok(Some(memory)) => Box::into_raw(Box::new(memory)) as *mut c_void,
+                _ => std::ptr::null_mut(),
+            }
+        }
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Get exported table by name
+/// Returns table handle or null if not found
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_get_table_by_name(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name_str = match std::ffi::CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+        (Ok(instance), Ok(store)) => {
+            match core::get_exported_table(instance, store, name_str) {
+                Ok(Some(table)) => Box::into_raw(Box::new(table)) as *mut c_void,
+                _ => std::ptr::null_mut(),
+            }
+        }
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Get exported global by name
+/// Returns global handle or null if not found
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_get_global_by_name(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name_str = match std::ffi::CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+        (Ok(instance), Ok(store)) => {
+            match core::get_exported_global(instance, store, name_str) {
+                Ok(Some(global)) => Box::into_raw(Box::new(global)) as *mut c_void,
+                _ => std::ptr::null_mut(),
+            }
+        }
+        _ => std::ptr::null_mut(),
+    }
+}

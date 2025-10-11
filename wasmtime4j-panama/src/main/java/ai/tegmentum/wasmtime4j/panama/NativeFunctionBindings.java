@@ -879,6 +879,57 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets a memory export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @return memory segment pointer or null if not found
+   */
+  public MemorySegment instanceGetMemoryByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets a table export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the table export
+   * @return table segment pointer or null if not found
+   */
+  public MemorySegment instanceGetTableByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_table_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets a global export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return global segment pointer or null if not found
+   */
+  public MemorySegment instanceGetGlobalByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
    * Gets a cached method handle for a native function.
    *
    * @param functionName the name of the function
@@ -1970,6 +2021,31 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // name_out_ptr
             ValueLayout.ADDRESS)); // export_out_ptr
 
+    // Instance export retrieval functions
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return memory* or null
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_table_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return table* or null
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return global* or null
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
     // Table functions
     addFunctionBinding(
         "wasmtime4j_table_size",
@@ -2194,8 +2270,7 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // message_ptr
 
     addFunctionBinding(
-        "wasmtime4j_free_string",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
+        "wasmtime4j_free_string", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
 
     addFunctionBinding(
         "wasmtime4j_clear_error_state", FunctionDescriptor.ofVoid()); // no parameters

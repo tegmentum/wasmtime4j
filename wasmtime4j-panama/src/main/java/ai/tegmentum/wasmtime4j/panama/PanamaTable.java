@@ -42,6 +42,22 @@ public final class PanamaTable implements WasmTable {
     LOGGER.fine("Created Panama table");
   }
 
+  /**
+   * Package-private constructor for wrapping an existing native table pointer.
+   *
+   * @param nativeTable the native table pointer from Wasmtime
+   */
+  PanamaTable(final MemorySegment nativeTable) {
+    if (nativeTable == null || nativeTable.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native table pointer cannot be null");
+    }
+    this.arena = Arena.ofShared();
+    this.nativeTable = nativeTable;
+    // Element type will be determined when needed (TODO: may need to query from native)
+    this.elementType = WasmValueType.FUNCREF;
+    LOGGER.fine("Wrapped native table pointer");
+  }
+
   @Override
   public int getSize() {
     ensureNotClosed();

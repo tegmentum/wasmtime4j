@@ -138,8 +138,18 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement global lookup
-    return Optional.empty();
+
+    final MemorySegment nameSegment =
+        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+    final MemorySegment globalPtr =
+        NATIVE_BINDINGS.instanceGetGlobalByName(
+            nativeInstance, store.getNativeStore(), nameSegment);
+
+    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new PanamaGlobal(globalPtr));
   }
 
   @Override
@@ -148,7 +158,20 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Index cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement global lookup by index
+
+    // Iterate through exports and find the nth global
+    final String[] exportNames = getExportNames();
+    int globalCount = 0;
+    for (final String name : exportNames) {
+      final Optional<WasmGlobal> global = getGlobal(name);
+      if (global.isPresent()) {
+        if (globalCount == index) {
+          return global;
+        }
+        globalCount++;
+      }
+    }
+
     return Optional.empty();
   }
 
@@ -158,8 +181,18 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement memory lookup
-    return Optional.empty();
+
+    final MemorySegment nameSegment =
+        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+    final MemorySegment memoryPtr =
+        NATIVE_BINDINGS.instanceGetMemoryByName(
+            nativeInstance, store.getNativeStore(), nameSegment);
+
+    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new PanamaMemory(memoryPtr));
   }
 
   @Override
@@ -168,7 +201,20 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Index cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement memory lookup by index
+
+    // Iterate through exports and find the nth memory
+    final String[] exportNames = getExportNames();
+    int memoryCount = 0;
+    for (final String name : exportNames) {
+      final Optional<WasmMemory> memory = getMemory(name);
+      if (memory.isPresent()) {
+        if (memoryCount == index) {
+          return memory;
+        }
+        memoryCount++;
+      }
+    }
+
     return Optional.empty();
   }
 
@@ -178,8 +224,17 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement table lookup
-    return Optional.empty();
+
+    final MemorySegment nameSegment =
+        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+    final MemorySegment tablePtr =
+        NATIVE_BINDINGS.instanceGetTableByName(nativeInstance, store.getNativeStore(), nameSegment);
+
+    if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new PanamaTable(tablePtr));
   }
 
   @Override
@@ -188,14 +243,43 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Index cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement table lookup by index
+
+    // Iterate through exports and find the nth table
+    final String[] exportNames = getExportNames();
+    int tableCount = 0;
+    for (final String name : exportNames) {
+      final Optional<WasmTable> table = getTable(name);
+      if (table.isPresent()) {
+        if (tableCount == index) {
+          return table;
+        }
+        tableCount++;
+      }
+    }
+
     return Optional.empty();
   }
 
   @Override
   public Optional<WasmMemory> getDefaultMemory() {
     ensureNotClosed();
-    // TODO: Implement default memory lookup
+
+    // First, try to get memory named "memory" (most common convention)
+    final Optional<WasmMemory> namedMemory = getMemory("memory");
+    if (namedMemory.isPresent()) {
+      return namedMemory;
+    }
+
+    // If not found, try to get the first memory export
+    final String[] exportNames = getExportNames();
+    for (final String exportName : exportNames) {
+      final Optional<WasmMemory> memory = getMemory(exportName);
+      if (memory.isPresent()) {
+        return memory;
+      }
+    }
+
+    // No memory exports found
     return Optional.empty();
   }
 
@@ -215,8 +299,7 @@ public final class PanamaInstance implements Instance {
 
       // Call native function to populate the array
       final long actualCount =
-          NATIVE_BINDINGS.moduleGetExportNames(
-              module.getNativeModule(), namesArray, exportCount);
+          NATIVE_BINDINGS.moduleGetExportNames(module.getNativeModule(), namesArray, exportCount);
 
       if (actualCount <= 0) {
         return new String[0];

@@ -37,6 +37,20 @@ public final class PanamaMemory implements WasmMemory {
     LOGGER.fine("Created Panama memory");
   }
 
+  /**
+   * Package-private constructor for wrapping an existing native memory pointer.
+   *
+   * @param nativeMemory the native memory pointer from Wasmtime
+   */
+  PanamaMemory(final MemorySegment nativeMemory) {
+    if (nativeMemory == null || nativeMemory.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native memory pointer cannot be null");
+    }
+    this.arena = Arena.ofShared();
+    this.nativeMemory = nativeMemory;
+    LOGGER.fine("Wrapped native memory pointer");
+  }
+
   @Override
   public int getSize() {
     ensureNotClosed();
