@@ -469,8 +469,37 @@ public final class PanamaInstance implements Instance {
   @Override
   public Map<String, Object> getAllExports() {
     ensureNotClosed();
-    // TODO: Implement export map
-    return Collections.emptyMap();
+
+    final Map<String, Object> exports = new java.util.HashMap<>();
+    final String[] exportNames = getExportNames();
+
+    for (final String name : exportNames) {
+      // Try each export type
+      final Optional<WasmFunction> function = getFunction(name);
+      if (function.isPresent()) {
+        exports.put(name, function.get());
+        continue;
+      }
+
+      final Optional<WasmMemory> memory = getMemory(name);
+      if (memory.isPresent()) {
+        exports.put(name, memory.get());
+        continue;
+      }
+
+      final Optional<WasmTable> table = getTable(name);
+      if (table.isPresent()) {
+        exports.put(name, table.get());
+        continue;
+      }
+
+      final Optional<WasmGlobal> global = getGlobal(name);
+      if (global.isPresent()) {
+        exports.put(name, global.get());
+      }
+    }
+
+    return Collections.unmodifiableMap(exports);
   }
 
   @Override

@@ -281,4 +281,45 @@ final class PanamaInstanceExportRetrievalTest {
         () -> instance.getGlobal("g_i32"),
         "Getting global from closed instance should throw");
   }
+
+  @Test
+  void testGetAllExports() {
+    final java.util.Map<String, Object> exports = instance.getAllExports();
+    assertNotNull(exports, "Exports map should not be null");
+    assertFalse(exports.isEmpty(), "Exports map should not be empty");
+
+    // Verify we have all expected exports
+    assertTrue(exports.containsKey("memory"), "Should have memory export");
+    assertTrue(exports.containsKey("table"), "Should have table export");
+    assertTrue(exports.containsKey("test"), "Should have test function export");
+    assertTrue(exports.containsKey("g_i32"), "Should have g_i32 global export");
+    assertTrue(exports.containsKey("g_i64"), "Should have g_i64 global export");
+    assertTrue(exports.containsKey("g_f32"), "Should have g_f32 global export");
+
+    // Verify types
+    assertTrue(exports.get("memory") instanceof WasmMemory, "memory should be WasmMemory");
+    assertTrue(exports.get("table") instanceof WasmTable, "table should be WasmTable");
+    assertTrue(exports.get("test") instanceof WasmFunction, "test should be WasmFunction");
+    assertTrue(exports.get("g_i32") instanceof WasmGlobal, "g_i32 should be WasmGlobal");
+    assertTrue(exports.get("g_i64") instanceof WasmGlobal, "g_i64 should be WasmGlobal");
+    assertTrue(exports.get("g_f32") instanceof WasmGlobal, "g_f32 should be WasmGlobal");
+  }
+
+  @Test
+  void testGetAllExportsIsUnmodifiable() {
+    final java.util.Map<String, Object> exports = instance.getAllExports();
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> exports.put("new_export", new Object()),
+        "Exports map should be unmodifiable");
+  }
+
+  @Test
+  void testGetAllExportsWhenClosed() {
+    instance.close();
+    assertThrows(
+        IllegalStateException.class,
+        () -> instance.getAllExports(),
+        "Getting all exports from closed instance should throw");
+  }
 }
