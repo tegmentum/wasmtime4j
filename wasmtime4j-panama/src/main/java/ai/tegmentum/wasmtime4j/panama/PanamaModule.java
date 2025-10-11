@@ -31,6 +31,8 @@ import java.util.logging.Logger;
  */
 public final class PanamaModule implements Module {
   private static final Logger LOGGER = Logger.getLogger(PanamaModule.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   private final PanamaEngine engine;
   private final Arena arena;
@@ -49,15 +51,29 @@ public final class PanamaModule implements Module {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
     if (wasmBytes == null || wasmBytes.length == 0) {
       throw new IllegalArgumentException("WASM bytes cannot be null or empty");
     }
+
     this.engine = engine;
     this.wasmBytes = wasmBytes.clone();
     this.arena = Arena.ofShared();
 
-    // TODO: Create native module via Panama FFI
-    this.nativeModule = MemorySegment.NULL;
+    // Allocate native memory for WASM bytes
+    final MemorySegment bytesSegment = arena.allocate(wasmBytes.length);
+    bytesSegment.copyFrom(MemorySegment.ofArray(wasmBytes));
+
+    // Create native module via Panama FFI
+    this.nativeModule =
+        NATIVE_BINDINGS.moduleCreate(engine.getNativeEngine(), bytesSegment, wasmBytes.length);
+
+    if (this.nativeModule == null || this.nativeModule.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to compile WASM module");
+    }
 
     LOGGER.fine("Created Panama module");
   }
@@ -265,7 +281,10 @@ public final class PanamaModule implements Module {
     }
 
     try {
-      // TODO: Destroy native module
+      // Destroy native module
+      if (nativeModule != null && !nativeModule.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.moduleDestroy(nativeModule);
+      }
       arena.close();
       closed = true;
       LOGGER.fine("Closed Panama module");

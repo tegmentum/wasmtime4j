@@ -81,8 +81,7 @@ public final class PanamaEngine implements Engine {
       throw new IllegalArgumentException("WASM bytes cannot be null or empty");
     }
     ensureNotClosed();
-    // TODO: Implement module compilation
-    throw new UnsupportedOperationException("Module compilation not yet implemented");
+    return new PanamaModule(this, wasmBytes);
   }
 
   @Override
@@ -94,8 +93,15 @@ public final class PanamaEngine implements Engine {
       throw new IllegalArgumentException("wat cannot be empty");
     }
     ensureNotClosed();
+
     // TODO: Implement WAT compilation
-    throw new UnsupportedOperationException("WAT compilation not yet implemented");
+    // Options:
+    // 1. Use wabt-java library to convert WAT->WASM in Java
+    // 2. Add a native function to get serialized bytes from compiled module
+    // 3. Add a PanamaModule constructor that accepts native module pointer
+    // For now, throw UnsupportedOperationException
+    throw new UnsupportedOperationException(
+        "WAT compilation not yet implemented for Panama - use compileModule with WASM bytes");
   }
 
   @Override

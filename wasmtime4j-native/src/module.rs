@@ -934,6 +934,25 @@ pub unsafe extern "C" fn wasmtime4j_module_destroy(module_ptr: *mut c_void) {
     }
 }
 
+/// Alias for wasmtime4j_module_compile (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_create(
+    engine_ptr: *const c_void,
+    wasm_bytes: *const u8,
+    size: usize,
+) -> *mut c_void {
+    wasmtime4j_module_compile(engine_ptr, wasm_bytes, size)
+}
+
+/// Alias for wasmtime4j_module_compile_wat (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_create_wat(
+    engine_ptr: *const c_void,
+    wat_text: *const c_char,
+) -> *mut c_void {
+    wasmtime4j_module_compile_wat(engine_ptr, wat_text)
+}
+
 /// Check if module has specific export
 ///
 /// # Safety

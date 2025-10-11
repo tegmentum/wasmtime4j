@@ -248,6 +248,36 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Creates a WebAssembly module from bytecode (Panama FFI).
+   *
+   * @param enginePtr pointer to the engine
+   * @param wasmBytes pointer to the WASM bytecode
+   * @param wasmSize size of the WASM bytecode
+   * @return memory segment pointer to the module, or null on failure
+   */
+  public MemorySegment moduleCreate(
+      final MemorySegment enginePtr, final MemorySegment wasmBytes, final long wasmSize) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(wasmBytes, "wasmBytes");
+    validateSize(wasmSize, "wasmSize");
+    return callNativeFunction(
+        "wasmtime4j_module_create", MemorySegment.class, enginePtr, wasmBytes, wasmSize);
+  }
+
+  /**
+   * Creates a WebAssembly module from WAT text (Panama FFI).
+   *
+   * @param enginePtr pointer to the engine
+   * @param watText pointer to null-terminated WAT text
+   * @return memory segment pointer to the module, or null on failure
+   */
+  public MemorySegment moduleCreateWat(final MemorySegment enginePtr, final MemorySegment watText) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(watText, "watText");
+    return callNativeFunction("wasmtime4j_module_create_wat", MemorySegment.class, enginePtr, watText);
+  }
+
+  /**
    * Gets the number of imports in a module.
    *
    * @param modulePtr pointer to the module
@@ -1660,6 +1690,22 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama FFI bindings: return module pointer directly
+    addFunctionBinding(
+        "wasmtime4j_module_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,      // return module*
+            ValueLayout.ADDRESS,      // engine_ptr
+            ValueLayout.ADDRESS,      // wasm_bytes
+            ValueLayout.JAVA_LONG));  // wasm_size
+
+    addFunctionBinding(
+        "wasmtime4j_module_create_wat",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,      // return module*
+            ValueLayout.ADDRESS,      // engine_ptr
+            ValueLayout.ADDRESS));    // wat_text (null-terminated string)
 
     // Module introspection functions
     addFunctionBinding(
