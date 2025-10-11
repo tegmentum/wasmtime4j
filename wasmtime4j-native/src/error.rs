@@ -1596,15 +1596,9 @@ pub mod ffi_utils {
         }
 
         // Use panic-safe destruction to prevent JVM crashes
-        log::debug!("destroy_resource: about to Box::from_raw for {} at {:p}", name, ptr);
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            log::debug!("destroy_resource: inside catch_unwind, calling Box::from_raw");
-            let boxed = Box::from_raw(ptr as *mut T);
-            log::debug!("destroy_resource: Box::from_raw completed, dropping box");
-            drop(boxed);
-            log::debug!("destroy_resource: drop completed");
+            let _ = Box::from_raw(ptr as *mut T);
         }));
-        log::debug!("destroy_resource: catch_unwind completed for {}", name);
 
         match result {
             Ok(_) => {
