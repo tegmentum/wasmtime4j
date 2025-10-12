@@ -388,12 +388,12 @@ public final class PanamaBatchProcessor {
     final double avgOpTimeNs = operations > 0 ? (double) totalTimeNs / operations : 0.0;
 
     return String.format(
-        "Panama Batch Processor Statistics:\n"
-            + "  Total batches: %,d\n"
-            + "  Total operations: %,d\n"
-            + "  Average batch size: %.1f\n"
-            + "  Average batch time: %.2f ms\n"
-            + "  Average operation time: %.0f ns\n"
+        "Panama Batch Processor Statistics:%n"
+            + "  Total batches: %,d%n"
+            + "  Total operations: %,d%n"
+            + "  Average batch size: %.1f%n"
+            + "  Average batch time: %.2f ms%n"
+            + "  Average operation time: %.0f ns%n"
             + "  Arena active: %b",
         batches,
         operations,

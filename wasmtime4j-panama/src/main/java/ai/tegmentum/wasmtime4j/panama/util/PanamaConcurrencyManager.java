@@ -388,15 +388,15 @@ public final class PanamaConcurrencyManager {
     final int availablePermits = concurrencySemaphore.availablePermits();
 
     return String.format(
-        "Panama Concurrency Manager Statistics:\n"
-            + "  Total operations: %,d\n"
-            + "  Current concurrent operations: %d\n"
-            + "  Max concurrent operations reached: %d\n"
-            + "  Lock contentions: %,d\n"
-            + "  Average wait time: %,d ns\n"
-            + "  Available permits: %d/%d\n"
-            + "  Active resource locks: %d\n"
-            + "  Arena operations: %,d\n"
+        "Panama Concurrency Manager Statistics:%n"
+            + "  Total operations: %,d%n"
+            + "  Current concurrent operations: %d%n"
+            + "  Max concurrent operations reached: %d%n"
+            + "  Lock contentions: %,d%n"
+            + "  Average wait time: %,d ns%n"
+            + "  Available permits: %d/%d%n"
+            + "  Active resource locks: %d%n"
+            + "  Arena operations: %,d%n"
             + "  Active arenas: %d",
         totalOps,
         currentConcurrent,
@@ -442,12 +442,12 @@ public final class PanamaConcurrencyManager {
       return "No active arenas";
     }
 
-    final StringBuilder sb = new StringBuilder("Active Arena Information:\n");
+    final StringBuilder sb = new StringBuilder(String.format("Active Arena Information:%n"));
     for (final ArenaInfo info : arenaInfoMap.values()) {
       if (!info.closed && info.arena.scope().isAlive()) {
         sb.append(
             String.format(
-                "  Arena: lifetime=%dms, active_ops=%d\n",
+                "  Arena: lifetime=%dms, active_ops=%d%n",
                 info.getLifetimeMs(), info.activeOperations.get()));
       }
     }
