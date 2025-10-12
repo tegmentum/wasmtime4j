@@ -107,7 +107,7 @@ public final class CompilationCache {
     final long size;
     final long createdTime;
     volatile long lastAccessTime;
-    volatile int accessCount;
+    final AtomicInteger accessCount;
     final long originalCompilationTimeNs;
     final int generation;
     volatile boolean verified;
@@ -127,7 +127,7 @@ public final class CompilationCache {
       this.size = size;
       this.createdTime = createdTime;
       this.lastAccessTime = createdTime;
-      this.accessCount = 0;
+      this.accessCount = new AtomicInteger(0);
       this.originalCompilationTimeNs = compilationTimeNs;
       this.generation = generation;
       this.verified = false;
@@ -136,7 +136,7 @@ public final class CompilationCache {
 
     void recordAccess() {
       lastAccessTime = System.currentTimeMillis();
-      accessCount++;
+      accessCount.incrementAndGet();
     }
 
     void markVerified() {
@@ -150,7 +150,7 @@ public final class CompilationCache {
 
     double getAccessFrequency() {
       final long age = System.currentTimeMillis() - createdTime;
-      return age > 0 ? (accessCount * 86400000.0) / age : 0.0; // accesses per day
+      return age > 0 ? (accessCount.get() * 86400000.0) / age : 0.0; // accesses per day
     }
   }
 
@@ -482,7 +482,7 @@ public final class CompilationCache {
               }
 
               // Then prefer frequently accessed entries
-              return Integer.compare(entry1.accessCount, entry2.accessCount);
+              return Integer.compare(entry1.accessCount.get(), entry2.accessCount.get());
             })
         .limit(MODULE_CACHE.size() - targetSize)
         .forEach(

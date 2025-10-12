@@ -401,7 +401,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           return WasmValue.funcref(null);
         }
         if (value instanceof Long) {
-          return WasmValue.funcref(((Long) value).longValue());
+          return WasmValue.funcref(value);
         }
         throw new WasmTypeException("Expected Long or null for funcref, got " + value.getClass());
       case "externref":
@@ -409,7 +409,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           return WasmValue.externref(null);
         }
         if (value instanceof Long) {
-          return WasmValue.externref(((Long) value).longValue());
+          return WasmValue.externref(value);
         }
         throw new WasmTypeException("Expected Long or null for externref, got " + value.getClass());
       default:

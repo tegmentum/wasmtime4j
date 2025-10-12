@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 /**
@@ -64,7 +65,7 @@ public final class OptimizedMarshalling {
     final MarshallingStrategy strategy;
     final long createdTime;
     volatile long lastUsedTime;
-    volatile int useCount;
+    final AtomicInteger useCount;
 
     MarshallingPlan(
         final WasmValueType[] types,
@@ -77,12 +78,12 @@ public final class OptimizedMarshalling {
       this.strategy = strategy;
       this.createdTime = System.currentTimeMillis();
       this.lastUsedTime = createdTime;
-      this.useCount = 0;
+      this.useCount = new AtomicInteger(0);
     }
 
     void markUsed() {
       lastUsedTime = System.currentTimeMillis();
-      useCount++;
+      useCount.incrementAndGet();
     }
   }
 
@@ -575,7 +576,7 @@ public final class OptimizedMarshalling {
         .removeIf(
             entry -> {
               final MarshallingPlan plan = entry.getValue();
-              return currentTime - plan.lastUsedTime > maxAge && plan.useCount < 10;
+              return currentTime - plan.lastUsedTime > maxAge && plan.useCount.get() < 10;
             });
 
     LOGGER.fine("Evicted old marshalling plans, cache size: " + MARSHALLING_CACHE.size());
@@ -596,7 +597,7 @@ public final class OptimizedMarshalling {
     final ConcurrentHashMap<MarshallingStrategy, Integer> strategyCounts =
         new ConcurrentHashMap<>();
     for (final MarshallingPlan plan : MARSHALLING_CACHE.values()) {
-      strategyCounts.merge(plan.strategy, plan.useCount, Integer::sum);
+      strategyCounts.merge(plan.strategy, plan.useCount.get(), Integer::sum);
     }
 
     sb.append(String.format("Strategy usage:%n"));
