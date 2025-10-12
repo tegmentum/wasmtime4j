@@ -508,6 +508,15 @@ public final class PanamaInstance implements Instance {
     return store;
   }
 
+  /**
+   * Gets the native store memory segment for FFI operations.
+   *
+   * @return the native store memory segment
+   */
+  MemorySegment getNativeStore() {
+    return store.getNativeStore();
+  }
+
   @Override
   public WasmValue[] callFunction(final String functionName, final WasmValue... params)
       throws WasmException {

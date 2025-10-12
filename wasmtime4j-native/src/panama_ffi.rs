@@ -1743,6 +1743,68 @@ pub mod memory {
         })
     }
 
+    /// Get global type information
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_instance_get_global_type(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+        value_type_out: *mut i32,
+        is_mutable_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid UTF-8 in global name".to_string(),
+                    })?
+            };
+
+            let global = crate::instance::core::get_exported_global(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
+                    message: format!("Global '{}' not found", name_str),
+                })?;
+
+            store.with_context_ro(|ctx| {
+                let global_type = global.ty(&ctx);
+
+                // Map wasmtime value type to our type codes
+                let type_code = match global_type.content() {
+                    wasmtime::ValType::I32 => 0,
+                    wasmtime::ValType::I64 => 1,
+                    wasmtime::ValType::F32 => 2,
+                    wasmtime::ValType::F64 => 3,
+                    wasmtime::ValType::V128 => 4,
+                    wasmtime::ValType::Ref(ref_type) => {
+                        match ref_type.heap_type() {
+                            wasmtime::HeapType::Func => 5, // FuncRef
+                            _ => 6, // ExternRef or other
+                        }
+                    }
+                };
+
+                unsafe {
+                    if !value_type_out.is_null() {
+                        *value_type_out = type_code;
+                    }
+                    if !is_mutable_out.is_null() {
+                        *is_mutable_out = if global_type.mutability() == wasmtime::Mutability::Var {
+                            1
+                        } else {
+                            0
+                        };
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
     /// Check if global export exists
     #[no_mangle]
     pub extern "C" fn wasmtime4j_instance_has_global_export(

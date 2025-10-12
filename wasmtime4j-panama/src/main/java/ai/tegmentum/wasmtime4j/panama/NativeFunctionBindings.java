@@ -1063,6 +1063,35 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets the type and mutability of a global export.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param valueTypeOut output for value type code
+   * @param isMutableOut output for mutability flag
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetGlobalType(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment valueTypeOut,
+      final MemorySegment isMutableOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_type",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        valueTypeOut,
+        isMutableOut);
+  }
+
+  /**
    * Checks if a global export exists in an instance.
    *
    * @param instancePtr pointer to the instance
@@ -2567,6 +2596,16 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG, // offset
             ValueLayout.JAVA_LONG, // length
             ValueLayout.ADDRESS)); // buffer
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_type",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, error code on failure
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS, // value_type_out
+            ValueLayout.ADDRESS)); // is_mutable_out
 
     addFunctionBinding(
         "wasmtime4j_instance_has_global_export",

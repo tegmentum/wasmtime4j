@@ -101,11 +101,8 @@ public final class PanamaGlobal implements WasmGlobal {
 
   @Override
   public WasmValueType getType() {
-    // Determine type lazily if not yet known
-    if (type == null) {
-      // Call get() to auto-detect the type
-      get();
-    }
+    // Type is determined lazily during first get() call
+    // or set during construction via queryTypeAndMutability()
     return type;
   }
 
@@ -139,11 +136,69 @@ public final class PanamaGlobal implements WasmGlobal {
    * <p>This method is called during construction to initialize type and mutability fields.
    */
   private void queryTypeAndMutability() {
-    // Type will be determined lazily during first get() call
-    // Panama FFI version of globalGetTypeInfo is not yet implemented
-    this.type = null; // Will be auto-detected
-    this.mutable = true; // Assume mutable, set() will fail if not
-    LOGGER.fine("Global type will be determined on first access");
+    if (instance == null) {
+      this.type = null;
+      this.mutable = true;
+      return;
+    }
+
+    try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment nameSegment =
+          tempArena.allocateFrom(globalName, java.nio.charset.StandardCharsets.UTF_8);
+      final java.lang.foreign.MemorySegment valueTypeOut =
+          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      final java.lang.foreign.MemorySegment isMutableOut =
+          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+      final int result =
+          NATIVE_BINDINGS.instanceGetGlobalType(
+              instance.getNativeInstance(),
+              instance.getNativeStore(),
+              nameSegment,
+              valueTypeOut,
+              isMutableOut);
+
+      if (result == 0) {
+        final int typeCode = valueTypeOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+        this.type = mapTypeCodeToWasmValueType(typeCode);
+        this.mutable = isMutableOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0) != 0;
+        LOGGER.fine("Global type determined: " + type + ", mutable: " + mutable);
+      } else {
+        LOGGER.warning("Failed to query global type: error code " + result);
+        this.type = null;
+        this.mutable = true;
+      }
+    } catch (Exception e) {
+      LOGGER.warning("Failed to query global type during construction: " + e.getMessage());
+      this.type = null;
+      this.mutable = true;
+    }
+  }
+
+  /**
+   * Maps type code to WasmValueType.
+   *
+   * @param typeCode the type code from native
+   * @return the WasmValueType
+   */
+  private static WasmValueType mapTypeCodeToWasmValueType(final int typeCode) {
+    switch (typeCode) {
+      case 0:
+        return WasmValueType.I32;
+      case 1:
+        return WasmValueType.I64;
+      case 2:
+        return WasmValueType.F32;
+      case 3:
+        return WasmValueType.F64;
+      case 5:
+        return WasmValueType.FUNCREF;
+      case 6:
+        return WasmValueType.EXTERNREF;
+      default:
+        LOGGER.warning("Unknown type code: " + typeCode);
+        return null;
+    }
   }
 
   /**
