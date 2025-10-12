@@ -1674,10 +1674,8 @@ public final class JniGcRuntime implements GcRuntime {
         final int value = i31GetNative(nativeHandle, objectId, true);
         return new JniI31Instance(this, objectId, value);
       case STRUCT_REF:
-        // Would need type information to create proper struct instance
-        return new JniGcObject(objectId);
       case ARRAY_REF:
-        // Would need type information to create proper array instance
+        // Would need type information to create proper struct/array instance
         return new JniGcObject(objectId);
       default:
         return new JniGcObject(objectId);

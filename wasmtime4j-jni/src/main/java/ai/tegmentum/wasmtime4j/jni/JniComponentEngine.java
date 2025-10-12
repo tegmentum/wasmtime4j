@@ -517,6 +517,14 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       final List<ComponentValidationResult.ValidationError> errors = new ArrayList<>();
       final List<ComponentValidationResult.ValidationWarning> validationWarnings =
           new ArrayList<>();
+
+      // Convert warnings to ValidationWarning objects
+      for (final String warning : warnings) {
+        validationWarnings.add(
+            new ComponentValidationResult.ValidationWarning(
+                "COMPONENT_WARNING", warning, "component"));
+      }
+
       final ComponentValidationResult.ValidationContext context =
           new ComponentValidationResult.ValidationContext(
               component.getMetadata() != null ? component.getMetadata().getName() : "unknown",
