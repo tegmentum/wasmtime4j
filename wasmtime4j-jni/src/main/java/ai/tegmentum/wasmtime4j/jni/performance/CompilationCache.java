@@ -408,11 +408,7 @@ public final class CompilationCache {
       final byte[] hashBytes = digest.digest();
       final StringBuilder hexString = new StringBuilder();
       for (final byte b : hashBytes) {
-        final String hex = Integer.toHexString(0xff & b);
-        if (hex.length() == 1) {
-          hexString.append('0');
-        }
-        hexString.append(hex);
+        hexString.append(String.format("%02x", b));
       }
 
       return hexString.toString();
@@ -471,7 +467,6 @@ public final class CompilationCache {
   /** Evicts old cache entries to maintain size limits. */
   private static void evictOldEntries() {
     final int targetSize = MAX_CACHED_MODULES / 2; // Evict down to 50% of max
-    final long currentTime = System.currentTimeMillis();
 
     // Sort entries by access time and frequency
     MODULE_CACHE.entrySet().stream()

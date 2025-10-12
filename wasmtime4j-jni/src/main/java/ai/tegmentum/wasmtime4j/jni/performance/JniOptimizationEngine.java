@@ -515,8 +515,7 @@ public final class JniOptimizationEngine {
 
   /** Executes operation with pooled resources. */
   private <T> T executePooled(final OptimizedOperation<T> operation) throws Exception {
-    final ResourceBundle resources = getThreadResources();
-    // Use pooled resources implicitly
+    // Thread-local resources are available via getThreadResources() if needed
     return operation.execute();
   }
 
