@@ -82,8 +82,8 @@ class JniTypeConverterTest {
     assertThat(JniTypeConverter.wasmValueToNativeParam(i64Value)).isEqualTo(100L);
 
     // Test f32
-    final WasmValue f32Value = WasmValue.f32(3.14f);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(f32Value)).isEqualTo(3.14f);
+    final WasmValue f32Value = WasmValue.f32(2.5f);
+    assertThat(JniTypeConverter.wasmValueToNativeParam(f32Value)).isEqualTo(2.5f);
 
     // Test f64
     final WasmValue f64Value = WasmValue.f64(2.718);
@@ -149,15 +149,13 @@ class JniTypeConverterTest {
 
   @Test
   void testWasmValuesToNativeParams() {
-    final WasmValue[] values = {
-      WasmValue.i32(42), WasmValue.f64(3.14), WasmValue.externref("test")
-    };
+    final WasmValue[] values = {WasmValue.i32(42), WasmValue.f64(2.5), WasmValue.externref("test")};
 
     final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(values);
 
     assertThat(nativeParams).hasSize(3);
     assertThat(nativeParams[0]).isEqualTo(42);
-    assertThat(nativeParams[1]).isEqualTo(3.14);
+    assertThat(nativeParams[1]).isEqualTo(2.5);
     assertThat(nativeParams[2]).isEqualTo("test");
   }
 
@@ -172,7 +170,7 @@ class JniTypeConverterTest {
 
   @Test
   void testWasmValuesToNativeParamsWithNullElement() {
-    final WasmValue[] values = {WasmValue.i32(42), null, WasmValue.f64(3.14)};
+    final WasmValue[] values = {WasmValue.i32(42), null, WasmValue.f64(2.5)};
 
     final JniValidationException exception =
         assertThrows(
@@ -194,9 +192,9 @@ class JniTypeConverterTest {
     assertThat(i64Result.asLong()).isEqualTo(100L);
 
     // Test f32
-    final WasmValue f32Result = JniTypeConverter.nativeResultToWasmValue(3.14f, WasmValueType.F32);
+    final WasmValue f32Result = JniTypeConverter.nativeResultToWasmValue(2.5f, WasmValueType.F32);
     assertThat(f32Result.getType()).isEqualTo(WasmValueType.F32);
-    assertThat(f32Result.asFloat()).isEqualTo(3.14f);
+    assertThat(f32Result.asFloat()).isEqualTo(2.5f);
 
     // Test f64
     final WasmValue f64Result = JniTypeConverter.nativeResultToWasmValue(2.718, WasmValueType.F64);
@@ -273,7 +271,7 @@ class JniTypeConverterTest {
 
   @Test
   void testNativeResultsToWasmValues() {
-    final Object[] nativeResults = {42, 3.14, 100L};
+    final Object[] nativeResults = {42, 2.5, 100L};
     final WasmValueType[] expectedTypes = {WasmValueType.I32, WasmValueType.F64, WasmValueType.I64};
 
     final WasmValue[] wasmValues =
@@ -283,14 +281,14 @@ class JniTypeConverterTest {
     assertThat(wasmValues[0].getType()).isEqualTo(WasmValueType.I32);
     assertThat(wasmValues[0].asInt()).isEqualTo(42);
     assertThat(wasmValues[1].getType()).isEqualTo(WasmValueType.F64);
-    assertThat(wasmValues[1].asDouble()).isEqualTo(3.14);
+    assertThat(wasmValues[1].asDouble()).isEqualTo(2.5);
     assertThat(wasmValues[2].getType()).isEqualTo(WasmValueType.I64);
     assertThat(wasmValues[2].asLong()).isEqualTo(100L);
   }
 
   @Test
   void testNativeResultsToWasmValuesCountMismatch() {
-    final Object[] nativeResults = {42, 3.14};
+    final Object[] nativeResults = {42, 2.5};
     final WasmValueType[] expectedTypes = {WasmValueType.I32};
 
     final JniValidationException exception =
@@ -303,7 +301,7 @@ class JniTypeConverterTest {
 
   @Test
   void testValidateParameterTypes() {
-    final WasmValue[] params = {WasmValue.i32(42), WasmValue.f64(3.14)};
+    final WasmValue[] params = {WasmValue.i32(42), WasmValue.f64(2.5)};
     final WasmValueType[] expectedTypes = {WasmValueType.I32, WasmValueType.F64};
 
     // Should not throw
