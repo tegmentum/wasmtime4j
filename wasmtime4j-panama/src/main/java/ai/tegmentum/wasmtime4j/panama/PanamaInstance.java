@@ -1222,26 +1222,33 @@ public final class PanamaInstance implements Instance {
       // Determine type if not yet set
       WasmValueType type = global.getType();
       if (type == null) {
-        // Try I32 first (most common)
+        // Fallback: use heuristic type detection (unreliable, only when type query fails)
+        LOGGER.warning(
+            "Type not set for global "
+                + global.getGlobalName()
+                + ", falling back to heuristic detection");
+
         final int i32Val = i32Out.get(ValueLayout.JAVA_INT, 0);
         final long i64Val = i64Out.get(ValueLayout.JAVA_LONG, 0);
         final double f32Val = f32Out.get(ValueLayout.JAVA_DOUBLE, 0);
         final double f64Val = f64Out.get(ValueLayout.JAVA_DOUBLE, 0);
 
         // Heuristic: if i64 != i32 (sign-extended), it's probably I64
-        // If f32 != 0.0 or f64 != 0.0, it's probably float
+        // If f32 or f64 differ significantly from zero, it's probably float
+        final double epsilon = 1e-10;
         if (i64Val != (long) i32Val) {
           type = WasmValueType.I64;
-        } else if (f32Val != 0.0) {
+        } else if (Math.abs(f32Val) > epsilon) {
           type = WasmValueType.F32;
-        } else if (f64Val != 0.0 && f64Val != (double) (float) f32Val) {
+        } else if (Math.abs(f64Val) > epsilon
+            && Math.abs(f64Val - (double) (float) f32Val) > epsilon) {
           type = WasmValueType.F64;
         } else {
           // Default to I32
           type = WasmValueType.I32;
         }
         global.setType(type);
-        LOGGER.fine("Auto-detected global type: " + type);
+        LOGGER.warning("Heuristically detected global type as: " + type + " (may be incorrect)");
       }
 
       // Extract value based on type
