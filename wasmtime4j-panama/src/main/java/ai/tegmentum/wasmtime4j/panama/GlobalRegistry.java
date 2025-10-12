@@ -65,20 +65,11 @@ public final class GlobalRegistry implements AutoCloseable {
       throw new WasmException("Native function bindings not initialized");
     }
 
-    try {
-      // Create native registry resource
-      MemorySegment registryPtr = createNativeRegistry();
-      PanamaErrorHandler.requireValidPointer(registryPtr, "registryPtr");
+    // With fresh-lookup architecture, the registry is just a Java-side map
+    // No native resources needed - globals perform fresh lookup when accessed
+    this.registryResource = null;
 
-      this.registryResource =
-          resourceManager.manageNativeResource(
-              registryPtr, () -> destroyNativeRegistryInternal(registryPtr), "Global Registry");
-
-      LOGGER.fine("Created global registry with native resource");
-
-    } catch (Exception e) {
-      throw new WasmException("Failed to create global registry", e);
-    }
+    LOGGER.fine("Created global registry (fresh-lookup architecture)");
   }
 
   /**
@@ -103,21 +94,9 @@ public final class GlobalRegistry implements AutoCloseable {
         throw new WasmException("Global name already registered: " + name);
       }
 
-      // TODO: Re-implement with fresh-lookup architecture
-      // Register through native FFI
-      // ArenaResourceManager.ManagedMemorySegment nameSegment =
-      // resourceManager.allocateString(name);
-
-      // int result =
-      //     nativeFunctions.globalRegisterShared(
-      //         global.getGlobalHandle(),
-      //         nameSegment.getSegment(),
-      //         registryResource.getNativePointer());
-
-      // PanamaErrorHandler.safeCheckError(
-      //     result, "Global registration", "Failed to register global: " + name);
-
-      // Add to Java-side registry
+      // With fresh-lookup architecture, we only need to store the global in the Java-side registry
+      // The global will perform fresh lookup when accessed, ensuring it always uses the correct
+      // store
       globalMap.put(name, global);
 
       LOGGER.fine("Registered global for sharing: " + name);
@@ -138,38 +117,16 @@ public final class GlobalRegistry implements AutoCloseable {
     ensureNotClosed();
     Objects.requireNonNull(name, "name cannot be null");
 
-    try {
-      // First check Java-side registry for fast lookup
-      PanamaGlobal cached = globalMap.get(name);
-      if (cached != null && !cached.isClosed()) {
-        return Optional.of(cached);
-      }
+    // Check Java-side registry
+    PanamaGlobal global = globalMap.get(name);
 
+    if (global != null && global.isClosed()) {
       // Remove stale entry if global is closed
-      if (cached != null && cached.isClosed()) {
-        globalMap.remove(name, cached);
-      }
-
-      // Fallback to native lookup
-      ArenaResourceManager.ManagedMemorySegment nameSegment = resourceManager.allocateString(name);
-
-      MemorySegment globalPtr =
-          nativeFunctions.globalLookupShared(
-              nameSegment.getSegment(), registryResource.getNativePointer());
-
-      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
-        return Optional.empty();
-      }
-
-      // Create Panama global wrapper for native global
-      // Note: This requires the parent instance context, which would need to be tracked
-      LOGGER.warning(
-          "Native global lookup found global but cannot create wrapper without instance context");
+      globalMap.remove(name, global);
       return Optional.empty();
-
-    } catch (Exception e) {
-      throw new WasmException("Failed to lookup global: " + name, e);
     }
+
+    return Optional.ofNullable(global);
   }
 
   /**
@@ -237,12 +194,18 @@ public final class GlobalRegistry implements AutoCloseable {
   /**
    * Gets the native registry pointer for FFI operations.
    *
+   * <p>Note: With fresh-lookup architecture, no native registry pointer exists. This method is kept
+   * for API compatibility but will throw an exception.
+   *
    * @return the native registry pointer
-   * @throws IllegalStateException if the registry is closed
+   * @throws UnsupportedOperationException always, as fresh-lookup architecture doesn't use native
+   *     pointers
+   * @deprecated Fresh-lookup architecture doesn't require native registry pointers
    */
+  @Deprecated
   public MemorySegment getRegistryPointer() {
-    ensureNotClosed();
-    return registryResource.getNativePointer();
+    throw new UnsupportedOperationException(
+        "Fresh-lookup architecture does not use native registry pointers");
   }
 
   /**
@@ -251,7 +214,7 @@ public final class GlobalRegistry implements AutoCloseable {
    * @return true if closed
    */
   public boolean isClosed() {
-    return closed || registryResource.isClosed();
+    return closed;
   }
 
   @Override
@@ -269,58 +232,12 @@ public final class GlobalRegistry implements AutoCloseable {
         // Clear Java-side registry
         clear();
 
-        // Close native registry resource
-        registryResource.close();
-
         LOGGER.fine("Closed global registry");
       } catch (Exception e) {
         LOGGER.warning("Error during registry closure: " + e.getMessage());
       } finally {
         closed = true;
       }
-    }
-  }
-
-  /**
-   * Creates the native registry resource.
-   *
-   * @return the native registry pointer
-   * @throws WasmException if creation fails
-   */
-  private MemorySegment createNativeRegistry() throws WasmException {
-    try {
-      // Allocate memory for registry pointer
-      ArenaResourceManager.ManagedMemorySegment registryOutPtr =
-          resourceManager.allocate(MemoryLayouts.C_POINTER);
-
-      // For now, we'll use a simple memory segment as the registry handle
-      // In a real implementation, this would create a native registry structure
-      MemorySegment registryPtr =
-          resourceManager.allocate(64).getSegment(); // 64-byte registry structure
-
-      // Store the registry pointer in the output parameter
-      MemoryLayouts.C_POINTER.varHandle().set(registryOutPtr.getSegment(), 0, registryPtr);
-
-      LOGGER.fine("Created native global registry");
-      return registryPtr;
-
-    } catch (Exception e) {
-      throw new WasmException("Failed to create native registry", e);
-    }
-  }
-
-  /**
-   * Internal cleanup method for native registry destruction.
-   *
-   * @param registryPtr the native registry pointer to destroy
-   */
-  private void destroyNativeRegistryInternal(final MemorySegment registryPtr) {
-    try {
-      // In a real implementation, this would call native cleanup functions
-      LOGGER.fine("Destroyed native registry: " + registryPtr);
-    } catch (Exception e) {
-      // Log but don't throw during cleanup
-      LOGGER.warning("Error during native registry cleanup: " + e.getMessage());
     }
   }
 
