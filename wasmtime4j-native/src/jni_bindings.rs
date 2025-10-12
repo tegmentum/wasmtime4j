@@ -20,7 +20,7 @@ use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject, jintArray};
 #[cfg(feature = "jni-bindings")]
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetLibraryVersion(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
 ) -> jstring {
     let version = "wasmtime4j-native-DEBUG-2025-10-06-18:45-WITH-SIGNALS-DISABLED";
