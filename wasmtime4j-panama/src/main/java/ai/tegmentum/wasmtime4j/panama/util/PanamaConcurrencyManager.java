@@ -420,7 +420,7 @@ public final class PanamaConcurrencyManager {
     final long contentions = lockContentions.get();
     final double contentionRate = totalOps > 0 ? (contentions * 100.0) / totalOps : 0.0;
     final double avgWaitTimeMs =
-        totalOps > 0 ? (totalWaitTimeNs.get() / totalOps) / 1_000_000.0 : 0.0;
+        totalOps > 0 ? ((double) totalWaitTimeNs.get() / totalOps) / 1_000_000.0 : 0.0;
 
     return String.format(
         "Panama Concurrency Performance: contention_rate=%.2f%%, avg_wait=%.3fms, "

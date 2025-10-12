@@ -393,9 +393,7 @@ public final class PanamaWasmThread implements WasmThread {
       }
 
       // Clean up thread-local storage
-      if (threadLocalStorage instanceof PanamaWasmThreadLocalStorage) {
-        ((PanamaWasmThreadLocalStorage) threadLocalStorage).close();
-      }
+      ((PanamaWasmThreadLocalStorage) threadLocalStorage).close();
 
       // TODO: Clean up native resources when PanamaThreadingBindings is available
       // PanamaThreadingBindings.destroyThread(nativeHandle);

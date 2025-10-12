@@ -382,13 +382,9 @@ public final class CompilationCache {
 
       // Convert to hex string
       final byte[] hashBytes = digest.digest();
-      final StringBuilder hexString = new StringBuilder();
+      final StringBuilder hexString = new StringBuilder(hashBytes.length * 2);
       for (final byte b : hashBytes) {
-        final String hex = Integer.toHexString(0xff & b);
-        if (hex.length() == 1) {
-          hexString.append('0');
-        }
-        hexString.append(hex);
+        hexString.append(String.format("%02x", b));
       }
 
       return hexString.toString();

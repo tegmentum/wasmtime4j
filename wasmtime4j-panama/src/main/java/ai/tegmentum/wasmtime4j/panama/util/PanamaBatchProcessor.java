@@ -251,7 +251,7 @@ public final class PanamaBatchProcessor {
 
     final long startTime = PanamaPerformanceMonitor.startOperation("panama_native_batch_process");
     try (Arena tempArena = Arena.ofConfined()) {
-      PanamaPerformanceMonitor.recordArenaAllocation(tempArena, parameters.length * 64);
+      PanamaPerformanceMonitor.recordArenaAllocation(tempArena, (long) parameters.length * 64);
 
       LOGGER.fine(
           () -> String.format("Processing Panama native batch: %d parameters", parameters.length));
@@ -384,7 +384,8 @@ public final class PanamaBatchProcessor {
     final long totalTimeNs = totalBatchTimeNs.get();
 
     final double avgBatchSize = batches > 0 ? (double) operations / batches : 0.0;
-    final double avgBatchTimeMs = batches > 0 ? (totalTimeNs / batches) / 1_000_000.0 : 0.0;
+    final double avgBatchTimeMs =
+        batches > 0 ? ((double) totalTimeNs / batches) / 1_000_000.0 : 0.0;
     final double avgOpTimeNs = operations > 0 ? (double) totalTimeNs / operations : 0.0;
 
     return String.format(
