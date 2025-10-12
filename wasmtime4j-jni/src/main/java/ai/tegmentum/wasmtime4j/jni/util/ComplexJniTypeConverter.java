@@ -175,8 +175,7 @@ public final class ComplexJniTypeConverter {
     }
 
     try {
-      final int dimensions = wasmValues[0].asI32();
-      final int totalElements = wasmValues[1].asI32();
+      // dimensions and totalElements are in wasmValues[0] and [1] but not needed for reconstruction
       final ByteBuffer dataBuffer = (ByteBuffer) wasmValues[2].asExternref();
       final int[] shape = (int[]) wasmValues[3].asExternref();
 
@@ -340,7 +339,6 @@ public final class ComplexJniTypeConverter {
    * @return the marshaling result
    */
   private ArrayMarshalingResult marshalArrayRecursive(final Object array) {
-    final Class<?> arrayType = array.getClass();
     final ArrayInfo arrayInfo = analyzeArray(array);
 
     // Flatten the array data
@@ -662,7 +660,7 @@ public final class ComplexJniTypeConverter {
    */
   private List<?> unmarshalList(final WasmValue[] wasmValues) {
     // Simplified implementation
-    final int size = wasmValues[0].asI32();
+    // size is in wasmValues[0] but not needed for unmarshaling
     final Object[] elements = (Object[]) wasmValues[1].asExternref();
     return java.util.Arrays.asList(elements);
   }
@@ -675,7 +673,7 @@ public final class ComplexJniTypeConverter {
    */
   private Map<?, ?> unmarshalMap(final WasmValue[] wasmValues) {
     // Simplified implementation
-    final int size = wasmValues[0].asI32();
+    // size is in wasmValues[0] but not needed for unmarshaling
     final Object[] keys = (Object[]) wasmValues[1].asExternref();
     final Object[] values = (Object[]) wasmValues[2].asExternref();
 

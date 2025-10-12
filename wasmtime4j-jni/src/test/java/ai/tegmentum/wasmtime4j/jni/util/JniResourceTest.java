@@ -174,8 +174,6 @@ class JniResourceTest {
 
   @Test
   void testTryWithResourcesPattern() {
-    final AtomicBoolean cleanupCalled = new AtomicBoolean(false);
-
     try (TestResource resource = new TestResource(12345L, "Test")) {
       assertFalse(resource.isClosed());
       assertThat(resource.getNativeHandle()).isEqualTo(12345L);

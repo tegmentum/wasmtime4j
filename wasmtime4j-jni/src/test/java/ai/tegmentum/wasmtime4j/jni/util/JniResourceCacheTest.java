@@ -244,8 +244,8 @@ class JniResourceCacheTest {
     @Test
     void testHandleGarbageCollectionOfCachedValues() {
       // Create some objects that can be garbage collected
-      cache.put("gc1", new String("gcValue1"));
-      cache.put("gc2", new String("gcValue2"));
+      cache.put("gc1", "gcValue1");
+      cache.put("gc2", "gcValue2");
 
       assertEquals(2, cache.size());
 
@@ -265,7 +265,7 @@ class JniResourceCacheTest {
     void testCleanupCollectedReferencesOnOperations() {
       // Fill cache with values that might be collected
       for (int i = 0; i < 10; i++) {
-        cache.put("key" + i, new String("value" + i));
+        cache.put("key" + i, "value" + i);
       }
 
       final int initialSize = cache.size();
