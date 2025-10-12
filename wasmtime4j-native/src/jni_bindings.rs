@@ -1942,6 +1942,7 @@ pub mod jni_store {
         })
     }
 
+    #[allow(non_snake_case)]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
         env: JNIEnv,
         _class: JClass,

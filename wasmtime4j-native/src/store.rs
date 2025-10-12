@@ -131,7 +131,7 @@ impl Store {
     /// CRITICAL: This method is essential for avoiding WASM execution traps.
     /// The ReentrantLock allows Wasmtime to access the Store multiple times
     /// during function execution on the same thread.
-    pub fn lock_store(&self) -> crate::interop::ReentrantLockGuard<WasmtimeStore<StoreData>> {
+    pub fn lock_store(&self) -> crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>> {
         self.inner.lock()
     }
 

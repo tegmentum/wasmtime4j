@@ -54,7 +54,7 @@ impl<T> ReentrantLock<T> {
     ///
     /// This will block if another thread holds the lock, but allows
     /// reentrant access from the same thread.
-    pub fn lock(&self) -> ReentrantLockGuard<T> {
+    pub fn lock(&self) -> ReentrantLockGuard<'_, T> {
         let current_thread_id = current_thread_id();
 
         // Check if current thread already owns the lock
@@ -78,7 +78,7 @@ impl<T> ReentrantLock<T> {
     /// Try to lock without blocking
     ///
     /// Returns None if the lock is held by another thread.
-    pub fn try_lock(&self) -> Option<ReentrantLockGuard<T>> {
+    pub fn try_lock(&self) -> Option<ReentrantLockGuard<'_, T>> {
         let current_thread_id = current_thread_id();
 
         // Check if current thread already owns the lock
