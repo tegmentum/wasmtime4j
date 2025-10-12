@@ -409,34 +409,34 @@ public final class PerformanceMonitor {
     final double avgOverhead = getAverageJniOverhead();
     final boolean meetsTarget = avgOverhead < SIMPLE_OPERATION_TARGET_NS;
 
-    sb.append(String.format("Uptime: %d ms\n", uptimeMs));
-    sb.append(String.format("Total JNI calls: %,d\n", totalCalls));
+    sb.append(String.format("Uptime: %d ms%n", uptimeMs));
+    sb.append(String.format("Total JNI calls: %,d%n", totalCalls));
     sb.append(
         String.format(
-            "Average JNI overhead: %.0f ns/call %s\n",
+            "Average JNI overhead: %.0f ns/call %s%n",
             avgOverhead, meetsTarget ? "(✓ meets target)" : "(⚠ exceeds target)"));
-    sb.append(String.format("Performance target: %d ns/call\n", SIMPLE_OPERATION_TARGET_NS));
-    sb.append("\n");
+    sb.append(String.format("Performance target: %d ns/call%n", SIMPLE_OPERATION_TARGET_NS));
+    sb.append(String.format("%n"));
 
     // Memory statistics
     final long allocations = NATIVE_ALLOCATIONS.get();
     final long deallocations = NATIVE_DEALLOCATIONS.get();
     final long netAllocated = TOTAL_ALLOCATED_BYTES.get();
 
-    sb.append("=== Memory Statistics ===\n");
-    sb.append(String.format("Native allocations: %,d\n", allocations));
-    sb.append(String.format("Native deallocations: %,d\n", deallocations));
-    sb.append(String.format("Net allocated bytes: %,d\n", netAllocated));
-    sb.append("\n");
+    sb.append(String.format("=== Memory Statistics ===%n"));
+    sb.append(String.format("Native allocations: %,d%n", allocations));
+    sb.append(String.format("Native deallocations: %,d%n", deallocations));
+    sb.append(String.format("Net allocated bytes: %,d%n", netAllocated));
+    sb.append(String.format("%n"));
 
     // JVM memory information
     final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
     final MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
 
-    sb.append("=== JVM Memory ===\n");
+    sb.append(String.format("=== JVM Memory ===%n"));
     sb.append(
         String.format(
-            "Heap used: %,d / %,d MB\n",
+            "Heap used: %,d / %,d MB%n",
             heapUsage.getUsed() / (1024 * 1024), heapUsage.getMax() / (1024 * 1024)));
 
     // GC information
@@ -447,18 +447,18 @@ public final class PerformanceMonitor {
 
     sb.append(
         String.format(
-            "GC time since last check: %d ms (%d collections)\n", gcTimeDelta, gcCollectionsDelta));
-    sb.append("\n");
+            "GC time since last check: %d ms (%d collections)%n", gcTimeDelta, gcCollectionsDelta));
+    sb.append(String.format("%n"));
 
     // Operation statistics
-    sb.append("=== Operation Statistics ===\n");
+    sb.append(String.format("=== Operation Statistics ===%n"));
     if (OPERATION_STATS.isEmpty()) {
-      sb.append("No operations recorded\n");
+      sb.append(String.format("No operations recorded%n"));
     } else {
       for (final OperationStats stats : OPERATION_STATS.values()) {
         sb.append(
             String.format(
-                "%-20s: %,8d calls, avg=%.0fns, min=%.0fns, max=%.0fns, slow=%.1f%%\n",
+                "%-20s: %,8d calls, avg=%.0fns, min=%.0fns, max=%.0fns, slow=%.1f%%%n",
                 stats.category,
                 stats.getTotalCalls(),
                 stats.getAverageTimeNs(),
@@ -598,7 +598,7 @@ public final class PerformanceMonitor {
     if (avgOverhead > SIMPLE_OPERATION_TARGET_NS) {
       issues.append(
           String.format(
-              "• JNI overhead %.0f ns exceeds target %d ns\n",
+              "• JNI overhead %.0f ns exceeds target %d ns%n",
               avgOverhead, SIMPLE_OPERATION_TARGET_NS));
     }
 
@@ -606,7 +606,7 @@ public final class PerformanceMonitor {
     final long netAllocated = TOTAL_ALLOCATED_BYTES.get();
     if (netAllocated > 100 * 1024 * 1024) { // 100MB
       issues.append(
-          String.format("• Potential memory leak: %,d bytes net allocated\n", netAllocated));
+          String.format("• Potential memory leak: %,d bytes net allocated%n", netAllocated));
     }
 
     // Check for excessive slow operations
@@ -614,12 +614,14 @@ public final class PerformanceMonitor {
       if (stats.getSlowOperationRate() > 5.0) { // More than 5% slow operations
         issues.append(
             String.format(
-                "• High slow operation rate for %s: %.1f%%\n",
+                "• High slow operation rate for %s: %.1f%%%n",
                 stats.category, stats.getSlowOperationRate()));
       }
     }
 
-    return issues.length() > 0 ? "Performance Issues Detected:\n" + issues.toString() : null;
+    return issues.length() > 0
+        ? String.format("Performance Issues Detected:%n") + issues.toString()
+        : null;
   }
 
   /**
