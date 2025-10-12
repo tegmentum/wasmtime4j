@@ -40,7 +40,7 @@ public final class WasiSecurityValidator {
 
   /** Pattern for detecting potentially dangerous paths. */
   private static final Pattern DANGEROUS_PATH_PATTERN =
-      Pattern.compile("(\\0|[\\\\/]\\.{1,2}[\\\\/]|^[\\\\/]\\.{1,2}$)");
+      Pattern.compile("(\0|[\\\\/]\\.{1,2}[\\\\/]|^[\\\\/]\\.{1,2}$)");
 
   /** Maximum allowed path length. */
   private final int maxPathLength;

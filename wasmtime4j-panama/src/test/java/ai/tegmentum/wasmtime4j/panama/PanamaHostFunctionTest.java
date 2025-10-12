@@ -213,7 +213,6 @@ class PanamaHostFunctionTest {
     @Test
     void testExecuteCallbackWithCorrectParameters() throws Exception {
       // Arrange
-      final WasmValue[] expectedParams = {WasmValue.i32(10), WasmValue.i64(20L)};
       final WasmValue[] expectedResults = {WasmValue.f32(30.0f)};
 
       final HostFunctionCallback mockCallback = mock(HostFunctionCallback.class);

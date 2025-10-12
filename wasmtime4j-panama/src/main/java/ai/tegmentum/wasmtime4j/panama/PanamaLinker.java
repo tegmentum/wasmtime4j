@@ -546,8 +546,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
               + " results");
       return 0; // Success
     } catch (final Exception e) {
-      LOGGER.severe("Host function execution failed: " + e.getMessage());
-      e.printStackTrace();
+      LOGGER.log(java.util.logging.Level.SEVERE, "Host function execution failed", e);
       return -2; // Error
     }
   }
