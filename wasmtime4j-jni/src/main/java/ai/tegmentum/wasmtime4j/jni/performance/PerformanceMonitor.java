@@ -780,11 +780,11 @@ public final class PerformanceMonitor {
       return "No performance baselines established yet";
     }
 
-    final StringBuilder sb = new StringBuilder("Performance Baselines:\n");
+    final StringBuilder sb = new StringBuilder(String.format("Performance Baselines:%n"));
     for (final PerformanceBaseline baseline : BASELINES.values()) {
       sb.append(
           String.format(
-              "  %-20s: %.0fns ± %.0fns (%s, %d samples)\n",
+              "  %-20s: %.0fns ± %.0fns (%s, %d samples)%n",
               baseline.category,
               baseline.baselineAvgNs,
               baseline.baselineStdDevNs,
