@@ -459,7 +459,7 @@ public final class PanamaPerformanceMonitor {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Panama WebAssembly Performance Statistics ===\n");
+    sb.append(String.format("=== Panama WebAssembly Performance Statistics ===%n"));
 
     // Overall metrics
     final long uptimeMs = System.currentTimeMillis() - MONITOR_START_TIME;
@@ -467,14 +467,14 @@ public final class PanamaPerformanceMonitor {
     final double avgOverhead = getAverageFfiOverhead();
     final boolean meetsTarget = avgOverhead < SIMPLE_PANAMA_OPERATION_TARGET_NS;
 
-    sb.append(String.format("Uptime: %d ms\n", uptimeMs));
-    sb.append(String.format("Total Panama FFI calls: %,d\n", totalCalls));
+    sb.append(String.format("Uptime: %d ms%n", uptimeMs));
+    sb.append(String.format("Total Panama FFI calls: %,d%n", totalCalls));
     sb.append(
         String.format(
-            "Average FFI overhead: %.0f ns/call %s\n",
+            "Average FFI overhead: %.0f ns/call %s%n",
             avgOverhead, meetsTarget ? "(✓ meets target)" : "(⚠ exceeds target)"));
-    sb.append(String.format("Performance target: %d ns/call\n", SIMPLE_PANAMA_OPERATION_TARGET_NS));
-    sb.append("\n");
+    sb.append(String.format("Performance target: %d ns/call%n", SIMPLE_PANAMA_OPERATION_TARGET_NS));
+    sb.append(String.format("%n"));
 
     // Panama-specific metrics
     final long arenaAllocations = ARENA_ALLOCATIONS.get();
@@ -482,24 +482,24 @@ public final class PanamaPerformanceMonitor {
     final long netArenaSize = TOTAL_ARENA_SIZE_BYTES.get();
     final long activeArenas = arenaAllocations - arenaDeallocations;
 
-    sb.append("=== Panama Memory Statistics ===\n");
-    sb.append(String.format("Arena allocations: %,d\n", arenaAllocations));
-    sb.append(String.format("Arena deallocations: %,d\n", arenaDeallocations));
-    sb.append(String.format("Active arenas: %,d\n", activeArenas));
-    sb.append(String.format("Net arena size: %,d bytes\n", netArenaSize));
-    sb.append(String.format("Memory segment operations: %,d\n", MEMORY_SEGMENT_OPERATIONS.get()));
-    sb.append(String.format("Method handle calls: %,d\n", METHOD_HANDLE_CALLS.get()));
-    sb.append(String.format("Zero-copy operations: %,d\n", ZERO_COPY_OPERATIONS.get()));
-    sb.append("\n");
+    sb.append(String.format("=== Panama Memory Statistics ===%n"));
+    sb.append(String.format("Arena allocations: %,d%n", arenaAllocations));
+    sb.append(String.format("Arena deallocations: %,d%n", arenaDeallocations));
+    sb.append(String.format("Active arenas: %,d%n", activeArenas));
+    sb.append(String.format("Net arena size: %,d bytes%n", netArenaSize));
+    sb.append(String.format("Memory segment operations: %,d%n", MEMORY_SEGMENT_OPERATIONS.get()));
+    sb.append(String.format("Method handle calls: %,d%n", METHOD_HANDLE_CALLS.get()));
+    sb.append(String.format("Zero-copy operations: %,d%n", ZERO_COPY_OPERATIONS.get()));
+    sb.append(String.format("%n"));
 
     // JVM memory information
     final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
     final MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
 
-    sb.append("=== JVM Memory ===\n");
+    sb.append(String.format("=== JVM Memory ===%n"));
     sb.append(
         String.format(
-            "Heap used: %,d / %,d MB\n",
+            "Heap used: %,d / %,d MB%n",
             heapUsage.getUsed() / (1024 * 1024), heapUsage.getMax() / (1024 * 1024)));
 
     // GC information
@@ -510,18 +510,18 @@ public final class PanamaPerformanceMonitor {
 
     sb.append(
         String.format(
-            "GC time since last check: %d ms (%d collections)\n", gcTimeDelta, gcCollectionsDelta));
-    sb.append("\n");
+            "GC time since last check: %d ms (%d collections)%n", gcTimeDelta, gcCollectionsDelta));
+    sb.append(String.format("%n"));
 
     // Operation statistics
-    sb.append("=== Panama Operation Statistics ===\n");
+    sb.append(String.format("=== Panama Operation Statistics ===%n"));
     if (OPERATION_STATS.isEmpty()) {
-      sb.append("No operations recorded\n");
+      sb.append(String.format("No operations recorded%n"));
     } else {
       for (final OperationStats stats : OPERATION_STATS.values()) {
         sb.append(
             String.format(
-                "%-20s: %,8d calls, avg=%.0fns, min=%.0fns, max=%.0fns, slow=%.1f%%\n",
+                "%-20s: %,8d calls, avg=%.0fns, min=%.0fns, max=%.0fns, slow=%.1f%%%n",
                 stats.category,
                 stats.getTotalCalls(),
                 stats.getAverageTimeNs(),
@@ -662,12 +662,12 @@ public final class PanamaPerformanceMonitor {
       return "No active arenas";
     }
 
-    final StringBuilder sb = new StringBuilder("Active Arena Statistics:\n");
+    final StringBuilder sb = new StringBuilder(String.format("Active Arena Statistics:%n"));
     for (final ArenaStats stats : ARENA_STATS.values()) {
       if (!stats.closed) {
         sb.append(
             String.format(
-                "  Arena: lifetime=%dms, allocations=%d, total_bytes=%d\n",
+                "  Arena: lifetime=%dms, allocations=%d, total_bytes=%d%n",
                 stats.getLifetimeMs(),
                 stats.allocationCount.get(),
                 stats.totalAllocatedBytes.get()));
@@ -693,14 +693,14 @@ public final class PanamaPerformanceMonitor {
     if (avgOverhead > SIMPLE_PANAMA_OPERATION_TARGET_NS) {
       issues.append(
           String.format(
-              "• Panama FFI overhead %.0f ns exceeds target %d ns\n",
+              "• Panama FFI overhead %.0f ns exceeds target %d ns%n",
               avgOverhead, SIMPLE_PANAMA_OPERATION_TARGET_NS));
     }
 
     // Check for arena leaks
     final long activeArenas = ARENA_ALLOCATIONS.get() - ARENA_DEALLOCATIONS.get();
     if (activeArenas > 1000) { // More than 1000 active arenas might indicate leaks
-      issues.append(String.format("• Potential arena leak: %,d active arenas\n", activeArenas));
+      issues.append(String.format("• Potential arena leak: %,d active arenas%n", activeArenas));
     }
 
     // Check for excessive slow operations
@@ -708,11 +708,13 @@ public final class PanamaPerformanceMonitor {
       if (stats.getSlowOperationRate() > 5.0) { // More than 5% slow operations
         issues.append(
             String.format(
-                "• High slow operation rate for %s: %.1f%%\n",
+                "• High slow operation rate for %s: %.1f%%%n",
                 stats.category, stats.getSlowOperationRate()));
       }
     }
 
-    return issues.length() > 0 ? "Panama Performance Issues Detected:\n" + issues.toString() : null;
+    return issues.length() > 0
+        ? String.format("Panama Performance Issues Detected:%n") + issues.toString()
+        : null;
   }
 }

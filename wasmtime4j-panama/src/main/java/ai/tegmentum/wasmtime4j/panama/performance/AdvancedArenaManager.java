@@ -603,31 +603,31 @@ public final class AdvancedArenaManager {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Advanced Arena Management Statistics ===\n");
-    sb.append(String.format("Memory pressure: %s\n", currentPressure.get()));
-    sb.append(String.format("Total allocations: %,d\n", totalAllocations.get()));
-    sb.append(String.format("Current memory: %,d bytes\n", currentMemoryUsage.get()));
-    sb.append(String.format("Peak memory: %,d bytes\n", peakMemoryUsage.get()));
-    sb.append(String.format("Pool hits: %,d\n", poolHits.get()));
-    sb.append(String.format("Pool misses: %,d\n", poolMisses.get()));
-    sb.append(String.format("Zero-copies: %,d\n", zerocopies.get()));
-    sb.append(String.format("Alignment optimizations: %,d\n", alignmentOptimizations.get()));
+    sb.append(String.format("=== Advanced Arena Management Statistics ===%n"));
+    sb.append(String.format("Memory pressure: %s%n", currentPressure.get()));
+    sb.append(String.format("Total allocations: %,d%n", totalAllocations.get()));
+    sb.append(String.format("Current memory: %,d bytes%n", currentMemoryUsage.get()));
+    sb.append(String.format("Peak memory: %,d bytes%n", peakMemoryUsage.get()));
+    sb.append(String.format("Pool hits: %,d%n", poolHits.get()));
+    sb.append(String.format("Pool misses: %,d%n", poolMisses.get()));
+    sb.append(String.format("Zero-copies: %,d%n", zerocopies.get()));
+    sb.append(String.format("Alignment optimizations: %,d%n", alignmentOptimizations.get()));
 
     final long hits = poolHits.get();
     final long misses = poolMisses.get();
     final double hitRate = (hits + misses) > 0 ? (hits * 100.0) / (hits + misses) : 0.0;
-    sb.append(String.format("Pool hit rate: %.1f%%\n", hitRate));
+    sb.append(String.format("Pool hit rate: %.1f%%%n", hitRate));
 
-    sb.append("\nArena Pool Statistics:\n");
+    sb.append(String.format("%nArena Pool Statistics:%n"));
     arenaPools.forEach(
         (size, pool) -> {
           sb.append(
               String.format(
-                  "  %d bytes: %d created, %d active, %.1f%% hit rate\n",
+                  "  %d bytes: %d created, %d active, %.1f%% hit rate%n",
                   size, pool.totalCreated.get(), pool.currentActive.get(), pool.getHitRate()));
         });
 
-    sb.append("\nHot Allocation Patterns:\n");
+    sb.append(String.format("%nHot Allocation Patterns:%n"));
     allocationPatterns.entrySet().stream()
         .filter(entry -> entry.getValue().isHot())
         .forEach(
@@ -635,7 +635,7 @@ public final class AdvancedArenaManager {
               final AllocationPattern pattern = entry.getValue();
               sb.append(
                   String.format(
-                      "  %d bytes: %,d allocations, avg=%d bytes\n",
+                      "  %d bytes: %,d allocations, avg=%d bytes%n",
                       entry.getKey(), pattern.allocationCount.get(), pattern.averageSize.get()));
             });
 

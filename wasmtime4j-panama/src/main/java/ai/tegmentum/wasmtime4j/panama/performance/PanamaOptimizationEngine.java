@@ -597,30 +597,30 @@ public final class PanamaOptimizationEngine {
     final double hitRate = total > 0 ? (hits * 100.0) / total : 0.0;
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Panama Optimization Statistics ===\n");
-    sb.append(String.format("Optimization enabled: %b\n", optimizationEnabled));
-    sb.append(String.format("Total operations: %,d\n", operations));
-    sb.append(String.format("Average operation time: %.0f ns\n", avgTime));
-    sb.append(String.format("Method handle cache: %d entries\n", functionHandleCache.size()));
+    sb.append(String.format("=== Panama Optimization Statistics ===%n"));
+    sb.append(String.format("Optimization enabled: %b%n", optimizationEnabled));
+    sb.append(String.format("Total operations: %,d%n", operations));
+    sb.append(String.format("Average operation time: %.0f ns%n", avgTime));
+    sb.append(String.format("Method handle cache: %d entries%n", functionHandleCache.size()));
     sb.append(
-        String.format("Cache hit rate: %.1f%% (%,d hits, %,d misses)\n", hitRate, hits, misses));
-    sb.append(String.format("Arena allocations: %,d\n", totalArenaAllocations.get()));
-    sb.append(String.format("Arena bytes: %,d\n", totalArenaBytes.get()));
-    sb.append(String.format("Zero-copy calls: %,d\n", zerocopyCalls.get()));
-    sb.append(String.format("Segment pools: %d\n", segmentPools.size()));
+        String.format("Cache hit rate: %.1f%% (%,d hits, %,d misses)%n", hitRate, hits, misses));
+    sb.append(String.format("Arena allocations: %,d%n", totalArenaAllocations.get()));
+    sb.append(String.format("Arena bytes: %,d%n", totalArenaBytes.get()));
+    sb.append(String.format("Zero-copy calls: %,d%n", zerocopyCalls.get()));
+    sb.append(String.format("Segment pools: %d%n", segmentPools.size()));
 
     // Pool statistics
-    sb.append("\nSegment pool statistics:\n");
+    sb.append(String.format("%nSegment pool statistics:%n"));
     segmentPools.forEach(
         (size, pool) -> {
           sb.append(
               String.format(
-                  "  %d bytes: %,d segments, %.1f%% hit rate\n",
+                  "  %d bytes: %,d segments, %.1f%% hit rate%n",
                   size, pool.totalSegments.get(), pool.getHitRate()));
         });
 
     // Top method handles
-    sb.append("\nTop method handles:\n");
+    sb.append(String.format("%nTop method handles:%n"));
     functionHandleCache.values().stream()
         .sorted((h1, h2) -> Long.compare(h2.callCount.get(), h1.callCount.get()))
         .limit(5)
@@ -628,7 +628,7 @@ public final class PanamaOptimizationEngine {
             handle ->
                 sb.append(
                     String.format(
-                        "  %s: %,d calls, avg=%.0fns\n",
+                        "  %s: %,d calls, avg=%.0fns%n",
                         handle.signature.substring(0, Math.min(30, handle.signature.length())),
                         handle.callCount.get(),
                         (double) handle.averageTimeNs)));
