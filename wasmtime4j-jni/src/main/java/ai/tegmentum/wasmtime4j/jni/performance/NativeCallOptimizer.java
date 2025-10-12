@@ -583,16 +583,16 @@ public final class NativeCallOptimizer {
     }
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Native Call Optimization Statistics ===\n");
-    sb.append(String.format("Total optimized calls: %,d\n", totalOptimizedCalls.get()));
-    sb.append(String.format("Saved transitions: %,d\n", totalSavedTransitions.get()));
-    sb.append(String.format("Time saved: %,d ms\n", totalTimeSavedNs.get() / 1_000_000));
-    sb.append(String.format("Batch operations: %,d\n", batchOperations.get()));
-    sb.append(String.format("Async operations: %,d\n", asyncOperations.get()));
-    sb.append(String.format("Fast path hits: %,d\n", fastPathHits.get()));
+    sb.append(String.format("=== Native Call Optimization Statistics ===%n"));
+    sb.append(String.format("Total optimized calls: %,d%n", totalOptimizedCalls.get()));
+    sb.append(String.format("Saved transitions: %,d%n", totalSavedTransitions.get()));
+    sb.append(String.format("Time saved: %,d ms%n", totalTimeSavedNs.get() / 1_000_000));
+    sb.append(String.format("Batch operations: %,d%n", batchOperations.get()));
+    sb.append(String.format("Async operations: %,d%n", asyncOperations.get()));
+    sb.append(String.format("Fast path hits: %,d%n", fastPathHits.get()));
 
     // Top call patterns
-    sb.append("\nTop optimized methods:\n");
+    sb.append(String.format("%nTop optimized methods:%n"));
     patterns.entrySet().stream()
         .sorted(
             (e1, e2) -> Long.compare(e2.getValue().callCount.get(), e1.getValue().callCount.get()))
@@ -602,7 +602,7 @@ public final class NativeCallOptimizer {
               final CallPattern pattern = entry.getValue();
               sb.append(
                   String.format(
-                      "  %s: %,d calls, %dns avg, level=%s\n",
+                      "  %s: %,d calls, %dns avg, level=%s%n",
                       pattern.methodName,
                       pattern.callCount.get(),
                       pattern.averageDurationNs.get(),

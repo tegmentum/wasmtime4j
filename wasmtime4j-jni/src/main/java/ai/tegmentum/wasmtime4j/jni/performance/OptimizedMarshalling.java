@@ -588,9 +588,9 @@ public final class OptimizedMarshalling {
    */
   public static String getStatistics() {
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Optimized Marshalling Statistics ===\n");
-    sb.append(String.format("Cached marshalling plans: %d\n", MARSHALLING_CACHE.size()));
-    sb.append(String.format("Buffer pool: %s\n", BUFFER_POOL.getStats()));
+    sb.append(String.format("=== Optimized Marshalling Statistics ===%n"));
+    sb.append(String.format("Cached marshalling plans: %d%n", MARSHALLING_CACHE.size()));
+    sb.append(String.format("Buffer pool: %s%n", BUFFER_POOL.getStats()));
 
     // Strategy usage breakdown
     final ConcurrentHashMap<MarshallingStrategy, Integer> strategyCounts =
@@ -599,10 +599,10 @@ public final class OptimizedMarshalling {
       strategyCounts.merge(plan.strategy, plan.useCount, Integer::sum);
     }
 
-    sb.append("Strategy usage:\n");
+    sb.append(String.format("Strategy usage:%n"));
     for (final MarshallingStrategy strategy : MarshallingStrategy.values()) {
       final int count = strategyCounts.getOrDefault(strategy, 0);
-      sb.append(String.format("  %s: %d uses\n", strategy, count));
+      sb.append(String.format("  %s: %d uses%n", strategy, count));
     }
 
     return sb.toString();
