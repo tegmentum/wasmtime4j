@@ -524,21 +524,21 @@ public final class CompilationCache {
     final double hitRate = total > 0 ? (hits * 100.0) / total : 0.0;
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== Compilation Cache Statistics ===\n");
-    sb.append(String.format("Cache directory: %s\n", CACHE_DIR));
-    sb.append(String.format("Cache enabled: %b\n", enabled));
-    sb.append(String.format("Cached modules: %d/%d\n", MODULE_CACHE.size(), MAX_CACHED_MODULES));
-    sb.append(String.format("Cache hits: %,d\n", hits));
-    sb.append(String.format("Cache misses: %,d\n", misses));
-    sb.append(String.format("Hit rate: %.1f%%\n", hitRate));
-    sb.append(String.format("Stores: %,d\n", CACHE_STORES.get()));
-    sb.append(String.format("Evictions: %,d\n", CACHE_EVICTIONS.get()));
+    sb.append(String.format("=== Compilation Cache Statistics ===%n"));
+    sb.append(String.format("Cache directory: %s%n", CACHE_DIR));
+    sb.append(String.format("Cache enabled: %b%n", enabled));
+    sb.append(String.format("Cached modules: %d/%d%n", MODULE_CACHE.size(), MAX_CACHED_MODULES));
+    sb.append(String.format("Cache hits: %,d%n", hits));
+    sb.append(String.format("Cache misses: %,d%n", misses));
+    sb.append(String.format("Hit rate: %.1f%%%n", hitRate));
+    sb.append(String.format("Stores: %,d%n", CACHE_STORES.get()));
+    sb.append(String.format("Evictions: %,d%n", CACHE_EVICTIONS.get()));
 
     // Calculate total cache size
     final long totalSize = MODULE_CACHE.values().stream().mapToLong(entry -> entry.size).sum();
     sb.append(
         String.format(
-            "Total cache size: %,d bytes (%.1f MB)\n", totalSize, totalSize / (1024.0 * 1024.0)));
+            "Total cache size: %,d bytes (%.1f MB)%n", totalSize, totalSize / (1024.0 * 1024.0)));
 
     return sb.toString();
   }

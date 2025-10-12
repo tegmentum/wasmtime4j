@@ -578,19 +578,19 @@ public final class JniOptimizationEngine {
     final long saved = savedTransitions.get();
 
     final StringBuilder sb = new StringBuilder();
-    sb.append("=== JNI Optimization Statistics ===\n");
-    sb.append(String.format("Optimization enabled: %b\n", optimizationEnabled));
-    sb.append(String.format("Total JNI calls: %,d\n", totalCalls));
-    sb.append(String.format("Average call time: %.0f ns\n", avgCallTime));
-    sb.append(String.format("Batched calls: %,d\n", batched));
-    sb.append(String.format("Saved transitions: %,d\n", saved));
-    sb.append(String.format("GC pressure: %d\n", gcPressure.get()));
-    sb.append(String.format("GC optimization active: %b\n", gcOptimizationActive));
-    sb.append(String.format("Call patterns tracked: %d\n", callPatterns.size()));
-    sb.append(String.format("Critical sections: %d\n", criticalSections.size()));
+    sb.append(String.format("=== JNI Optimization Statistics ===%n"));
+    sb.append(String.format("Optimization enabled: %b%n", optimizationEnabled));
+    sb.append(String.format("Total JNI calls: %,d%n", totalCalls));
+    sb.append(String.format("Average call time: %.0f ns%n", avgCallTime));
+    sb.append(String.format("Batched calls: %,d%n", batched));
+    sb.append(String.format("Saved transitions: %,d%n", saved));
+    sb.append(String.format("GC pressure: %d%n", gcPressure.get()));
+    sb.append(String.format("GC optimization active: %b%n", gcOptimizationActive));
+    sb.append(String.format("Call patterns tracked: %d%n", callPatterns.size()));
+    sb.append(String.format("Critical sections: %d%n", criticalSections.size()));
 
     // Top call patterns
-    sb.append("\nTop call patterns:\n");
+    sb.append(String.format("%nTop call patterns:%n"));
     callPatterns.values().stream()
         .sorted((p1, p2) -> Long.compare(p2.callCount.get(), p1.callCount.get()))
         .limit(5)
@@ -598,7 +598,7 @@ public final class JniOptimizationEngine {
             pattern ->
                 sb.append(
                     String.format(
-                        "  %s: %,d calls, avg=%.0fns, strategy=%s\n",
+                        "  %s: %,d calls, avg=%.0fns, strategy=%s%n",
                         pattern.methodName,
                         pattern.callCount.get(),
                         (double) pattern.averageTimeNs,
