@@ -13,6 +13,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,7 +68,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
   private static final int MAX_CACHE_SIZE = 100;
 
   /** Hot path optimization - cache the most frequently called function signature. */
-  private volatile Object[] cachedNativeParams;
+  private final AtomicReference<Object[]> cachedNativeParams = new AtomicReference<>();
 
   private volatile String cachedParamSignature;
   private volatile long lastOptimizationCheck = 0;
@@ -531,7 +532,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
     if (!paramSignature.equals(cachedParamSignature)) {
       // Pre-compute and cache marshalling for this parameter pattern
       try {
-        cachedNativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+        cachedNativeParams.set(JniTypeConverter.wasmValuesToNativeParams(params));
         cachedParamSignature = paramSignature;
         lastOptimizationCheck = System.currentTimeMillis();
         LOGGER.fine(
