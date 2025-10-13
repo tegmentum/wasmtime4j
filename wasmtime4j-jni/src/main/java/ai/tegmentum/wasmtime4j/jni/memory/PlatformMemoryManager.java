@@ -88,6 +88,9 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /** Platform memory information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for platform memory information, fields used for monitoring")
   public static final class PlatformInfo {
     public final long totalPhysicalMemory;
     public final long availableMemory;
@@ -122,6 +125,10 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /** Memory pool statistics. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for memory statistics, fields used for monitoring and diagnostics")
   public static final class MemoryStats {
     public final long totalAllocated;
     public final long totalFreed;

@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -743,6 +744,10 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Snapshot information class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for snapshot information, fields accessed by native code and reflection")
   public static final class SnapshotInfo {
     public final long handle;
     public final String rootPath;
@@ -776,6 +781,10 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Snapshot metadata class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for snapshot metadata, fields accessed by native code and reflection")
   public static final class SnapshotMetadata {
     public final long handle;
     public final String rootPath;

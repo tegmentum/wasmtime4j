@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -986,6 +987,9 @@ public final class WasiExperimentalProcess {
   }
 
   /** Process resource usage. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for process resource monitoring, fields used for diagnostics")
   public static final class ProcessResourceUsage {
     public final double cpuUsagePercent;
     public final long memoryUsageBytes;
@@ -1037,6 +1041,9 @@ public final class WasiExperimentalProcess {
   }
 
   /** Resource usage alert. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for resource usage alerts, fields used for monitoring")
   public static final class ResourceUsageAlert {
     public final long processHandle;
     public final String alertType;
@@ -1102,6 +1109,9 @@ public final class WasiExperimentalProcess {
   }
 
   /** Process information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for process information, fields used for process management")
   private static final class ProcessInfo {
     public final long handle;
     public final String executable;
