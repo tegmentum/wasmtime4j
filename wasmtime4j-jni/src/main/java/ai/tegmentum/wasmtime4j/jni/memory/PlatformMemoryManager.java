@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.memory;
 
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,6 +57,9 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /** Memory allocation information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Diagnostic fields for memory leak detection and debugging")
   public static final class AllocationInfo {
     public final long ptr;
     public final long size;
