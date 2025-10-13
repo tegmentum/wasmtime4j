@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -527,6 +528,9 @@ public class JniLinker<T> implements Linker<T> {
    * @throws WasmException if the callback fails
    */
   @SuppressWarnings("unused") // Called from native code
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called by native code through JNI")
   private static WasmValue[] invokeHostFunctionCallback(
       final long callbackId, final WasmValue[] params) throws WasmException {
     LOGGER.info(

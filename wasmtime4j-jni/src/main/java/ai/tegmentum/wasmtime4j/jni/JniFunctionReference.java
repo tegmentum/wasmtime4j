@@ -24,6 +24,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -353,6 +354,9 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    * @return 0 on success, error code on failure
    */
   @SuppressWarnings("unused") // Called by native code
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called by native code through JNI")
   private static int functionReferenceCallback(
       final long functionReferenceId, final byte[] paramsData, final byte[] resultsBuffer) {
     final JniFunctionReference functionReference =

@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -276,6 +277,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * @return 0 on success, error code on failure
    */
   @SuppressWarnings("unused") // Called by native code
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called by native code through JNI")
   private static int hostFunctionCallback(
       final long hostFunctionId, final byte[] paramsData, final byte[] resultsBuffer) {
     final JniHostFunction hostFunction = HOST_FUNCTION_REGISTRY.get(hostFunctionId);
@@ -326,6 +330,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * @param functionType the function type to marshal
    * @return byte array containing marshalled function type
    */
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Reserved for future use in JNI callback marshalling")
   private byte[] marshalFunctionType(final FunctionType functionType) {
     return JniTypeConverter.marshalFunctionType(functionType);
   }
