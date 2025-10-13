@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 /**
@@ -33,11 +32,10 @@ public final class JniOptimizationEngine {
 
   private static final Logger LOGGER = Logger.getLogger(JniOptimizationEngine.class.getName());
 
-  /** Singleton instance for global optimization coordination. */
-  private static volatile JniOptimizationEngine instance;
-
-  /** Lock for singleton initialization. */
-  private static final ReentrantLock INSTANCE_LOCK = new ReentrantLock();
+  /** Holder class for lazy initialization (thread-safe without synchronization). */
+  private static class InstanceHolder {
+    private static final JniOptimizationEngine INSTANCE = new JniOptimizationEngine();
+  }
 
   /** Whether optimization is enabled. */
   private static volatile boolean optimizationEnabled =
@@ -234,17 +232,7 @@ public final class JniOptimizationEngine {
    * @return the optimization engine
    */
   public static JniOptimizationEngine getInstance() {
-    if (instance == null) {
-      INSTANCE_LOCK.lock();
-      try {
-        if (instance == null) {
-          instance = new JniOptimizationEngine();
-        }
-      } finally {
-        INSTANCE_LOCK.unlock();
-      }
-    }
-    return instance;
+    return InstanceHolder.INSTANCE;
   }
 
   /**

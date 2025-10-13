@@ -651,20 +651,22 @@ public final class PerformanceMonitor {
     }
 
     final double currentAvg = stats.getAverageTimeNs();
-    final PerformanceBaseline baseline = BASELINES.get(category);
 
-    if (baseline == null) {
-      // Establish new baseline
-      final double stdDev = calculateStandardDeviation(stats);
-      final PerformanceBaseline newBaseline =
-          new PerformanceBaseline(category, currentAvg, stdDev, totalCalls);
-      BASELINES.put(category, newBaseline);
-      LOGGER.info(
-          String.format(
-              "Established performance baseline for %s: %.0fns ± %.0fns",
-              category, currentAvg, stdDev));
-    } else {
-      // Check for regression or improvement
+    // Atomically get or create baseline
+    final PerformanceBaseline baseline =
+        BASELINES.computeIfAbsent(
+            category,
+            key -> {
+              final double stdDev = calculateStandardDeviation(stats);
+              LOGGER.info(
+                  String.format(
+                      "Established performance baseline for %s: %.0fns ± %.0fns",
+                      key, currentAvg, stdDev));
+              return new PerformanceBaseline(key, currentAvg, stdDev, totalCalls);
+            });
+
+    // Check for regression or improvement (only if baseline already existed)
+    if (baseline.baselineCount < totalCalls) {
       if (baseline.isRegression(currentAvg)) {
         LOGGER.warning(
             String.format(

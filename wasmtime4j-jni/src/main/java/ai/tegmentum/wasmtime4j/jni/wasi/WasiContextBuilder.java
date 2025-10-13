@@ -393,9 +393,11 @@ public final class WasiContextBuilder {
    * @param hostPath the host directory path
    * @param guestPath the guest directory path
    * @return this builder for method chaining
+   * @throws IllegalArgumentException if hostPath is null
    */
   public WasiContextBuilder addPreopenedDirectory(final Path hostPath, final String guestPath) {
-    return withPreopenDirectory(guestPath, hostPath != null ? hostPath.toString() : null);
+    JniValidation.requireNonNull(hostPath, "hostPath");
+    return withPreopenDirectory(guestPath, hostPath.toString());
   }
 
   /**
