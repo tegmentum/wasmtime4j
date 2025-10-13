@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link JniValidationException}. */
@@ -60,6 +61,9 @@ class JniValidationExceptionTest {
   }
 
   @Test
+  @SuppressFBWarnings(
+      value = "NP_LOAD_OF_KNOWN_NULL_VALUE",
+      justification = "Test intentionally validates null parameter handling")
   void testParameterDetailsWithNullValue() {
     final String message = "Validation failed";
     final String parameterName = "nullParam";

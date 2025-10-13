@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
@@ -292,6 +293,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws JniResourceException if this memory is closed
    * @throws RuntimeException if the buffer cannot be created
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_BUF",
+      justification = "Returns duplicate() of buffer, not the internal reference")
   public ByteBuffer getBuffer() {
     ensureNotClosed();
 

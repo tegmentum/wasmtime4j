@@ -503,11 +503,6 @@ public final class JniWitInterfaceEvolution implements WitInterfaceEvolution {
                 .collect(java.util.stream.Collectors.toList())));
   }
 
-  private String serializeAdaptationConfig(final AdaptationConfig config) {
-    // Serialize adaptation configuration
-    return "{}"; // Simplified implementation
-  }
-
   private String serializeEvolutionStrategy(final InterfaceEvolutionStrategy strategy) {
     // Serialize evolution strategy
     return "{}"; // Simplified implementation
