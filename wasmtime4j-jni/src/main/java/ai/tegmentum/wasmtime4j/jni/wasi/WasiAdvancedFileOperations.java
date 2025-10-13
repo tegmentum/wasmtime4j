@@ -499,9 +499,15 @@ public final class WasiAdvancedFileOperations {
     }
   }
 
-  /** Converts integer permissions to POSIX permission set. */
+  /**
+   * Converts integer permissions to POSIX permission set.
+   *
+   * <p>Note: This method restricts permissions to owner and group only (0770) for security. World
+   * permissions are masked out to prevent overly permissive file access.
+   */
   private Set<PosixFilePermission> convertToPosixPermissions(final int permissions) {
-    return PosixFilePermissions.fromString(String.format("%03o", permissions & 0777));
+    // Mask to owner and group permissions only (0770) to avoid world-writable files
+    return PosixFilePermissions.fromString(String.format("%03o", permissions & 0770));
   }
 
   /** Converts POSIX permission set to integer permissions. */

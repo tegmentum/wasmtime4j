@@ -132,6 +132,9 @@ public final class WasiProcessOperations {
     JniValidation.requireNonNull(arguments, "arguments");
     JniValidation.requireNonNull(environment, "environment");
 
+    // Validate command for security
+    validateCommand(command);
+
     if (childProcesses.size() >= MAX_CHILD_PROCESSES) {
       throw new WasiException(WasiErrorCode.EMFILE, "Maximum number of child processes reached");
     }
@@ -142,7 +145,7 @@ public final class WasiProcessOperations {
     return CompletableFuture.supplyAsync(
         () -> {
           try {
-            // Build command line
+            // Build command line (ProcessBuilder with List prevents shell interpretation)
             final List<String> commandLine = new ArrayList<>();
             commandLine.add(command);
             commandLine.addAll(arguments);
@@ -386,24 +389,36 @@ public final class WasiProcessOperations {
    *
    * <p>WASI function: proc_raise
    *
+   * <p>Note: This implementation throws exceptions instead of calling System.exit() or
+   * Runtime.halt() to avoid terminating the entire JVM. Applications should catch termination
+   * signal exceptions and handle process lifecycle appropriately.
+   *
    * @param signal the signal to raise
-   * @throws WasiException if the operation fails
+   * @throws WasiException if the operation fails or for terminal signals (SIGINT, SIGTERM, SIGKILL)
    */
   public void raiseSignal(final int signal) {
     LOGGER.fine(() -> String.format("Raising signal: %d", signal));
 
     try {
       // Signal handling in Java is limited, so we implement basic signal semantics
+      // Note: We throw exceptions instead of calling System.exit() to avoid terminating the JVM
       switch (signal) {
         case 2: // SIGINT
         case 15: // SIGTERM
-          // Trigger graceful shutdown
-          System.exit(signal);
-          break;
+          // Throw exception instead of System.exit() to avoid terminating the entire JVM
+          LOGGER.warning(
+              () ->
+                  String.format(
+                      "Terminal signal %d raised - throwing exception instead of System.exit()",
+                      signal));
+          throw new WasiException(
+              WasiErrorCode.EINTR,
+              String.format("Process termination requested by signal %d", signal));
         case 9: // SIGKILL
-          // Force immediate exit
-          Runtime.getRuntime().halt(signal);
-          break;
+          // Throw exception for forceful termination instead of Runtime.halt()
+          LOGGER.warning("SIGKILL raised - throwing exception instead of Runtime.halt()");
+          throw new WasiException(
+              WasiErrorCode.EINTR, "Forceful process termination requested by SIGKILL");
         case 19: // SIGSTOP
         case 17: // SIGCHLD
           // These signals are typically handled by the OS, ignore
@@ -416,6 +431,9 @@ public final class WasiProcessOperations {
 
       LOGGER.fine(() -> String.format("Signal raised: %d", signal));
 
+    } catch (final WasiException e) {
+      // Rethrow WasiException as-is (includes termination signal exceptions)
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to raise signal", e);
       throw new WasiException(WasiErrorCode.EIO, "Failed to raise signal: " + e.getMessage());
@@ -439,6 +457,28 @@ public final class WasiProcessOperations {
    */
   public List<ProcessInfo> getAllChildProcesses() {
     return new ArrayList<>(childProcesses.values());
+  }
+
+  /**
+   * Validates command string to prevent shell injection attacks.
+   *
+   * @param command the command to validate
+   * @throws WasiException if command contains suspicious characters
+   */
+  private void validateCommand(final String command) {
+    // Check for shell metacharacters that could be used for injection
+    // Note: This is defense in depth - ProcessBuilder with List<String> already prevents
+    // shell interpretation, but we validate to be extra safe
+    if (command.contains("|")
+        || command.contains("&")
+        || command.contains(";")
+        || command.contains("$")
+        || command.contains("`")
+        || command.contains("\n")
+        || command.contains("\r")) {
+      throw new WasiException(
+          WasiErrorCode.EINVAL, "Command contains suspicious shell metacharacters");
+    }
   }
 
   /** Closes all child processes and releases resources. */
