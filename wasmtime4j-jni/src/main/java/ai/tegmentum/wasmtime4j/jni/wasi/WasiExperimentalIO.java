@@ -921,6 +921,9 @@ public final class WasiExperimentalIO {
   }
 
   /** Async I/O result. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for async I/O results, fields used for I/O completion tracking")
   public static final class AsyncIOResult {
     public final int bytesTransferred;
     public final WasiException error;
@@ -942,6 +945,10 @@ public final class WasiExperimentalIO {
   }
 
   /** File system event. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for file system events, fields used for event tracking and monitoring")
   public static final class FileSystemEvent {
     public final FileSystemEventType eventType;
     public final String path;

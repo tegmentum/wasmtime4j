@@ -1143,6 +1143,10 @@ public final class WasiExperimentalProcess {
   }
 
   /** Resource monitor information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for resource monitoring, fields used for monitoring and diagnostics")
   private static final class ResourceMonitorInfo {
     public final long handle;
     public final long processHandle;
@@ -1168,6 +1172,9 @@ public final class WasiExperimentalProcess {
   }
 
   /** IPC handle information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for IPC handle management, fields used for process communication")
   private static final class IpcHandleInfo {
     public final long handle;
     public final long sourceProcessHandle;

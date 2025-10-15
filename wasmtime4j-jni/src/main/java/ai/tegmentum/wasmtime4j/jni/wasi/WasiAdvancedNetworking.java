@@ -1003,6 +1003,9 @@ public final class WasiAdvancedNetworking {
   }
 
   /** WebSocket message class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for WebSocket messages, fields used for message processing")
   public static final class WebSocketMessage {
     public final int bytesReceived;
     public final WebSocketMessageType messageType;

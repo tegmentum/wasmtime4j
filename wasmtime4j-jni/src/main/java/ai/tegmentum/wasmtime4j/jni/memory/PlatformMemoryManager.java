@@ -169,6 +169,10 @@ public final class PlatformMemoryManager implements AutoCloseable {
   }
 
   /** Memory leak information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for memory leak detection, fields used for diagnostics and reporting")
   public static final class MemoryLeak {
     public final AllocationInfo allocationInfo;
     public final long ageMillis;
