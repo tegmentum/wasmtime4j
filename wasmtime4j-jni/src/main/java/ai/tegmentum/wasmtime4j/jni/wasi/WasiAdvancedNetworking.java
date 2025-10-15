@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -893,6 +894,9 @@ public final class WasiAdvancedNetworking {
   }
 
   /** Connection information class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for network connections, fields used for connection management")
   public static final class ConnectionInfo {
     public final long handle;
     public final String host;
@@ -928,6 +932,9 @@ public final class WasiAdvancedNetworking {
   }
 
   /** WebSocket information class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for WebSocket connections, fields used for connection management")
   public static final class WebSocketInfo {
     public final long handle;
     public final String uri;
@@ -959,6 +966,9 @@ public final class WasiAdvancedNetworking {
   }
 
   /** HTTP/2 response class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for HTTP/2 responses, fields accessed for response processing")
   public static final class Http2Response {
     public final int statusCode;
     public final Map<String, String> headers;
@@ -1014,6 +1024,9 @@ public final class WasiAdvancedNetworking {
   }
 
   /** Network interface information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for network interfaces, fields used for network management")
   public static final class NetworkInterface {
     public final String name;
     public final String description;
