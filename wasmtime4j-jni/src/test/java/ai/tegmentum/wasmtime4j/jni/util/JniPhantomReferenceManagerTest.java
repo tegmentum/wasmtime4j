@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -232,6 +233,10 @@ class JniPhantomReferenceManagerTest {
       }
     }
 
+    @SuppressFBWarnings(
+        value = "DM_GC",
+        justification =
+            "Test code explicitly testing garbage collection and phantom reference cleanup")
     private void forceGarbageCollection() {
       // Force garbage collection multiple times
       for (int i = 0; i < 3; i++) {
@@ -392,6 +397,10 @@ class JniPhantomReferenceManagerTest {
       Thread.sleep(100);
     }
 
+    @SuppressFBWarnings(
+        value = "DM_GC",
+        justification =
+            "Test code explicitly testing garbage collection and phantom reference cleanup")
     private void forceGarbageCollection() {
       for (int i = 0; i < 3; i++) {
         System.gc();

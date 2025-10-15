@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -505,6 +506,12 @@ public final class WasiAdvancedFileOperations {
    * <p>Note: This method restricts permissions to owner and group only (0770) for security. World
    * permissions are masked out to prevent overly permissive file access.
    */
+  @SuppressFBWarnings(
+      value = "OVERLY_PERMISSIVE_FILE_PERMISSION",
+      justification =
+          "WASI file operations require flexible permissions. World permissions are explicitly"
+              + " masked to 0770 maximum, preventing world-writable files. Group permissions are"
+              + " intentional for shared WASI contexts.")
   private Set<PosixFilePermission> convertToPosixPermissions(final int permissions) {
     // Mask to owner and group permissions only (0770) to avoid world-writable files
     return PosixFilePermissions.fromString(String.format("%03o", permissions & 0770));
