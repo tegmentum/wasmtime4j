@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link JniValidation}. */
@@ -18,9 +17,6 @@ class JniValidationTest {
   }
 
   @Test
-  @SuppressFBWarnings(
-      value = "NP_NONNULL_PARAM_VIOLATION",
-      justification = "Test intentionally passes null to validate null checking behavior")
   void testRequireNonNullWithNullObject() {
     final JniValidationException exception =
         assertThrows(

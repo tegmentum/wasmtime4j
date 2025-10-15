@@ -547,10 +547,9 @@ public final class JniTypeConverter {
         System.arraycopy(v128Data, 0, buffer, offset, 16);
         return offset + 16;
       case FUNCREF:
-        writeLong(buffer, offset, 0); // Null funcref
-        return offset + 8;
       case EXTERNREF:
-        writeLong(buffer, offset, 0); // Null externref
+        // Both reference types use the same null representation
+        writeLong(buffer, offset, 0);
         return offset + 8;
       default:
         throw new JniValidationException("Unsupported value type: " + value.getType());

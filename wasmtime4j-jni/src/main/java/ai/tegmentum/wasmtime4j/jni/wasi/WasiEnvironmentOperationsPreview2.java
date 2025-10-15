@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +61,7 @@ public final class WasiEnvironmentOperationsPreview2 {
   private volatile Map<String, String> cachedEnvironment;
 
   /** Cached command-line arguments. */
-  private volatile String[] cachedArguments;
+  private final AtomicReference<String[]> cachedArguments = new AtomicReference<>();
 
   /**
    * Creates a new WASI Preview 2 environment operations instance.
@@ -199,8 +200,9 @@ public final class WasiEnvironmentOperationsPreview2 {
     LOGGER.fine("Getting command-line arguments");
 
     // Return cached arguments if available
-    if (cachedArguments != null) {
-      return java.util.Arrays.asList(cachedArguments);
+    final String[] cached = cachedArguments.get();
+    if (cached != null) {
+      return java.util.Arrays.asList(cached);
     }
 
     try {
@@ -215,7 +217,7 @@ public final class WasiEnvironmentOperationsPreview2 {
       }
 
       final String[] arguments = parseArguments(result.args);
-      cachedArguments = arguments;
+      cachedArguments.set(arguments);
 
       LOGGER.fine(() -> String.format("Got %d command-line arguments", arguments.length));
       return java.util.Arrays.asList(arguments);

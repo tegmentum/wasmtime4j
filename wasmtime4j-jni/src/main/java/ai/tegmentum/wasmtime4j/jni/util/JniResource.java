@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,6 +93,12 @@ public abstract class JniResource implements AutoCloseable {
    * @throws JniResourceException if the native handle is invalid
    */
   @SuppressWarnings("this-escape")
+  @SuppressFBWarnings(
+      value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+      justification =
+          "Method reference this::doCleanupSafely is stored for later execution, not called in"
+              + " constructor. The actual execution happens during phantom reference cleanup after"
+              + " object is fully initialized.")
   protected JniResource(final long nativeHandle) {
     JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
@@ -164,7 +171,7 @@ public abstract class JniResource implements AutoCloseable {
     if (closed.compareAndSet(false, true)) {
       try {
         // Clean up phantom reference tracking
-        final ResourceCleanup cleanupData = PHANTOM_REFS.remove(phantomRef);
+        PHANTOM_REFS.remove(phantomRef);
         phantomRef.clear();
 
         // Perform actual resource cleanup

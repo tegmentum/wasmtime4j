@@ -16,4 +16,14 @@
     <Bug pattern="COMMAND_INJECTION"/>
     <Class name="ai.tegmentum.wasmtime4j.jni.wasi.WasiProcessOperations"/>
   </Match>
+
+  <!-- Suppress test-specific warnings in test classes -->
+  <!-- Tests intentionally use patterns that trigger warnings for validation purposes -->
+  <Match>
+    <Or>
+      <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
+      <Bug pattern="DE_MIGHT_IGNORE"/>
+    </Or>
+    <Class name="~.*Test.*"/>
+  </Match>
 </FindBugsFilter>
