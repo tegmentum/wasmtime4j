@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Suppress unread field warnings for memory data classes -->
+  <!-- These are data classes where fields are accessed by native code, reflection, or reserved for diagnostics -->
+  <Match>
+    <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+    <Class name="~.*\.memory\..*\$.*"/>
+  </Match>
+
+  <!-- Suppress rough constant warnings in test code -->
+  <!-- Test code intentionally uses simplified values for readability -->
+  <Match>
+    <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
+    <Class name="~.*Test.*"/>
+  </Match>
+</FindBugsFilter>
