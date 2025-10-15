@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -968,6 +969,9 @@ public final class WasiExperimentalIO {
   }
 
   /** Async I/O operation information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for async I/O operations, fields used for I/O management")
   private static final class AsyncIOOperation {
     public final long handle;
     public final long fileHandle;
@@ -996,6 +1000,9 @@ public final class WasiExperimentalIO {
   }
 
   /** Memory-mapped file information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for memory-mapped files, fields used for memory management")
   private static final class MemoryMappedFileInfo {
     public final long handle;
     public final long fileHandle;
@@ -1024,6 +1031,9 @@ public final class WasiExperimentalIO {
   }
 
   /** File lock information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for file locks, fields used for lock management")
   private static final class FileLockInfo {
     public final long handle;
     public final long fileHandle;
@@ -1052,6 +1062,9 @@ public final class WasiExperimentalIO {
   }
 
   /** Directory watcher information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for directory watchers, fields used for file system monitoring")
   private static final class DirectoryWatcherInfo {
     public final long handle;
     public final String directoryPath;

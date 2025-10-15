@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -514,6 +515,9 @@ public final class WasiProcessOperations {
   }
 
   /** Information about a spawned process. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for process information, fields used for process management")
   public static final class ProcessInfo {
     public final long handle;
     public final Process process;
