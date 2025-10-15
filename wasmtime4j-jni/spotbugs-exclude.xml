@@ -9,4 +9,11 @@
       <Class name="~.*\.memory\..*\$.*"/>
     </Or>
   </Match>
+
+  <!-- Suppress command injection in WasiProcessOperations.spawnProcess() -->
+  <!-- ProcessBuilder with List<String> is safe - does not invoke shell, arguments passed separately to OS -->
+  <Match>
+    <Bug pattern="COMMAND_INJECTION"/>
+    <Class name="ai.tegmentum.wasmtime4j.jni.wasi.WasiProcessOperations"/>
+  </Match>
 </FindBugsFilter>
