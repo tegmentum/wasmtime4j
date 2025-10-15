@@ -1079,6 +1079,10 @@ public final class WasiExperimentalProcess {
   }
 
   /** Service request. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for service requests, fields used for request routing and processing")
   public static final class ServiceRequest {
     public final String operation;
     public final Map<String, String> parameters;
@@ -1214,6 +1218,9 @@ public final class WasiExperimentalProcess {
   }
 
   /** System service information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for system service info, fields used for service management")
   public static final class SystemServiceInfo {
     public final String serviceName;
     public final SystemServiceMetadata metadata;
