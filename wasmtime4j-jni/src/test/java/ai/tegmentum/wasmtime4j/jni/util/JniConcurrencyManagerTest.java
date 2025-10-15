@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -358,7 +359,13 @@ class JniConcurrencyManagerTest {
                       () -> {
                         readStartLatch.countDown();
                         try {
-                          writeLatch.await(5, TimeUnit.SECONDS);
+                          @SuppressWarnings("unused")
+                          @SuppressFBWarnings(
+                              value = "RV_RETURN_VALUE_IGNORED",
+                              justification =
+                                  "Test synchronization - timeout result not relevant for test"
+                                      + " scenario")
+                          boolean ignored = writeLatch.await(5, TimeUnit.SECONDS);
                         } catch (final InterruptedException e) {
                           Thread.currentThread().interrupt();
                         }
@@ -600,7 +607,13 @@ class JniConcurrencyManagerTest {
                       () -> {
                         startLatch.countDown();
                         try {
-                          operationLatch.await(5, TimeUnit.SECONDS);
+                          @SuppressWarnings("unused")
+                          @SuppressFBWarnings(
+                              value = "RV_RETURN_VALUE_IGNORED",
+                              justification =
+                                  "Test synchronization - timeout result not relevant for test"
+                                      + " scenario")
+                          boolean ignored = operationLatch.await(5, TimeUnit.SECONDS);
                         } catch (final InterruptedException e) {
                           Thread.currentThread().interrupt();
                         }

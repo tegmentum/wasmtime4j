@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -317,7 +318,13 @@ class JniBatchProcessorTest {
                         latch.countDown();
                         return "processed on close";
                       });
-                } catch (final Exception e) {
+                } catch (
+                    @SuppressFBWarnings(
+                        value = "DE_MIGHT_IGNORE",
+                        justification =
+                            "Test intentionally ignores exception when processor is closed during"
+                                + " operation")
+                    final Exception e) {
                   // Expected if processor is closed during operation
                 }
               });
