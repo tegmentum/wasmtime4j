@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Suppress unread field warnings for WASI experimental data classes -->
+  <!-- These are data classes where fields are accessed by native code, reflection, or reserved for future use -->
+  <Match>
+    <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+    <Or>
+      <Class name="~.*\.wasi\..*\$.*"/>
+      <Class name="~.*\.memory\..*\$.*"/>
+    </Or>
+  </Match>
+</FindBugsFilter>
