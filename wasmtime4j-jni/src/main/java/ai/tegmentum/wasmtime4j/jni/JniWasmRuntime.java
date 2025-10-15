@@ -320,15 +320,18 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
                         + " future)");
               }
 
-              // This is a simplified instantiation - actual implementation would use JniStore
-              // and handle imports properly
+              // Create a Store for the instance
+              final Engine engine = module.getEngine();
+              final Store store = createStore(engine);
+
+              // Instantiate the module with the Store
               final long instanceHandle =
                   nativeInstantiateModule(nativeHandle, ((JniModule) module).getNativeHandle());
               if (instanceHandle == 0) {
                 throw new WasmException("Failed to instantiate WebAssembly module");
               }
 
-              final JniInstance instance = new JniInstance(instanceHandle, module, null);
+              final JniInstance instance = new JniInstance(instanceHandle, module, store);
 
               // Register instance for concurrency management and cleanup
               concurrencyManager.registerResource(instanceHandle);

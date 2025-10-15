@@ -15,6 +15,10 @@
   <Match>
     <Bug pattern="COMMAND_INJECTION"/>
     <Class name="ai.tegmentum.wasmtime4j.jni.wasi.WasiProcessOperations"/>
+    <Or>
+      <Method name="spawnProcess"/>
+      <Method name="~lambda\$spawnProcess.*"/>
+    </Or>
   </Match>
 
   <!-- Suppress test-specific warnings in test classes -->

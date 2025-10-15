@@ -151,52 +151,72 @@ public final class WasiProcessOperations {
 
     final CompletableFuture<Long> result =
         CompletableFuture.supplyAsync(
-            () -> {
-              try {
-                // Build command line (ProcessBuilder with List prevents shell interpretation)
-                final List<String> commandLine = new ArrayList<>();
-                commandLine.add(command);
-                commandLine.addAll(arguments);
-
-                // Build process builder
-                final ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
-
-                // Set environment
-                final Map<String, String> processEnv = processBuilder.environment();
-                processEnv.clear();
-                processEnv.putAll(environment);
-
-                // Set working directory if specified
-                if (workingDirectory != null && !workingDirectory.isEmpty()) {
-                  processBuilder.directory(new java.io.File(workingDirectory));
-                }
-
-                // Start the process
-                final Process process = processBuilder.start();
-                final long processHandle = processHandleGenerator.getAndIncrement();
-
-                // Track the process
-                final ProcessInfo processInfo =
-                    new ProcessInfo(
-                        processHandle, process, command, arguments, environment, workingDirectory);
-                childProcesses.put(processHandle, processInfo);
-
-                LOGGER.fine(
-                    () -> String.format("Process spawned successfully: handle=%d", processHandle));
-
-                return processHandle;
-
-              } catch (final IOException e) {
-                LOGGER.log(Level.WARNING, "Failed to spawn process", e);
-                throw new RuntimeException("Process spawn failed: " + e.getMessage(), e);
-              } catch (final SecurityException e) {
-                LOGGER.log(Level.WARNING, "Security violation spawning process", e);
-                throw new RuntimeException("Access denied: " + e.getMessage(), e);
-              }
-            },
-            processExecutor);
+            () -> doSpawnProcess(command, arguments, environment, workingDirectory), processExecutor);
 
     return result;
+  }
+
+  /**
+   * Internal method to spawn a process. ProcessBuilder with {@code List<String>} is safe from
+   * command injection.
+   *
+   * @param command the command to execute
+   * @param arguments the command arguments
+   * @param environment the environment variables
+   * @param workingDirectory the working directory
+   * @return the process handle
+   */
+  @SuppressWarnings("lgtm[java/command-line-injection]")
+  @SuppressFBWarnings(
+      value = "COMMAND_INJECTION",
+      justification =
+          "ProcessBuilder with List<String> does not invoke shell and treats each element as"
+              + " separate argument, preventing command injection. Command is validated before"
+              + " reaching this method.")
+  private Long doSpawnProcess(
+      final String command,
+      final List<String> arguments,
+      final Map<String, String> environment,
+      final String workingDirectory) {
+    try {
+      // Build command line (ProcessBuilder with List prevents shell interpretation)
+      final List<String> commandLine = new ArrayList<>();
+      commandLine.add(command);
+      commandLine.addAll(arguments);
+
+      // Build process builder
+      final ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
+
+      // Set environment
+      final Map<String, String> processEnv = processBuilder.environment();
+      processEnv.clear();
+      processEnv.putAll(environment);
+
+      // Set working directory if specified
+      if (workingDirectory != null && !workingDirectory.isEmpty()) {
+        processBuilder.directory(new java.io.File(workingDirectory));
+      }
+
+      // Start the process
+      final Process process = processBuilder.start();
+      final long processHandle = processHandleGenerator.getAndIncrement();
+
+      // Track the process
+      final ProcessInfo processInfo =
+          new ProcessInfo(processHandle, process, command, arguments, environment, workingDirectory);
+      childProcesses.put(processHandle, processInfo);
+
+      LOGGER.fine(() -> String.format("Process spawned successfully: handle=%d", processHandle));
+
+      return processHandle;
+
+    } catch (final IOException e) {
+      LOGGER.log(Level.WARNING, "Failed to spawn process", e);
+      throw new RuntimeException("Process spawn failed: " + e.getMessage(), e);
+    } catch (final SecurityException e) {
+      LOGGER.log(Level.WARNING, "Security violation spawning process", e);
+      throw new RuntimeException("Access denied: " + e.getMessage(), e);
+    }
   }
 
   /**
@@ -581,7 +601,12 @@ public final class WasiProcessOperations {
       try {
         if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
           final java.lang.reflect.Field pidField = process.getClass().getDeclaredField("pid");
-          pidField.setAccessible(true);
+          java.security.AccessController.doPrivileged(
+              (java.security.PrivilegedAction<Void>)
+                  () -> {
+                    pidField.setAccessible(true);
+                    return null;
+                  });
           return pidField.getInt(process);
         }
       } catch (final Exception e) {

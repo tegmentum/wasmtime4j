@@ -495,8 +495,14 @@ public final class WasiAdvancedFileOperations {
 
     } catch (final IOException e) {
       LOGGER.warning("Failed to read attributes for: " + path);
-      // Return minimal entry with just the name
-      return new WasiDirectoryEntry(path.getFileName().toString(), false, false, false, 0L, null);
+      // Return minimal entry with just the name and epoch time as fallback
+      return new WasiDirectoryEntry(
+          path.getFileName().toString(),
+          false,
+          false,
+          false,
+          0L,
+          java.nio.file.attribute.FileTime.fromMillis(0));
     }
   }
 

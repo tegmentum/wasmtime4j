@@ -208,6 +208,11 @@ public final class CompilationCache {
    * @param expectedCompilationTimeNs expected compilation time for performance measurement
    * @return cached compiled module data or null if not found
    */
+  @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+      justification =
+          "Returning null is intentional to distinguish 'not found' from valid empty cache"
+              + " entries. Callers across tests and production code expect null for cache misses.")
   public static byte[] loadFromCache(
       final byte[] wasmBytes, final String engineOptions, final long expectedCompilationTimeNs) {
     if (!enabled) {
