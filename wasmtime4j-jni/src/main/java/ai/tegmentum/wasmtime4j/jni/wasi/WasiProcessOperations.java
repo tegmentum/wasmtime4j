@@ -123,6 +123,12 @@ public final class WasiProcessOperations {
    * @return CompletableFuture that resolves to the process handle
    * @throws WasiException if process spawning fails
    */
+  @SuppressWarnings("lgtm[java/command-line-injection]")
+  @SuppressFBWarnings(
+      value = "COMMAND_INJECTION",
+      justification =
+          "ProcessBuilder with List<String> does not invoke shell and treats each element as"
+              + " separate argument, preventing command injection")
   public CompletableFuture<Long> spawnProcess(
       final String command,
       final List<String> arguments,
@@ -143,51 +149,54 @@ public final class WasiProcessOperations {
     LOGGER.fine(
         () -> String.format("Spawning process: command=%s, args=%d", command, arguments.size()));
 
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            // Build command line (ProcessBuilder with List prevents shell interpretation)
-            final List<String> commandLine = new ArrayList<>();
-            commandLine.add(command);
-            commandLine.addAll(arguments);
+    final CompletableFuture<Long> result =
+        CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                // Build command line (ProcessBuilder with List prevents shell interpretation)
+                final List<String> commandLine = new ArrayList<>();
+                commandLine.add(command);
+                commandLine.addAll(arguments);
 
-            // Build process builder
-            final ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
+                // Build process builder
+                final ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
 
-            // Set environment
-            final Map<String, String> processEnv = processBuilder.environment();
-            processEnv.clear();
-            processEnv.putAll(environment);
+                // Set environment
+                final Map<String, String> processEnv = processBuilder.environment();
+                processEnv.clear();
+                processEnv.putAll(environment);
 
-            // Set working directory if specified
-            if (workingDirectory != null && !workingDirectory.isEmpty()) {
-              processBuilder.directory(new java.io.File(workingDirectory));
-            }
+                // Set working directory if specified
+                if (workingDirectory != null && !workingDirectory.isEmpty()) {
+                  processBuilder.directory(new java.io.File(workingDirectory));
+                }
 
-            // Start the process
-            final Process process = processBuilder.start();
-            final long processHandle = processHandleGenerator.getAndIncrement();
+                // Start the process
+                final Process process = processBuilder.start();
+                final long processHandle = processHandleGenerator.getAndIncrement();
 
-            // Track the process
-            final ProcessInfo processInfo =
-                new ProcessInfo(
-                    processHandle, process, command, arguments, environment, workingDirectory);
-            childProcesses.put(processHandle, processInfo);
+                // Track the process
+                final ProcessInfo processInfo =
+                    new ProcessInfo(
+                        processHandle, process, command, arguments, environment, workingDirectory);
+                childProcesses.put(processHandle, processInfo);
 
-            LOGGER.fine(
-                () -> String.format("Process spawned successfully: handle=%d", processHandle));
+                LOGGER.fine(
+                    () -> String.format("Process spawned successfully: handle=%d", processHandle));
 
-            return processHandle;
+                return processHandle;
 
-          } catch (final IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to spawn process", e);
-            throw new RuntimeException("Process spawn failed: " + e.getMessage(), e);
-          } catch (final SecurityException e) {
-            LOGGER.log(Level.WARNING, "Security violation spawning process", e);
-            throw new RuntimeException("Access denied: " + e.getMessage(), e);
-          }
-        },
-        processExecutor);
+              } catch (final IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to spawn process", e);
+                throw new RuntimeException("Process spawn failed: " + e.getMessage(), e);
+              } catch (final SecurityException e) {
+                LOGGER.log(Level.WARNING, "Security violation spawning process", e);
+                throw new RuntimeException("Access denied: " + e.getMessage(), e);
+              }
+            },
+            processExecutor);
+
+    return result;
   }
 
   /**

@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.security;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiPermissionException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -728,6 +729,9 @@ public final class WasiSecurityPolicyEngine {
   }
 
   /** Security statistics container. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for security statistics, fields used for monitoring and auditing")
   public static final class SecurityStatistics {
     public final long totalEvents;
     public final long deniedAccesses;
@@ -759,6 +763,10 @@ public final class WasiSecurityPolicyEngine {
   }
 
   /** Audit event container. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Data class for audit events, fields used for security logging and compliance")
   public static final class AuditEvent {
     public final String contextId;
     public final String resource;

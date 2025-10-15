@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -793,6 +794,9 @@ public final class WasiNetworkOperations {
   }
 
   /** Socket information class. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for socket information, fields used for network management")
   public static final class SocketInfo {
     public final long handle;
     public final SocketType type;
@@ -818,6 +822,9 @@ public final class WasiNetworkOperations {
   }
 
   /** UDP datagram information. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for UDP datagram information, fields used for network I/O")
   public static final class UdpDatagram {
     public final int bytesReceived;
     public final String sourceAddress;

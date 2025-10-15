@@ -832,6 +832,9 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Snapshot verification result. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for snapshot verification results, fields used for diagnostics")
   public static final class SnapshotVerificationResult {
     public final boolean isValid;
     public final int checkedFiles;
@@ -918,6 +921,9 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Snapshot performance metrics. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for snapshot performance metrics, fields used for monitoring")
   public static final class SnapshotPerformanceMetrics {
     public volatile long snapshotCreationTimeMs;
     public volatile long snapshotRestoreTimeMs;
@@ -934,6 +940,9 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Deduplication statistics. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for deduplication statistics, fields used for monitoring")
   public static final class DeduplicationStatistics {
     public volatile long duplicateBlocksFound;
     public volatile long bytesDeduplicatedCompressionStatistics;
@@ -948,6 +957,9 @@ public final class WasiFilesystemSnapshot {
   }
 
   /** Compression statistics. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification = "Data class for compression statistics, fields used for monitoring")
   public static final class CompressionStatistics {
     public volatile long originalSize;
     public volatile long compressedSize;
