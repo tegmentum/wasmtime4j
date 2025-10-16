@@ -151,7 +151,8 @@ public final class WasiProcessOperations {
 
     final CompletableFuture<Long> result =
         CompletableFuture.supplyAsync(
-            () -> doSpawnProcess(command, arguments, environment, workingDirectory), processExecutor);
+            () -> doSpawnProcess(command, arguments, environment, workingDirectory),
+            processExecutor);
 
     return result;
   }
@@ -203,7 +204,8 @@ public final class WasiProcessOperations {
 
       // Track the process
       final ProcessInfo processInfo =
-          new ProcessInfo(processHandle, process, command, arguments, environment, workingDirectory);
+          new ProcessInfo(
+              processHandle, process, command, arguments, environment, workingDirectory);
       childProcesses.put(processHandle, processInfo);
 
       LOGGER.fine(() -> String.format("Process spawned successfully: handle=%d", processHandle));
