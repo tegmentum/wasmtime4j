@@ -42,7 +42,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_createR
 /// JNI binding for destroying a GC runtime
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_WasmGcRuntimeJni_destroyRuntime(
-    _mut env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     runtime_handle: jlong,
 ) -> jint {

@@ -28,6 +28,8 @@
 #![allow(private_bounds)]
 #![allow(elided_lifetimes_in_paths)]
 #![allow(unused_doc_comments)]
+#![allow(unused_mut)] // JNI env parameters require mut for API calls
+#![allow(non_snake_case)] // JNI functions must follow Java naming conventions
 #![allow(unused_variables)]
 #![allow(private_interfaces)]
 #![warn(clippy::all)]
