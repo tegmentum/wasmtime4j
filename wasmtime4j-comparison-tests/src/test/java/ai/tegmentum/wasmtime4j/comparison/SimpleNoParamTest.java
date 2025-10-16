@@ -9,6 +9,12 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests for calling WebAssembly functions with no parameters.
+ *
+ * <p>Validates that functions without parameters can be called correctly and return expected
+ * values.
+ */
 public class SimpleNoParamTest {
 
   @Test

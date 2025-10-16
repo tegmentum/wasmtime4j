@@ -21,12 +21,14 @@ public class GlobalsTest {
   private Engine engine;
   private Store store;
 
+  /** Sets up the test engine and store before each test. */
   @BeforeEach
   public void setUp() throws Exception {
     engine = Engine.create();
     store = engine.createStore();
   }
 
+  /** Cleans up the test engine and store after each test. */
   @AfterEach
   public void tearDown() {
     if (store != null) {
@@ -37,6 +39,7 @@ public class GlobalsTest {
     }
   }
 
+  /** Tests exporting an immutable i32 global variable. */
   @Test
   @DisplayName("Export immutable i32 global")
   public void testExportImmutableI32Global() throws Exception {
@@ -59,6 +62,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests exporting a mutable i32 global variable and modifying it from Java and WebAssembly. */
   @Test
   @DisplayName("Export mutable i32 global")
   public void testExportMutableI32Global() throws Exception {
@@ -98,6 +102,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests exporting and modifying a mutable i64 global variable. */
   @Test
   @DisplayName("Export i64 global")
   public void testExportI64Global() throws Exception {
@@ -121,6 +126,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests exporting and modifying a mutable f32 global variable. */
   @Test
   @DisplayName("Export f32 global")
   public void testExportF32Global() throws Exception {
@@ -144,6 +150,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests exporting and modifying a mutable f64 global variable. */
   @Test
   @DisplayName("Export f64 global")
   public void testExportF64Global() throws Exception {
@@ -167,6 +174,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests exporting multiple global variables with different types and mutability. */
   @Test
   @DisplayName("Multiple exported globals")
   public void testMultipleExportedGlobals() throws Exception {
@@ -201,6 +209,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests importing an immutable i32 global from Java into WebAssembly. */
   @Test
   @DisplayName("Import immutable i32 global")
   public void testImportImmutableI32Global() throws Exception {
@@ -232,6 +241,7 @@ public class GlobalsTest {
     linker.close();
   }
 
+  /** Tests importing a mutable i32 global that is shared between Java and WebAssembly. */
   @Test
   @DisplayName("Import mutable i32 global")
   public void testImportMutableI32Global() throws Exception {
@@ -284,6 +294,7 @@ public class GlobalsTest {
     linker.close();
   }
 
+  /** Tests importing a mutable i64 global and modifying it from WebAssembly. */
   @Test
   @DisplayName("Import i64 global")
   public void testImportI64Global() throws Exception {
@@ -321,6 +332,7 @@ public class GlobalsTest {
     linker.close();
   }
 
+  /** Tests importing a mutable f32 global and using it in WebAssembly calculations. */
   @Test
   @DisplayName("Import f32 global")
   public void testImportF32Global() throws Exception {
@@ -352,6 +364,7 @@ public class GlobalsTest {
     linker.close();
   }
 
+  /** Tests a module that both imports and exports global variables. */
   @Test
   @DisplayName("Import and export globals in same module")
   public void testImportAndExportGlobals() throws Exception {
@@ -393,6 +406,7 @@ public class GlobalsTest {
     linker.close();
   }
 
+  /** Tests a global variable being shared and modified by multiple WebAssembly functions. */
   @Test
   @DisplayName("Global used in multiple functions")
   public void testGlobalSharedAcrossFunctions() throws Exception {
@@ -443,6 +457,7 @@ public class GlobalsTest {
     instance.close();
   }
 
+  /** Tests that attempting to set an immutable global variable throws an exception. */
   @Test
   @DisplayName("Attempt to set immutable global throws exception")
   public void testSetImmutableGlobalThrows() throws Exception {

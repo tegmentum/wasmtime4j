@@ -127,8 +127,14 @@ public final class EquivalentJavaTestGenerator {
    * @return package name
    */
   private String generatePackageName(final WasmtimeTestMetadata metadata) {
-    final String category = metadata.getCategory().replace('-', '_').replace('/', '.');
-    return "ai.tegmentum.wasmtime4j.comparison.generated." + category;
+    // Convert category to valid Java package name (lowercase, no underscores/hyphens)
+    final String category =
+        metadata
+            .getCategory()
+            .replace('-', '_')
+            .replace('/', '.')
+            .replaceAll("_", ""); // Remove underscores for valid package names
+    return "ai.tegmentum.wasmtime4j.comparison.generated." + category.toLowerCase();
   }
 
   /**
@@ -148,11 +154,13 @@ public final class EquivalentJavaTestGenerator {
     code.append("package ").append(packageName).append(";\n\n");
 
     // Imports
-    code.append("import org.junit.jupiter.api.Test;\n");
-    code.append("import org.junit.jupiter.api.DisplayName;\n");
-    code.append("import static org.junit.jupiter.api.Assertions.*;\n\n");
+    code.append("import static org.junit.jupiter.api.Assertions.fail;\n\n");
+    code.append("import ai.tegmentum.wasmtime4j.Engine;\n");
+    code.append("import ai.tegmentum.wasmtime4j.Module;\n");
+    code.append("import ai.tegmentum.wasmtime4j.Store;\n");
     code.append("import java.io.InputStream;\n");
-    code.append("import ai.tegmentum.wasmtime4j.*;\n\n");
+    code.append("import org.junit.jupiter.api.DisplayName;\n");
+    code.append("import org.junit.jupiter.api.Test;\n\n");
 
     // Class documentation
     code.append("/**\n");

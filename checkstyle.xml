@@ -24,6 +24,10 @@
     <module name="BeforeExecutionExclusionFileFilter">
         <property name="fileNamePattern" value="package-info\.java$"/>
     </module>
+    <!-- Exclude generated test files from comparison-tests module -->
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*/comparison/generated/.*\.java$"/>
+    </module>
 
     <!-- Checks for whitespace -->
     <module name="FileTabCharacter">

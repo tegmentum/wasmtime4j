@@ -1,8 +1,14 @@
 package ai.tegmentum.wasmtime4j.comparison;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +40,7 @@ public final class SimpleWatCompilationTest {
 
     try {
       // Compile WAT to module
-      final ai.tegmentum.wasmtime4j.Module module = engine.compileWat(wat);
+      final Module module = engine.compileWat(wat);
       assertNotNull(module, "Module should not be null");
 
       // Create store and instantiate
@@ -78,7 +84,7 @@ public final class SimpleWatCompilationTest {
     final Engine engine = Engine.create();
 
     try {
-      final ai.tegmentum.wasmtime4j.Module module = engine.compileWat(wat);
+      final Module module = engine.compileWat(wat);
       final Store store = engine.createStore();
       final Instance instance = module.instantiate(store);
 

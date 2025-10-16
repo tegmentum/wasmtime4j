@@ -20,12 +20,14 @@ public class TablesTest {
   private Engine engine;
   private Store store;
 
+  /** Sets up the test engine and store before each test. */
   @BeforeEach
   public void setUp() throws Exception {
     engine = Engine.create();
     store = engine.createStore();
   }
 
+  /** Cleans up the test engine and store after each test. */
   @AfterEach
   public void tearDown() {
     if (store != null) {
@@ -36,6 +38,7 @@ public class TablesTest {
     }
   }
 
+  /** Tests exporting a funcref table and querying its size. */
   @Test
   @DisplayName("Export funcref table")
   public void testExportFuncrefTable() throws Exception {
@@ -62,6 +65,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests growing a table and verifying the size changes. */
   @Test
   @DisplayName("Table grow operation")
   public void testTableGrow() throws Exception {
@@ -100,6 +104,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests storing function references in a table and calling them indirectly. */
   @Test
   @DisplayName("Table get and set operations")
   public void testTableGetSet() throws Exception {
@@ -147,6 +152,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests filling a range of table elements with a function reference. */
   @Test
   @DisplayName("Table fill operation")
   public void testTableFill() throws Exception {
@@ -201,6 +207,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests copying elements from one table to another. */
   @Test
   @DisplayName("Table copy operation")
   public void testTableCopy() throws Exception {
@@ -258,6 +265,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests importing a table from Java (currently expects failure due to missing API). */
   @Test
   @DisplayName("Import table from Java")
   public void testImportTable() throws Exception {
@@ -299,6 +307,7 @@ public class TablesTest {
     linker.close();
   }
 
+  /** Tests sharing a table between two modules via export and import. */
   @Test
   @DisplayName("Export and re-import table")
   public void testExportReimportTable() throws Exception {
@@ -356,6 +365,7 @@ public class TablesTest {
     linker.close();
   }
 
+  /** Tests a module with multiple tables of different sizes. */
   @Test
   @DisplayName("Multiple tables in one module")
   public void testMultipleTables() throws Exception {
@@ -393,6 +403,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests initializing table elements at instantiation time using element segments. */
   @Test
   @DisplayName("Table element initialization")
   public void testTableElementInit() throws Exception {
@@ -429,6 +440,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests that table growth respects maximum size limits. */
   @Test
   @DisplayName("Table limits enforcement")
   public void testTableLimits() throws Exception {
@@ -475,6 +487,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests that accessing a table element out of bounds causes a trap. */
   @Test
   @DisplayName("Table access out of bounds")
   public void testTableOutOfBounds() throws Exception {
@@ -504,6 +517,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests creating and using a table of externref type. */
   @Test
   @DisplayName("Externref table")
   public void testExternrefTable() throws Exception {
@@ -536,6 +550,7 @@ public class TablesTest {
     instance.close();
   }
 
+  /** Tests using passive element segments with table.init and elem.drop instructions. */
   @Test
   @DisplayName("Table with passive element segment")
   public void testPassiveElementSegment() throws Exception {

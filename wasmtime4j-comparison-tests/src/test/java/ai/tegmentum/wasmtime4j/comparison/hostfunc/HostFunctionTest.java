@@ -23,6 +23,7 @@ public class HostFunctionTest {
   private Store store;
   private Linker linker;
 
+  /** Sets up the test engine, store, and linker before each test. */
   @BeforeEach
   public void setUp() throws Exception {
     engine = Engine.create();
@@ -30,6 +31,7 @@ public class HostFunctionTest {
     linker = Linker.create(engine);
   }
 
+  /** Cleans up the test resources after each test. */
   @AfterEach
   public void tearDown() {
     if (linker != null) {

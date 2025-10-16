@@ -18,12 +18,14 @@ public class BasicTypesTest {
   private Engine engine;
   private Store store;
 
+  /** Sets up the test engine and store before each test. */
   @BeforeEach
   public void setUp() throws Exception {
     engine = Engine.create();
     store = engine.createStore();
   }
 
+  /** Cleans up the test engine and store after each test. */
   @AfterEach
   public void tearDown() {
     if (store != null) {
