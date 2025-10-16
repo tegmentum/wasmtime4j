@@ -314,6 +314,8 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
+                        <!-- @{argLine} is set by jacoco-maven-plugin -->
+                        <argLine>@{argLine}</argLine>
                         <useModulePath>false</useModulePath>
                         <includes>
                             <include>**/*Test.java</include>
@@ -802,7 +804,8 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED</argLine>
+                            <!-- Append Panama flags to JaCoCo argLine -->
+                            <argLine>@{argLine} --enable-preview --enable-native-access=ALL-UNNAMED</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
