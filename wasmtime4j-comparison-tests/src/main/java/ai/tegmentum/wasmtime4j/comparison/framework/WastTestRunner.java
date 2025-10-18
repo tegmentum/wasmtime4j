@@ -1,0 +1,311 @@
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.comparison.framework;
+
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Test runner for executing WAST-style tests.
+ *
+ * <p>This class provides utilities for running WebAssembly test assertions similar to those in
+ * WAST (WebAssembly Script) files. It handles module compilation, instantiation, and assertion
+ * verification.
+ */
+public final class WastTestRunner implements AutoCloseable {
+
+  private final Engine engine;
+  private final Store store;
+  private final Map<String, Instance> namedInstances;
+  private Instance currentInstance;
+
+  /** Creates a new WAST test runner with a default engine and store. */
+  public WastTestRunner() throws Exception {
+    this.engine = Engine.create();
+    this.store = engine.createStore();
+    this.namedInstances = new HashMap<>();
+    this.currentInstance = null;
+  }
+
+  /**
+   * Compiles and instantiates a WAT module.
+   *
+   * @param wat the WebAssembly Text format module
+   * @return the instantiated module instance
+   * @throws Exception if compilation or instantiation fails
+   */
+  public Instance compileAndInstantiate(final String wat) throws Exception {
+    Objects.requireNonNull(wat, "WAT cannot be null");
+
+    final Module module = engine.compileWat(wat);
+    final Instance instance = module.instantiate(store);
+
+    // Set as current instance
+    this.currentInstance = instance;
+
+    return instance;
+  }
+
+  /**
+   * Compiles and instantiates a WAT module with a specific name.
+   *
+   * @param name the name to associate with this instance
+   * @param wat the WebAssembly Text format module
+   * @return the instantiated module instance
+   * @throws Exception if compilation or instantiation fails
+   */
+  public Instance compileAndInstantiate(final String name, final String wat) throws Exception {
+    Objects.requireNonNull(name, "Name cannot be null");
+    Objects.requireNonNull(wat, "WAT cannot be null");
+
+    final Instance instance = compileAndInstantiate(wat);
+    namedInstances.put(name, instance);
+
+    return instance;
+  }
+
+  /**
+   * Invokes an exported function on the current instance.
+   *
+   * @param functionName the name of the exported function
+   * @param args the arguments to pass to the function
+   * @return the result values from the function call
+   * @throws Exception if the function call fails
+   */
+  public WasmValue[] invoke(final String functionName, final WasmValue... args) throws Exception {
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+
+    if (currentInstance == null) {
+      throw new IllegalStateException("No module instance available");
+    }
+
+    return currentInstance.callFunction(functionName, args);
+  }
+
+  /**
+   * Invokes an exported function on a named instance.
+   *
+   * @param instanceName the name of the instance
+   * @param functionName the name of the exported function
+   * @param args the arguments to pass to the function
+   * @return the result values from the function call
+   * @throws Exception if the function call fails
+   */
+  public WasmValue[] invoke(
+      final String instanceName, final String functionName, final WasmValue... args)
+      throws Exception {
+    Objects.requireNonNull(instanceName, "Instance name cannot be null");
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+
+    final Instance instance = namedInstances.get(instanceName);
+    if (instance == null) {
+      throw new IllegalArgumentException("No instance found with name: " + instanceName);
+    }
+
+    return instance.callFunction(functionName, args);
+  }
+
+  /**
+   * Asserts that invoking a function returns the expected values.
+   *
+   * @param functionName the function to invoke
+   * @param expectedResults the expected return values
+   * @param args the arguments to pass to the function
+   * @throws Exception if the assertion fails
+   */
+  public void assertReturn(
+      final String functionName, final WasmValue[] expectedResults, final WasmValue... args)
+      throws Exception {
+    final WasmValue[] actualResults = invoke(functionName, args);
+
+    if (expectedResults.length != actualResults.length) {
+      throw new AssertionError(
+          String.format(
+              "Expected %d return values but got %d",
+              expectedResults.length, actualResults.length));
+    }
+
+    for (int i = 0; i < expectedResults.length; i++) {
+      final WasmValue expected = expectedResults[i];
+      final WasmValue actual = actualResults[i];
+
+      if (!valuesEqual(expected, actual)) {
+        throw new AssertionError(
+            String.format(
+                "Return value mismatch at index %d: expected %s but got %s", i, expected, actual));
+      }
+    }
+  }
+
+  /**
+   * Asserts that invoking a function throws a trap with the expected message.
+   *
+   * @param functionName the function to invoke
+   * @param expectedTrapMessage the expected trap message (can be null for any trap)
+   * @param args the arguments to pass to the function
+   * @throws Exception if the assertion fails
+   */
+  public void assertTrap(
+      final String functionName, final String expectedTrapMessage, final WasmValue... args)
+      throws Exception {
+    try {
+      invoke(functionName, args);
+      throw new AssertionError("Expected trap but function call succeeded");
+    } catch (final Exception e) {
+      // Expected trap occurred
+      if (expectedTrapMessage != null
+          && !e.getMessage().contains(expectedTrapMessage)) {
+        throw new AssertionError(
+            String.format(
+                "Expected trap message containing '%s' but got: %s",
+                expectedTrapMessage, e.getMessage()));
+      }
+    }
+  }
+
+  /**
+   * Asserts that a module fails to link.
+   *
+   * @param wat the module that should fail to link
+   * @param expectedErrorMessage the expected error message (can be null for any error)
+   * @throws Exception if the assertion fails
+   */
+  public void assertUnlinkable(final String wat, final String expectedErrorMessage)
+      throws Exception {
+    try {
+      compileAndInstantiate(wat);
+      throw new AssertionError("Expected module to fail linking but it succeeded");
+    } catch (final Exception e) {
+      // Expected error occurred
+      if (expectedErrorMessage != null && !e.getMessage().contains(expectedErrorMessage)) {
+        throw new AssertionError(
+            String.format(
+                "Expected error message containing '%s' but got: %s",
+                expectedErrorMessage, e.getMessage()));
+      }
+    }
+  }
+
+  /**
+   * Asserts that a module is invalid (fails to compile/validate).
+   *
+   * @param wat the module that should be invalid
+   * @param expectedErrorMessage the expected error message (can be null for any error)
+   * @throws Exception if the assertion fails
+   */
+  public void assertInvalid(final String wat, final String expectedErrorMessage) throws Exception {
+    try {
+      engine.compileWat(wat);
+      throw new AssertionError("Expected module to be invalid but compilation succeeded");
+    } catch (final Exception e) {
+      // Expected error occurred
+      if (expectedErrorMessage != null && !e.getMessage().contains(expectedErrorMessage)) {
+        throw new AssertionError(
+            String.format(
+                "Expected error message containing '%s' but got: %s",
+                expectedErrorMessage, e.getMessage()));
+      }
+    }
+  }
+
+  /**
+   * Asserts that a module fails to compile (malformed).
+   *
+   * @param wat the module that should fail to compile
+   * @param expectedErrorMessage the expected error message (can be null for any error)
+   * @throws Exception if the assertion fails
+   */
+  public void assertMalformed(final String wat, final String expectedErrorMessage)
+      throws Exception {
+    // For WAT, malformed and invalid are typically the same
+    assertInvalid(wat, expectedErrorMessage);
+  }
+
+  /**
+   * Compares two WasmValue instances for equality.
+   *
+   * @param expected the expected value
+   * @param actual the actual value
+   * @return true if the values are equal
+   */
+  private boolean valuesEqual(final WasmValue expected, final WasmValue actual) {
+    if (expected.getType() != actual.getType()) {
+      return false;
+    }
+
+    switch (expected.getType()) {
+      case I32:
+        return expected.asInt() == actual.asInt();
+      case I64:
+        return expected.asLong() == actual.asLong();
+      case F32:
+        return Float.compare(expected.asFloat(), actual.asFloat()) == 0;
+      case F64:
+        return Double.compare(expected.asDouble(), actual.asDouble()) == 0;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Gets the current instance.
+   *
+   * @return the current instance, or null if none
+   */
+  public Instance getCurrentInstance() {
+    return currentInstance;
+  }
+
+  /**
+   * Gets a named instance.
+   *
+   * @param name the instance name
+   * @return the instance, or null if not found
+   */
+  public Instance getInstance(final String name) {
+    return namedInstances.get(name);
+  }
+
+  @Override
+  public void close() {
+    // Close all named instances
+    for (final Instance instance : namedInstances.values()) {
+      if (instance != null) {
+        instance.close();
+      }
+    }
+
+    // Close current instance if it's not in the named instances
+    if (currentInstance != null && !namedInstances.containsValue(currentInstance)) {
+      currentInstance.close();
+    }
+
+    // Close store and engine
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
+  }
+}

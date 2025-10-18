@@ -1,8 +1,7 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,27 +17,39 @@ public final class CallArrayToWasmTest {
 
   @Test
   @DisplayName("func::call_array_to_wasm")
-  public void testCallArrayToWasm() {
+  public void testCallArrayToWasm() throws Exception {
     // WAT code from original Wasmtime test:
     // (module
-    //             (func (export "run
+    //             (func (export "run") (param i32 i32 i32) (result i32 i32 i32)
+    //               local.get 1
+    //               local.get 2
+    //               local.get 0
+    //             )
+    //           )
 
-    final String wat = """
+    final String wat =
+        """
         (module
-                    (func (export "run
+                    (func (export "run") (param i32 i32 i32) (result i32 i32 i32)
+                      local.get 1
+                      local.get 2
+                      local.get 0
+                    )
+                  )
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final WastTestRunner runner = new WastTestRunner()) {
+      // Compile and instantiate module
+      runner.compileAndInstantiate(wat);
 
-    // Expected results from original test:
-    // results[0].i32(
-    // results[1].i32(
-    // results[2].i32(
-    fail("Test not yet implemented - awaiting test framework completion");
+      // Function takes params (0, 1, 2) and returns (1, 2, 0)
+      // Testing with input (100, 200, 300) should return (200, 300, 100)
+      runner.assertReturn(
+          "run",
+          new WasmValue[] {WasmValue.i32(200), WasmValue.i32(300), WasmValue.i32(100)},
+          WasmValue.i32(100),
+          WasmValue.i32(200),
+          WasmValue.i32(300));
+    }
   }
 }
