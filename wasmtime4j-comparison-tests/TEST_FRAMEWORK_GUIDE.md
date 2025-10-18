@@ -7,14 +7,16 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 4 of 136 generated tests (2.9%)
-- **Tests Passing**: 4/4 (100% success rate)
+- **Tests Implemented**: 6 of 136 generated tests (4.4%)
+- **Tests Passing**: 6/6 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns
   - ✅ CallNativeToWasmTest - Multi-value returns
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns
   - ✅ CallWasmToNativeTest - Host function imports with Linker
+  - ✅ CallWasmToArrayTest - Host function with multi-value returns
+  - ✅ TrapImportTest - Host function that traps during instantiation
 - **Test Execution Time**: <1 second for all tests
-- **Last Verified**: 2025-10-17
+- **Last Verified**: 2025-10-18
 
 ## Quick Start
 
@@ -259,26 +261,26 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 4 of 13 complete (31%)
+**Status**: 6 of 13 complete (46%)
 
 **Completed**:
 - ✅ CallWasmToWasmTest
 - ✅ CallNativeToWasmTest
 - ✅ CallArrayToWasmTest
 - ✅ CallWasmToNativeTest (with Linker support)
+- ✅ CallWasmToArrayTest (with Linker support)
+- ✅ TrapImportTest (with Linker support)
 
 **Remaining without host imports**:
 - CallIndirectNativeFromExportedGlobalTest (requires table manipulation)
 - CallIndirectNativeFromExportedTableTest (requires table manipulation)
 
-**Remaining with host imports** (use Linker - now supported):
-- CallWasmToArrayTest
-- ImportWorksTest
-- TrapImportTest
-- DtorDelayedTest
-- CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest
-- CallIndirectNativeFromWasmImportGlobalTest
-- CallIndirectNativeFromWasmImportTableTest
+**Remaining with host imports - blocked by reference type support**:
+- ImportWorksTest (requires externref, funcref, anyref, i31ref)
+- DtorDelayedTest (requires internal lifecycle hooks - not testable from Java API)
+- CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest (requires funcref)
+- CallIndirectNativeFromWasmImportGlobalTest (requires reference types)
+- CallIndirectNativeFromWasmImportTableTest (requires reference types)
 
 ### Category: misc_testsuite (109 tests)
 
@@ -463,8 +465,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 4 / 136 (2.9%)
-- **Test Success Rate**: 100% (4/4 passing)
+- **Tests Implemented**: 6 / 136 (4.4%)
+- **Test Success Rate**: 100% (6/6 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
-- **Next Priority**: Implement remaining func category tests with host imports
+- **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
