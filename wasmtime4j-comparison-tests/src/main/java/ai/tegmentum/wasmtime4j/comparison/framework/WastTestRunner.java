@@ -17,7 +17,10 @@
 package ai.tegmentum.wasmtime4j.comparison.framework;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
@@ -31,24 +34,56 @@ import java.util.Objects;
  * <p>This class provides utilities for running WebAssembly test assertions similar to those in
  * WAST (WebAssembly Script) files. It handles module compilation, instantiation, and assertion
  * verification.
+ *
+ * <p>Supports both simple modules and modules with host function imports via Linker.
  */
 public final class WastTestRunner implements AutoCloseable {
 
   private final Engine engine;
   private final Store store;
+  private final Linker linker;
   private final Map<String, Instance> namedInstances;
   private Instance currentInstance;
+  private boolean hasHostFunctions;
 
   /** Creates a new WAST test runner with a default engine and store. */
   public WastTestRunner() throws Exception {
     this.engine = Engine.create();
     this.store = engine.createStore();
+    this.linker = Linker.create(engine);
     this.namedInstances = new HashMap<>();
     this.currentInstance = null;
+    this.hasHostFunctions = false;
+  }
+
+  /**
+   * Defines a host function that can be imported by WASM modules.
+   *
+   * @param moduleName the module name for the import (e.g., "env" or "")
+   * @param functionName the function name for the import (e.g., "add" or "")
+   * @param functionType the function type signature
+   * @param hostFunction the host function implementation
+   * @throws Exception if the host function cannot be defined
+   */
+  public void defineHostFunction(
+      final String moduleName,
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunction hostFunction)
+      throws Exception {
+    Objects.requireNonNull(moduleName, "Module name cannot be null");
+    Objects.requireNonNull(functionName, "Function name cannot be null");
+    Objects.requireNonNull(functionType, "Function type cannot be null");
+    Objects.requireNonNull(hostFunction, "Host function cannot be null");
+
+    linker.defineHostFunction(moduleName, functionName, functionType, hostFunction);
+    hasHostFunctions = true;
   }
 
   /**
    * Compiles and instantiates a WAT module.
+   *
+   * <p>Uses Linker if host functions have been defined, otherwise uses direct instantiation.
    *
    * @param wat the WebAssembly Text format module
    * @return the instantiated module instance
@@ -58,7 +93,15 @@ public final class WastTestRunner implements AutoCloseable {
     Objects.requireNonNull(wat, "WAT cannot be null");
 
     final Module module = engine.compileWat(wat);
-    final Instance instance = module.instantiate(store);
+    final Instance instance;
+
+    if (hasHostFunctions) {
+      // Use linker when host functions are defined
+      instance = linker.instantiate(store, module);
+    } else {
+      // Direct instantiation for simple modules
+      instance = module.instantiate(store);
+    }
 
     // Set as current instance
     this.currentInstance = instance;
@@ -300,7 +343,10 @@ public final class WastTestRunner implements AutoCloseable {
       currentInstance.close();
     }
 
-    // Close store and engine
+    // Close linker, store, and engine
+    if (linker != null) {
+      linker.close();
+    }
     if (store != null) {
       store.close();
     }

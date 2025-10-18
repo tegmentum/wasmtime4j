@@ -6,12 +6,13 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 
 ## Framework Status
 
-- **Framework**: ✅ Complete and production-ready
-- **Tests Implemented**: 3 of 136 generated tests (2.2%)
-- **Tests Passing**: 3/3 (100% success rate)
+- **Framework**: ✅ Complete with Linker support and production-ready
+- **Tests Implemented**: 4 of 136 generated tests (2.9%)
+- **Tests Passing**: 4/4 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns
   - ✅ CallNativeToWasmTest - Multi-value returns
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns
+  - ✅ CallWasmToNativeTest - Host function imports with Linker
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-17
 
@@ -193,6 +194,56 @@ WasmValue[] results = runner.invoke("functionName", WasmValue.i32(42));
 WasmValue[] results = runner.invoke("module1", "functionName", args);
 ```
 
+### Host Functions (Linker Support)
+
+The framework supports defining host functions that can be imported by WASM modules:
+
+```java
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+
+try (final WastTestRunner runner = new WastTestRunner()) {
+  // Define the function type signature
+  final FunctionType funcType = new FunctionType(
+      new WasmValueType[] {}, // No parameters
+      new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32} // Three i32 returns
+  );
+
+  // Define a host function
+  runner.defineHostFunction(
+      "host",           // Module name
+      "triple",         // Function name
+      funcType,         // Function signature
+      (params) -> {     // Implementation
+        return new WasmValue[] {
+          WasmValue.i32(1),
+          WasmValue.i32(2),
+          WasmValue.i32(3)
+        };
+      });
+
+  // WAT module that imports the host function
+  final String wat = """
+      (module
+        (import "host" "triple" (func (result i32 i32 i32)))
+        (func (export "run") (result i32 i32 i32)
+          call 0
+        )
+      )
+  """;
+
+  runner.compileAndInstantiate(wat);
+  runner.assertReturn("run",
+      new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)});
+}
+```
+
+**Key Points:**
+- Host functions must be defined before calling `compileAndInstantiate()`
+- Function types must match the import declaration in WAT
+- The framework automatically uses Linker when host functions are defined
+- Multiple host functions can be defined with different module/function names
+
 ## Test Categories & Examples
 
 ### Category: func (13 tests)
@@ -208,19 +259,19 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 3 of 13 complete (23%)
+**Status**: 4 of 13 complete (31%)
 
 **Completed**:
 - ✅ CallWasmToWasmTest
 - ✅ CallNativeToWasmTest
 - ✅ CallArrayToWasmTest
+- ✅ CallWasmToNativeTest (with Linker support)
 
 **Remaining without host imports**:
 - CallIndirectNativeFromExportedGlobalTest (requires table manipulation)
 - CallIndirectNativeFromExportedTableTest (requires table manipulation)
 
-**Remaining with host imports** (requires Linker):
-- CallWasmToNativeTest
+**Remaining with host imports** (use Linker - now supported):
 - CallWasmToArrayTest
 - ImportWorksTest
 - TrapImportTest
@@ -264,7 +315,7 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 
 Tests for host function imports.
 
-**Note**: Requires Linker support in framework (not yet implemented).
+**Note**: Linker support is now available in the framework.
 
 **Status**: 0 of 7 complete
 
@@ -381,25 +432,23 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 
 ## Known Limitations
 
-1. **Linker/Host Functions**: Framework doesn't yet support Linker for host function imports
-   - Affects: CallWasmToNativeTest, CallWasmToArrayTest, and all hostfuncs category tests
-   - Solution: Enhance WastTestRunner to support Linker.defineHostFunction()
-
-2. **Reference Types**: Some tests use reference types (externref, funcref)
+1. **Reference Types**: Some tests use reference types (externref, funcref)
    - May require additional WasmValue types
 
-3. **WASI Imports**: Tests requiring WASI may need WASI context setup
+2. **WASI Imports**: Tests requiring WASI may need WASI context setup
 
-4. **Component Model**: Component model tests may need specialized support
+3. **Component Model**: Component model tests may need specialized support
+
+4. **Table and Global Operations**: Some tests require table/global manipulation beyond simple function calls
 
 ## Future Enhancements
 
-1. Add Linker support to WastTestRunner
-2. Add helper methods for common test patterns
-3. Add support for memory operations
-4. Add support for table operations
-5. Add support for global operations
-6. Automated test generation from WAST files
+1. Add helper methods for common test patterns
+2. Add support for memory operations
+3. Add support for table operations
+4. Add support for global operations
+5. Automated test generation from WAST files
+6. Support for reference types (externref, funcref)
 
 ## Contributing
 
@@ -413,9 +462,9 @@ When updating tests:
 
 ## Summary
 
-- **Framework Status**: ✅ Complete, tested, and production-ready
-- **Tests Implemented**: 3 / 136 (2.2%)
-- **Test Success Rate**: 100% (3/3 passing)
+- **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
+- **Tests Implemented**: 4 / 136 (2.9%)
+- **Test Success Rate**: 100% (4/4 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
-- **Lines of Code**: 323 lines (framework) + comprehensive documentation
-- **Next Priority**: Add Linker support to enable host function tests (affects ~60% of remaining tests)
+- **Lines of Code**: 357 lines (framework) + comprehensive documentation
+- **Next Priority**: Implement remaining func category tests with host imports
