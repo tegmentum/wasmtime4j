@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import java.util.Locale;
+
 /**
  * WebAssembly Interface Types (WIT) primitive types.
  *
@@ -178,7 +180,7 @@ public enum WitPrimitiveType {
       throw new IllegalArgumentException("Type name cannot be null or empty");
     }
 
-    final String normalized = typeName.toLowerCase().trim();
+    final String normalized = typeName.toLowerCase(Locale.ROOT).trim();
     switch (normalized) {
       case "bool":
       case "boolean":
@@ -224,6 +226,6 @@ public enum WitPrimitiveType {
    * @return the canonical type name
    */
   public String getWitTypeName() {
-    return name().toLowerCase().replace('_', '-');
+    return name().toLowerCase(Locale.ROOT).replace('_', '-');
   }
 }

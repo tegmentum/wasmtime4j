@@ -28,10 +28,15 @@ public final class WasmtimeTestDiscovery {
   // Pattern to match function declaration after test annotation
   private static final Pattern FUNCTION_PATTERN = Pattern.compile("^\\s*fn\\s+(\\w+)\\s*\\(");
 
-  // Pattern to match WAT code in wat::parse_str
-  // Handles both r#"..."# and r"..." formats
-  private static final Pattern WAT_PATTERN =
-      Pattern.compile("wat::parse_str\\s*\\(\\s*r#?\"([\\s\\S]*?)\"#?\\s*\\)", Pattern.DOTALL);
+  // Pattern to match WAT code in wat::parse_str with r#"..."# format (most common)
+  // Note: Don't match closing paren - allows for trailing comma, newlines, etc.
+  private static final Pattern WAT_PATTERN_RAW_HASH =
+      Pattern.compile("wat::parse_str\\s*\\(\\s*r#\"([\\s\\S]*?)\"#", Pattern.DOTALL);
+
+  // Pattern to match WAT code in wat::parse_str with r"..." format
+  // Note: Don't match closing paren - allows for trailing comma, newlines, etc.
+  private static final Pattern WAT_PATTERN_RAW =
+      Pattern.compile("wat::parse_str\\s*\\(\\s*r\"([\\s\\S]*?)\"", Pattern.DOTALL);
 
   // Pattern to match assert_eq! statements
   private static final Pattern ASSERT_PATTERN = Pattern.compile("assert_eq!\\s*\\(([^)]+)\\)");
@@ -241,9 +246,16 @@ public final class WasmtimeTestDiscovery {
     final String functionText = functionCode.toString();
 
     // Extract WAT code from the combined text
-    final Matcher watMatcher = WAT_PATTERN.matcher(functionText);
+    // Try r#"..."# format first (most common in Wasmtime tests)
+    Matcher watMatcher = WAT_PATTERN_RAW_HASH.matcher(functionText);
     if (watMatcher.find()) {
       watCode = watMatcher.group(1).trim();
+    } else {
+      // Try r"..." format
+      watMatcher = WAT_PATTERN_RAW.matcher(functionText);
+      if (watMatcher.find()) {
+        watCode = watMatcher.group(1).trim();
+      }
     }
 
     // Extract assertions

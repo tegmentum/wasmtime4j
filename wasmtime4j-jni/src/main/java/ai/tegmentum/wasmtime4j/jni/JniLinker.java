@@ -435,6 +435,12 @@ public class JniLinker<T> implements Linker<T> {
       closed = true;
       cleanupHostFunctionCallbacks();
 
+      // DEFENSIVE: Only destroy native handle if it's valid
+      // Prevents crashes when closing linkers created with fake/test handles
+      if (nativeHandle == 0) {
+        return;
+      }
+
       // WORKAROUND: Native linker destruction with host functions can block indefinitely
       // due to circular references in Wasmtime linker closures. Call in separate thread
       // with timeout to prevent test hangs. The linker will be garbage collected eventually.

@@ -40,7 +40,6 @@ final class WebAssemblyTestSuiteIntegrationTest {
             .enabledRuntimes(EnumSet.of(TestRuntime.JNI)) // Test with JNI only for simplicity
             .maxConcurrentTests(1)
             .testTimeoutMinutes(1)
-            .enableCrossRuntimeComparison(false) // Single runtime
             .enablePerformanceAnalysis(false) // Skip for unit tests
             .enableCoverageAnalysis(true)
             .enableConsoleReport(false) // Avoid console noise
@@ -218,7 +217,6 @@ final class WebAssemblyTestSuiteIntegrationTest {
     assertThat(defaultConfig.isWasmtimeTestsEnabled()).isTrue();
     assertThat(defaultConfig.isCustomTestsEnabled()).isTrue();
     assertThat(defaultConfig.getEnabledRuntimes()).containsAll(EnumSet.allOf(TestRuntime.class));
-    assertThat(defaultConfig.isCrossRuntimeComparisonEnabled()).isTrue();
     assertThat(defaultConfig.isPerformanceAnalysisEnabled()).isTrue();
     assertThat(defaultConfig.isCoverageAnalysisEnabled()).isTrue();
   }

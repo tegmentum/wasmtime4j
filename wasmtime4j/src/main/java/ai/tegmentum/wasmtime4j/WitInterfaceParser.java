@@ -40,8 +40,9 @@ public final class WitInterfaceParser {
   private static final Pattern INTERFACE_PATTERN =
       Pattern.compile("interface\\s+([a-zA-Z0-9_-]+)\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
 
+  // Simplified pattern to prevent ReDoS - uses possessive quantifiers
   private static final Pattern FUNCTION_PATTERN =
-      Pattern.compile("([a-zA-Z0-9_-]+)\\s*:\\s*func\\s*\\(([^)]*)\\)\\s*(?:->\\s*([^;]+))?");
+      Pattern.compile("([a-zA-Z0-9_-]++)\\s*:\\s*func\\s*\\(([^)]*)\\)\\s*(?:->\\s*([^;]+))?");
 
   private static final Pattern TYPE_PATTERN =
       Pattern.compile("type\\s+([a-zA-Z0-9_-]+)\\s*=\\s*([^;]+)", Pattern.DOTALL);
@@ -57,6 +58,8 @@ public final class WitInterfaceParser {
 
   private static final Pattern FLAGS_PATTERN =
       Pattern.compile("flags\\s*\\{([\\s\\S]*)\\}", Pattern.DOTALL);
+
+  private static final int MAX_WIT_TEXT_LENGTH = 1024 * 1024; // 1MB limit
 
   private final Map<String, WitType> typeCache;
   private final WitTypeValidator validator;
@@ -80,6 +83,12 @@ public final class WitInterfaceParser {
       throws WasmException {
     Objects.requireNonNull(witText, "witText");
     Objects.requireNonNull(packageName, "packageName");
+
+    // Prevent ReDoS by rejecting excessively large WIT definitions
+    if (witText.length() > MAX_WIT_TEXT_LENGTH) {
+      throw new WasmException(
+          "WIT definition exceeds maximum length of " + MAX_WIT_TEXT_LENGTH + " characters");
+    }
 
     try {
       // Parse the interface declaration

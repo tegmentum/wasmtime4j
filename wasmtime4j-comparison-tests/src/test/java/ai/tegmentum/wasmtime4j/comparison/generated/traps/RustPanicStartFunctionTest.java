@@ -1,18 +1,22 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::rust_panic_start_function
  *
- * <p>Original source: traps.rs:484 Category: traps
+ * Original source: traps.rs:484
+ * Category: traps
  *
- * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case.
+ * This test validates that wasmtime4j produces the same results as
+ * the upstream Wasmtime implementation for this test case.
  */
 public final class RustPanicStartFunctionTest {
 
@@ -24,25 +28,12 @@ public final class RustPanicStartFunctionTest {
     //                 (import "" "" (func $foo))
     //                 (start $foo)
     //             )
-    //         "#,
-    //     )?;
-    //
-    //     let module = Module::new(store.engine(), &binary)?;
-    //     let sig = FuncType::new(store.engine(), None, None);
-    //     let func = Func::new(&mut store, sig, |_, _, _| panic!("this is a panic
 
-    final String wat =
-        """
+    final String wat = """
         (module $a
                         (import "" "" (func $foo))
                         (start $foo)
                     )
-                "#,
-            )?;
-
-            let module = Module::new(store.engine(), &binary)?;
-            let sig = FuncType::new(store.engine(), None, None);
-            let func = Func::new(&mut store, sig, |_, _, _| panic!("this is a panic
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

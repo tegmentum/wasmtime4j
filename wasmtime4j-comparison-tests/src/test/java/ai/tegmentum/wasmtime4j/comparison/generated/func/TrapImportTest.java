@@ -1,8 +1,9 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,36 +19,38 @@ public final class TrapImportTest {
 
   @Test
   @DisplayName("func::trap_import")
-  public void testTrapImport() {
+  public void testTrapImport() throws Exception {
     // WAT code from original Wasmtime test:
     // (import "" "" (func))
     //             (start 0)
-    //         "#,
-    //     )?;
-    //     let engine = Engine::new(&config)?;
-    //     let mut store = Store::<()>::new(&engine, ());
-    //     let module = Module::new(store.engine(), &wasm)?;
-    //     let import = Func::wrap(&mut store, || -> Result<()> { bail!("foo
 
     final String wat =
         """
-        (import "" "" (func))
+        (module
+                    (import "host" "trap" (func))
                     (start 0)
-                "#,
-            )?;
-            let engine = Engine::new(&config)?;
-            let mut store = Store::<()>::new(&engine, ());
-            let module = Module::new(store.engine(), &wasm)?;
-            let import = Func::wrap(&mut store, || -> Result<()> { bail!("foo
+                  )
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final WastTestRunner runner = new WastTestRunner()) {
+      // Define host function that throws an exception (traps)
+      final FunctionType funcType =
+          new FunctionType(
+              new WasmValueType[] {}, // No parameters
+              new WasmValueType[] {} // No returns
+              );
 
-    fail("Test not yet implemented - awaiting test framework completion");
+      runner.defineHostFunction(
+          "host", // Module name
+          "trap", // Function name
+          funcType,
+          (params) -> {
+            // Throw exception to trigger trap
+            throw new WasmException("Host function trap");
+          });
+
+      // Module instantiation should fail because start function calls the trapping host function
+      runner.assertUnlinkable(wat, null);
+    }
   }
 }

@@ -48,6 +48,7 @@ pub mod memory;
 pub mod global;
 pub mod table;
 pub mod linker;
+pub mod wast_runner;  // WAST test execution
 pub mod caller;
 pub mod serialization;
 pub mod threading;
@@ -97,6 +98,8 @@ pub mod jni_hot_reload_bindings;
 pub mod platform_memory_jni;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_experimental_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wast_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
@@ -185,11 +188,9 @@ pub mod sourcemap;
 
 // Component model support for WASI Preview 2
 #[cfg(feature = "component-model")]
-// TODO: Fix wasmtime::wat usage
-// pub mod component;
+pub mod component;
 #[cfg(feature = "component-model")]
-// TODO: Re-enable when component module is available
-// pub mod component_core;
+pub mod component_core;
 #[cfg(feature = "component-model")]
 // TODO: Re-enable when component module is available
 // pub mod wit_interfaces;
@@ -582,7 +583,7 @@ pub use cpu_cache_management::{
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Wasmtime version this library is built against
-pub const WASMTIME_VERSION: &str = "36.0.2";
+pub const WASMTIME_VERSION: &str = "37.0.2";
 
 /// Initialize the native library
 ///

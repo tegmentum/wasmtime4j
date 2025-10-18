@@ -1,18 +1,22 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::call_indirect_native_from_wasm_import_table
  *
- * <p>Original source: func.rs:272 Category: func
+ * Original source: func.rs:272
+ * Category: func
  *
- * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case.
+ * This test validates that wasmtime4j produces the same results as
+ * the upstream Wasmtime implementation for this test case.
  */
 public final class CallIndirectNativeFromWasmImportTableTest {
 
@@ -22,13 +26,20 @@ public final class CallIndirectNativeFromWasmImportTableTest {
     // WAT code from original Wasmtime test:
     // (module
     //             (import "" "" (table 1 1 funcref))
-    //             (func (export "run
+    //             (func (export "run") (result i32 i32 i32)
+    //                 i32.const 0
+    //                 call_indirect (result i32 i32 i32)
+    //             )
+    //           )
 
-    final String wat =
-        """
+    final String wat = """
         (module
                     (import "" "" (table 1 1 funcref))
-                    (func (export "run
+                    (func (export "run") (result i32 i32 i32)
+                        i32.const 0
+                        call_indirect (result i32 i32 i32)
+                    )
+                  )
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

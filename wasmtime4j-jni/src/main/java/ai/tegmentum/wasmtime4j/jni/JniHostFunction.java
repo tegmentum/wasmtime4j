@@ -111,16 +111,26 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    *
    * @param functionName the name of the function
    * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
    * @param store the store this host function belongs to
    * @return the host function handle containing native handle and ID
-   * @throws WasmException if creation fails
+   * @throws WasmException if creation fails or any parameter is null
    */
   private static HostFunctionHandle createNativeHandle(
-      final String functionName, final FunctionType functionType, final JniStore store)
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunction implementation,
+      final JniStore store)
       throws WasmException {
-    Objects.requireNonNull(functionName, "Function name cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
-    Objects.requireNonNull(store, "Store cannot be null");
+    // Validate all parameters first
+    try {
+      Objects.requireNonNull(functionName, "Function name cannot be null");
+      Objects.requireNonNull(functionType, "Function type cannot be null");
+      Objects.requireNonNull(implementation, "Implementation cannot be null");
+      Objects.requireNonNull(store, "Store cannot be null");
+    } catch (NullPointerException e) {
+      throw new WasmException("Failed to create native host function: " + e.getMessage(), e);
+    }
 
     final long hostFunctionId = NEXT_HOST_FUNCTION_ID.getAndIncrement();
     final long nativeHandle =
@@ -154,7 +164,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       final JniStore store)
       throws WasmException {
     this(
-        createNativeHandle(functionName, functionType, store),
+        createNativeHandle(functionName, functionType, implementation, store),
         functionName,
         functionType,
         implementation,

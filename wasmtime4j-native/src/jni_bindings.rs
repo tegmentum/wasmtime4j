@@ -27,6 +27,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetLib
     env.new_string(version).unwrap().into_raw()
 }
 
+/// JNI binding for NativeMethodBindings.nativeGetWasmtimeVersion (TOP LEVEL)
+#[cfg(feature = "jni-bindings")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeGetWasmtimeVersion(
+    mut env: JNIEnv,
+    _class: JClass,
+) -> jstring {
+    // Return Wasmtime version from constant
+    match env.new_string(crate::WASMTIME_VERSION) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut()
+    }
+}
+
 /// JNI bindings for Instance operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_instance {
@@ -1211,16 +1225,8 @@ pub mod jni_native_method_bindings {
     use super::*;
     
     
-    /// Get the Wasmtime version string (JNI version) - PLACEHOLDER
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeGetWasmtimeVersion(
-        mut env: JNIEnv,
-        _class: JClass,
-    ) -> jstring {
-        // Simple placeholder implementation - just return a hardcoded version string
-        // This will be improved later with proper JNI string creation
-        std::ptr::null_mut()
-    }
+    // REMOVED: Duplicate function moved to top level (line 33)
+    // The function must be at the top level to be properly exported for JNI
     
     /// Create a test runtime for validation (JNI version) - PLACEHOLDER
     #[no_mangle]
@@ -2663,6 +2669,14 @@ pub mod jni_linker {
         _class: JClass,
         linker_handle: jlong,
     ) {
+        // DEFENSIVE: Validate handle before attempting to destroy
+        // Handles must be properly aligned pointers (at least 8-byte aligned for Box<Linker>)
+        // Small values like 1L from tests will fail this check
+        if linker_handle == 0 || (linker_handle as usize) < 4096 || (linker_handle as usize) % std::mem::align_of::<usize>() != 0 {
+            log::warn!("Attempted to destroy invalid linker handle: {:#x}", linker_handle);
+            return;
+        }
+
         unsafe {
             linker_core::destroy_linker(linker_handle as *mut c_void);
         }
@@ -3253,8 +3267,6 @@ pub mod engine {}
 pub mod module {}
 
 /// JNI bindings for Component operations (WASI Preview 2)
-// TODO: Re-enable when component module is available
-/*
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component {
     use super::*;
@@ -3467,7 +3479,6 @@ pub mod jni_component {
         }
     }
 }
-*/
 
 /// JNI bindings for Host Function operations
 #[cfg(feature = "jni-bindings")]

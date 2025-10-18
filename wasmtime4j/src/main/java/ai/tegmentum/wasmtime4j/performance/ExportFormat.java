@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.performance;
 
+import java.util.Locale;
+
 /**
  * Supported export formats for performance profiling data.
  *
@@ -288,7 +290,7 @@ public enum ExportFormat {
       throw new IllegalArgumentException("Format string cannot be null or empty");
     }
 
-    final String normalized = formatString.trim().toUpperCase().replace("-", "_");
+    final String normalized = formatString.trim().toUpperCase(Locale.ROOT).replace("-", "_");
 
     try {
       return valueOf(normalized);

@@ -20,6 +20,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -347,8 +348,8 @@ public final class SerializedModuleMetadata {
    */
   private boolean isPlatformOsCompatible(final String current, final String serialized) {
     // OS compatibility check
-    final String currentLower = current.toLowerCase();
-    final String serializedLower = serialized.toLowerCase();
+    final String currentLower = current.toLowerCase(Locale.ROOT);
+    final String serializedLower = serialized.toLowerCase(Locale.ROOT);
 
     return currentLower.equals(serializedLower)
         || (currentLower.contains("windows") && serializedLower.contains("windows"))

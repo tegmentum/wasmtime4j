@@ -35,12 +35,14 @@ import java.util.regex.Pattern;
  */
 public final class ComponentVersion implements Comparable<ComponentVersion> {
 
+  // Simplified semver pattern to prevent ReDoS attacks
+  // Pre-release and build metadata are validated separately after initial parse
   private static final Pattern VERSION_PATTERN =
-      Pattern.compile(
-          "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)"
-              + "(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-              + "(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))"
-              + "?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
+      Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)"
+          + "(?:-([0-9A-Za-z-.]+))?"
+          + "(?:\\+([0-9A-Za-z-.]+))?$");
+
+  private static final int MAX_VERSION_LENGTH = 256;
 
   private final int major;
   private final int minor;
@@ -109,6 +111,12 @@ public final class ComponentVersion implements Comparable<ComponentVersion> {
    */
   public static ComponentVersion parse(final String versionString) {
     Objects.requireNonNull(versionString, "Version string cannot be null");
+
+    // Prevent ReDoS by rejecting excessively long version strings
+    if (versionString.length() > MAX_VERSION_LENGTH) {
+      throw new IllegalArgumentException(
+          "Version string exceeds maximum length of " + MAX_VERSION_LENGTH);
+    }
 
     if (!VERSION_PATTERN.matcher(versionString).matches()) {
       throw new IllegalArgumentException("Invalid version string: " + versionString);

@@ -14,11 +14,13 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime
-wasmtime = "37.0.2"
+wasmtime = { version = "37.0.2", features = ["component-model", "component-model-async", "async", "gc"] }
 wasmtime-wasi = { version = "37.0.2", optional = true }
+wasmtime-wast = { version = "37.0.2", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"
+wast = "240.0.0"
 
 # JNI support for Java 8-22 compatibility
 jni = { version = "0.21.1", optional = true }

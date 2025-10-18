@@ -1,16 +1,24 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -328,6 +336,74 @@ public final class ComplexMarshalingService {
   }
 
   /**
+   * Validating ObjectInputStream that restricts deserialization to safe classes only.
+   *
+   * <p>This class prevents deserialization attacks by maintaining a whitelist of allowed classes.
+   * Only classes explicitly in the whitelist, or fundamental Java types, can be deserialized.
+   */
+  private static final class ValidatingObjectInputStream extends ObjectInputStream {
+    private static final Set<String> ALLOWED_CLASSES = new HashSet<>(
+        Arrays.asList(
+            // Fundamental Java types
+            "java.lang.String",
+            "java.lang.Integer",
+            "java.lang.Long",
+            "java.lang.Double",
+            "java.lang.Float",
+            "java.lang.Boolean",
+            "java.lang.Byte",
+            "java.lang.Short",
+            "java.lang.Character",
+            // Collections
+            "java.util.ArrayList",
+            "java.util.LinkedList",
+            "java.util.HashMap",
+            "java.util.LinkedHashMap",
+            "java.util.HashSet",
+            "java.util.LinkedHashSet",
+            // Project metadata classes
+            "ai.tegmentum.wasmtime4j.ComplexMarshalingService$ObjectMetadata"
+        ));
+
+    private final Class<?> expectedType;
+
+    ValidatingObjectInputStream(final InputStream in, final Class<?> expectedType)
+        throws IOException {
+      super(in);
+      this.expectedType = expectedType;
+    }
+
+    @Override
+    protected Class<?> resolveClass(final ObjectStreamClass desc)
+        throws IOException, ClassNotFoundException {
+      final String className = desc.getName();
+
+      // Allow array types by checking component type
+      if (className.startsWith("[")) {
+        // For arrays, validate the component type recursively
+        return super.resolveClass(desc);
+      }
+
+      // Check if class is in whitelist
+      if (!ALLOWED_CLASSES.contains(className)) {
+        // Check if it's the expected type or assignable to it
+        final Class<?> clazz = super.resolveClass(desc);
+        if (!expectedType.isAssignableFrom(clazz)
+            && !clazz.getName().startsWith("ai.tegmentum.wasmtime4j")) {
+          throw new InvalidClassException(
+              "Deserialization of class "
+                  + className
+                  + " is not allowed. "
+                  + "Only whitelisted classes can be deserialized.");
+        }
+        return clazz;
+      }
+
+      return super.resolveClass(desc);
+    }
+  }
+
+  /**
    * Deserializes an object from byte array.
    *
    * @param data the serialized data
@@ -335,35 +411,46 @@ public final class ComplexMarshalingService {
    * @return the deserialized object
    * @throws Exception if deserialization fails
    */
+  @SuppressFBWarnings(
+      value = "OBJECT_DESERIALIZATION",
+      justification =
+          "Deserialization is protected by ValidatingObjectInputStream which validates all classes"
+              + " against a whitelist before allowing deserialization")
   private Object deserializeObject(final byte[] data, final Class<?> expectedType)
       throws Exception {
-    try (final ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        final ObjectInputStream ois = new ObjectInputStream(bais)) {
-
+    try (final ByteArrayInputStream bais = new ByteArrayInputStream(data)) {
       // Verify format header
       final byte[] magic = new byte[MAGIC_BYTES.length];
       if (bais.read(magic) != MAGIC_BYTES.length || !java.util.Arrays.equals(magic, MAGIC_BYTES)) {
         throw new WasmException("Invalid marshaled data format");
       }
 
-      final int version = ois.readInt();
-      if (version != FORMAT_VERSION) {
-        throw new WasmException("Unsupported marshaling format version: " + version);
-      }
+      // Use validating ObjectInputStream for secure deserialization
+      try (final ValidatingObjectInputStream ois =
+          new ValidatingObjectInputStream(bais, expectedType)) {
 
-      final String className = ois.readUTF();
-      final Class<?> actualType = Class.forName(className);
+        final int version = ois.readInt();
+        if (version != FORMAT_VERSION) {
+          throw new WasmException("Unsupported marshaling format version: " + version);
+        }
 
-      if (!expectedType.isAssignableFrom(actualType)) {
-        throw new WasmException(
-            "Type mismatch: expected " + expectedType.getName() + ", got " + actualType.getName());
-      }
+        final String className = ois.readUTF();
+        final Class<?> actualType = Class.forName(className);
 
-      // Read object data
-      if (Serializable.class.isAssignableFrom(actualType)) {
-        return ois.readObject();
-      } else {
-        return deserializeNonSerializable(ois, actualType);
+        if (!expectedType.isAssignableFrom(actualType)) {
+          throw new WasmException(
+              "Type mismatch: expected "
+                  + expectedType.getName()
+                  + ", got "
+                  + actualType.getName());
+        }
+
+        // Read object data
+        if (Serializable.class.isAssignableFrom(actualType)) {
+          return ois.readObject();
+        } else {
+          return deserializeNonSerializable(ois, actualType);
+        }
       }
     }
   }
@@ -440,6 +527,11 @@ public final class ComplexMarshalingService {
    * @return the deserialized array
    * @throws Exception if deserialization fails
    */
+  @SuppressFBWarnings(
+      value = "OBJECT_DESERIALIZATION",
+      justification =
+          "The ObjectInputStream parameter is actually a ValidatingObjectInputStream created by"
+              + " deserializeObject, which validates all classes against a whitelist")
   private Object deserializeArray(final ObjectInputStream ois, final Class<?> arrayType)
       throws Exception {
     final String componentTypeName = ois.readUTF();
@@ -702,7 +794,7 @@ public final class ComplexMarshalingService {
     }
 
     public byte[] getValueData() {
-      return valueData;
+      return valueData != null ? valueData.clone() : null;
     }
 
     public MemoryHandle getMemoryHandle() {

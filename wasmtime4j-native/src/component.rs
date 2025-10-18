@@ -586,8 +586,8 @@ impl ComponentEngine {
             });
         }
 
-        // Convert WAT to bytes first
-        let bytes = wasmtime::wat::parse_str(wat)
+        // Convert WAT to bytes first using the wat crate
+        let bytes = wat::parse_str(wat)
             .map_err(|e| WasmtimeError::Compilation {
                 message: format!("Failed to parse WAT: {}", e),
             })?;
@@ -648,8 +648,8 @@ impl ComponentEngine {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
 
-        // Extract imports
-        for (name, _import_ty) in component_ty.imports() {
+        // Extract imports - Wasmtime 37.0.2 requires engine parameter
+        for (name, _import_ty) in component_ty.imports(&self.engine) {
             imports.push(InterfaceDefinition {
                 name: name.to_string(),
                 namespace: None, // Will be enhanced with actual namespace parsing
@@ -660,8 +660,8 @@ impl ComponentEngine {
             });
         }
 
-        // Extract exports
-        for (name, _export_ty) in component_ty.exports() {
+        // Extract exports - Wasmtime 37.0.2 requires engine parameter
+        for (name, _export_ty) in component_ty.exports(&self.engine) {
             exports.push(InterfaceDefinition {
                 name: name.to_string(),
                 namespace: None, // Will be enhanced with actual namespace parsing
@@ -706,6 +706,32 @@ pub struct InstanceInfo {
 }
 
 impl Component {
+    /// Create a new Component with Wasmtime component and metadata
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - The compiled Wasmtime component
+    /// * `metadata` - Component metadata
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `Component` instance.
+    pub(crate) fn new(component: WasmtimeComponent, metadata: ComponentMetadata) -> Self {
+        Component {
+            component,
+            metadata,
+        }
+    }
+
+    /// Get the internal Wasmtime component
+    ///
+    /// # Returns
+    ///
+    /// Returns a reference to the internal Wasmtime component.
+    pub(crate) fn wasmtime_component(&self) -> &WasmtimeComponent {
+        &self.component
+    }
+
     /// Get component metadata
     ///
     /// # Returns

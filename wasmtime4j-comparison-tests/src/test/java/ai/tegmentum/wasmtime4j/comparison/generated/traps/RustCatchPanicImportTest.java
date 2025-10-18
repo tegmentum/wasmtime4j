@@ -1,18 +1,22 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::rust_catch_panic_import
  *
- * <p>Original source: traps.rs:431 Category: traps
+ * Original source: traps.rs:431
+ * Category: traps
  *
- * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case.
+ * This test validates that wasmtime4j produces the same results as
+ * the upstream Wasmtime implementation for this test case.
  */
 public final class RustCatchPanicImportTest {
 
@@ -23,14 +27,25 @@ public final class RustCatchPanicImportTest {
     // (module $a
     //                 (import "" "panic" (func $panic))
     //                 (import "" "catch panic" (func $catch_panic))
-    //                 (func (export "panic
+    //                 (func (export "panic") call $panic)
+    //                 (func (export "run")
+    //                   call $catch_panic
+    //                   call $catch_panic
+    //                   unreachable
+    //                 )
+    //             )
 
-    final String wat =
-        """
+    final String wat = """
         (module $a
                         (import "" "panic" (func $panic))
                         (import "" "catch panic" (func $catch_panic))
-                        (func (export "panic
+                        (func (export "panic") call $panic)
+                        (func (export "run")
+                          call $catch_panic
+                          call $catch_panic
+                          unreachable
+                        )
+                    )
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

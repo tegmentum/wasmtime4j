@@ -513,15 +513,11 @@ public final class TypeValidationCache {
         digest.update(moduleContext.getBytes());
       }
 
-      // Convert to hex
+      // Convert to hex using String.format to prevent BAD_HEXA_CONVERSION
       final byte[] hash = digest.digest();
-      final StringBuilder hexString = new StringBuilder();
+      final StringBuilder hexString = new StringBuilder(hash.length * 2);
       for (final byte b : hash) {
-        final String hex = Integer.toHexString(0xff & b);
-        if (hex.length() == 1) {
-          hexString.append('0');
-        }
-        hexString.append(hex);
+        hexString.append(String.format("%02x", b));
       }
 
       return "val_" + hexString.toString();
@@ -566,15 +562,11 @@ public final class TypeValidationCache {
         digest.update(context.getBytes());
       }
 
-      // Convert to hex
+      // Convert to hex using String.format to prevent BAD_HEXA_CONVERSION
       final byte[] hash = digest.digest();
-      final StringBuilder hexString = new StringBuilder();
+      final StringBuilder hexString = new StringBuilder(hash.length * 2);
       for (final byte b : hash) {
-        final String hex = Integer.toHexString(0xff & b);
-        if (hex.length() == 1) {
-          hexString.append('0');
-        }
-        hexString.append(hex);
+        hexString.append(String.format("%02x", b));
       }
 
       return "comp_" + hexString.toString();

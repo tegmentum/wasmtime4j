@@ -102,9 +102,15 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   private static FunctionReferenceHandle createNativeHandleFromHost(
       final HostFunction hostFunction, final FunctionType functionType, final JniStore store)
       throws WasmException {
-    Objects.requireNonNull(hostFunction, "Host function cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
-    Objects.requireNonNull(store, "Store cannot be null");
+    if (hostFunction == null) {
+      throw new WasmException("Failed to create native function reference: Host function cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException("Failed to create native function reference: Function type cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create native function reference: Store cannot be null");
+    }
 
     final long functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
     final long nativeHandle =
@@ -130,12 +136,16 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    */
   private static FunctionReferenceHandle createNativeHandleFromWasm(
       final WasmFunction wasmFunction, final JniStore store) throws WasmException {
-    Objects.requireNonNull(wasmFunction, "WebAssembly function cannot be null");
-    Objects.requireNonNull(store, "Store cannot be null");
+    if (wasmFunction == null) {
+      throw new WasmException("Failed to create native function reference: WebAssembly function cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create native function reference: Store cannot be null");
+    }
 
     if (!(wasmFunction instanceof JniFunction)) {
       throw new WasmException(
-          "WebAssembly function must be a JNI function for function reference creation");
+          "Failed to create native function reference: WebAssembly function must be a JNI function");
     }
     final JniFunction jniFunction = (JniFunction) wasmFunction;
 

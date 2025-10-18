@@ -370,6 +370,14 @@ pub enum WasmtimeError {
         /// Error message describing the potential deadlock
         message: String,
     },
+
+    /// WAST execution errors
+    #[error("WAST execution error: {0}")]
+    WastExecutionError(String),
+
+    /// JNI-specific errors
+    #[error("JNI error: {0}")]
+    JniError(String),
 }
 
 impl Clone for WasmtimeError {
@@ -427,6 +435,8 @@ impl Clone for WasmtimeError {
             WasmtimeError::Wasi { message } => WasmtimeError::Wasi { message: message.clone() },
             WasmtimeError::Security { message } => WasmtimeError::Security { message: message.clone() },
             WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock { message: message.clone() },
+            WasmtimeError::WastExecutionError(message) => WasmtimeError::WastExecutionError(message.clone()),
+            WasmtimeError::JniError(message) => WasmtimeError::JniError(message.clone()),
         }
     }
 }
@@ -564,6 +574,8 @@ impl WasmtimeError {
             WasmtimeError::SystemError { .. } => ErrorCode::InternalError,
             WasmtimeError::CompilationError { .. } => ErrorCode::CompilationError,
             WasmtimeError::WouldDeadlock { .. } => ErrorCode::ConcurrencyError,
+            WasmtimeError::WastExecutionError(..) => ErrorCode::ValidationError,
+            WasmtimeError::JniError(..) => ErrorCode::InternalError,
         }
     }
 

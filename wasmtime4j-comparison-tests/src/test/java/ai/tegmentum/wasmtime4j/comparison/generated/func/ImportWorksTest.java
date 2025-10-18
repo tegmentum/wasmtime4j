@@ -1,18 +1,22 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::import_works
  *
- * <p>Original source: func.rs:560 Category: func
+ * Original source: func.rs:560
+ * Category: func
  *
- * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case.
+ * This test validates that wasmtime4j produces the same results as
+ * the upstream Wasmtime implementation for this test case.
  */
 public final class ImportWorksTest {
 
@@ -23,19 +27,59 @@ public final class ImportWorksTest {
     // (import "" "" (func))
     //             (import "" "" (func (param i32) (result i32)))
     //             (import "" "" (func (param i32) (param i64)))
-    //             (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref
-    // anyref i31ref)))
-    //
-    //             (func (export "run
+    //             (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref anyref i31ref)))
+    // 
+    //             (func (export "run") (param externref externref funcref)
+    //                 call 0
+    //                 i32.const 0
+    //                 call 1
+    //                 i32.const 1
+    //                 i32.add
+    //                 i64.const 3
+    //                 call 2
+    // 
+    //                 i32.const 100
+    //                 i64.const 200
+    //                 i32.const 300
+    //                 f32.const 400
+    //                 f64.const 500
+    //                 local.get 0
+    //                 local.get 1
+    //                 local.get 2
+    //                 (ref.i31 (i32.const 36))
+    //                 (ref.i31 (i32.const 42))
+    //                 (ref.i31 (i32.const 0x1234))
+    //                 call 3
+    //             )
 
-    final String wat =
-        """
+    final String wat = """
         (import "" "" (func))
                     (import "" "" (func (param i32) (result i32)))
                     (import "" "" (func (param i32) (param i64)))
                     (import "" "" (func (param i32 i64 i32 f32 f64 externref externref funcref anyref anyref i31ref)))
-
-                    (func (export "run
+        
+                    (func (export "run") (param externref externref funcref)
+                        call 0
+                        i32.const 0
+                        call 1
+                        i32.const 1
+                        i32.add
+                        i64.const 3
+                        call 2
+        
+                        i32.const 100
+                        i64.const 200
+                        i32.const 300
+                        f32.const 400
+                        f64.const 500
+                        local.get 0
+                        local.get 1
+                        local.get 2
+                        (ref.i31 (i32.const 36))
+                        (ref.i31 (i32.const 42))
+                        (ref.i31 (i32.const 0x1234))
+                        call 3
+                    )
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

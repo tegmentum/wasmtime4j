@@ -1,18 +1,22 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::mismatched_arguments
  *
- * <p>Original source: traps.rs:517 Category: traps
+ * Original source: traps.rs:517
+ * Category: traps
  *
- * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case.
+ * This test validates that wasmtime4j produces the same results as
+ * the upstream Wasmtime implementation for this test case.
  */
 public final class MismatchedArgumentsTest {
 
@@ -21,11 +25,13 @@ public final class MismatchedArgumentsTest {
   public void testMismatchedArguments() {
     // WAT code from original Wasmtime test:
     // (module $a
-    //                 (func (export "foo
+    //                 (func (export "foo") (param i32))
+    //             )
 
     final String wat = """
         (module $a
-                        (func (export "foo
+                        (func (export "foo") (param i32))
+                    )
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

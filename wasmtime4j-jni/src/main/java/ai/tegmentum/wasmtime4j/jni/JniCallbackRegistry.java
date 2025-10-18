@@ -113,9 +113,15 @@ public final class JniCallbackRegistry implements CallbackRegistry {
       final String name, final HostFunction callback, final FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
-    Objects.requireNonNull(name, "Callback name cannot be null");
-    Objects.requireNonNull(callback, "Callback cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
+    if (name == null) {
+      throw new WasmException("Failed to register callback: Callback name cannot be null");
+    }
+    if (callback == null) {
+      throw new WasmException("Failed to register callback: Callback cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException("Failed to register callback: Function type cannot be null");
+    }
 
     final long callbackId = nextCallbackId.getAndIncrement();
     final CallbackHandleImpl handle = new CallbackHandleImpl(callbackId, name, functionType);
@@ -147,9 +153,15 @@ public final class JniCallbackRegistry implements CallbackRegistry {
       final String name, final AsyncHostFunction callback, final FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
-    Objects.requireNonNull(name, "Callback name cannot be null");
-    Objects.requireNonNull(callback, "Callback cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
+    if (name == null) {
+      throw new WasmException("Failed to register async callback: Callback name cannot be null");
+    }
+    if (callback == null) {
+      throw new WasmException("Failed to register async callback: Callback cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException("Failed to register async callback: Function type cannot be null");
+    }
 
     final long callbackId = nextCallbackId.getAndIncrement();
     final AsyncCallbackHandleImpl handle =
@@ -330,6 +342,7 @@ public final class JniCallbackRegistry implements CallbackRegistry {
 
   @Override
   public boolean hasCallback(final String name) {
+    Objects.requireNonNull(name, "Callback name cannot be null");
     return callbacks.values().stream().anyMatch(entry -> name.equals(entry.handle.getName()));
   }
 

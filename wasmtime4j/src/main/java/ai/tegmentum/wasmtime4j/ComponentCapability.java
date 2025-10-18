@@ -228,7 +228,7 @@ public final class ComponentCapability {
     }
 
     public Builder attributes(Set<String> attributes) {
-      this.attributes = attributes;
+      this.attributes = attributes != null ? Set.copyOf(attributes) : Set.of();
       return this;
     }
 

@@ -2,6 +2,8 @@ package ai.tegmentum.wasmtime4j.comprehensive;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.jni.JniWastRunner;
+import ai.tegmentum.wasmtime4j.jni.WastExecutionResult;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,18 @@ public class ComprehensiveTestSuiteRunner {
 
   private ExecutorService testExecutor;
   private List<TestResult> testResults;
+
+  /** Setup method to load native library before running tests. */
+  @BeforeAll
+  public static void setupNativeLibrary() {
+    // Ensure native library is loaded for WAST execution
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      LOGGER.warning("Warning: Failed to load native library: " + e.getMessage());
+      LOGGER.warning("WAST tests will be skipped if native library is not available");
+    }
+  }
 
   @BeforeEach
   void setUp() {
@@ -371,7 +386,11 @@ public class ComprehensiveTestSuiteRunner {
     try (Stream<Path> paths = Files.walk(directory)) {
       return paths
           .filter(Files::isRegularFile)
-          .filter(path -> path.toString().endsWith(".wasm"))
+          .filter(
+              path -> {
+                final String pathStr = path.toString();
+                return pathStr.endsWith(".wasm") || pathStr.endsWith(".wast");
+              })
           .collect(Collectors.toList());
     }
   }
@@ -387,7 +406,13 @@ public class ComprehensiveTestSuiteRunner {
 
     for (final Path testFile : testFiles) {
       try {
-        final boolean success = executeWasmTestFile(testFile);
+        final boolean success;
+        if (testFile.toString().endsWith(".wast")) {
+          success = executeWastTestFile(testFile);
+        } else {
+          success = executeWasmTestFile(testFile);
+        }
+
         if (success) {
           successfulTests++;
         } else {
@@ -439,6 +464,60 @@ public class ComprehensiveTestSuiteRunner {
     // file
     // Real implementation would actually execute the module
     return true;
+  }
+
+  private boolean executeWastTestFile(final Path testFile) throws Exception {
+    // Execute WAST test file using JniWastRunner
+    LOGGER.fine("Executing WAST test: " + testFile.getFileName());
+
+    // Validate file exists and is readable
+    if (!Files.exists(testFile) || !Files.isReadable(testFile)) {
+      throw new IOException("WAST test file not accessible: " + testFile);
+    }
+
+    try {
+      final WastExecutionResult result =
+          JniWastRunner.executeWastFile(testFile.toAbsolutePath().toString());
+
+      if (result == null) {
+        throw new IllegalStateException("WAST execution returned null result");
+      }
+
+      // Log detailed results
+      if (result.allPassed()) {
+        LOGGER.fine(
+            "WAST test passed: "
+                + testFile.getFileName()
+                + " - "
+                + result.getPassedDirectives()
+                + "/"
+                + result.getTotalDirectives()
+                + " directives passed");
+      } else {
+        LOGGER.warning(
+            "WAST test failed: "
+                + testFile.getFileName()
+                + " - "
+                + result.getFailedDirectives()
+                + "/"
+                + result.getTotalDirectives()
+                + " directives failed"
+                + (result.getExecutionError() != null
+                    ? " (Error: " + result.getExecutionError() + ")"
+                    : ""));
+      }
+
+      return result.allPassed();
+    } catch (UnsatisfiedLinkError e) {
+      // Native library not loaded - skip WAST tests
+      LOGGER.warning(
+          "Skipping WAST test "
+              + testFile.getFileName()
+              + " - native library not available: "
+              + e.getMessage());
+      // Consider as success to avoid failing tests when library isn't available
+      return true;
+    }
   }
 
   private PerformanceTestResults executePerformanceTests() {

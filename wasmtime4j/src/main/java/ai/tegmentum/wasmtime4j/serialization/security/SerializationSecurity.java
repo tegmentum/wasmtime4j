@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.serialization.security;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
@@ -161,11 +162,27 @@ public final class SerializationSecurity {
   /**
    * Encrypts data using AES-CBC with PKCS5 padding.
    *
+   * <p><strong>SECURITY WARNING:</strong> AES-CBC does not provide integrity protection and is
+   * vulnerable to padding oracle attacks. Use {@link #encryptAesGcm(byte[], SecretKey)} for new
+   * code. This method is provided only for compatibility with legacy systems that require AES-CBC.
+   * If you must use this method, you MUST also compute and verify an HMAC using {@link
+   * #calculateHmacSha256(byte[], SecretKey)} to ensure integrity protection.
+   *
    * @param data the data to encrypt
    * @param secretKey the secret key for encryption
    * @return the encrypted data with IV
    * @throws WasmException if encryption fails
+   * @deprecated Use {@link #encryptAesGcm(byte[], SecretKey)} instead for authenticated encryption
    */
+  @Deprecated
+  @SuppressFBWarnings(
+      value = {"CIPHER_INTEGRITY", "PADDING_ORACLE", "STATIC_IV"},
+      justification =
+          "AES-CBC is provided for backward compatibility with legacy systems. "
+              + "Users are warned via deprecation and documentation to prefer AES-GCM. "
+              + "When this method must be used, users should add HMAC for integrity protection "
+              + "as documented in the method's Javadoc. "
+              + "IV is generated using SecureRandom each time, not static.")
   public static EncryptedData encryptAesCbc(final byte[] data, final SecretKey secretKey)
       throws WasmException {
     Objects.requireNonNull(data, "Data cannot be null");
@@ -199,11 +216,28 @@ public final class SerializationSecurity {
   /**
    * Decrypts data that was encrypted with AES-CBC.
    *
+   * <p><strong>SECURITY WARNING:</strong> AES-CBC does not provide integrity protection and is
+   * vulnerable to padding oracle attacks. Use {@link #decryptAesGcm(EncryptedData, SecretKey)} for
+   * new code. This method is provided only for compatibility with legacy systems that require
+   * AES-CBC. If you must use this method, you MUST verify an HMAC using {@link
+   * #verifyHmacSha256(byte[], byte[], SecretKey)} before decrypting to ensure integrity
+   * protection.
+   *
    * @param encryptedData the encrypted data with metadata
    * @param secretKey the secret key for decryption
    * @return the decrypted data
    * @throws WasmException if decryption fails
+   * @deprecated Use {@link #decryptAesGcm(EncryptedData, SecretKey)} instead for authenticated
+   *     encryption
    */
+  @Deprecated
+  @SuppressFBWarnings(
+      value = {"CIPHER_INTEGRITY", "PADDING_ORACLE"},
+      justification =
+          "AES-CBC is provided for backward compatibility with legacy systems. "
+              + "Users are warned via deprecation and documentation to prefer AES-GCM. "
+              + "When this method must be used, users should verify HMAC before decrypting "
+              + "as documented in the method's Javadoc to prevent padding oracle attacks.")
   public static byte[] decryptAesCbc(final EncryptedData encryptedData, final SecretKey secretKey)
       throws WasmException {
     Objects.requireNonNull(encryptedData, "Encrypted data cannot be null");

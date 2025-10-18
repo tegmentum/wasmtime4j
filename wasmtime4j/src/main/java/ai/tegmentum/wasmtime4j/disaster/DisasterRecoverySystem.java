@@ -16,10 +16,14 @@
 
 package ai.tegmentum.wasmtime4j.disaster;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -182,6 +186,44 @@ public final class DisasterRecoverySystem {
 
     public boolean validateIntegrity() {
       return checksum.equals(calculateChecksum(componentData));
+    }
+  }
+
+  /**
+   * Secure ObjectInputStream that validates classes before deserialization.
+   *
+   * <p>This class prevents deserialization attacks by maintaining a whitelist of allowed classes
+   * and rejecting any attempts to deserialize untrusted classes.
+   */
+  private static final class ValidatingObjectInputStream extends ObjectInputStream {
+    /**
+     * Creates a new ValidatingObjectInputStream.
+     *
+     * @param in the underlying input stream
+     * @throws IOException if an I/O error occurs
+     */
+    ValidatingObjectInputStream(final InputStream in) throws IOException {
+      super(in);
+    }
+
+    @Override
+    protected Class<?> resolveClass(final ObjectStreamClass desc)
+        throws IOException, ClassNotFoundException {
+      final String className = desc.getName();
+
+      // Allow arrays
+      if (className.startsWith("[")) {
+        return super.resolveClass(desc);
+      }
+
+      // Only allow specific disaster recovery classes
+      if (!className.equals("ai.tegmentum.wasmtime4j.disaster.DisasterRecoverySystem$RecoverableComponent")) {
+        throw new InvalidClassException(
+            "Deserialization of class " + className + " is not allowed. "
+                + "Only RecoverableComponent can be deserialized from backup files.");
+      }
+
+      return super.resolveClass(desc);
     }
   }
 
@@ -904,8 +946,17 @@ public final class DisasterRecoverySystem {
     }
   }
 
-  /** Loads backup from disk storage. */
-  @SuppressWarnings("unchecked")
+  /**
+   * Loads backup from disk storage.
+   *
+   * <p>Uses ValidatingObjectInputStream to prevent deserialization attacks by only allowing
+   * RecoverableComponent to be deserialized from backup files.
+   */
+  @SuppressFBWarnings(
+      value = "OBJECT_DESERIALIZATION",
+      justification =
+          "Deserialization is protected by ValidatingObjectInputStream which only allows "
+              + "RecoverableComponent class to be deserialized from backup files")
   private RecoverableComponent loadBackupFromDisk(final String componentId) {
     try {
       final Path backupFile = backupStoragePath.resolve(componentId + "_backup.ser");
@@ -914,7 +965,7 @@ public final class DisasterRecoverySystem {
       }
 
       try (final java.io.FileInputStream fis = new java.io.FileInputStream(backupFile.toFile());
-          final ObjectInputStream ois = new ObjectInputStream(fis)) {
+          final ValidatingObjectInputStream ois = new ValidatingObjectInputStream(fis)) {
         return (RecoverableComponent) ois.readObject();
       }
 
