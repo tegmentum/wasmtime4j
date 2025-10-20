@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 10 of 136 generated tests (7.4%)
-- **Tests Passing**: 10/10 (100% success rate)
+- **Tests Implemented**: 11 of 136 generated tests (8.1%)
+- **Tests Passing**: 11/11 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -19,6 +19,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ DivRemTest - Division and remainder operations for i32/i64 (misc_testsuite category)
   - ✅ MiscTest - br_table instruction with stack pointer validation (misc_testsuite category)
   - ✅ CallWasmManyArgsTest - Function with 10 i32 parameters (hostfuncs category)
+  - ✅ CallImportManyArgsTest - Host function with 10 i32 parameters (hostfuncs category)
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-19
 
@@ -370,12 +371,39 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 1 of 7 complete (14.3%)
+**Example: CallImportManyArgsTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  // Define host function with 10 parameters
+  final FunctionType funcType = new FunctionType(
+      new WasmValueType[] {
+        WasmValueType.I32, WasmValueType.I32, WasmValueType.I32,
+        WasmValueType.I32, WasmValueType.I32, WasmValueType.I32,
+        WasmValueType.I32, WasmValueType.I32, WasmValueType.I32,
+        WasmValueType.I32
+      },
+      new WasmValueType[] {});
+
+  runner.defineHostFunction("host", "validate", funcType, (params) -> {
+    // Validate all 10 parameters
+    for (int i = 0; i < 10; i++) {
+      assertEquals(i + 1, params[i].asInt());
+    }
+    return new WasmValue[] {};
+  });
+
+  runner.compileAndInstantiate(wat);
+  runner.assertReturn("run", new WasmValue[] {});
+}
+```
+
+**Status**: 2 of 7 complete (28.6%)
 
 **Completed**:
 - ✅ CallWasmManyArgsTest (10 i32 parameters with validation)
+- ✅ CallImportManyArgsTest (host function with 10 i32 parameters and validation)
 
-**Remaining**: TrapImportTest, ImportWorksTest, CallImportManyArgsTest, etc.
+**Remaining**: TrapImportTest, ImportWorksTest, etc.
 
 ### Category: componentmodel (1 test)
 
@@ -521,8 +549,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 10 / 136 (7.4%)
-- **Test Success Rate**: 100% (10/10 passing)
+- **Tests Implemented**: 11 / 136 (8.1%)
+- **Test Success Rate**: 100% (11/11 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
