@@ -1,51 +1,54 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::rust_panic_start_function
  *
- * Original source: traps.rs:484
- * Category: traps
+ * <p>Original source: traps.rs:484 Category: traps
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class RustPanicStartFunctionTest {
 
   @Test
   @DisplayName("traps::rust_panic_start_function")
-  public void testRustPanicStartFunction() {
+  public void testRustPanicStartFunction() throws Exception {
     // WAT code from original Wasmtime test:
     // (module $a
     //                 (import "" "" (func $foo))
     //                 (start $foo)
     //             )
 
-    final String wat = """
+    final String wat =
+        """
         (module $a
-                        (import "" "" (func $foo))
-                        (start $foo)
-                    )
+          (import "" "" (func $foo))
+          (start $foo)
+        )
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final WastTestRunner runner = new WastTestRunner()) {
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
 
-    // Expected results from original test:
-    // err.downcast_ref::<&'static str>(
-    // err.downcast_ref::<&'static str>(
-    fail("Test not yet implemented - awaiting test framework completion");
+      runner.defineHostFunction(
+          "",
+          "",
+          funcType,
+          (params) -> {
+            throw new WasmException("Rust panic simulation");
+          });
+
+      // The start function calls a host function that panics,
+      // which should cause instantiation to fail
+      runner.assertUnlinkable(wat, null);
+    }
   }
 }

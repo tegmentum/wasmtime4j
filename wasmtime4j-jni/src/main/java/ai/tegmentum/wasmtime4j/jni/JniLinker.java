@@ -70,11 +70,11 @@ public class JniLinker<T> implements Linker<T> {
       final FunctionType functionType,
       final HostFunction implementation)
       throws WasmException {
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Function name cannot be null or empty");
+    if (name == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
     }
     if (functionType == null) {
       throw new IllegalArgumentException("Function type cannot be null");
@@ -117,11 +117,11 @@ public class JniLinker<T> implements Linker<T> {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Memory name cannot be null or empty");
+    if (name == null) {
+      throw new IllegalArgumentException("Memory name cannot be null");
     }
     if (memory == null) {
       throw new IllegalArgumentException("Memory cannot be null");
@@ -164,11 +164,11 @@ public class JniLinker<T> implements Linker<T> {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Table name cannot be null or empty");
+    if (name == null) {
+      throw new IllegalArgumentException("Table name cannot be null");
     }
     if (table == null) {
       throw new IllegalArgumentException("Table cannot be null");
@@ -211,11 +211,11 @@ public class JniLinker<T> implements Linker<T> {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Global name cannot be null or empty");
+    if (name == null) {
+      throw new IllegalArgumentException("Global name cannot be null");
     }
     if (global == null) {
       throw new IllegalArgumentException("Global cannot be null");
@@ -254,8 +254,8 @@ public class JniLinker<T> implements Linker<T> {
   @Override
   public void defineInstance(final String moduleName, final Instance instance)
       throws WasmException {
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
@@ -381,8 +381,8 @@ public class JniLinker<T> implements Linker<T> {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");

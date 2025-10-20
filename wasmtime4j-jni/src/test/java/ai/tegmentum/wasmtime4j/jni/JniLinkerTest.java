@@ -77,17 +77,7 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction(null, "func", testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
-  }
-
-  @Test
-  void testDefineHostFunctionWithEmptyModuleName() {
-    final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineHostFunction("", "func", testFunctionType, testImplementation));
-
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test
@@ -97,17 +87,7 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction("env", null, testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Function name cannot be null or empty");
-  }
-
-  @Test
-  void testDefineHostFunctionWithEmptyFunctionName() {
-    final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineHostFunction("env", "", testFunctionType, testImplementation));
-
-    assertThat(exception.getMessage()).contains("Function name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Function name cannot be null");
   }
 
   @Test
@@ -153,7 +133,7 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineMemory(testStore, null, "memory", memory));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test
@@ -188,7 +168,7 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineTable(testStore, null, "table", table));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test
@@ -224,7 +204,7 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineGlobal(testStore, null, "global", global));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test
@@ -247,7 +227,7 @@ class JniLinkerTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test
@@ -300,7 +280,7 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.instantiate(testStore, null, module));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null or empty");
+    assertThat(exception.getMessage()).contains("Module name cannot be null");
   }
 
   @Test

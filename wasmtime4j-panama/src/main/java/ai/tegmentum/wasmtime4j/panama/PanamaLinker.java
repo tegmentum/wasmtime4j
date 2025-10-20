@@ -81,11 +81,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final FunctionType functionType,
       final HostFunction implementation)
       throws WasmException {
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
     }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Function name cannot be null or empty");
+    if (name == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
     }
     if (functionType == null) {
       throw new IllegalArgumentException("Function type cannot be null");

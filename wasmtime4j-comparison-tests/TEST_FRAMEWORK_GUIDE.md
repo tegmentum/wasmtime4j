@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 15 of 136 generated tests (11.0%)
-- **Tests Passing**: 15/15 (100% success rate)
+- **Tests Implemented**: 16 of 136 generated tests (11.8%)
+- **Tests Passing**: 16/16 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -24,8 +24,9 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ TrapStartFunctionImportTest - Trap in start function during instantiation (traps category)
   - ✅ MismatchedArgumentsTest - Wrong number of arguments causes trap (traps category)
   - ✅ CallSignatureMismatchTest - Signature mismatch in call_indirect (traps category)
+  - ✅ RustPanicStartFunctionTest - Host function panic in start function with empty module names (traps category)
 - **Test Execution Time**: <1 second for all tests
-- **Last Verified**: 2025-10-19
+- **Last Verified**: 2025-10-20
 
 ## Quick Start
 
@@ -405,14 +406,36 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 3 of 6 complete (50%)
+**Example: RustPanicStartFunctionTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  final FunctionType funcType =
+      new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+
+  // Define host function with empty module and function names
+  runner.defineHostFunction(
+      "",  // Empty module name
+      "",  // Empty function name
+      funcType,
+      (params) -> {
+        throw new WasmException("Rust panic simulation");
+      });
+
+  // The start function calls a host function that panics,
+  // which should cause instantiation to fail
+  runner.assertUnlinkable(wat, null);
+}
+```
+
+**Status**: 4 of 6 complete (66.7%)
 
 **Completed**:
 - ✅ TrapStartFunctionImportTest (trap in start function during instantiation)
 - ✅ MismatchedArgumentsTest (wrong number of arguments causes trap)
 - ✅ CallSignatureMismatchTest (call_indirect signature mismatch traps during instantiation)
+- ✅ RustPanicStartFunctionTest (host function panic in start function with empty module names)
 
-**Remaining**: RustCatchPanicImportTest, RustPanicImportTest, RustPanicStartFunctionTest
+**Remaining**: RustCatchPanicImportTest, RustPanicImportTest
 
 ### Category: hostfuncs (7 tests)
 
@@ -612,8 +635,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 15 / 136 (11.0%)
-- **Test Success Rate**: 100% (15/15 passing)
+- **Tests Implemented**: 16 / 136 (11.8%)
+- **Test Success Rate**: 100% (16/16 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
-- **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
+- **Next Priority**: Implement remaining traps tests (RustCatchPanicImportTest, RustPanicImportTest) or implement misc_testsuite tests
