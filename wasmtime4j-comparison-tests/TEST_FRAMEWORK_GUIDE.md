@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 13 of 136 generated tests (9.6%)
-- **Tests Passing**: 13/13 (100% success rate)
+- **Tests Implemented**: 14 of 136 generated tests (10.3%)
+- **Tests Passing**: 14/14 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -18,6 +18,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ FibTest - Two fibonacci implementations with 22 assertions (misc_testsuite category)
   - ✅ DivRemTest - Division and remainder operations for i32/i64 (misc_testsuite category)
   - ✅ MiscTest - br_table instruction with stack pointer validation (misc_testsuite category)
+  - ✅ Rs2wasmAddFuncTest - Simple i32 addition with complex module (misc_testsuite category)
   - ✅ CallWasmManyArgsTest - Function with 10 i32 parameters (hostfuncs category)
   - ✅ CallImportManyArgsTest - Host function with 10 i32 parameters (hostfuncs category)
   - ✅ TrapStartFunctionImportTest - Trap in start function during instantiation (traps category)
@@ -329,13 +330,26 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 4 of 109 complete (3.7%)
+**Example: Rs2wasmAddFuncTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
+
+  // Test the add function with various inputs
+  runner.assertReturn("add", new WasmValue[] {WasmValue.i32(5)}, WasmValue.i32(2), WasmValue.i32(3));
+  runner.assertReturn("add", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(0), WasmValue.i32(0));
+  runner.assertReturn("add", new WasmValue[] {WasmValue.i32(-1)}, WasmValue.i32(1), WasmValue.i32(-2));
+}
+```
+
+**Status**: 5 of 109 complete (4.6%)
 
 **Completed**:
 - ✅ FloatComparisonTest
 - ✅ FibTest (22 assertions across two implementations)
 - ✅ DivRemTest (4 assertions testing i32/i64 division and remainder)
 - ✅ MiscTest (1 assertion testing br_table stack pointer handling)
+- ✅ Rs2wasmAddFuncTest (4 assertions testing i32 addition with complex module)
 
 **Remaining tests**: ThreadsTest, SimdTest, ResourcesTest, MultiMemoryTest, etc.
 
@@ -587,8 +601,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 13 / 136 (9.6%)
-- **Test Success Rate**: 100% (13/13 passing)
+- **Tests Implemented**: 14 / 136 (10.3%)
+- **Test Success Rate**: 100% (14/14 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
