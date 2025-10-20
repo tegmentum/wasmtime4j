@@ -7,16 +7,18 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 6 of 136 generated tests (4.4%)
-- **Tests Passing**: 6/6 (100% success rate)
-  - ✅ FloatComparisonTest - Multi-value returns
-  - ✅ CallNativeToWasmTest - Multi-value returns
-  - ✅ CallArrayToWasmTest - Parameters with multi-value returns
-  - ✅ CallWasmToNativeTest - Host function imports with Linker
-  - ✅ CallWasmToArrayTest - Host function with multi-value returns
-  - ✅ TrapImportTest - Host function that traps during instantiation
+- **Tests Implemented**: 8 of 136 generated tests (5.9%)
+- **Tests Passing**: 8/8 (100% success rate)
+  - ✅ FloatComparisonTest - Multi-value returns (func category)
+  - ✅ CallNativeToWasmTest - Multi-value returns (func category)
+  - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
+  - ✅ CallWasmToNativeTest - Host function imports with Linker (func category)
+  - ✅ CallWasmToArrayTest - Host function with multi-value returns (func category)
+  - ✅ TrapImportTest - Host function that traps during instantiation (func category)
+  - ✅ FibTest - Two fibonacci implementations with 22 assertions (misc_testsuite category)
+  - ✅ DivRemTest - Division and remainder operations for i32/i64 (misc_testsuite category)
 - **Test Execution Time**: <1 second for all tests
-- **Last Verified**: 2025-10-18
+- **Last Verified**: 2025-10-19
 
 ## Quick Start
 
@@ -295,7 +297,31 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 1 of 109 complete
+**Example: FibTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
+  runner.assertReturn("fib", new WasmValue[] {WasmValue.i32(1)}, WasmValue.i32(0));
+  runner.assertReturn("fib", new WasmValue[] {WasmValue.i32(1)}, WasmValue.i32(1));
+  runner.assertReturn("fib", new WasmValue[] {WasmValue.i32(89)}, WasmValue.i32(10));
+}
+```
+
+**Example: DivRemTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
+  runner.assertReturn(
+      "i32.div_s", new WasmValue[] {WasmValue.i32(1)}, WasmValue.i32(-1), WasmValue.i32(-1));
+}
+```
+
+**Status**: 3 of 109 complete (2.8%)
+
+**Completed**:
+- ✅ FloatComparisonTest
+- ✅ FibTest (22 assertions across two implementations)
+- ✅ DivRemTest (4 assertions testing i32/i64 division and remainder)
 
 **Remaining tests**: ThreadsTest, SimdTest, ResourcesTest, MultiMemoryTest, etc.
 
@@ -465,8 +491,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 6 / 136 (4.4%)
-- **Test Success Rate**: 100% (6/6 passing)
+- **Tests Implemented**: 8 / 136 (5.9%)
+- **Test Success Rate**: 100% (8/8 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
