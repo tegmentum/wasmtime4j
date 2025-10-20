@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 12 of 136 generated tests (8.8%)
-- **Tests Passing**: 12/12 (100% success rate)
+- **Tests Implemented**: 13 of 136 generated tests (9.6%)
+- **Tests Passing**: 13/13 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -21,6 +21,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ CallWasmManyArgsTest - Function with 10 i32 parameters (hostfuncs category)
   - ✅ CallImportManyArgsTest - Host function with 10 i32 parameters (hostfuncs category)
   - ✅ TrapStartFunctionImportTest - Trap in start function during instantiation (traps category)
+  - ✅ MismatchedArgumentsTest - Wrong number of arguments causes trap (traps category)
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-19
 
@@ -367,12 +368,26 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 1 of 6 complete (16.7%)
+**Example: MismatchedArgumentsTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
+
+  // Test calling with no arguments (should trap - function expects 1 parameter)
+  runner.assertTrap("foo", null);
+
+  // Test calling with correct arguments (should succeed)
+  runner.assertReturn("foo", new WasmValue[] {}, WasmValue.i32(0));
+}
+```
+
+**Status**: 2 of 6 complete (33.3%)
 
 **Completed**:
 - ✅ TrapStartFunctionImportTest (trap in start function during instantiation)
+- ✅ MismatchedArgumentsTest (wrong number of arguments causes trap)
 
-**Remaining**: CallSignatureMismatchTest, MismatchedArgumentsTest, RustCatchPanicImportTest, RustPanicImportTest, RustPanicStartFunctionTest
+**Remaining**: CallSignatureMismatchTest, RustCatchPanicImportTest, RustPanicImportTest, RustPanicStartFunctionTest
 
 ### Category: hostfuncs (7 tests)
 
@@ -572,8 +587,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 12 / 136 (8.8%)
-- **Test Success Rate**: 100% (12/12 passing)
+- **Tests Implemented**: 13 / 136 (9.6%)
+- **Test Success Rate**: 100% (13/13 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
