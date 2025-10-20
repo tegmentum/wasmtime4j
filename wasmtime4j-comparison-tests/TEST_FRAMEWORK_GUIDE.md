@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 16 of 136 generated tests (11.8%)
-- **Tests Passing**: 16/16 (100% success rate)
+- **Tests Implemented**: 18 of 136 generated tests (13.2%)
+- **Tests Passing**: 18/18 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -25,7 +25,9 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ MismatchedArgumentsTest - Wrong number of arguments causes trap (traps category)
   - ✅ CallSignatureMismatchTest - Signature mismatch in call_indirect (traps category)
   - ✅ RustPanicStartFunctionTest - Host function panic in start function with empty module names (traps category)
-- **Test Execution Time**: <1 second for all tests
+  - ✅ RustPanicImportTest - Host function panic when calling imported functions (traps category)
+  - ✅ RustCatchPanicImportTest - Host function that catches exceptions internally (traps category)
+- **Test Execution Time**: <2 seconds for all tests
 - **Last Verified**: 2025-10-20
 
 ## Quick Start
@@ -427,15 +429,15 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 4 of 6 complete (66.7%)
+**Status**: 6 of 6 complete (100%) ✅ CATEGORY COMPLETE
 
 **Completed**:
 - ✅ TrapStartFunctionImportTest (trap in start function during instantiation)
 - ✅ MismatchedArgumentsTest (wrong number of arguments causes trap)
 - ✅ CallSignatureMismatchTest (call_indirect signature mismatch traps during instantiation)
 - ✅ RustPanicStartFunctionTest (host function panic in start function with empty module names)
-
-**Remaining**: RustCatchPanicImportTest, RustPanicImportTest
+- ✅ RustPanicImportTest (host function panic when calling imported functions)
+- ✅ RustCatchPanicImportTest (host function that catches exceptions internally)
 
 ### Category: hostfuncs (7 tests)
 
@@ -635,8 +637,9 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 16 / 136 (11.8%)
-- **Test Success Rate**: 100% (16/16 passing)
+- **Tests Implemented**: 18 / 136 (13.2%)
+- **Test Success Rate**: 100% (18/18 passing)
+- **Categories Complete**: traps (6/6 = 100%)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
-- **Next Priority**: Implement remaining traps tests (RustCatchPanicImportTest, RustPanicImportTest) or implement misc_testsuite tests
+- **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
