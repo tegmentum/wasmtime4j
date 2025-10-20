@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 9 of 136 generated tests (6.6%)
-- **Tests Passing**: 9/9 (100% success rate)
+- **Tests Implemented**: 10 of 136 generated tests (7.4%)
+- **Tests Passing**: 10/10 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -18,6 +18,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ FibTest - Two fibonacci implementations with 22 assertions (misc_testsuite category)
   - ✅ DivRemTest - Division and remainder operations for i32/i64 (misc_testsuite category)
   - ✅ MiscTest - br_table instruction with stack pointer validation (misc_testsuite category)
+  - ✅ CallWasmManyArgsTest - Function with 10 i32 parameters (hostfuncs category)
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-19
 
@@ -353,9 +354,28 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 
 Tests for host function imports.
 
-**Note**: Linker support is now available in the framework.
+**Example: CallWasmManyArgsTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
 
-**Status**: 0 of 7 complete
+  // Test function with 10 parameters
+  runner.assertReturn(
+      "run",
+      new WasmValue[] {},
+      WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3),
+      WasmValue.i32(4), WasmValue.i32(5), WasmValue.i32(6),
+      WasmValue.i32(7), WasmValue.i32(8), WasmValue.i32(9),
+      WasmValue.i32(10));
+}
+```
+
+**Status**: 1 of 7 complete (14.3%)
+
+**Completed**:
+- ✅ CallWasmManyArgsTest (10 i32 parameters with validation)
+
+**Remaining**: TrapImportTest, ImportWorksTest, CallImportManyArgsTest, etc.
 
 ### Category: componentmodel (1 test)
 
@@ -501,8 +521,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 9 / 136 (6.6%)
-- **Test Success Rate**: 100% (9/9 passing)
+- **Tests Implemented**: 10 / 136 (7.4%)
+- **Test Success Rate**: 100% (10/10 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
