@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 11 of 136 generated tests (8.1%)
-- **Tests Passing**: 11/11 (100% success rate)
+- **Tests Implemented**: 12 of 136 generated tests (8.8%)
+- **Tests Passing**: 12/12 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -20,6 +20,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ MiscTest - br_table instruction with stack pointer validation (misc_testsuite category)
   - ✅ CallWasmManyArgsTest - Function with 10 i32 parameters (hostfuncs category)
   - ✅ CallImportManyArgsTest - Host function with 10 i32 parameters (hostfuncs category)
+  - ✅ TrapStartFunctionImportTest - Trap in start function during instantiation (traps category)
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-19
 
@@ -341,7 +342,24 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 
 Tests for proper trap handling.
 
-**Pattern**:
+**Example: TrapStartFunctionImportTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  // Define host function that always traps
+  final FunctionType funcType = new FunctionType(
+      new WasmValueType[] {},
+      new WasmValueType[] {});
+
+  runner.defineHostFunction("host", "trap", funcType, (params) -> {
+    throw new WasmException("Host function trap");
+  });
+
+  // Module should fail to instantiate because start function traps
+  runner.assertUnlinkable(wat, null);
+}
+```
+
+**Pattern for direct trap testing**:
 ```java
 try (final WastTestRunner runner = new WastTestRunner()) {
   runner.compileAndInstantiate(wat);
@@ -349,7 +367,12 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 0 of 6 complete
+**Status**: 1 of 6 complete (16.7%)
+
+**Completed**:
+- ✅ TrapStartFunctionImportTest (trap in start function during instantiation)
+
+**Remaining**: CallSignatureMismatchTest, MismatchedArgumentsTest, RustCatchPanicImportTest, RustPanicImportTest, RustPanicStartFunctionTest
 
 ### Category: hostfuncs (7 tests)
 
@@ -549,8 +572,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 11 / 136 (8.1%)
-- **Test Success Rate**: 100% (11/11 passing)
+- **Tests Implemented**: 12 / 136 (8.8%)
+- **Test Success Rate**: 100% (12/12 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
