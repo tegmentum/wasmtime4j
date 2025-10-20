@@ -1,49 +1,43 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.traps;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: traps::mismatched_arguments
  *
- * Original source: traps.rs:517
- * Category: traps
+ * <p>Original source: traps.rs:517 Category: traps
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class MismatchedArgumentsTest {
 
   @Test
   @DisplayName("traps::mismatched_arguments")
-  public void testMismatchedArguments() {
+  public void testMismatchedArguments() throws Exception {
     // WAT code from original Wasmtime test:
     // (module $a
     //                 (func (export "foo") (param i32))
     //             )
 
-    final String wat = """
+    final String wat =
+        """
         (module $a
-                        (func (export "foo") (param i32))
-                    )
+          (func (export "foo") (param i32))
+        )
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final WastTestRunner runner = new WastTestRunner()) {
+      runner.compileAndInstantiate(wat);
 
-    // Expected results from original test:
-    // func.call(&mut store, &[], &mut []
-    // func.call(&mut store, &[Val::I32(0
-    fail("Test not yet implemented - awaiting test framework completion");
+      // Test calling with no arguments (should trap - function expects 1 parameter)
+      runner.assertTrap("foo", null);
+
+      // Test calling with correct arguments (should succeed - no trap)
+      runner.assertReturn("foo", new WasmValue[] {}, WasmValue.i32(0));
+    }
   }
 }
