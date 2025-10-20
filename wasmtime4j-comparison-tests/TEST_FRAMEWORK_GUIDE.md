@@ -7,8 +7,8 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
 ## Framework Status
 
 - **Framework**: ✅ Complete with Linker support and production-ready
-- **Tests Implemented**: 8 of 136 generated tests (5.9%)
-- **Tests Passing**: 8/8 (100% success rate)
+- **Tests Implemented**: 9 of 136 generated tests (6.6%)
+- **Tests Passing**: 9/9 (100% success rate)
   - ✅ FloatComparisonTest - Multi-value returns (func category)
   - ✅ CallNativeToWasmTest - Multi-value returns (func category)
   - ✅ CallArrayToWasmTest - Parameters with multi-value returns (func category)
@@ -17,6 +17,7 @@ The WastTestRunner framework enables automated testing of wasmtime4j against Was
   - ✅ TrapImportTest - Host function that traps during instantiation (func category)
   - ✅ FibTest - Two fibonacci implementations with 22 assertions (misc_testsuite category)
   - ✅ DivRemTest - Division and remainder operations for i32/i64 (misc_testsuite category)
+  - ✅ MiscTest - br_table instruction with stack pointer validation (misc_testsuite category)
 - **Test Execution Time**: <1 second for all tests
 - **Last Verified**: 2025-10-19
 
@@ -316,12 +317,21 @@ try (final WastTestRunner runner = new WastTestRunner()) {
 }
 ```
 
-**Status**: 3 of 109 complete (2.8%)
+**Example: MiscTest**
+```java
+try (final WastTestRunner runner = new WastTestRunner()) {
+  runner.compileAndInstantiate(wat);
+  runner.assertReturn("br-table-ensure-sp", new WasmValue[] {WasmValue.i32(0)});
+}
+```
+
+**Status**: 4 of 109 complete (3.7%)
 
 **Completed**:
 - ✅ FloatComparisonTest
 - ✅ FibTest (22 assertions across two implementations)
 - ✅ DivRemTest (4 assertions testing i32/i64 division and remainder)
+- ✅ MiscTest (1 assertion testing br_table stack pointer handling)
 
 **Remaining tests**: ThreadsTest, SimdTest, ResourcesTest, MultiMemoryTest, etc.
 
@@ -491,8 +501,8 @@ When updating tests:
 ## Summary
 
 - **Framework Status**: ✅ Complete with Linker support, tested, and production-ready
-- **Tests Implemented**: 8 / 136 (5.9%)
-- **Test Success Rate**: 100% (8/8 passing)
+- **Tests Implemented**: 9 / 136 (6.6%)
+- **Test Success Rate**: 100% (9/9 passing)
 - **Framework Location**: `ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner`
 - **Lines of Code**: 357 lines (framework) + comprehensive documentation
 - **Next Priority**: Implement misc_testsuite tests or add reference type support for remaining func tests
