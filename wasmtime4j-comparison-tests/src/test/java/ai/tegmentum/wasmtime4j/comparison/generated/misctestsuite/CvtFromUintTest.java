@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::cvt-from-uint
  *
- * Original source: cvt-from-uint.wast:1
- * Category: misc_testsuite
+ * <p>Original source: cvt-from-uint.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CvtFromUintTest {
 
@@ -24,7 +19,7 @@ public final class CvtFromUintTest {
   @DisplayName("misc_testsuite::cvt-from-uint")
   public void testCvtFromUint() {
     // WAT code from original Wasmtime test:
-    // 
+    //
     // ;; Tests inspired by https://github.com/bytecodealliance/wasmtime/issues/3161
     // ;; which found issue in lowering Opcode::FcvtFromUint where valid instruction
     // ;; patterns were rejected
@@ -54,27 +49,34 @@ public final class CvtFromUintTest {
     //         i64x2.extend_low_i32x4_u
     //         f32x4.convert_i32x4_u)
     // )
-    // 
-    // (assert_return (invoke "i16x8.extend_low_i8x16_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i16x8.extend_low_i8x16_s" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
-    // 
-    // (assert_return (invoke "i16x8.extend_low_i8x16_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i16x8.extend_low_i8x16_u" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
-    // 
-    // (assert_return (invoke "i32x4.extend_low_i16x8_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i32x4.extend_low_i16x8_s" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
-    // 
-    // (assert_return (invoke "i32x4.extend_low_i16x8_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i32x4.extend_low_i16x8_u" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
-    // 
-    // (assert_return (invoke "i64x2.extend_low_i32x4_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i64x2.extend_low_i32x4_s" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
-    // 
-    // (assert_return (invoke "i64x2.extend_low_i32x4_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
+    //
+    // (assert_return (invoke "i64x2.extend_low_i32x4_u" (v128.const i32x4 0x00000000 0x00000000
+    // 0x00000000 0x00000000))
     //                (v128.const f32x4 0 0 0 0))
 
-    final String wat = """
-        
+    final String wat =
+        """
+
         ;; Tests inspired by https://github.com/bytecodealliance/wasmtime/issues/3161
         ;; which found issue in lowering Opcode::FcvtFromUint where valid instruction
         ;; patterns were rejected
@@ -104,22 +106,22 @@ public final class CvtFromUintTest {
                 i64x2.extend_low_i32x4_u
                 f32x4.convert_i32x4_u)
         )
-        
+
         (assert_return (invoke "i16x8.extend_low_i8x16_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
-        
+
         (assert_return (invoke "i16x8.extend_low_i8x16_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
-        
+
         (assert_return (invoke "i32x4.extend_low_i16x8_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
-        
+
         (assert_return (invoke "i32x4.extend_low_i16x8_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
-        
+
         (assert_return (invoke "i64x2.extend_low_i32x4_s" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
-        
+
         (assert_return (invoke "i64x2.extend_low_i32x4_u" (v128.const i32x4 0x00000000 0x00000000 0x00000000 0x00000000))
                        (v128.const f32x4 0 0 0 0))
     """;

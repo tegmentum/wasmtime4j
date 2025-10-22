@@ -1,80 +1,160 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
 
 /**
- * Panama FFI implementation of WebAssembly Global.
+ * Panama FFI implementation of WebAssembly Global with native handle support.
  *
  * @since 1.0.0
  */
-public final class PanamaGlobal implements WasmGlobal {
+public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   private static final Logger LOGGER = Logger.getLogger(PanamaGlobal.class.getName());
 
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
-  private final String globalName;
-  private final PanamaInstance instance;
+  private final PanamaStore store;
+  private final MemorySegment nativeGlobal;
+  private final Arena arena;
   private WasmValueType type;
   private boolean mutable;
   private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama global.
+   * Creates a new Panama global with a native handle.
    *
    * @param type the value type of this global
    * @param mutable whether this global is mutable
    * @param initialValue the initial value
+   * @param store the store context
    */
   public PanamaGlobal(
-      final WasmValueType type, final boolean mutable, final WasmValue initialValue) {
+      final WasmValueType type,
+      final boolean mutable,
+      final WasmValue initialValue,
+      final PanamaStore store) {
     if (type == null) {
       throw new IllegalArgumentException("Type cannot be null");
     }
     if (initialValue == null) {
       throw new IllegalArgumentException("Initial value cannot be null");
     }
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+
     this.type = type;
     this.mutable = mutable;
-    this.instance = null;
-    this.globalName = null;
+    this.store = store;
+    this.arena = Arena.ofShared();
 
-    // TODO: Create native global via Panama FFI
-    throw new UnsupportedOperationException("Creating new globals not yet implemented");
+    // Create native global via Panama FFI
+    final MemorySegment globalPtrPtr = arena.allocate(ValueLayout.ADDRESS);
+    final int result =
+        NATIVE_BINDINGS.panamaGlobalCreate(
+            store.getNativeStore(),
+            type.toNativeTypeCode(),
+            mutable ? 1 : 0,
+            initialValue,
+            null, // name - optional
+            globalPtrPtr);
+
+    if (result != 0) {
+      arena.close();
+      throw new RuntimeException("Failed to create global: error code " + result);
+    }
+
+    this.nativeGlobal = globalPtrPtr.get(ValueLayout.ADDRESS, 0);
+    if (nativeGlobal == null || nativeGlobal.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new RuntimeException("Failed to create global: null pointer returned");
+    }
+
+    LOGGER.fine("Created Panama global with type: " + type + ", mutable: " + mutable);
   }
 
   /**
-   * Package-private constructor for wrapping an exported global.
+   * Package-private constructor for wrapping an existing native global.
    *
-   * @param globalName the name of the global export
-   * @param instance the instance that owns this global
+   * @param nativeGlobal the native global pointer
+   * @param store the store context
    */
-  PanamaGlobal(final String globalName, final PanamaInstance instance) {
-    if (globalName == null || globalName.isEmpty()) {
-      throw new IllegalArgumentException("Global name cannot be null or empty");
+  PanamaGlobal(final MemorySegment nativeGlobal, final PanamaStore store) {
+    if (nativeGlobal == null || nativeGlobal.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native global cannot be null");
     }
-    if (instance == null) {
-      throw new IllegalArgumentException("Instance cannot be null");
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
     }
-    this.globalName = globalName;
-    this.instance = instance;
+
+    this.nativeGlobal = nativeGlobal;
+    this.store = store;
+    this.arena = Arena.ofShared();
 
     // Query type and mutability from native global
-    queryTypeAndMutability();
+    queryMetadata();
 
-    LOGGER.fine("Created global wrapper for export: " + globalName);
+    LOGGER.fine("Wrapped existing Panama global");
   }
 
   @Override
   public WasmValue get() {
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot get value: global not associated with an instance");
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+      final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+      final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.panamaGlobalGet(
+              nativeGlobal,
+              store.getNativeStore(),
+              i32Value,
+              i64Value,
+              f32Value,
+              f64Value,
+              refIdPresent,
+              refId);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get global value: error code " + result);
+      }
+
+      // Convert based on type
+      switch (type) {
+        case I32:
+          return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+        case I64:
+          return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+        case F32:
+          return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+        case F64:
+          return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+        case FUNCREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
+          return WasmValue.funcref(null);
+        case EXTERNREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
+          return WasmValue.externref(null);
+        default:
+          throw new WasmTypeException("Unsupported global type: " + type);
+      }
     }
-    return instance.getGlobalValue(this);
   }
 
   @Override
@@ -86,29 +166,37 @@ public final class PanamaGlobal implements WasmGlobal {
       throw new IllegalStateException("Cannot set value of immutable global");
     }
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot set value: global not associated with an instance");
-    }
 
     // Validate type matches
     if (value.getType() != type) {
-      throw new IllegalArgumentException(
-          "Value type " + value.getType() + " does not match global type " + type);
+      throw new WasmTypeException(
+          "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
     }
 
-    instance.setGlobalValue(this, value);
+    final int result = NATIVE_BINDINGS.panamaGlobalSet(nativeGlobal, store.getNativeStore(), value);
+
+    if (result != 0) {
+      throw new RuntimeException("Failed to set global value: error code " + result);
+    }
   }
 
   @Override
   public WasmValueType getType() {
-    // Type is determined lazily during first get() call
-    // or set during construction via queryTypeAndMutability()
     return type;
   }
 
   @Override
   public boolean isMutable() {
     return mutable;
+  }
+
+  /**
+   * Gets the native global pointer.
+   *
+   * @return native global memory segment
+   */
+  public MemorySegment getNativeGlobal() {
+    return nativeGlobal;
   }
 
   /**
@@ -120,57 +208,45 @@ public final class PanamaGlobal implements WasmGlobal {
     return closed;
   }
 
-  /** Closes the global and releases resources. */
+  @Override
   public void close() {
     if (closed) {
       return;
     }
 
-    closed = true;
-    LOGGER.fine("Closed Panama global");
+    try {
+      if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
+      }
+      arena.close();
+      closed = true;
+      LOGGER.fine("Closed Panama global");
+    } catch (final Exception e) {
+      LOGGER.warning("Error closing global: " + e.getMessage());
+    }
   }
 
-  /**
-   * Queries type and mutability information from the native global.
-   *
-   * <p>This method is called during construction to initialize type and mutability fields.
-   */
-  private void queryTypeAndMutability() {
-    if (instance == null) {
-      this.type = null;
-      this.mutable = true;
-      return;
-    }
-
-    try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment nameSegment =
-          tempArena.allocateFrom(globalName, java.nio.charset.StandardCharsets.UTF_8);
-      final java.lang.foreign.MemorySegment valueTypeOut =
-          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-      final java.lang.foreign.MemorySegment isMutableOut =
-          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+  /** Queries type and mutability metadata from the native global. */
+  private void queryMetadata() {
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment typeCode = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment mutabilityCode = tempArena.allocate(ValueLayout.JAVA_INT);
 
       final int result =
-          NATIVE_BINDINGS.instanceGetGlobalType(
-              instance.getNativeInstance(),
-              instance.getNativeStore(),
-              nameSegment,
-              valueTypeOut,
-              isMutableOut);
+          NATIVE_BINDINGS.panamaGlobalMetadata(nativeGlobal, typeCode, mutabilityCode);
 
       if (result == 0) {
-        final int typeCode = valueTypeOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-        this.type = mapTypeCodeToWasmValueType(typeCode);
-        this.mutable = isMutableOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0) != 0;
-        LOGGER.fine("Global type determined: " + type + ", mutable: " + mutable);
+        this.type = mapTypeCodeToWasmValueType(typeCode.get(ValueLayout.JAVA_INT, 0));
+        this.mutable = mutabilityCode.get(ValueLayout.JAVA_INT, 0) != 0;
+        LOGGER.fine("Global metadata: type=" + type + ", mutable=" + mutable);
       } else {
-        LOGGER.warning("Failed to query global type: error code " + result);
-        this.type = null;
+        LOGGER.warning("Failed to query global metadata: error code " + result);
+        this.type = WasmValueType.I32; // Default fallback
         this.mutable = true;
       }
-    } catch (Exception e) {
-      LOGGER.warning("Failed to query global type during construction: " + e.getMessage());
-      this.type = null;
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to query global metadata: " + e.getMessage());
+      this.type = WasmValueType.I32; // Default fallback
       this.mutable = true;
     }
   }
@@ -191,41 +267,16 @@ public final class PanamaGlobal implements WasmGlobal {
         return WasmValueType.F32;
       case 3:
         return WasmValueType.F64;
+      case 4:
+        return WasmValueType.V128;
       case 5:
         return WasmValueType.FUNCREF;
       case 6:
         return WasmValueType.EXTERNREF;
       default:
         LOGGER.warning("Unknown type code: " + typeCode);
-        return null;
+        return WasmValueType.I32; // Default fallback
     }
-  }
-
-  /**
-   * Gets the global name.
-   *
-   * @return global export name
-   */
-  String getGlobalName() {
-    return globalName;
-  }
-
-  /**
-   * Sets the type of this global.
-   *
-   * @param type the value type
-   */
-  void setType(final WasmValueType type) {
-    this.type = type;
-  }
-
-  /**
-   * Sets the mutability of this global.
-   *
-   * @param mutable whether this global is mutable
-   */
-  void setMutable(final boolean mutable) {
-    this.mutable = mutable;
   }
 
   /**

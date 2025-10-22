@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::adapter
  *
- * Original source: adapter.wast:1
- * Category: misc_testsuite
+ * <p>Original source: adapter.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class AdapterTest {
 
@@ -30,27 +25,27 @@ public final class AdapterTest {
     //     (func (export ""))
     //   )
     //   (core instance $i (instantiate $m))
-    // 
+    //
     //   (func (export "thunk")
     //     (canon lift (core func $i ""))
     //   )
     // )
-    // 
+    //
     // ;; use an aliased type
     // (component $c
     //   (core module $m
     //     (func (export ""))
     //   )
     //   (core instance $i (instantiate $m))
-    // 
+    //
     //   (type $to_alias (func))
     //   (alias outer $c $to_alias (type $alias))
-    // 
+    //
     //   (func (export "thunk") (type $alias)
     //     (canon lift (core func $i ""))
     //   )
     // )
-    // 
+    //
     // ;; test out some various canonical abi
     // (component $c
     //   (core module $m
@@ -60,7 +55,7 @@ public final class AdapterTest {
     //       unreachable)
     //   )
     //   (core instance $i (instantiate $m))
-    // 
+    //
     //   (func (export "thunk") (param "a" string)
     //     (canon lift
     //       (core func $i "")
@@ -68,7 +63,7 @@ public final class AdapterTest {
     //       (realloc (func $i "realloc"))
     //     )
     //   )
-    // 
+    //
     //   (func (export "thunk8") (param "a" string)
     //     (canon lift
     //       (core func $i "")
@@ -77,7 +72,7 @@ public final class AdapterTest {
     //       (realloc (func $i "realloc"))
     //     )
     //   )
-    // 
+    //
     //   (func (export "thunk16") (param "a" string)
     //     (canon lift
     //       (core func $i "")
@@ -86,7 +81,7 @@ public final class AdapterTest {
     //       (realloc (func $i "realloc"))
     //     )
     //   )
-    // 
+    //
     //   (func (export "thunklatin16") (param "a" string)
     //     (canon lift
     //       (core func $i "")
@@ -96,11 +91,11 @@ public final class AdapterTest {
     //     )
     //   )
     // )
-    // 
+    //
     // ;; lower something then immediately lift it
     // (component $c
     //   (import "host-return-two" (func $f (result u32)))
-    // 
+    //
     //   (core func $f_lower
     //     (canon lower (func $f))
     //   )
@@ -109,12 +104,12 @@ public final class AdapterTest {
     //   )
     //   (export "f" (func $f2))
     // )
-    // 
+    //
     // ;; valid, but odd
     // (component
     //   (core module $m (func (export "")))
     //   (core instance $m (instantiate $m))
-    // 
+    //
     //   (func $f1 (canon lift (core func $m "")))
     //   (core func $f2 (canon lower (func $f1)))
     // )
@@ -122,10 +117,10 @@ public final class AdapterTest {
     //   (component
     //     (core module $m (func (export "")))
     //     (core instance $m (instantiate $m))
-    // 
+    //
     //     (func $f1 (canon lift (core func $m "")))
     //     (core func $f2 (canon lower (func $f1)))
-    // 
+    //
     //     (core module $m2
     //       (import "" "" (func $f))
     //       (func $start
@@ -137,7 +132,7 @@ public final class AdapterTest {
     //     ))
     //   )
     //   "degenerate component adapter called")
-    // 
+    //
     // ;; fiddling with 0-sized lists
     // (component $c
     //   (core module $m
@@ -160,34 +155,35 @@ public final class AdapterTest {
     // )
     // (assert_trap (invoke "empty-list" (list.const)) "realloc return: beyond end of memory")
 
-    final String wat = """
+    final String wat =
+        """
         ;; basic function lifting
         (component
           (core module $m
             (func (export ""))
           )
           (core instance $i (instantiate $m))
-        
+
           (func (export "thunk")
             (canon lift (core func $i ""))
           )
         )
-        
+
         ;; use an aliased type
         (component $c
           (core module $m
             (func (export ""))
           )
           (core instance $i (instantiate $m))
-        
+
           (type $to_alias (func))
           (alias outer $c $to_alias (type $alias))
-        
+
           (func (export "thunk") (type $alias)
             (canon lift (core func $i ""))
           )
         )
-        
+
         ;; test out some various canonical abi
         (component $c
           (core module $m
@@ -197,7 +193,7 @@ public final class AdapterTest {
               unreachable)
           )
           (core instance $i (instantiate $m))
-        
+
           (func (export "thunk") (param "a" string)
             (canon lift
               (core func $i "")
@@ -205,7 +201,7 @@ public final class AdapterTest {
               (realloc (func $i "realloc"))
             )
           )
-        
+
           (func (export "thunk8") (param "a" string)
             (canon lift
               (core func $i "")
@@ -214,7 +210,7 @@ public final class AdapterTest {
               (realloc (func $i "realloc"))
             )
           )
-        
+
           (func (export "thunk16") (param "a" string)
             (canon lift
               (core func $i "")
@@ -223,7 +219,7 @@ public final class AdapterTest {
               (realloc (func $i "realloc"))
             )
           )
-        
+
           (func (export "thunklatin16") (param "a" string)
             (canon lift
               (core func $i "")
@@ -233,11 +229,11 @@ public final class AdapterTest {
             )
           )
         )
-        
+
         ;; lower something then immediately lift it
         (component $c
           (import "host-return-two" (func $f (result u32)))
-        
+
           (core func $f_lower
             (canon lower (func $f))
           )
@@ -246,12 +242,12 @@ public final class AdapterTest {
           )
           (export "f" (func $f2))
         )
-        
+
         ;; valid, but odd
         (component
           (core module $m (func (export "")))
           (core instance $m (instantiate $m))
-        
+
           (func $f1 (canon lift (core func $m "")))
           (core func $f2 (canon lower (func $f1)))
         )
@@ -259,10 +255,10 @@ public final class AdapterTest {
           (component
             (core module $m (func (export "")))
             (core instance $m (instantiate $m))
-        
+
             (func $f1 (canon lift (core func $m "")))
             (core func $f2 (canon lower (func $f1)))
-        
+
             (core module $m2
               (import "" "" (func $f))
               (func $start
@@ -274,7 +270,7 @@ public final class AdapterTest {
             ))
           )
           "degenerate component adapter called")
-        
+
         ;; fiddling with 0-sized lists
         (component $c
           (core module $m

@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::fused
  *
- * Original source: fused.wast:1
- * Category: misc_testsuite
+ * <p>Original source: fused.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class FusedTest {
 
@@ -31,10 +26,10 @@ public final class FusedTest {
     //   )
     //   (core instance $m (instantiate $m))
     //   (func $foo (canon lift (core func $m "")))
-    // 
+    //
     //   (component $c
     //     (import "a" (func $foo))
-    // 
+    //
     //     (core func $foo (canon lower (func $foo)))
     //     (core module $m2
     //       (import "" "" (func))
@@ -42,10 +37,10 @@ public final class FusedTest {
     //     )
     //     (core instance $m2 (instantiate $m2 (with "" (instance (export "" (func $foo))))))
     //   )
-    // 
+    //
     //   (instance $c (instantiate $c (with "a" (func $foo))))
     // )
-    // 
+    //
     // ;; boolean parameters
     // (component
     //   (core module $m
@@ -68,27 +63,27 @@ public final class FusedTest {
     //   (func $assert_true (param "a" bool) (canon lift (core func $m "assert_true")))
     //   (func $assert_false (param "a" bool) (canon lift (core func $m "assert_false")))
     //   (func $ret_bool (param "a" u32) (result bool) (canon lift (core func $m "ret-bool")))
-    // 
+    //
     //   (component $c
     //     (import "assert-true" (func $assert_true (param "a" bool)))
     //     (import "assert-false" (func $assert_false (param "a" bool)))
     //     (import "ret-bool" (func $ret_bool (param "a" u32) (result bool)))
-    // 
+    //
     //     (core func $assert_true (canon lower (func $assert_true)))
     //     (core func $assert_false (canon lower (func $assert_false)))
     //     (core func $ret_bool (canon lower (func $ret_bool)))
-    // 
+    //
     //     (core module $m2
     //       (import "" "assert-true" (func $assert_true (param i32)))
     //       (import "" "assert-false" (func $assert_false (param i32)))
     //       (import "" "ret-bool" (func $ret_bool (param i32) (result i32)))
-    // 
+    //
     //       (func $start
     //         (call $assert_true (i32.const 1))
     //         (call $assert_true (i32.const 2))
     //         (call $assert_true (i32.const -1))
     //         (call $assert_false (i32.const 0))
-    // 
+    //
     //         (if (i32.ne (call $ret_bool (i32.const 1)) (i32.const 1))
     //           (then (unreachable)))
     //         (if (i32.ne (call $ret_bool (i32.const 2)) (i32.const 1))
@@ -108,14 +103,14 @@ public final class FusedTest {
     //       ))
     //     ))
     //   )
-    // 
+    //
     //   (instance $c (instantiate $c
     //     (with "assert-true" (func $assert_true))
     //     (with "assert-false" (func $assert_false))
     //     (with "ret-bool" (func $ret_bool))
     //   ))
     // )
-    // 
+    //
     // ;; lots of parameters and results
     // (component
     //   (type $roundtrip (func
@@ -124,18 +119,18 @@ public final class FusedTest {
     //     (param "a6" u32) (param "a7" u32) (param "a8" u32) (param "a9" u32) (param "a10" u32)
     //     (param "a11" u32) (param "a12" u32) (param "a13" u32) (param "a14" u32) (param "a15" u32)
     //     (param "a16" u32) (param "a17" u32) (param "a18" u32) (param "a19" u32) (param "a20" u32)
-    // 
+    //
     //     ;; 10 u32 results
     //     (result (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
     //   ))
-    // 
+    //
     //   (core module $m
     //     (memory (export "memory") 1)
     //     (func (export "roundtrip") (param $src i32) (result i32)
     //       (local $dst i32)
     //       (if (i32.ne (local.get $src) (i32.const 16))
     //         (then (unreachable)))
-    // 
+    //
     //       (if (i32.ne (i32.load offset=0 (local.get $src)) (i32.const 1)) (then (unreachable)))
     //       (if (i32.ne (i32.load offset=4 (local.get $src)) (i32.const 2)) (then (unreachable)))
     //       (if (i32.ne (i32.load offset=8 (local.get $src)) (i32.const 3)) (then (unreachable)))
@@ -156,9 +151,9 @@ public final class FusedTest {
     //       (if (i32.ne (i32.load offset=68 (local.get $src)) (i32.const 18)) (then (unreachable)))
     //       (if (i32.ne (i32.load offset=72 (local.get $src)) (i32.const 19)) (then (unreachable)))
     //       (if (i32.ne (i32.load offset=76 (local.get $src)) (i32.const 20)) (then (unreachable)))
-    // 
+    //
     //       (local.set $dst (i32.const 500))
-    // 
+    //
     //       (i32.store offset=0 (local.get $dst) (i32.const 21))
     //       (i32.store offset=4 (local.get $dst) (i32.const 22))
     //       (i32.store offset=8 (local.get $dst) (i32.const 23))
@@ -169,23 +164,23 @@ public final class FusedTest {
     //       (i32.store offset=28 (local.get $dst) (i32.const 28))
     //       (i32.store offset=32 (local.get $dst) (i32.const 29))
     //       (i32.store offset=36 (local.get $dst) (i32.const 30))
-    // 
+    //
     //       local.get $dst
     //     )
-    // 
+    //
     //     (func (export "realloc") (param i32 i32 i32 i32) (result i32)
     //       i32.const 16)
     //   )
     //   (core instance $m (instantiate $m))
-    // 
+    //
     //   (func $roundtrip (type $roundtrip)
     //     (canon lift (core func $m "roundtrip") (memory $m "memory")
     //       (realloc (func $m "realloc")))
     //   )
-    // 
+    //
     //   (component $c
     //     (import "roundtrip" (func $roundtrip (type $roundtrip)))
-    // 
+    //
     //     (core module $libc
     //       (memory (export "memory") 1)
     //       (func (export "realloc") (param i32 i32 i32 i32) (result i32) unreachable)
@@ -197,40 +192,50 @@ public final class FusedTest {
     //         (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
     //       )
     //     )
-    // 
+    //
     //     (core module $m2
     //       (import "libc" "memory" (memory 1))
     //       (import "" "roundtrip" (func $roundtrip (param i32 i32)))
-    // 
+    //
     //       (func $start
     //         (local $addr i32)
     //         (local $retaddr i32)
-    // 
+    //
     //         (local.set $addr (i32.const 100))
     //         (call $store_many (i32.const 20) (local.get $addr))
-    // 
+    //
     //         (local.set $retaddr (i32.const 200))
     //         (call $roundtrip (local.get $addr) (local.get $retaddr))
-    // 
-    //         (if (i32.ne (i32.load offset=0 (local.get $retaddr)) (i32.const 21)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=4 (local.get $retaddr)) (i32.const 22)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=8 (local.get $retaddr)) (i32.const 23)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=12 (local.get $retaddr)) (i32.const 24)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=16 (local.get $retaddr)) (i32.const 25)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=20 (local.get $retaddr)) (i32.const 26)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=24 (local.get $retaddr)) (i32.const 27)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=28 (local.get $retaddr)) (i32.const 28)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=32 (local.get $retaddr)) (i32.const 29)) (then (unreachable)))
-    //         (if (i32.ne (i32.load offset=36 (local.get $retaddr)) (i32.const 30)) (then (unreachable)))
+    //
+    //         (if (i32.ne (i32.load offset=0 (local.get $retaddr)) (i32.const 21)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=4 (local.get $retaddr)) (i32.const 22)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=8 (local.get $retaddr)) (i32.const 23)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=12 (local.get $retaddr)) (i32.const 24)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=16 (local.get $retaddr)) (i32.const 25)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=20 (local.get $retaddr)) (i32.const 26)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=24 (local.get $retaddr)) (i32.const 27)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=28 (local.get $retaddr)) (i32.const 28)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=32 (local.get $retaddr)) (i32.const 29)) (then
+    // (unreachable)))
+    //         (if (i32.ne (i32.load offset=36 (local.get $retaddr)) (i32.const 30)) (then
+    // (unreachable)))
     //       )
-    // 
+    //
     //       (func $store_many (param $amt i32) (param $addr i32)
     //         (local $c i32)
     //         (loop $loop
     //           (local.set $c (i32.add (local.get $c) (i32.const 1)))
     //           (i32.store (local.get $addr) (local.get $c))
     //           (local.set $addr (i32.add (local.get $addr) (i32.const 4)))
-    // 
+    //
     //           (if (i32.ne (local.get $amt) (local.get $c)) (then (br $loop)))
     //         )
     //       )
@@ -241,12 +246,12 @@ public final class FusedTest {
     //       (with "" (instance (export "roundtrip" (func $roundtrip))))
     //     ))
     //   )
-    // 
+    //
     //   (instance $c (instantiate $c
     //     (with "roundtrip" (func $roundtrip))
     //   ))
     // )
-    // 
+    //
     // ;; this will require multiple adapter modules to get generated
     // (component
     //   (core module $root (func (export "") (result i32)
@@ -254,7 +259,7 @@ public final class FusedTest {
     //   ))
     //   (core instance $root (instantiate $root))
     //   (func $root (result u32) (canon lift (core func $root "")))
-    // 
+    //
     //   (component $c
     //     (import "thunk" (func $import (result u32)))
     //     (core func $import (canon lower (func $import)))
@@ -274,20 +279,20 @@ public final class FusedTest {
     //       (canon lift (core func $reexport "thunk"))
     //     )
     //   )
-    // 
+    //
     //   (instance $c1 (instantiate $c (with "thunk" (func $root))))
     //   (instance $c2 (instantiate $c (with "thunk" (func $c1 "thunk2"))))
     //   (instance $c3 (instantiate $c (with "thunk" (func $c2 "thunk2"))))
     //   (instance $c4 (instantiate $c (with "thunk" (func $c3 "thunk2"))))
     //   (instance $c5 (instantiate $c (with "thunk" (func $c4 "thunk2"))))
     //   (instance $c6 (instantiate $c (with "thunk" (func $c5 "thunk2"))))
-    // 
+    //
     //   (component $verify
     //     (import "thunk" (func $thunk (result u32)))
     //     (core func $thunk (canon lower (func $thunk)))
     //     (core module $verify
     //       (import "" "" (func $thunk (result i32)))
-    // 
+    //
     //       (func $start
     //         call $thunk
     //         i32.const 6
@@ -304,7 +309,7 @@ public final class FusedTest {
     //   )
     //   (instance (instantiate $verify (with "thunk" (func $c6 "thunk2"))))
     // )
-    // 
+    //
     // ;; Fancy case of an adapter using an adapter. Note that this is silly and
     // ;; doesn't actually make any sense at runtime, we just shouldn't panic on a
     // ;; valid component.
@@ -314,7 +319,7 @@ public final class FusedTest {
     //     u32 u32 u32 u32 u32
     //     u32 u32 u32 u32 u32
     //     u32 u32 u32 u32 u32))
-    // 
+    //
     //   (component $realloc
     //     (core module $realloc
     //       (memory (export "memory") 1)
@@ -329,7 +334,7 @@ public final class FusedTest {
     //   )
     //   (instance $realloc (instantiate $realloc))
     //   (core func $realloc (canon lower (func $realloc "realloc")))
-    // 
+    //
     //   (core module $m
     //     (memory (export "memory") 1)
     //     (func (export "foo") (param i32))
@@ -342,10 +347,10 @@ public final class FusedTest {
     //       (realloc (func $realloc))
     //     )
     //   )
-    // 
+    //
     //   (component $c
     //     (import "foo" (func $foo (param "a" $tuple20)))
-    // 
+    //
     //     (core module $libc
     //       (memory (export "memory") 1)
     //       (func (export "realloc") (param i32 i32 i32 i32) (result i32)
@@ -371,7 +376,7 @@ public final class FusedTest {
     //     (with "foo" (func $foo))
     //   ))
     // )
-    // 
+    //
     // ;; Don't panic or otherwise create extraneous adapter modules when the same
     // ;; adapter is used twice for a module's argument.
     // (component
@@ -380,11 +385,11 @@ public final class FusedTest {
     //   )
     //   (core instance $m (instantiate $m))
     //   (func $foo (canon lift (core func $m "foo")))
-    // 
+    //
     //   (component $c
     //     (import "foo" (func $foo))
     //     (core func $foo (canon lower (func $foo)))
-    // 
+    //
     //     (core module $something
     //       (import "" "a" (func))
     //       (import "" "b" (func))
@@ -398,7 +403,7 @@ public final class FusedTest {
     //   )
     //   (instance (instantiate $c (with "foo" (func $foo))))
     // )
-    // 
+    //
     // ;; post-return should get invoked by the generated adapter, if specified
     // (component
     //   (core module $m
@@ -430,17 +435,17 @@ public final class FusedTest {
     //   (core instance $m (instantiate $m))
     //   (func $foo (canon lift (core func $m "foo") (post-return (func $m "foo-post"))))
     //   (func $assert_post (canon lift (core func $m "assert-post")))
-    // 
+    //
     //   (component $c
     //     (import "foo" (func $foo))
     //     (import "assert-post" (func $assert_post))
     //     (core func $foo (canon lower (func $foo)))
     //     (core func $assert_post (canon lower (func $assert_post)))
-    // 
+    //
     //     (core module $something
     //       (import "" "foo" (func $foo))
     //       (import "" "assert-post" (func $assert_post))
-    // 
+    //
     //       (func $start
     //         call $foo
     //         call $assert_post
@@ -459,7 +464,7 @@ public final class FusedTest {
     //     (with "assert-post" (func $assert_post))
     //   ))
     // )
-    // 
+    //
     // ;; post-return passes the results
     // (component
     //   (core module $m
@@ -470,11 +475,11 @@ public final class FusedTest {
     //   (core instance $m (instantiate $m))
     //   (func $foo (result u32)
     //     (canon lift (core func $m "foo") (post-return (func $m "foo-post"))))
-    // 
+    //
     //   (component $c
     //     (import "foo" (func $foo (result u32)))
     //     (core func $foo (canon lower (func $foo)))
-    // 
+    //
     //     (core module $something
     //       (import "" "foo" (func $foo (result i32)))
     //       (func $start
@@ -491,7 +496,7 @@ public final class FusedTest {
     //     (with "foo" (func $foo))
     //   ))
     // )
-    // 
+    //
     // ;; callee retptr misaligned
     // (assert_trap
     //   (component
@@ -510,7 +515,7 @@ public final class FusedTest {
     //       (core module $libc (memory (export "memory") 1))
     //       (core instance $libc (instantiate $libc))
     //       (core func $r (canon lower (func $r) (memory $libc "memory")))
-    // 
+    //
     //       (core module $m
     //         (import "" "r" (func $r (param i32)))
     //         (func $start
@@ -527,7 +532,7 @@ public final class FusedTest {
     //     (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; caller retptr misaligned
     // (assert_trap
     //   (component
@@ -546,7 +551,7 @@ public final class FusedTest {
     //       (core module $libc (memory (export "memory") 1))
     //       (core instance $libc (instantiate $libc))
     //       (core func $r (canon lower (func $r) (memory $libc "memory")))
-    // 
+    //
     //       (core module $m
     //         (import "" "r" (func $r (param i32)))
     //         (func $start
@@ -563,12 +568,13 @@ public final class FusedTest {
     //     (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; callee argptr misaligned
     // (assert_trap
     //   (component
-    //     (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
-    // 
+    //     (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32
+    // u32 u32 u32 u32 u32 u32 u32))
+    //
     //     (component $c1
     //       (core module $m
     //         (memory (export "memory") 1)
@@ -594,7 +600,7 @@ public final class FusedTest {
     //           (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
     //         )
     //       )
-    // 
+    //
     //       (core module $m
     //         (import "" "r" (func $r (param i32)))
     //         (func $start
@@ -611,12 +617,13 @@ public final class FusedTest {
     //     (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; caller argptr misaligned
     // (assert_trap
     //   (component
-    //     (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
-    // 
+    //     (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32
+    // u32 u32 u32 u32 u32 u32 u32))
+    //
     //     (component $c1
     //       (core module $m
     //         (memory (export "memory") 1)
@@ -642,8 +649,8 @@ public final class FusedTest {
     //           (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
     //         )
     //       )
-    // 
-    // 
+    //
+    //
     //       (core module $m
     //         (import "" "r" (func $r (param i32)))
     //         (func $start
@@ -660,7 +667,7 @@ public final class FusedTest {
     //     (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; simple variant translation
     // (component
     //   (component $c1
@@ -668,7 +675,7 @@ public final class FusedTest {
     //     (export $a "a" (type $a'))
     //     (type $b' (variant (case "y")))
     //     (export $b "b" (type $b'))
-    // 
+    //
     //     (core module $m
     //       (func (export "r") (param i32) (result i32)
     //         (if (i32.ne (local.get 0) (i32.const 0)) (then (unreachable)))
@@ -683,10 +690,10 @@ public final class FusedTest {
     //     (import "a" (type $a (eq $a')))
     //     (type $b' (variant (case "y")))
     //     (import "b" (type $b (eq $b')))
-    // 
+    //
     //     (import "r" (func $r (param "a" $a) (result $b)))
     //     (core func $r (canon lower (func $r)))
-    // 
+    //
     //     (core module $m
     //       (import "" "r" (func $r (param i32) (result i32)))
     //       (func $start
@@ -709,7 +716,7 @@ public final class FusedTest {
     //     (with "r" (func $c1 "r"))
     //   ))
     // )
-    // 
+    //
     // ;; invalid variant discriminant in a parameter
     // (assert_trap
     //   (component
@@ -727,7 +734,7 @@ public final class FusedTest {
     //       (import "a" (type $a (eq $a')))
     //       (import "r" (func $r (param "a" $a)))
     //       (core func $r (canon lower (func $r)))
-    // 
+    //
     //       (core module $m
     //         (import "" "r" (func $r (param i32)))
     //         (func $start
@@ -747,7 +754,7 @@ public final class FusedTest {
     //     ))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; invalid variant discriminant in a result
     // (assert_trap
     //   (component
@@ -765,7 +772,7 @@ public final class FusedTest {
     //       (import "a" (type $a (eq $a')))
     //       (import "r" (func $r (result $a)))
     //       (core func $r (canon lower (func $r)))
-    // 
+    //
     //       (core module $m
     //         (import "" "r" (func $r (result i32)))
     //         (func $start call $r drop)
@@ -782,8 +789,8 @@ public final class FusedTest {
     //     ))
     //   )
     //   "unreachable")
-    // 
-    // 
+    //
+    //
     // ;; extra bits are chopped off
     // (component
     //   (component $c1
@@ -808,25 +815,25 @@ public final class FusedTest {
     //       (export "u16" (func (param "a" u16)))
     //       (export "s16" (func (param "a" s16)))
     //     ))
-    // 
+    //
     //     (core func $u8 (canon lower (func $i "u8")))
     //     (core func $s8 (canon lower (func $i "s8")))
     //     (core func $u16 (canon lower (func $i "u16")))
     //     (core func $s16 (canon lower (func $i "s16")))
-    // 
+    //
     //     (core module $m
     //       (import "" "u8" (func $u8 (param i32)))
     //       (import "" "s8" (func $s8 (param i32)))
     //       (import "" "u16" (func $u16 (param i32)))
     //       (import "" "s16" (func $s16 (param i32)))
-    // 
+    //
     //       (func $start
     //         (call $u8 (i32.const 0))
     //         (call $u8 (i32.const 0xff00))
     //         (call $s8 (i32.const -1))
     //         (call $s8 (i32.const 0xff))
     //         (call $s8 (i32.const 0xffff))
-    // 
+    //
     //         (call $u16 (i32.const 0))
     //         (call $u16 (i32.const 0xff0000))
     //         (call $s16 (i32.const -1))
@@ -847,7 +854,7 @@ public final class FusedTest {
     //   (instance $c1 (instantiate $c1))
     //   (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
     // )
-    // 
+    //
     // ;; translation of locals between different types
     // (component
     //   (component $c1
@@ -861,13 +868,13 @@ public final class FusedTest {
     //     (export $c "t-c" (type $c'))
     //     (export $d "t-d" (type $d'))
     //     (export $e "t-e" (type $e'))
-    // 
+    //
     //     (type $func_a (func (param "x" bool) (param "a" $a)))
     //     (type $func_b (func (param "x" bool) (param "b" $b)))
     //     (type $func_c (func (param "x" bool) (param "c" $c)))
     //     (type $func_d (func (param "x" bool) (param "d" $d)))
     //     (type $func_e (func (param "x" bool) (param "e" $d)))
-    // 
+    //
     //     (core module $m
     //       (func (export "a") (param i32 i32 i32)
     //         (i32.eqz (local.get 0))
@@ -876,7 +883,8 @@ public final class FusedTest {
     //           (if (i32.ne (local.get 2) (i32.const 2)) (then (unreachable)))
     //         else
     //           (if (i32.ne (local.get 1) (i32.const 1)) (then (unreachable)))
-    //           (if (f32.ne (f32.reinterpret_i32 (local.get 2)) (f32.const 3)) (then (unreachable)))
+    //           (if (f32.ne (f32.reinterpret_i32 (local.get 2)) (f32.const 3)) (then
+    // (unreachable)))
     //         end
     //       )
     //       (func (export "b") (param i32 i32 i64)
@@ -896,24 +904,28 @@ public final class FusedTest {
     //           (if (i64.ne (local.get 2) (i64.const 6)) (then (unreachable)))
     //         else
     //           (if (i32.ne (local.get 1) (i32.const 1)) (then (unreachable)))
-    //           (if (f64.ne (f64.reinterpret_i64 (local.get 2)) (f64.const 7)) (then (unreachable)))
+    //           (if (f64.ne (f64.reinterpret_i64 (local.get 2)) (f64.const 7)) (then
+    // (unreachable)))
     //         end
     //       )
     //       (func (export "d") (param i32 i32 i64)
     //         (i32.eqz (local.get 0))
     //         if
     //           (if (i32.ne (local.get 1) (i32.const 0)) (then (unreachable)))
-    //           (if (f32.ne (f32.reinterpret_i32 (i32.wrap_i64 (local.get 2))) (f32.const 8)) (then (unreachable)))
+    //           (if (f32.ne (f32.reinterpret_i32 (i32.wrap_i64 (local.get 2))) (f32.const 8)) (then
+    // (unreachable)))
     //         else
     //           (if (i32.ne (local.get 1) (i32.const 1)) (then (unreachable)))
-    //           (if (f64.ne (f64.reinterpret_i64 (local.get 2)) (f64.const 9)) (then (unreachable)))
+    //           (if (f64.ne (f64.reinterpret_i64 (local.get 2)) (f64.const 9)) (then
+    // (unreachable)))
     //         end
     //       )
     //       (func (export "e") (param i32 i32 i64)
     //         (i32.eqz (local.get 0))
     //         if
     //           (if (i32.ne (local.get 1) (i32.const 0)) (then (unreachable)))
-    //           (if (f32.ne (f32.reinterpret_i32 (i32.wrap_i64 (local.get 2))) (f32.const 10)) (then (unreachable)))
+    //           (if (f32.ne (f32.reinterpret_i32 (i32.wrap_i64 (local.get 2))) (f32.const 10))
+    // (then (unreachable)))
     //         else
     //           (if (i32.ne (local.get 1) (i32.const 1)) (then (unreachable)))
     //           (if (i64.ne (local.get 2) (i64.const 11)) (then (unreachable)))
@@ -944,43 +956,45 @@ public final class FusedTest {
     //       (type $func_c (func (param "x" bool) (param "c" $c)))
     //       (type $func_d (func (param "x" bool) (param "d" $d)))
     //       (type $func_e (func (param "x" bool) (param "e" $d)))
-    // 
+    //
     //       (export "a" (func (type $func_a)))
     //       (export "b" (func (type $func_b)))
     //       (export "c" (func (type $func_c)))
     //       (export "d" (func (type $func_d)))
     //       (export "e" (func (type $func_e)))
     //     ))
-    // 
+    //
     //     (core func $a (canon lower (func $i "a")))
     //     (core func $b (canon lower (func $i "b")))
     //     (core func $c (canon lower (func $i "c")))
     //     (core func $d (canon lower (func $i "d")))
     //     (core func $e (canon lower (func $i "e")))
-    // 
+    //
     //     (core module $m
     //       (import "" "a" (func $a (param i32 i32 i32)))
     //       (import "" "b" (func $b (param i32 i32 i64)))
     //       (import "" "c" (func $c (param i32 i32 i64)))
     //       (import "" "d" (func $d (param i32 i32 i64)))
     //       (import "" "e" (func $e (param i32 i32 i64)))
-    // 
+    //
     //       (func $start
     //                                                 ;; upper bits should get masked
     //         (call $a (i32.const 0) (i32.const 0) (i32.const 0xff_02))
     //         (call $a (i32.const 1) (i32.const 1) (i32.reinterpret_f32 (f32.const 3)))
-    // 
+    //
     //                                                 ;; upper bits should get masked
     //         (call $b (i32.const 0) (i32.const 0) (i64.const 0xff_00_04))
     //         (call $b (i32.const 1) (i32.const 1) (i64.const 5))
-    // 
+    //
     //         (call $c (i32.const 0) (i32.const 0) (i64.const 6))
     //         (call $c (i32.const 1) (i32.const 1) (i64.reinterpret_f64 (f64.const 7)))
-    // 
-    //         (call $d (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32 (f32.const 8))))
+    //
+    //         (call $d (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32
+    // (f32.const 8))))
     //         (call $d (i32.const 1) (i32.const 1) (i64.reinterpret_f64 (f64.const 9)))
-    // 
-    //         (call $e (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32 (f32.const 10))))
+    //
+    //         (call $e (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32
+    // (f32.const 10))))
     //         (call $e (i32.const 1) (i32.const 1) (i64.const 11))
     //       )
     //       (start $start)
@@ -998,7 +1012,7 @@ public final class FusedTest {
     //   (instance $c1 (instantiate $c1))
     //   (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
     // )
-    // 
+    //
     // ;; different size variants
     // (component
     //   (component $c1
@@ -1009,7 +1023,7 @@ public final class FusedTest {
     //       (case "d" (tuple float32 u64 u8))
     //     ))
     //     (export $a "t-a" (type $a'))
-    // 
+    //
     //     (core module $m
     //       (func (export "a") (param i32 i32 f32 i64 i32)
     //         (if (i32.eq (local.get 0) (i32.const 0))
@@ -1062,12 +1076,12 @@ public final class FusedTest {
     //       (export $a "t-a" (type (eq $a')))
     //       (export "a" (func (param "x" u8) (param "a" $a)))
     //     ))
-    // 
+    //
     //     (core func $a (canon lower (func $i "a")))
-    // 
+    //
     //     (core module $m
     //       (import "" "a" (func $a (param i32 i32 f32 i64 i32)))
-    // 
+    //
     //       (func $start
     //         ;; variant a
     //         (call $a
@@ -1109,7 +1123,7 @@ public final class FusedTest {
     //   (instance $c1 (instantiate $c1))
     //   (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
     // )
-    // 
+    //
     // ;; roundtrip some valid chars
     // (component
     //   (component $c1
@@ -1123,12 +1137,12 @@ public final class FusedTest {
     //     (import "a" (instance $i
     //       (export "a" (func (param "a" char) (result char)))
     //     ))
-    // 
+    //
     //     (core func $a (canon lower (func $i "a")))
-    // 
+    //
     //     (core module $m
     //       (import "" "a" (func $a (param i32) (result i32)))
-    // 
+    //
     //       (func $start
     //         (call $roundtrip (i32.const 0))
     //         (call $roundtrip (i32.const 0xab))
@@ -1150,19 +1164,19 @@ public final class FusedTest {
     //         (export "a" (func $a))
     //       ))
     //     ))
-    // 
+    //
     //     (func (export "roundtrip") (param "a" char) (canon lift (core func $m "roundtrip")))
     //   )
     //   (instance $c1 (instantiate $c1))
     //   (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
-    // 
+    //
     //   (export "roundtrip" (func $c2 "roundtrip"))
     // )
-    // 
+    //
     // (assert_return (invoke "roundtrip" (char.const "x")))
     // (assert_return (invoke "roundtrip" (char.const "⛳")))
     // (assert_return (invoke "roundtrip" (char.const "🍰")))
-    // 
+    //
     // ;; invalid chars
     // (assert_trap
     //   (component
@@ -1227,7 +1241,7 @@ public final class FusedTest {
     //     (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
     //   )
     //   "unreachable")
-    // 
+    //
     // ;; test that flags get their upper bits all masked off
     // (component
     //   (type $f1' (flags "f1"))
@@ -1276,7 +1290,7 @@ public final class FusedTest {
     //     "m1" "m2" "m3" "m4" "m5" "m6" "m7" "m8"
     //     "m9"
     //   ))
-    // 
+    //
     //   (component $c1
     //     (export $f1 "t-f1" (type $f1'))
     //     (export $f8 "t-f8" (type $f8'))
@@ -1332,7 +1346,7 @@ public final class FusedTest {
     //     (func (export "f65") (param "a" $f65) (canon lift (core func $m "f65")))
     //   )
     //   (instance $c1 (instantiate $c1))
-    // 
+    //
     //   (component $c2
     //     (import "a" (instance $i
     //       (export $f1 "t-f1" (type (eq $f1')))
@@ -1363,7 +1377,7 @@ public final class FusedTest {
     //     (core func $f33 (canon lower (func $i "f33")))
     //     (core func $f64 (canon lower (func $i "f64")))
     //     (core func $f65 (canon lower (func $i "f65")))
-    // 
+    //
     //     (core module $m
     //       (import "" "f1" (func $f1 (param i32)))
     //       (import "" "f8" (func $f8 (param i32)))
@@ -1374,7 +1388,7 @@ public final class FusedTest {
     //       (import "" "f33" (func $f33 (param i32 i32)))
     //       (import "" "f64" (func $f64 (param i32 i32)))
     //       (import "" "f65" (func $f65 (param i32 i32 i32)))
-    // 
+    //
     //       (func $start
     //         (call $f1 (i32.const 0xffffff01))
     //         (call $f8 (i32.const 0xffffff11))
@@ -1386,7 +1400,7 @@ public final class FusedTest {
     //         (call $f64 (i32.const 0x11111111) (i32.const 0x11111111))
     //         (call $f65 (i32.const 0x11111111) (i32.const 0x11111111) (i32.const 0xffffffff))
     //       )
-    // 
+    //
     //       (start $start)
     //     )
     //     (core instance $m (instantiate $m
@@ -1405,7 +1419,7 @@ public final class FusedTest {
     //   )
     //   (instance (instantiate $c2 (with "a" (instance $c1))))
     // )
-    // 
+    //
     // ;; Adapters are used slightly out-of-order here to stress the internals of
     // ;; dependencies between adapters.
     // (component
@@ -1414,7 +1428,7 @@ public final class FusedTest {
     //     (func (export "realloc") (param i32 i32 i32 i32) (result i32) unreachable)
     //     (memory (export "memory") 1)
     //   )
-    // 
+    //
     //   (component $root
     //     (core instance $m (instantiate $m))
     //     (func (export "execute")
@@ -1427,7 +1441,7 @@ public final class FusedTest {
     //     ))
     //     (core module $shim2 (import "" "0" (func)))
     //     (core instance $m (instantiate $m))
-    // 
+    //
     //     ;; This adapter, when fused with itself on the second instantiation of this
     //     ;; component, will dependend on the prior instance `$m` so it which means
     //     ;; that the adapter module containing this must be placed in the right
@@ -1447,7 +1461,8 @@ public final class FusedTest {
     //   (instance $c2 (instantiate $c (with "backend" (instance $c1))))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         ;; smoke test with no arguments and no results
         (component
           (core module $m
@@ -1455,10 +1470,10 @@ public final class FusedTest {
           )
           (core instance $m (instantiate $m))
           (func $foo (canon lift (core func $m "")))
-        
+
           (component $c
             (import "a" (func $foo))
-        
+
             (core func $foo (canon lower (func $foo)))
             (core module $m2
               (import "" "" (func))
@@ -1466,10 +1481,10 @@ public final class FusedTest {
             )
             (core instance $m2 (instantiate $m2 (with "" (instance (export "" (func $foo))))))
           )
-        
+
           (instance $c (instantiate $c (with "a" (func $foo))))
         )
-        
+
         ;; boolean parameters
         (component
           (core module $m
@@ -1492,27 +1507,27 @@ public final class FusedTest {
           (func $assert_true (param "a" bool) (canon lift (core func $m "assert_true")))
           (func $assert_false (param "a" bool) (canon lift (core func $m "assert_false")))
           (func $ret_bool (param "a" u32) (result bool) (canon lift (core func $m "ret-bool")))
-        
+
           (component $c
             (import "assert-true" (func $assert_true (param "a" bool)))
             (import "assert-false" (func $assert_false (param "a" bool)))
             (import "ret-bool" (func $ret_bool (param "a" u32) (result bool)))
-        
+
             (core func $assert_true (canon lower (func $assert_true)))
             (core func $assert_false (canon lower (func $assert_false)))
             (core func $ret_bool (canon lower (func $ret_bool)))
-        
+
             (core module $m2
               (import "" "assert-true" (func $assert_true (param i32)))
               (import "" "assert-false" (func $assert_false (param i32)))
               (import "" "ret-bool" (func $ret_bool (param i32) (result i32)))
-        
+
               (func $start
                 (call $assert_true (i32.const 1))
                 (call $assert_true (i32.const 2))
                 (call $assert_true (i32.const -1))
                 (call $assert_false (i32.const 0))
-        
+
                 (if (i32.ne (call $ret_bool (i32.const 1)) (i32.const 1))
                   (then (unreachable)))
                 (if (i32.ne (call $ret_bool (i32.const 2)) (i32.const 1))
@@ -1532,14 +1547,14 @@ public final class FusedTest {
               ))
             ))
           )
-        
+
           (instance $c (instantiate $c
             (with "assert-true" (func $assert_true))
             (with "assert-false" (func $assert_false))
             (with "ret-bool" (func $ret_bool))
           ))
         )
-        
+
         ;; lots of parameters and results
         (component
           (type $roundtrip (func
@@ -1548,18 +1563,18 @@ public final class FusedTest {
             (param "a6" u32) (param "a7" u32) (param "a8" u32) (param "a9" u32) (param "a10" u32)
             (param "a11" u32) (param "a12" u32) (param "a13" u32) (param "a14" u32) (param "a15" u32)
             (param "a16" u32) (param "a17" u32) (param "a18" u32) (param "a19" u32) (param "a20" u32)
-        
+
             ;; 10 u32 results
             (result (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
           ))
-        
+
           (core module $m
             (memory (export "memory") 1)
             (func (export "roundtrip") (param $src i32) (result i32)
               (local $dst i32)
               (if (i32.ne (local.get $src) (i32.const 16))
                 (then (unreachable)))
-        
+
               (if (i32.ne (i32.load offset=0 (local.get $src)) (i32.const 1)) (then (unreachable)))
               (if (i32.ne (i32.load offset=4 (local.get $src)) (i32.const 2)) (then (unreachable)))
               (if (i32.ne (i32.load offset=8 (local.get $src)) (i32.const 3)) (then (unreachable)))
@@ -1580,9 +1595,9 @@ public final class FusedTest {
               (if (i32.ne (i32.load offset=68 (local.get $src)) (i32.const 18)) (then (unreachable)))
               (if (i32.ne (i32.load offset=72 (local.get $src)) (i32.const 19)) (then (unreachable)))
               (if (i32.ne (i32.load offset=76 (local.get $src)) (i32.const 20)) (then (unreachable)))
-        
+
               (local.set $dst (i32.const 500))
-        
+
               (i32.store offset=0 (local.get $dst) (i32.const 21))
               (i32.store offset=4 (local.get $dst) (i32.const 22))
               (i32.store offset=8 (local.get $dst) (i32.const 23))
@@ -1593,23 +1608,23 @@ public final class FusedTest {
               (i32.store offset=28 (local.get $dst) (i32.const 28))
               (i32.store offset=32 (local.get $dst) (i32.const 29))
               (i32.store offset=36 (local.get $dst) (i32.const 30))
-        
+
               local.get $dst
             )
-        
+
             (func (export "realloc") (param i32 i32 i32 i32) (result i32)
               i32.const 16)
           )
           (core instance $m (instantiate $m))
-        
+
           (func $roundtrip (type $roundtrip)
             (canon lift (core func $m "roundtrip") (memory $m "memory")
               (realloc (func $m "realloc")))
           )
-        
+
           (component $c
             (import "roundtrip" (func $roundtrip (type $roundtrip)))
-        
+
             (core module $libc
               (memory (export "memory") 1)
               (func (export "realloc") (param i32 i32 i32 i32) (result i32) unreachable)
@@ -1621,21 +1636,21 @@ public final class FusedTest {
                 (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
               )
             )
-        
+
             (core module $m2
               (import "libc" "memory" (memory 1))
               (import "" "roundtrip" (func $roundtrip (param i32 i32)))
-        
+
               (func $start
                 (local $addr i32)
                 (local $retaddr i32)
-        
+
                 (local.set $addr (i32.const 100))
                 (call $store_many (i32.const 20) (local.get $addr))
-        
+
                 (local.set $retaddr (i32.const 200))
                 (call $roundtrip (local.get $addr) (local.get $retaddr))
-        
+
                 (if (i32.ne (i32.load offset=0 (local.get $retaddr)) (i32.const 21)) (then (unreachable)))
                 (if (i32.ne (i32.load offset=4 (local.get $retaddr)) (i32.const 22)) (then (unreachable)))
                 (if (i32.ne (i32.load offset=8 (local.get $retaddr)) (i32.const 23)) (then (unreachable)))
@@ -1647,14 +1662,14 @@ public final class FusedTest {
                 (if (i32.ne (i32.load offset=32 (local.get $retaddr)) (i32.const 29)) (then (unreachable)))
                 (if (i32.ne (i32.load offset=36 (local.get $retaddr)) (i32.const 30)) (then (unreachable)))
               )
-        
+
               (func $store_many (param $amt i32) (param $addr i32)
                 (local $c i32)
                 (loop $loop
                   (local.set $c (i32.add (local.get $c) (i32.const 1)))
                   (i32.store (local.get $addr) (local.get $c))
                   (local.set $addr (i32.add (local.get $addr) (i32.const 4)))
-        
+
                   (if (i32.ne (local.get $amt) (local.get $c)) (then (br $loop)))
                 )
               )
@@ -1665,12 +1680,12 @@ public final class FusedTest {
               (with "" (instance (export "roundtrip" (func $roundtrip))))
             ))
           )
-        
+
           (instance $c (instantiate $c
             (with "roundtrip" (func $roundtrip))
           ))
         )
-        
+
         ;; this will require multiple adapter modules to get generated
         (component
           (core module $root (func (export "") (result i32)
@@ -1678,7 +1693,7 @@ public final class FusedTest {
           ))
           (core instance $root (instantiate $root))
           (func $root (result u32) (canon lift (core func $root "")))
-        
+
           (component $c
             (import "thunk" (func $import (result u32)))
             (core func $import (canon lower (func $import)))
@@ -1698,20 +1713,20 @@ public final class FusedTest {
               (canon lift (core func $reexport "thunk"))
             )
           )
-        
+
           (instance $c1 (instantiate $c (with "thunk" (func $root))))
           (instance $c2 (instantiate $c (with "thunk" (func $c1 "thunk2"))))
           (instance $c3 (instantiate $c (with "thunk" (func $c2 "thunk2"))))
           (instance $c4 (instantiate $c (with "thunk" (func $c3 "thunk2"))))
           (instance $c5 (instantiate $c (with "thunk" (func $c4 "thunk2"))))
           (instance $c6 (instantiate $c (with "thunk" (func $c5 "thunk2"))))
-        
+
           (component $verify
             (import "thunk" (func $thunk (result u32)))
             (core func $thunk (canon lower (func $thunk)))
             (core module $verify
               (import "" "" (func $thunk (result i32)))
-        
+
               (func $start
                 call $thunk
                 i32.const 6
@@ -1728,7 +1743,7 @@ public final class FusedTest {
           )
           (instance (instantiate $verify (with "thunk" (func $c6 "thunk2"))))
         )
-        
+
         ;; Fancy case of an adapter using an adapter. Note that this is silly and
         ;; doesn't actually make any sense at runtime, we just shouldn't panic on a
         ;; valid component.
@@ -1738,7 +1753,7 @@ public final class FusedTest {
             u32 u32 u32 u32 u32
             u32 u32 u32 u32 u32
             u32 u32 u32 u32 u32))
-        
+
           (component $realloc
             (core module $realloc
               (memory (export "memory") 1)
@@ -1753,7 +1768,7 @@ public final class FusedTest {
           )
           (instance $realloc (instantiate $realloc))
           (core func $realloc (canon lower (func $realloc "realloc")))
-        
+
           (core module $m
             (memory (export "memory") 1)
             (func (export "foo") (param i32))
@@ -1766,10 +1781,10 @@ public final class FusedTest {
               (realloc (func $realloc))
             )
           )
-        
+
           (component $c
             (import "foo" (func $foo (param "a" $tuple20)))
-        
+
             (core module $libc
               (memory (export "memory") 1)
               (func (export "realloc") (param i32 i32 i32 i32) (result i32)
@@ -1795,7 +1810,7 @@ public final class FusedTest {
             (with "foo" (func $foo))
           ))
         )
-        
+
         ;; Don't panic or otherwise create extraneous adapter modules when the same
         ;; adapter is used twice for a module's argument.
         (component
@@ -1804,11 +1819,11 @@ public final class FusedTest {
           )
           (core instance $m (instantiate $m))
           (func $foo (canon lift (core func $m "foo")))
-        
+
           (component $c
             (import "foo" (func $foo))
             (core func $foo (canon lower (func $foo)))
-        
+
             (core module $something
               (import "" "a" (func))
               (import "" "b" (func))
@@ -1822,7 +1837,7 @@ public final class FusedTest {
           )
           (instance (instantiate $c (with "foo" (func $foo))))
         )
-        
+
         ;; post-return should get invoked by the generated adapter, if specified
         (component
           (core module $m
@@ -1854,17 +1869,17 @@ public final class FusedTest {
           (core instance $m (instantiate $m))
           (func $foo (canon lift (core func $m "foo") (post-return (func $m "foo-post"))))
           (func $assert_post (canon lift (core func $m "assert-post")))
-        
+
           (component $c
             (import "foo" (func $foo))
             (import "assert-post" (func $assert_post))
             (core func $foo (canon lower (func $foo)))
             (core func $assert_post (canon lower (func $assert_post)))
-        
+
             (core module $something
               (import "" "foo" (func $foo))
               (import "" "assert-post" (func $assert_post))
-        
+
               (func $start
                 call $foo
                 call $assert_post
@@ -1883,7 +1898,7 @@ public final class FusedTest {
             (with "assert-post" (func $assert_post))
           ))
         )
-        
+
         ;; post-return passes the results
         (component
           (core module $m
@@ -1894,11 +1909,11 @@ public final class FusedTest {
           (core instance $m (instantiate $m))
           (func $foo (result u32)
             (canon lift (core func $m "foo") (post-return (func $m "foo-post"))))
-        
+
           (component $c
             (import "foo" (func $foo (result u32)))
             (core func $foo (canon lower (func $foo)))
-        
+
             (core module $something
               (import "" "foo" (func $foo (result i32)))
               (func $start
@@ -1915,7 +1930,7 @@ public final class FusedTest {
             (with "foo" (func $foo))
           ))
         )
-        
+
         ;; callee retptr misaligned
         (assert_trap
           (component
@@ -1934,7 +1949,7 @@ public final class FusedTest {
               (core module $libc (memory (export "memory") 1))
               (core instance $libc (instantiate $libc))
               (core func $r (canon lower (func $r) (memory $libc "memory")))
-        
+
               (core module $m
                 (import "" "r" (func $r (param i32)))
                 (func $start
@@ -1951,7 +1966,7 @@ public final class FusedTest {
             (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
           )
           "unreachable")
-        
+
         ;; caller retptr misaligned
         (assert_trap
           (component
@@ -1970,7 +1985,7 @@ public final class FusedTest {
               (core module $libc (memory (export "memory") 1))
               (core instance $libc (instantiate $libc))
               (core func $r (canon lower (func $r) (memory $libc "memory")))
-        
+
               (core module $m
                 (import "" "r" (func $r (param i32)))
                 (func $start
@@ -1987,12 +2002,12 @@ public final class FusedTest {
             (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
           )
           "unreachable")
-        
+
         ;; callee argptr misaligned
         (assert_trap
           (component
             (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
-        
+
             (component $c1
               (core module $m
                 (memory (export "memory") 1)
@@ -2018,7 +2033,7 @@ public final class FusedTest {
                   (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
                 )
               )
-        
+
               (core module $m
                 (import "" "r" (func $r (param i32)))
                 (func $start
@@ -2035,12 +2050,12 @@ public final class FusedTest {
             (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
           )
           "unreachable")
-        
+
         ;; caller argptr misaligned
         (assert_trap
           (component
             (type $big (tuple u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32 u32))
-        
+
             (component $c1
               (core module $m
                 (memory (export "memory") 1)
@@ -2066,8 +2081,8 @@ public final class FusedTest {
                   (realloc (func $libc "realloc")) ;; FIXME(wasm-tools#693) should not be necessary
                 )
               )
-        
-        
+
+
               (core module $m
                 (import "" "r" (func $r (param i32)))
                 (func $start
@@ -2084,7 +2099,7 @@ public final class FusedTest {
             (instance $c2 (instantiate $c2 (with "r" (func $c1 "r"))))
           )
           "unreachable")
-        
+
         ;; simple variant translation
         (component
           (component $c1
@@ -2092,7 +2107,7 @@ public final class FusedTest {
             (export $a "a" (type $a'))
             (type $b' (variant (case "y")))
             (export $b "b" (type $b'))
-        
+
             (core module $m
               (func (export "r") (param i32) (result i32)
                 (if (i32.ne (local.get 0) (i32.const 0)) (then (unreachable)))
@@ -2107,10 +2122,10 @@ public final class FusedTest {
             (import "a" (type $a (eq $a')))
             (type $b' (variant (case "y")))
             (import "b" (type $b (eq $b')))
-        
+
             (import "r" (func $r (param "a" $a) (result $b)))
             (core func $r (canon lower (func $r)))
-        
+
             (core module $m
               (import "" "r" (func $r (param i32) (result i32)))
               (func $start
@@ -2133,7 +2148,7 @@ public final class FusedTest {
             (with "r" (func $c1 "r"))
           ))
         )
-        
+
         ;; invalid variant discriminant in a parameter
         (assert_trap
           (component
@@ -2151,7 +2166,7 @@ public final class FusedTest {
               (import "a" (type $a (eq $a')))
               (import "r" (func $r (param "a" $a)))
               (core func $r (canon lower (func $r)))
-        
+
               (core module $m
                 (import "" "r" (func $r (param i32)))
                 (func $start
@@ -2171,7 +2186,7 @@ public final class FusedTest {
             ))
           )
           "unreachable")
-        
+
         ;; invalid variant discriminant in a result
         (assert_trap
           (component
@@ -2189,7 +2204,7 @@ public final class FusedTest {
               (import "a" (type $a (eq $a')))
               (import "r" (func $r (result $a)))
               (core func $r (canon lower (func $r)))
-        
+
               (core module $m
                 (import "" "r" (func $r (result i32)))
                 (func $start call $r drop)
@@ -2206,8 +2221,8 @@ public final class FusedTest {
             ))
           )
           "unreachable")
-        
-        
+
+
         ;; extra bits are chopped off
         (component
           (component $c1
@@ -2232,25 +2247,25 @@ public final class FusedTest {
               (export "u16" (func (param "a" u16)))
               (export "s16" (func (param "a" s16)))
             ))
-        
+
             (core func $u8 (canon lower (func $i "u8")))
             (core func $s8 (canon lower (func $i "s8")))
             (core func $u16 (canon lower (func $i "u16")))
             (core func $s16 (canon lower (func $i "s16")))
-        
+
             (core module $m
               (import "" "u8" (func $u8 (param i32)))
               (import "" "s8" (func $s8 (param i32)))
               (import "" "u16" (func $u16 (param i32)))
               (import "" "s16" (func $s16 (param i32)))
-        
+
               (func $start
                 (call $u8 (i32.const 0))
                 (call $u8 (i32.const 0xff00))
                 (call $s8 (i32.const -1))
                 (call $s8 (i32.const 0xff))
                 (call $s8 (i32.const 0xffff))
-        
+
                 (call $u16 (i32.const 0))
                 (call $u16 (i32.const 0xff0000))
                 (call $s16 (i32.const -1))
@@ -2271,7 +2286,7 @@ public final class FusedTest {
           (instance $c1 (instantiate $c1))
           (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
         )
-        
+
         ;; translation of locals between different types
         (component
           (component $c1
@@ -2285,13 +2300,13 @@ public final class FusedTest {
             (export $c "t-c" (type $c'))
             (export $d "t-d" (type $d'))
             (export $e "t-e" (type $e'))
-        
+
             (type $func_a (func (param "x" bool) (param "a" $a)))
             (type $func_b (func (param "x" bool) (param "b" $b)))
             (type $func_c (func (param "x" bool) (param "c" $c)))
             (type $func_d (func (param "x" bool) (param "d" $d)))
             (type $func_e (func (param "x" bool) (param "e" $d)))
-        
+
             (core module $m
               (func (export "a") (param i32 i32 i32)
                 (i32.eqz (local.get 0))
@@ -2368,42 +2383,42 @@ public final class FusedTest {
               (type $func_c (func (param "x" bool) (param "c" $c)))
               (type $func_d (func (param "x" bool) (param "d" $d)))
               (type $func_e (func (param "x" bool) (param "e" $d)))
-        
+
               (export "a" (func (type $func_a)))
               (export "b" (func (type $func_b)))
               (export "c" (func (type $func_c)))
               (export "d" (func (type $func_d)))
               (export "e" (func (type $func_e)))
             ))
-        
+
             (core func $a (canon lower (func $i "a")))
             (core func $b (canon lower (func $i "b")))
             (core func $c (canon lower (func $i "c")))
             (core func $d (canon lower (func $i "d")))
             (core func $e (canon lower (func $i "e")))
-        
+
             (core module $m
               (import "" "a" (func $a (param i32 i32 i32)))
               (import "" "b" (func $b (param i32 i32 i64)))
               (import "" "c" (func $c (param i32 i32 i64)))
               (import "" "d" (func $d (param i32 i32 i64)))
               (import "" "e" (func $e (param i32 i32 i64)))
-        
+
               (func $start
                                                         ;; upper bits should get masked
                 (call $a (i32.const 0) (i32.const 0) (i32.const 0xff_02))
                 (call $a (i32.const 1) (i32.const 1) (i32.reinterpret_f32 (f32.const 3)))
-        
+
                                                         ;; upper bits should get masked
                 (call $b (i32.const 0) (i32.const 0) (i64.const 0xff_00_04))
                 (call $b (i32.const 1) (i32.const 1) (i64.const 5))
-        
+
                 (call $c (i32.const 0) (i32.const 0) (i64.const 6))
                 (call $c (i32.const 1) (i32.const 1) (i64.reinterpret_f64 (f64.const 7)))
-        
+
                 (call $d (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32 (f32.const 8))))
                 (call $d (i32.const 1) (i32.const 1) (i64.reinterpret_f64 (f64.const 9)))
-        
+
                 (call $e (i32.const 0) (i32.const 0) (i64.extend_i32_u (i32.reinterpret_f32 (f32.const 10))))
                 (call $e (i32.const 1) (i32.const 1) (i64.const 11))
               )
@@ -2422,7 +2437,7 @@ public final class FusedTest {
           (instance $c1 (instantiate $c1))
           (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
         )
-        
+
         ;; different size variants
         (component
           (component $c1
@@ -2433,7 +2448,7 @@ public final class FusedTest {
               (case "d" (tuple float32 u64 u8))
             ))
             (export $a "t-a" (type $a'))
-        
+
             (core module $m
               (func (export "a") (param i32 i32 f32 i64 i32)
                 (if (i32.eq (local.get 0) (i32.const 0))
@@ -2486,12 +2501,12 @@ public final class FusedTest {
               (export $a "t-a" (type (eq $a')))
               (export "a" (func (param "x" u8) (param "a" $a)))
             ))
-        
+
             (core func $a (canon lower (func $i "a")))
-        
+
             (core module $m
               (import "" "a" (func $a (param i32 i32 f32 i64 i32)))
-        
+
               (func $start
                 ;; variant a
                 (call $a
@@ -2533,7 +2548,7 @@ public final class FusedTest {
           (instance $c1 (instantiate $c1))
           (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
         )
-        
+
         ;; roundtrip some valid chars
         (component
           (component $c1
@@ -2547,12 +2562,12 @@ public final class FusedTest {
             (import "a" (instance $i
               (export "a" (func (param "a" char) (result char)))
             ))
-        
+
             (core func $a (canon lower (func $i "a")))
-        
+
             (core module $m
               (import "" "a" (func $a (param i32) (result i32)))
-        
+
               (func $start
                 (call $roundtrip (i32.const 0))
                 (call $roundtrip (i32.const 0xab))
@@ -2574,19 +2589,19 @@ public final class FusedTest {
                 (export "a" (func $a))
               ))
             ))
-        
+
             (func (export "roundtrip") (param "a" char) (canon lift (core func $m "roundtrip")))
           )
           (instance $c1 (instantiate $c1))
           (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
-        
+
           (export "roundtrip" (func $c2 "roundtrip"))
         )
-        
+
         (assert_return (invoke "roundtrip" (char.const "x")))
         (assert_return (invoke "roundtrip" (char.const "⛳")))
         (assert_return (invoke "roundtrip" (char.const "🍰")))
-        
+
         ;; invalid chars
         (assert_trap
           (component
@@ -2651,7 +2666,7 @@ public final class FusedTest {
             (instance $c2 (instantiate $c2 (with "a" (instance $c1))))
           )
           "unreachable")
-        
+
         ;; test that flags get their upper bits all masked off
         (component
           (type $f1' (flags "f1"))
@@ -2700,7 +2715,7 @@ public final class FusedTest {
             "m1" "m2" "m3" "m4" "m5" "m6" "m7" "m8"
             "m9"
           ))
-        
+
           (component $c1
             (export $f1 "t-f1" (type $f1'))
             (export $f8 "t-f8" (type $f8'))
@@ -2756,7 +2771,7 @@ public final class FusedTest {
             (func (export "f65") (param "a" $f65) (canon lift (core func $m "f65")))
           )
           (instance $c1 (instantiate $c1))
-        
+
           (component $c2
             (import "a" (instance $i
               (export $f1 "t-f1" (type (eq $f1')))
@@ -2787,7 +2802,7 @@ public final class FusedTest {
             (core func $f33 (canon lower (func $i "f33")))
             (core func $f64 (canon lower (func $i "f64")))
             (core func $f65 (canon lower (func $i "f65")))
-        
+
             (core module $m
               (import "" "f1" (func $f1 (param i32)))
               (import "" "f8" (func $f8 (param i32)))
@@ -2798,7 +2813,7 @@ public final class FusedTest {
               (import "" "f33" (func $f33 (param i32 i32)))
               (import "" "f64" (func $f64 (param i32 i32)))
               (import "" "f65" (func $f65 (param i32 i32 i32)))
-        
+
               (func $start
                 (call $f1 (i32.const 0xffffff01))
                 (call $f8 (i32.const 0xffffff11))
@@ -2810,7 +2825,7 @@ public final class FusedTest {
                 (call $f64 (i32.const 0x11111111) (i32.const 0x11111111))
                 (call $f65 (i32.const 0x11111111) (i32.const 0x11111111) (i32.const 0xffffffff))
               )
-        
+
               (start $start)
             )
             (core instance $m (instantiate $m
@@ -2829,7 +2844,7 @@ public final class FusedTest {
           )
           (instance (instantiate $c2 (with "a" (instance $c1))))
         )
-        
+
         ;; Adapters are used slightly out-of-order here to stress the internals of
         ;; dependencies between adapters.
         (component
@@ -2838,7 +2853,7 @@ public final class FusedTest {
             (func (export "realloc") (param i32 i32 i32 i32) (result i32) unreachable)
             (memory (export "memory") 1)
           )
-        
+
           (component $root
             (core instance $m (instantiate $m))
             (func (export "execute")
@@ -2851,7 +2866,7 @@ public final class FusedTest {
             ))
             (core module $shim2 (import "" "0" (func)))
             (core instance $m (instantiate $m))
-        
+
             ;; This adapter, when fused with itself on the second instantiation of this
             ;; component, will dependend on the prior instance `$m` so it which means
             ;; that the adapter module containing this must be placed in the right

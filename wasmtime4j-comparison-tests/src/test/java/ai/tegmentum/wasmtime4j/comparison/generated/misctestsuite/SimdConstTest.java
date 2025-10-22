@@ -2,9 +2,6 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
 import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,11 +9,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::_simd_const
  *
- * Original source: _simd_const.wast:1
- * Category: misc_testsuite
+ * <p>Original source: _simd_const.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class SimdConstTest {
 
@@ -27,9 +23,11 @@ public final class SimdConstTest {
     // WAT code is large (93 KB), loaded from external resource file
 
     final String wat;
-    try (final InputStream is = getClass().getResourceAsStream("/wasmtime-tests/misc_testsuite/-simd-const.wat")) {
+    try (final InputStream is =
+        getClass().getResourceAsStream("/wasmtime-tests/misc_testsuite/-simd-const.wat")) {
       if (is == null) {
-        throw new AssertionError("WAT resource not found: /wasmtime-tests/misc_testsuite/-simd-const.wat");
+        throw new AssertionError(
+            "WAT resource not found: /wasmtime-tests/misc_testsuite/-simd-const.wat");
       }
       wat = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
     } catch (final java.io.IOException e) {

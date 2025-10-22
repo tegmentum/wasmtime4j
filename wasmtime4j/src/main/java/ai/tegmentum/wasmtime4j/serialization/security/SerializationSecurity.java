@@ -220,8 +220,7 @@ public final class SerializationSecurity {
    * vulnerable to padding oracle attacks. Use {@link #decryptAesGcm(EncryptedData, SecretKey)} for
    * new code. This method is provided only for compatibility with legacy systems that require
    * AES-CBC. If you must use this method, you MUST verify an HMAC using {@link
-   * #verifyHmacSha256(byte[], byte[], SecretKey)} before decrypting to ensure integrity
-   * protection.
+   * #verifyHmacSha256(byte[], byte[], SecretKey)} before decrypting to ensure integrity protection.
    *
    * @param encryptedData the encrypted data with metadata
    * @param secretKey the secret key for decryption

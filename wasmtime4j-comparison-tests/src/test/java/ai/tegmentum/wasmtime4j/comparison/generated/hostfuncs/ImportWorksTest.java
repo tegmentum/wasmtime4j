@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.hostfuncs;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: host_funcs::import_works
  *
- * Original source: host_funcs.rs:224
- * Category: host_funcs
+ * <p>Original source: host_funcs.rs:224 Category: host_funcs
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ImportWorksTest {
 
@@ -28,7 +23,7 @@ public final class ImportWorksTest {
     //             (import "" "f2" (func (param i32) (result i32)))
     //             (import "" "f3" (func (param i32) (param i64)))
     //             (import "" "f4" (func (param i32 i64 i32 f32 f64 externref funcref)))
-    // 
+    //
     //             (func (export "run") (param externref funcref)
     //                 call 0
     //                 i32.const 0
@@ -37,7 +32,7 @@ public final class ImportWorksTest {
     //                 i32.add
     //                 i64.const 3
     //                 call 2
-    // 
+    //
     //                 i32.const 100
     //                 i64.const 200
     //                 i32.const 300
@@ -48,12 +43,13 @@ public final class ImportWorksTest {
     //                 call 3
     //             )
 
-    final String wat = """
+    final String wat =
+        """
         (import "" "f1" (func))
                     (import "" "f2" (func (param i32) (result i32)))
                     (import "" "f3" (func (param i32) (param i64)))
                     (import "" "f4" (func (param i32 i64 i32 f32 f64 externref funcref)))
-        
+
                     (func (export "run") (param externref funcref)
                         call 0
                         i32.const 0
@@ -62,7 +58,7 @@ public final class ImportWorksTest {
                         i32.add
                         i64.const 3
                         call 2
-        
+
                         i32.const 100
                         i64.const 200
                         i32.const 300

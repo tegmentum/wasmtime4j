@@ -217,9 +217,12 @@ public final class DisasterRecoverySystem {
       }
 
       // Only allow specific disaster recovery classes
-      if (!className.equals("ai.tegmentum.wasmtime4j.disaster.DisasterRecoverySystem$RecoverableComponent")) {
+      if (!className.equals(
+          "ai.tegmentum.wasmtime4j.disaster.DisasterRecoverySystem$RecoverableComponent")) {
         throw new InvalidClassException(
-            "Deserialization of class " + className + " is not allowed. "
+            "Deserialization of class "
+                + className
+                + " is not allowed. "
                 + "Only RecoverableComponent can be deserialized from backup files.");
       }
 

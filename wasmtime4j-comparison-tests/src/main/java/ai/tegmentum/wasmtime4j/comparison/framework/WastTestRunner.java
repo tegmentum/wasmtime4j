@@ -31,8 +31,8 @@ import java.util.Objects;
 /**
  * Test runner for executing WAST-style tests.
  *
- * <p>This class provides utilities for running WebAssembly test assertions similar to those in
- * WAST (WebAssembly Script) files. It handles module compilation, instantiation, and assertion
+ * <p>This class provides utilities for running WebAssembly test assertions similar to those in WAST
+ * (WebAssembly Script) files. It handles module compilation, instantiation, and assertion
  * verification.
  *
  * <p>Supports both simple modules and modules with host function imports via Linker.
@@ -46,8 +46,29 @@ public final class WastTestRunner implements AutoCloseable {
   private Instance currentInstance;
   private boolean hasHostFunctions;
 
-  /** Creates a new WAST test runner with a default engine and store. */
+  /**
+   * Creates a new WAST test runner with a default engine and store.
+   *
+   * <p>Uses the currently configured runtime (JNI or Panama) based on system properties.
+   */
   public WastTestRunner() throws Exception {
+    this.engine = Engine.create();
+    this.store = engine.createStore();
+    this.linker = Linker.create(engine);
+    this.namedInstances = new HashMap<>();
+    this.currentInstance = null;
+    this.hasHostFunctions = false;
+  }
+
+  /**
+   * Creates a new WAST test runner with a specific runtime type.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the runner cannot be created
+   */
+  public WastTestRunner(final ai.tegmentum.wasmtime4j.RuntimeType runtime) throws Exception {
+    // Set the runtime before creating the engine
+    DualRuntimeTest.setRuntime(runtime);
     this.engine = Engine.create();
     this.store = engine.createStore();
     this.linker = Linker.create(engine);
@@ -78,6 +99,27 @@ public final class WastTestRunner implements AutoCloseable {
 
     linker.defineHostFunction(moduleName, functionName, functionType, hostFunction);
     hasHostFunctions = true;
+  }
+
+  /**
+   * Defines a global that can be imported by WASM modules.
+   *
+   * @param moduleName the module name for the import (e.g., "spectest")
+   * @param globalName the global name for the import (e.g., "global_i32")
+   * @param global the global to define
+   * @throws Exception if the global cannot be defined
+   */
+  public void defineGlobal(
+      final String moduleName,
+      final String globalName,
+      final ai.tegmentum.wasmtime4j.WasmGlobal global)
+      throws Exception {
+    Objects.requireNonNull(moduleName, "Module name cannot be null");
+    Objects.requireNonNull(globalName, "Global name cannot be null");
+    Objects.requireNonNull(global, "Global cannot be null");
+
+    linker.defineGlobal(store, moduleName, globalName, global);
+    hasHostFunctions = true; // Mark as using linker
   }
 
   /**
@@ -216,8 +258,7 @@ public final class WastTestRunner implements AutoCloseable {
       throw new AssertionError("Expected trap but function call succeeded");
     } catch (final Exception e) {
       // Expected trap occurred
-      if (expectedTrapMessage != null
-          && !e.getMessage().contains(expectedTrapMessage)) {
+      if (expectedTrapMessage != null && !e.getMessage().contains(expectedTrapMessage)) {
         throw new AssertionError(
             String.format(
                 "Expected trap message containing '%s' but got: %s",
@@ -327,6 +368,24 @@ public final class WastTestRunner implements AutoCloseable {
    */
   public Instance getInstance(final String name) {
     return namedInstances.get(name);
+  }
+
+  /**
+   * Gets the store used by this test runner.
+   *
+   * @return the store instance
+   */
+  public Store getStore() {
+    return store;
+  }
+
+  /**
+   * Gets the engine used by this test runner.
+   *
+   * @return the engine instance
+   */
+  public Engine getEngine() {
+    return engine;
   }
 
   @Override

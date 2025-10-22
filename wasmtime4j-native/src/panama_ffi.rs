@@ -3659,6 +3659,62 @@ pub mod linker {
         }
     }
 
+    /// Define a global in the linker (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_global(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_name: *const c_char,
+        name: *const c_char,
+        global_ptr: *mut c_void,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+        use wasmtime::AsContextMut;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Convert C strings to Rust strings
+                let module_name_str = CStr::from_ptr(module_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let name_str = CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Get global reference
+                let global = crate::global::core::get_global_ref(global_ptr)?;
+
+                // Lock linker and global
+                let mut linker_lock = linker.inner()?;
+                let wasmtime_global_arc = global.wasmtime_global();
+                let wasmtime_global_lock = wasmtime_global_arc.lock()
+                    .map_err(|e| crate::error::WasmtimeError::Concurrency {
+                        message: format!("Failed to lock global: {}", e),
+                    })?;
+
+                // Lock store and define global
+                let mut store_lock = store.lock_store();
+                linker_lock.define(
+                    &mut (*store_lock).as_context_mut(),
+                    module_name_str,
+                    name_str,
+                    wasmtime::Extern::Global(*wasmtime_global_lock),
+                ).map_err(|e| crate::error::WasmtimeError::Linker {
+                    message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
+                })?;
+
+                Ok(())
+            }
+        })
+    }
+
     /// Helper: Convert int to ValType
     fn int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
         match val {

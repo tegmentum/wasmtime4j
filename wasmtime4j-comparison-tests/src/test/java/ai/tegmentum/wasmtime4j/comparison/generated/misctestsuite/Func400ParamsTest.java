@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::func-400-params
  *
- * Original source: func-400-params.wast:1
- * Category: misc_testsuite
+ * <p>Original source: func-400-params.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class Func400ParamsTest {
 
@@ -67,12 +62,12 @@ public final class Func400ParamsTest {
     //     i32 i32 i32 i32 i32 i32 i32 i32 i32 i32
     //     i32 i32 i32 i32 i32 i32 i32 i32 i32 i32
     //   )
-    // 
+    //
     //     (result i32)
     //   ))
     //   (func (export "x") (type 0) local.get 0)
     // )
-    // 
+    //
     // (assert_return
     //   (invoke "x"
     //     (i32.const 1) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0)
@@ -159,7 +154,8 @@ public final class Func400ParamsTest {
     //   (i32.const 1)
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (type (;0;) (func (param
             i32 i32 i32 i32 i32 i32 i32 i32 i32 i32
@@ -203,12 +199,12 @@ public final class Func400ParamsTest {
             i32 i32 i32 i32 i32 i32 i32 i32 i32 i32
             i32 i32 i32 i32 i32 i32 i32 i32 i32 i32
           )
-        
+
             (result i32)
           ))
           (func (export "x") (type 0) local.get 0)
         )
-        
+
         (assert_return
           (invoke "x"
             (i32.const 1) (i32.const 0) (i32.const 0) (i32.const 0) (i32.const 0)

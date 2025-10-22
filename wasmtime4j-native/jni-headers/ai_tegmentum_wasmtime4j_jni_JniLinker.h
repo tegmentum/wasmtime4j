@@ -42,10 +42,10 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefi
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDefineInstance
- * Signature: (JLjava/lang/String;J)Z
+ * Signature: (JJLjava/lang/String;J)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineInstance
-  (JNIEnv *, jobject, jlong, jstring, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jstring, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker

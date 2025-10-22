@@ -1,64 +1,90 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.comparison.framework.DualRuntimeTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Equivalent Java test for Wasmtime test: func::call_indirect_native_from_wasm_import_global
  *
- * Original source: func.rs:238
- * Category: func
+ * <p>Original source: func.rs:238 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
-public final class CallIndirectNativeFromWasmImportGlobalTest {
+public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntimeTest {
 
-  @Test
+  @AfterEach
+  void cleanupRuntime() {
+    clearRuntimeSelection();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("func::call_indirect_native_from_wasm_import_global")
-  public void testCallIndirectNativeFromWasmImportGlobal() {
-    // WAT code from original Wasmtime test:
-    // (module
-    //             (import "" "" (global funcref))
-    //             (table 1 1 funcref)
-    //             (func (export "run") (result i32 i32 i32)
-    //                 i32.const 0
-    //                 global.get 0
-    //                 table.set
-    //                 i32.const 0
-    //                 call_indirect (result i32 i32 i32)
-    //             )
-    //           )
-
-    final String wat = """
+  public void testCallIndirectNativeFromWasmImportGlobal(final RuntimeType runtime)
+      throws Exception {
+    setRuntime(runtime);
+    // WAT module that imports a funcref global and calls it indirectly
+    final String wat =
+        """
         (module
-                    (import "" "" (global funcref))
-                    (table 1 1 funcref)
-                    (func (export "run") (result i32 i32 i32)
-                        i32.const 0
-                        global.get 0
-                        table.set
-                        i32.const 0
-                        call_indirect (result i32 i32 i32)
-                    )
-                  )
+          (import "" "" (global funcref))
+          (table 1 1 funcref)
+          (func (export "run") (result i32 i32 i32)
+            i32.const 0
+            global.get 0
+            table.set
+            i32.const 0
+            call_indirect (result i32 i32 i32)
+          )
+        )
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner runner =
+        new ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner()) {
 
-    // Expected results from original test:
-    // results, (10, 20, 30
-    fail("Test not yet implemented - awaiting test framework completion");
+      // Define a host function that returns (10, 20, 30)
+      final ai.tegmentum.wasmtime4j.FunctionType funcType =
+          new ai.tegmentum.wasmtime4j.FunctionType(
+              new ai.tegmentum.wasmtime4j.WasmValueType[] {}, // no params
+              new ai.tegmentum.wasmtime4j.WasmValueType[] {
+                ai.tegmentum.wasmtime4j.WasmValueType.I32,
+                ai.tegmentum.wasmtime4j.WasmValueType.I32,
+                ai.tegmentum.wasmtime4j.WasmValueType.I32
+              });
+
+      runner.defineHostFunction(
+          "",
+          "",
+          funcType,
+          (args) ->
+              new ai.tegmentum.wasmtime4j.WasmValue[] {
+                ai.tegmentum.wasmtime4j.WasmValue.i32(10),
+                ai.tegmentum.wasmtime4j.WasmValue.i32(20),
+                ai.tegmentum.wasmtime4j.WasmValue.i32(30)
+              });
+
+      // Compile and instantiate the module with the host function import
+      runner.compileAndInstantiate(wat);
+
+      // Call the exported "run" function which should:
+      // 1. Get the imported funcref global
+      // 2. Set it in table slot 0
+      // 3. Call it indirectly from the table
+      // 4. Return (10, 20, 30)
+      final ai.tegmentum.wasmtime4j.WasmValue[] results = runner.invoke("run");
+
+      org.junit.jupiter.api.Assertions.assertEquals(3, results.length, "Should return 3 values");
+      org.junit.jupiter.api.Assertions.assertEquals(
+          10, results[0].asI32(), "First result should be 10");
+      org.junit.jupiter.api.Assertions.assertEquals(
+          20, results[1].asI32(), "Second result should be 20");
+      org.junit.jupiter.api.Assertions.assertEquals(
+          30, results[2].asI32(), "Third result should be 30");
+    }
   }
 }

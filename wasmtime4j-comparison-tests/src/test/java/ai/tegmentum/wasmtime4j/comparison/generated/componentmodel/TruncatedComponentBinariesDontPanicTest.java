@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.componentmodel;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: component_model::truncated_component_binaries_dont_panic
  *
- * Original source: aot.rs:170
- * Category: component_model
+ * <p>Original source: aot.rs:170 Category: component_model
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class TruncatedComponentBinariesDontPanicTest {
 
@@ -28,13 +23,13 @@ public final class TruncatedComponentBinariesDontPanicTest {
     //             (import "a" (core module $m0
     //                 (import "" "" (func))
     //             ))
-    // 
+    //
     //             (core module $m1
     //                 (func (export ""))
     //             )
     //             (core instance $i1 (instantiate (module $m1)))
     //             (func $f (canon lift (core func $i1 "f")))
-    // 
+    //
     //             (component $c1
     //                 (import "f" (func))
     //                 (core module $m2
@@ -49,18 +44,19 @@ public final class TruncatedComponentBinariesDontPanicTest {
     //             (func (export "g") (alias export $i3 "g"))
     //         )
 
-    final String wat = """
+    final String wat =
+        """
         (component
                     (import "a" (core module $m0
                         (import "" "" (func))
                     ))
-        
+
                     (core module $m1
                         (func (export ""))
                     )
                     (core instance $i1 (instantiate (module $m1)))
                     (func $f (canon lift (core func $i1 "f")))
-        
+
                     (component $c1
                         (import "f" (func))
                         (core module $m2

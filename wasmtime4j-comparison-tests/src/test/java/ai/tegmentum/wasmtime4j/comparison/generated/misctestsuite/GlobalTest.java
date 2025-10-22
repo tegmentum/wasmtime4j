@@ -1,48 +1,41 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::global
  *
- * Original source: global.wast:1
- * Category: misc_testsuite
+ * <p>Original source: global.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class GlobalTest {
 
   @Test
   @DisplayName("misc_testsuite::global")
-  public void testGlobal() {
+  public void testGlobal() throws Exception {
     // WAT code from original Wasmtime test:
     // ;; Test globals
-    // 
+    //
     // (module
     //   (global (import "spectest" "global_i32") i32)
     //   (global (import "spectest" "global_i64") i64)
-    // 
+    //
     //   (global $a i32 (i32.const -2))
     //   (global $b i64 (i64.const -5))
     //   (global $3 f32 (f32.const -3))
     //   (global $4 f64 (f64.const -4))
-    // 
+    //
     //   (global $x (mut i32) (i32.const -12))
     //   (global $y (mut i64) (i64.const -15))
     //   (global $7 (mut f32) (f32.const -13))
     //   (global $8 (mut f64) (f64.const -14))
-    // 
+    //
     //   (global $z1 i32 (global.get 0))
     //   (global $z2 i64 (global.get 1))
-    // 
+    //
     //   (func (export "get-a") (result i32) (global.get $a))
     //   (func (export "get-b") (result i64) (global.get $b))
     //   (func (export "get-x") (result i32) (global.get $x))
@@ -51,20 +44,20 @@ public final class GlobalTest {
     //   (func (export "get-z2") (result i64) (global.get $z2))
     //   (func (export "set-x") (param i32) (global.set $x (local.get 0)))
     //   (func (export "set-y") (param i64) (global.set $y (local.get 0)))
-    // 
+    //
     //   (func (export "get-3") (result f32) (global.get $3))
     //   (func (export "get-4") (result f64) (global.get $4))
     //   (func (export "get-7") (result f32) (global.get $7))
     //   (func (export "get-8") (result f64) (global.get $8))
     //   (func (export "set-7") (param f32) (global.set $7 (local.get 0)))
     //   (func (export "set-8") (param f64) (global.set $8 (local.get 0)))
-    // 
+    //
     //   ;; As the argument of control constructs and instructions
-    // 
+    //
     //   (memory 1)
-    // 
+    //
     //   (func $dummy)
-    // 
+    //
     //   (func (export "as-loop-first") (result i32)
     //     (loop (result i32)
     //       (global.get $x) (call $dummy) (call $dummy)
@@ -80,7 +73,7 @@ public final class GlobalTest {
     //       (call $dummy) (call $dummy) (global.get $x)
     //     )
     //   )
-    // 
+    //
     //   (func (export "as-if-condition") (result i32)
     //     (if (result i32) (global.get $x)
     //       (then (call $dummy) (i32.const 2))
@@ -97,7 +90,7 @@ public final class GlobalTest {
     //       (then (i32.const 2)) (else (global.get $x))
     //     )
     //   )
-    // 
+    //
     //   (func (export "as-br_if-first") (result i32)
     //     (block (result i32)
     //       (br_if 0 (global.get $x) (i32.const 2))
@@ -110,7 +103,7 @@ public final class GlobalTest {
     //       (return (i32.const 3))
     //     )
     //   )
-    // 
+    //
     //   (func (export "as-br_table-first") (result i32)
     //     (block (result i32)
     //       (global.get $x) (i32.const 2) (br_table 0 0)
@@ -121,24 +114,24 @@ public final class GlobalTest {
     //       (i32.const 2) (global.get $x) (br_table 0 0)
     //     )
     //   )
-    // 
+    //
     //   (func $f (param i32) (result i32) (local.get 0))
     //   (func (export "as-call-value") (result i32)
     //     (call $f (global.get $x))
     //   )
-    // 
+    //
     //   (func (export "as-return-value") (result i32)
     //     (global.get $x) (return)
     //   )
-    // 
+    //
     //   (func (export "as-drop-operand")
     //     (drop (global.get $x))
     //   )
-    // 
+    //
     //   (func (export "as-br-value") (result i32)
     //     (block (result i32) (br 0 (global.get $x)))
     //   )
-    // 
+    //
     //   (func (export "as-local.set-value") (param i32) (result i32)
     //     (local.set 0 (global.get $x))
     //     (local.get 0)
@@ -150,7 +143,7 @@ public final class GlobalTest {
     //     (global.set $x (global.get $x))
     //     (global.get $x)
     //   )
-    // 
+    //
     //   (func (export "as-unary-operand") (result i32)
     //     (i32.eqz (global.get $x))
     //   )
@@ -164,7 +157,7 @@ public final class GlobalTest {
     //       (global.get 0) (i32.const 1)
     //     )
     //   )
-    // 
+    //
     //   (func (export "as-store-first")
     //     (global.get $x) (i32.const 1) (i32.store)
     //   )
@@ -175,48 +168,48 @@ public final class GlobalTest {
     //     (i32.load (global.get $x))
     //   )
     // )
-    // 
-    // 
+    //
+    //
     // (assert_return (invoke "get-a") (i32.const -2))
     // (assert_return (invoke "get-b") (i64.const -5))
     // (assert_return (invoke "get-x") (i32.const -12))
     // (assert_return (invoke "get-y") (i64.const -15))
     // (assert_return (invoke "get-z1") (i32.const 666))
     // (assert_return (invoke "get-z2") (i64.const 666))
-    // 
+    //
     // (assert_return (invoke "set-x" (i32.const 6)))
     // (assert_return (invoke "set-y" (i64.const 7)))
-    // 
+    //
     // (assert_return (invoke "get-x") (i32.const 6))
     // (assert_return (invoke "get-y") (i64.const 7))
-    // 
+    //
     // (assert_return (invoke "get-x") (i32.const 6))
     // (assert_return (invoke "get-y") (i64.const 7))
-    // 
+    //
     // (assert_return (invoke "as-loop-first") (i32.const 6))
     // (assert_return (invoke "as-loop-mid") (i32.const 6))
     // (assert_return (invoke "as-loop-last") (i32.const 6))
-    // 
+    //
     // (assert_return (invoke "as-if-condition") (i32.const 2))
     // (assert_return (invoke "as-if-then") (i32.const 6))
     // (assert_return (invoke "as-if-else") (i32.const 6))
-    // 
+    //
     // (assert_return (invoke "as-br_if-first") (i32.const 6))
     // (assert_return (invoke "as-br_if-last") (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-call-value") (i32.const 6))
-    // 
+    //
     // (assert_return (invoke "as-return-value") (i32.const 6))
     // (assert_return (invoke "as-br-value") (i32.const 6))
-    // 
+    //
     // (assert_return (invoke "as-local.set-value" (i32.const 1)) (i32.const 6))
     // (assert_return (invoke "as-local.tee-value" (i32.const 1)) (i32.const 6))
     // (assert_return (invoke "as-global.set-value") (i32.const 6))
-    // 
+    //
     // (assert_return (invoke "as-unary-operand") (i32.const 0))
     // (assert_return (invoke "as-binary-operand") (i32.const 36))
     // (assert_return (invoke "as-compare-operand") (i32.const 1))
-    // 
+    //
     // (assert_return (invoke "get-3") (f32.const -3))
     // (assert_return (invoke "get-4") (f64.const -4))
     // (assert_return (invoke "get-7") (f32.const -13))
@@ -226,34 +219,33 @@ public final class GlobalTest {
     // (assert_return (invoke "get-7") (f32.const 8))
     // (assert_return (invoke "get-8") (f64.const 9))
     // (assert_return (invoke "as-drop-operand"))
-    // 
+    //
     // (assert_return (invoke "as-br_table-first") (i32.const 6))
     // (assert_return (invoke "as-br_table-last") (i32.const 2))
-    // 
+    //
     // (assert_return (invoke "as-store-first"))
     // (assert_return (invoke "as-store-last"))
     // (assert_return (invoke "as-load-operand") (i32.const 1))
 
-    final String wat = """
-        ;; Test globals
-        
+    final String wat =
+        """
         (module
           (global (import "spectest" "global_i32") i32)
           (global (import "spectest" "global_i64") i64)
-        
+
           (global $a i32 (i32.const -2))
           (global $b i64 (i64.const -5))
           (global $3 f32 (f32.const -3))
           (global $4 f64 (f64.const -4))
-        
+
           (global $x (mut i32) (i32.const -12))
           (global $y (mut i64) (i64.const -15))
           (global $7 (mut f32) (f32.const -13))
           (global $8 (mut f64) (f64.const -14))
-        
+
           (global $z1 i32 (global.get 0))
           (global $z2 i64 (global.get 1))
-        
+
           (func (export "get-a") (result i32) (global.get $a))
           (func (export "get-b") (result i64) (global.get $b))
           (func (export "get-x") (result i32) (global.get $x))
@@ -262,20 +254,18 @@ public final class GlobalTest {
           (func (export "get-z2") (result i64) (global.get $z2))
           (func (export "set-x") (param i32) (global.set $x (local.get 0)))
           (func (export "set-y") (param i64) (global.set $y (local.get 0)))
-        
+
           (func (export "get-3") (result f32) (global.get $3))
           (func (export "get-4") (result f64) (global.get $4))
           (func (export "get-7") (result f32) (global.get $7))
           (func (export "get-8") (result f64) (global.get $8))
           (func (export "set-7") (param f32) (global.set $7 (local.get 0)))
           (func (export "set-8") (param f64) (global.set $8 (local.get 0)))
-        
-          ;; As the argument of control constructs and instructions
-        
+
           (memory 1)
-        
+
           (func $dummy)
-        
+
           (func (export "as-loop-first") (result i32)
             (loop (result i32)
               (global.get $x) (call $dummy) (call $dummy)
@@ -291,7 +281,7 @@ public final class GlobalTest {
               (call $dummy) (call $dummy) (global.get $x)
             )
           )
-        
+
           (func (export "as-if-condition") (result i32)
             (if (result i32) (global.get $x)
               (then (call $dummy) (i32.const 2))
@@ -308,7 +298,7 @@ public final class GlobalTest {
               (then (i32.const 2)) (else (global.get $x))
             )
           )
-        
+
           (func (export "as-br_if-first") (result i32)
             (block (result i32)
               (br_if 0 (global.get $x) (i32.const 2))
@@ -321,7 +311,7 @@ public final class GlobalTest {
               (return (i32.const 3))
             )
           )
-        
+
           (func (export "as-br_table-first") (result i32)
             (block (result i32)
               (global.get $x) (i32.const 2) (br_table 0 0)
@@ -332,24 +322,24 @@ public final class GlobalTest {
               (i32.const 2) (global.get $x) (br_table 0 0)
             )
           )
-        
+
           (func $f (param i32) (result i32) (local.get 0))
           (func (export "as-call-value") (result i32)
             (call $f (global.get $x))
           )
-        
+
           (func (export "as-return-value") (result i32)
             (global.get $x) (return)
           )
-        
+
           (func (export "as-drop-operand")
             (drop (global.get $x))
           )
-        
+
           (func (export "as-br-value") (result i32)
             (block (result i32) (br 0 (global.get $x)))
           )
-        
+
           (func (export "as-local.set-value") (param i32) (result i32)
             (local.set 0 (global.get $x))
             (local.get 0)
@@ -361,7 +351,7 @@ public final class GlobalTest {
             (global.set $x (global.get $x))
             (global.get $x)
           )
-        
+
           (func (export "as-unary-operand") (result i32)
             (i32.eqz (global.get $x))
           )
@@ -375,7 +365,7 @@ public final class GlobalTest {
               (global.get 0) (i32.const 1)
             )
           )
-        
+
           (func (export "as-store-first")
             (global.get $x) (i32.const 1) (i32.store)
           )
@@ -386,73 +376,119 @@ public final class GlobalTest {
             (i32.load (global.get $x))
           )
         )
-        
-        
-        (assert_return (invoke "get-a") (i32.const -2))
-        (assert_return (invoke "get-b") (i64.const -5))
-        (assert_return (invoke "get-x") (i32.const -12))
-        (assert_return (invoke "get-y") (i64.const -15))
-        (assert_return (invoke "get-z1") (i32.const 666))
-        (assert_return (invoke "get-z2") (i64.const 666))
-        
-        (assert_return (invoke "set-x" (i32.const 6)))
-        (assert_return (invoke "set-y" (i64.const 7)))
-        
-        (assert_return (invoke "get-x") (i32.const 6))
-        (assert_return (invoke "get-y") (i64.const 7))
-        
-        (assert_return (invoke "get-x") (i32.const 6))
-        (assert_return (invoke "get-y") (i64.const 7))
-        
-        (assert_return (invoke "as-loop-first") (i32.const 6))
-        (assert_return (invoke "as-loop-mid") (i32.const 6))
-        (assert_return (invoke "as-loop-last") (i32.const 6))
-        
-        (assert_return (invoke "as-if-condition") (i32.const 2))
-        (assert_return (invoke "as-if-then") (i32.const 6))
-        (assert_return (invoke "as-if-else") (i32.const 6))
-        
-        (assert_return (invoke "as-br_if-first") (i32.const 6))
-        (assert_return (invoke "as-br_if-last") (i32.const 2))
-        
-        (assert_return (invoke "as-call-value") (i32.const 6))
-        
-        (assert_return (invoke "as-return-value") (i32.const 6))
-        (assert_return (invoke "as-br-value") (i32.const 6))
-        
-        (assert_return (invoke "as-local.set-value" (i32.const 1)) (i32.const 6))
-        (assert_return (invoke "as-local.tee-value" (i32.const 1)) (i32.const 6))
-        (assert_return (invoke "as-global.set-value") (i32.const 6))
-        
-        (assert_return (invoke "as-unary-operand") (i32.const 0))
-        (assert_return (invoke "as-binary-operand") (i32.const 36))
-        (assert_return (invoke "as-compare-operand") (i32.const 1))
-        
-        (assert_return (invoke "get-3") (f32.const -3))
-        (assert_return (invoke "get-4") (f64.const -4))
-        (assert_return (invoke "get-7") (f32.const -13))
-        (assert_return (invoke "get-8") (f64.const -14))
-        (assert_return (invoke "set-7" (f32.const 8)))
-        (assert_return (invoke "set-8" (f64.const 9)))
-        (assert_return (invoke "get-7") (f32.const 8))
-        (assert_return (invoke "get-8") (f64.const 9))
-        (assert_return (invoke "as-drop-operand"))
-        
-        (assert_return (invoke "as-br_table-first") (i32.const 6))
-        (assert_return (invoke "as-br_table-last") (i32.const 2))
-        
-        (assert_return (invoke "as-store-first"))
-        (assert_return (invoke "as-store-last"))
-        (assert_return (invoke "as-load-operand") (i32.const 1))
     """;
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+    try (final ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner runner =
+        new ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner()) {
 
-    fail("Test not yet implemented - awaiting test framework completion");
+      // Create a spectest module that provides global_i32=666 and global_i64=666
+      final String spectestModule =
+          """
+          (module
+            (global (export "global_i32") i32 (i32.const 666))
+            (global (export "global_i64") i64 (i64.const 666))
+          )
+      """;
+
+      // Compile and instantiate the spectest module
+      final ai.tegmentum.wasmtime4j.Instance spectestInstance =
+          runner.compileAndInstantiate("spectest", spectestModule);
+
+      // Get the exported globals
+      final ai.tegmentum.wasmtime4j.WasmGlobal globalI32 =
+          spectestInstance
+              .getGlobal("global_i32")
+              .orElseThrow(() -> new AssertionError("global_i32 not found"));
+      final ai.tegmentum.wasmtime4j.WasmGlobal globalI64 =
+          spectestInstance
+              .getGlobal("global_i64")
+              .orElseThrow(() -> new AssertionError("global_i64 not found"));
+
+      // Define spectest globals so they can be imported by the main module
+      runner.defineGlobal("spectest", "global_i32", globalI32);
+      runner.defineGlobal("spectest", "global_i64", globalI64);
+
+      // Compile and instantiate the main module
+      runner.compileAndInstantiate(wat);
+
+      // Run all the assertions from the WAT file
+      // Test immutable globals
+      org.junit.jupiter.api.Assertions.assertEquals(-2, runner.invoke("get-a")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(-5L, runner.invoke("get-b")[0].asI64());
+      org.junit.jupiter.api.Assertions.assertEquals(-12, runner.invoke("get-x")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(-15L, runner.invoke("get-y")[0].asI64());
+
+      // Test globals initialized from imports
+      org.junit.jupiter.api.Assertions.assertEquals(666, runner.invoke("get-z1")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(666L, runner.invoke("get-z2")[0].asI64());
+
+      // Test mutable globals - set new values
+      runner.invoke("set-x", ai.tegmentum.wasmtime4j.WasmValue.i32(6));
+      runner.invoke("set-y", ai.tegmentum.wasmtime4j.WasmValue.i64(7));
+
+      // Verify values were set
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("get-x")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(7L, runner.invoke("get-y")[0].asI64());
+
+      // Test global usage in control flow
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-loop-first")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-loop-mid")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-loop-last")[0].asI32());
+
+      org.junit.jupiter.api.Assertions.assertEquals(2, runner.invoke("as-if-condition")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-if-then")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-if-else")[0].asI32());
+
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-br_if-first")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(2, runner.invoke("as-br_if-last")[0].asI32());
+
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-call-value")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-return-value")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(6, runner.invoke("as-br-value")[0].asI32());
+
+      org.junit.jupiter.api.Assertions.assertEquals(
+          6,
+          runner.invoke("as-local.set-value", ai.tegmentum.wasmtime4j.WasmValue.i32(1))[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(
+          6,
+          runner.invoke("as-local.tee-value", ai.tegmentum.wasmtime4j.WasmValue.i32(1))[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(
+          6, runner.invoke("as-global.set-value")[0].asI32());
+
+      org.junit.jupiter.api.Assertions.assertEquals(
+          0, runner.invoke("as-unary-operand")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(
+          36, runner.invoke("as-binary-operand")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(
+          1, runner.invoke("as-compare-operand")[0].asI32());
+
+      // Test floating-point globals
+      org.junit.jupiter.api.Assertions.assertEquals(
+          -3.0f, runner.invoke("get-3")[0].asF32(), 0.0001f);
+      org.junit.jupiter.api.Assertions.assertEquals(
+          -4.0, runner.invoke("get-4")[0].asF64(), 0.0001);
+      org.junit.jupiter.api.Assertions.assertEquals(
+          -13.0f, runner.invoke("get-7")[0].asF32(), 0.0001f);
+      org.junit.jupiter.api.Assertions.assertEquals(
+          -14.0, runner.invoke("get-8")[0].asF64(), 0.0001);
+
+      runner.invoke("set-7", ai.tegmentum.wasmtime4j.WasmValue.f32(8.0f));
+      runner.invoke("set-8", ai.tegmentum.wasmtime4j.WasmValue.f64(9.0));
+
+      org.junit.jupiter.api.Assertions.assertEquals(
+          8.0f, runner.invoke("get-7")[0].asF32(), 0.0001f);
+      org.junit.jupiter.api.Assertions.assertEquals(9.0, runner.invoke("get-8")[0].asF64(), 0.0001);
+
+      runner.invoke("as-drop-operand");
+
+      org.junit.jupiter.api.Assertions.assertEquals(
+          6, runner.invoke("as-br_table-first")[0].asI32());
+      org.junit.jupiter.api.Assertions.assertEquals(
+          2, runner.invoke("as-br_table-last")[0].asI32());
+
+      runner.invoke("as-store-first");
+      runner.invoke("as-store-last");
+      org.junit.jupiter.api.Assertions.assertEquals(1, runner.invoke("as-load-operand")[0].asI32());
+    }
   }
 }

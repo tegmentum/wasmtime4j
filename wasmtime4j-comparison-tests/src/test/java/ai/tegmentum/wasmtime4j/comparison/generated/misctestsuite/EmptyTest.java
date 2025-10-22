@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::empty
  *
- * Original source: empty.wast:1
- * Category: misc_testsuite
+ * <p>Original source: empty.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class EmptyTest {
 
@@ -25,12 +20,12 @@ public final class EmptyTest {
   public void testEmpty() {
     // WAT code from original Wasmtime test:
     // (module (func (export "empty")))
-    // 
+    //
     // (invoke "empty")
-    // 
+    //
     // (module binary
     //   "\00asm\01\00\00\00"    ;; module header
-    // 
+    //
     //   "\00"             ;; custom section id 0
     //   "\0e"             ;; section size
     //   "\04name"         ;; this is the `name` custom section
@@ -40,10 +35,10 @@ public final class EmptyTest {
     //   "\ff\ff\ff\ff\0f" ;; index == u32::MAX
     //   "\00"             ;; empty string name
     // )
-    // 
+    //
     // (module binary
     //   "\00asm\01\00\00\00"    ;; module header
-    // 
+    //
     //   "\00"             ;; custom section id 0
     //   "\10"             ;; section size
     //   "\04name"         ;; this is the `name` custom section
@@ -55,10 +50,10 @@ public final class EmptyTest {
     //   "\00"             ;; index == 0 (local)
     //   "\00"             ;; empty string name
     // )
-    // 
+    //
     // (module binary
     //   "\00asm\01\00\00\00"    ;; module header
-    // 
+    //
     //   "\00"             ;; custom section id 0
     //   "\10"             ;; section size
     //   "\04name"         ;; this is the `name` custom section
@@ -70,21 +65,22 @@ public final class EmptyTest {
     //   "\ff\ff\ff\ff\0f" ;; index == u32::MAX (local)
     //   "\00"             ;; empty string name
     // )
-    // 
+    //
     // ;; empty module
     // (module)
-    // 
+    //
     // ;; empty module with memory
     // (module (memory 1))
 
-    final String wat = """
+    final String wat =
+        """
         (module (func (export "empty")))
-        
+
         (invoke "empty")
-        
+
         (module binary
           "\\00asm\\01\\00\\00\\00"    ;; module header
-        
+
           "\\00"             ;; custom section id 0
           "\\0e"             ;; section size
           "\\04name"         ;; this is the `name` custom section
@@ -94,10 +90,10 @@ public final class EmptyTest {
           "\\ff\\ff\\ff\\ff\\0f" ;; index == u32::MAX
           "\\00"             ;; empty string name
         )
-        
+
         (module binary
           "\\00asm\\01\\00\\00\\00"    ;; module header
-        
+
           "\\00"             ;; custom section id 0
           "\\10"             ;; section size
           "\\04name"         ;; this is the `name` custom section
@@ -109,10 +105,10 @@ public final class EmptyTest {
           "\\00"             ;; index == 0 (local)
           "\\00"             ;; empty string name
         )
-        
+
         (module binary
           "\\00asm\\01\\00\\00\\00"    ;; module header
-        
+
           "\\00"             ;; custom section id 0
           "\\10"             ;; section size
           "\\04name"         ;; this is the `name` custom section
@@ -124,10 +120,10 @@ public final class EmptyTest {
           "\\ff\\ff\\ff\\ff\\0f" ;; index == u32::MAX (local)
           "\\00"             ;; empty string name
         )
-        
+
         ;; empty module
         (module)
-        
+
         ;; empty module with memory
         (module (memory 1))
     """;

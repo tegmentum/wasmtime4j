@@ -94,9 +94,7 @@ public final class CallImportManyArgsTest {
             // Validate each parameter matches expected value (1 through 10)
             for (int i = 0; i < 10; i++) {
               assertEquals(
-                  i + 1,
-                  params[i].asInt(),
-                  "Parameter " + (i + 1) + " should be " + (i + 1));
+                  i + 1, params[i].asInt(), "Parameter " + (i + 1) + " should be " + (i + 1));
             }
 
             return new WasmValue[] {};

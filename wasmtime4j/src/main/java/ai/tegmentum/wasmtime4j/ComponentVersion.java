@@ -38,9 +38,10 @@ public final class ComponentVersion implements Comparable<ComponentVersion> {
   // Simplified semver pattern to prevent ReDoS attacks
   // Pre-release and build metadata are validated separately after initial parse
   private static final Pattern VERSION_PATTERN =
-      Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)"
-          + "(?:-([0-9A-Za-z-.]+))?"
-          + "(?:\\+([0-9A-Za-z-.]+))?$");
+      Pattern.compile(
+          "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)"
+              + "(?:-([0-9A-Za-z-.]+))?"
+              + "(?:\\+([0-9A-Za-z-.]+))?$");
 
   private static final int MAX_VERSION_LENGTH = 256;
 

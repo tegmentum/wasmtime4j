@@ -217,8 +217,37 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Global cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement global definition
-    throw new UnsupportedOperationException("Global definition not yet implemented");
+
+    // Ensure we have Panama implementations
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(global instanceof PanamaGlobal)) {
+      throw new IllegalArgumentException("Global must be a PanamaGlobal");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaGlobal panamaGlobal = (PanamaGlobal) global;
+
+    // Allocate C strings for module name and global name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    // Call native function to define global
+    final int result =
+        NATIVE_BINDINGS.panamaLinkerDefineGlobal(
+            nativeLinker,
+            panamaStore.getNativeStore(),
+            moduleNamePtr,
+            namePtr,
+            panamaGlobal.getNativeGlobal());
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to define global: " + moduleName + "::" + name + " (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Defined global: " + moduleName + "::" + name);
   }
 
   @Override

@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::multi-memory
  *
- * Original source: multi-memory.wast:1
- * Category: misc_testsuite
+ * <p>Original source: multi-memory.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class MultiMemoryTest {
 
@@ -28,7 +23,7 @@ public final class MultiMemoryTest {
     // (module
     //   (memory $a i64 1)
     //   (memory $b i64 1)
-    // 
+    //
     //   (func (export "copy") (param i64 i64 i64)
     //       local.get 0
     //       local.get 1
@@ -39,12 +34,12 @@ public final class MultiMemoryTest {
     // (assert_trap
     //   (invoke "copy" (i64.const 0x1_0000_0000) (i64.const 0) (i64.const 0))
     //   "out of bounds memory access")
-    // 
+    //
     // ;; 32 => 64
     // (module
     //   (memory $a i32 1)
     //   (memory $b i64 1)
-    // 
+    //
     //   (func (export "copy") (param i32 i64 i32)
     //       local.get 0
     //       local.get 1
@@ -55,12 +50,12 @@ public final class MultiMemoryTest {
     // (assert_trap
     //   (invoke "copy" (i32.const 0) (i64.const 0x1_0000_0000) (i32.const 0))
     //   "out of bounds memory access")
-    // 
+    //
     // ;; 64 => 32
     // (module
     //   (memory $a i64 1)
     //   (memory $b i32 1)
-    // 
+    //
     //   (func (export "copy") (param i64 i32 i32)
     //       local.get 0
     //       local.get 1
@@ -72,12 +67,13 @@ public final class MultiMemoryTest {
     //   (invoke "copy" (i64.const 0x1_0000_0000) (i32.const 0) (i32.const 0))
     //   "out of bounds memory access")
 
-    final String wat = """
+    final String wat =
+        """
         ;; 64 => 64
         (module
           (memory $a i64 1)
           (memory $b i64 1)
-        
+
           (func (export "copy") (param i64 i64 i64)
               local.get 0
               local.get 1
@@ -88,12 +84,12 @@ public final class MultiMemoryTest {
         (assert_trap
           (invoke "copy" (i64.const 0x1_0000_0000) (i64.const 0) (i64.const 0))
           "out of bounds memory access")
-        
+
         ;; 32 => 64
         (module
           (memory $a i32 1)
           (memory $b i64 1)
-        
+
           (func (export "copy") (param i32 i64 i32)
               local.get 0
               local.get 1
@@ -104,12 +100,12 @@ public final class MultiMemoryTest {
         (assert_trap
           (invoke "copy" (i32.const 0) (i64.const 0x1_0000_0000) (i32.const 0))
           "out of bounds memory access")
-        
+
         ;; 64 => 32
         (module
           (memory $a i64 1)
           (memory $b i32 1)
-        
+
           (func (export "copy") (param i64 i32 i32)
               local.get 0
               local.get 1
@@ -120,7 +116,7 @@ public final class MultiMemoryTest {
         (assert_trap
           (invoke "copy" (i64.const 0x1_0000_0000) (i32.const 0) (i32.const 0))
           "out of bounds memory access")
-        
+
     """;
 
     // TODO: Implement equivalent wasmtime4j test logic

@@ -525,33 +525,26 @@ public final class JniInstance extends JniResource implements Instance {
 
     final JniStore jniStore = (JniStore) store;
 
-    // Convert WasmValue[] to Object[] for native call
-    final Object[] nativeParams = new Object[params.length];
-    for (int i = 0; i < params.length; i++) {
-      nativeParams[i] = params[i].getValue();
-    }
-
+    // Pass WasmValue array directly to preserve type information
+    // Native code now returns WasmValue[] directly, preserving type information
     final Object[] nativeResults =
-        nativeCallFunction(
-            getNativeHandle(), jniStore.getNativeHandle(), functionName, nativeParams);
+        nativeCallFunction(getNativeHandle(), jniStore.getNativeHandle(), functionName, params);
 
     if (nativeResults == null) {
       return new WasmValue[0];
     }
 
-    // Convert Object[] results back to WasmValue[]
+    // Cast to WasmValue[] - native code returns WasmValue objects directly
     final WasmValue[] results = new WasmValue[nativeResults.length];
     for (int i = 0; i < nativeResults.length; i++) {
-      if (nativeResults[i] instanceof Integer) {
-        results[i] = WasmValue.i32((Integer) nativeResults[i]);
-      } else if (nativeResults[i] instanceof Long) {
-        results[i] = WasmValue.i64((Long) nativeResults[i]);
-      } else if (nativeResults[i] instanceof Float) {
-        results[i] = WasmValue.f32((Float) nativeResults[i]);
-      } else if (nativeResults[i] instanceof Double) {
-        results[i] = WasmValue.f64((Double) nativeResults[i]);
+      if (nativeResults[i] instanceof WasmValue) {
+        results[i] = (WasmValue) nativeResults[i];
+      } else if (nativeResults[i] == null) {
+        // Null represents null externref or funcref - shouldn't happen with new approach
+        results[i] = WasmValue.externref(null);
       } else {
-        throw new WasmException("Unsupported return type: " + nativeResults[i].getClass());
+        throw new WasmException(
+            "Unexpected return type: " + nativeResults[i].getClass() + " at index " + i);
       }
     }
 

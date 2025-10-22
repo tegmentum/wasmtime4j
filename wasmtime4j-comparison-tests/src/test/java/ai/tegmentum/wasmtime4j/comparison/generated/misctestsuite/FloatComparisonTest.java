@@ -55,8 +55,7 @@ public final class FloatComparisonTest {
       // Execute assertion: (assert_return (invoke "d") (i32.const 0) (i32.const 1) (i32.const
       // 1111))
       runner.assertReturn(
-          "d",
-          new WasmValue[] {WasmValue.i32(0), WasmValue.i32(1), WasmValue.i32(1111)});
+          "d", new WasmValue[] {WasmValue.i32(0), WasmValue.i32(1), WasmValue.i32(1111)});
     }
   }
 }

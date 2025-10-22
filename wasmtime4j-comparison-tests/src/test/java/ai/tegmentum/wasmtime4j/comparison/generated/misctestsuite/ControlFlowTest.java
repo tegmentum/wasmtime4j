@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::control-flow
  *
- * Original source: control-flow.wast:1
- * Category: misc_testsuite
+ * <p>Original source: control-flow.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ControlFlowTest {
 
@@ -25,7 +20,7 @@ public final class ControlFlowTest {
   public void testControlFlow() {
     // WAT code from original Wasmtime test:
     // (module (func))
-    // 
+    //
     // (module
     //   (func (export "if-without-result") (param i32) (param i32) (result i32)
     //     (if
@@ -35,13 +30,13 @@ public final class ControlFlowTest {
     //       )
     //       (then (unreachable))
     //     )
-    // 
+    //
     //     (local.get 0)
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "if-without-result" (i32.const 2) (i32.const 3)) (i32.const 2))
-    // 
+    //
     // (module
     //   (func (export "block") (param i32) (param i32) (result i32)
     //     (block (result i32)
@@ -49,9 +44,9 @@ public final class ControlFlowTest {
     //     )
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "block" (i32.const 10) (i32.const 20)) (i32.const 10))
-    // 
+    //
     // (module
     //   (func (export "br_block") (param i32) (param i32) (result i32)
     //     local.get 1
@@ -64,9 +59,9 @@ public final class ControlFlowTest {
     //     i32.add
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "br_block" (i32.const 5) (i32.const 7)) (i32.const 12))
-    // 
+    //
     // ;; Tests discarding values on the value stack, while
     // ;; carrying over the result using a conditional branch.
     // (module
@@ -81,9 +76,9 @@ public final class ControlFlowTest {
     //     i32.add
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "brif_block" (i32.const 5) (i32.const 7)) (i32.const 12))
-    // 
+    //
     // ;; Tests that br_if keeps values in the case if the branch
     // ;; hasn't been taken.
     // (module
@@ -97,15 +92,15 @@ public final class ControlFlowTest {
     //     )
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "brif_block_passthru" (i32.const 0) (i32.const 3)) (i32.const 6))
-    // 
+    //
     // (module
     //   (func (export "i32.div_s") (param i32) (param i32) (result i32)
     //     (i32.div_s (local.get 0) (local.get 1))
     //   )
     // )
-    // 
+    //
     // (module
     //   (func (export "br_table") (param $i i32) (result i32)
     //     (return
@@ -130,7 +125,7 @@ public final class ControlFlowTest {
     //     )
     //   )
     // )
-    // 
+    //
     // (assert_return (invoke "br_table" (i32.const 0)) (i32.const 110))
     // (assert_return (invoke "br_table" (i32.const 1)) (i32.const 12))
     // (assert_return (invoke "br_table" (i32.const 2)) (i32.const 4))
@@ -141,9 +136,10 @@ public final class ControlFlowTest {
     // (assert_return (invoke "br_table" (i32.const 7)) (i32.const 1124))
     // (assert_return (invoke "br_table" (i32.const 8)) (i32.const 126))
 
-    final String wat = """
+    final String wat =
+        """
         (module (func))
-        
+
         (module
           (func (export "if-without-result") (param i32) (param i32) (result i32)
             (if
@@ -153,13 +149,13 @@ public final class ControlFlowTest {
               )
               (then (unreachable))
             )
-        
+
             (local.get 0)
           )
         )
-        
+
         (assert_return (invoke "if-without-result" (i32.const 2) (i32.const 3)) (i32.const 2))
-        
+
         (module
           (func (export "block") (param i32) (param i32) (result i32)
             (block (result i32)
@@ -167,9 +163,9 @@ public final class ControlFlowTest {
             )
           )
         )
-        
+
         (assert_return (invoke "block" (i32.const 10) (i32.const 20)) (i32.const 10))
-        
+
         (module
           (func (export "br_block") (param i32) (param i32) (result i32)
             local.get 1
@@ -182,9 +178,9 @@ public final class ControlFlowTest {
             i32.add
           )
         )
-        
+
         (assert_return (invoke "br_block" (i32.const 5) (i32.const 7)) (i32.const 12))
-        
+
         ;; Tests discarding values on the value stack, while
         ;; carrying over the result using a conditional branch.
         (module
@@ -199,9 +195,9 @@ public final class ControlFlowTest {
             i32.add
           )
         )
-        
+
         (assert_return (invoke "brif_block" (i32.const 5) (i32.const 7)) (i32.const 12))
-        
+
         ;; Tests that br_if keeps values in the case if the branch
         ;; hasn't been taken.
         (module
@@ -215,15 +211,15 @@ public final class ControlFlowTest {
             )
           )
         )
-        
+
         (assert_return (invoke "brif_block_passthru" (i32.const 0) (i32.const 3)) (i32.const 6))
-        
+
         (module
           (func (export "i32.div_s") (param i32) (param i32) (result i32)
             (i32.div_s (local.get 0) (local.get 1))
           )
         )
-        
+
         (module
           (func (export "br_table") (param $i i32) (result i32)
             (return
@@ -248,7 +244,7 @@ public final class ControlFlowTest {
             )
           )
         )
-        
+
         (assert_return (invoke "br_table" (i32.const 0)) (i32.const 110))
         (assert_return (invoke "br_table" (i32.const 1)) (i32.const 12))
         (assert_return (invoke "br_table" (i32.const 2)) (i32.const 4))

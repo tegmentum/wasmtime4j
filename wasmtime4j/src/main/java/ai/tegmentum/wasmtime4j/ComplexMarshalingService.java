@@ -342,28 +342,28 @@ public final class ComplexMarshalingService {
    * Only classes explicitly in the whitelist, or fundamental Java types, can be deserialized.
    */
   private static final class ValidatingObjectInputStream extends ObjectInputStream {
-    private static final Set<String> ALLOWED_CLASSES = new HashSet<>(
-        Arrays.asList(
-            // Fundamental Java types
-            "java.lang.String",
-            "java.lang.Integer",
-            "java.lang.Long",
-            "java.lang.Double",
-            "java.lang.Float",
-            "java.lang.Boolean",
-            "java.lang.Byte",
-            "java.lang.Short",
-            "java.lang.Character",
-            // Collections
-            "java.util.ArrayList",
-            "java.util.LinkedList",
-            "java.util.HashMap",
-            "java.util.LinkedHashMap",
-            "java.util.HashSet",
-            "java.util.LinkedHashSet",
-            // Project metadata classes
-            "ai.tegmentum.wasmtime4j.ComplexMarshalingService$ObjectMetadata"
-        ));
+    private static final Set<String> ALLOWED_CLASSES =
+        new HashSet<>(
+            Arrays.asList(
+                // Fundamental Java types
+                "java.lang.String",
+                "java.lang.Integer",
+                "java.lang.Long",
+                "java.lang.Double",
+                "java.lang.Float",
+                "java.lang.Boolean",
+                "java.lang.Byte",
+                "java.lang.Short",
+                "java.lang.Character",
+                // Collections
+                "java.util.ArrayList",
+                "java.util.LinkedList",
+                "java.util.HashMap",
+                "java.util.LinkedHashMap",
+                "java.util.HashSet",
+                "java.util.LinkedHashSet",
+                // Project metadata classes
+                "ai.tegmentum.wasmtime4j.ComplexMarshalingService$ObjectMetadata"));
 
     private final Class<?> expectedType;
 

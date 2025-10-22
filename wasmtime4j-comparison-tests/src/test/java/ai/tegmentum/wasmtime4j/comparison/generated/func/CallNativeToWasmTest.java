@@ -44,8 +44,7 @@ public final class CallNativeToWasmTest {
 
       // Expected results: (42, 420, 4200)
       runner.assertReturn(
-          "run",
-          new WasmValue[] {WasmValue.i32(42), WasmValue.i32(420), WasmValue.i32(4200)});
+          "run", new WasmValue[] {WasmValue.i32(42), WasmValue.i32(420), WasmValue.i32(4200)});
     }
   }
 }

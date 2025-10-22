@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::offsets
  *
- * Original source: offsets.wast:1
- * Category: misc_testsuite
+ * <p>Original source: offsets.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class OffsetsTest {
 
@@ -36,7 +31,8 @@ public final class OffsetsTest {
     // (assert_trap (invoke "load1") "out of bounds memory access")
     // (assert_trap (invoke "load2") "out of bounds memory access")
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (memory i64 1)
           (func (export "load1") (result i32)

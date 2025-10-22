@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::unaligned-load
  *
- * Original source: unaligned-load.wast:1
- * Category: misc_testsuite
+ * <p>Original source: unaligned-load.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class UnalignedLoadTest {
 
@@ -28,29 +23,30 @@ public final class UnalignedLoadTest {
     // (module
     //   (memory 1)
     //   (data (i32.const 1) "\01\00\00\00\01\00\00\00")
-    // 
+    //
     //   (func $unaligned_load (export "unaligned_load") (result v128)
     //     v128.const i32x4 0 0 1 1
     //     i32.const 1
     //     v128.load
     //     v128.xor)
     // )
-    // 
+    //
     // (assert_return (invoke "unaligned_load") (v128.const i32x4 1 1 1 1))
 
-    final String wat = """
+    final String wat =
+        """
         (; See discussion at https://github.com/bytecodealliance/wasmtime/issues/2943 ;)
         (module
           (memory 1)
           (data (i32.const 1) "\\01\\00\\00\\00\\01\\00\\00\\00")
-        
+
           (func $unaligned_load (export "unaligned_load") (result v128)
             v128.const i32x4 0 0 1 1
             i32.const 1
             v128.load
             v128.xor)
         )
-        
+
         (assert_return (invoke "unaligned_load") (v128.const i32x4 1 1 1 1))
     """;
 

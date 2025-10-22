@@ -269,8 +269,17 @@ public class JniLinker<T> implements Linker<T> {
     final JniInstance jniInstance = (JniInstance) instance;
     final long instanceHandle = jniInstance.getNativeHandle();
 
+    // Get the store from the instance
+    final Store store = jniInstance.getStore();
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+    final JniStore jniStore = (JniStore) store;
+    final long storeHandle = jniStore.getNativeHandle();
+
     try {
-      final boolean success = nativeDefineInstance(nativeHandle, moduleName, instanceHandle);
+      final boolean success =
+          nativeDefineInstance(nativeHandle, storeHandle, moduleName, instanceHandle);
 
       if (!success) {
         throw new WasmException("Failed to define instance: " + moduleName);
@@ -668,12 +677,13 @@ public class JniLinker<T> implements Linker<T> {
    * Defines an instance in the linker.
    *
    * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
    * @param moduleName the module name
    * @param instanceHandle the instance handle
    * @return true on success
    */
   private native boolean nativeDefineInstance(
-      long linkerHandle, String moduleName, long instanceHandle);
+      long linkerHandle, long storeHandle, String moduleName, long instanceHandle);
 
   /**
    * Instantiates a module using the linker.

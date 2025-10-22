@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::_simd_multivalue
  *
- * Original source: _simd_multivalue.wast:1
- * Category: misc_testsuite
+ * <p>Original source: _simd_multivalue.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class SimdMultivalueTest {
 
@@ -25,10 +20,13 @@ public final class SimdMultivalueTest {
   public void testSimdMultivalue() {
     // WAT code from original Wasmtime test:
     // ;; test that swapping the parameters results in swapped return values
-    // (module (func (export "f") (param v128) (param v128) (result v128) (result v128) (local.get 1) (local.get 0)))
-    // (assert_return (invoke "f" (v128.const i64x2 2 1) (v128.const i64x2 1 2)) (v128.const i64x2 1 2) (v128.const i64x2 2 1))
+    // (module (func (export "f") (param v128) (param v128) (result v128) (result v128) (local.get
+    // 1) (local.get 0)))
+    // (assert_return (invoke "f" (v128.const i64x2 2 1) (v128.const i64x2 1 2)) (v128.const i64x2 1
+    // 2) (v128.const i64x2 2 1))
 
-    final String wat = """
+    final String wat =
+        """
         ;; test that swapping the parameters results in swapped return values
         (module (func (export "f") (param v128) (param v128) (result v128) (result v128) (local.get 1) (local.get 0)))
         (assert_return (invoke "f" (v128.const i64x2 2 1) (v128.const i64x2 1 2)) (v128.const i64x2 1 2) (v128.const i64x2 2 1))

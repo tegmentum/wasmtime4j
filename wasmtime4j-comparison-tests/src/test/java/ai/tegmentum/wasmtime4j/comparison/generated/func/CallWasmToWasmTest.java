@@ -49,8 +49,7 @@ public final class CallWasmToWasmTest {
 
       // Call exported function and verify results: (1, 2, 3)
       runner.assertReturn(
-          "run",
-          new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)});
+          "run", new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)});
     }
   }
 }

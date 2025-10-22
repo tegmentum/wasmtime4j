@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.hostfuncs;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: host_funcs::call_via_funcref
  *
- * Original source: host_funcs.rs:628
- * Category: host_funcs
+ * <p>Original source: host_funcs.rs:628 Category: host_funcs
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallViaFuncrefTest {
 
@@ -32,7 +27,8 @@ public final class CallViaFuncrefTest {
     //                 (local.get 0)
     //             )
 
-    final String wat = """
+    final String wat =
+        """
         (table $t 1 funcref)
                     (type $add (func (param i32 i32) (result i32)))
                     (func (export "call") (param funcref) (result i32 funcref)

@@ -152,9 +152,9 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    // Return a PanamaGlobal that stores just the name
-    // The actual global will be looked up fresh for each operation
-    return Optional.of(new PanamaGlobal(name, this));
+    // TODO: Implement global export retrieval
+    // This requires getting the native global pointer from the instance
+    throw new UnsupportedOperationException("Global export retrieval not yet implemented");
   }
 
   @Override
@@ -1182,167 +1182,27 @@ public final class PanamaInstance implements Instance {
     }
   }
 
-  /**
-   * Gets the value of a global.
-   *
-   * @param global the global to get value from
-   * @return the global's value
-   */
-  WasmValue getGlobalValue(final PanamaGlobal global) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(global.getGlobalName(), java.nio.charset.StandardCharsets.UTF_8);
-
-      // Allocate output parameters
-      final MemorySegment i32Out = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment i64Out = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment f32Out = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment f64Out = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment refIdPresentOut = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment refIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
-
-      // Call native function
-      final int result =
-          NATIVE_BINDINGS.instanceGetGlobalValue(
-              nativeInstance,
-              store.getNativeStore(),
-              nameSegment,
-              i32Out,
-              i64Out,
-              f32Out,
-              f64Out,
-              refIdPresentOut,
-              refIdOut);
-
-      if (result != 0) {
-        throw new RuntimeException("Failed to get global value: error code " + result);
-      }
-
-      // Determine type if not yet set
-      WasmValueType type = global.getType();
-      if (type == null) {
-        // Fallback: use heuristic type detection (unreliable, only when type query fails)
-        LOGGER.warning(
-            "Type not set for global "
-                + global.getGlobalName()
-                + ", falling back to heuristic detection");
-
-        final int i32Val = i32Out.get(ValueLayout.JAVA_INT, 0);
-        final long i64Val = i64Out.get(ValueLayout.JAVA_LONG, 0);
-        final double f32Val = f32Out.get(ValueLayout.JAVA_DOUBLE, 0);
-        final double f64Val = f64Out.get(ValueLayout.JAVA_DOUBLE, 0);
-
-        // Heuristic: if i64 != i32 (sign-extended), it's probably I64
-        // If f32 or f64 differ significantly from zero, it's probably float
-        final double epsilon = 1e-10;
-        if (i64Val != (long) i32Val) {
-          type = WasmValueType.I64;
-        } else if (Math.abs(f32Val) > epsilon) {
-          type = WasmValueType.F32;
-        } else if (Math.abs(f64Val) > epsilon
-            && Math.abs(f64Val - (double) (float) f32Val) > epsilon) {
-          type = WasmValueType.F64;
-        } else {
-          // Default to I32
-          type = WasmValueType.I32;
-        }
-        global.setType(type);
-        LOGGER.warning("Heuristically detected global type as: " + type + " (may be incorrect)");
-      }
-
-      // Extract value based on type
-      switch (type) {
-        case I32:
-          return WasmValue.i32(i32Out.get(ValueLayout.JAVA_INT, 0));
-        case I64:
-          return WasmValue.i64(i64Out.get(ValueLayout.JAVA_LONG, 0));
-        case F32:
-          return WasmValue.f32((float) f32Out.get(ValueLayout.JAVA_DOUBLE, 0));
-        case F64:
-          return WasmValue.f64(f64Out.get(ValueLayout.JAVA_DOUBLE, 0));
-        case FUNCREF:
-          final int refPresent = refIdPresentOut.get(ValueLayout.JAVA_INT, 0);
-          return WasmValue.funcref(refPresent != 0 ? new Object() : null);
-        case EXTERNREF:
-          final int extRefPresent = refIdPresentOut.get(ValueLayout.JAVA_INT, 0);
-          return WasmValue.externref(extRefPresent != 0 ? new Object() : null);
-        default:
-          throw new IllegalStateException("Unsupported global type: " + type);
-      }
-    }
-  }
-
-  /**
-   * Sets the value of a global.
-   *
-   * @param global the global to set value for
-   * @param value the value to set
-   */
-  void setGlobalValue(final PanamaGlobal global, final WasmValue value) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(global.getGlobalName(), java.nio.charset.StandardCharsets.UTF_8);
-
-      // Convert WasmValue to native parameters
-      int valueTypeCode;
-      int i32Value = 0;
-      long i64Value = 0;
-      double f32Value = 0.0;
-      double f64Value = 0.0;
-      int refIdPresent = 0;
-      long refId = 0;
-
-      final WasmValueType type = value.getType();
-      switch (type) {
-        case I32:
-          valueTypeCode = 0;
-          i32Value = value.asI32();
-          break;
-        case I64:
-          valueTypeCode = 1;
-          i64Value = value.asI64();
-          break;
-        case F32:
-          valueTypeCode = 2;
-          f32Value = value.asF32();
-          break;
-        case F64:
-          valueTypeCode = 3;
-          f64Value = value.asF64();
-          break;
-        case FUNCREF:
-          valueTypeCode = 5;
-          final Object funcRef = value.asFuncref();
-          refIdPresent = (funcRef != null) ? 1 : 0;
-          break;
-        case EXTERNREF:
-          valueTypeCode = 6;
-          final Object extRef = value.asExternref();
-          refIdPresent = (extRef != null) ? 1 : 0;
-          break;
-        default:
-          throw new IllegalStateException("Unsupported global type: " + type);
-      }
-
-      // Call native function
-      final int result =
-          NATIVE_BINDINGS.instanceSetGlobalValue(
-              nativeInstance,
-              store.getNativeStore(),
-              nameSegment,
-              valueTypeCode,
-              i32Value,
-              i64Value,
-              f32Value,
-              f64Value,
-              refIdPresent,
-              refId);
-
-      if (result != 0) {
-        throw new RuntimeException("Failed to set global value: error code " + result);
-      }
-    }
-  }
+  // TODO: Global delegation methods not yet implemented
+  // These methods were used by the old PanamaGlobal implementation which delegated
+  // get/set operations to the instance. The new PanamaGlobal uses native handles directly.
+  //
+  // /**
+  //  * Gets the value of a global.
+  //  *
+  //  * @param global the global to get value from
+  //  * @return the global's value
+  //  */
+  // WasmValue getGlobalValue(final PanamaGlobal global) {
+  //   throw new UnsupportedOperationException("Global delegation not yet implemented");
+  // }
+  //
+  // /**
+  //  * Sets the value of a global.
+  //  *
+  //  * @param global the global to set value for
+  //  * @param value the value to set
+  //  */
+  // void setGlobalValue(final PanamaGlobal global, final WasmValue value) {
+  //   throw new UnsupportedOperationException("Global delegation not yet implemented");
+  // }
 }

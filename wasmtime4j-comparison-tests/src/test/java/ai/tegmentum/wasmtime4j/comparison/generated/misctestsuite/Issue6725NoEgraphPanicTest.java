@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::issue6725-no-egraph-panic
  *
- * Original source: issue6725-no-egraph-panic.wast:1
- * Category: misc_testsuite
+ * <p>Original source: issue6725-no-egraph-panic.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class Issue6725NoEgraphPanicTest {
 
@@ -31,7 +26,7 @@ public final class Issue6725NoEgraphPanicTest {
     //     v128.or
     //   )
     // )
-    // 
+    //
     // (module
     //   (func (result v128)
     //     (local v128)
@@ -42,7 +37,8 @@ public final class Issue6725NoEgraphPanicTest {
     //   )
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (param v128) (result v128)
             (i8x16.eq (local.get 0) (local.get 0))
@@ -50,7 +46,7 @@ public final class Issue6725NoEgraphPanicTest {
             v128.or
           )
         )
-        
+
         (module
           (func (result v128)
             (local v128)

@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::issue1809
  *
- * Original source: issue1809.wast:1
- * Category: misc_testsuite
+ * <p>Original source: issue1809.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class Issue1809Test {
 
@@ -102,7 +97,8 @@ public final class Issue1809Test {
     //         (i32.const 16)))
     //     (local.get $l0))
     //   (func $f3 (type $t2) (param $p0 i32) (result i32)
-    //     (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32)
+    //     (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local
+    // $l6 i32)
     //     (if $I0
     //       (local.tee $l1
     //         (i32.load
@@ -353,7 +349,8 @@ public final class Issue1809Test {
     //           (unreachable))))
     //     (i32.const 0))
     //   (func $f4 (type $t1) (param $p0 i32)
-    //     (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32) (local $l7 i32)
+    //     (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local
+    // $l6 i32) (local $l7 i32)
     //     (if $I0
     //       (local.get $p0)
     //       (then
@@ -510,7 +507,8 @@ public final class Issue1809Test {
     //   (global $__data_efd (export "__data_efd") i32 (i32.const 1048580))
     //   (global $__heap_bare (export "__heap_bare") i32 (i32.const 1048580)))
 
-    final String wat = """
+    final String wat =
+        """
         (module
           (type $t0 (func (result i32)))
           (type $t1 (func (param i32)))

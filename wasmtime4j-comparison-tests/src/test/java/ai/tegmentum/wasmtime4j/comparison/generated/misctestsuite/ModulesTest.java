@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::modules
  *
- * Original source: modules.wast:1
- * Category: misc_testsuite
+ * <p>Original source: modules.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class ModulesTest {
 
@@ -27,14 +22,14 @@ public final class ModulesTest {
     // (component $foo
     //   (core module (export "a-module"))
     // )
-    // 
+    //
     // ;; the above instance can be imported into this component
     // (component
     //   (import "foo" (instance
     //     (export "a-module" (core module))
     //   ))
     // )
-    // 
+    //
     // ;; specifying extra imports is ok
     // (component
     //   (import "foo" (instance
@@ -43,7 +38,7 @@ public final class ModulesTest {
     //     ))
     //   ))
     // )
-    // 
+    //
     // ;; specifying extra exports is not ok
     // (assert_unlinkable
     //   (component
@@ -54,13 +49,13 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "module export `the-export` not defined")
-    // 
+    //
     // (component $foo
     //   (core module (export "a-module")
     //     (import "env" "something" (func))
     //   )
     // )
-    // 
+    //
     // ;; imports must be specified
     // (assert_unlinkable
     //   (component
@@ -69,7 +64,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "module import `env::something` not defined")
-    // 
+    //
     // (component
     //   (import "foo" (instance
     //     (export "a-module" (core module
@@ -77,7 +72,7 @@ public final class ModulesTest {
     //     ))
     //   ))
     // )
-    // 
+    //
     // ;; extra imports still ok
     // (component
     //   (import "foo" (instance
@@ -87,20 +82,20 @@ public final class ModulesTest {
     //     ))
     //   ))
     // )
-    // 
+    //
     // (component $foo
     //   (core module (export "a-module")
     //     (func (export "f"))
     //   )
     // )
-    // 
+    //
     // ;; dropping exports is ok
     // (component
     //   (import "foo" (instance
     //     (export "a-module" (core module))
     //   ))
     // )
-    // 
+    //
     // (component
     //   (import "foo" (instance
     //     (export "a-module" (core module
@@ -108,7 +103,7 @@ public final class ModulesTest {
     //     ))
     //   ))
     // )
-    // 
+    //
     // (assert_unlinkable
     //   (component
     //     (import "foo" (instance
@@ -118,7 +113,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "expected type `(func (param i32))`, found type `(func)`")
-    // 
+    //
     // (assert_unlinkable
     //   (component
     //     (import "foo" (instance
@@ -128,7 +123,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "expected global found func")
-    // 
+    //
     // (component $foo
     //   (core module (export "m")
     //     (func (export "f"))
@@ -137,7 +132,7 @@ public final class ModulesTest {
     //     (global (export "g") i32 i32.const 0)
     //   )
     // )
-    // 
+    //
     // ;; wrong class of item
     // (assert_unlinkable
     //   (component
@@ -167,7 +162,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "expected func found global")
-    // 
+    //
     // ;; wrong item type
     // (assert_unlinkable
     //   (component
@@ -211,7 +206,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "export `g` has the wrong type")
-    // 
+    //
     // ;; subtyping ok
     // (component
     //   (import "foo" (instance
@@ -221,14 +216,14 @@ public final class ModulesTest {
     //     ))
     //   ))
     // )
-    // 
+    //
     // (component $foo
     //   (core module (export "f") (func (import "" "")))
     //   (core module (export "t") (table (import "" "") 1 funcref))
     //   (core module (export "m") (memory (import "" "") 1))
     //   (core module (export "g") (global (import "" "") i32))
     // )
-    // 
+    //
     // ;; wrong class of item
     // (assert_unlinkable
     //   (component
@@ -258,7 +253,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "expected global found func")
-    // 
+    //
     // ;; wrong item type
     // (assert_unlinkable
     //   (component
@@ -302,7 +297,7 @@ public final class ModulesTest {
     //     ))
     //   )
     //   "module import `::` has the wrong type")
-    // 
+    //
     // ;; subtyping ok, but in the opposite direction of imports
     // (component
     //   (import "foo" (instance
@@ -310,7 +305,7 @@ public final class ModulesTest {
     //     (export "m" (core module (import "" "" (memory 2))))
     //   ))
     // )
-    // 
+    //
     // ;; An instance can reexport a module, define a module, and everything can be
     // ;; used by something else
     // (component $src
@@ -318,7 +313,7 @@ public final class ModulesTest {
     //     (global (export "g") i32 i32.const 2)
     //   )
     // )
-    // 
+    //
     // (component $reexport
     //   (core module $m1
     //     (global (export "g") i32 i32.const 1)
@@ -326,16 +321,16 @@ public final class ModulesTest {
     //   (import "src" (instance $src
     //     (export "m" (core module (export "g" (global i32))))
     //   ))
-    // 
+    //
     //   (core module $m3
     //     (global (export "g") i32 i32.const 3)
     //   )
-    // 
+    //
     //   (export "m1" (core module $m1))
     //   (export "m2" (core module $src "m"))
     //   (export "m3" (core module $m3))
     // )
-    // 
+    //
     // (component
     //   (core type $modulety (module (export "g" (global i32))))
     //   (import "reexport" (instance $reexport
@@ -343,12 +338,12 @@ public final class ModulesTest {
     //     (export "m2" (core module (type $modulety)))
     //     (export "m3" (core module (type $modulety)))
     //   ))
-    // 
+    //
     //   (core module $assert_ok
     //     (import "m1" "g" (global $m1 i32))
     //     (import "m2" "g" (global $m2 i32))
     //     (import "m3" "g" (global $m3 i32))
-    // 
+    //
     //     (func $assert_ok
     //       block
     //         global.get $m1
@@ -372,21 +367,21 @@ public final class ModulesTest {
     //         unreachable
     //       end
     //     )
-    // 
+    //
     //     (start $assert_ok)
     //   )
-    // 
+    //
     //   (core instance $m1 (instantiate (module $reexport "m1")))
     //   (core instance $m2 (instantiate (module $reexport "m2")))
     //   (core instance $m3 (instantiate (module $reexport "m3")))
-    // 
+    //
     //   (core instance (instantiate $assert_ok
     //     (with "m1" (instance $m1))
     //     (with "m2" (instance $m2))
     //     (with "m3" (instance $m3))
     //   ))
     // )
-    // 
+    //
     // ;; order of imports and exports can be shuffled between definition site and
     // ;; use-site
     // (component $provider
@@ -395,12 +390,12 @@ public final class ModulesTest {
     //     (import "" "2" (global $i2 i32))
     //     (import "" "3" (global $i3 i32))
     //     (import "" "4" (global $i4 i32))
-    // 
+    //
     //     (global $g1 i32 i32.const 100)
     //     (global $g2 i32 i32.const 101)
     //     (global $g3 i32 i32.const 102)
     //     (global $g4 i32 i32.const 103)
-    // 
+    //
     //     (func $assert_imports
     //       (block
     //         global.get $i1
@@ -427,16 +422,16 @@ public final class ModulesTest {
     //         br_if 0
     //         unreachable)
     //     )
-    // 
+    //
     //     (start $assert_imports)
-    // 
+    //
     //     (export "g1" (global $g1))
     //     (export "g2" (global $g2))
     //     (export "g3" (global $g3))
     //     (export "g4" (global $g4))
     //   )
     // )
-    // 
+    //
     // (component
     //   (import "provider" (instance $provider
     //     (export "m" (core module
@@ -444,14 +439,14 @@ public final class ModulesTest {
     //       (import "" "3" (global i32))
     //       (import "" "2" (global i32))
     //       (import "" "1" (global i32))
-    // 
+    //
     //       (export "g4" (global i32))
     //       (export "g3" (global i32))
     //       (export "g2" (global i32))
     //       (export "g1" (global i32))
     //     ))
     //   ))
-    // 
+    //
     //   (core module $imports
     //     (global (export "1") i32 (i32.const 1))
     //     (global (export "3") i32 (i32.const 3))
@@ -462,13 +457,13 @@ public final class ModulesTest {
     //   (core instance $m (instantiate (module $provider "m")
     //     (with "" (instance $imports))
     //   ))
-    // 
+    //
     //   (core module $import_globals
     //     (import "" "g4" (global $g4 i32))
     //     (import "" "g3" (global $g3 i32))
     //     (import "" "g2" (global $g2 i32))
     //     (import "" "g1" (global $g1 i32))
-    // 
+    //
     //     (func $assert_imports
     //       (block
     //         global.get $g1
@@ -495,25 +490,26 @@ public final class ModulesTest {
     //         br_if 0
     //         unreachable)
     //     )
-    // 
+    //
     //     (start $assert_imports)
     //   )
-    // 
+    //
     //   (core instance (instantiate $import_globals (with "" (instance $m))))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (component $foo
           (core module (export "a-module"))
         )
-        
+
         ;; the above instance can be imported into this component
         (component
           (import "foo" (instance
             (export "a-module" (core module))
           ))
         )
-        
+
         ;; specifying extra imports is ok
         (component
           (import "foo" (instance
@@ -522,7 +518,7 @@ public final class ModulesTest {
             ))
           ))
         )
-        
+
         ;; specifying extra exports is not ok
         (assert_unlinkable
           (component
@@ -533,13 +529,13 @@ public final class ModulesTest {
             ))
           )
           "module export `the-export` not defined")
-        
+
         (component $foo
           (core module (export "a-module")
             (import "env" "something" (func))
           )
         )
-        
+
         ;; imports must be specified
         (assert_unlinkable
           (component
@@ -548,7 +544,7 @@ public final class ModulesTest {
             ))
           )
           "module import `env::something` not defined")
-        
+
         (component
           (import "foo" (instance
             (export "a-module" (core module
@@ -556,7 +552,7 @@ public final class ModulesTest {
             ))
           ))
         )
-        
+
         ;; extra imports still ok
         (component
           (import "foo" (instance
@@ -566,20 +562,20 @@ public final class ModulesTest {
             ))
           ))
         )
-        
+
         (component $foo
           (core module (export "a-module")
             (func (export "f"))
           )
         )
-        
+
         ;; dropping exports is ok
         (component
           (import "foo" (instance
             (export "a-module" (core module))
           ))
         )
-        
+
         (component
           (import "foo" (instance
             (export "a-module" (core module
@@ -587,7 +583,7 @@ public final class ModulesTest {
             ))
           ))
         )
-        
+
         (assert_unlinkable
           (component
             (import "foo" (instance
@@ -597,7 +593,7 @@ public final class ModulesTest {
             ))
           )
           "expected type `(func (param i32))`, found type `(func)`")
-        
+
         (assert_unlinkable
           (component
             (import "foo" (instance
@@ -607,7 +603,7 @@ public final class ModulesTest {
             ))
           )
           "expected global found func")
-        
+
         (component $foo
           (core module (export "m")
             (func (export "f"))
@@ -616,7 +612,7 @@ public final class ModulesTest {
             (global (export "g") i32 i32.const 0)
           )
         )
-        
+
         ;; wrong class of item
         (assert_unlinkable
           (component
@@ -646,7 +642,7 @@ public final class ModulesTest {
             ))
           )
           "expected func found global")
-        
+
         ;; wrong item type
         (assert_unlinkable
           (component
@@ -690,7 +686,7 @@ public final class ModulesTest {
             ))
           )
           "export `g` has the wrong type")
-        
+
         ;; subtyping ok
         (component
           (import "foo" (instance
@@ -700,14 +696,14 @@ public final class ModulesTest {
             ))
           ))
         )
-        
+
         (component $foo
           (core module (export "f") (func (import "" "")))
           (core module (export "t") (table (import "" "") 1 funcref))
           (core module (export "m") (memory (import "" "") 1))
           (core module (export "g") (global (import "" "") i32))
         )
-        
+
         ;; wrong class of item
         (assert_unlinkable
           (component
@@ -737,7 +733,7 @@ public final class ModulesTest {
             ))
           )
           "expected global found func")
-        
+
         ;; wrong item type
         (assert_unlinkable
           (component
@@ -781,7 +777,7 @@ public final class ModulesTest {
             ))
           )
           "module import `::` has the wrong type")
-        
+
         ;; subtyping ok, but in the opposite direction of imports
         (component
           (import "foo" (instance
@@ -789,7 +785,7 @@ public final class ModulesTest {
             (export "m" (core module (import "" "" (memory 2))))
           ))
         )
-        
+
         ;; An instance can reexport a module, define a module, and everything can be
         ;; used by something else
         (component $src
@@ -797,7 +793,7 @@ public final class ModulesTest {
             (global (export "g") i32 i32.const 2)
           )
         )
-        
+
         (component $reexport
           (core module $m1
             (global (export "g") i32 i32.const 1)
@@ -805,16 +801,16 @@ public final class ModulesTest {
           (import "src" (instance $src
             (export "m" (core module (export "g" (global i32))))
           ))
-        
+
           (core module $m3
             (global (export "g") i32 i32.const 3)
           )
-        
+
           (export "m1" (core module $m1))
           (export "m2" (core module $src "m"))
           (export "m3" (core module $m3))
         )
-        
+
         (component
           (core type $modulety (module (export "g" (global i32))))
           (import "reexport" (instance $reexport
@@ -822,12 +818,12 @@ public final class ModulesTest {
             (export "m2" (core module (type $modulety)))
             (export "m3" (core module (type $modulety)))
           ))
-        
+
           (core module $assert_ok
             (import "m1" "g" (global $m1 i32))
             (import "m2" "g" (global $m2 i32))
             (import "m3" "g" (global $m3 i32))
-        
+
             (func $assert_ok
               block
                 global.get $m1
@@ -851,21 +847,21 @@ public final class ModulesTest {
                 unreachable
               end
             )
-        
+
             (start $assert_ok)
           )
-        
+
           (core instance $m1 (instantiate (module $reexport "m1")))
           (core instance $m2 (instantiate (module $reexport "m2")))
           (core instance $m3 (instantiate (module $reexport "m3")))
-        
+
           (core instance (instantiate $assert_ok
             (with "m1" (instance $m1))
             (with "m2" (instance $m2))
             (with "m3" (instance $m3))
           ))
         )
-        
+
         ;; order of imports and exports can be shuffled between definition site and
         ;; use-site
         (component $provider
@@ -874,12 +870,12 @@ public final class ModulesTest {
             (import "" "2" (global $i2 i32))
             (import "" "3" (global $i3 i32))
             (import "" "4" (global $i4 i32))
-        
+
             (global $g1 i32 i32.const 100)
             (global $g2 i32 i32.const 101)
             (global $g3 i32 i32.const 102)
             (global $g4 i32 i32.const 103)
-        
+
             (func $assert_imports
               (block
                 global.get $i1
@@ -906,16 +902,16 @@ public final class ModulesTest {
                 br_if 0
                 unreachable)
             )
-        
+
             (start $assert_imports)
-        
+
             (export "g1" (global $g1))
             (export "g2" (global $g2))
             (export "g3" (global $g3))
             (export "g4" (global $g4))
           )
         )
-        
+
         (component
           (import "provider" (instance $provider
             (export "m" (core module
@@ -923,14 +919,14 @@ public final class ModulesTest {
               (import "" "3" (global i32))
               (import "" "2" (global i32))
               (import "" "1" (global i32))
-        
+
               (export "g4" (global i32))
               (export "g3" (global i32))
               (export "g2" (global i32))
               (export "g1" (global i32))
             ))
           ))
-        
+
           (core module $imports
             (global (export "1") i32 (i32.const 1))
             (global (export "3") i32 (i32.const 3))
@@ -941,13 +937,13 @@ public final class ModulesTest {
           (core instance $m (instantiate (module $provider "m")
             (with "" (instance $imports))
           ))
-        
+
           (core module $import_globals
             (import "" "g4" (global $g4 i32))
             (import "" "g3" (global $g3 i32))
             (import "" "g2" (global $g2 i32))
             (import "" "g1" (global $g1 i32))
-        
+
             (func $assert_imports
               (block
                 global.get $g1
@@ -974,10 +970,10 @@ public final class ModulesTest {
                 br_if 0
                 unreachable)
             )
-        
+
             (start $assert_imports)
           )
-        
+
           (core instance (instantiate $import_globals (with "" (instance $m))))
         )
     """;

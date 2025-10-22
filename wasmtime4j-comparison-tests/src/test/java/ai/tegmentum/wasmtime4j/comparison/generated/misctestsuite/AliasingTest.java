@@ -2,21 +2,16 @@ package ai.tegmentum.wasmtime4j.comparison.generated.misctestsuite;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: misc_testsuite::aliasing
  *
- * Original source: aliasing.wast:1
- * Category: misc_testsuite
+ * <p>Original source: aliasing.wast:1 Category: misc_testsuite
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class AliasingTest {
 
@@ -34,27 +29,28 @@ public final class AliasingTest {
     //     (instance (instantiate 0))
     //     (export "a" (instance 0))
     //   )
-    // 
+    //
     //   (instance (instantiate 0))       ;; instance 0
     //   (alias export 0 "a" (instance))  ;; instance 1
     //   (export "a" (instance 1))        ;; instance 2
     //   (alias export 2 "a" (instance))  ;; instance 3
     //   (export "inner-a" (instance 3))  ;; instance 4
     // )
-    // 
+    //
     // (component
     //   (component
     //     (core module)
     //     (export "a" (core module 0))
     //   )
-    // 
+    //
     //   (instance (instantiate 0))
     //   (alias export 0 "a" (core module))  ;; module 0
     //   (export "a" (core module 0))        ;; module 1
     //   (core instance (instantiate 1))
     // )
 
-    final String wat = """
+    final String wat =
+        """
         (component
           (component
             (component
@@ -65,20 +61,20 @@ public final class AliasingTest {
             (instance (instantiate 0))
             (export "a" (instance 0))
           )
-        
+
           (instance (instantiate 0))       ;; instance 0
           (alias export 0 "a" (instance))  ;; instance 1
           (export "a" (instance 1))        ;; instance 2
           (alias export 2 "a" (instance))  ;; instance 3
           (export "inner-a" (instance 3))  ;; instance 4
         )
-        
+
         (component
           (component
             (core module)
             (export "a" (core module 0))
           )
-        
+
           (instance (instantiate 0))
           (alias export 0 "a" (core module))  ;; module 0
           (export "a" (core module 0))        ;; module 1

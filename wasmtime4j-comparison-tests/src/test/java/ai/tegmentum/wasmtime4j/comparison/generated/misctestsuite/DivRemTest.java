@@ -99,10 +99,7 @@ public final class DivRemTest {
     try (final WastTestRunner runner = new WastTestRunner()) {
       runner.compileAndInstantiate(wat3);
       runner.assertReturn(
-          "i64.div_s",
-          new WasmValue[] {WasmValue.i64(1L)},
-          WasmValue.i64(-1L),
-          WasmValue.i64(-1L));
+          "i64.div_s", new WasmValue[] {WasmValue.i64(1L)}, WasmValue.i64(-1L), WasmValue.i64(-1L));
     }
 
     // Test i64.rem_s: 123121 % -1 = 0

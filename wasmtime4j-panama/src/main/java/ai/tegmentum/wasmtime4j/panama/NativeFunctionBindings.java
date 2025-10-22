@@ -1684,6 +1684,68 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Sets a WebAssembly global value using WasmValue (Panama FFI version).
+   *
+   * @param globalPtr pointer to the global
+   * @param storePtr pointer to the store
+   * @param value the value to set
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaGlobalSet(
+      final MemorySegment globalPtr, final MemorySegment storePtr, final WasmValue value) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(storePtr, "storePtr");
+
+    // Extract value components
+    int i32Value = 0;
+    long i64Value = 0;
+    double f32Value = 0.0;
+    double f64Value = 0.0;
+    int refIdPresent = 0;
+    long refId = 0;
+
+    switch (value.getType()) {
+      case I32:
+        i32Value = value.asI32();
+        break;
+      case I64:
+        i64Value = value.asI64();
+        break;
+      case F32:
+        f32Value = value.asF32();
+        break;
+      case F64:
+        f64Value = value.asF64();
+        break;
+      case FUNCREF:
+        if (value.asFuncref() != null) {
+          refIdPresent = 1;
+          refId = ((Long) value.asFuncref()).longValue();
+        }
+        break;
+      case EXTERNREF:
+        if (value.asExternref() != null) {
+          refIdPresent = 1;
+          refId = ((Long) value.asExternref()).longValue();
+        }
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported value type: " + value.getType());
+    }
+
+    return panamaGlobalSet(
+        globalPtr,
+        storePtr,
+        value.getType().toNativeTypeCode(),
+        i32Value,
+        i64Value,
+        f32Value,
+        f64Value,
+        refIdPresent,
+        refId);
+  }
+
+  /**
    * Gets type information for a WebAssembly global.
    *
    * @param globalPtr pointer to the global
@@ -1705,6 +1767,115 @@ public final class NativeFunctionBindings {
         globalPtr,
         typeInfoOutPtr,
         mutabilityOutPtr);
+  }
+
+  /**
+   * Creates a new WebAssembly global with a WasmValue (Panama FFI version).
+   *
+   * @param storePtr pointer to the store
+   * @param valueType the value type (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FuncRef, 6=ExternRef)
+   * @param mutability mutability flag (0=const, 1=var)
+   * @param value the initial value
+   * @param namePtr optional name pointer (can be null)
+   * @param globalPtrPtr pointer to store the created global pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaGlobalCreate(
+      final MemorySegment storePtr,
+      final int valueType,
+      final int mutability,
+      final WasmValue value,
+      final MemorySegment namePtr,
+      final MemorySegment globalPtrPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(globalPtrPtr, "globalPtrPtr");
+
+    // Extract value components
+    int i32Value = 0;
+    long i64Value = 0;
+    double f32Value = 0.0;
+    double f64Value = 0.0;
+    int refIdPresent = 0;
+    long refId = 0;
+
+    switch (value.getType()) {
+      case I32:
+        i32Value = value.asI32();
+        break;
+      case I64:
+        i64Value = value.asI64();
+        break;
+      case F32:
+        f32Value = value.asF32();
+        break;
+      case F64:
+        f64Value = value.asF64();
+        break;
+      case FUNCREF:
+        if (value.asFuncref() != null) {
+          refIdPresent = 1;
+          refId = ((Long) value.asFuncref()).longValue();
+        }
+        break;
+      case EXTERNREF:
+        if (value.asExternref() != null) {
+          refIdPresent = 1;
+          refId = ((Long) value.asExternref()).longValue();
+        }
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported value type: " + value.getType());
+    }
+
+    return callNativeFunction(
+        "wasmtime4j_panama_global_create",
+        Integer.class,
+        storePtr,
+        valueType,
+        mutability,
+        i32Value,
+        i64Value,
+        f32Value,
+        f64Value,
+        refIdPresent,
+        refId,
+        namePtr == null ? MemorySegment.NULL : namePtr,
+        globalPtrPtr);
+  }
+
+  /**
+   * Gets metadata for a WebAssembly global (Panama FFI version).
+   *
+   * @param globalPtr pointer to the global
+   * @param valueTypePtr pointer to store the value type code
+   * @param mutabilityPtr pointer to store the mutability flag
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaGlobalMetadata(
+      final MemorySegment globalPtr,
+      final MemorySegment valueTypePtr,
+      final MemorySegment mutabilityPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    validatePointer(valueTypePtr, "valueTypePtr");
+    validatePointer(mutabilityPtr, "mutabilityPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_global_metadata",
+        Integer.class,
+        globalPtr,
+        valueTypePtr,
+        mutabilityPtr,
+        MemorySegment.NULL); // name_ptr - not needed for PanamaGlobal
+  }
+
+  /**
+   * Destroys a WebAssembly global (Panama FFI version).
+   *
+   * @param globalPtr pointer to the global
+   */
+  public void panamaGlobalDestroy(final MemorySegment globalPtr) {
+    validatePointer(globalPtr, "globalPtr");
+    callNativeFunction("wasmtime4j_panama_global_destroy", Void.class, globalPtr);
   }
 
   /**
@@ -2873,6 +3044,36 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // type_info (out)
             ValueLayout.ADDRESS)); // mutability (out)
 
+    // Panama FFI global create/destroy/metadata functions
+    addFunctionBinding(
+        "wasmtime4j_panama_global_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // value_type
+            ValueLayout.JAVA_INT, // mutability
+            ValueLayout.JAVA_INT, // i32_value
+            ValueLayout.JAVA_LONG, // i64_value
+            ValueLayout.JAVA_DOUBLE, // f32_value
+            ValueLayout.JAVA_DOUBLE, // f64_value
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG, // ref_id
+            ValueLayout.ADDRESS, // name_ptr (optional)
+            ValueLayout.ADDRESS)); // global_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_global_metadata",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // global_ptr
+            ValueLayout.ADDRESS, // value_type (out)
+            ValueLayout.ADDRESS, // mutability (out)
+            ValueLayout.ADDRESS)); // name_ptr (out)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_global_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // global_ptr
+
     // Panama FFI memory functions
     addFunctionBinding(
         "wasmtime4j_panama_memory_size_pages",
@@ -3123,6 +3324,16 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
+        "wasmtime4j_panama_linker_define_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS)); // global_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_linker_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
   }
@@ -3183,6 +3394,38 @@ public final class NativeFunctionBindings {
         returnCount,
         callbackFn,
         callbackId);
+  }
+
+  /**
+   * Defines a global in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the global name string
+   * @param globalPtr pointer to the global
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineGlobal(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment globalPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(globalPtr, "globalPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_global",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        globalPtr);
   }
 
   /**

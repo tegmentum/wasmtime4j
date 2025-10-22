@@ -117,10 +117,10 @@ pub enum WasmValue {
     F64(f64),
     /// 128-bit SIMD vector (as bytes)
     V128([u8; 16]),
-    /// External reference (null for now)
-    ExternRef,
-    /// Function reference (null for now)  
-    FuncRef,
+    /// External reference - stores host object reference ID
+    ExternRef(Option<i64>),
+    /// Function reference - stores function reference ID
+    FuncRef(Option<i64>),
 }
 
 /// Result from WebAssembly function execution
@@ -450,7 +450,7 @@ impl Instance {
             }),
         };
         
-        // Validate parameter count and types
+        // Validate parameter count
         if params.len() != function_sig.params.len() {
             return Err(WasmtimeError::Function {
                 message: format!(
@@ -460,21 +460,10 @@ impl Instance {
                 ),
             });
         }
-        
-        // Convert parameters to Wasmtime values with type validation
-        let mut wasm_params = Vec::new();
-        for (i, (provided, expected)) in params.iter().zip(&function_sig.params).enumerate() {
-            if !Self::value_type_matches(provided, expected) {
-                return Err(WasmtimeError::Function {
-                    message: format!(
-                        "Parameter {} type mismatch: expected {:?}, got {:?}",
-                        i, expected, provided
-                    ),
-                });
-            }
-            let val = Self::wasm_value_to_val(provided)?;
-            wasm_params.push(val);
-        }
+
+        // Save parameters for conversion after we have store context
+        // (needed for externref/funcref which require Store to create)
+        let params_to_convert = params.to_vec();
         
         // Get function and execute with timing
         let start_time = Instant::now();
@@ -496,6 +485,52 @@ impl Instance {
             Extern::Func(func) => {
                 // Get function type to determine result types
                 let func_type = func.ty(&*store_guard);
+
+                // Validate parameter types
+                for (i, (provided, expected)) in params_to_convert.iter().zip(&function_sig.params).enumerate() {
+                    if !Self::value_type_matches(provided, expected) {
+                        return Err(WasmtimeError::Function {
+                            message: format!(
+                                "Parameter {} type mismatch: expected {:?}, got {:?}",
+                                i, expected, provided
+                            ),
+                        });
+                    }
+                }
+
+                // Convert parameters WITH store context for externref/funcref
+                let mut wasm_params = Vec::with_capacity(params_to_convert.len());
+                for param in &params_to_convert {
+                    match param {
+                        WasmValue::I32(v) => wasm_params.push(Val::I32(*v)),
+                        WasmValue::I64(v) => wasm_params.push(Val::I64(*v)),
+                        WasmValue::F32(v) => wasm_params.push(Val::F32(v.to_bits())),
+                        WasmValue::F64(v) => wasm_params.push(Val::F64(v.to_bits())),
+                        WasmValue::V128(bytes) => wasm_params.push(Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes)))),
+                        WasmValue::ExternRef(ref_id) => {
+                            // For externref, we need to create a proper ExternRef with store context
+                            use wasmtime::ExternRef;
+                            let externref_val = match ref_id {
+                                Some(id) => {
+                                    // Create ExternRef wrapping the i64 ID
+                                    let externref = ExternRef::new(&mut *store_guard, *id)
+                                        .map_err(|e| WasmtimeError::Runtime {
+                                            message: format!("Failed to create ExternRef: {}", e),
+                                            backtrace: None
+                                        })?;
+                                    Val::ExternRef(Some(externref))
+                                }
+                                None => Val::ExternRef(None)
+                            };
+                            wasm_params.push(externref_val);
+                        }
+                        WasmValue::FuncRef(_) => {
+                            // FuncRef requires actual Func handle - not implementable with just an ID
+                            // For now, pass null funcref
+                            wasm_params.push(Val::FuncRef(None));
+                        }
+                    }
+                }
 
                 // Pre-allocate results with correct types
                 let mut results = Vec::with_capacity(func_type.results().len());
@@ -582,21 +617,51 @@ impl Instance {
             self.metadata.state = InstanceState::Error;
             e
         })?;
-        
+
+        // Convert results back to WasmValue WITH store context for externref extraction
+        // This must happen BEFORE we drop store_guard
+        let values: Vec<WasmValue> = result.iter()
+            .map(|val| {
+                match val {
+                    Val::ExternRef(Some(ext_ref)) => {
+                        // Extract the wrapped i64 value from ExternRef using store context
+                        // Note: ext_ref.data() returns Result<Option<&dyn Any>, Error>
+                        match ext_ref.data(&*store_guard) {
+                            Ok(Some(data)) => {
+                                // Try to downcast to i64
+                                if let Some(&id) = data.downcast_ref::<i64>() {
+                                    Ok(WasmValue::ExternRef(Some(id)))
+                                } else {
+                                    // Not an i64, return None
+                                    Ok(WasmValue::ExternRef(None))
+                                }
+                            }
+                            Ok(None) => Ok(WasmValue::ExternRef(None)),
+                            Err(e) => Err(WasmtimeError::Runtime {
+                                message: format!("Failed to extract externref data: {}", e),
+                                backtrace: None
+                            })
+                        }
+                    }
+                    Val::ExternRef(None) => Ok(WasmValue::ExternRef(None)),
+                    // For non-externref values, use the standard conversion
+                    _ => Self::val_to_wasm_value(val.clone())
+                }
+            })
+            .collect::<WasmtimeResult<Vec<_>>>()?;
+
+        // Drop store_guard now that we're done with it
+        drop(store_guard);
+
         let execution_time_ns = start_time.elapsed().as_nanos() as u64;
-        
+
         // Get fuel after execution for tracking
         let fuel_after = store.fuel_remaining().ok().flatten();
-        
+
         let fuel_consumed = match (fuel_before, fuel_after) {
             (Some(before), Some(after)) => Some(after.saturating_sub(before)),
             _ => None,
         };
-        
-        // Convert results back to WasmValue
-        let values = result.into_iter()
-            .map(|val| Self::val_to_wasm_value(val))
-            .collect::<WasmtimeResult<Vec<_>>>()?;
 
         // Increment function call count
         self.metadata.function_calls += 1;
@@ -873,8 +938,8 @@ impl Instance {
             (WasmValue::F32(_), ModuleValueType::F32) => true,
             (WasmValue::F64(_), ModuleValueType::F64) => true,
             (WasmValue::V128(_), ModuleValueType::V128) => true,
-            (WasmValue::ExternRef, ModuleValueType::ExternRef) => true,
-            (WasmValue::FuncRef, ModuleValueType::FuncRef) => true,
+            (WasmValue::ExternRef(_), ModuleValueType::ExternRef) => true,
+            (WasmValue::FuncRef(_), ModuleValueType::FuncRef) => true,
             _ => false,
         }
     }
@@ -887,8 +952,16 @@ impl Instance {
             WasmValue::F32(v) => Ok(Val::F32(v.to_bits())),
             WasmValue::F64(v) => Ok(Val::F64(v.to_bits())),
             WasmValue::V128(bytes) => Ok(Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes)))),
-            WasmValue::ExternRef => Ok(Val::ExternRef(None)),
-            WasmValue::FuncRef => Ok(Val::FuncRef(None)),
+            WasmValue::ExternRef(_ref_id) => {
+                // ExternRef support is limited - creating externrefs requires Store context
+                // For now, always pass NULL to prevent parameter count mismatch
+                Ok(Val::ExternRef(None))
+            }
+            WasmValue::FuncRef(_ref_id) => {
+                // FuncRef requires actual Func handle - not implementable with just an ID
+                // This needs access to the store and function registry
+                Ok(Val::FuncRef(None))  // TODO: Implement proper funcref support
+            }
         }
     }
     
@@ -900,11 +973,15 @@ impl Instance {
             Val::F32(bits) => Ok(WasmValue::F32(f32::from_bits(bits))),
             Val::F64(bits) => Ok(WasmValue::F64(f64::from_bits(bits))),
             Val::V128(v) => Ok(WasmValue::V128(u128::from(v).to_le_bytes())),
-            Val::ExternRef(_) => Ok(WasmValue::ExternRef),
-            Val::FuncRef(_) => Ok(WasmValue::FuncRef),
-            Val::AnyRef(_) => Ok(WasmValue::ExternRef), // Treat AnyRef as ExternRef for now
-            Val::ExnRef(_) => Ok(WasmValue::ExternRef), // Treat ExnRef as ExternRef for now
-            Val::ContRef(_) => Ok(WasmValue::ExternRef), // Treat ContRef as ExternRef for now
+            Val::ExternRef(_ext_ref) => {
+                // ExternRef data extraction requires Store context
+                // For now, just preserve None
+                Ok(WasmValue::ExternRef(None))
+            }
+            Val::FuncRef(_) => Ok(WasmValue::FuncRef(None)),  // TODO: Extract funcref ID
+            Val::AnyRef(_) => Ok(WasmValue::ExternRef(None)),
+            Val::ExnRef(_) => Ok(WasmValue::ExternRef(None)),
+            Val::ContRef(_) => Ok(WasmValue::ExternRef(None)),
         }
     }
     
@@ -1198,14 +1275,14 @@ pub mod core {
         WasmValue::V128(bytes)
     }
     
-    /// Creates an externref WebAssembly value
-    pub fn create_externref_value() -> WasmValue {
-        WasmValue::ExternRef
+    /// Creates an externref WebAssembly value with optional ID
+    pub fn create_externref_value(ref_id: Option<i64>) -> WasmValue {
+        WasmValue::ExternRef(ref_id)
     }
-    
-    /// Creates a funcref WebAssembly value
-    pub fn create_funcref_value() -> WasmValue {
-        WasmValue::FuncRef
+
+    /// Creates a funcref WebAssembly value with optional ID
+    pub fn create_funcref_value(ref_id: Option<i64>) -> WasmValue {
+        WasmValue::FuncRef(ref_id)
     }
     
     /// Helper functions to extract values from WasmValue for JNI/Panama bindings
@@ -1398,8 +1475,12 @@ pub mod core {
             WasmValue::F32(v) => wasmtime::Val::F32((*v).to_bits()),
             WasmValue::F64(v) => wasmtime::Val::F64((*v).to_bits()),
             WasmValue::V128(bytes) => wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes))),
-            WasmValue::ExternRef => wasmtime::Val::null_extern_ref(),
-            WasmValue::FuncRef => wasmtime::Val::null_func_ref(),
+            WasmValue::ExternRef(_ref_id) => {
+                // ExternRef creation requires Store context
+                // Always pass NULL for now
+                wasmtime::Val::null_extern_ref()
+            }
+            WasmValue::FuncRef(_) => wasmtime::Val::null_func_ref(),
         })
     }
 
@@ -1411,11 +1492,15 @@ pub mod core {
             wasmtime::Val::F32(v) => WasmValue::F32(f32::from_bits(*v)),
             wasmtime::Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
             wasmtime::Val::V128(v) => WasmValue::V128(v.as_u128().to_le_bytes()),
-            wasmtime::Val::FuncRef(_) => WasmValue::FuncRef,
-            wasmtime::Val::ExternRef(_) => WasmValue::ExternRef,
-            wasmtime::Val::AnyRef(_) => WasmValue::ExternRef,
-            wasmtime::Val::ExnRef(_) => WasmValue::ExternRef,
-            wasmtime::Val::ContRef(_) => WasmValue::ExternRef,
+            wasmtime::Val::FuncRef(_) => WasmValue::FuncRef(None),
+            wasmtime::Val::ExternRef(_ext_ref) => {
+                // ExternRef data extraction requires Store context
+                // For now, just preserve None
+                WasmValue::ExternRef(None)
+            }
+            wasmtime::Val::AnyRef(_) => WasmValue::ExternRef(None),
+            wasmtime::Val::ExnRef(_) => WasmValue::ExternRef(None),
+            wasmtime::Val::ContRef(_) => WasmValue::ExternRef(None),
         })
     }
 
@@ -1922,9 +2007,17 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
                             std::ptr::copy_nonoverlapping(base_ptr.add(offset + 4), bytes.as_mut_ptr(), 16);
                             WasmValue::V128(bytes)
                         }
+                        5 => { // FUNCREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::FuncRef(if val == 0 { None } else { Some(val) })
+                        }
+                        6 => { // EXTERNREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::ExternRef(if val == 0 { None } else { Some(val) })
+                        }
                         _ => {
                             // Invalid tag - return error
-                            return 0;
+                            return -1;
                         }
                     };
                     result.push(value);
