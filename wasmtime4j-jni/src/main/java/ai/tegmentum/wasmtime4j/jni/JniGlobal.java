@@ -427,6 +427,35 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
         return value.asFloat();
       case F64:
         return value.asDouble();
+      case FUNCREF:
+        {
+          final Object funcrefValue = value.asFuncref();
+          if (funcrefValue == null) {
+            return null;
+          }
+          if (funcrefValue instanceof ai.tegmentum.wasmtime4j.FunctionReference) {
+            // Cast to JniFunctionReference to get native handle
+            if (funcrefValue instanceof JniFunctionReference) {
+              return ((JniFunctionReference) funcrefValue).getNativeHandle();
+            }
+            throw new WasmTypeException(
+                "Funcref must be a JniFunctionReference, got: " + funcrefValue.getClass());
+          }
+          // Already a handle (Long)
+          return funcrefValue;
+        }
+      case EXTERNREF:
+        {
+          final Object externrefValue = value.asExternref();
+          if (externrefValue == null) {
+            return null;
+          }
+          if (externrefValue instanceof Long) {
+            return externrefValue;
+          }
+          throw new WasmTypeException(
+              "Externref must be a Long handle or null, got: " + externrefValue.getClass());
+        }
       default:
         return value.getValue();
     }
