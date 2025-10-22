@@ -77,9 +77,12 @@ public final class CallIndirectNativeFromExportedGlobalTest extends DualRuntimeT
                 ai.tegmentum.wasmtime4j.WasmValue.i32(30)
               };
 
-      // Set the global to point to our host function
-      // Note: This requires funcref support - we'll use a Long reference ID
-      global.set(ai.tegmentum.wasmtime4j.WasmValue.funcref(System.identityHashCode(hostFunc)));
+      // Create a function reference from the host function
+      final ai.tegmentum.wasmtime4j.FunctionReference funcRef =
+          runner.getStore().createFunctionReference(hostFunc, funcType);
+
+      // Set the global to point to our host function via funcref
+      global.set(ai.tegmentum.wasmtime4j.WasmValue.funcref(funcRef));
 
       // Call the exported "run" function
       final ai.tegmentum.wasmtime4j.WasmValue[] results = runner.invoke("run");

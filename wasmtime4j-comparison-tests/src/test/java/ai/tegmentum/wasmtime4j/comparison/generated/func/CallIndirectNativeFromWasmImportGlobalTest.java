@@ -47,7 +47,7 @@ public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntim
     try (final ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner runner =
         new ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner()) {
 
-      // Define a host function that returns (10, 20, 30)
+      // Create a host function that returns (10, 20, 30)
       final ai.tegmentum.wasmtime4j.FunctionType funcType =
           new ai.tegmentum.wasmtime4j.FunctionType(
               new ai.tegmentum.wasmtime4j.WasmValueType[] {}, // no params
@@ -57,18 +57,31 @@ public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntim
                 ai.tegmentum.wasmtime4j.WasmValueType.I32
               });
 
-      runner.defineHostFunction(
-          "",
-          "",
-          funcType,
+      final ai.tegmentum.wasmtime4j.HostFunction hostFunc =
           (args) ->
               new ai.tegmentum.wasmtime4j.WasmValue[] {
                 ai.tegmentum.wasmtime4j.WasmValue.i32(10),
                 ai.tegmentum.wasmtime4j.WasmValue.i32(20),
                 ai.tegmentum.wasmtime4j.WasmValue.i32(30)
-              });
+              };
 
-      // Compile and instantiate the module with the host function import
+      // Create a function reference from the host function
+      final ai.tegmentum.wasmtime4j.FunctionReference funcRef =
+          runner.getStore().createFunctionReference(hostFunc, funcType);
+
+      // Create a funcref global containing the function reference
+      final ai.tegmentum.wasmtime4j.WasmGlobal funcrefGlobal =
+          runner
+              .getStore()
+              .createGlobal(
+                  ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF,
+                  false,
+                  ai.tegmentum.wasmtime4j.WasmValue.funcref(funcRef));
+
+      // Define the funcref global (not a function) for import
+      runner.defineGlobal("", "", funcrefGlobal);
+
+      // Compile and instantiate the module with the funcref global import
       runner.compileAndInstantiate(wat);
 
       // Call the exported "run" function which should:
