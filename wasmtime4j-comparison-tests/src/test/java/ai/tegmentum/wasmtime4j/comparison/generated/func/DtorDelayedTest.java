@@ -2,25 +2,22 @@ package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::dtor_delayed
  *
- * Original source: func.rs:472
- * Category: func
+ * <p>Original source: func.rs:472 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class DtorDelayedTest {
 
   @Test
+  @Disabled("Test implementation pending - awaiting test framework completion")
   @DisplayName("func::dtor_delayed")
   public void testDtorDelayed() {
     // WAT code from original Wasmtime test:

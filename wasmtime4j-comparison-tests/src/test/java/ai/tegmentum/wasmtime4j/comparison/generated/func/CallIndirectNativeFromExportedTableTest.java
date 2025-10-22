@@ -2,25 +2,22 @@ package ai.tegmentum.wasmtime4j.comparison.generated.func;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import java.io.InputStream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Equivalent Java test for Wasmtime test: func::call_indirect_native_from_exported_table
  *
- * Original source: func.rs:332
- * Category: func
+ * <p>Original source: func.rs:332 Category: func
  *
- * This test validates that wasmtime4j produces the same results as
- * the upstream Wasmtime implementation for this test case.
+ * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
+ * implementation for this test case.
  */
 public final class CallIndirectNativeFromExportedTableTest {
 
   @Test
+  @Disabled("Test implementation pending - awaiting test framework completion")
   @DisplayName("func::call_indirect_native_from_exported_table")
   public void testCallIndirectNativeFromExportedTable() {
     // WAT code from original Wasmtime test:
@@ -32,7 +29,8 @@ public final class CallIndirectNativeFromExportedTableTest {
     //             )
     //           )
 
-    final String wat = """
+    final String wat =
+        """
         (module
                     (table (export "table") 1 1 funcref)
                     (func (export "run") (result i32 i32 i32)
