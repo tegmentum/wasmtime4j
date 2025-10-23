@@ -3823,7 +3823,7 @@ pub mod jni_hostfunc {
     }
 
     /// Unmarshal function type from byte array
-    fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> WasmtimeResult<FuncType> {
+    pub(crate) fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> WasmtimeResult<FuncType> {
         // Simple marshalling format:
         // [param_count: 4 bytes][param_types: param_count bytes][return_count: 4 bytes][return_types: return_count bytes]
         
@@ -3888,6 +3888,105 @@ pub mod jni_hostfunc {
         }
         
         Ok(wasmtime::FuncType::new(engine, param_types, return_types))
+    }
+}
+
+/// JNI bindings for WebAssembly function references
+#[cfg(feature = "jni-bindings")]
+pub mod jni_functionref {
+    use super::*;
+    use crate::error::{jni_utils, WasmtimeError};
+
+    /// Create a new function reference from a host function (JNI version)
+    ///
+    /// This is a minimal stub that just returns the function reference ID as a handle.
+    /// The Java-side FUNCTION_REFERENCE_REGISTRY manages the actual callbacks.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCreateFunctionReferenceFromHost(
+        mut env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+        _function_type_data: jbyteArray,
+        function_reference_id: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            // Just return the ID as the handle - Java manages callbacks
+            Ok(Box::new(function_reference_id as u64))
+        }) as jlong
+    }
+
+    /// Create a new function reference from a WebAssembly function (JNI version)
+    ///
+    /// This is a minimal stub that just returns the function reference ID as a handle.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCreateFunctionReferenceFromWasm(
+        mut env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+        wasm_function_handle: jlong,
+        _function_reference_id: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            if wasm_function_handle == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "WebAssembly function handle cannot be null".to_string(),
+                });
+            }
+
+            // The wasm_function_handle is already a function ID from a JniFunction
+            // For function references from WebAssembly functions, we just return the same handle
+            let func_id = unsafe { *(wasm_function_handle as *const u64) };
+
+            // Return the function ID as the handle
+            Ok(Box::new(func_id))
+        }) as jlong
+    }
+
+    /// Call a function reference through native code (JNI version)
+    ///
+    /// This is a minimal stub - actual calls happen through the Java callback mechanism.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCallFunctionReference(
+        mut env: JNIEnv,
+        _class: JClass,
+        function_reference_handle: jlong,
+        _params_data: jbyteArray,
+        _results_buffer: jbyteArray,
+    ) -> jint {
+        jni_utils::jni_try_with_default(&mut env, -1, || {
+            if function_reference_handle == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Function reference handle cannot be null".to_string(),
+                });
+            }
+
+            // The actual call happens through the Java callback mechanism
+            // The Java side handles parameter/result marshalling through FUNCTION_REFERENCE_REGISTRY
+            Ok(0)
+        })
+    }
+
+    /// Destroy a function reference (JNI version)
+    ///
+    /// This is a minimal stub that cleans up the boxed handle.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeDestroyFunctionReference(
+        mut env: JNIEnv,
+        _class: JClass,
+        function_reference_handle: jlong,
+    ) {
+        jni_utils::jni_try_default(&env, (), || {
+            if function_reference_handle == 0 {
+                return Ok(());
+            }
+
+            // Clean up the boxed handle
+            unsafe {
+                let _ = Box::from_raw(function_reference_handle as *mut u64);
+            }
+
+            Ok(())
+        });
     }
 }
 
@@ -4488,8 +4587,15 @@ pub mod jni_global {
                             }
                         }
                     } else {
-                        // Non-null reference - extract the Long handle value
-                        let handle_val = env.call_method(&java_object, "longValue", "()J", &[])?.j()?;
+                        // Non-null reference - extract the handle value
+                        // Check if it's a JniFunctionReference (call getNativeHandle) or Long (call longValue)
+                        let handle_val = if env.is_instance_of(&java_object, "ai/tegmentum/wasmtime4j/jni/JniFunctionReference")? {
+                            // It's a JniFunctionReference - call getNativeHandle()
+                            env.call_method(&java_object, "getNativeHandle", "()J", &[])?.j()?
+                        } else {
+                            // It's a Long - call longValue()
+                            env.call_method(&java_object, "longValue", "()J", &[])?.j()?
+                        };
                         let handle_id = handle_val as u64;
 
                         match *ref_type.heap_type() {
