@@ -61,9 +61,9 @@ pub enum GlobalValue {
 impl Global {
     /// Create a new global variable with specified type and initial value
     pub fn new(
-        store: &Store, 
-        value_type: ValType, 
-        mutability: Mutability, 
+        store: &Store,
+        value_type: ValType,
+        mutability: Mutability,
         initial_value: GlobalValue,
         name: Option<String>,
     ) -> WasmtimeResult<Self> {
@@ -71,7 +71,7 @@ impl Global {
         Self::validate_value_type(&initial_value, &value_type)?;
 
         let global_type = GlobalType::new(value_type.clone(), mutability);
-        let wasmtime_value = Self::global_value_to_wasmtime_val(initial_value.clone())?;
+        let wasmtime_value = Self::global_value_to_wasmtime_val(initial_value.clone(), store)?;
 
         let wasmtime_global = store.with_context(|mut ctx| {
             WasmtimeGlobal::new(&mut ctx, global_type, wasmtime_value)
@@ -122,7 +122,7 @@ impl Global {
             message: format!("Failed to acquire global lock: {}", e),
         })?;
 
-        let wasmtime_value = Self::global_value_to_wasmtime_val(value)?;
+        let wasmtime_value = Self::global_value_to_wasmtime_val(value, store)?;
 
         store.with_context(|mut ctx| {
             global.set(&mut ctx, wasmtime_value)
@@ -182,16 +182,19 @@ impl Global {
     }
 
     /// Convert GlobalValue to wasmtime::Val
-    fn global_value_to_wasmtime_val(value: GlobalValue) -> WasmtimeResult<Val> {
+    fn global_value_to_wasmtime_val(value: GlobalValue, _store: &Store) -> WasmtimeResult<Val> {
         let wasmtime_val = match value {
             GlobalValue::I32(val) => Val::I32(val),
             GlobalValue::I64(val) => Val::I64(val),
             GlobalValue::F32(val) => Val::F32(val.to_bits()),
             GlobalValue::F64(val) => Val::F64(val.to_bits()),
             GlobalValue::V128(val) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(val))),
-            GlobalValue::FuncRef(_) => {
-                // For now, we only support null function references
+            GlobalValue::FuncRef(_func_id) => {
                 // TODO: Implement proper function reference handling
+                // Challenge: wasmtime::Func is store-bound and requires creating a new Func
+                // each time from the HostFunction registry. This requires access to the full Store,
+                // not just StoreContext, which creates architectural challenges.
+                // For now, only null funcrefs are supported.
                 Val::FuncRef(None)
             },
             GlobalValue::ExternRef(_) => {

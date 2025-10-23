@@ -4470,6 +4470,41 @@ pub mod jni_global {
                     let double_val = env.call_method(&java_object, "doubleValue", "()D", &[])?.d()?;
                     crate::global::GlobalValue::F64(double_val)
                 },
+                ValType::Ref(ref_type) => {
+                    use wasmtime::HeapType;
+
+                    // Check if the object is null
+                    if java_object.is_null() {
+                        // Null reference
+                        match *ref_type.heap_type() {
+                            HeapType::Func | HeapType::ConcreteFunc(_) => {
+                                crate::global::GlobalValue::FuncRef(None)
+                            },
+                            HeapType::Extern => {
+                                crate::global::GlobalValue::ExternRef(None)
+                            },
+                            _ => {
+                                crate::global::GlobalValue::AnyRef(None)
+                            }
+                        }
+                    } else {
+                        // Non-null reference - extract the Long handle value
+                        let handle_val = env.call_method(&java_object, "longValue", "()J", &[])?.j()?;
+                        let handle_id = handle_val as u64;
+
+                        match *ref_type.heap_type() {
+                            HeapType::Func | HeapType::ConcreteFunc(_) => {
+                                crate::global::GlobalValue::FuncRef(Some(handle_id))
+                            },
+                            HeapType::Extern => {
+                                crate::global::GlobalValue::ExternRef(Some(handle_id))
+                            },
+                            _ => {
+                                crate::global::GlobalValue::AnyRef(Some(handle_id))
+                            }
+                        }
+                    }
+                },
                 _ => {
                     return Err(WasmtimeError::Type {
                         message: format!("Unsupported global value type for Object conversion: {:?}", metadata.value_type),
