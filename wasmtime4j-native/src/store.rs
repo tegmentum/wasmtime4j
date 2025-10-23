@@ -276,18 +276,30 @@ impl Store {
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<(u64, Func)> {
         let store_weak = Arc::downgrade(&self.inner);
-        
+
         // Create the host function wrapper
         let host_function = HostFunction::new(name, func_type, store_weak, callback)?;
         let host_function_id = host_function.id();
-        
+
         // Create the Wasmtime Func
         let wasmtime_func = {
             let mut store = self.inner.lock();
             host_function.create_wasmtime_func(&mut store)?
         };
-        
+
         Ok((host_function_id, wasmtime_func))
+    }
+
+    /// Create a function reference from a host function
+    /// Returns only the handle ID - the FunctionReference wrapper is created on the Java side
+    pub fn create_function_reference(
+        &self,
+        name: String,
+        func_type: FuncType,
+        callback: Box<dyn HostFunctionCallback + Send + Sync>,
+    ) -> WasmtimeResult<u64> {
+        let (id, _func) = self.create_host_function(name, func_type, callback)?;
+        Ok(id)
     }
 
     /// Set WASI context for this store
