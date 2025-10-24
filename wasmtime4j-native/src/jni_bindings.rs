@@ -2162,11 +2162,13 @@ pub mod jni_linker {
     pub(crate) struct JniHostFunctionCallback {
         pub(crate) jvm: std::sync::Arc<JavaVM>,
         pub(crate) callback_id: i64,
+        pub(crate) is_function_reference: bool,  // true for FunctionReference, false for Linker host functions
     }
 
     impl HostFunctionCallback for JniHostFunctionCallback {
         fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
-            log::info!("JniHostFunctionCallback::execute - Starting callback execution for callback_id={}", self.callback_id);
+            log::info!("JniHostFunctionCallback::execute - Starting callback execution for callback_id={}, is_function_reference={}",
+                self.callback_id, self.is_function_reference);
 
             // Attach to current thread and get JNI environment
             log::debug!("Attaching to JVM thread");
@@ -2177,34 +2179,55 @@ pub mod jni_linker {
                 })?;
             log::debug!("Successfully attached to JVM thread");
 
-            // Find the JniFunctionReference class
-            log::debug!("Finding JniFunctionReference class");
-            let funcref_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniFunctionReference")
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to find JniFunctionReference class: {}", e),
-                    backtrace: None
-                })?;
-            log::debug!("Found JniFunctionReference class");
-
             // Convert parameters to Java WasmValue array
             log::debug!("Converting {} parameters to Java array", params.len());
             let java_params = wasm_values_to_java_array(&mut env, params)?;
             log::debug!("Successfully converted parameters");
 
-            // Call the static invokeFunctionReferenceCallback method
-            log::debug!("Calling Java invokeFunctionReferenceCallback method");
-            let callback_result = env.call_static_method(
-                funcref_class,
-                "invokeFunctionReferenceCallback",
-                "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
-                &[
-                    jni::objects::JValue::Long(self.callback_id),
-                    jni::objects::JValue::Object(&java_params),
-                ]
-            ).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to invoke Java callback: {}", e),
-                backtrace: None
-            })?;
+            // Route to the appropriate Java callback method based on callback type
+            let callback_result = if self.is_function_reference {
+                // This is a FunctionReference - call invokeFunctionReferenceCallback
+                log::debug!("Finding JniFunctionReference class");
+                let funcref_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniFunctionReference")
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to find JniFunctionReference class: {}", e),
+                        backtrace: None
+                    })?;
+                log::debug!("Calling Java invokeFunctionReferenceCallback method");
+                env.call_static_method(
+                    funcref_class,
+                    "invokeFunctionReferenceCallback",
+                    "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[
+                        jni::objects::JValue::Long(self.callback_id),
+                        jni::objects::JValue::Object(&java_params),
+                    ]
+                ).map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to invoke FunctionReference callback: {}", e),
+                    backtrace: None
+                })?
+            } else {
+                // This is a Linker host function - call invokeHostFunctionCallback
+                log::debug!("Finding JniLinker class");
+                let linker_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniLinker")
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to find JniLinker class: {}", e),
+                        backtrace: None
+                    })?;
+                log::debug!("Calling Java invokeHostFunctionCallback method");
+                env.call_static_method(
+                    linker_class,
+                    "invokeHostFunctionCallback",
+                    "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[
+                        jni::objects::JValue::Long(self.callback_id),
+                        jni::objects::JValue::Object(&java_params),
+                    ]
+                ).map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to invoke Linker host function callback: {}", e),
+                    backtrace: None
+                })?
+            };
             log::debug!("Java callback completed");
 
             // Convert Java WasmValue array back to Rust
@@ -2225,6 +2248,7 @@ pub mod jni_linker {
             Box::new(JniHostFunctionCallback {
                 jvm: Arc::clone(&self.jvm),
                 callback_id: self.callback_id,
+                is_function_reference: self.is_function_reference,
             })
         }
     }
@@ -2840,6 +2864,7 @@ pub mod jni_linker {
             let callback = JniHostFunctionCallback {
                 jvm: std::sync::Arc::new(jvm),
                 callback_id,
+                is_function_reference: false,  // This is a Linker host function
             };
 
             // Create host function with weak store reference (will be set during instantiation)
@@ -3947,6 +3972,7 @@ pub mod jni_functionref {
             let callback = Box::new(JniHostFunctionCallback {
                 jvm: std::sync::Arc::new(jvm),
                 callback_id: function_reference_id,
+                is_function_reference: true,  // This is a FunctionReference
             });
 
             // Create and register the function using Store::create_function_reference
