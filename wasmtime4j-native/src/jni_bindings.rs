@@ -2159,9 +2159,9 @@ pub mod jni_linker {
     use wasmtime::ValType;
 
     /// JNI callback implementation for host functions
-    struct JniHostFunctionCallback {
-        jvm: std::sync::Arc<JavaVM>,
-        callback_id: i64,
+    pub(crate) struct JniHostFunctionCallback {
+        pub(crate) jvm: std::sync::Arc<JavaVM>,
+        pub(crate) callback_id: i64,
     }
 
     impl HostFunctionCallback for JniHostFunctionCallback {
@@ -2177,25 +2177,25 @@ pub mod jni_linker {
                 })?;
             log::debug!("Successfully attached to JVM thread");
 
-            // Find the JniLinker class
-            log::debug!("Finding JniLinker class");
-            let linker_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniLinker")
+            // Find the JniFunctionReference class
+            log::debug!("Finding JniFunctionReference class");
+            let funcref_class = env.find_class("ai/tegmentum/wasmtime4j/jni/JniFunctionReference")
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to find JniLinker class: {}", e),
+                    message: format!("Failed to find JniFunctionReference class: {}", e),
                     backtrace: None
                 })?;
-            log::debug!("Found JniLinker class");
+            log::debug!("Found JniFunctionReference class");
 
             // Convert parameters to Java WasmValue array
             log::debug!("Converting {} parameters to Java array", params.len());
             let java_params = wasm_values_to_java_array(&mut env, params)?;
             log::debug!("Successfully converted parameters");
 
-            // Call the static invokeHostFunctionCallback method
-            log::debug!("Calling Java invokeHostFunctionCallback method");
+            // Call the static invokeFunctionReferenceCallback method
+            log::debug!("Calling Java invokeFunctionReferenceCallback method");
             let callback_result = env.call_static_method(
-                linker_class,
-                "invokeHostFunctionCallback",
+                funcref_class,
+                "invokeFunctionReferenceCallback",
                 "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
                 &[
                     jni::objects::JValue::Long(self.callback_id),
@@ -3896,23 +3896,66 @@ pub mod jni_hostfunc {
 pub mod jni_functionref {
     use super::*;
     use crate::error::{jni_utils, WasmtimeError};
+    use super::jni_linker::JniHostFunctionCallback;
+    use super::jni_hostfunc::unmarshal_function_type;
+    use crate::store::Store;
 
     /// Create a new function reference from a host function (JNI version)
     ///
-    /// This is a minimal stub that just returns the function reference ID as a handle.
-    /// The Java-side FUNCTION_REFERENCE_REGISTRY manages the actual callbacks.
+    /// Creates a real Rust Func and registers it in the table reference registry.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCreateFunctionReferenceFromHost(
         mut env: JNIEnv,
         _class: JClass,
-        _store_handle: jlong,
-        _function_type_data: jbyteArray,
+        store_handle: jlong,
+        function_type_data: jbyteArray,
         function_reference_id: jlong,
     ) -> jlong {
-        jni_utils::jni_try_ptr(&mut env, || {
-            // Just return the ID as the handle - Java manages callbacks
-            Ok(Box::new(function_reference_id as u64))
-        }) as jlong
+        // Extract data before the closure
+        let type_data_result = env.convert_byte_array(unsafe { jni::objects::JByteArray::from_raw(function_type_data) })
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to read function type data: {}", e),
+                backtrace: None,
+            });
+
+        let type_data = match type_data_result {
+            Ok(data) => data,
+            Err(_) => return 0,
+        };
+
+        let jvm = match env.get_java_vm() {
+            Ok(vm) => vm,
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            if store_handle == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+
+            // Get the store
+            let store_ref = unsafe { &*(store_handle as *const Store) };
+
+            // Get engine from store context and unmarshal function type
+            let func_type = store_ref.with_context(|ctx| {
+                unmarshal_function_type(ctx.engine(), &type_data)
+            })?;
+
+            // Create the JNI callback wrapper (jvm is already extracted above)
+            let callback = Box::new(JniHostFunctionCallback {
+                jvm: std::sync::Arc::new(jvm),
+                callback_id: function_reference_id,
+            });
+
+            // Create and register the function using Store::create_function_reference
+            let name = format!("host_function_{}", function_reference_id);
+            let registry_id = store_ref.create_function_reference(name, func_type, callback)?;
+
+            // Return the registry ID directly as jlong
+            Ok(registry_id as jlong)
+        })
     }
 
     /// Create a new function reference from a WebAssembly function (JNI version)

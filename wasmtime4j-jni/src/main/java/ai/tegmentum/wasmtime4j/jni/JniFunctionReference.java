@@ -428,6 +428,19 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   }
 
   /**
+   * Returns the registry ID for this function reference.
+   *
+   * <p>This method is used when storing function references in globals or tables. It returns the
+   * Rust registry ID from the native handle, which is used to look up the function in the Rust
+   * reference registry.
+   *
+   * @return the Rust registry ID as a long value
+   */
+  public long longValue() {
+    return getNativeHandle();
+  }
+
+  /**
    * Gets the current registry statistics for debugging.
    *
    * @return array containing [count, nextId]
@@ -444,6 +457,65 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    */
   static JniFunctionReference getFromRegistry(final long functionReferenceId) {
     return FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+  }
+
+  /**
+   * Invokes a function reference callback from native code (called via JNI).
+   *
+   * <p>This method is called by the Rust JNI layer when a FunctionReference created from a host
+   * function is invoked. It looks up the function reference in the registry and executes the
+   * associated host function.
+   *
+   * @param functionReferenceId the function reference ID
+   * @param params array of parameter values
+   * @return array of return values
+   * @throws WasmException if the callback fails
+   */
+  @SuppressWarnings("unused") // Called by native code
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called by native code through JNI")
+  private static WasmValue[] invokeFunctionReferenceCallback(
+      final long functionReferenceId, final WasmValue[] params) throws WasmException {
+    final JniFunctionReference functionReference =
+        FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    if (functionReference == null) {
+      LOGGER.severe("Function reference not found in registry: " + functionReferenceId);
+      throw new WasmException("Function reference not found: " + functionReferenceId);
+    }
+
+    if (functionReference.isClosed()) {
+      LOGGER.warning(
+          "Attempted to call closed function reference: " + functionReference.functionName);
+      throw new WasmException(
+          "Function reference has been closed: " + functionReference.functionName);
+    }
+
+    if (functionReference.hostFunction == null) {
+      LOGGER.severe(
+          "Function reference callback called on non-host function: "
+              + functionReference.functionName);
+      throw new WasmException(
+          "Function reference is not a host function: " + functionReference.functionName);
+    }
+
+    try {
+      LOGGER.fine(
+          "Executing function reference callback: "
+              + functionReference.functionName
+              + " (ID: "
+              + functionReferenceId
+              + ")");
+      return functionReference.hostFunction.execute(params);
+    } catch (final Exception e) {
+      LOGGER.severe(
+          "Function reference execution failed: "
+              + functionReference.functionName
+              + " - "
+              + e.getMessage());
+      throw new WasmException(
+          "Function reference execution failed: " + functionReference.functionName, e);
+    }
   }
 
   // Native method declarations

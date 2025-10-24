@@ -182,25 +182,46 @@ impl Global {
     }
 
     /// Convert GlobalValue to wasmtime::Val
-    fn global_value_to_wasmtime_val(value: GlobalValue, _store: &Store) -> WasmtimeResult<Val> {
+    fn global_value_to_wasmtime_val(value: GlobalValue, store: &Store) -> WasmtimeResult<Val> {
         let wasmtime_val = match value {
             GlobalValue::I32(val) => Val::I32(val),
             GlobalValue::I64(val) => Val::I64(val),
             GlobalValue::F32(val) => Val::F32(val.to_bits()),
             GlobalValue::F64(val) => Val::F64(val.to_bits()),
             GlobalValue::V128(val) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(val))),
-            GlobalValue::FuncRef(_func_id) => {
-                // TODO: Implement proper function reference handling
-                // Challenge: wasmtime::Func is store-bound and requires creating a new Func
-                // each time from the HostFunction registry. This requires access to the full Store,
-                // not just StoreContext, which creates architectural challenges.
-                // For now, only null funcrefs are supported.
-                Val::FuncRef(None)
+            GlobalValue::FuncRef(func_id) => {
+                if let Some(id) = func_id {
+                    eprintln!("[GLOBAL] Looking up funcref with ID: {}", id);
+                    // Look up function reference in the table reference registry
+                    use crate::table::core::get_function_reference;
+                    if let Some(func) = get_function_reference(id)? {
+                        eprintln!("[GLOBAL] Found funcref with ID: {}", id);
+                        Val::FuncRef(Some(func))
+                    } else {
+                        // Function not found in registry, return null
+                        eprintln!("[GLOBAL] WARNING: Funcref ID {} not found in registry!", id);
+                        Val::FuncRef(None)
+                    }
+                } else {
+                    eprintln!("[GLOBAL] Funcref is NULL");
+                    Val::FuncRef(None)
+                }
             },
-            GlobalValue::ExternRef(_) => {
-                // For now, we only support null external references
-                // TODO: Implement proper external reference handling
-                Val::ExternRef(None)
+            GlobalValue::ExternRef(extern_id) => {
+                if let Some(id) = extern_id {
+                    // Look up external reference in the table reference registry
+                    use crate::table::core::get_external_reference;
+                    if let Some(_external) = get_external_reference(id)? {
+                        // For now, we'll convert Extern to ExternRef
+                        // This is a simplified implementation
+                        // TODO: Properly convert Extern to ExternRef
+                        Val::ExternRef(None)
+                    } else {
+                        Val::ExternRef(None)
+                    }
+                } else {
+                    Val::ExternRef(None)
+                }
             },
             GlobalValue::AnyRef(_) => {
                 // AnyRef is not directly supported by wasmtime::Val
@@ -222,12 +243,19 @@ impl Global {
             Val::F64(val) => GlobalValue::F64(f64::from_bits(val)),
             Val::V128(val) => GlobalValue::V128(u128::from(val).to_le_bytes()),
             Val::FuncRef(func_ref) => {
-                // TODO: Implement proper function reference ID mapping
-                GlobalValue::FuncRef(func_ref.map(|_| 0))
+                if let Some(func) = func_ref {
+                    // Register the function in the table reference registry and get its ID
+                    use crate::table::core::register_function_reference;
+                    let id = register_function_reference(func)?;
+                    GlobalValue::FuncRef(Some(id))
+                } else {
+                    GlobalValue::FuncRef(None)
+                }
             },
             Val::ExternRef(extern_ref) => {
-                // TODO: Implement proper external reference ID mapping
-                GlobalValue::ExternRef(extern_ref.map(|_| 0))
+                // For now, only support null externref since we can't easily convert ExternRef to Extern
+                // TODO: Properly handle externref values when we support them
+                GlobalValue::ExternRef(None)
             },
             Val::AnyRef(_) => {
                 // TODO: Implement proper any reference ID mapping

@@ -298,8 +298,15 @@ impl Store {
         func_type: FuncType,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<u64> {
-        let (id, _func) = self.create_host_function(name, func_type, callback)?;
-        Ok(id)
+        let (_host_id, func) = self.create_host_function(name, func_type, callback)?;
+
+        // Register the function in the table reference registry so it can be
+        // looked up when stored in globals and used with call_indirect
+        // Return the registry ID, not the host function ID
+        use crate::table::core::register_function_reference;
+        let registry_id = register_function_reference(func)?;
+
+        Ok(registry_id)
     }
 
     /// Set WASI context for this store

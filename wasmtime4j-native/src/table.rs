@@ -40,8 +40,8 @@ static REFERENCE_REGISTRY: Lazy<Arc<Mutex<ReferenceRegistry>>> = Lazy::new(|| {
 /// Registry for managing WebAssembly references by ID
 #[derive(Debug)]
 struct ReferenceRegistry {
-    functions: HashMap<u64, Func>,
-    externals: HashMap<u64, Extern>,
+    functions: HashMap<u64, Arc<Func>>,
+    externals: HashMap<u64, Arc<Extern>>,
     next_id: u64,
 }
 
@@ -57,30 +57,30 @@ impl ReferenceRegistry {
     fn register_function(&mut self, func: Func) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        self.functions.insert(id, func);
+        self.functions.insert(id, Arc::new(func));
         id
     }
 
     fn register_external(&mut self, external: Extern) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        self.externals.insert(id, external);
+        self.externals.insert(id, Arc::new(external));
         id
     }
 
-    fn get_function(&self, id: u64) -> Option<&Func> {
-        self.functions.get(&id)
+    fn get_function(&self, id: u64) -> Option<Arc<Func>> {
+        self.functions.get(&id).cloned()
     }
 
-    fn get_external(&self, id: u64) -> Option<&Extern> {
-        self.externals.get(&id)
+    fn get_external(&self, id: u64) -> Option<Arc<Extern>> {
+        self.externals.get(&id).cloned()
     }
 
-    fn remove_function(&mut self, id: u64) -> Option<Func> {
+    fn remove_function(&mut self, id: u64) -> Option<Arc<Func>> {
         self.functions.remove(&id)
     }
 
-    fn remove_external(&mut self, id: u64) -> Option<Extern> {
+    fn remove_external(&mut self, id: u64) -> Option<Arc<Extern>> {
         self.externals.remove(&id)
     }
 }
@@ -575,8 +575,8 @@ impl Table {
                         message: format!("Failed to lock reference registry: {}", e),
                     })?;
 
-                    if let Some(func) = registry.get_function(id) {
-                        Ref::from(Clone::clone(func))
+                    if let Some(arc_func) = registry.get_function(id) {
+                        Ref::from(Clone::clone(&*arc_func))
                     } else {
                         // Function not found, use null reference
                         Ref::null(&RefType::FUNCREF.heap_type())
@@ -592,9 +592,9 @@ impl Table {
                         message: format!("Failed to lock reference registry: {}", e),
                     })?;
 
-                    if let Some(external) = registry.get_external(id) {
+                    if let Some(arc_external) = registry.get_external(id) {
                         // Convert Extern to Ref - this might need specific handling based on Extern type
-                        match external {
+                        match &*arc_external {
                             Extern::Func(func) => Ref::from(Clone::clone(func)),
                             _ => Ref::null(&RefType::EXTERNREF.heap_type()), // For other external types, use null for now
                         }
@@ -613,10 +613,10 @@ impl Table {
                         message: format!("Failed to lock reference registry: {}", e),
                     })?;
 
-                    if let Some(func) = registry.get_function(id) {
-                        Ref::from(Clone::clone(func))
-                    } else if let Some(external) = registry.get_external(id) {
-                        match external {
+                    if let Some(arc_func) = registry.get_function(id) {
+                        Ref::from(Clone::clone(&*arc_func))
+                    } else if let Some(arc_external) = registry.get_external(id) {
+                        match &*arc_external {
                             Extern::Func(func) => Ref::from(Clone::clone(func)),
                             _ => Ref::null(&RefType::EXTERNREF.heap_type()),
                         }
@@ -986,7 +986,9 @@ pub mod core {
         let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock reference registry: {}", e),
         })?;
-        Ok(registry.get_function(id).cloned())
+        // Get Arc<Func> and dereference it to get a clone of the Func
+        // This is safe because Func is Clone and the Arc keeps the original alive
+        Ok(registry.get_function(id).map(|arc_func| (*arc_func).clone()))
     }
 
     /// Get an external reference by ID
@@ -994,7 +996,8 @@ pub mod core {
         let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock reference registry: {}", e),
         })?;
-        Ok(registry.get_external(id).cloned())
+        // Get Arc<Extern> and dereference it to get a clone of the Extern
+        Ok(registry.get_external(id).map(|arc_extern| (*arc_extern).clone()))
     }
 
     /// Remove a function reference from the registry
@@ -1002,7 +1005,8 @@ pub mod core {
         let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock reference registry: {}", e),
         })?;
-        Ok(registry.remove_function(id))
+        // Remove returns Arc<Func>, unwrap it to return Func
+        Ok(registry.remove_function(id).map(|arc_func| Arc::try_unwrap(arc_func).unwrap_or_else(|arc| (*arc).clone())))
     }
 
     /// Remove an external reference from the registry
@@ -1010,7 +1014,8 @@ pub mod core {
         let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock reference registry: {}", e),
         })?;
-        Ok(registry.remove_external(id))
+        // Remove returns Arc<Extern>, unwrap it to return Extern
+        Ok(registry.remove_external(id).map(|arc_extern| Arc::try_unwrap(arc_extern).unwrap_or_else(|arc| (*arc).clone())))
     }
 
     /// Clear all references (useful for cleanup)
