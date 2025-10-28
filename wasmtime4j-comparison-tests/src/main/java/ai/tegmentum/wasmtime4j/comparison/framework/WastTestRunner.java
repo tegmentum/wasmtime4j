@@ -298,6 +298,37 @@ public final class WastTestRunner implements AutoCloseable {
   }
 
   /**
+   * Asserts that compiling and instantiating a module traps with the expected error message.
+   *
+   * <p>This is used for `assert_trap (module ...)` directives where a module is expected to trap
+   * during instantiation (e.g., due to out-of-bounds element segment initialization).
+   *
+   * @param wat the WAT source code for the module
+   * @param expectedTrapMessage the expected trap message (can be null for any trap)
+   * @throws Exception if the assertion fails
+   */
+  public void assertModuleTrap(final String wat, final String expectedTrapMessage)
+      throws Exception {
+    try {
+      compileAndInstantiate(wat);
+      throw new AssertionError("Expected module instantiation to trap but it succeeded");
+    } catch (final Exception e) {
+      // Expected trap occurred
+      if (expectedTrapMessage != null) {
+        final String normalizedExpected = normalizeTrapMessage(expectedTrapMessage);
+        final String normalizedActual = normalizeTrapMessage(e.getMessage());
+
+        if (!normalizedActual.contains(normalizedExpected)) {
+          throw new AssertionError(
+              String.format(
+                  "Expected module instantiation trap message containing '%s' but got: %s",
+                  expectedTrapMessage, e.getMessage()));
+        }
+      }
+    }
+  }
+
+  /**
    * Normalizes trap messages to handle differences between JNI and Panama implementations.
    *
    * <p>Different runtimes may produce slightly different error messages for the same trap
