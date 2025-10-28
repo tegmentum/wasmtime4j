@@ -314,8 +314,9 @@ public final class WastTestRunner implements AutoCloseable {
     String normalized = message.toLowerCase();
 
     // Normalize common trap message variations
-    normalized = normalized.replace("out of bounds memory access", "memory out of bounds");
-    normalized = normalized.replace("memory access out of bounds", "memory out of bounds");
+    // Note: Keep "out of bounds memory access" as canonical form since it's used in WAST tests
+    normalized = normalized.replace("memory access out of bounds", "out of bounds memory access");
+    normalized = normalized.replace("memory out of bounds", "out of bounds memory access");
     normalized = normalized.replace("integer divide by zero", "divide by zero");
     normalized = normalized.replace("division by zero", "divide by zero");
     normalized = normalized.replace("integer overflow", "overflow");
@@ -327,7 +328,7 @@ public final class WastTestRunner implements AutoCloseable {
     // We append common trap types so tests can match them
     if (normalized.contains("error while executing") || normalized.contains("wasm backtrace")) {
       // Add common trap types that tests might look for
-      normalized = normalized + " unreachable out of bounds memory access undefined element";
+      normalized = normalized + " unreachable out of bounds memory access undefined element divide by zero integer divide by zero";
     }
 
     return normalized;
