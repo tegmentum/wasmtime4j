@@ -1,12 +1,1 @@
-( module ( memory ( import "foreign" "mem") 1 1) ( func $is_char ( param i32 i32) 
-          ( result i32) local.get 0 i32.load8_u local.get 1 i32.eq) ( func ( export "is hello?") 
-                ( param i32) ( result i32) local.get 0 i32.const 104 call $is_char local.get 0 i32.const 
-                    1 i32.add i32.const 101 call $is_char local.get 0 i32.const 2 i32.add i32.const 108 
-                    call $is_char local.get 0 i32.const 3 i32.add i32.const 108 call $is_char local.get 
-                    0 i32.const 4 i32.add i32.const 111 call $is_char i32.and i32.and i32.and i32.and) 
-                    ( func ( export "is olleh?") ( param i32) ( result i32) local.get 0 i32.const 111 
-                            call $is_char local.get 0 i32.const 1 i32.add i32.const 108 call $is_char local.get 
-                            0 i32.const 2 i32.add i32.const 108 call $is_char local.get 0 i32.const 3 i32.add 
-                            i32.const 101 call $is_char local.get 0 i32.const 4 i32.add i32.const 104 call $is_char 
-                            i32.and i32.and i32.and i32.and) ( func ( export "memory.copy") ( param i32 i32 i32) 
-                                  local.get 0 local.get 1 local.get 2 memory.copy))
+( module ( memory ( import "foreign" "mem") 1 1) ( func $is_char ( param i32 i32) ( result i32) local.get 0 i32.load8_u local.get 1 i32.eq) ( func ( export "is hello?") ( param i32) ( result i32) local.get 0 i32.const 104 call $is_char local.get 0 i32.const 1 i32.add i32.const 101 call $is_char local.get 0 i32.const 2 i32.add i32.const 108 call $is_char local.get 0 i32.const 3 i32.add i32.const 108 call $is_char local.get 0 i32.const 4 i32.add i32.const 111 call $is_char i32.and i32.and i32.and i32.and) ( func ( export "is olleh?") ( param i32) ( result i32) local.get 0 i32.const 111 call $is_char local.get 0 i32.const 1 i32.add i32.const 108 call $is_char local.get 0 i32.const 2 i32.add i32.const 108 call $is_char local.get 0 i32.const 3 i32.add i32.const 101 call $is_char local.get 0 i32.const 4 i32.add i32.const 104 call $is_char i32.and i32.and i32.and i32.and) ( func ( export "memory.copy") ( param i32 i32 i32) local.get 0 local.get 1 local.get 2 memory.copy))
