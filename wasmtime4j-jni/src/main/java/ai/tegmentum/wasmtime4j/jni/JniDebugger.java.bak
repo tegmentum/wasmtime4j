@@ -1038,7 +1038,7 @@ public final class JniDebugger {
   static {
     try {
       // Ensure native library is loaded
-      System.loadLibrary("wasmtime4j_v2");
+      System.loadLibrary("wasmtime4j");
       LOGGER.log(Level.FINE, "Loaded native library for JNI debugger");
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.log(Level.SEVERE, "Failed to load native library", e);

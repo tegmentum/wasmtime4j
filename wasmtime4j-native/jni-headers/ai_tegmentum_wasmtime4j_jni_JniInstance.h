@@ -106,18 +106,18 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nati
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeCallI32Function
- * Signature: (JLjava/lang/String;[I)I
+ * Signature: (JJLjava/lang/String;[I)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32Function
-  (JNIEnv *, jclass, jlong, jstring, jintArray);
+  (JNIEnv *, jclass, jlong, jlong, jstring, jintArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeCallI32FunctionNoParams
- * Signature: (JLjava/lang/String;)I
+ * Signature: (JJLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32FunctionNoParams
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance

@@ -1,18 +1,28 @@
-package ai.tegmentum.wasmtime4j.jni;
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+package ai.tegmentum.wasmtime4j.jni;
 
 /**
  * Results from executing a complete WAST file.
  *
- * <p>This class contains comprehensive information about the execution of a WAST (WebAssembly Test)
- * file, including overall pass/fail status, individual directive results, and any execution errors
- * that occurred.
+ * <p>Contains aggregate statistics and detailed results for all directives in a WAST script. WAST
+ * (WebAssembly Script) is the test format used by the WebAssembly specification.
  *
- * <p>WAST files are the standard test format used by the WebAssembly specification and Wasmtime
- * runtime. They contain module definitions and test assertions that verify WebAssembly behavior.
+ * @since 1.0.0
  */
 public final class WastExecutionResult {
 
@@ -30,8 +40,8 @@ public final class WastExecutionResult {
    * @param totalDirectives the total number of directives in the file
    * @param passedDirectives the number of directives that passed
    * @param failedDirectives the number of directives that failed
-   * @param executionError overall execution error message, or null if execution succeeded
-   * @param directiveResults array of individual directive results
+   * @param executionError an overall execution error message, or null if no error
+   * @param directiveResults detailed results for each directive
    */
   public WastExecutionResult(
       final String filePath,
@@ -45,8 +55,7 @@ public final class WastExecutionResult {
     this.passedDirectives = passedDirectives;
     this.failedDirectives = failedDirectives;
     this.executionError = executionError;
-    this.directiveResults =
-        directiveResults != null ? directiveResults : new WastDirectiveResult[0];
+    this.directiveResults = directiveResults;
   }
 
   /**
@@ -86,27 +95,27 @@ public final class WastExecutionResult {
   }
 
   /**
-   * Gets the overall execution error message, if any.
+   * Gets the overall execution error message if the WAST execution failed.
    *
-   * @return the execution error message, or null if execution succeeded
+   * @return the execution error message, or null if no error occurred
    */
   public String getExecutionError() {
     return executionError;
   }
 
   /**
-   * Gets the individual directive results.
+   * Gets detailed results for each directive in the WAST file.
    *
-   * @return an unmodifiable list of directive results
+   * @return array of directive results
    */
-  public List<WastDirectiveResult> getDirectiveResults() {
-    return Collections.unmodifiableList(Arrays.asList(directiveResults));
+  public WastDirectiveResult[] getDirectiveResults() {
+    return directiveResults;
   }
 
   /**
    * Checks if all directives passed.
    *
-   * @return true if all directives passed and there were no execution errors
+   * @return true if all directives passed and there was no execution error
    */
   public boolean allPassed() {
     return executionError == null && failedDirectives == 0;
@@ -115,7 +124,7 @@ public final class WastExecutionResult {
   /**
    * Gets the pass rate as a percentage.
    *
-   * @return the pass rate (0.0 to 100.0)
+   * @return the pass rate (0-100)
    */
   public double getPassRate() {
     if (totalDirectives == 0) {
@@ -126,16 +135,24 @@ public final class WastExecutionResult {
 
   @Override
   public String toString() {
-    if (allPassed()) {
-      return String.format(
-          "WastExecutionResult[file=%s, passed=%d/%d (100%%)]",
-          filePath, passedDirectives, totalDirectives);
-    } else if (executionError != null) {
-      return String.format("WastExecutionResult[file=%s, error=%s]", filePath, executionError);
-    } else {
-      return String.format(
-          "WastExecutionResult[file=%s, passed=%d/%d (%.1f%%), failed=%d]",
-          filePath, passedDirectives, totalDirectives, getPassRate(), failedDirectives);
+    final StringBuilder sb = new StringBuilder();
+    sb.append("WAST Execution Result: ").append(filePath).append('\n');
+    sb.append("Total: ").append(totalDirectives);
+    sb.append(", Passed: ").append(passedDirectives);
+    sb.append(", Failed: ").append(failedDirectives);
+    sb.append(" (").append(String.format("%.1f", getPassRate())).append("%)\n");
+
+    if (executionError != null) {
+      sb.append("Execution Error: ").append(executionError).append('\n');
     }
+
+    if (directiveResults != null && directiveResults.length > 0) {
+      sb.append("Directive Results:\n");
+      for (final WastDirectiveResult result : directiveResults) {
+        sb.append("  ").append(result).append('\n');
+      }
+    }
+
+    return sb.toString();
   }
 }

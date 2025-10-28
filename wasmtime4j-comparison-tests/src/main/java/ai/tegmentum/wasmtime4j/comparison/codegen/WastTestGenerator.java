@@ -1130,8 +1130,17 @@ public final class WastTestGenerator {
           result.add(String.format("WasmValue.f64(%s)", convertF64Literal(value)));
           i += 4;
         } else if (type.equals("ref.null")) {
-          result.add("WasmValue.externref(null)");
-          i += 4; // Skip ( ref.null extern )
+          // Check the reference type: func or extern
+          final String refType = tokens.get(i + 2);
+          if (refType.equals("func")) {
+            result.add("WasmValue.funcref(null)");
+          } else if (refType.equals("extern")) {
+            result.add("WasmValue.externref(null)");
+          } else {
+            // Default to externref for compatibility
+            result.add("WasmValue.externref(null)");
+          }
+          i += 4; // Skip ( ref.null <type> )
         } else if (type.equals("ref.extern")) {
           final String value = tokens.get(i + 2);
           result.add(String.format("WasmValue.externref(%sL)", value));

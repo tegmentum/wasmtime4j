@@ -659,8 +659,14 @@ public final class JniInstance extends JniResource implements Instance {
     JniValidation.requireNonNull(params, "params");
     ensureNotClosed();
 
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
+    }
+
     try {
-      return nativeCallI32Function(getNativeHandle(), functionName, params);
+      final JniStore jniStore = (JniStore) store;
+      return nativeCallI32Function(
+          getNativeHandle(), jniStore.getNativeHandle(), functionName, params);
     } catch (final Exception e) {
       throw new WasmException("Failed to call I32 function " + functionName, e);
     }
@@ -683,8 +689,14 @@ public final class JniInstance extends JniResource implements Instance {
     JniValidation.requireNonEmpty(functionName, "functionName");
     ensureNotClosed();
 
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
+    }
+
     try {
-      return nativeCallI32FunctionNoParams(getNativeHandle(), functionName);
+      final JniStore jniStore = (JniStore) store;
+      return nativeCallI32FunctionNoParams(
+          getNativeHandle(), jniStore.getNativeHandle(), functionName);
     } catch (final Exception e) {
       throw new WasmException("Failed to call I32 function " + functionName, e);
     }
@@ -944,21 +956,24 @@ public final class JniInstance extends JniResource implements Instance {
    * Calls a 32-bit integer function with parameters.
    *
    * @param instanceHandle the native instance handle
+   * @param storeHandle the native store handle
    * @param functionName the name of the function to call
    * @param params array of 32-bit integer parameters
    * @return the 32-bit integer result
    */
   private static native int nativeCallI32Function(
-      long instanceHandle, String functionName, int[] params);
+      long instanceHandle, long storeHandle, String functionName, int[] params);
 
   /**
    * Calls a 32-bit integer function with no parameters.
    *
    * @param instanceHandle the native instance handle
+   * @param storeHandle the native store handle
    * @param functionName the name of the function to call
    * @return the 32-bit integer result
    */
-  private static native int nativeCallI32FunctionNoParams(long instanceHandle, String functionName);
+  private static native int nativeCallI32FunctionNoParams(
+      long instanceHandle, long storeHandle, String functionName);
 
   /**
    * Gets the state of a native instance.

@@ -1,0 +1,1 @@
+( module ( type $t ( func)) ( func ( param $r ( ref $t)) ( drop ( ref.is_null ( local.get $r)))) ( func ( param $r ( ref func)) ( drop ( ref.is_null ( local.get $r)))) ( func ( param $r ( ref extern)) ( drop ( ref.is_null ( local.get $r)))))

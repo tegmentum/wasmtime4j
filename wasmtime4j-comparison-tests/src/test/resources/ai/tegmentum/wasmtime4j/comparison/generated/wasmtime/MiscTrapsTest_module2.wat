@@ -1,2 +1,1 @@
-( module ( memory 1 1) ( func ( export "store_oob") i32.const 65536 i32.const 65536 
-        i32.store))
+( module ( memory 1 1) ( func ( export "store_oob") i32.const 65536 i32.const 65536 i32.store))

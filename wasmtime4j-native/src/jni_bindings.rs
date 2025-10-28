@@ -218,23 +218,16 @@ pub mod jni_instance {
                 .map_err(|e| WasmtimeError::InvalidParameter {
                     message: format!("Failed to get array length: {}", e)
                 })?;
-            eprintln!("ZYXWV_BUILD_VERIFIED_20251021_082527");
-            eprintln!("=== RUST JNI: nativeCallFunction ===");
-            eprintln!("📊 PARAM COUNT: {}", param_count);
             let mut wasm_params = Vec::with_capacity(param_count as usize);
 
             for i in 0..param_count {
-                println!("🔍 Processing parameter {} of {}", i, param_count);
                 let param_obj = env.get_object_array_element(&params_array, i)
                     .map_err(|e| WasmtimeError::InvalidParameter {
                         message: format!("Failed to get parameter {}: {}", i, e)
                     })?;
 
-                println!("🔍 param_obj is_null: {}", param_obj.is_null());
-
                 // Check if it's a WasmValue object
                 let is_wasm_value = env.is_instance_of(&param_obj, "ai/tegmentum/wasmtime4j/WasmValue").unwrap_or(false);
-                println!("🔍 is_instance_of WasmValue: {}", is_wasm_value);
 
                 if is_wasm_value {
                     // Get the type from WasmValue.getType()
@@ -251,16 +244,12 @@ pub mod jni_instance {
                             message: format!("Failed to get type ordinal: {}", e)
                         })?;
 
-                    eprintln!("🔍 Type ordinal: {}", type_ordinal);
-
                     // Get the value from WasmValue.getValue()
                     let value_obj = env.call_method(&param_obj, "getValue", "()Ljava/lang/Object;", &[])
                         .and_then(|v| v.l())
                         .map_err(|e| WasmtimeError::InvalidParameter {
                             message: format!("Failed to get value from WasmValue: {}", e)
                         })?;
-
-                    eprintln!("🔍 value_obj is_null: {}", value_obj.is_null());
 
                     // Convert based on type ordinal (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF)
                     match type_ordinal {
@@ -308,8 +297,6 @@ pub mod jni_instance {
                             wasm_params.push(WasmValue::FuncRef(ref_value));
                         }
                         6 => { // EXTERNREF
-                            println!("🔍 Processing EXTERNREF parameter");
-                            println!("🔍 value_obj.is_null(): {}", value_obj.is_null());
                             // Extract the Long value from the externref
                             let ref_value = if !value_obj.is_null() {
                                 env.call_method(&value_obj, "longValue", "()J", &[])
@@ -318,9 +305,7 @@ pub mod jni_instance {
                             } else {
                                 None
                             };
-                            println!("🔍 EXTERNREF value: {:?}", ref_value);
                             wasm_params.push(WasmValue::ExternRef(ref_value));
-                            println!("🔍 Pushed EXTERNREF to wasm_params, count now: {}", wasm_params.len());
                         }
                         _ => {
                             return Err(WasmtimeError::InvalidParameter {
@@ -377,10 +362,6 @@ pub mod jni_instance {
                     });
                 }
             }
-
-            println!("🔍 Final wasm_params count: {}", wasm_params.len());
-            println!("🔍 wasm_params: {:?}", wasm_params);
-            println!("🔍 Calling instance.call_export_function with function name: {}", name_str);
 
             // Call the function using Instance's built-in method
             let exec_result: ExecutionResult = instance.call_export_function(store, &name_str, &wasm_params)?;
@@ -508,11 +489,45 @@ pub mod jni_instance {
             Ok(array) => array,
             Err(e) => {
                 // Throw a Java exception with the error details
-                let error_msg = format!("nativeCallFunction failed: {:?}", e);
+                // Use Display format ({}) instead of Debug ({:?}) to get clean error messages
+                let error_msg = format!("{}", e);
                 let _ = env.throw_new("java/lang/RuntimeException", error_msg);
                 std::ptr::null_mut()
             }
         }
+    }
+
+    /// Get a function export from the instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFunction(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        store_handle: jlong,
+        name: JString,
+    ) -> jlong {
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Get the function export
+            let func_opt = instance.get_func(store, &name_str)?;
+
+            match func_opt {
+                Some(func) => {
+                    // Box the function and return its pointer
+                    Ok(Box::into_raw(Box::new(func)) as jlong)
+                }
+                None => Ok(0), // Return 0 for not found
+            }
+        })
     }
 
     /// Get a global export from the instance
@@ -623,6 +638,232 @@ pub mod jni_instance {
                 None => Ok(0), // Return 0 for not found
             }
         })
+    }
+
+    /// Check if an instance has a specific export
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHasExport(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        name: JString,
+    ) -> jboolean {
+        let name_str: String = match env.get_string(&name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+
+            // Check if the export exists by getting the list of export names
+            let exports = core::get_all_exports(instance);
+            let has_export = exports.contains_key(&name_str);
+            Ok(if has_export { 1 } else { 0 })
+        })
+    }
+
+    /// Destroy a native instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance(
+        _env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+    ) {
+        if instance_handle != 0 {
+            use std::os::raw::c_void;
+            unsafe {
+                // Drop the boxed instance
+                let _ = Box::from_raw(instance_handle as *mut c_void);
+            }
+        }
+    }
+
+    /// Dispose of a native instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDispose(
+        _env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+    ) -> jboolean {
+        if instance_handle != 0 {
+            use std::os::raw::c_void;
+            unsafe {
+                // Drop the boxed instance
+                let _ = Box::from_raw(instance_handle as *mut c_void);
+            }
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Check if an instance has been disposed
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsDisposed(
+        _env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+    ) -> jboolean {
+        // If handle is 0, it's been disposed
+        if instance_handle == 0 {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Get the creation timestamp of an instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetCreatedAtMicros(
+        _env: JNIEnv,
+        _class: JClass,
+        _instance_handle: jlong,
+    ) -> jlong {
+        // Return current time in microseconds as a placeholder
+        use std::time::{SystemTime, UNIX_EPOCH};
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(duration) => duration.as_micros() as jlong,
+            Err(_) => 0,
+        }
+    }
+
+    /// Get metadata export count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMetadataExportCount(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+            let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+
+            // Count the number of exports
+            let exports = core::get_all_exports(instance);
+            let count = exports.len() as jlong;
+            Ok(count)
+        })
+    }
+
+    /// Call an i32 function with i32 parameters
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32Function(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        store_handle: jlong,
+        function_name: JString,
+        params: jintArray,
+    ) -> jint {
+        use crate::instance::WasmValue;
+        use std::os::raw::c_void;
+        use jni::objects::JPrimitiveArray;
+
+        let result = (|| -> WasmtimeResult<jint> {
+            // Get the instance and store
+            let instance = unsafe { core::get_instance_mut(instance_handle as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Convert function name
+            let name_str: String = env.get_string(&function_name)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert function name: {}", e)
+                })?.into();
+
+            // Convert int array to WasmValue::I32 vector
+            let params_array = unsafe { JPrimitiveArray::from_raw(params) };
+            let param_count = env.get_array_length(&params_array)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get array length: {}", e)
+                })?;
+
+            let mut int_values = vec![0i32; param_count as usize];
+            env.get_int_array_region(&params_array, 0, &mut int_values)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get int array: {}", e)
+                })?;
+
+            let wasm_params: Vec<WasmValue> = int_values.into_iter()
+                .map(WasmValue::I32)
+                .collect();
+
+            // Call the function
+            let exec_result = instance.call_export_function(store, &name_str, &wasm_params)?;
+
+            // Extract the first result as i32
+            if exec_result.values.is_empty() {
+                return Err(WasmtimeError::Function {
+                    message: "Function returned no values".to_string(),
+                });
+            }
+
+            match exec_result.values[0] {
+                WasmValue::I32(value) => Ok(value),
+                _ => Err(WasmtimeError::Function {
+                    message: "Function did not return an i32 value".to_string(),
+                }),
+            }
+        })();
+
+        match result {
+            Ok(value) => value,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                -1
+            }
+        }
+    }
+
+    /// Call an i32 function with no parameters
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32FunctionNoParams(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_handle: jlong,
+        store_handle: jlong,
+        function_name: JString,
+    ) -> jint {
+        use crate::instance::WasmValue;
+        use std::os::raw::c_void;
+
+        let result = (|| -> WasmtimeResult<jint> {
+            // Get the instance and store
+            let instance = unsafe { core::get_instance_mut(instance_handle as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Convert function name
+            let name_str: String = env.get_string(&function_name)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert function name: {}", e)
+                })?.into();
+
+            // Call the function with no parameters
+            let exec_result = instance.call_export_function(store, &name_str, &[])?;
+
+            // Extract the first result as i32
+            if exec_result.values.is_empty() {
+                return Err(WasmtimeError::Function {
+                    message: "Function returned no values".to_string(),
+                });
+            }
+
+            match exec_result.values[0] {
+                WasmValue::I32(value) => Ok(value),
+                _ => Err(WasmtimeError::Function {
+                    message: "Function did not return an i32 value".to_string(),
+                }),
+            }
+        })();
+
+        match result {
+            Ok(value) => value,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                -1
+            }
+        }
     }
 }
 

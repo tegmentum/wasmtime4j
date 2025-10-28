@@ -1,14 +1,16 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
+
 /**
  * JNI library loader utility class.
+ *
+ * <p>This class delegates to {@link NativeLibraryLoader} which handles extracting the native
+ * library from JAR resources.
  *
  * @since 1.0.0
  */
 public final class JniLibraryLoader {
-
-  private static volatile boolean loaded = false;
-  private static final Object LOAD_LOCK = new Object();
 
   private JniLibraryLoader() {
     // Utility class
@@ -20,18 +22,7 @@ public final class JniLibraryLoader {
    * @throws RuntimeException if loading fails
    */
   public static void ensureLoaded() {
-    if (!loaded) {
-      synchronized (LOAD_LOCK) {
-        if (!loaded) {
-          try {
-            System.loadLibrary("wasmtime4j");
-            loaded = true;
-          } catch (UnsatisfiedLinkError e) {
-            throw new RuntimeException("Failed to load wasmtime4j native library", e);
-          }
-        }
-      }
-    }
+    NativeLibraryLoader.loadLibrary();
   }
 
   /**
@@ -40,6 +31,6 @@ public final class JniLibraryLoader {
    * @return true if loaded
    */
   public static boolean isLoaded() {
-    return loaded;
+    return NativeLibraryLoader.isLibraryLoaded();
   }
 }

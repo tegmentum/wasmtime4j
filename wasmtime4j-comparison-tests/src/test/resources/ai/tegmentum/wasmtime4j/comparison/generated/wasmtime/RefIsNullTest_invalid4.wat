@@ -1,0 +1,1 @@
+( module ( func $ref-vs-empty ( ref.is_null)))

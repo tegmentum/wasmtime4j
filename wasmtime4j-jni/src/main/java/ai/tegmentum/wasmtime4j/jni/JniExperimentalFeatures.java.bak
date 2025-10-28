@@ -37,7 +37,7 @@ public final class JniExperimentalFeatures {
   static {
     // Load the native library
     try {
-      System.loadLibrary("wasmtime4j_v2");
+      System.loadLibrary("wasmtime4j_native");
     } catch (final UnsatisfiedLinkError e) {
       logger.severe("Failed to load native library: " + e.getMessage());
       throw new RuntimeException("Failed to load wasmtime4j native library", e);

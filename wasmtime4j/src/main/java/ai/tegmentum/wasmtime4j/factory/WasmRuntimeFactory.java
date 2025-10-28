@@ -276,6 +276,9 @@ public final class WasmRuntimeFactory {
         return false;
       } catch (final ExceptionInInitializerError e) {
         logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        if (e.getCause() != null) {
+          logger.warning("  Caused by: " + sanitizeForLog(e.getCause().toString()));
+        }
         jniAvailable = Boolean.FALSE;
         return false;
       } catch (final Exception e) {
@@ -310,6 +313,9 @@ public final class WasmRuntimeFactory {
         return false;
       } catch (final ExceptionInInitializerError e) {
         logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        if (e.getCause() != null) {
+          logger.warning("  Caused by: " + sanitizeForLog(e.getCause().toString()));
+        }
         panamaAvailable = Boolean.FALSE;
         return false;
       } catch (final Exception e) {
