@@ -204,6 +204,9 @@
 
                         <!-- WideArithmeticTest: Uses i64.add128 extension instruction (not in standard WASM) -->
                         <exclude>**/comparison/generated/wasmtime/WideArithmeticTest.java</exclude>
+
+                        <!-- WASI tests: WASI support not yet implemented -->
+                        <exclude>**/comparison/wasi/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>
