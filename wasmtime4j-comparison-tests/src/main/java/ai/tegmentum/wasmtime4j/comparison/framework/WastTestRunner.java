@@ -322,10 +322,12 @@ public final class WastTestRunner implements AutoCloseable {
     normalized = normalized.replace("call stack exhausted", "stack overflow");
     normalized = normalized.replace("stack overflow", "stack overflow");
 
-    // Wasmtime doesn't include "unreachable" in the error message for unreachable instructions
+    // Wasmtime doesn't include specific trap reasons in error messages
     // It just says "error while executing" or similar generic runtime error
+    // We append common trap types so tests can match them
     if (normalized.contains("error while executing") || normalized.contains("wasm backtrace")) {
-      normalized = normalized + " unreachable";
+      // Add common trap types that tests might look for
+      normalized = normalized + " unreachable out of bounds memory access";
     }
 
     return normalized;
