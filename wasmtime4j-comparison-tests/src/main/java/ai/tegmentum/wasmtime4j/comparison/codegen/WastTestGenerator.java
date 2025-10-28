@@ -524,8 +524,8 @@ public final class WastTestGenerator {
    */
   private static void writeWatFilesFromWast(final Path wastFile, final Path outputDir)
       throws IOException {
-    final Path projectRoot = findProjectRoot(wastFile);
-    final Path resourcesDir = projectRoot.resolve("wasmtime4j-comparison-tests/src/test/resources");
+    // Convert outputDir from .../src/test/java to .../src/test/resources
+    final Path resourcesDir = outputDir.getParent().resolve("resources");
 
     for (final WatFileToCreate watFile : watFilesToCreate) {
       final Path watFilePath = resourcesDir.resolve(watFile.path);
