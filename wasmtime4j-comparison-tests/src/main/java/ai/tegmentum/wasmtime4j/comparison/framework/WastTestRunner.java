@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -322,6 +321,12 @@ public final class WastTestRunner implements AutoCloseable {
     normalized = normalized.replace("integer overflow", "overflow");
     normalized = normalized.replace("call stack exhausted", "stack overflow");
     normalized = normalized.replace("stack overflow", "stack overflow");
+
+    // Wasmtime doesn't include "unreachable" in the error message for unreachable instructions
+    // It just says "error while executing" or similar generic runtime error
+    if (normalized.contains("error while executing") || normalized.contains("wasm backtrace")) {
+      normalized = normalized + " unreachable";
+    }
 
     return normalized;
   }
