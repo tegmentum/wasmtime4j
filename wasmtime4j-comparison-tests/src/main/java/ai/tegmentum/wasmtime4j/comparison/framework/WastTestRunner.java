@@ -24,6 +24,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -404,6 +405,11 @@ public final class WastTestRunner implements AutoCloseable {
         return Float.compare(expected.asFloat(), actual.asFloat()) == 0;
       case F64:
         return Double.compare(expected.asDouble(), actual.asDouble()) == 0;
+      case EXTERNREF:
+      case FUNCREF:
+      case V128:
+        // Use WasmValue.equals() for reference types and vectors
+        return expected.equals(actual);
       default:
         return false;
     }

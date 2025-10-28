@@ -556,6 +556,46 @@ public final class WasmValue {
   }
 
   @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final WasmValue other = (WasmValue) obj;
+    if (type != other.type) {
+      return false;
+    }
+
+    // Handle null values
+    if (value == null) {
+      return other.value == null;
+    }
+
+    // Special handling for byte arrays (V128)
+    if (type == WasmValueType.V128) {
+      return java.util.Arrays.equals((byte[]) value, (byte[]) other.value);
+    }
+
+    // For all other types, use standard equals
+    return value.equals(other.value);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = type != null ? type.hashCode() : 0;
+    if (value != null) {
+      if (type == WasmValueType.V128) {
+        result = 31 * result + java.util.Arrays.hashCode((byte[]) value);
+      } else {
+        result = 31 * result + value.hashCode();
+      }
+    }
+    return result;
+  }
+
+  @Override
   public String toString() {
     if (type == WasmValueType.V128) {
       final byte[] bytes = (byte[]) value;
