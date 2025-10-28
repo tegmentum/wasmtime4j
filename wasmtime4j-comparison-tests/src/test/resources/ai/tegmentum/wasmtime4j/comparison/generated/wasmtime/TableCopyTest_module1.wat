@@ -1,6 +1,1 @@
-( module ( func $f ( param i32 i32 i32) ( result i32) ( local.get 0)) ( func $g ( 
-              param i32 i32 i32) ( result i32) ( local.get 1)) ( func $h ( param i32 i32 i32) ( 
-                        result i32) ( local.get 2)) ( table funcref ( elem $f $g $h $f $g $h $f $g $h)) ( 
-                                func ( export "copy") ( param i32 i32 i32) local.get 0 local.get 1 local.get 2 table.copy) 
-                                    ( func ( export "call") ( param i32 i32 i32 i32) ( result i32) local.get 0 local.get 
-                                            1 local.get 2 local.get 3 call_indirect ( param i32 i32 i32) ( result i32)))
+( module ( func $f ( param i32 i32 i32) ( result i32) ( local.get 0)) ( func $g ( param i32 i32 i32) ( result i32) ( local.get 1)) ( func $h ( param i32 i32 i32) ( result i32) ( local.get 2)) ( table funcref ( elem $f $g $h $f $g $h $f $g $h)) ( func ( export "copy") ( param i32 i32 i32) local.get 0 local.get 1 local.get 2 table.copy) ( func ( export "call") ( param i32 i32 i32 i32) ( result i32) local.get 0 local.get 1 local.get 2 local.get 3 call_indirect ( param i32 i32 i32) ( result i32)))
