@@ -1,0 +1,2 @@
+( module $foreign ( memory ( export "mem") 1 1) ( data 0 ( i32.const 1000) "hello") 
+          ( data 0 ( i32.const 2000) "olleh"))

@@ -98,6 +98,13 @@
             <version>1.10.0</version>
         </dependency>
 
+        <!-- JavaPoet for code generation -->
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>1.13.0</version>
+        </dependency>
+
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -158,7 +165,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <!-- Force fresh JVM for each test to prevent native library caching -->
+                    <!-- Run tests sequentially to avoid resource conflicts -->
                     <reuseForks>false</reuseForks>
                     <forkCount>1</forkCount>
                     <includes>
@@ -171,15 +178,29 @@
                         <include>**/comparison/tables/**/*Test.java</include>
                         <include>**/comparison/wasi/**/*Test.java</include>
                         <include>**/comparison/linker/**/*Test.java</include>
+                        <include>**/comparison/module/**/*Test.java</include>
                         <include>**/comparison/Simple*Test.java</include>
                         <include>**/comparison/generated/func/**/*Test.java</include>
+                        <include>**/comparison/generated/wasmtime/**/*Test.java</include>
                     </includes>
                     <excludes>
+                        <!-- Trap tests (6 tests): Require enhanced trap message extraction from JNI layer -->
                         <exclude>**/comparison/generated/traps/**</exclude>
+
+                        <!-- Host function tests (7 tests): Require host function callback implementation -->
                         <exclude>**/comparison/generated/hostfuncs/**</exclude>
+
+                        <!-- Component model tests (1 test): Require component model support (WASM proposal) -->
                         <exclude>**/comparison/generated/componentmodel/**</exclude>
+
+                        <!-- Misc test suite (103 tests): Mixed bag - needs individual triage -->
                         <exclude>**/comparison/generated/misctestsuite/**</exclude>
+
+                        <!-- Analyzer utilities: Not actual tests -->
                         <exclude>**/comparison/analyzers/**</exclude>
+
+                        <!-- WideArithmeticTest: Uses i64.add128 extension instruction (not in standard WASM) -->
+                        <exclude>**/comparison/generated/wasmtime/WideArithmeticTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

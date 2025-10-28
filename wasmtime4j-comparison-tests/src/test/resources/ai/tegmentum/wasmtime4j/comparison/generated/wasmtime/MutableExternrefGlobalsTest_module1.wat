@@ -1,0 +1,3 @@
+( module ( global $mr ( mut externref) ( ref.null extern)) ( func ( export "get-mr") 
+            ( result externref) ( global.get $mr)) ( func ( export "set-mr") ( param externref) 
+                      ( global.set $mr ( local.get 0))))

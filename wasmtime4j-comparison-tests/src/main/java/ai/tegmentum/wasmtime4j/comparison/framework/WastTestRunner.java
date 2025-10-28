@@ -170,6 +170,31 @@ public final class WastTestRunner implements AutoCloseable {
   }
 
   /**
+   * Registers the current module's exports under a specified name in the linker.
+   *
+   * <p>This allows subsequent modules to import items from this module by using the registered name
+   * as the import module name. This is equivalent to the WAST (register "name") directive.
+   *
+   * <p>All exports from the current instance (tables, memories, globals, functions) will be made
+   * available to future module instantiations under the specified module name.
+   *
+   * @param moduleName the name to register this module under (e.g., "test")
+   * @throws Exception if registration fails
+   * @throws IllegalStateException if no current instance is available
+   */
+  public void registerModule(final String moduleName) throws Exception {
+    Objects.requireNonNull(moduleName, "Module name cannot be null");
+
+    if (currentInstance == null) {
+      throw new IllegalStateException("No current module instance to register");
+    }
+
+    // Use Linker.defineInstance() to register all exports at once
+    linker.defineInstance(moduleName, currentInstance);
+    hasHostFunctions = true; // Mark as using linker
+  }
+
+  /**
    * Invokes an exported function on the current instance.
    *
    * @param functionName the name of the exported function
@@ -258,13 +283,46 @@ public final class WastTestRunner implements AutoCloseable {
       throw new AssertionError("Expected trap but function call succeeded");
     } catch (final Exception e) {
       // Expected trap occurred
-      if (expectedTrapMessage != null && !e.getMessage().contains(expectedTrapMessage)) {
-        throw new AssertionError(
-            String.format(
-                "Expected trap message containing '%s' but got: %s",
-                expectedTrapMessage, e.getMessage()));
+      if (expectedTrapMessage != null) {
+        final String normalizedExpected = normalizeTrapMessage(expectedTrapMessage);
+        final String normalizedActual = normalizeTrapMessage(e.getMessage());
+
+        if (!normalizedActual.contains(normalizedExpected)) {
+          throw new AssertionError(
+              String.format(
+                  "Expected trap message containing '%s' but got: %s",
+                  expectedTrapMessage, e.getMessage()));
+        }
       }
     }
+  }
+
+  /**
+   * Normalizes trap messages to handle differences between JNI and Panama implementations.
+   *
+   * <p>Different runtimes may produce slightly different error messages for the same trap
+   * condition. This method normalizes common variations to canonical forms.
+   *
+   * @param message the trap message to normalize
+   * @return normalized message in lowercase with standardized wording
+   */
+  private static String normalizeTrapMessage(final String message) {
+    if (message == null) {
+      return "";
+    }
+
+    String normalized = message.toLowerCase();
+
+    // Normalize common trap message variations
+    normalized = normalized.replace("out of bounds memory access", "memory out of bounds");
+    normalized = normalized.replace("memory access out of bounds", "memory out of bounds");
+    normalized = normalized.replace("integer divide by zero", "divide by zero");
+    normalized = normalized.replace("division by zero", "divide by zero");
+    normalized = normalized.replace("integer overflow", "overflow");
+    normalized = normalized.replace("call stack exhausted", "stack overflow");
+    normalized = normalized.replace("stack overflow", "stack overflow");
+
+    return normalized;
   }
 
   /**

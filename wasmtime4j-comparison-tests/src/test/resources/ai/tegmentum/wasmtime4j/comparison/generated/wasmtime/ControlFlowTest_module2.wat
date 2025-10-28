@@ -1,0 +1,3 @@
+( module ( func ( export "if-without-result") ( param i32) ( param i32) ( result 
+            i32) ( if ( i32.eq ( local.get 0) ( local.get 1)) ( then ( unreachable))) ( local.get 
+                          0)))

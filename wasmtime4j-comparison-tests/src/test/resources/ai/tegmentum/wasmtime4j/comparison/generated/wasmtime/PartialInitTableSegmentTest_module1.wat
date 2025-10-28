@@ -1,0 +1,4 @@
+( module $m ( table ( export "table") funcref ( elem $zero $zero $zero $zero $zero 
+        $zero $zero $zero $zero $zero)) ( func $zero ( result i32) ( i32.const 0)) ( func 
+                ( export "indirect-call") ( param i32) ( result i32) local.get 0 call_indirect ( 
+                        result i32)))

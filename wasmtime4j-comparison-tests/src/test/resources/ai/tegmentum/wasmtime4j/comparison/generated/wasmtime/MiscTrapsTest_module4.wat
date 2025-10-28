@@ -1,0 +1,1 @@
+( module ( memory 0 0) ( func ( export "store_oob_0") i32.const 0 i32.const 0 i32.store))

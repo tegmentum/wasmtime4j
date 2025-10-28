@@ -1,0 +1,1 @@
+( module ( memory 1 1) ( func ( export "load_oob") i32.const 65536 i32.load drop))
