@@ -42,6 +42,7 @@ public final class TableCopyOnImportedTablesTest extends DualRuntimeTest {
           loadResource(
               "/ai/tegmentum/wasmtime4j/comparison/generated/wasmtime/TableCopyOnImportedTablesTest_module1.wat");
       runner.compileAndInstantiate(moduleWat1);
+      runner.registerModule("m");
 
       // Compile and instantiate module 2
       // WAT file:
