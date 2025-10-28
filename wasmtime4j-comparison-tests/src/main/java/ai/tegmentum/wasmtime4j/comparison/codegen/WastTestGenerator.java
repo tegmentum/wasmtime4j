@@ -297,14 +297,16 @@ public final class WastTestGenerator {
   }
 
   private static Path findProjectRoot(final Path testFile) {
+    // Find the root by looking for wasmtime4j-comparison-tests subdirectory
     Path current = testFile.getParent();
     while (current != null) {
-      if (Files.exists(current.resolve("pom.xml"))) {
+      if (Files.exists(current.resolve("wasmtime4j-comparison-tests"))
+          && Files.isDirectory(current.resolve("wasmtime4j-comparison-tests"))) {
         return current;
       }
       current = current.getParent();
     }
-    throw new RuntimeException("Could not find project root (pom.xml)");
+    throw new RuntimeException("Could not find project root (with wasmtime4j-comparison-tests)");
   }
 
   private static final class WatFileToCreate {
@@ -566,6 +568,10 @@ public final class WastTestGenerator {
             || next.equals("assert_unlinkable")) {
           final ParseResult result = parseDirective(tokens, i);
           generateAssertInvalid(result.content, next);
+          i = result.endIndex;
+        } else if (next.equals("invoke")) {
+          final ParseResult result = parseDirective(tokens, i);
+          generateInvoke(result.content);
           i = result.endIndex;
         } else {
           i++;
@@ -971,6 +977,64 @@ public final class WastTestGenerator {
     final String moduleName = directive.substring(firstQuote + 1, secondQuote);
 
     methodBody.addStatement("runner.registerModule($S)", moduleName);
+    methodBody.add("\n");
+  }
+
+  private static void generateInvoke(final String directive) {
+    // Parse: (invoke "name" args...)
+    final Pattern namePattern = Pattern.compile("invoke\\s+\"([^\"]+)\"");
+    final Matcher nameMatcher = namePattern.matcher(directive);
+
+    if (!nameMatcher.find()) {
+      methodBody.add("// $L\n", directive);
+      methodBody.add("// TODO: Parse invoke - no function name found\n");
+      methodBody.add("\n");
+      return;
+    }
+
+    final String functionName = nameMatcher.group(1);
+    final int functionNameEnd = nameMatcher.end();
+
+    // Find matching closing paren for invoke
+    int depth = 0;
+    int invokeEnd = -1;
+    for (int i = 0; i < directive.length(); i++) {
+      if (directive.charAt(i) == '(') {
+        depth++;
+      }
+      if (directive.charAt(i) == ')') {
+        depth--;
+        if (depth == 0) {
+          invokeEnd = i;
+          break;
+        }
+      }
+    }
+
+    if (invokeEnd == -1) {
+      methodBody.add("// $L\n", directive);
+      methodBody.add("// TODO: Parse invoke - malformed directive\n");
+      methodBody.add("\n");
+      return;
+    }
+
+    final String argsSection =
+        directive.substring(functionNameEnd, invokeEnd).trim().replaceAll("\\)\\s*$", "").trim();
+    final List<String> args = parseWasmValues(argsSection);
+
+    methodBody.add("// $L\n", directive);
+
+    // Generate standalone invoke call
+    if (args.isEmpty()) {
+      methodBody.addStatement("runner.invoke($S)", functionName);
+    } else {
+      methodBody.add("runner.invoke($S", functionName);
+      for (final String arg : args) {
+        methodBody.add(", $L", arg);
+      }
+      methodBody.add(");\n");
+    }
+
     methodBody.add("\n");
   }
 
