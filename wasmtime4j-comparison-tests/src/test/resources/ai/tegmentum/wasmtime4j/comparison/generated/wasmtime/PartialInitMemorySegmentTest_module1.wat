@@ -1,2 +1,1 @@
-( module $m ( memory ( export "mem") 1) ( func ( export "load") ( param i32) ( result 
-              i32) local.get 0 i32.load8_u))
+( module $m ( memory ( export "mem") 1) ( func ( export "load") ( param i32) ( result i32) local.get 0 i32.load8_u))

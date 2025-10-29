@@ -37,6 +37,12 @@ public class ModuleMemoryTest extends DualRuntimeTest {
     store = engine.createStore();
   }
 
+  /**
+   * Tests importing and exporting memory in WebAssembly modules.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import and export memory in same module")
@@ -63,10 +69,12 @@ public class ModuleMemoryTest extends DualRuntimeTest {
     // Initialize memory
     instance1.callFunction("init_mem");
 
+    // Get memory and keep a reference to it
+    final var sharedMemory = instance1.getMemory("shared_mem").orElseThrow();
+
     // Now create a linker and add the memory
     final Linker linker = Linker.create(engine);
-    linker.defineMemory(
-        store, "env", "imported_mem", instance1.getMemory("shared_mem").orElseThrow());
+    linker.defineMemory(store, "env", "imported_mem", sharedMemory);
 
     // Second module imports the memory
     final String wat2 =

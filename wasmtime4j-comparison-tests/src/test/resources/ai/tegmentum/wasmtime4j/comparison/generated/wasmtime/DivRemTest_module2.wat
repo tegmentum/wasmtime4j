@@ -1,2 +1,1 @@
-( module ( func ( export "i32.rem_s") ( param i32) ( param i32) ( result i32) ( i32.rem_s 
-              ( local.get 0) ( local.get 1))))
+( module ( func ( export "i32.rem_s") ( param i32) ( param i32) ( result i32) ( i32.rem_s ( local.get 0) ( local.get 1))))

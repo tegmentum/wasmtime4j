@@ -593,9 +593,10 @@ pub mod jni_instance {
 
             match memory_opt {
                 Some(memory) => {
-                    // Create a new Memory wrapper and return its pointer
+                    // Create a new Memory wrapper and register the handle
                     let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory);
-                    Ok(Box::into_raw(Box::new(memory_wrapper)) as jlong)
+                    let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                    Ok(validated_ptr as jlong)
                 }
                 None => Ok(0), // Return 0 for not found
             }

@@ -29,18 +29,22 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
  * <p>This class provides infrastructure for parameterized tests that verify behavior across both
  * runtime implementations, ensuring consistency and correctness.
  *
+ * <p>Performance timing data is automatically collected and reported at the end of the test suite.
+ *
  * <p>Usage:
  *
  * <pre>{@code
  * @ParameterizedTest
  * @ArgumentsSource(DualRuntimeTest.RuntimeProvider.class)
  * void testSomething(RuntimeType runtime) {
- *     System.setProperty("wasmtime4j.runtime", runtime.name().toLowerCase());
+ *     setRuntime(runtime);
  *     // Test code here
  * }
  * }</pre>
  */
 public abstract class DualRuntimeTest {
+
+  private static final ThreadLocal<RuntimeType> currentRuntime = new ThreadLocal<>();
 
   /**
    * JUnit 5 ArgumentsProvider that supplies both JNI and Panama runtime types for parameterized
@@ -77,6 +81,17 @@ public abstract class DualRuntimeTest {
     System.setProperty(WasmRuntimeFactory.RUNTIME_PROPERTY, runtime.name().toLowerCase());
     // Clear the factory cache to ensure the new runtime is selected
     WasmRuntimeFactory.clearCache();
+    // Store current runtime for performance tracking
+    currentRuntime.set(runtime);
+  }
+
+  /**
+   * Gets the currently configured runtime type for this thread.
+   *
+   * @return the current runtime type, or null if not set
+   */
+  protected static RuntimeType getCurrentRuntime() {
+    return currentRuntime.get();
   }
 
   /** Clears the runtime selection, reverting to automatic selection. */

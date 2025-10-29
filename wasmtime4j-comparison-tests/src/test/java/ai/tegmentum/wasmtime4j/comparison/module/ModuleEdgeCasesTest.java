@@ -20,8 +20,12 @@ public class ModuleEdgeCasesTest extends DualRuntimeTest {
 
   @AfterEach
   void cleanupRuntime() {
-    if (store != null) store.close();
-    if (engine != null) engine.close();
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
     clearRuntimeSelection();
   }
 
@@ -30,6 +34,12 @@ public class ModuleEdgeCasesTest extends DualRuntimeTest {
     store = engine.createStore();
   }
 
+  /**
+   * Tests that querying for non-existent exports returns empty.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Get non-existent export returns empty")
@@ -58,6 +68,12 @@ public class ModuleEdgeCasesTest extends DualRuntimeTest {
     instance.close();
   }
 
+  /**
+   * Tests instantiating a module with no imports or exports.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Module with no imports or exports")

@@ -1,7 +1,1 @@
-( module ( global $g ( mut i32) ( i32.const 0)) ( table 10 funcref) ( tag $t) ( elem 
-              ( i32.const 0) func $unreachable $div-by-zero $stack-overflow $actually-throw) ( 
-                  func $unreachable unreachable) ( func $div-by-zero i32.const 1 i32.const 0 i32.div_s 
-                    drop) ( func $stack-overflow call $stack-overflow) ( func $actually-throw throw $t) 
-                        ( func ( export "run") ( param i32) ( global.set $g ( i32.const 0)) ( block $h ( 
-                                      try_table ( catch_all $h) ( call_indirect ( local.get 0)) return)) ( global.set $g 
-                                              ( i32.const 1))) ( func ( export "g") ( result i32) ( global.get $g)))
+( module ( global $g ( mut i32) ( i32.const 0)) ( table 10 funcref) ( tag $t) ( elem ( i32.const 0) func $unreachable $div-by-zero $stack-overflow $actually-throw) ( func $unreachable unreachable) ( func $div-by-zero i32.const 1 i32.const 0 i32.div_s drop) ( func $stack-overflow call $stack-overflow) ( func $actually-throw throw $t) ( func ( export "run") ( param i32) ( global.set $g ( i32.const 0)) ( block $h ( try_table ( catch_all $h) ( call_indirect ( local.get 0)) return)) ( global.set $g ( i32.const 1))) ( func ( export "g") ( result i32) ( global.get $g)))

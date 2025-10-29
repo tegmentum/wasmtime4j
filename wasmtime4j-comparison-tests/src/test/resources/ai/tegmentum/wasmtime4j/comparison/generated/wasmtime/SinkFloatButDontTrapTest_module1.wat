@@ -1,7 +1,1 @@
-( module ( memory 1) ( func ( export "select-with-sink") ( param i32) ( result f64) 
-            local.get 0 f64.load f64.const 1 local.get 0 select return) ( func ( export "select-with-fcmp-and-sink") 
-                ( param i32 f64 f64) ( result f64) local.get 0 f64.load f64.const 1 local.get 1 local.get 
-                    2 f64.ne select return) ( func ( export "select-with-sink-other-way") ( param i32) 
-                          ( result f64) f64.const 1 local.get 0 f64.load local.get 0 select return) ( func 
-                              ( export "select-with-fcmp-and-sink-other-way") ( param i32 f64 f64) ( result f64) 
-                                    f64.const 1 local.get 0 f64.load local.get 1 local.get 2 f64.ne select return))
+( module ( memory 1) ( func ( export "select-with-sink") ( param i32) ( result f64) local.get 0 f64.load f64.const 1 local.get 0 select return) ( func ( export "select-with-fcmp-and-sink") ( param i32 f64 f64) ( result f64) local.get 0 f64.load f64.const 1 local.get 1 local.get 2 f64.ne select return) ( func ( export "select-with-sink-other-way") ( param i32) ( result f64) f64.const 1 local.get 0 f64.load local.get 0 select return) ( func ( export "select-with-fcmp-and-sink-other-way") ( param i32 f64 f64) ( result f64) f64.const 1 local.get 0 f64.load local.get 1 local.get 2 f64.ne select return))

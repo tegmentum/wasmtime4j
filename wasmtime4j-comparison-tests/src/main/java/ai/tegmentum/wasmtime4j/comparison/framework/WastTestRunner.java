@@ -359,7 +359,10 @@ public final class WastTestRunner implements AutoCloseable {
     // We append common trap types so tests can match them
     if (normalized.contains("error while executing") || normalized.contains("wasm backtrace")) {
       // Add common trap types that tests might look for
-      normalized = normalized + " unreachable out of bounds memory access undefined element divide by zero integer divide by zero";
+      normalized =
+          normalized
+              + " unreachable out of bounds memory access undefined element divide by zero"
+              + " integer divide by zero";
     }
 
     return normalized;

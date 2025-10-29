@@ -37,7 +37,8 @@ public final class WastDirectiveResult {
    * @param passed whether the directive passed
    * @param errorMessage the error message if the directive failed, null otherwise
    */
-  public WastDirectiveResult(final int lineNumber, final boolean passed, final String errorMessage) {
+  public WastDirectiveResult(
+      final int lineNumber, final boolean passed, final String errorMessage) {
     this.lineNumber = lineNumber;
     this.passed = passed;
     this.errorMessage = errorMessage;

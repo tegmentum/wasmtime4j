@@ -36,6 +36,12 @@ public class ModuleExportTest extends DualRuntimeTest {
     store = engine.createStore();
   }
 
+  /**
+   * Tests exporting a single function from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export single function")
@@ -64,6 +70,12 @@ public class ModuleExportTest extends DualRuntimeTest {
     instance.close();
   }
 
+  /**
+   * Tests exporting multiple functions from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export multiple functions")
@@ -112,6 +124,12 @@ public class ModuleExportTest extends DualRuntimeTest {
     instance.close();
   }
 
+  /**
+   * Tests exporting memory from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export memory")
@@ -140,6 +158,12 @@ public class ModuleExportTest extends DualRuntimeTest {
     instance.close();
   }
 
+  /**
+   * Tests exporting a table from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export table")
@@ -162,6 +186,12 @@ public class ModuleExportTest extends DualRuntimeTest {
     instance.close();
   }
 
+  /**
+   * Tests exporting the same function with multiple names from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export same function with different names")

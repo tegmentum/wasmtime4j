@@ -26,8 +26,12 @@ public class ModuleMixedItemsTest extends DualRuntimeTest {
 
   @AfterEach
   void cleanupRuntime() {
-    if (store != null) store.close();
-    if (engine != null) engine.close();
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
+    }
     clearRuntimeSelection();
   }
 
@@ -36,6 +40,12 @@ public class ModuleMixedItemsTest extends DualRuntimeTest {
     store = engine.createStore();
   }
 
+  /**
+   * Tests importing and exporting mixed items in a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import and export mixed items")
@@ -89,6 +99,12 @@ public class ModuleMixedItemsTest extends DualRuntimeTest {
     linker.close();
   }
 
+  /**
+   * Tests re-exporting an imported function from a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Re-export imported function")

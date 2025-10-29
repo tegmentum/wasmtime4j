@@ -40,6 +40,12 @@ public class ModuleImportTest extends DualRuntimeTest {
     store = engine.createStore();
   }
 
+  /**
+   * Tests importing a function from the host into a WebAssembly module.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import function from host")
@@ -75,6 +81,12 @@ public class ModuleImportTest extends DualRuntimeTest {
     linker.close();
   }
 
+  /**
+   * Tests importing a function with parameters from the host.
+   *
+   * @param runtime the runtime type to use (JNI or Panama)
+   * @throws Exception if the test fails
+   */
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import function with parameters from host")

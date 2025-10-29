@@ -1,6 +1,1 @@
-( module ( table $t 0 0 externref) ( func ( export "f1") ( i32.const 0) ( i32.const 
-            0) ( i32.const 0) ( table.init $t $declared)) ( func ( export "f2") ( i32.const 0) 
-                      ( i32.const 0) ( i32.const 0) ( table.init $t $passive) ( elem.drop $passive) ( i32.const 
-                                0) ( i32.const 0) ( i32.const 0) ( table.init $t $passive)) ( func ( export "f3") 
-                                          ( i32.const 0) ( i32.const 0) ( i32.const 0) ( table.init $t $active)) ( elem $declared 
-                                                    declare externref) ( elem $passive externref) ( elem $active ( i32.const 0) externref))
+( module ( table $t 0 0 externref) ( func ( export "f1") ( i32.const 0) ( i32.const 0) ( i32.const 0) ( table.init $t $declared)) ( func ( export "f2") ( i32.const 0) ( i32.const 0) ( i32.const 0) ( table.init $t $passive) ( elem.drop $passive) ( i32.const 0) ( i32.const 0) ( i32.const 0) ( table.init $t $passive)) ( func ( export "f3") ( i32.const 0) ( i32.const 0) ( i32.const 0) ( table.init $t $active)) ( elem $declared declare externref) ( elem $passive externref) ( elem $active ( i32.const 0) externref))

@@ -1,2 +1,1 @@
-( module ( func ( export "block") ( param i32) ( param i32) ( result i32) ( block 
-              ( result i32) local.get 0)))
+( module ( func ( export "block") ( param i32) ( param i32) ( result i32) ( block ( result i32) local.get 0)))
