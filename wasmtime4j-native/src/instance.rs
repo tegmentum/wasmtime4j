@@ -22,6 +22,7 @@ use wasmtime::{
 use crate::store::{Store, StoreData};
 use crate::module::{Module, ModuleValueType, FunctionSignature, ImportKind, ExportKind};
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::element_segment::ElementSegmentManager;
 
 /// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
 ///
@@ -34,6 +35,8 @@ pub struct Instance {
     exports_map: HashMap<String, ExportBinding>,
     /// Weak reference to the Store that created this instance
     store_weak: std::sync::Weak<ReentrantLock<Store>>,
+    /// Element segment manager for table.init() support
+    element_segment_manager: Arc<ElementSegmentManager>,
 }
 
 /// Lifecycle state of a WebAssembly instance
@@ -169,13 +172,17 @@ impl Instance {
         // Need to create a mutable context from the store
         use wasmtime::AsContextMut;
         let (metadata, imports_map, exports_map) = Self::build_instance_data(&instance, &mut (*store_guard).as_context_mut(), module, imports.len())?;
-        
+
+        // Create element segment manager from module's element segments
+        let element_segment_manager = Arc::new(ElementSegmentManager::new(module.element_segments.clone()));
+
         Ok(Instance {
             inner: Arc::new(ReentrantLock::new(instance)),
             metadata,
             imports_map,
             exports_map,
             store_weak: std::sync::Weak::new(), // Will be set later if needed
+            element_segment_manager,
         })
     }
     
@@ -237,12 +244,16 @@ impl Instance {
         )?;
         drop(store_guard);
 
+        // Create element segment manager from module's element segments
+        let element_segment_manager = Arc::new(ElementSegmentManager::new(module.element_segments.clone()));
+
         Ok(Instance {
             inner: Arc::new(ReentrantLock::new(wasmtime_instance)),
             metadata,
             imports_map,
             exports_map,
             store_weak: std::sync::Weak::new(), // Will be set later if needed
+            element_segment_manager,
         })
     }
 
@@ -722,6 +733,11 @@ impl Instance {
             Some(Extern::Table(table)) => Ok(Some(table)),
             _ => Ok(None),
         }
+    }
+
+    /// Get element segment manager for table.init() operations
+    pub fn get_element_segment_manager(&self) -> &Arc<ElementSegmentManager> {
+        &self.element_segment_manager
     }
 
     /// List all exports

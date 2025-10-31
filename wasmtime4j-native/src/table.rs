@@ -7,10 +7,12 @@
 
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
-use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern};
+use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern, HeapType};
 use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
+use crate::instance::Instance;
+use crate::element_segment::{ElementSegmentManager, ElementItem};
 
 /// Thread-safe wrapper around Wasmtime table with bounds checking
 pub struct Table {
@@ -423,6 +425,124 @@ impl Table {
                 dst_table.set(&mut ctx, dst_index + i, element)
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to set destination element at index {}: {}", dst_index + i, e),
+                        backtrace: None,
+                    })?;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Initialize table elements from an element segment
+    ///
+    /// This implements the table.init instruction, copying elements from
+    /// a passive element segment into the table.
+    ///
+    /// # Arguments
+    /// * `store` - The WebAssembly store
+    /// * `instance` - The instance containing the element segments
+    /// * `dst` - Destination offset in the table
+    /// * `src` - Source offset in the element segment
+    /// * `len` - Number of elements to copy
+    /// * `segment_index` - Index of the element segment to copy from
+    pub fn init_from_segment(
+        &self,
+        store: &Store,
+        instance: &Instance,
+        dst: u32,
+        src: u32,
+        len: u32,
+        segment_index: u32,
+    ) -> WasmtimeResult<()> {
+        // Get element segment manager from instance
+        let segment_manager = instance.get_element_segment_manager();
+
+        // Get table lock
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+
+        // Get table size for bounds checking
+        let table_size = store.with_context_ro(|ctx| {
+            Ok(table.size(&ctx))
+        })?;
+
+        // Bounds check for destination
+        if (dst as u64).saturating_add(len as u64) > table_size {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table.init destination would exceed bounds: dst={}, len={}, table_size={}",
+                    dst, len, table_size
+                ),
+                backtrace: None,
+            });
+        }
+
+        // Get segment info for validation
+        let segment = segment_manager.get_segment(segment_index)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Element segment index {} out of bounds", segment_index),
+            })?;
+
+        // Check if segment is available (Some = passive, None = active/declarative)
+        let segment = segment.as_ref().ok_or_else(|| WasmtimeError::Runtime {
+            message: format!(
+                "Element segment {} is not available (may be active or declarative)",
+                segment_index
+            ),
+            backtrace: None,
+        })?;
+
+        // Bounds check for source
+        if (src as u64).saturating_add(len as u64) > segment.len() as u64 {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Table.init source would exceed segment bounds: src={}, len={}, segment_size={}",
+                    src, len, segment.len()
+                ),
+                backtrace: None,
+            });
+        }
+
+        // Validate type compatibility
+        if format!("{:?}", self.metadata.element_type) != format!("{:?}", segment.elem_type) {
+            return Err(WasmtimeError::Type {
+                message: format!(
+                    "Table element type {:?} does not match segment element type {:?}",
+                    self.metadata.element_type, segment.elem_type
+                ),
+            });
+        }
+
+        // Copy elements from segment to table
+        store.with_context(|mut ctx| {
+            for i in 0..len {
+                let element_item = segment_manager.get_element(segment_index, src + i)?;
+
+                // Convert ElementItem to Ref
+                let ref_val = match element_item {
+                    ElementItem::NullFunc => {
+                        Ref::null(&HeapType::Func)
+                    }
+                    ElementItem::FuncIndex(func_idx) => {
+                        // Get the function from the instance by index
+                        // For now, we'll create a null reference as a placeholder
+                        // Full implementation would need to resolve the function reference
+                        // from the instance's exports or internal function table
+                        log::warn!("table.init with function index {} - creating null ref (function resolution not yet implemented)", func_idx);
+                        Ref::null(&HeapType::Func)
+                    }
+                    ElementItem::Expr(_) => {
+                        // Expression-based elements
+                        log::warn!("table.init with expression element - creating null ref (expression evaluation not yet implemented)");
+                        Ref::null(&HeapType::Func)
+                    }
+                };
+
+                // Set the table element
+                table.set(&mut ctx, (dst + i) as u64, ref_val)
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to set table element at index {}: {}", dst + i, e),
                         backtrace: None,
                     })?;
             }

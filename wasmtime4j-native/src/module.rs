@@ -6,13 +6,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use wasmtime::{
-    Module as WasmtimeModule, 
-    FuncType, 
+    Module as WasmtimeModule,
+    FuncType,
     ValType,
     Mutability,
 };
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::element_segment::ElementSegment;
+use crate::element_segment_parser::parse_element_segments;
 // Note: validation functions removed from crate root
 
 /// Thread-safe wrapper around Wasmtime module with introspection
@@ -20,6 +22,8 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 pub struct Module {
     inner: Arc<WasmtimeModule>,
     pub metadata: ModuleMetadata,
+    /// Element segments for table.init() operations (hybrid design - only passive segments cached)
+    pub element_segments: Vec<Option<ElementSegment>>,
 }
 
 /// Comprehensive module metadata for introspection and validation
@@ -46,7 +50,7 @@ pub struct ModuleMetadata {
 }
 
 /// Import information for validation and resolution
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ImportInfo {
     /// Module name that provides this import
     pub module: String,
@@ -57,7 +61,7 @@ pub struct ImportInfo {
 }
 
 /// Export information for binding and invocation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ExportInfo {
     /// Name of the exported item
     pub name: String,
@@ -77,7 +81,7 @@ pub struct FunctionInfo {
 }
 
 /// Function signature with parameter and return types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FunctionSignature {
     /// Parameter types for this function
     pub params: Vec<ModuleValueType>,
@@ -131,7 +135,7 @@ pub struct TableInfo {
 }
 
 /// WebAssembly value types with defensive validation
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ModuleValueType {
     /// 32-bit integer
     I32,
@@ -150,7 +154,7 @@ pub enum ModuleValueType {
 }
 
 /// Import kinds with type information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum ImportKind {
     /// Function import with signature
     Function(FunctionSignature),
@@ -163,7 +167,7 @@ pub enum ImportKind {
 }
 
 /// Export kinds with type information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum ExportKind {
     /// Function export with signature
     Function(FunctionSignature),
@@ -202,9 +206,17 @@ impl Module {
         // Extract comprehensive metadata
         let metadata = ModuleMetadata::extract(&module, wasm_bytes.len())?;
 
+        // Parse element segments for table.init() support (hybrid design)
+        let element_segments = parse_element_segments(wasm_bytes)
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to parse element segments: {:?}", e);
+                Vec::new()
+            });
+
         Ok(Module {
             inner: Arc::new(module),
             metadata,
+            element_segments,
         })
     }
 
@@ -370,9 +382,14 @@ impl Module {
         // This is a limitation we'll document
         let metadata = ModuleMetadata::empty();
 
+        // Element segments cannot be recovered from deserialized modules
+        // This is a known limitation - table.init() won't work with deserialized modules
+        let element_segments = Vec::new();
+
         Ok(Module {
             inner: Arc::new(module),
             metadata,
+            element_segments,
         })
     }
 }
