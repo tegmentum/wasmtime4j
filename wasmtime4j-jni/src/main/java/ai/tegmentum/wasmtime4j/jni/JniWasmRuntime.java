@@ -199,9 +199,49 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalStateException("JNI runtime is not valid or has been closed");
     }
 
-    // TODO: Implement store creation with StoreLimits
-    // For now, delegate to basic createStore
-    return createStore(engine);
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      final JniEngine jniEngine = (JniEngine) engine;
+      final long engineHandle = jniEngine.getNativeHandle();
+
+      // Call native method with StoreLimits
+      final long storeHandle =
+          nativeCreateStoreWithLimits(
+              engineHandle,
+              limits.getMemorySize(),
+              limits.getTableElements(),
+              limits.getInstances());
+
+      if (storeHandle == 0) {
+        throw new WasmException("Failed to create store with limits");
+      }
+
+      final JniStore store = new JniStore(storeHandle, jniEngine);
+
+      // Register store for concurrency management and cleanup
+      concurrencyManager.registerResource(storeHandle);
+      phantomManager.register(store, storeHandle, "nativeDestroyStore");
+
+      LOGGER.fine(
+          "Created store with limits - memory: "
+              + limits.getMemorySize()
+              + " bytes, tables: "
+              + limits.getTableElements()
+              + ", instances: "
+              + limits.getInstances()
+              + ", handle: 0x"
+              + Long.toHexString(storeHandle));
+
+      return store;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Unexpected error creating store with limits", e);
+    }
   }
 
   @Override
@@ -881,4 +921,16 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   private static native int nativeAddComponentModelToLinker(long runtimeHandle, long linkerHandle);
 
   private static native boolean nativeSupportsComponentModel(long runtimeHandle);
+
+  /**
+   * Creates a new store with resource limits.
+   *
+   * @param engineHandle the native engine handle
+   * @param memorySize the memory size limit in bytes (0 = unlimited)
+   * @param tableElements the table elements limit (0 = unlimited)
+   * @param instances the instances limit (0 = unlimited)
+   * @return the native store handle, or 0 on failure
+   */
+  private static native long nativeCreateStoreWithLimits(
+      long engineHandle, long memorySize, long tableElements, long instances);
 }
