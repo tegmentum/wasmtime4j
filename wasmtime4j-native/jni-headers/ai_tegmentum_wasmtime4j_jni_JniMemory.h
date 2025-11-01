@@ -77,6 +77,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyM
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeGetMemoryTypeInfo
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemoryTypeInfo
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeMemoryCopy
  * Signature: (JIII)V
  */

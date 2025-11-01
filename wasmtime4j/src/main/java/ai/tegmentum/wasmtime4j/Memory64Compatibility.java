@@ -496,6 +496,11 @@ public final class Memory64Compatibility {
       return delegate.supports64BitAddressing();
     }
 
+    @Override
+    public MemoryType getMemoryType() {
+      return delegate.getMemoryType();
+    }
+
     // Delegate all other methods directly
     @Override
     public int getMaxSize() {

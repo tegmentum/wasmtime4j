@@ -381,6 +381,22 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     }
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+    ensureNotClosed();
+    try {
+      final long[] typeInfo = nativeGetGlobalTypeInfo(getNativeHandle());
+      if (typeInfo.length < 2) {
+        throw new IllegalStateException("Invalid global type info from native");
+      }
+      final WasmValueType valueType = WasmValueType.fromNativeTypeCode((int) typeInfo[0]);
+      final boolean isMutable = typeInfo[1] != 0;
+      return new ai.tegmentum.wasmtime4j.jni.type.JniGlobalType(valueType, isMutable);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting global type", e);
+    }
+  }
+
   private WasmValue convertToWasmValue(final Object value, final String typeString) {
     switch (typeString.toLowerCase()) {
       case "i32":
@@ -427,8 +443,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
         return value.asFloat();
       case F64:
         return value.asDouble();
-      case FUNCREF: {
-        final Object funcrefValue = value.asFuncref();
+      case FUNCREF:
+        {
+          final Object funcrefValue = value.asFuncref();
           if (funcrefValue == null) {
             return null;
           }
@@ -442,9 +459,10 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           }
           // Already a handle (Long)
           return funcrefValue;
-      }
-      case EXTERNREF: {
-        final Object externrefValue = value.asExternref();
+        }
+      case EXTERNREF:
+        {
+          final Object externrefValue = value.asExternref();
           if (externrefValue == null) {
             return null;
           }
@@ -611,4 +629,12 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @param globalHandle the native global handle
    */
   private static native void nativeDestroyGlobal(long globalHandle);
+
+  /**
+   * Gets global type information directly from the global.
+   *
+   * @param globalHandle the native global handle
+   * @return array containing [valueTypeCode, isMutable(0/1)]
+   */
+  private static native long[] nativeGetGlobalTypeInfo(long globalHandle);
 }

@@ -233,7 +233,10 @@ public final class PanamaStore implements Store {
     }
     if (initialValue.getType() != valueType) {
       throw new IllegalArgumentException(
-          "Initial value type " + initialValue.getType() + " does not match global type " + valueType);
+          "Initial value type "
+              + initialValue.getType()
+              + " does not match global type "
+              + valueType);
     }
     ensureNotClosed();
 
@@ -632,9 +635,7 @@ public final class PanamaStore implements Store {
     final long fuelConsumed;
 
     ExecutionStats(
-        final long executionCount,
-        final long totalExecutionTimeMicros,
-        final long fuelConsumed) {
+        final long executionCount, final long totalExecutionTimeMicros, final long fuelConsumed) {
       this.executionCount = executionCount;
       this.totalExecutionTimeMicros = totalExecutionTimeMicros;
       this.fuelConsumed = fuelConsumed;

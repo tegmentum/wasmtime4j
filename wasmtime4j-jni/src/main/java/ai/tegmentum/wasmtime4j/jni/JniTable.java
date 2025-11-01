@@ -127,6 +127,27 @@ public final class JniTable extends JniResource implements WasmTable {
     return getElementType();
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.TableType getTableType() {
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+    try {
+      final long[] typeInfo = nativeGetTableTypeInfo(getNativeHandle(), store.getNativeHandle());
+      if (typeInfo.length < 3) {
+        throw new IllegalStateException("Invalid table type info from native");
+      }
+      final WasmValueType elementType = WasmValueType.fromNativeTypeCode((int) typeInfo[0]);
+      final long minimum = typeInfo[1];
+      final Long maximum = typeInfo[2] == -1 ? null : typeInfo[2];
+      return new ai.tegmentum.wasmtime4j.jni.type.JniTableType(elementType, minimum, maximum);
+    } catch (final JniResourceException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting table type", e);
+    }
+  }
+
   /**
    * Gets an element from the table at the specified index.
    *
@@ -464,6 +485,15 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param tableHandle the native table handle
    */
   private static native void nativeDestroy(long tableHandle);
+
+  /**
+   * Gets table type information directly from the table.
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @return array containing [elementTypeCode, minimum, maximum(-1 if unlimited)]
+   */
+  private static native long[] nativeGetTableTypeInfo(long tableHandle, long storeHandle);
 
   @Override
   public void dropElementSegment(final int segmentIndex) {

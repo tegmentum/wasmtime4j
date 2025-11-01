@@ -47,4 +47,15 @@ public interface WasmGlobal {
    * @return true if the global is mutable
    */
   boolean isMutable();
+
+  /**
+   * Gets the complete type information for this global.
+   *
+   * <p>The GlobalType provides full type information including both the value type and mutability.
+   * This is more comprehensive than {@link #getType()} which only returns the value type.
+   *
+   * @return the complete global type information
+   * @since 1.0.0
+   */
+  GlobalType getGlobalType();
 }

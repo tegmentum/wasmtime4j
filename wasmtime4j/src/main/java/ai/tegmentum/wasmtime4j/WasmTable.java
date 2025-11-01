@@ -35,6 +35,18 @@ public interface WasmTable {
   WasmValueType getType();
 
   /**
+   * Gets the complete type information for this table.
+   *
+   * <p>The TableType provides full type information including element type and size constraints
+   * (minimum and maximum). This is more comprehensive than {@link #getType()} which only returns
+   * the element value type.
+   *
+   * @return the complete table type information
+   * @since 1.0.0
+   */
+  TableType getTableType();
+
+  /**
    * Grows the table by the specified number of elements.
    *
    * @param elements the number of elements to add

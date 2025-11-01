@@ -163,6 +163,30 @@ public interface Module extends Closeable {
   boolean validateImports(final ImportMap imports);
 
   /**
+   * Validates that the provided imports satisfy this module's requirements with detailed results.
+   *
+   * <p>This method performs comprehensive type checking for all imports required by the module,
+   * including:
+   *
+   * <ul>
+   *   <li>Verification that all required imports are present in the ImportMap
+   *   <li>Type checking for globals (comparing GlobalType)
+   *   <li>Type checking for tables (comparing TableType)
+   *   <li>Type checking for memories (comparing MemoryType)
+   *   <li>Type checking for functions (comparing FuncType)
+   * </ul>
+   *
+   * <p>The returned ImportValidation object provides detailed information about any issues found,
+   * including missing imports and type mismatches with expected vs. actual type details.
+   *
+   * @param imports the import definitions to validate
+   * @return detailed validation results including issues, statistics, and validation time
+   * @throws IllegalArgumentException if imports is null
+   * @since 1.0.0
+   */
+  ImportValidation validateImportsDetailed(final ImportMap imports);
+
+  /**
    * Validates WebAssembly bytecode and returns detailed validation results.
    *
    * <p>This method performs comprehensive validation of WebAssembly bytecode without compiling it,

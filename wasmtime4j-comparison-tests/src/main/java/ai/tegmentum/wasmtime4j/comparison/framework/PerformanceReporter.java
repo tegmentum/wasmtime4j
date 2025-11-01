@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,7 +74,9 @@ public final class PerformanceReporter {
    */
   public void recordTiming(
       final String testName, final RuntimeType runtime, final long durationNanos) {
-    testTimings.computeIfAbsent(testName, k -> new ConcurrentHashMap<>()).put(runtime, durationNanos);
+    testTimings
+        .computeIfAbsent(testName, k -> new ConcurrentHashMap<>())
+        .put(runtime, durationNanos);
     totalTimes.get(runtime).addAndGet(durationNanos);
   }
 
@@ -122,8 +123,11 @@ public final class PerformanceReporter {
 
     report.append("Overall Summary:\n");
     report.append("───────────────────────────────────────────────────────────────────\n");
-    report.append(String.format("  JNI Total Time:    %,15d ns  (%s)%n", jniTotal, formatDuration(jniTotal)));
-    report.append(String.format("  Panama Total Time: %,15d ns  (%s)%n", panamaTotal, formatDuration(panamaTotal)));
+    report.append(
+        String.format("  JNI Total Time:    %,15d ns  (%s)%n", jniTotal, formatDuration(jniTotal)));
+    report.append(
+        String.format(
+            "  Panama Total Time: %,15d ns  (%s)%n", panamaTotal, formatDuration(panamaTotal)));
 
     if (jniTotal > 0 && panamaTotal > 0) {
       final double speedup = (double) jniTotal / panamaTotal;
@@ -142,19 +146,20 @@ public final class PerformanceReporter {
     report.append("Per-Test Comparison (sorted by absolute time difference):\n");
     report.append("───────────────────────────────────────────────────────────────────\n");
 
-    final List<Map.Entry<String, Map<RuntimeType, Long>>> sortedTests = new ArrayList<>(testTimings.entrySet());
+    final List<Map.Entry<String, Map<RuntimeType, Long>>> sortedTests =
+        new ArrayList<>(testTimings.entrySet());
 
     // Sort by absolute time difference
     sortedTests.sort(
         Comparator.<Map.Entry<String, Map<RuntimeType, Long>>>comparingLong(
-            e -> {
-              final Long jniTime = e.getValue().get(RuntimeType.JNI);
-              final Long panamaTime = e.getValue().get(RuntimeType.PANAMA);
-              if (jniTime == null || panamaTime == null) {
-                return 0;
-              }
-              return Math.abs(jniTime - panamaTime);
-            })
+                e -> {
+                  final Long jniTime = e.getValue().get(RuntimeType.JNI);
+                  final Long panamaTime = e.getValue().get(RuntimeType.PANAMA);
+                  if (jniTime == null || panamaTime == null) {
+                    return 0;
+                  }
+                  return Math.abs(jniTime - panamaTime);
+                })
             .reversed());
 
     for (final Map.Entry<String, Map<RuntimeType, Long>> entry : sortedTests) {
@@ -168,8 +173,10 @@ public final class PerformanceReporter {
         final double speedup = ratio > 1.0 ? ratio : 1.0 / ratio;
 
         report.append(String.format("%n  Test: %s%n", testName));
-        report.append(String.format("    JNI:    %,12d ns  (%s)%n", jniTime, formatDuration(jniTime)));
-        report.append(String.format("    Panama: %,12d ns  (%s)%n", panamaTime, formatDuration(panamaTime)));
+        report.append(
+            String.format("    JNI:    %,12d ns  (%s)%n", jniTime, formatDuration(jniTime)));
+        report.append(
+            String.format("    Panama: %,12d ns  (%s)%n", panamaTime, formatDuration(panamaTime)));
         report.append(String.format("    %s is %.2fx faster%n", fasterRuntime, speedup));
       }
     }
@@ -196,11 +203,12 @@ public final class PerformanceReporter {
 
     final double min = speedupRatios.get(0);
     final double max = speedupRatios.get(speedupRatios.size() - 1);
-    final double mean = speedupRatios.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    final double mean =
+        speedupRatios.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     final double median =
         speedupRatios.size() % 2 == 0
             ? (speedupRatios.get(speedupRatios.size() / 2 - 1)
-                + speedupRatios.get(speedupRatios.size() / 2))
+                    + speedupRatios.get(speedupRatios.size() / 2))
                 / 2.0
             : speedupRatios.get(speedupRatios.size() / 2);
 
@@ -240,9 +248,7 @@ public final class PerformanceReporter {
     }
   }
 
-  /**
-   * Prints the performance report to standard output.
-   */
+  /** Prints the performance report to standard output. */
   public void printReport() {
     System.out.println(generateReport());
   }

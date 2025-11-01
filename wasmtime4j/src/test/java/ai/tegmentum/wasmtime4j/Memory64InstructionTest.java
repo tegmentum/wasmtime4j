@@ -709,6 +709,36 @@ class Memory64InstructionTest {
     public int atomicWait64(int offset, long expected, long timeoutNanos) {
       return 0;
     }
+
+    @Override
+    public MemoryType getMemoryType() {
+      return new MemoryType() {
+        @Override
+        public long getMinimum() {
+          return currentSize;
+        }
+
+        @Override
+        public java.util.Optional<Long> getMaximum() {
+          return java.util.Optional.of(16L);
+        }
+
+        @Override
+        public boolean is64Bit() {
+          return true;
+        }
+
+        @Override
+        public boolean isShared() {
+          return false;
+        }
+
+        @Override
+        public WasmTypeKind getKind() {
+          return WasmTypeKind.MEMORY;
+        }
+      };
+    }
   }
 
   private static class MockMemory32 implements WasmMemory {
@@ -835,6 +865,36 @@ class Memory64InstructionTest {
     @Override
     public int atomicWait64(int offset, long expected, long timeoutNanos) {
       return 0;
+    }
+
+    @Override
+    public MemoryType getMemoryType() {
+      return new MemoryType() {
+        @Override
+        public long getMinimum() {
+          return 1;
+        }
+
+        @Override
+        public java.util.Optional<Long> getMaximum() {
+          return java.util.Optional.of(16L);
+        }
+
+        @Override
+        public boolean is64Bit() {
+          return false;
+        }
+
+        @Override
+        public boolean isShared() {
+          return false;
+        }
+
+        @Override
+        public WasmTypeKind getKind() {
+          return WasmTypeKind.MEMORY;
+        }
+      };
     }
   }
 }

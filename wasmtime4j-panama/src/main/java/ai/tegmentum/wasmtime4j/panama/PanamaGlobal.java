@@ -190,6 +190,29 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     return mutable;
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+    ensureNotClosed();
+    final WasmValueType valueType = getType();
+    final boolean mutableFlag = isMutable();
+    return new ai.tegmentum.wasmtime4j.GlobalType() {
+      @Override
+      public WasmValueType getValueType() {
+        return valueType;
+      }
+
+      @Override
+      public boolean isMutable() {
+        return mutableFlag;
+      }
+
+      @Override
+      public ai.tegmentum.wasmtime4j.WasmTypeKind getKind() {
+        return ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL;
+      }
+    };
+  }
+
   /**
    * Gets the native global pointer.
    *

@@ -80,9 +80,7 @@ public final class PanamaTable implements WasmTable {
    * @param store the store that owns this table
    */
   PanamaTable(
-      final MemorySegment nativeTable,
-      final WasmValueType elementType,
-      final PanamaStore store) {
+      final MemorySegment nativeTable, final WasmValueType elementType, final PanamaStore store) {
     if (nativeTable == null || nativeTable.equals(MemorySegment.NULL)) {
       throw new IllegalArgumentException("Native table pointer cannot be null");
     }
@@ -115,8 +113,7 @@ public final class PanamaTable implements WasmTable {
 
       final MemorySegment sizeSegment = arena.allocate(ValueLayout.JAVA_INT);
       final int result =
-          (int)
-              getSizeHandle.invoke(nativeTable, getNativeStorePointer(), sizeSegment);
+          (int) getSizeHandle.invoke(nativeTable, getNativeStorePointer(), sizeSegment);
 
       if (result != 0) {
         throw new IllegalStateException("Failed to get table size");
@@ -131,6 +128,50 @@ public final class PanamaTable implements WasmTable {
   @Override
   public WasmValueType getType() {
     return elementType;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.TableType getTableType() {
+    ensureNotClosed();
+
+    try {
+      final MethodHandle metadataHandle = NATIVE_BINDINGS.getPanamaTableMetadata();
+      if (metadataHandle == null) {
+        throw new IllegalStateException("Panama table metadata function not available");
+      }
+
+      final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              metadataHandle.invoke(
+                  nativeTable,
+                  elementTypeSegment,
+                  initialSizeSegment,
+                  hasMaximumSegment,
+                  maximumSizeSegment,
+                  nameSegment);
+
+      if (result != 0) {
+        throw new IllegalStateException("Failed to get table metadata");
+      }
+
+      final int elementTypeCode = elementTypeSegment.get(ValueLayout.JAVA_INT, 0);
+      final WasmValueType element = WasmValueType.fromNativeTypeCode(elementTypeCode);
+      final long minimum = initialSizeSegment.get(ValueLayout.JAVA_INT, 0);
+      final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
+      final Long maximum =
+          hasMaximum != 0 ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_INT, 0)) : null;
+
+      return new ai.tegmentum.wasmtime4j.panama.type.PanamaTableType(
+          element, minimum, maximum, arena, nativeTable);
+    } catch (final Throwable e) {
+      throw new IllegalStateException("Error getting table type: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -259,11 +300,7 @@ public final class PanamaTable implements WasmTable {
       final int result =
           (int)
               getHandle.invoke(
-                  nativeTable,
-                  getNativeStorePointer(),
-                  index,
-                  refIdPresentSegment,
-                  refIdSegment);
+                  nativeTable, getNativeStorePointer(), index, refIdPresentSegment, refIdSegment);
 
       if (result != 0) {
         throw new IndexOutOfBoundsException("Failed to get table element at index " + index);

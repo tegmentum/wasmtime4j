@@ -45,6 +45,18 @@ public interface WasmMemory {
   int getMaxSize();
 
   /**
+   * Gets the complete type information for this memory.
+   *
+   * <p>The MemoryType provides full type information including minimum and maximum page counts,
+   * 64-bit addressing support, and shared memory status. This provides comprehensive metadata about
+   * the memory's configuration and limits.
+   *
+   * @return the complete memory type information
+   * @since 1.0.0
+   */
+  MemoryType getMemoryType();
+
+  /**
    * Gets a read-only view of the memory as a ByteBuffer.
    *
    * <p>The returned buffer provides direct access to the WebAssembly memory. Care must be taken

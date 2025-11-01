@@ -614,6 +614,36 @@ class Memory64Test {
       public void setSupports64Bit(boolean supports) {
         this.supports64Bit = supports;
       }
+
+      @Override
+      public MemoryType getMemoryType() {
+        return new MemoryType() {
+          @Override
+          public long getMinimum() {
+            return size32;
+          }
+
+          @Override
+          public java.util.Optional<Long> getMaximum() {
+            return java.util.Optional.of((long) maxSize32);
+          }
+
+          @Override
+          public boolean is64Bit() {
+            return supports64Bit;
+          }
+
+          @Override
+          public boolean isShared() {
+            return false;
+          }
+
+          @Override
+          public WasmTypeKind getKind() {
+            return WasmTypeKind.MEMORY;
+          }
+        };
+      }
     }
 
     private MockMemory mockMemory;

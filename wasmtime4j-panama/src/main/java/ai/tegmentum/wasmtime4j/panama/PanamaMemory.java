@@ -83,7 +83,6 @@ public final class PanamaMemory implements WasmMemory {
     LOGGER.fine("Created memory from store");
   }
 
-
   @Override
   public int getSize() {
     ensureNotClosed();
@@ -231,11 +230,7 @@ public final class PanamaMemory implements WasmMemory {
     }
     if (destOffset + length > buffer.limit()) {
       throw new IndexOutOfBoundsException(
-          "Destination range ["
-              + destOffset
-              + ", "
-              + (destOffset + length)
-              + ") is out of bounds");
+          "Destination range [" + destOffset + ", " + (destOffset + length) + ") is out of bounds");
     }
 
     // Handle overlapping regions correctly using a temp buffer
@@ -305,6 +300,21 @@ public final class PanamaMemory implements WasmMemory {
     ensureNotClosed();
     // TODO: Implement shared check
     return false;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+    ensureNotClosed();
+
+    // Return sensible defaults - proper implementation would need store context
+    // TODO: Enhance with actual memory type information when store context is available
+    final long minimum = 1L;
+    final Long maximum = null; // unlimited
+    final boolean is64Bit = false; // 32-bit
+    final boolean isShared = false; // not shared
+
+    return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
+        minimum, maximum, is64Bit, isShared, arena, nativeMemory);
   }
 
   @Override

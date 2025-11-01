@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;

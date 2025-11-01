@@ -3782,9 +3782,7 @@ public final class NativeFunctionBindings {
    * @return pointer to the instance, or null on failure
    */
   public MemorySegment panamaLinkerInstantiate(
-      final MemorySegment linkerPtr,
-      final MemorySegment storePtr,
-      final MemorySegment modulePtr) {
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(modulePtr, "modulePtr");

@@ -456,6 +456,25 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+    ensureNotClosed();
+    try {
+      final long[] typeInfo = nativeGetMemoryTypeInfo(getNativeHandle());
+      if (typeInfo.length < 4) {
+        throw new IllegalStateException("Invalid memory type info from native");
+      }
+      final long minimum = typeInfo[0];
+      final Long maximum = typeInfo[1] == -1 ? null : typeInfo[1];
+      final boolean is64Bit = typeInfo[2] != 0;
+      final boolean isShared = typeInfo[3] != 0;
+      return new ai.tegmentum.wasmtime4j.jni.type.JniMemoryType(
+          minimum, maximum, is64Bit, isShared);
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting memory type", e);
+    }
+  }
+
   /**
    * Gets the resource type name for logging and error messages.
    *
@@ -562,6 +581,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param memoryHandle the native memory handle
    */
   private static native void nativeDestroyMemory(long memoryHandle);
+
+  /**
+   * Gets memory type information directly from the memory.
+   *
+   * @param memoryHandle the native memory handle
+   * @return array containing [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+   */
+  private static native long[] nativeGetMemoryTypeInfo(long memoryHandle);
 
   // Bulk Memory Operations Implementation
 

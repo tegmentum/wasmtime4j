@@ -56,8 +56,7 @@ public class PerformanceTimingExtension
       Boolean.parseBoolean(System.getProperty("wasmtime4j.performance.report", "true"));
   private static final String REPORT_PATH =
       System.getProperty(
-          "wasmtime4j.performance.report.path",
-          "target/performance-comparison-report.txt");
+          "wasmtime4j.performance.report.path", "target/performance-comparison-report.txt");
 
   @Override
   public void beforeTestExecution(final ExtensionContext context) {
@@ -117,7 +116,8 @@ public class PerformanceTimingExtension
       // Write to file
       try {
         reporter.writeReportToFile(REPORT_PATH);
-        System.out.println("Performance report written to: " + Paths.get(REPORT_PATH).toAbsolutePath());
+        System.out.println(
+            "Performance report written to: " + Paths.get(REPORT_PATH).toAbsolutePath());
       } catch (final IOException e) {
         System.err.println("Failed to write performance report: " + e.getMessage());
       }
@@ -125,7 +125,8 @@ public class PerformanceTimingExtension
   }
 
   private ExtensionContext.Store getStore(final ExtensionContext context) {
-    return context.getStore(ExtensionContext.Namespace.create(getClass(), context.getRequiredTestMethod()));
+    return context.getStore(
+        ExtensionContext.Namespace.create(getClass(), context.getRequiredTestMethod()));
   }
 
   private String getTestName(final ExtensionContext context) {

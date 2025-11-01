@@ -93,9 +93,7 @@ public final class PanamaInstance implements Instance {
    * @param store the store that owns this instance
    */
   PanamaInstance(
-      final MemorySegment nativeInstance,
-      final PanamaModule module,
-      final PanamaStore store) {
+      final MemorySegment nativeInstance, final PanamaModule module, final PanamaStore store) {
     if (nativeInstance == null || nativeInstance.equals(MemorySegment.NULL)) {
       throw new IllegalArgumentException("Native instance pointer cannot be null");
     }

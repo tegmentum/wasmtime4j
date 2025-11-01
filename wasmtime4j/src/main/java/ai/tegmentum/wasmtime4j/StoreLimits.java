@@ -119,8 +119,8 @@ public final class StoreLimits {
     /**
      * Sets the instance limit.
      *
-     * <p>This limit restricts the total number of instances that can be created. A value of 0
-     * means unlimited.
+     * <p>This limit restricts the total number of instances that can be created. A value of 0 means
+     * unlimited.
      *
      * @param count the instance limit
      * @return this builder

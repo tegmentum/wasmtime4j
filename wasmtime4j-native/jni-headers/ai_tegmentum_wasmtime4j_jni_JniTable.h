@@ -87,6 +87,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopyF
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeGetTableTypeInfo
+ * Signature: (JJ)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableTypeInfo
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif
