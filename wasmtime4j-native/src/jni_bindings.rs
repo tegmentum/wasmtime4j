@@ -7,7 +7,7 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JByteArray, JString, JObject, JValue};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jbyte, jboolean, jbyteArray, jstring, jobject, jintArray};
+use jni::sys::{jlong, jint, jbyte, jboolean, jbyteArray, jstring, jobject, jintArray, jlongArray};
 
 // Instance is imported locally in each module that needs it
 
@@ -2307,11 +2307,12 @@ pub mod jni_store {
             let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
 
             // Convert element type from native type code
+            // Accepts both WebAssembly binary format codes and Java enum ordinals
             let val_type = match element_type {
-                0x70 => ValType::Ref(RefType::FUNCREF), // FUNCREF
-                0x6F => ValType::Ref(RefType::EXTERNREF), // EXTERNREF
+                0x70 | 5 => ValType::Ref(RefType::FUNCREF), // FUNCREF (0x70 = binary format, 5 = enum ordinal)
+                0x6F | 6 => ValType::Ref(RefType::EXTERNREF), // EXTERNREF (0x6F = binary format, 6 = enum ordinal)
                 _ => return Err(WasmtimeError::Type {
-                    message: format!("Invalid element type code: {}", element_type),
+                    message: format!("Invalid element type code: {} (expected 0x70/5 for FUNCREF or 0x6F/6 for EXTERNREF)", element_type),
                 }),
             };
 
@@ -5653,6 +5654,52 @@ pub mod jni_global {
             core::destroy_global(global_ptr as *mut std::os::raw::c_void);
         }
     }
+
+    /// Get global type information directly from the global (JNI version)
+    /// Returns array: [valueTypeCode, isMutable(0/1)]
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGlobalTypeInfo<'a>(
+        mut env: JNIEnv<'a>,
+        _class: JClass<'a>,
+        global_ptr: jlong,
+    ) -> jlongArray {
+        match (|| -> WasmtimeResult<jlongArray> {
+            let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+            let metadata = core::get_global_metadata(global);
+
+            // Map ValType to type code
+            let type_code = match metadata.value_type {
+                wasmtime::ValType::I32 => 0,
+                wasmtime::ValType::I64 => 1,
+                wasmtime::ValType::F32 => 2,
+                wasmtime::ValType::F64 => 3,
+                wasmtime::ValType::V128 => 4,
+                wasmtime::ValType::Ref(_) => {
+                    // For now, all ref types map to FUNCREF (5) or EXTERNREF (6)
+                    // We'll use 5 as a generic ref type
+                    5
+                }
+            };
+
+            let is_mutable = if metadata.mutability == wasmtime::Mutability::Var { 1 } else { 0 };
+
+            // Create long array with [typeCode, isMutable]
+            let result_array = env.new_long_array(2)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to create long array: {}", e) })?;
+
+            let values = vec![type_code as i64, is_mutable as i64];
+            env.set_long_array_region(&result_array, 0, &values)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to set long array region: {}", e) })?;
+
+            Ok(result_array.as_raw())
+        })() {
+            Ok(array) => array,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                std::ptr::null_mut()
+            }
+        }
+    }
 }
 
 /// JNI bindings for WebAssembly tables
@@ -5919,6 +5966,58 @@ pub mod jni_table {
             core::destroy_table(table_ptr as *mut std::os::raw::c_void);
         }
     }
+
+    /// Get table type information directly from the table (JNI version)
+    /// Returns array: [elementTypeCode, minimum, maximum(-1 if unlimited)]
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableTypeInfo<'a>(
+        mut env: JNIEnv<'a>,
+        _class: JClass<'a>,
+        table_ptr: jlong,
+        _store_ptr: jlong,
+    ) -> jlongArray {
+        match (|| -> WasmtimeResult<jlongArray> {
+            let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+            let metadata = core::get_table_metadata(table);
+
+            // Map element type to type code
+            let type_code = match &metadata.element_type {
+                wasmtime::ValType::I32 => 0,
+                wasmtime::ValType::I64 => 1,
+                wasmtime::ValType::F32 => 2,
+                wasmtime::ValType::F64 => 3,
+                wasmtime::ValType::V128 => 4,
+                wasmtime::ValType::Ref(ref_type) => {
+                    // Map reference types based on heap type
+                    use wasmtime::HeapType;
+                    match ref_type.heap_type() {
+                        HeapType::Extern => 6,  // EXTERNREF
+                        HeapType::Func => 5,    // FUNCREF
+                        _ => 5,  // Default to FUNCREF for other ref types
+                    }
+                }
+            };
+
+            let minimum = metadata.initial_size as i64;
+            let maximum = metadata.maximum_size.map(|m| m as i64).unwrap_or(-1);
+
+            // Create long array with [elementTypeCode, minimum, maximum]
+            let result_array = env.new_long_array(3)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to create long array: {}", e) })?;
+
+            let values = vec![type_code as i64, minimum, maximum];
+            env.set_long_array_region(&result_array, 0, &values)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to set long array region: {}", e) })?;
+
+            Ok(result_array.as_raw())
+        })() {
+            Ok(array) => array,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                std::ptr::null_mut()
+            }
+        }
+    }
 }
 
 /// JNI bindings for Memory operations
@@ -5926,7 +6025,7 @@ pub mod jni_table {
 pub mod jni_memory {
     use super::*;
     use crate::memory::core;
-    use crate::error::jni_utils;
+    use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
     use jni::objects::{JByteBuffer, JByteArray};
     
     /// Get memory size in bytes (JNI version) with comprehensive validation
@@ -7040,6 +7139,56 @@ pub mod jni_memory {
             // Return success as if the element was set (this maintains API consistency)
             Ok(1)
         })
+    }
+
+    /// Get memory type information directly from the memory (JNI version)
+    /// Returns array: [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemoryTypeInfo<'a>(
+        mut env: JNIEnv<'a>,
+        _class: JClass<'a>,
+        memory_ptr: jlong,
+    ) -> jlongArray {
+        match (|| -> WasmtimeResult<jlongArray> {
+            // Validate memory pointer
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+
+            // Get memory reference
+            let memory = unsafe { &*(memory_ptr as *const crate::memory::Memory) };
+
+            // Get metadata (current and maximum pages)
+            let metadata = memory.get_metadata()?;
+            let minimum = metadata.current_pages as i64;
+            let maximum = metadata.maximum_pages.map(|m| m as i64).unwrap_or(-1);
+
+            // Get config for is_shared
+            let config = memory.get_config();
+            let is_shared = if config.is_shared { 1i64 } else { 0i64 };
+
+            // Get is_64_bit from wasmtime memory type
+            // Note: WebAssembly 1.0 memories are all 32-bit, WebAssembly 2.0 adds 64-bit memories
+            let is_64_bit = 0i64;  // Currently all memories are 32-bit (wasmtime default)
+
+            // Create long array with [minimum, maximum, is64Bit, isShared]
+            let result_array = env.new_long_array(4)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to create long array: {}", e) })?;
+
+            let values = vec![minimum, maximum, is_64_bit, is_shared];
+            env.set_long_array_region(&result_array, 0, &values)
+                .map_err(|e| WasmtimeError::Memory { message: format!("Failed to set long array region: {}", e) })?;
+
+            Ok(result_array.as_raw())
+        })() {
+            Ok(array) => array,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                std::ptr::null_mut()
+            }
+        }
     }
 
 }
