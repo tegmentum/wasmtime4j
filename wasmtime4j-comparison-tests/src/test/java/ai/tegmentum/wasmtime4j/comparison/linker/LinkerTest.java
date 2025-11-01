@@ -123,7 +123,7 @@ public class LinkerTest {
     instance1.callFunction("write_value", WasmValue.i32(0), WasmValue.i32(42));
 
     final Linker linker = Linker.create(engine);
-    final WasmMemory sharedMemory = instance1.getDefaultMemory().orElseThrow();
+    final WasmMemory sharedMemory = instance1.getMemory("shared_mem").orElseThrow();
     linker.defineMemory(store, "mod1", "shared_mem", sharedMemory);
 
     final Module module2 = engine.compileWat(wat2);
