@@ -285,7 +285,7 @@ public class WitInterfaceBenchmark {
   @Threads(4)
   public void benchmarkConcurrentResourceAccess(final Blackhole bh) throws WasmException {
     // Create a resource first
-    final String testResource = "concurrent-test-" + Thread.currentThread().getId();
+    final String testResource = "concurrent-test-" + Thread.currentThread().threadId();
     final int handle = resourceManager.createResource("string", testResource);
 
     try {

@@ -41,7 +41,7 @@ public final class WastTestRunner implements AutoCloseable {
 
   private final Engine engine;
   private final Store store;
-  private final Linker linker;
+  private final Linker<?> linker;
   private final Map<String, Instance> namedInstances;
   private Instance currentInstance;
   private boolean hasHostFunctions;
