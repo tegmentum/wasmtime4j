@@ -5,6 +5,8 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -75,15 +77,51 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement fuel setting via Panama FFI
-    throw new UnsupportedOperationException("Fuel not yet implemented");
+
+    try {
+      final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
+      if (setFuelHandle == null) {
+        throw new WasmException("Panama store set fuel function not available");
+      }
+
+      final int result = (int) setFuelHandle.invoke(nativeStore, fuel);
+
+      if (result != 0) {
+        throw new WasmException("Failed to set fuel");
+      }
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error setting fuel: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public long getFuel() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement fuel getting via Panama FFI
-    return -1;
+
+    try {
+      final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
+      if (getFuelHandle == null) {
+        throw new WasmException("Panama store get fuel function not available");
+      }
+
+      final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = (int) getFuelHandle.invoke(nativeStore, fuelSegment);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get fuel");
+      }
+
+      return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error getting fuel: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -92,15 +130,47 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement fuel addition via Panama FFI
-    throw new UnsupportedOperationException("Fuel not yet implemented");
+
+    try {
+      final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
+      if (addFuelHandle == null) {
+        throw new WasmException("Panama store add fuel function not available");
+      }
+
+      final int result = (int) addFuelHandle.invoke(nativeStore, fuel);
+
+      if (result != 0) {
+        throw new WasmException("Failed to add fuel");
+      }
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error adding fuel: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public void setEpochDeadline(final long ticks) throws WasmException {
     ensureNotClosed();
-    // TODO: Implement epoch deadline via Panama FFI
-    throw new UnsupportedOperationException("Epoch deadline not yet implemented");
+
+    try {
+      final MethodHandle setEpochDeadlineHandle = NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
+      if (setEpochDeadlineHandle == null) {
+        throw new WasmException("Panama store set epoch deadline function not available");
+      }
+
+      final int result = (int) setEpochDeadlineHandle.invoke(nativeStore, ticks);
+
+      if (result != 0) {
+        throw new WasmException("Failed to set epoch deadline");
+      }
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error setting epoch deadline: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -109,41 +179,33 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement fuel consumption via Panama FFI
-    throw new UnsupportedOperationException("Fuel not yet implemented");
+
+    try {
+      final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
+      if (consumeFuelHandle == null) {
+        throw new WasmException("Panama store consume fuel function not available");
+      }
+
+      final MemorySegment consumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = (int) consumeFuelHandle.invoke(nativeStore, fuel, consumedSegment);
+
+      if (result != 0) {
+        throw new WasmException("Failed to consume fuel");
+      }
+
+      return consumedSegment.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public long getRemainingFuel() throws WasmException {
     return getFuel();
-  }
-
-  @Override
-  public void incrementEpoch() throws WasmException {
-    ensureNotClosed();
-    // TODO: Implement epoch increment via Panama FFI
-    throw new UnsupportedOperationException("Epoch not yet implemented");
-  }
-
-  @Override
-  public void setMemoryLimit(final long bytes) throws WasmException {
-    ensureNotClosed();
-    // TODO: Implement memory limit via Panama FFI
-    throw new UnsupportedOperationException("Memory limit not yet implemented");
-  }
-
-  @Override
-  public void setTableElementLimit(final long elements) throws WasmException {
-    ensureNotClosed();
-    // TODO: Implement table element limit via Panama FFI
-    throw new UnsupportedOperationException("Table element limit not yet implemented");
-  }
-
-  @Override
-  public void setInstanceLimit(final int count) throws WasmException {
-    ensureNotClosed();
-    // TODO: Implement instance limit via Panama FFI
-    throw new UnsupportedOperationException("Instance limit not yet implemented");
   }
 
   @Override
@@ -163,9 +225,89 @@ public final class PanamaStore implements Store {
       final boolean isMutable,
       final ai.tegmentum.wasmtime4j.WasmValue initialValue)
       throws WasmException {
+    if (valueType == null) {
+      throw new IllegalArgumentException("Value type cannot be null");
+    }
+    if (initialValue == null) {
+      throw new IllegalArgumentException("Initial value cannot be null");
+    }
+    if (initialValue.getType() != valueType) {
+      throw new IllegalArgumentException(
+          "Initial value type " + initialValue.getType() + " does not match global type " + valueType);
+    }
     ensureNotClosed();
-    // TODO: Implement global creation
-    throw new UnsupportedOperationException("Global creation not yet implemented");
+
+    try {
+      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaGlobalCreate();
+      if (createHandle == null) {
+        throw new WasmException("Panama global creation function not available");
+      }
+
+      // Extract values based on type
+      int i32Value = 0;
+      long i64Value = 0L;
+      double f32Value = 0.0;
+      double f64Value = 0.0;
+      int refIdPresent = 0;
+      long refId = 0L;
+
+      switch (valueType) {
+        case I32:
+          i32Value = (Integer) initialValue.getValue();
+          break;
+        case I64:
+          i64Value = (Long) initialValue.getValue();
+          break;
+        case F32:
+          f32Value = ((Float) initialValue.getValue()).doubleValue();
+          break;
+        case F64:
+          f64Value = (Double) initialValue.getValue();
+          break;
+        case FUNCREF:
+        case EXTERNREF:
+          if (initialValue.getValue() != null) {
+            refIdPresent = 1;
+            refId = (Long) initialValue.getValue();
+          }
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported global type: " + valueType);
+      }
+
+      final MemorySegment globalPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  valueType.toNativeTypeCode(),
+                  isMutable ? 1 : 0,
+                  i32Value,
+                  i64Value,
+                  f32Value,
+                  f64Value,
+                  refIdPresent,
+                  refId,
+                  MemorySegment.NULL, // name = null
+                  globalPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create global");
+      }
+
+      final MemorySegment nativeGlobalPtr = globalPtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeGlobalPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created global pointer is null");
+      }
+
+      return new PanamaGlobal(nativeGlobalPtr, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating global: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -174,17 +316,117 @@ public final class PanamaStore implements Store {
       final int initialSize,
       final int maxSize)
       throws WasmException {
+    if (elementType == null) {
+      throw new IllegalArgumentException("Element type cannot be null");
+    }
+    if (initialSize < 0) {
+      throw new IllegalArgumentException("Initial size cannot be negative");
+    }
+    if (maxSize < -1) {
+      throw new IllegalArgumentException("Max size must be -1 (unlimited) or non-negative");
+    }
     ensureNotClosed();
-    // TODO: Implement table creation
-    throw new UnsupportedOperationException("Table creation not yet implemented");
+
+    try {
+      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaTableCreate();
+      if (createHandle == null) {
+        throw new WasmException("Panama table creation function not available");
+      }
+
+      // Convert element type to native code
+      final int elementTypeCode;
+      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+        elementTypeCode = 5; // FUNCREF
+      } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+        elementTypeCode = 6; // EXTERNREF
+      } else {
+        throw new IllegalArgumentException("Unsupported table element type: " + elementType);
+      }
+
+      final int hasMaximum = (maxSize == -1) ? 0 : 1;
+      final int maximumSize = (maxSize == -1) ? 0 : maxSize;
+
+      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  elementTypeCode,
+                  initialSize,
+                  hasMaximum,
+                  maximumSize,
+                  MemorySegment.NULL, // name = null
+                  tablePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create table");
+      }
+
+      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeTablePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created table pointer is null");
+      }
+
+      return new PanamaTable(nativeTablePtr, elementType, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating table: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
       throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative");
+    }
+    if (maxPages < -1) {
+      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or non-negative");
+    }
     ensureNotClosed();
-    // TODO: Implement memory creation
-    throw new UnsupportedOperationException("Memory creation not yet implemented");
+
+    try {
+      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaMemoryCreateWithConfig();
+      if (createHandle == null) {
+        throw new WasmException("Panama memory creation function not available");
+      }
+
+      final int maximumPages = (maxPages == -1) ? 0 : maxPages;
+      final int isShared = 0; // Not shared
+      final int memoryIndex = 0; // Not used for direct creation
+
+      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  initialPages,
+                  maximumPages,
+                  isShared,
+                  memoryIndex,
+                  MemorySegment.NULL, // name = null
+                  memoryPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create memory");
+      }
+
+      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created memory pointer is null");
+      }
+
+      return new PanamaMemory(nativeMemoryPtr, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating memory: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -214,9 +456,42 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.Instance createInstance(
       final ai.tegmentum.wasmtime4j.Module module) throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
     ensureNotClosed();
-    // TODO: Implement instance creation
-    throw new UnsupportedOperationException("Instance creation not yet implemented");
+
+    try {
+      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaInstanceCreate();
+      if (createHandle == null) {
+        throw new WasmException("Panama instance creation function not available");
+      }
+
+      final PanamaModule panamaModule = (PanamaModule) module;
+      final MemorySegment instancePtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int) createHandle.invoke(nativeStore, panamaModule.getNativeModule(), instancePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create instance");
+      }
+
+      final MemorySegment nativeInstancePtr = instancePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeInstancePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created instance pointer is null");
+      }
+
+      return new PanamaInstance(nativeInstancePtr, panamaModule, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating instance: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -227,20 +502,36 @@ public final class PanamaStore implements Store {
   @Override
   public long getTotalFuelConsumed() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement total fuel consumed tracking
-    return 0;
+    final ExecutionStats stats = getExecutionStats();
+    return stats.fuelConsumed;
   }
 
   @Override
   public long getExecutionCount() {
-    // TODO: Implement execution count tracking
-    return 0;
+    if (closed) {
+      return 0;
+    }
+    try {
+      final ExecutionStats stats = getExecutionStats();
+      return stats.executionCount;
+    } catch (final WasmException e) {
+      LOGGER.warning("Error getting execution count: " + e.getMessage());
+      return 0;
+    }
   }
 
   @Override
   public long getTotalExecutionTimeMicros() {
-    // TODO: Implement execution time tracking
-    return 0;
+    if (closed) {
+      return 0;
+    }
+    try {
+      final ExecutionStats stats = getExecutionStats();
+      return stats.totalExecutionTimeMicros;
+    } catch (final WasmException e) {
+      LOGGER.warning("Error getting total execution time: " + e.getMessage());
+      return 0;
+    }
   }
 
   @Override
@@ -282,6 +573,48 @@ public final class PanamaStore implements Store {
   }
 
   /**
+   * Gets execution statistics from the native store.
+   *
+   * @return execution statistics
+   * @throws WasmException if failed to get stats
+   */
+  private ExecutionStats getExecutionStats() throws WasmException {
+    try {
+      final MethodHandle getStatsHandle = NATIVE_BINDINGS.getPanamaStoreGetExecutionStats();
+      if (getStatsHandle == null) {
+        throw new WasmException("Panama store get execution stats function not available");
+      }
+
+      final MemorySegment executionCountSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment totalExecutionTimeMsSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment fuelConsumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          (int)
+              getStatsHandle.invoke(
+                  nativeStore,
+                  executionCountSegment,
+                  totalExecutionTimeMsSegment,
+                  fuelConsumedSegment);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get execution statistics");
+      }
+
+      final long executionCount = executionCountSegment.get(ValueLayout.JAVA_LONG, 0);
+      final long totalExecutionTimeMs = totalExecutionTimeMsSegment.get(ValueLayout.JAVA_LONG, 0);
+      final long fuelConsumed = fuelConsumedSegment.get(ValueLayout.JAVA_LONG, 0);
+
+      return new ExecutionStats(executionCount, totalExecutionTimeMs * 1000L, fuelConsumed);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error getting execution statistics: " + e.getMessage(), e);
+    }
+  }
+
+  /**
    * Ensures the store is not closed.
    *
    * @throws IllegalStateException if closed
@@ -289,6 +622,22 @@ public final class PanamaStore implements Store {
   private void ensureNotClosed() {
     if (closed) {
       throw new IllegalStateException("Store has been closed");
+    }
+  }
+
+  /** Holds execution statistics from the native store. */
+  private static final class ExecutionStats {
+    final long executionCount;
+    final long totalExecutionTimeMicros;
+    final long fuelConsumed;
+
+    ExecutionStats(
+        final long executionCount,
+        final long totalExecutionTimeMicros,
+        final long fuelConsumed) {
+      this.executionCount = executionCount;
+      this.totalExecutionTimeMicros = totalExecutionTimeMicros;
+      this.fuelConsumed = fuelConsumed;
     }
   }
 }

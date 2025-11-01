@@ -175,8 +175,21 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Memory cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement memory definition
-    throw new UnsupportedOperationException("Memory definition not yet implemented");
+
+    // Ensure we have Panama implementations
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(memory instanceof PanamaMemory)) {
+      throw new IllegalArgumentException("Memory must be a PanamaMemory");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaMemory panamaMemory = (PanamaMemory) memory;
+
+    // TODO: PanamaMemory needs to expose getNativeMemory() method before this can be implemented
+    throw new UnsupportedOperationException(
+        "Memory definition requires PanamaMemory.getNativeMemory() to be implemented");
   }
 
   @Override
@@ -196,8 +209,37 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Table cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement table definition
-    throw new UnsupportedOperationException("Table definition not yet implemented");
+
+    // Ensure we have Panama implementations
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(table instanceof PanamaTable)) {
+      throw new IllegalArgumentException("Table must be a PanamaTable");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaTable panamaTable = (PanamaTable) table;
+
+    // Allocate C strings for module name and table name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    // Call native function to define table
+    final int result =
+        NATIVE_BINDINGS.panamaLinkerDefineTable(
+            nativeLinker,
+            panamaStore.getNativeStore(),
+            moduleNamePtr,
+            namePtr,
+            panamaTable.getNativeTable());
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to define table: " + moduleName + "::" + name + " (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Defined table: " + moduleName + "::" + name);
   }
 
   @Override
@@ -260,8 +302,38 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Instance cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement instance definition
-    throw new UnsupportedOperationException("Instance definition not yet implemented");
+
+    // Ensure we have Panama implementation
+    if (!(instance instanceof PanamaInstance)) {
+      throw new IllegalArgumentException("Instance must be a PanamaInstance");
+    }
+
+    final PanamaInstance panamaInstance = (PanamaInstance) instance;
+
+    // Get the store from the instance
+    final Store store = panamaInstance.getStore();
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    // Allocate C string for module name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+
+    // Call native function to define instance
+    final int result =
+        NATIVE_BINDINGS.panamaLinkerDefineInstance(
+            nativeLinker,
+            panamaStore.getNativeStore(),
+            moduleNamePtr,
+            panamaInstance.getNativeInstance());
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to define instance: " + moduleName + " (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Defined instance: " + moduleName);
   }
 
   @Override
@@ -294,8 +366,22 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Module cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement module instantiation
-    throw new UnsupportedOperationException("Instantiation not yet implemented");
+
+    // Ensure we have Panama implementations
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    // TODO: Linker-based instantiation needs native support that returns instance handle
+    // PanamaInstance constructor creates instance internally, but we need linker to do it
+    throw new UnsupportedOperationException(
+        "Linker instantiation requires native linker instantiate to be fully wired");
   }
 
   @Override
@@ -311,15 +397,33 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Module cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement named module instantiation
-    throw new UnsupportedOperationException("Named instantiation not yet implemented");
+
+    // Ensure we have Panama implementations
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+
+    // TODO: Linker-based instantiation needs native support that returns instance handle
+    // PanamaInstance constructor creates instance internally, but we need linker to do it
+    throw new UnsupportedOperationException(
+        "Linker named instantiation requires native linker instantiate to be fully wired");
   }
 
   @Override
   public void enableWasi() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement WASI enablement
-    throw new UnsupportedOperationException("WASI not yet implemented");
+
+    // Call native function to enable WASI
+    final int result = NATIVE_BINDINGS.panamaLinkerEnableWasi(nativeLinker);
+
+    if (result != 0) {
+      throw new WasmException("Failed to enable WASI (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Enabled WASI for linker");
   }
 
   @Override

@@ -48,7 +48,8 @@ pub mod memory;
 pub mod global;
 pub mod table;
 pub mod element_segment;  // Element segment management for table.init()
-pub mod element_segment_parser;  // Element segment parser using wasmparser
+pub mod data_segment;  // Data segment management for memory.init()
+pub mod element_segment_parser;  // Element and data segment parser using wasmparser
 pub mod linker;
 pub mod wast_runner;  // WAST test execution
 pub mod caller;

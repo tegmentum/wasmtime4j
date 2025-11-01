@@ -296,8 +296,16 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public void enableWasi() throws WasmException {
-    // TODO: Implement WASI enabling
-    throw new UnsupportedOperationException("WASI enabling not yet implemented");
+    ensureNotClosed();
+
+    try {
+      nativeEnableWasi(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to enable WASI", e);
+    }
   }
 
   @Override
@@ -706,6 +714,13 @@ public class JniLinker<T> implements Linker<T> {
    */
   private native long nativeInstantiateNamed(
       long linkerHandle, long storeHandle, String moduleName, long moduleHandle);
+
+  /**
+   * Enables WASI for the linker.
+   *
+   * @param linkerHandle the linker handle
+   */
+  private native void nativeEnableWasi(long linkerHandle);
 
   /**
    * Destroys the linker.

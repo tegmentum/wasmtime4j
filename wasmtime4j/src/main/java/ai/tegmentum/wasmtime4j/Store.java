@@ -95,38 +95,6 @@ public interface Store extends Closeable {
   long getRemainingFuel() throws WasmException;
 
   /**
-   * Increments the epoch counter for this store.
-   *
-   * <p>This method manually advances the epoch counter, which can trigger epoch-based interruptions
-   * if they are enabled.
-   */
-  void incrementEpoch() throws WasmException;
-
-  /**
-   * Sets the memory limit for this store.
-   *
-   * @param bytes maximum memory in bytes (0 for unlimited)
-   * @throws IllegalArgumentException if bytes is negative
-   */
-  void setMemoryLimit(final long bytes) throws WasmException;
-
-  /**
-   * Sets the table element limit for this store.
-   *
-   * @param elements maximum number of table elements (0 for unlimited)
-   * @throws IllegalArgumentException if elements is negative
-   */
-  void setTableElementLimit(final long elements) throws WasmException;
-
-  /**
-   * Sets the instance limit for this store.
-   *
-   * @param count maximum number of instances (0 for unlimited)
-   * @throws IllegalArgumentException if count is negative
-   */
-  void setInstanceLimit(final int count) throws WasmException;
-
-  /**
    * Creates a host function that can be imported by WebAssembly modules.
    *
    * <p>The created function will be bound to this store and can be added to import maps for module
@@ -360,5 +328,26 @@ public interface Store extends Closeable {
       throws WasmException {
     return WasmRuntimeFactory.create()
         .createStore(engine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
+  }
+
+  /**
+   * Creates a new Store with resource limits.
+   *
+   * <p>Resource limits are enforced during WebAssembly execution and control memory size, table
+   * elements, and instance counts. Limits are applied per-resource (each memory/table can grow to
+   * the limit independently).
+   *
+   * @param engine the engine to create the store for
+   * @param limits the resource limits to apply
+   * @return a new Store instance with the specified limits
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine or limits is null
+   * @since 1.0.0
+   */
+  static Store create(final Engine engine, final StoreLimits limits) throws WasmException {
+    if (limits == null) {
+      throw new IllegalArgumentException("StoreLimits cannot be null");
+    }
+    return WasmRuntimeFactory.create().createStore(engine, limits);
   }
 }

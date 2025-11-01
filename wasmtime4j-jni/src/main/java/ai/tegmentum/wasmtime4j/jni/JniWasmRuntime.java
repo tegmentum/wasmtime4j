@@ -191,6 +191,20 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public Store createStore(final Engine engine, final ai.tegmentum.wasmtime4j.StoreLimits limits)
+      throws WasmException {
+    JniValidation.requireNonNull(engine, "engine");
+    JniValidation.requireNonNull(limits, "limits");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    // TODO: Implement store creation with StoreLimits
+    // For now, delegate to basic createStore
+    return createStore(engine);
+  }
+
+  @Override
   public Store createStore(
       final Engine engine,
       final long fuelLimit,

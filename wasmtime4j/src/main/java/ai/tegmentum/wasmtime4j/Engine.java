@@ -78,6 +78,22 @@ public interface Engine extends Closeable {
   StreamingCompiler createStreamingCompiler() throws WasmException;
 
   /**
+   * Increments the epoch counter.
+   *
+   * <p>This method is signal-safe and performs only an atomic increment. The epoch counter is used
+   * for epoch-based interruption of WebAssembly execution.
+   *
+   * <p>This should typically be called from a separate thread or signal handler to periodically
+   * increment the epoch, allowing for cooperative timeslicing of long-running WebAssembly code.
+   *
+   * <p>Stores created from this engine with an epoch deadline will be interrupted when the epoch
+   * counter exceeds their deadline.
+   *
+   * @since 1.0.0
+   */
+  void incrementEpoch();
+
+  /**
    * Gets the configuration used by this engine.
    *
    * @return the engine configuration

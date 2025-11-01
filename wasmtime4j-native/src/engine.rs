@@ -33,6 +33,42 @@ pub struct EngineConfigSummary {
     pub wasm_bulk_memory: bool,
     /// Whether WebAssembly multi-value returns are supported
     pub wasm_multi_value: bool,
+    /// Whether WebAssembly multi-memory is supported
+    pub wasm_multi_memory: bool,
+    /// Whether WebAssembly tail call is supported
+    pub wasm_tail_call: bool,
+    /// Whether WebAssembly relaxed SIMD is supported
+    pub wasm_relaxed_simd: bool,
+    /// Whether WebAssembly function references are supported
+    pub wasm_function_references: bool,
+    /// Whether WebAssembly garbage collection is supported
+    pub wasm_gc: bool,
+    /// Whether WebAssembly exceptions are supported
+    pub wasm_exceptions: bool,
+    /// Whether WebAssembly 64-bit memory is supported
+    pub wasm_memory64: bool,
+    /// Whether WebAssembly extended constant expressions are supported
+    pub wasm_extended_const: bool,
+    /// Whether WebAssembly component model is supported
+    pub wasm_component_model: bool,
+    /// Whether WebAssembly custom page sizes are supported
+    pub wasm_custom_page_sizes: bool,
+    /// Whether WebAssembly wide arithmetic is supported
+    pub wasm_wide_arithmetic: bool,
+    /// Whether WebAssembly stack switching is supported
+    pub wasm_stack_switching: bool,
+    /// Whether WebAssembly shared-everything-threads is supported
+    pub wasm_shared_everything_threads: bool,
+    /// Whether WebAssembly component model async is supported
+    pub wasm_component_model_async: bool,
+    /// Whether WebAssembly component model async builtins is supported
+    pub wasm_component_model_async_builtins: bool,
+    /// Whether WebAssembly component model async stackful is supported
+    pub wasm_component_model_async_stackful: bool,
+    /// Whether WebAssembly component model error context is supported
+    pub wasm_component_model_error_context: bool,
+    /// Whether WebAssembly component model GC is supported
+    pub wasm_component_model_gc: bool,
     /// Whether fuel consumption is enabled
     pub fuel_enabled: bool,
     /// Maximum memory pages allowed (64KB per page)
@@ -63,6 +99,24 @@ pub struct EngineBuilder {
     wasm_simd: bool,
     wasm_bulk_memory: bool,
     wasm_multi_value: bool,
+    wasm_multi_memory: bool,
+    wasm_tail_call: bool,
+    wasm_relaxed_simd: bool,
+    wasm_function_references: bool,
+    wasm_gc: bool,
+    wasm_exceptions: bool,
+    wasm_memory64: bool,
+    wasm_extended_const: bool,
+    wasm_component_model: bool,
+    wasm_custom_page_sizes: bool,
+    wasm_wide_arithmetic: bool,
+    wasm_stack_switching: bool,
+    wasm_shared_everything_threads: bool,
+    wasm_component_model_async: bool,
+    wasm_component_model_async_builtins: bool,
+    wasm_component_model_async_stackful: bool,
+    wasm_component_model_error_context: bool,
+    wasm_component_model_gc: bool,
 }
 
 impl Engine {
@@ -109,6 +163,24 @@ impl Engine {
             WasmFeature::Simd => self.config_summary.wasm_simd,
             WasmFeature::BulkMemory => self.config_summary.wasm_bulk_memory,
             WasmFeature::MultiValue => self.config_summary.wasm_multi_value,
+            WasmFeature::MultiMemory => self.config_summary.wasm_multi_memory,
+            WasmFeature::TailCall => self.config_summary.wasm_tail_call,
+            WasmFeature::RelaxedSimd => self.config_summary.wasm_relaxed_simd,
+            WasmFeature::FunctionReferences => self.config_summary.wasm_function_references,
+            WasmFeature::Gc => self.config_summary.wasm_gc,
+            WasmFeature::Exceptions => self.config_summary.wasm_exceptions,
+            WasmFeature::Memory64 => self.config_summary.wasm_memory64,
+            WasmFeature::ExtendedConst => self.config_summary.wasm_extended_const,
+            WasmFeature::ComponentModel => self.config_summary.wasm_component_model,
+            WasmFeature::CustomPageSizes => self.config_summary.wasm_custom_page_sizes,
+            WasmFeature::WideArithmetic => self.config_summary.wasm_wide_arithmetic,
+            WasmFeature::StackSwitching => self.config_summary.wasm_stack_switching,
+            WasmFeature::SharedEverythingThreads => self.config_summary.wasm_shared_everything_threads,
+            WasmFeature::ComponentModelAsync => self.config_summary.wasm_component_model_async,
+            WasmFeature::ComponentModelAsyncBuiltins => self.config_summary.wasm_component_model_async_builtins,
+            WasmFeature::ComponentModelAsyncStackful => self.config_summary.wasm_component_model_async_stackful,
+            WasmFeature::ComponentModelErrorContext => self.config_summary.wasm_component_model_error_context,
+            WasmFeature::ComponentModelGc => self.config_summary.wasm_component_model_gc,
         }
     }
 
@@ -152,6 +224,21 @@ impl Engine {
     /// Check engine reference count for debugging
     pub fn reference_count(&self) -> usize {
         Arc::strong_count(&self.inner)
+    }
+
+    /// Increment the epoch counter
+    ///
+    /// This method is signal-safe and performs only an atomic increment operation.
+    /// The epoch counter is used for epoch-based interruption of WebAssembly execution.
+    ///
+    /// Stores created from this engine with an epoch deadline will be interrupted
+    /// when the epoch counter exceeds their deadline.
+    ///
+    /// This is typically called from a separate thread or signal handler to
+    /// periodically increment the epoch, enabling cooperative timeslicing of
+    /// long-running WebAssembly code.
+    pub fn increment_epoch(&self) {
+        self.inner.increment_epoch();
     }
 }
 
@@ -332,6 +419,24 @@ impl EngineBuilder {
             wasm_simd: true,
             wasm_bulk_memory: true,
             wasm_multi_value: true,
+            wasm_multi_memory: false,
+            wasm_tail_call: false,
+            wasm_relaxed_simd: false,
+            wasm_function_references: false,
+            wasm_gc: false,
+            wasm_exceptions: false,
+            wasm_memory64: true,              // Tier 1 - on by default
+            wasm_extended_const: true,        // Tier 1 - on by default
+            wasm_component_model: true,       // Tier 1 - on by default
+            wasm_custom_page_sizes: false,    // Tier 3 - off by default
+            wasm_wide_arithmetic: false,      // Tier 3 - off by default
+            wasm_stack_switching: false,      // Tier 3 - off by default
+            wasm_shared_everything_threads: false,  // Tier 3 - off by default
+            wasm_component_model_async: false,  // Component model extension - off by default
+            wasm_component_model_async_builtins: false,  // Component model extension - off by default
+            wasm_component_model_async_stackful: false,  // Component model extension - off by default
+            wasm_component_model_error_context: false,  // Component model extension - off by default
+            wasm_component_model_gc: false,  // Component model extension - off by default
         }
     }
 
@@ -384,10 +489,136 @@ impl EngineBuilder {
         self
     }
 
-    /// Configure WebAssembly multi-value support  
+    /// Configure WebAssembly multi-value support
     pub fn wasm_multi_value(mut self, enable: bool) -> Self {
         self.config.wasm_multi_value(enable);
         self.wasm_multi_value = enable;
+        self
+    }
+
+    /// Configure WebAssembly multi-memory support
+    pub fn wasm_multi_memory(mut self, enable: bool) -> Self {
+        self.config.wasm_multi_memory(enable);
+        self.wasm_multi_memory = enable;
+        self
+    }
+
+    /// Configure WebAssembly tail call support
+    pub fn wasm_tail_call(mut self, enable: bool) -> Self {
+        self.config.wasm_tail_call(enable);
+        self.wasm_tail_call = enable;
+        self
+    }
+
+    /// Configure WebAssembly relaxed SIMD support
+    pub fn wasm_relaxed_simd(mut self, enable: bool) -> Self {
+        self.config.wasm_relaxed_simd(enable);
+        self.wasm_relaxed_simd = enable;
+        self
+    }
+
+    /// Configure WebAssembly function references support
+    pub fn wasm_function_references(mut self, enable: bool) -> Self {
+        self.config.wasm_function_references(enable);
+        self.wasm_function_references = enable;
+        self
+    }
+
+    /// Configure WebAssembly garbage collection support
+    pub fn wasm_gc(mut self, enable: bool) -> Self {
+        self.config.wasm_gc(enable);
+        self.wasm_gc = enable;
+        self
+    }
+
+    /// Configure WebAssembly exceptions support
+    pub fn wasm_exceptions(mut self, enable: bool) -> Self {
+        self.config.wasm_exceptions(enable);
+        self.wasm_exceptions = enable;
+        self
+    }
+
+    /// Configure WebAssembly 64-bit memory support
+    pub fn wasm_memory64(mut self, enable: bool) -> Self {
+        self.config.wasm_memory64(enable);
+        self.wasm_memory64 = enable;
+        self
+    }
+
+    /// Configure WebAssembly extended constant expressions support
+    pub fn wasm_extended_const(mut self, enable: bool) -> Self {
+        self.config.wasm_extended_const(enable);
+        self.wasm_extended_const = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model support
+    pub fn wasm_component_model(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model(enable);
+        self.wasm_component_model = enable;
+        self
+    }
+
+    /// Configure WebAssembly custom page sizes support
+    pub fn wasm_custom_page_sizes(mut self, enable: bool) -> Self {
+        self.config.wasm_custom_page_sizes(enable);
+        self.wasm_custom_page_sizes = enable;
+        self
+    }
+
+    /// Configure WebAssembly wide arithmetic support
+    pub fn wasm_wide_arithmetic(mut self, enable: bool) -> Self {
+        self.config.wasm_wide_arithmetic(enable);
+        self.wasm_wide_arithmetic = enable;
+        self
+    }
+
+    /// Configure WebAssembly stack switching support
+    pub fn wasm_stack_switching(mut self, enable: bool) -> Self {
+        self.config.wasm_stack_switching(enable);
+        self.wasm_stack_switching = enable;
+        self
+    }
+
+    /// Configure WebAssembly shared-everything-threads support
+    pub fn wasm_shared_everything_threads(mut self, enable: bool) -> Self {
+        self.config.wasm_shared_everything_threads(enable);
+        self.wasm_shared_everything_threads = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model async support
+    pub fn wasm_component_model_async(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_async(enable);
+        self.wasm_component_model_async = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model async builtins support
+    pub fn wasm_component_model_async_builtins(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_async_builtins(enable);
+        self.wasm_component_model_async_builtins = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model async stackful support
+    pub fn wasm_component_model_async_stackful(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_async_stackful(enable);
+        self.wasm_component_model_async_stackful = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model error context support
+    pub fn wasm_component_model_error_context(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_error_context(enable);
+        self.wasm_component_model_error_context = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model GC support
+    pub fn wasm_component_model_gc(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_gc(enable);
+        self.wasm_component_model_gc = enable;
         self
     }
 
@@ -461,6 +692,24 @@ impl EngineConfigSummary {
             wasm_simd: true,                   // Commonly enabled
             wasm_bulk_memory: true,            // Commonly enabled
             wasm_multi_value: true,            // Commonly enabled
+            wasm_multi_memory: false,          // Tier 3 feature - off by default
+            wasm_tail_call: false,             // Tier 3 feature - off by default
+            wasm_relaxed_simd: false,          // Tier 3 feature - off by default
+            wasm_function_references: false,   // Tier 3 feature - off by default
+            wasm_gc: false,                    // Tier 3 feature - off by default
+            wasm_exceptions: false,            // Tier 3 feature - off by default
+            wasm_memory64: true,               // Tier 1 feature - on by default
+            wasm_extended_const: true,         // Tier 1 feature - on by default
+            wasm_component_model: true,        // Tier 1 feature - on by default
+            wasm_custom_page_sizes: false,     // Tier 3 feature - off by default
+            wasm_wide_arithmetic: false,       // Tier 3 feature - off by default
+            wasm_stack_switching: false,       // Tier 3 feature - off by default
+            wasm_shared_everything_threads: false,  // Tier 3 feature - off by default
+            wasm_component_model_async: false,  // Component model extension - off by default
+            wasm_component_model_async_builtins: false,  // Component model extension - off by default
+            wasm_component_model_async_stackful: false,  // Component model extension - off by default
+            wasm_component_model_error_context: false,  // Component model extension - off by default
+            wasm_component_model_gc: false,  // Component model extension - off by default
             fuel_enabled: true,                // Default assumption (enabled for Store operations)
             max_memory_pages: None,            // No limit by default
             max_stack_size: None,              // No limit by default
@@ -487,6 +736,24 @@ impl EngineConfigSummary {
             wasm_simd: builder.wasm_simd,
             wasm_bulk_memory: builder.wasm_bulk_memory,
             wasm_multi_value: builder.wasm_multi_value,
+            wasm_multi_memory: builder.wasm_multi_memory,
+            wasm_tail_call: builder.wasm_tail_call,
+            wasm_relaxed_simd: builder.wasm_relaxed_simd,
+            wasm_function_references: builder.wasm_function_references,
+            wasm_gc: builder.wasm_gc,
+            wasm_exceptions: builder.wasm_exceptions,
+            wasm_memory64: builder.wasm_memory64,
+            wasm_extended_const: builder.wasm_extended_const,
+            wasm_component_model: builder.wasm_component_model,
+            wasm_custom_page_sizes: builder.wasm_custom_page_sizes,
+            wasm_wide_arithmetic: builder.wasm_wide_arithmetic,
+            wasm_stack_switching: builder.wasm_stack_switching,
+            wasm_shared_everything_threads: builder.wasm_shared_everything_threads,
+            wasm_component_model_async: builder.wasm_component_model_async,
+            wasm_component_model_async_builtins: builder.wasm_component_model_async_builtins,
+            wasm_component_model_async_stackful: builder.wasm_component_model_async_stackful,
+            wasm_component_model_error_context: builder.wasm_component_model_error_context,
+            wasm_component_model_gc: builder.wasm_component_model_gc,
             fuel_enabled: builder.fuel_enabled,
             max_memory_pages: builder.max_memory_pages,
             max_stack_size: builder.max_stack_size,
@@ -509,6 +776,42 @@ pub enum WasmFeature {
     BulkMemory,
     /// WebAssembly multi-value proposal support (multiple return values)
     MultiValue,
+    /// WebAssembly multi-memory proposal support (multiple memory instances)
+    MultiMemory,
+    /// WebAssembly tail call proposal support (tail call optimization)
+    TailCall,
+    /// WebAssembly relaxed SIMD proposal support (performance optimization)
+    RelaxedSimd,
+    /// WebAssembly function references proposal support
+    FunctionReferences,
+    /// WebAssembly garbage collection proposal support
+    Gc,
+    /// WebAssembly exceptions proposal support
+    Exceptions,
+    /// WebAssembly 64-bit memory support
+    Memory64,
+    /// WebAssembly extended constant expressions support
+    ExtendedConst,
+    /// WebAssembly component model support
+    ComponentModel,
+    /// WebAssembly custom page sizes support
+    CustomPageSizes,
+    /// WebAssembly wide arithmetic support
+    WideArithmetic,
+    /// WebAssembly stack switching support
+    StackSwitching,
+    /// WebAssembly shared-everything-threads support
+    SharedEverythingThreads,
+    /// WebAssembly component model async support
+    ComponentModelAsync,
+    /// WebAssembly component model async builtins support
+    ComponentModelAsyncBuiltins,
+    /// WebAssembly component model async stackful support
+    ComponentModelAsyncStackful,
+    /// WebAssembly component model error context support
+    ComponentModelErrorContext,
+    /// WebAssembly component model GC support
+    ComponentModelGc,
 }
 
 impl Default for Engine {
@@ -533,6 +836,24 @@ impl Default for Engine {
                             wasm_simd: false,
                             wasm_bulk_memory: false,
                             wasm_multi_value: false,
+                            wasm_multi_memory: false,
+                            wasm_tail_call: false,
+                            wasm_relaxed_simd: false,
+                            wasm_function_references: false,
+                            wasm_gc: false,
+                            wasm_exceptions: false,
+                            wasm_memory64: false,
+                            wasm_extended_const: false,
+                            wasm_component_model: false,
+                            wasm_custom_page_sizes: false,
+                            wasm_wide_arithmetic: false,
+                            wasm_stack_switching: false,
+                            wasm_shared_everything_threads: false,
+                            wasm_component_model_async: false,
+                            wasm_component_model_async_builtins: false,
+                            wasm_component_model_async_stackful: false,
+                            wasm_component_model_error_context: false,
+                            wasm_component_model_gc: false,
                             fuel_enabled: false,
                             max_memory_pages: None,
                             max_stack_size: None,
@@ -556,6 +877,24 @@ impl Default for Engine {
                                 wasm_simd: false,
                                 wasm_bulk_memory: false,
                                 wasm_multi_value: false,
+                                wasm_multi_memory: false,
+                                wasm_tail_call: false,
+                                wasm_relaxed_simd: false,
+                                wasm_function_references: false,
+                                wasm_gc: false,
+                                wasm_exceptions: false,
+                                wasm_memory64: false,
+                                wasm_extended_const: false,
+                                wasm_component_model: false,
+                                wasm_custom_page_sizes: false,
+                                wasm_wide_arithmetic: false,
+                                wasm_stack_switching: false,
+                                wasm_shared_everything_threads: false,
+                                wasm_component_model_async: false,
+                                wasm_component_model_async_builtins: false,
+                                wasm_component_model_async_stackful: false,
+                                wasm_component_model_error_context: false,
+                                wasm_component_model_gc: false,
                                 fuel_enabled: false,
                                 max_memory_pages: None,
                                 max_stack_size: None,

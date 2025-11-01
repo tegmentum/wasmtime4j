@@ -23,6 +23,7 @@ use crate::store::{Store, StoreData};
 use crate::module::{Module, ModuleValueType, FunctionSignature, ImportKind, ExportKind};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::element_segment::ElementSegmentManager;
+use crate::data_segment::DataSegmentManager;
 
 /// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
 ///
@@ -37,6 +38,8 @@ pub struct Instance {
     store_weak: std::sync::Weak<ReentrantLock<Store>>,
     /// Element segment manager for table.init() support
     element_segment_manager: Arc<ElementSegmentManager>,
+    /// Data segment manager for memory.init() support
+    data_segment_manager: Arc<DataSegmentManager>,
 }
 
 /// Lifecycle state of a WebAssembly instance
@@ -176,6 +179,9 @@ impl Instance {
         // Create element segment manager from module's element segments
         let element_segment_manager = Arc::new(ElementSegmentManager::new(module.element_segments.clone()));
 
+        // Create data segment manager from module's data segments
+        let data_segment_manager = Arc::new(DataSegmentManager::new(module.data_segments.clone()));
+
         Ok(Instance {
             inner: Arc::new(ReentrantLock::new(instance)),
             metadata,
@@ -183,6 +189,7 @@ impl Instance {
             exports_map,
             store_weak: std::sync::Weak::new(), // Will be set later if needed
             element_segment_manager,
+            data_segment_manager,
         })
     }
     
@@ -247,6 +254,9 @@ impl Instance {
         // Create element segment manager from module's element segments
         let element_segment_manager = Arc::new(ElementSegmentManager::new(module.element_segments.clone()));
 
+        // Create data segment manager from module's data segments
+        let data_segment_manager = Arc::new(DataSegmentManager::new(module.data_segments.clone()));
+
         Ok(Instance {
             inner: Arc::new(ReentrantLock::new(wasmtime_instance)),
             metadata,
@@ -254,6 +264,7 @@ impl Instance {
             exports_map,
             store_weak: std::sync::Weak::new(), // Will be set later if needed
             element_segment_manager,
+            data_segment_manager,
         })
     }
 
@@ -738,6 +749,11 @@ impl Instance {
     /// Get element segment manager for table.init() operations
     pub fn get_element_segment_manager(&self) -> &Arc<ElementSegmentManager> {
         &self.element_segment_manager
+    }
+
+    /// Get data segment manager for memory.init() operations
+    pub fn get_data_segment_manager(&self) -> &Arc<DataSegmentManager> {
+        &self.data_segment_manager
     }
 
     /// List all exports

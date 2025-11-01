@@ -167,6 +167,12 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public void incrementEpoch() {
+    ensureNotClosed();
+    NATIVE_BINDINGS.engineIncrementEpoch(nativeEngine);
+  }
+
+  @Override
   public void close() {
     if (closed) {
       return;

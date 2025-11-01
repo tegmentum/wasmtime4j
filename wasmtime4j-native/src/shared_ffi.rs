@@ -195,6 +195,24 @@ pub enum FfiWasmFeature {
     Simd = 2,
     BulkMemory = 3,
     MultiValue = 4,
+    MultiMemory = 5,
+    TailCall = 6,
+    RelaxedSimd = 7,
+    FunctionReferences = 8,
+    Gc = 9,
+    Exceptions = 10,
+    Memory64 = 11,
+    ExtendedConst = 12,
+    ComponentModel = 13,
+    CustomPageSizes = 14,
+    WideArithmetic = 15,
+    StackSwitching = 16,
+    SharedEverythingThreads = 17,
+    ComponentModelAsync = 18,
+    ComponentModelAsyncBuiltins = 19,
+    ComponentModelAsyncStackful = 20,
+    ComponentModelErrorContext = 21,
+    ComponentModelGc = 22,
 }
 
 impl ParameterConverter<WasmFeature> for FfiWasmFeature {
@@ -205,8 +223,26 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
             2 => Ok(WasmFeature::Simd),
             3 => Ok(WasmFeature::BulkMemory),
             4 => Ok(WasmFeature::MultiValue),
+            5 => Ok(WasmFeature::MultiMemory),
+            6 => Ok(WasmFeature::TailCall),
+            7 => Ok(WasmFeature::RelaxedSimd),
+            8 => Ok(WasmFeature::FunctionReferences),
+            9 => Ok(WasmFeature::Gc),
+            10 => Ok(WasmFeature::Exceptions),
+            11 => Ok(WasmFeature::Memory64),
+            12 => Ok(WasmFeature::ExtendedConst),
+            13 => Ok(WasmFeature::ComponentModel),
+            14 => Ok(WasmFeature::CustomPageSizes),
+            15 => Ok(WasmFeature::WideArithmetic),
+            16 => Ok(WasmFeature::StackSwitching),
+            17 => Ok(WasmFeature::SharedEverythingThreads),
+            18 => Ok(WasmFeature::ComponentModelAsync),
+            19 => Ok(WasmFeature::ComponentModelAsyncBuiltins),
+            20 => Ok(WasmFeature::ComponentModelAsyncStackful),
+            21 => Ok(WasmFeature::ComponentModelErrorContext),
+            22 => Ok(WasmFeature::ComponentModelGc),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-4", value)
+                message: format!("Invalid WASM feature: {}. Expected 0-22", value)
             }),
         }
     }
@@ -218,14 +254,32 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
             WasmFeature::Simd => 2,
             WasmFeature::BulkMemory => 3,
             WasmFeature::MultiValue => 4,
+            WasmFeature::MultiMemory => 5,
+            WasmFeature::TailCall => 6,
+            WasmFeature::RelaxedSimd => 7,
+            WasmFeature::FunctionReferences => 8,
+            WasmFeature::Gc => 9,
+            WasmFeature::Exceptions => 10,
+            WasmFeature::Memory64 => 11,
+            WasmFeature::ExtendedConst => 12,
+            WasmFeature::ComponentModel => 13,
+            WasmFeature::CustomPageSizes => 14,
+            WasmFeature::WideArithmetic => 15,
+            WasmFeature::StackSwitching => 16,
+            WasmFeature::SharedEverythingThreads => 17,
+            WasmFeature::ComponentModelAsync => 18,
+            WasmFeature::ComponentModelAsyncBuiltins => 19,
+            WasmFeature::ComponentModelAsyncStackful => 20,
+            WasmFeature::ComponentModelErrorContext => 21,
+            WasmFeature::ComponentModelGc => 22,
         }
     }
-    
+
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
-            0..=4 => Ok(()),
+            0..=22 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-4", value)
+                message: format!("Invalid WASM feature: {}. Expected 0-22", value)
             }),
         }
     }
@@ -240,9 +294,27 @@ impl FfiWasmFeature {
             FfiWasmFeature::Simd => WasmFeature::Simd,
             FfiWasmFeature::BulkMemory => WasmFeature::BulkMemory,
             FfiWasmFeature::MultiValue => WasmFeature::MultiValue,
+            FfiWasmFeature::MultiMemory => WasmFeature::MultiMemory,
+            FfiWasmFeature::TailCall => WasmFeature::TailCall,
+            FfiWasmFeature::RelaxedSimd => WasmFeature::RelaxedSimd,
+            FfiWasmFeature::FunctionReferences => WasmFeature::FunctionReferences,
+            FfiWasmFeature::Gc => WasmFeature::Gc,
+            FfiWasmFeature::Exceptions => WasmFeature::Exceptions,
+            FfiWasmFeature::Memory64 => WasmFeature::Memory64,
+            FfiWasmFeature::ExtendedConst => WasmFeature::ExtendedConst,
+            FfiWasmFeature::ComponentModel => WasmFeature::ComponentModel,
+            FfiWasmFeature::CustomPageSizes => WasmFeature::CustomPageSizes,
+            FfiWasmFeature::WideArithmetic => WasmFeature::WideArithmetic,
+            FfiWasmFeature::StackSwitching => WasmFeature::StackSwitching,
+            FfiWasmFeature::SharedEverythingThreads => WasmFeature::SharedEverythingThreads,
+            FfiWasmFeature::ComponentModelAsync => WasmFeature::ComponentModelAsync,
+            FfiWasmFeature::ComponentModelAsyncBuiltins => WasmFeature::ComponentModelAsyncBuiltins,
+            FfiWasmFeature::ComponentModelAsyncStackful => WasmFeature::ComponentModelAsyncStackful,
+            FfiWasmFeature::ComponentModelErrorContext => WasmFeature::ComponentModelErrorContext,
+            FfiWasmFeature::ComponentModelGc => WasmFeature::ComponentModelGc,
         }
     }
-    
+
     /// Create FFI WASM feature from native WasmFeature enum
     pub fn from_native(feature: WasmFeature) -> Self {
         match feature {
@@ -251,6 +323,24 @@ impl FfiWasmFeature {
             WasmFeature::Simd => FfiWasmFeature::Simd,
             WasmFeature::BulkMemory => FfiWasmFeature::BulkMemory,
             WasmFeature::MultiValue => FfiWasmFeature::MultiValue,
+            WasmFeature::MultiMemory => FfiWasmFeature::MultiMemory,
+            WasmFeature::TailCall => FfiWasmFeature::TailCall,
+            WasmFeature::RelaxedSimd => FfiWasmFeature::RelaxedSimd,
+            WasmFeature::FunctionReferences => FfiWasmFeature::FunctionReferences,
+            WasmFeature::Gc => FfiWasmFeature::Gc,
+            WasmFeature::Exceptions => FfiWasmFeature::Exceptions,
+            WasmFeature::Memory64 => FfiWasmFeature::Memory64,
+            WasmFeature::ExtendedConst => FfiWasmFeature::ExtendedConst,
+            WasmFeature::ComponentModel => FfiWasmFeature::ComponentModel,
+            WasmFeature::CustomPageSizes => FfiWasmFeature::CustomPageSizes,
+            WasmFeature::WideArithmetic => FfiWasmFeature::WideArithmetic,
+            WasmFeature::StackSwitching => FfiWasmFeature::StackSwitching,
+            WasmFeature::SharedEverythingThreads => FfiWasmFeature::SharedEverythingThreads,
+            WasmFeature::ComponentModelAsync => FfiWasmFeature::ComponentModelAsync,
+            WasmFeature::ComponentModelAsyncBuiltins => FfiWasmFeature::ComponentModelAsyncBuiltins,
+            WasmFeature::ComponentModelAsyncStackful => FfiWasmFeature::ComponentModelAsyncStackful,
+            WasmFeature::ComponentModelErrorContext => FfiWasmFeature::ComponentModelErrorContext,
+            WasmFeature::ComponentModelGc => FfiWasmFeature::ComponentModelGc,
         }
     }
 }
@@ -1457,8 +1547,31 @@ pub mod module {
         core::compile_module(engine, bytes)
     }
 
+    /// Shared implementation for module compilation from bytes
+    ///
+    /// This function provides unified WASM bytecode compilation logic that works
+    /// with any byte array representation through the ByteArrayConverter trait.
+    pub fn compile_module_bytes_shared<B>(
+        engine: &Engine,
+        wasm_bytes: B
+    ) -> WasmtimeResult<Box<Module>>
+    where
+        B: ByteArrayConverter,
+    {
+        // Validate byte array
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WebAssembly bytes cannot be empty".to_string()
+            });
+        }
+
+        // Get bytes safely and compile
+        let bytes = unsafe { wasm_bytes.get_bytes()? };
+        core::compile_module(engine, bytes)
+    }
+
     /// Shared implementation for module compilation from WAT
-    /// 
+    ///
     /// This function provides unified WAT compilation logic that works
     /// with any string representation through the StringConverter trait.
     pub fn compile_module_wat_shared<S>(

@@ -13,7 +13,28 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for module edge cases. */
+/**
+ * Tests edge cases in WebAssembly module handling.
+ *
+ * <p>This test validates that wasmtime4j correctly handles edge cases and boundary conditions in
+ * module instantiation, export retrieval, and function invocation, matching Wasmtime's behavior.
+ *
+ * <p>Expected Wasmtime behavior:
+ *
+ * <ul>
+ *   <li>Empty modules can be compiled and instantiated
+ *   <li>Accessing non-existent exports returns empty Optional
+ *   <li>Multiple instances of same module are independent
+ *   <li>Zero-parameter and zero-result functions work correctly
+ *   <li>Module names and export names handle special characters correctly
+ * </ul>
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Module.html">https://docs.wasmtime.dev/api/wasmtime/struct.Module.html</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleEdgeCasesTest extends DualRuntimeTest {
   private Engine engine;
   private Store store;

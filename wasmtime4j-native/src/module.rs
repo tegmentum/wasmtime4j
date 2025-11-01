@@ -14,7 +14,8 @@ use wasmtime::{
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::element_segment::ElementSegment;
-use crate::element_segment_parser::parse_element_segments;
+use crate::data_segment::DataSegment;
+use crate::element_segment_parser::{parse_element_segments, parse_data_segments};
 // Note: validation functions removed from crate root
 
 /// Thread-safe wrapper around Wasmtime module with introspection
@@ -24,6 +25,8 @@ pub struct Module {
     pub metadata: ModuleMetadata,
     /// Element segments for table.init() operations (hybrid design - only passive segments cached)
     pub element_segments: Vec<Option<ElementSegment>>,
+    /// Data segments for memory.init() operations (hybrid design - only passive segments cached)
+    pub data_segments: Vec<Option<DataSegment>>,
 }
 
 /// Comprehensive module metadata for introspection and validation
@@ -213,10 +216,18 @@ impl Module {
                 Vec::new()
             });
 
+        // Parse data segments for memory.init() support (hybrid design)
+        let data_segments = parse_data_segments(wasm_bytes)
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to parse data segments: {:?}", e);
+                Vec::new()
+            });
+
         Ok(Module {
             inner: Arc::new(module),
             metadata,
             element_segments,
+            data_segments,
         })
     }
 
@@ -386,10 +397,15 @@ impl Module {
         // This is a known limitation - table.init() won't work with deserialized modules
         let element_segments = Vec::new();
 
+        // Data segments cannot be recovered from deserialized modules
+        // This is a known limitation - memory.init() won't work with deserialized modules
+        let data_segments = Vec::new();
+
         Ok(Module {
             inner: Arc::new(module),
             metadata,
             element_segments,
+            data_segments,
         })
     }
 }

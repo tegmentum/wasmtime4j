@@ -153,16 +153,12 @@ class JniModuleTest {
             return 0;
           }
 
-          @Override
           public void incrementEpoch() {}
 
-          @Override
           public void setMemoryLimit(long bytes) {}
 
-          @Override
           public void setTableElementLimit(long elements) {}
 
-          @Override
           public void setInstanceLimit(int count) {}
 
           @Override

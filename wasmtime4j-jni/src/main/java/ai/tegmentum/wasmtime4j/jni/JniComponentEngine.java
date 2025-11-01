@@ -222,6 +222,12 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
+  public void incrementEpoch() {
+    // Component engines don't support epoch interruption in the same way
+    // This is a no-op for component engines
+  }
+
+  @Override
   public ComponentSimple compileComponent(final byte[] componentBytes) throws WasmException {
     JniValidation.requireNonEmpty(componentBytes, "componentBytes");
     ensureNotClosed();

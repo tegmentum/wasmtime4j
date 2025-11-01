@@ -279,7 +279,7 @@ public final class JniWastRunnerTest {
     final WastExecutionResult result =
         JniWastRunner.executeWastString("directive.wast", wastContent);
 
-    assertFalse(result.getDirectiveResults().isEmpty(), "Should have directive results");
+    assertFalse(result.getDirectiveResults().length == 0, "Should have directive results");
 
     for (final WastDirectiveResult directive : result.getDirectiveResults()) {
       assertNotNull(directive, "Directive should not be null");

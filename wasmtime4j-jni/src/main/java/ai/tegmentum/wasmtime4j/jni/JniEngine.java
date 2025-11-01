@@ -129,6 +129,11 @@ public class JniEngine implements Engine {
   }
 
   @Override
+  public void incrementEpoch() {
+    // No-op for JNI engine - epoch interruption handled at store level
+  }
+
+  @Override
   public Module compileModule(final byte[] wasmBytes) throws WasmException {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("wasmBytes cannot be null");
@@ -143,14 +148,11 @@ public class JniEngine implements Engine {
       throw new IllegalStateException("Engine has invalid native handle");
     }
 
-    // TODO: Call native method to compile module
-    // long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
-    // if (moduleHandle == 0) {
-    //   throw new WasmException("Failed to compile module");
-    // }
-    // return new JniModule(moduleHandle, this);
-    throw new UnsupportedOperationException(
-        "Module compilation not yet implemented - native library required");
+    final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to compile module from bytes");
+    }
+    return new JniModule(moduleHandle, this);
   }
 
   @Override
@@ -174,6 +176,8 @@ public class JniEngine implements Engine {
     }
     return new JniModule(moduleHandle, this);
   }
+
+  private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
 
   private native long nativeCompileWat(long engineHandle, String wat);
 

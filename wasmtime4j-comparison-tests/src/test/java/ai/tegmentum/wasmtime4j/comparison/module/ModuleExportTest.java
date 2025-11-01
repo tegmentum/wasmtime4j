@@ -14,7 +14,27 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for module exports across JNI and Panama implementations. */
+/**
+ * Tests WebAssembly module export functionality.
+ *
+ * <p>This test validates that wasmtime4j correctly implements Wasmtime's export behavior for
+ * functions, memory, tables, and other WebAssembly items.
+ *
+ * <p>Expected Wasmtime behavior:
+ *
+ * <ul>
+ *   <li>Exported functions can be retrieved and invoked via the Java API
+ *   <li>Exported memory and tables can be accessed from the host
+ *   <li>Same WebAssembly item can be exported multiple times with different names
+ *   <li>Export names are case-sensitive strings
+ * </ul>
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Instance.html#method.get_export">https://docs.wasmtime.dev/api/wasmtime/struct.Instance.html#method.get_export</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleExportTest extends DualRuntimeTest {
 
   private Engine engine;

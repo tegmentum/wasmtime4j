@@ -50,8 +50,12 @@ public class JniModule implements Module {
 
   @Override
   public List<ImportType> getImports() {
-    // TODO: Implement imports retrieval
-    return Collections.emptyList();
+    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+    final List<ImportType> imports = new java.util.ArrayList<>(moduleImports.size());
+    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
+      imports.add(moduleImport.getImportType());
+    }
+    return java.util.Collections.unmodifiableList(imports);
   }
 
   @Override
@@ -106,8 +110,12 @@ public class JniModule implements Module {
 
   @Override
   public List<ExportType> getExports() {
-    // TODO: Implement exports retrieval
-    return Collections.emptyList();
+    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
+    final List<ExportType> exports = new java.util.ArrayList<>(moduleExports.size());
+    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
+      exports.add(moduleExport.getExportType());
+    }
+    return java.util.Collections.unmodifiableList(exports);
   }
 
   @Override
@@ -118,90 +126,195 @@ public class JniModule implements Module {
 
   @Override
   public List<ai.tegmentum.wasmtime4j.GlobalType> getGlobalTypes() {
-    // TODO: Implement global types retrieval
-    return Collections.emptyList();
+    final List<ExportType> exports = getExports();
+    final List<ai.tegmentum.wasmtime4j.GlobalType> globalTypes = new java.util.ArrayList<>();
+    for (final ExportType export : exports) {
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
+        globalTypes.add((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(globalTypes);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.TableType> getTableTypes() {
-    // TODO: Implement table types retrieval
-    return Collections.emptyList();
+    final List<ExportType> exports = getExports();
+    final List<ai.tegmentum.wasmtime4j.TableType> tableTypes = new java.util.ArrayList<>();
+    for (final ExportType export : exports) {
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
+        tableTypes.add((ai.tegmentum.wasmtime4j.TableType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(tableTypes);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.MemoryType> getMemoryTypes() {
-    // TODO: Implement memory types retrieval
-    return Collections.emptyList();
+    final List<ExportType> exports = getExports();
+    final List<ai.tegmentum.wasmtime4j.MemoryType> memoryTypes = new java.util.ArrayList<>();
+    for (final ExportType export : exports) {
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
+        memoryTypes.add((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(memoryTypes);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.FuncType> getFunctionTypes() {
-    // TODO: Implement function types retrieval
-    return Collections.emptyList();
+    final List<ExportType> exports = getExports();
+    final List<ai.tegmentum.wasmtime4j.FuncType> functionTypes = new java.util.ArrayList<>();
+    for (final ExportType export : exports) {
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
+        functionTypes.add((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(functionTypes);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.ExportDescriptor> getExportDescriptors() {
-    // TODO: Implement export descriptors retrieval
-    return Collections.emptyList();
+    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
+    final List<ai.tegmentum.wasmtime4j.ExportDescriptor> descriptors =
+        new java.util.ArrayList<>(moduleExports.size());
+
+    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
+      final ai.tegmentum.wasmtime4j.ExportType exportType = moduleExport.getExportType();
+      descriptors.add(
+          new ai.tegmentum.wasmtime4j.jni.type.JniExportDescriptor(
+              exportType.getName(), exportType.getType()));
+    }
+
+    return java.util.Collections.unmodifiableList(descriptors);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.ImportDescriptor> getImportDescriptors() {
-    // TODO: Implement import descriptors retrieval
-    return Collections.emptyList();
+    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+    final List<ai.tegmentum.wasmtime4j.ImportDescriptor> descriptors =
+        new java.util.ArrayList<>(moduleImports.size());
+
+    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
+      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      descriptors.add(
+          new ai.tegmentum.wasmtime4j.jni.type.JniImportDescriptor(
+              importType.getModuleName(), importType.getName(), importType.getType()));
+    }
+
+    return java.util.Collections.unmodifiableList(descriptors);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.ModuleImport> getModuleImports() {
-    // TODO: Implement module imports retrieval
-    return Collections.emptyList();
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeGetModuleImports(nativeHandle);
   }
 
   @Override
   public List<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExports() {
-    // TODO: Implement module exports retrieval
-    return Collections.emptyList();
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeGetModuleExports(nativeHandle);
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.FuncType> getFunctionType(
       final String functionName) {
-    // TODO: Implement function type retrieval
+    if (functionName == null) {
+      return java.util.Optional.empty();
+    }
+    final List<ExportType> exports = getExports();
+    for (final ExportType export : exports) {
+      if (export.getName().equals(functionName)
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+      }
+    }
     return java.util.Optional.empty();
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.GlobalType> getGlobalType(
       final String globalName) {
-    // TODO: Implement global type retrieval
+    if (globalName == null) {
+      return java.util.Optional.empty();
+    }
+    final List<ExportType> exports = getExports();
+    for (final ExportType export : exports) {
+      if (export.getName().equals(globalName)
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+      }
+    }
     return java.util.Optional.empty();
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.MemoryType> getMemoryType(
       final String memoryName) {
-    // TODO: Implement memory type retrieval
+    if (memoryName == null) {
+      return java.util.Optional.empty();
+    }
+    final List<ExportType> exports = getExports();
+    for (final ExportType export : exports) {
+      if (export.getName().equals(memoryName)
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+      }
+    }
     return java.util.Optional.empty();
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.TableType> getTableType(
       final String tableName) {
-    // TODO: Implement table type retrieval
+    if (tableName == null) {
+      return java.util.Optional.empty();
+    }
+    final List<ExportType> exports = getExports();
+    for (final ExportType export : exports) {
+      if (export.getName().equals(tableName)
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.TableType) export.getType());
+      }
+    }
     return java.util.Optional.empty();
   }
 
   @Override
   public boolean hasExport(final String name) {
-    // TODO: Implement export checking
-    return false;
+    if (name == null) {
+      throw new IllegalArgumentException("Export name cannot be null");
+    }
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeHasExport(nativeHandle, name);
   }
 
   @Override
   public boolean hasImport(final String moduleName, final String fieldName) {
-    // TODO: Implement import checking
-    return false;
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (fieldName == null) {
+      throw new IllegalArgumentException("Field name cannot be null");
+    }
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeHasImport(nativeHandle, moduleName, fieldName);
   }
 
   @Override
@@ -212,8 +325,14 @@ public class JniModule implements Module {
 
   @Override
   public byte[] serialize() {
-    // TODO: Implement serialization
-    return new byte[0];
+    if (closed) {
+      throw new IllegalStateException("Module has been closed");
+    }
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeSerializeModule(nativeHandle);
   }
 
   @Override
@@ -260,5 +379,44 @@ public class JniModule implements Module {
   private static native long nativeInstantiateModuleWithImports(
       long moduleHandle, long storeHandle, long importMapHandle);
 
+  private native byte[] nativeSerializeModule(long handle);
+
   private native void nativeDestroyModule(long handle);
+
+  /**
+   * Native method to get module exports.
+   *
+   * @param moduleHandle the native module handle
+   * @return list of module exports
+   */
+  private native List<ai.tegmentum.wasmtime4j.ModuleExport> nativeGetModuleExports(
+      long moduleHandle);
+
+  /**
+   * Native method to get module imports.
+   *
+   * @param moduleHandle the native module handle
+   * @return list of module imports
+   */
+  private native List<ai.tegmentum.wasmtime4j.ModuleImport> nativeGetModuleImports(
+      long moduleHandle);
+
+  /**
+   * Native method to check if module has an export.
+   *
+   * @param moduleHandle the native module handle
+   * @param exportName the name of the export to check
+   * @return true if export exists, false otherwise
+   */
+  private native boolean nativeHasExport(long moduleHandle, String exportName);
+
+  /**
+   * Native method to check if module has an import.
+   *
+   * @param moduleHandle the native module handle
+   * @param moduleName the module name of the import
+   * @param fieldName the field name of the import
+   * @return true if import exists, false otherwise
+   */
+  private native boolean nativeHasImport(long moduleHandle, String moduleName, String fieldName);
 }

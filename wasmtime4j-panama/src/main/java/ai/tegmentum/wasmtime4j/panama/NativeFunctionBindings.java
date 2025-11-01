@@ -343,6 +343,41 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets module exports as JSON string.
+   *
+   * @param modulePtr pointer to the module
+   * @return MemorySegment pointing to JSON string, or NULL on error
+   */
+  public MemorySegment moduleGetExportsJson(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_exports_json", MemorySegment.class, modulePtr);
+  }
+
+  /**
+   * Gets module imports as JSON string.
+   *
+   * @param modulePtr pointer to the module
+   * @return MemorySegment pointing to JSON string, or NULL on error
+   */
+  public MemorySegment moduleGetImportsJson(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_imports_json", MemorySegment.class, modulePtr);
+  }
+
+  /**
+   * Frees a C string returned by module functions.
+   *
+   * @param strPtr pointer to the string to free
+   */
+  public void moduleFreeString(final MemorySegment strPtr) {
+    if (strPtr != null && !strPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_module_free_string", Void.class, strPtr);
+    }
+  }
+
+  /**
    * Gets the name of a module.
    *
    * @param modulePtr pointer to the module
@@ -1339,6 +1374,177 @@ public final class NativeFunctionBindings {
    */
   public MethodHandle getTableMetadata() {
     return getMethodHandle("wasmtime4j_table_metadata").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table size retrieval.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableSize() {
+    return getMethodHandle("wasmtime4j_panama_table_size").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table element get.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableGet() {
+    return getMethodHandle("wasmtime4j_panama_table_get").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table element set.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableSet() {
+    return getMethodHandle("wasmtime4j_panama_table_set").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table grow.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableGrow() {
+    return getMethodHandle("wasmtime4j_panama_table_grow").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table metadata retrieval.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableMetadata() {
+    return getMethodHandle("wasmtime4j_panama_table_metadata").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table fill.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableFill() {
+    return getMethodHandle("wasmtime4j_panama_table_fill").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table deletion.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableDelete() {
+    return getMethodHandle("wasmtime4j_panama_table_destroy").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI memory creation (simple version).
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaMemoryCreate() {
+    return getMethodHandle("wasmtime4j_panama_memory_create").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI memory creation (with configuration).
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaMemoryCreateWithConfig() {
+    return getMethodHandle("wasmtime4j_panama_memory_create_with_config").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI table creation.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableCreate() {
+    return getMethodHandle("wasmtime4j_panama_table_create").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI global creation.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaGlobalCreate() {
+    return getMethodHandle("wasmtime4j_panama_global_create").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI instance creation.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaInstanceCreate() {
+    return getMethodHandle("wasmtime4j_panama_instance_create").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for setting fuel level in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetFuel() {
+    return getMethodHandle("wasmtime4j_panama_store_set_fuel").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for getting remaining fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetFuel() {
+    return getMethodHandle("wasmtime4j_panama_store_get_fuel").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for adding fuel to a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreAddFuel() {
+    return getMethodHandle("wasmtime4j_panama_store_add_fuel").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for consuming fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreConsumeFuel() {
+    return getMethodHandle("wasmtime4j_panama_store_consume_fuel").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for getting remaining fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetFuelRemaining() {
+    return getMethodHandle("wasmtime4j_panama_store_get_fuel_remaining").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for setting epoch deadline in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetEpochDeadline() {
+    return getMethodHandle("wasmtime4j_panama_store_set_epoch_deadline").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for getting execution statistics from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetExecutionStats() {
+    return getMethodHandle("wasmtime4j_panama_store_get_execution_stats").orElse(null);
   }
 
   /**
@@ -2490,6 +2696,10 @@ public final class NativeFunctionBindings {
         "wasmtime4j_engine_reference_count",
         FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
 
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_increment_epoch",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine_ptr
+
     // Module functions
     addFunctionBinding(
         "wasmtime4j_module_compile",
@@ -3334,6 +3544,49 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // global_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_linker_define_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS)); // memory_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS)); // instance_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return instance* or null
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_enable_wasi",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_linker_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
   }
@@ -3426,6 +3679,134 @@ public final class NativeFunctionBindings {
         moduleNamePtr,
         namePtr,
         globalPtr);
+  }
+
+  /**
+   * Defines a memory in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the memory name string
+   * @param memoryPtr pointer to the memory
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineMemory(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment memoryPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(memoryPtr, "memoryPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_memory",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        memoryPtr);
+  }
+
+  /**
+   * Defines a table in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the table name string
+   * @param tablePtr pointer to the table
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineTable(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment tablePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(tablePtr, "tablePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_table",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        tablePtr);
+  }
+
+  /**
+   * Defines an instance in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param instancePtr pointer to the instance
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineInstance(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment instancePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_instance",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        instancePtr);
+  }
+
+  /**
+   * Instantiates a module using the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param modulePtr pointer to the module
+   * @return pointer to the instance, or null on failure
+   */
+  public MemorySegment panamaLinkerInstantiate(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_instantiate",
+        MemorySegment.class,
+        linkerPtr,
+        storePtr,
+        modulePtr);
+  }
+
+  /**
+   * Enables WASI for the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerEnableWasi(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+
+    return callNativeFunction("wasmtime4j_panama_linker_enable_wasi", Integer.class, linkerPtr);
   }
 
   /**
@@ -3713,5 +4094,18 @@ public final class NativeFunctionBindings {
    */
   public long engineReferenceCount(final MemorySegment enginePtr) {
     return callNativeFunction("wasmtime4j_engine_reference_count", Long.class, enginePtr);
+  }
+
+  /**
+   * Increments the epoch counter.
+   *
+   * <p>This method is signal-safe and performs only an atomic increment. The epoch counter is used
+   * for epoch-based interruption of WebAssembly execution.
+   *
+   * @param enginePtr pointer to the engine
+   */
+  public void engineIncrementEpoch(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);
   }
 }

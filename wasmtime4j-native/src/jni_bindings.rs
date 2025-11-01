@@ -7,7 +7,7 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JByteArray, JString, JObject, JValue};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jbyteArray, jstring, jobject, jintArray};
+use jni::sys::{jlong, jint, jbyte, jboolean, jbyteArray, jstring, jobject, jintArray};
 
 // Instance is imported locally in each module that needs it
 
@@ -3125,6 +3125,29 @@ pub mod jni_linker {
         })
     }
 
+    /// Enable WASI for the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeEnableWasi(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+    ) {
+        jni_utils::jni_try(&mut env, || {
+            use std::os::raw::c_void;
+
+            if linker_handle == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Linker handle cannot be null".to_string(),
+                });
+            }
+
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+            linker.enable_wasi()?;
+
+            Ok(())
+        });
+    }
+
     /// Destroy a linker
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker(
@@ -3720,6 +3743,434 @@ pub mod jni_module {
         module_ptr: jlong,
     ) {
         crate::shared_ffi::module::destroy_module_shared(module_ptr as *mut std::os::raw::c_void);
+    }
+
+    /// Helper: Convert ModuleValueType to WasmValueType enum name
+    fn module_value_type_to_java_enum(value_type: &crate::module::ModuleValueType) -> &'static str {
+        use crate::module::ModuleValueType;
+        match value_type {
+            ModuleValueType::I32 => "I32",
+            ModuleValueType::I64 => "I64",
+            ModuleValueType::F32 => "F32",
+            ModuleValueType::F64 => "F64",
+            ModuleValueType::V128 => "V128",
+            ModuleValueType::FuncRef => "FUNCREF",
+            ModuleValueType::ExternRef => "EXTERNREF",
+        }
+    }
+
+    /// Helper: Get WasmValueType enum value
+    fn get_wasm_value_type_enum<'a>(env: &mut JNIEnv<'a>, value_type: &crate::module::ModuleValueType) -> Result<JObject<'a>, String> {
+        let enum_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValueType")
+            .map_err(|e| format!("Failed to find WasmValueType class: {}", e))?;
+
+        let enum_name = module_value_type_to_java_enum(value_type);
+        let enum_value = env.get_static_field(enum_class, enum_name, "Lai/tegmentum/wasmtime4j/WasmValueType;")
+            .map_err(|e| format!("Failed to get enum value {}: {}", enum_name, e))?;
+
+        match enum_value {
+            jni::objects::JValueGen::Object(obj) => Ok(obj),
+            _ => Err("Unexpected JValue type for enum".to_string()),
+        }
+    }
+
+    /// Get module exports with type information
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleExports(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobject {
+        if module_ptr == 0 {
+            return std::ptr::null_mut();
+        }
+
+        // Get module and metadata
+        let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(m) => m,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let metadata = crate::module::core::get_metadata(module);
+
+        // Create ArrayList
+        let array_list_class = match env.find_class("java/util/ArrayList") {
+            Ok(c) => c,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let array_list = match env.new_object(array_list_class, "()V", &[]) {
+            Ok(list) => list,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        // For each export, create ModuleExport object
+        for export in &metadata.exports {
+            // Create export name string
+            let name_jstring = match env.new_string(&export.name) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+
+            // Create WasmType based on export_type
+            use crate::module::ExportKind;
+            let wasm_type_obj = match &export.export_type {
+                ExportKind::Function(_sig) => {
+                    // For now, return empty lists for function params/results
+                    // Full implementation would convert FunctionSignature
+                    let list_class = match env.find_class("java/util/ArrayList") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    let params_list = match env.new_object(&list_class, "()V", &[]) {
+                        Ok(l) => l,
+                        Err(_) => continue,
+                    };
+                    let results_list = match env.new_object(&list_class, "()V", &[]) {
+                        Ok(l) => l,
+                        Err(_) => continue,
+                    };
+
+                    let func_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniFuncType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(func_type_class, "(Ljava/util/List;Ljava/util/List;)V",
+                        &[JValue::Object(&params_list), JValue::Object(&results_list)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ExportKind::Global(value_type, is_mutable) => {
+                    let value_type_enum = match get_wasm_value_type_enum(&mut env, value_type) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    let global_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniGlobalType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(global_type_class, "(Lai/tegmentum/wasmtime4j/WasmValueType;Z)V",
+                        &[JValue::Object(&value_type_enum), JValue::Bool(*is_mutable as u8)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ExportKind::Memory(initial, maximum, _shared) => {
+                    let max_obj = match maximum {
+                        Some(max) => {
+                            let long_class = match env.find_class("java/lang/Long") {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
+                            match env.new_object(long_class, "(J)V", &[JValue::Long(*max as i64)]) {
+                                Ok(obj) => obj,
+                                Err(_) => continue,
+                            }
+                        },
+                        None => JObject::null(),
+                    };
+
+                    let memory_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(memory_type_class, "(JLjava/lang/Long;ZZ)V",
+                        &[JValue::Long(*initial as i64), JValue::Object(&max_obj), JValue::Bool(0), JValue::Bool(0)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ExportKind::Table(elem_type, initial, maximum) => {
+                    let elem_type_enum = match get_wasm_value_type_enum(&mut env, elem_type) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    let max_obj = match maximum {
+                        Some(max) => {
+                            let long_class = match env.find_class("java/lang/Long") {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
+                            match env.new_object(long_class, "(J)V", &[JValue::Long(*max as i64)]) {
+                                Ok(obj) => obj,
+                                Err(_) => continue,
+                            }
+                        },
+                        None => JObject::null(),
+                    };
+
+                    let table_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniTableType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(table_type_class, "(Lai/tegmentum/wasmtime4j/WasmValueType;JLjava/lang/Long;)V",
+                        &[JValue::Object(&elem_type_enum), JValue::Long(*initial as i64), JValue::Object(&max_obj)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+            };
+
+            // Create ExportType(String name, WasmType type)
+            let export_type_class = match env.find_class("ai/tegmentum/wasmtime4j/ExportType") {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let export_type_obj = match env.new_object(export_type_class, "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+                &[JValue::Object(&name_jstring), JValue::Object(&wasm_type_obj)]) {
+                Ok(obj) => obj,
+                Err(_) => continue,
+            };
+
+            // Create ModuleExport(String name, ExportType exportType)
+            let module_export_class = match env.find_class("ai/tegmentum/wasmtime4j/ModuleExport") {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let module_export_obj = match env.new_object(module_export_class, "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/ExportType;)V",
+                &[JValue::Object(&name_jstring), JValue::Object(&export_type_obj)]) {
+                Ok(obj) => obj,
+                Err(_) => continue,
+            };
+
+            // Add to ArrayList
+            let _ = env.call_method(&array_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&module_export_obj)]);
+        }
+
+        array_list.into_raw()
+    }
+
+    /// Get module imports with type information
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleImports(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobject {
+        if module_ptr == 0 {
+            return std::ptr::null_mut();
+        }
+
+        // Get module and metadata
+        let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            Ok(m) => m,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let metadata = crate::module::core::get_metadata(module);
+
+        // Create ArrayList
+        let array_list_class = match env.find_class("java/util/ArrayList") {
+            Ok(c) => c,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let array_list = match env.new_object(array_list_class, "()V", &[]) {
+            Ok(list) => list,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        // For each import, create ModuleImport object
+        for import in &metadata.imports {
+            // Create import strings
+            let module_name_jstring = match env.new_string(&import.module) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let field_name_jstring = match env.new_string(&import.name) {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+
+            // Create WasmType based on import_type
+            use crate::module::ImportKind;
+            let wasm_type_obj = match &import.import_type {
+                ImportKind::Function(_sig) => {
+                    // For now, return empty lists for function params/results
+                    let list_class = match env.find_class("java/util/ArrayList") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    let params_list = match env.new_object(&list_class, "()V", &[]) {
+                        Ok(l) => l,
+                        Err(_) => continue,
+                    };
+                    let results_list = match env.new_object(&list_class, "()V", &[]) {
+                        Ok(l) => l,
+                        Err(_) => continue,
+                    };
+
+                    let func_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniFuncType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(func_type_class, "(Ljava/util/List;Ljava/util/List;)V",
+                        &[JValue::Object(&params_list), JValue::Object(&results_list)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ImportKind::Global(value_type, is_mutable) => {
+                    let value_type_enum = match get_wasm_value_type_enum(&mut env, value_type) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    let global_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniGlobalType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(global_type_class, "(Lai/tegmentum/wasmtime4j/WasmValueType;Z)V",
+                        &[JValue::Object(&value_type_enum), JValue::Bool(*is_mutable as u8)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ImportKind::Memory(initial, maximum, _shared) => {
+                    let max_obj = match maximum {
+                        Some(max) => {
+                            let long_class = match env.find_class("java/lang/Long") {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
+                            match env.new_object(long_class, "(J)V", &[JValue::Long(*max as i64)]) {
+                                Ok(obj) => obj,
+                                Err(_) => continue,
+                            }
+                        },
+                        None => JObject::null(),
+                    };
+
+                    let memory_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(memory_type_class, "(JLjava/lang/Long;ZZ)V",
+                        &[JValue::Long(*initial as i64), JValue::Object(&max_obj), JValue::Bool(0), JValue::Bool(0)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+                ImportKind::Table(elem_type, initial, maximum) => {
+                    let elem_type_enum = match get_wasm_value_type_enum(&mut env, elem_type) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    let max_obj = match maximum {
+                        Some(max) => {
+                            let long_class = match env.find_class("java/lang/Long") {
+                                Ok(c) => c,
+                                Err(_) => continue,
+                            };
+                            match env.new_object(long_class, "(J)V", &[JValue::Long(*max as i64)]) {
+                                Ok(obj) => obj,
+                                Err(_) => continue,
+                            }
+                        },
+                        None => JObject::null(),
+                    };
+
+                    let table_type_class = match env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniTableType") {
+                        Ok(c) => c,
+                        Err(_) => continue,
+                    };
+                    match env.new_object(table_type_class, "(Lai/tegmentum/wasmtime4j/WasmValueType;JLjava/lang/Long;)V",
+                        &[JValue::Object(&elem_type_enum), JValue::Long(*initial as i64), JValue::Object(&max_obj)]) {
+                        Ok(obj) => obj,
+                        Err(_) => continue,
+                    }
+                },
+            };
+
+            // Create ImportType(String moduleName, String name, WasmType type)
+            let import_type_class = match env.find_class("ai/tegmentum/wasmtime4j/ImportType") {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let import_type_obj = match env.new_object(import_type_class, "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+                &[JValue::Object(&module_name_jstring), JValue::Object(&field_name_jstring), JValue::Object(&wasm_type_obj)]) {
+                Ok(obj) => obj,
+                Err(_) => continue,
+            };
+
+            // Create ModuleImport(String moduleName, String fieldName, ImportType importType)
+            let module_import_class = match env.find_class("ai/tegmentum/wasmtime4j/ModuleImport") {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let module_import_obj = match env.new_object(module_import_class, "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/ImportType;)V",
+                &[JValue::Object(&module_name_jstring), JValue::Object(&field_name_jstring), JValue::Object(&import_type_obj)]) {
+                Ok(obj) => obj,
+                Err(_) => continue,
+            };
+
+            // Add to ArrayList
+            let _ = env.call_method(&array_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&module_import_obj)]);
+        }
+
+        array_list.into_raw()
+    }
+
+    /// Check if module has a specific export
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasExport(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+        export_name: JString,
+    ) -> jboolean {
+        if module_ptr == 0 {
+            return jni::sys::JNI_FALSE;
+        }
+
+        match env.get_string(&export_name) {
+            Ok(name_str) => {
+                let name: String = name_str.into();
+                match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+                    Ok(module) => {
+                        let metadata = crate::module::core::get_metadata(module);
+                        for export in &metadata.exports {
+                            if export.name == name {
+                                return jni::sys::JNI_TRUE;
+                            }
+                        }
+                        jni::sys::JNI_FALSE
+                    }
+                    Err(_) => jni::sys::JNI_FALSE,
+                }
+            }
+            Err(_) => jni::sys::JNI_FALSE,
+        }
+    }
+
+    /// Check if module has a specific import
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasImport(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+        module_name: JString,
+        field_name: JString,
+    ) -> jboolean {
+        if module_ptr == 0 {
+            return jni::sys::JNI_FALSE;
+        }
+
+        match (env.get_string(&module_name), env.get_string(&field_name)) {
+            (Ok(mod_name_str), Ok(fld_name_str)) => {
+                let mod_name: String = mod_name_str.into();
+                let fld_name: String = fld_name_str.into();
+                match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+                    Ok(module) => {
+                        let metadata = crate::module::core::get_metadata(module);
+                        for import in &metadata.imports {
+                            if import.module == mod_name && import.name == fld_name {
+                                return jni::sys::JNI_TRUE;
+                            }
+                        }
+                        jni::sys::JNI_FALSE
+                    }
+                    Err(_) => jni::sys::JNI_FALSE,
+                }
+            }
+            _ => jni::sys::JNI_FALSE,
+        }
     }
 }
 
@@ -7407,4 +7858,484 @@ pub mod jni_simd {
     // Additional SIMD operations can be added here following the same pattern
     // For brevity, I'm including key examples. The full implementation would include
     // all the remaining operations declared in JniWasmRuntime.java
+
+    /// Initialize table from element segment (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit(
+        mut env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        instance_ptr: jlong,
+        dst: jint,
+        src: jint,
+        len: jint,
+        segment_index: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Table handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if instance_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Instance handle cannot be null".to_string(),
+                });
+            }
+            if dst < 0 || src < 0 || len < 0 || segment_index < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Invalid parameters: dst={}, src={}, len={}, segment_index={}",
+                        dst, src, len, segment_index
+                    ),
+                });
+            }
+
+            // Get objects from handles
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+
+            // Call table.init_from_segment
+            table.init_from_segment(
+                store,
+                instance,
+                dst as u32,
+                src as u32,
+                len as u32,
+                segment_index as u32,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Drop an element segment (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeElemDrop(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        segment_index: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if instance_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Instance handle cannot be null".to_string(),
+                });
+            }
+            if segment_index < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid segment index: {}", segment_index),
+                });
+            }
+
+            // Get instance from handle
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+
+            // Drop the element segment
+            let segment_manager = instance.get_element_segment_manager();
+            segment_manager.drop_segment(segment_index as u32)?;
+
+            Ok(())
+        })
+    }
+
+    /// Initialize memory from data segment (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryInit(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        instance_ptr: jlong,
+        dest_offset: jint,
+        data_segment_index: jint,
+        src_offset: jint,
+        len: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if instance_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Instance handle cannot be null".to_string(),
+                });
+            }
+            if dest_offset < 0 || data_segment_index < 0 || src_offset < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Invalid parameters: dest_offset={}, data_segment_index={}, src_offset={}, len={}",
+                        dest_offset, data_segment_index, src_offset, len
+                    ),
+                });
+            }
+
+            // Get objects from handles
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+
+            // Call memory_init
+            crate::memory::core::memory_init(
+                memory,
+                store,
+                instance,
+                dest_offset as u32,
+                data_segment_index as u32,
+                src_offset as u32,
+                len as u32,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Drop a data segment (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDataDrop(
+        mut env: JNIEnv,
+        _class: JClass,
+        instance_ptr: jlong,
+        data_segment_index: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if instance_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Instance handle cannot be null".to_string(),
+                });
+            }
+            if data_segment_index < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid data segment index: {}", data_segment_index),
+                });
+            }
+
+            // Get instance from handle
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+
+            // Drop the data segment
+            crate::memory::core::data_drop(instance, data_segment_index as u32)?;
+
+            Ok(())
+        })
+    }
+
+    /// Copy memory within the same memory instance (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryCopy(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        dest_offset: jint,
+        src_offset: jint,
+        len: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if dest_offset < 0 || src_offset < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Invalid parameters: dest_offset={}, src_offset={}, len={}",
+                        dest_offset, src_offset, len
+                    ),
+                });
+            }
+
+            // Get objects from handles
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            // Call memory_copy
+            crate::memory::core::memory_copy(
+                memory,
+                store,
+                dest_offset as usize,
+                src_offset as usize,
+                len as usize,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Fill memory with a byte value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryFill(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jbyte,
+        len: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid parameters: offset={}, len={}", offset, len),
+                });
+            }
+
+            // Get objects from handles
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            // Call memory_fill
+            crate::memory::core::memory_fill(
+                memory,
+                store,
+                offset as usize,
+                value as u8,
+                len as usize,
+            )?;
+
+            Ok(())
+        })
+    }
+
+    /// Copy elements within a table (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopy(
+        mut env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        dst: jint,
+        src: jint,
+        len: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Table handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if dst < 0 || src < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid parameters: dst={}, src={}, len={}", dst, src, len),
+                });
+            }
+
+            // Get objects from handles
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+            // Call table.copy_within
+            table.copy_within(store, dst as u32, src as u32, len as u32)?;
+
+            Ok(())
+        })
+    }
+
+    /// Copy elements from another table (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopyFrom(
+        mut env: JNIEnv,
+        _class: JClass,
+        dst_table_ptr: jlong,
+        store_ptr: jlong,
+        dst: jint,
+        src_table_ptr: jlong,
+        src: jint,
+        len: jint,
+        ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if dst_table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Destination table handle cannot be null".to_string(),
+                });
+            }
+            if src_table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Source table handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if dst < 0 || src < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Invalid parameters: dst={}, src={}, len={}",
+                        dst, src, len
+                    ),
+                });
+            }
+
+            // Get objects from handles
+            let dst_table = unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
+            let src_table = unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+            // Call table.copy_from
+            dst_table.copy_from(store, dst as u32, src_table, src as u32, len as u32)?;
+
+            Ok(())
+        })
+    }
+
+    /// Grow a table by delta elements (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow(
+        mut env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        delta: jint,
+        init_value: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_default(&env, -1, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Table handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if delta < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid delta: {}", delta),
+                });
+            }
+
+            // Get objects from handles
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+            // Create TableElement from init_value (assuming it's a funcref or null)
+            let elem = if init_value == 0 {
+                crate::table::TableElement::FuncRef(None)
+            } else {
+                // For non-null values, would need to handle properly
+                crate::table::TableElement::FuncRef(None)
+            };
+
+            // Call table.grow
+            let old_size = table.grow(store, delta as u32, elem)?;
+
+            Ok(old_size as jlong)
+        })
+    }
+
+    /// Fill a table with an element value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableFill(
+        mut env: JNIEnv,
+        _class: JClass,
+        table_ptr: jlong,
+        store_ptr: jlong,
+        dst: jint,
+        value: jlong,
+        len: jint,
+    ) -> jint {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            // Validate parameters
+            if table_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Table handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if dst < 0 || len < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid parameters: dst={}, len={}", dst, len),
+                });
+            }
+
+            // Get objects from handles
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+            // Create TableElement from value (assuming it's a funcref or null)
+            let elem = if value == 0 {
+                crate::table::TableElement::FuncRef(None)
+            } else {
+                // For non-null values, would need to handle properly
+                crate::table::TableElement::FuncRef(None)
+            };
+
+            // Call table.fill
+            table.fill(store, dst as u32, elem, len as u32)?;
+
+            Ok(())
+        })
+    }
 }

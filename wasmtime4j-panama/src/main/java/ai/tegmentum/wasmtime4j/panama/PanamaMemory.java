@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
@@ -15,8 +17,11 @@ public final class PanamaMemory implements WasmMemory {
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
+  private final Arena arena;
+  private final MemorySegment nativeMemory;
   private final String memoryName;
   private final PanamaInstance instance;
+  private final PanamaStore store; // For memories created directly by store (instance will be null)
   private volatile boolean closed = false;
 
   /**
@@ -49,10 +54,35 @@ public final class PanamaMemory implements WasmMemory {
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
     }
+    this.arena = Arena.ofShared();
+    this.nativeMemory = MemorySegment.NULL; // Not used for instance-exported memories
     this.memoryName = memoryName;
     this.instance = instance;
+    this.store = null; // Instance-exported memories don't have direct store reference
     LOGGER.fine("Created memory wrapper for export: " + memoryName);
   }
+
+  /**
+   * Package-private constructor for memories created directly by a store.
+   *
+   * @param nativeMemory the native memory pointer from Wasmtime
+   * @param store the store that owns this memory
+   */
+  PanamaMemory(final MemorySegment nativeMemory, final PanamaStore store) {
+    if (nativeMemory == null || nativeMemory.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native memory pointer cannot be null");
+    }
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    this.arena = Arena.ofShared();
+    this.nativeMemory = nativeMemory;
+    this.memoryName = null; // Store-created memories don't have a name
+    this.instance = null; // Memories created by store don't have an instance
+    this.store = store;
+    LOGGER.fine("Created memory from store");
+  }
+
 
   @Override
   public int getSize() {
@@ -97,8 +127,11 @@ public final class PanamaMemory implements WasmMemory {
       throw new IndexOutOfBoundsException("Offset cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement byte read
-    return 0;
+    final ByteBuffer buffer = getBuffer();
+    if (offset >= buffer.limit()) {
+      throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+    }
+    return buffer.get(offset);
   }
 
   @Override
@@ -107,7 +140,11 @@ public final class PanamaMemory implements WasmMemory {
       throw new IndexOutOfBoundsException("Offset cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement byte write
+    final ByteBuffer buffer = getBuffer();
+    if (offset >= buffer.limit()) {
+      throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+    }
+    buffer.put(offset, value);
   }
 
   @Override
@@ -184,7 +221,31 @@ public final class PanamaMemory implements WasmMemory {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement memory copy
+    if (length == 0) {
+      return;
+    }
+    final ByteBuffer buffer = getBuffer();
+    if (srcOffset + length > buffer.limit()) {
+      throw new IndexOutOfBoundsException(
+          "Source range [" + srcOffset + ", " + (srcOffset + length) + ") is out of bounds");
+    }
+    if (destOffset + length > buffer.limit()) {
+      throw new IndexOutOfBoundsException(
+          "Destination range ["
+              + destOffset
+              + ", "
+              + (destOffset + length)
+              + ") is out of bounds");
+    }
+
+    // Handle overlapping regions correctly using a temp buffer
+    final byte[] temp = new byte[length];
+    for (int i = 0; i < length; i++) {
+      temp[i] = buffer.get(srcOffset + i);
+    }
+    for (int i = 0; i < length; i++) {
+      buffer.put(destOffset + i, temp[i]);
+    }
   }
 
   @Override
@@ -196,7 +257,17 @@ public final class PanamaMemory implements WasmMemory {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement memory fill
+    if (length == 0) {
+      return;
+    }
+    final ByteBuffer buffer = getBuffer();
+    if (offset + length > buffer.limit()) {
+      throw new IndexOutOfBoundsException(
+          "Range [" + offset + ", " + (offset + length) + ") is out of bounds");
+    }
+    for (int i = 0; i < length; i++) {
+      buffer.put(offset + i, value);
+    }
   }
 
   @Override
@@ -443,8 +514,14 @@ public final class PanamaMemory implements WasmMemory {
       return;
     }
 
-    closed = true;
-    LOGGER.fine("Closed Panama memory");
+    try {
+      // TODO: Destroy native memory if created by store
+      arena.close();
+      closed = true;
+      LOGGER.fine("Closed Panama memory");
+    } catch (final Exception e) {
+      LOGGER.warning("Error closing memory: " + e.getMessage());
+    }
   }
 
   /**
@@ -457,6 +534,15 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   /**
+   * Gets the native memory pointer.
+   *
+   * @return native memory segment
+   */
+  public MemorySegment getNativeMemory() {
+    return nativeMemory;
+  }
+
+  /**
    * Ensures the memory is not closed.
    *
    * @throws IllegalStateException if closed
@@ -465,5 +551,25 @@ public final class PanamaMemory implements WasmMemory {
     if (closed) {
       throw new IllegalStateException("Memory has been closed");
     }
+  }
+
+  /**
+   * Gets the native store pointer from either the instance or direct store reference.
+   *
+   * @return native store segment
+   * @throws IllegalStateException if store is not available or not a PanamaStore
+   */
+  private MemorySegment getNativeStorePointer() {
+    if (store != null) {
+      // Memory was created directly by store
+      return store.getNativeStore();
+    }
+    if (instance == null || instance.getStore() == null) {
+      throw new IllegalStateException("Instance or store is null");
+    }
+    if (!(instance.getStore() instanceof PanamaStore)) {
+      throw new IllegalStateException("Store is not a PanamaStore");
+    }
+    return ((PanamaStore) instance.getStore()).getNativeStore();
   }
 }

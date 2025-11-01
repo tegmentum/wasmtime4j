@@ -368,7 +368,11 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  @Override
+  /**
+   * Increments the epoch counter for this store.
+   *
+   * @throws WasmException if the epoch increment fails
+   */
   public void incrementEpoch() throws WasmException {
     ensureNotClosed();
 
@@ -379,7 +383,12 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  @Override
+  /**
+   * Sets the memory limit for this store.
+   *
+   * @param bytes the memory limit in bytes
+   * @throws WasmException if setting the memory limit fails
+   */
   public void setMemoryLimit(final long bytes) throws WasmException {
     if (bytes < 0) {
       throw new IllegalArgumentException("Memory limit cannot be negative");
@@ -399,7 +408,12 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  @Override
+  /**
+   * Sets the table element limit for this store.
+   *
+   * @param elements the maximum number of table elements
+   * @throws WasmException if setting the table element limit fails
+   */
   public void setTableElementLimit(final long elements) throws WasmException {
     if (elements < 0) {
       throw new IllegalArgumentException("Table element limit cannot be negative");
@@ -419,7 +433,12 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  @Override
+  /**
+   * Sets the instance limit for this store.
+   *
+   * @param count the maximum number of instances
+   * @throws WasmException if setting the instance limit fails
+   */
   public void setInstanceLimit(final int count) throws WasmException {
     if (count < 0) {
       throw new IllegalArgumentException("Instance limit cannot be negative");

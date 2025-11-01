@@ -19,7 +19,27 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for mixed import/export scenarios. */
+/**
+ * Tests mixed import and export scenarios in WebAssembly modules.
+ *
+ * <p>This test validates that wasmtime4j correctly handles modules that both import and export
+ * items (functions, globals, memory, tables), matching Wasmtime's behavior.
+ *
+ * <p>Expected Wasmtime behavior:
+ *
+ * <ul>
+ *   <li>A module can both import items from host and export items to host
+ *   <li>Imported and exported items can interact within the module
+ *   <li>Host can access exported items that depend on imported items
+ *   <li>Complex dependency chains between imports and exports work correctly
+ * </ul>
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Instance.html">https://docs.wasmtime.dev/api/wasmtime/struct.Instance.html</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleMixedItemsTest extends DualRuntimeTest {
   private Engine engine;
   private Store store;

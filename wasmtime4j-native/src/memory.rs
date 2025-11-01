@@ -2789,31 +2789,77 @@ pub mod core {
         })
     }
 
-    /// Core function to initialize memory from a data segment
-    pub fn memory_init(memory: &Memory, store: &mut Store, dest_offset: usize, data_segment_index: u32, src_offset: usize, len: usize) -> WasmtimeResult<()> {
-        // Note: This is a simplified implementation. In a real implementation, you would:
-        // 1. Get the data segment from the module/instance
-        // 2. Check if the segment has been dropped
-        // 3. Perform bounds checking on both memory and data segment
-        // 4. Copy data from segment to memory
+    /// Initialize memory from a data segment
+    ///
+    /// This implements the memory.init instruction, copying bytes from
+    /// a passive data segment into memory.
+    ///
+    /// # Arguments
+    /// * `memory` - The memory to initialize
+    /// * `store` - The WebAssembly store
+    /// * `instance` - The instance containing the data segments
+    /// * `dest_offset` - Destination offset in memory
+    /// * `data_segment_index` - Index of the data segment to copy from
+    /// * `src_offset` - Source offset in the data segment
+    /// * `len` - Number of bytes to copy
+    pub fn memory_init(
+        memory: &Memory,
+        store: &Store,
+        instance: &crate::instance::Instance,
+        dest_offset: u32,
+        data_segment_index: u32,
+        src_offset: u32,
+        len: u32,
+    ) -> WasmtimeResult<()> {
+        // Get data segment manager from instance
+        let segment_manager = instance.get_data_segment_manager();
 
-        // For now, return an error indicating this needs module context
-        Err(WasmtimeError::InvalidParameter {
-            message: "memory.init requires module/instance context for data segment access".to_string(),
+        // Get memory size for bounds checking
+        let memory_size = store.with_context_ro(|ctx| {
+            Ok(memory.inner.data_size(&ctx))
+        })?;
+
+        // Bounds check for destination
+        if (dest_offset as u64).saturating_add(len as u64) > memory_size as u64 {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "memory.init destination would exceed bounds: dest={}, len={}, memory_size={}",
+                    dest_offset, len, memory_size
+                ),
+                backtrace: None,
+            });
+        }
+
+        // Get data from segment (includes validation and bounds checking)
+        let data = segment_manager.get_data(data_segment_index, src_offset, len)?;
+
+        // Write data to memory
+        store.with_context(|ctx| {
+            let memory_data = memory.inner.data_mut(ctx);
+            let dest_start = dest_offset as usize;
+            let dest_end = dest_start + len as usize;
+            memory_data[dest_start..dest_end].copy_from_slice(&data);
+            Ok(())
         })
     }
 
-    /// Core function to drop a data segment
-    pub fn data_drop(store: &mut Store, data_segment_index: u32) -> WasmtimeResult<()> {
-        // Note: This is a simplified implementation. In a real implementation, you would:
-        // 1. Get the data segment from the module/instance
-        // 2. Mark it as dropped
-        // 3. Free any associated memory
+    /// Drop a data segment
+    ///
+    /// This implements the data.drop instruction, marking a data segment
+    /// as dropped so it cannot be used by memory.init anymore.
+    ///
+    /// # Arguments
+    /// * `instance` - The instance containing the data segments
+    /// * `data_segment_index` - Index of the data segment to drop
+    pub fn data_drop(
+        instance: &crate::instance::Instance,
+        data_segment_index: u32,
+    ) -> WasmtimeResult<()> {
+        // Get data segment manager from instance
+        let segment_manager = instance.get_data_segment_manager();
 
-        // For now, return an error indicating this needs module context
-        Err(WasmtimeError::InvalidParameter {
-            message: "data.drop requires module/instance context for data segment management".to_string(),
-        })
+        // Drop the segment
+        segment_manager.drop_segment(data_segment_index)
     }
     
     /// Get diagnostic information about memory handle validation

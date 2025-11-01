@@ -1,10 +1,11 @@
-//! Element segment parser using wasmparser
+//! Element and data segment parser using wasmparser
 //!
-//! This module parses WebAssembly element sections from module bytecode,
-//! extracting passive element segments for table.init() operations.
+//! This module parses WebAssembly element and data sections from module bytecode,
+//! extracting passive segments for table.init() and memory.init() operations.
 
-use wasmparser::{Parser, Payload, ElementKind, ElementItems};
+use wasmparser::{Parser, Payload, ElementKind, ElementItems, DataKind};
 use crate::element_segment::{ElementSegment, ElementItem, ElementMode};
+use crate::data_segment::DataSegment;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use wasmtime::ValType;
 
@@ -208,5 +209,102 @@ mod tests {
 
         // First segment should be None (active - not cached)
         assert!(segments[0].is_none());
+    }
+
+    #[test]
+    fn test_parse_passive_data_segment() {
+        // Module with a passive data segment
+        let wasm = wat::parse_str(r#"
+            (module
+                (memory 1)
+                (data "hello")
+            )
+        "#).unwrap();
+
+        let segments = parse_data_segments(&wasm).unwrap();
+
+        // Should have one segment
+        assert_eq!(segments.len(), 1);
+
+        // First segment should be Some (passive)
+        assert!(segments[0].is_some());
+
+        let segment = segments[0].as_ref().unwrap();
+        assert!(segment.is_passive());
+        assert_eq!(segment.len(), 5);
+        assert_eq!(&segment.data, b"hello");
+    }
+
+    #[test]
+    fn test_parse_active_data_segment() {
+        // Module with an active data segment
+        let wasm = wat::parse_str(r#"
+            (module
+                (memory 1)
+                (data (i32.const 0) "world")
+            )
+        "#).unwrap();
+
+        let segments = parse_data_segments(&wasm).unwrap();
+
+        // Should have one segment
+        assert_eq!(segments.len(), 1);
+
+        // First segment should be None (active - not cached)
+        assert!(segments[0].is_none());
+    }
+}
+
+/// Parse data segments from WebAssembly module bytecode
+///
+/// Returns a vector where:
+/// - Some(segment) = passive segment (cached for memory.init)
+/// - None = active segment (not cached in hybrid design)
+pub fn parse_data_segments(module_bytes: &[u8]) -> WasmtimeResult<Vec<Option<DataSegment>>> {
+    let parser = Parser::new(0);
+    let mut segments = Vec::new();
+
+    for payload in parser.parse_all(module_bytes) {
+        match payload.map_err(|e| WasmtimeError::Compilation {
+            message: format!("Failed to parse module: {}", e),
+        })? {
+            Payload::DataSection(reader) => {
+                for data in reader {
+                    let data = data.map_err(|e| WasmtimeError::Compilation {
+                        message: format!("Failed to parse data segment: {}", e),
+                    })?;
+
+                    let segment = parse_data_segment(data)?;
+                    segments.push(segment);
+                }
+            }
+            _ => continue,
+        }
+    }
+
+    Ok(segments)
+}
+
+/// Parse a single data segment
+fn parse_data_segment(
+    data: wasmparser::Data,
+) -> WasmtimeResult<Option<DataSegment>> {
+    match data.kind {
+        DataKind::Passive => {
+            // Passive segment - cache it for memory.init()
+            let data_bytes = data.data.to_vec();
+            Ok(Some(DataSegment::new_passive(data_bytes)))
+        }
+        DataKind::Active {
+            memory_index,
+            offset_expr,
+        } => {
+            // Active segment - don't cache (hybrid design)
+            log::debug!(
+                "Skipping active data segment for memory {} (not cached in hybrid design)",
+                memory_index
+            );
+            Ok(None)
+        }
     }
 }

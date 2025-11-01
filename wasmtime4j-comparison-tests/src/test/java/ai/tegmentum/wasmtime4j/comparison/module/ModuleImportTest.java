@@ -18,7 +18,28 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for module imports from host across JNI and Panama implementations. */
+/**
+ * Tests WebAssembly module import functionality for host functions.
+ *
+ * <p>This test validates that wasmtime4j correctly implements Wasmtime's import behavior for host
+ * functions provided via the Linker API.
+ *
+ * <p>Expected Wasmtime behavior:
+ *
+ * <ul>
+ *   <li>Host functions can be defined in a Linker with module and name
+ *   <li>WebAssembly modules can import and call host functions
+ *   <li>Function signatures must match between import declaration and host definition
+ *   <li>Host functions receive parameters and return results correctly
+ *   <li>Host functions can access and modify Store data
+ * </ul>
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Linker.html">https://docs.wasmtime.dev/api/wasmtime/struct.Linker.html</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleImportTest extends DualRuntimeTest {
 
   private Engine engine;

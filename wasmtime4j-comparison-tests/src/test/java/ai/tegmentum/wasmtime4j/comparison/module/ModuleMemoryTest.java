@@ -15,7 +15,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for import and export of memory across JNI and Panama implementations. */
+/**
+ * Tests memory sharing between WebAssembly instances.
+ *
+ * <p>This test validates that wasmtime4j correctly implements Wasmtime's memory sharing behavior.
+ * Per Wasmtime documentation, memory exported from one instance can be imported by another
+ * instance, and modifications are visible across both instances.
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Memory.html">https://docs.wasmtime.dev/api/wasmtime/struct.Memory.html</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleMemoryTest extends DualRuntimeTest {
 
   private Engine engine;
@@ -39,6 +51,15 @@ public class ModuleMemoryTest extends DualRuntimeTest {
 
   /**
    * Tests importing and exporting memory in WebAssembly modules.
+   *
+   * <p>Expected Wasmtime behavior:
+   *
+   * <ul>
+   *   <li>Memory exported from one instance can be retrieved via getMemory()
+   *   <li>Exported memory can be defined in a linker for import by other modules
+   *   <li>Memory handle remains valid when passed through linker
+   *   <li>Modifications in one instance are visible when accessed through imported memory
+   * </ul>
    *
    * @param runtime the runtime type to use (JNI or Panama)
    * @throws Exception if the test fails

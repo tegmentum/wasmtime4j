@@ -1,6 +1,6 @@
 //! Panama Foreign Function Interface bindings for Java 23+
 
-use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 use std::sync::Arc;
 use crate::ffi_common::error_handling;
 use crate::WasmtimeResult;
@@ -172,6 +172,22 @@ pub mod engine {
                 let error_info = error_handling::validation_error_to_info(validation_error);
                 log::error!("Parameter validation failed: {}", error_info.message);
                 -1
+            }
+        }
+    }
+
+    /// Increment the epoch counter (Panama FFI version)
+    ///
+    /// This function is signal-safe and performs only an atomic increment.
+    /// The epoch counter is used for epoch-based interruption of WebAssembly execution.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_engine_increment_epoch(engine_ptr: *mut c_void) {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => {
+                engine.increment_epoch();
+            },
+            Err(e) => {
+                log::error!("Failed to increment epoch: {:?}", e);
             }
         }
     }
@@ -437,6 +453,62 @@ pub mod module {
         }
     }
 
+    /// Get module exports as JSON string (Panama FFI version)
+    /// Returns NULL on error or a JSON string containing export metadata
+    /// Caller must free the returned string with wasmtime4j_panama_module_free_string
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_module_get_exports_json(module_ptr: *mut c_void) -> *mut c_char {
+        if module_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        // Get module and metadata
+        let module = match unsafe { crate::module::core::get_module_ref(module_ptr) } {
+            Ok(m) => m,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let metadata = crate::module::core::get_metadata(module);
+
+        // Serialize exports to JSON
+        match serde_json::to_string(&metadata.exports) {
+            Ok(json) => {
+                match std::ffi::CString::new(json) {
+                    Ok(c_str) => c_str.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// Get module imports as JSON string (Panama FFI version)
+    /// Returns NULL on error or a JSON string containing import metadata
+    /// Caller must free the returned string with wasmtime4j_panama_module_free_string
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_module_get_imports_json(module_ptr: *mut c_void) -> *mut c_char {
+        if module_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        // Get module and metadata
+        let module = match unsafe { crate::module::core::get_module_ref(module_ptr) } {
+            Ok(m) => m,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let metadata = crate::module::core::get_metadata(module);
+
+        // Serialize imports to JSON
+        match serde_json::to_string(&metadata.imports) {
+            Ok(json) => {
+                match std::ffi::CString::new(json) {
+                    Ok(c_str) => c_str.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
     /// Free C string returned by module functions
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_module_free_string(str_ptr: *mut c_char) {
@@ -446,7 +518,7 @@ pub mod module {
             }
         }
     }
-    
+
     /// Destroy a WebAssembly module (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {
@@ -2657,6 +2729,159 @@ pub mod table {
         unsafe {
             core::destroy_table(table_ptr);
         }
+    }
+
+    /// Initialize table from element segment (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_table_init(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        instance_ptr: *mut c_void,
+        dst: c_uint,
+        src: c_uint,
+        len: c_uint,
+        segment_index: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { core::get_table_ref(table_ptr)? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+            let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+
+            table.init_from_segment(store, instance, dst, src, len, segment_index)?;
+            Ok(())
+        })
+    }
+
+    /// Drop an element segment (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_elem_drop(
+        instance_ptr: *mut c_void,
+        segment_index: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+
+            let segment_manager = instance.get_element_segment_manager();
+            segment_manager.drop_segment(segment_index)?;
+            Ok(())
+        })
+    }
+
+    /// Initialize memory from data segment (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_init(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        instance_ptr: *mut c_void,
+        dest_offset: c_uint,
+        data_segment_index: c_uint,
+        src_offset: c_uint,
+        len: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            // Get raw wasmtime::Memory (not wrapped)
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+            let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+
+            // Create wrapped Memory from wasmtime::Memory
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+
+            crate::memory::core::memory_init(&memory, store, instance, dest_offset, data_segment_index, src_offset, len)?;
+            Ok(())
+        })
+    }
+
+    /// Drop a data segment (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_data_drop(
+        instance_ptr: *mut c_void,
+        data_segment_index: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+
+            crate::memory::core::data_drop(instance, data_segment_index)?;
+            Ok(())
+        })
+    }
+
+    /// Copy memory within the same memory instance (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_copy(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        dest_offset: c_uint,
+        src_offset: c_uint,
+        len: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+
+            crate::memory::core::memory_copy(&memory, store, dest_offset as usize, src_offset as usize, len as usize)?;
+            Ok(())
+        })
+    }
+
+    /// Fill memory with a byte value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_fill(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: c_uint,
+        value: c_uchar,
+        len: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+
+            crate::memory::core::memory_fill(&memory, store, offset as usize, value, len as usize)?;
+            Ok(())
+        })
+    }
+
+    /// Copy elements within a table (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_table_copy(
+        table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        dst: c_uint,
+        src: c_uint,
+        len: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            table.copy_within(store, dst, src, len)?;
+            Ok(())
+        })
+    }
+
+    /// Copy elements from another table (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_table_copy_from(
+        dst_table_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        dst: c_uint,
+        src_table_ptr: *mut c_void,
+        src: c_uint,
+        len: c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let dst_table = unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
+            let src_table = unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            dst_table.copy_from(store, dst, src_table, src, len)?;
+            Ok(())
+        })
     }
 
     /// Get the last error message as a C string

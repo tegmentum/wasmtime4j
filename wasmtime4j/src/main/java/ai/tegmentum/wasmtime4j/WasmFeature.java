@@ -74,8 +74,26 @@ public enum WasmFeature {
   /** WebAssembly custom page sizes proposal support. */
   CUSTOM_PAGE_SIZES,
 
+  /** WebAssembly wide arithmetic proposal support. */
+  WIDE_ARITHMETIC,
+
   /** WebAssembly shared-everything threads proposal support. */
   SHARED_EVERYTHING_THREADS,
+
+  /** WebAssembly Component Model async support. */
+  COMPONENT_MODEL_ASYNC,
+
+  /** WebAssembly Component Model async builtins support. */
+  COMPONENT_MODEL_ASYNC_BUILTINS,
+
+  /** WebAssembly Component Model async stackful support. */
+  COMPONENT_MODEL_ASYNC_STACKFUL,
+
+  /** WebAssembly Component Model error context support. */
+  COMPONENT_MODEL_ERROR_CONTEXT,
+
+  /** WebAssembly Component Model GC support. */
+  COMPONENT_MODEL_GC,
 
   /** WebAssembly type imports proposal support. */
   TYPE_IMPORTS,

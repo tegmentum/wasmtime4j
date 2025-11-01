@@ -287,7 +287,7 @@ public final class WasmtimeWastSuiteIntegrationTest {
     final WastExecutionResult result = JniWastRunner.executeWastString("test.wast", wastContent);
 
     assertNotNull(result, "Result should not be null");
-    assertFalse(result.getDirectiveResults().isEmpty(), "Should have directive results");
+    assertFalse(result.getDirectiveResults().length == 0, "Should have directive results");
 
     for (final WastDirectiveResult directive : result.getDirectiveResults()) {
       assertTrue(directive.getLineNumber() >= 0, "Line number should be non-negative");

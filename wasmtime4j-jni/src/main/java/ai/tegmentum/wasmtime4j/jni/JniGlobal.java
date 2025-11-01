@@ -427,9 +427,8 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
         return value.asFloat();
       case F64:
         return value.asDouble();
-      case FUNCREF:
-        {
-          final Object funcrefValue = value.asFuncref();
+      case FUNCREF: {
+        final Object funcrefValue = value.asFuncref();
           if (funcrefValue == null) {
             return null;
           }
@@ -443,10 +442,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           }
           // Already a handle (Long)
           return funcrefValue;
-        }
-      case EXTERNREF:
-        {
-          final Object externrefValue = value.asExternref();
+      }
+      case EXTERNREF: {
+        final Object externrefValue = value.asExternref();
           if (externrefValue == null) {
             return null;
           }

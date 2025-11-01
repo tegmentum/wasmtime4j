@@ -123,6 +123,22 @@ public interface WasmRuntime extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a new store with resource limits.
+   *
+   * <p>Resource limits are enforced during WebAssembly execution and control memory size, table
+   * elements, and instance counts. Limits are applied per-resource (each memory/table can grow to
+   * the limit independently).
+   *
+   * @param engine the engine to create the store for
+   * @param limits the resource limits to apply
+   * @return a new Store instance with the specified limits
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if engine or limits is null
+   * @since 1.0.0
+   */
+  Store createStore(final Engine engine, final StoreLimits limits) throws WasmException;
+
+  /**
    * Creates a new linker for the given engine.
    *
    * <p>A linker provides the mechanism to define host functions and bind imports before

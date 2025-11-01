@@ -85,6 +85,36 @@ public final class PanamaInstance implements Instance {
     LOGGER.fine("Created Panama instance");
   }
 
+  /**
+   * Package-private constructor for wrapping an existing native instance pointer.
+   *
+   * @param nativeInstance the native instance pointer from Wasmtime
+   * @param module the module this instance was created from
+   * @param store the store that owns this instance
+   */
+  PanamaInstance(
+      final MemorySegment nativeInstance,
+      final PanamaModule module,
+      final PanamaStore store) {
+    if (nativeInstance == null || nativeInstance.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native instance pointer cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+
+    this.nativeInstance = nativeInstance;
+    this.module = module;
+    this.store = store;
+    this.arena = Arena.ofConfined();
+    this.createdAtMicros = System.currentTimeMillis() * 1000L;
+
+    LOGGER.fine("Wrapped native instance pointer");
+  }
+
   @Override
   public Optional<WasmFunction> getFunction(final String name) {
     if (name == null) {
@@ -243,7 +273,7 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    return Optional.of(new PanamaTable(tablePtr));
+    return Optional.of(new PanamaTable(tablePtr, this));
   }
 
   @Override
@@ -334,9 +364,8 @@ public final class PanamaInstance implements Instance {
   @Override
   public List<ExportDescriptor> getExportDescriptors() {
     ensureNotClosed();
-    // TODO: Implement full export descriptors with proper type information
-    // This requires additional native functions to get type details
-    return Collections.emptyList();
+    // Delegate to module's export descriptors - module knows all export types
+    return module.getExportDescriptors();
   }
 
   @Override
@@ -345,7 +374,13 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement export descriptor lookup with proper type information
+    // Delegate to module's export descriptors - module knows all export types
+    final List<ExportDescriptor> descriptors = module.getExportDescriptors();
+    for (final ExportDescriptor descriptor : descriptors) {
+      if (descriptor.getName().equals(name)) {
+        return Optional.of(descriptor);
+      }
+    }
     return Optional.empty();
   }
 
@@ -355,8 +390,8 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Function name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement function type lookup
-    return Optional.empty();
+    // Delegate to module's type lookup - module knows all export types
+    return module.getFunctionType(functionName);
   }
 
   @Override
@@ -365,8 +400,8 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Global name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement global type lookup
-    return Optional.empty();
+    // Delegate to module's type lookup - module knows all export types
+    return module.getGlobalType(globalName);
   }
 
   @Override
@@ -375,8 +410,8 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement memory type lookup
-    return Optional.empty();
+    // Delegate to module's type lookup - module knows all export types
+    return module.getMemoryType(memoryName);
   }
 
   @Override
@@ -385,8 +420,8 @@ public final class PanamaInstance implements Instance {
       throw new IllegalArgumentException("Table name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement table type lookup
-    return Optional.empty();
+    // Delegate to module's type lookup - module knows all export types
+    return module.getTableType(tableName);
   }
 
   @Override

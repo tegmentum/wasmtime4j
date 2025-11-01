@@ -19,7 +19,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -273,13 +272,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final Optional<WasmTable> table = getTable(tableName);
-      if (!table.isPresent()) {
-        return Optional.empty();
-      }
-      // Get table type information from the native table
-      // For now, return a basic table type - this would need native implementation
-      return Optional.empty(); // TODO: Implement native getTableType
+      // Delegate to module's type lookup - module knows all export types
+      return module.getTableType(tableName);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -293,13 +287,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final Optional<WasmMemory> memory = getMemory(memoryName);
-      if (!memory.isPresent()) {
-        return Optional.empty();
-      }
-      // Get memory type information from the native memory
-      // For now, return empty - this would need native implementation
-      return Optional.empty(); // TODO: Implement native getMemoryType
+      // Delegate to module's type lookup - module knows all export types
+      return module.getMemoryType(memoryName);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -313,13 +302,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final Optional<WasmGlobal> global = getGlobal(globalName);
-      if (!global.isPresent()) {
-        return Optional.empty();
-      }
-      // Get global type information from the native global
-      // For now, return empty - this would need native implementation
-      return Optional.empty(); // TODO: Implement native getGlobalType
+      // Delegate to module's type lookup - module knows all export types
+      return module.getGlobalType(globalName);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -333,13 +317,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      final Optional<WasmFunction> function = getFunction(functionName);
-      if (!function.isPresent()) {
-        return Optional.empty();
-      }
-      // Get function type information from the native function
-      // For now, return empty - this would need native implementation
-      return Optional.empty(); // TODO: Implement native getFunctionType
+      // Delegate to module's type lookup - module knows all export types
+      return module.getFunctionType(functionName);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -353,8 +332,13 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      // TODO: Implement native getExportDescriptor to get actual export descriptor information
-      // For now, return empty as this would need native implementation
+      // Delegate to module's export descriptors - module knows all export types
+      final List<ExportDescriptor> descriptors = module.getExportDescriptors();
+      for (final ExportDescriptor descriptor : descriptors) {
+        if (descriptor.getName().equals(name)) {
+          return Optional.of(descriptor);
+        }
+      }
       return Optional.empty();
     } catch (final RuntimeException e) {
       throw e;
@@ -368,9 +352,8 @@ public final class JniInstance extends JniResource implements Instance {
     ensureNotClosed();
 
     try {
-      // TODO: Implement native getExportDescriptors to get actual export descriptor information
-      // For now, return empty list as this would need native implementation
-      return Collections.emptyList();
+      // Delegate to module's export descriptors - module knows all export types
+      return module.getExportDescriptors();
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

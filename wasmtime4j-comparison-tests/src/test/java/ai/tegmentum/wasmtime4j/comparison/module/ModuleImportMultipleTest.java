@@ -18,7 +18,27 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-/** Tests for importing multiple functions from host across JNI and Panama implementations. */
+/**
+ * Tests importing multiple host functions in WebAssembly modules.
+ *
+ * <p>This test validates that wasmtime4j correctly handles multiple host function imports via the
+ * Linker API, matching Wasmtime's behavior.
+ *
+ * <p>Expected Wasmtime behavior:
+ *
+ * <ul>
+ *   <li>Multiple host functions can be defined in a single Linker
+ *   <li>WebAssembly module can import multiple functions from same or different modules
+ *   <li>Each import is resolved independently by module and name
+ *   <li>All imported functions work correctly when called from WebAssembly
+ * </ul>
+ *
+ * <p>Reference: <a
+ * href="https://docs.wasmtime.dev/api/wasmtime/struct.Linker.html#method.func_wrap">https://docs.wasmtime.dev/api/wasmtime/struct.Linker.html#method.func_wrap</a>
+ *
+ * <p>This test runs on both JNI and Panama runtimes to ensure both correctly implement Wasmtime's
+ * behavior.
+ */
 public class ModuleImportMultipleTest extends DualRuntimeTest {
 
   private Engine engine;
