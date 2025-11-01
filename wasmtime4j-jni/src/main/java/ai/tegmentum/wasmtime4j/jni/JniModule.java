@@ -323,7 +323,32 @@ public class JniModule implements Module {
 
   @Override
   public boolean validateImports(final ai.tegmentum.wasmtime4j.ImportMap imports) {
-    // TODO: Implement import validation
+    if (imports == null) {
+      throw new IllegalArgumentException("imports cannot be null");
+    }
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    // Get all module imports and check if they're satisfied by the provided ImportMap
+    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+
+    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
+      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final String moduleName = importType.getModuleName();
+      final String fieldName = importType.getName();
+
+      // Check if the import exists in the ImportMap
+      if (!imports.contains(moduleName, fieldName)) {
+        return false;
+      }
+
+      // TODO: Add type checking - verify that the provided import type
+      // matches the expected type from the module
+      // This requires access to the import value and type comparison logic
+    }
+
     return true;
   }
 
