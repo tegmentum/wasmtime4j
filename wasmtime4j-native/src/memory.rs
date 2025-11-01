@@ -162,6 +162,8 @@ pub struct Memory {
     metadata: Arc<RwLock<MemoryMetadata>>,
     /// Memory configuration and limits
     config: MemoryConfig,
+    /// Cached memory type (stored on creation to avoid needing Store for type queries)
+    pub memory_type: MemoryType,
     /// Platform-specific memory allocator (optional)
     platform_allocator: Option<Arc<PlatformMemoryAllocator>>,
 }
@@ -504,7 +506,7 @@ impl Memory {
 
         // Create memory instance
         let inner = store.with_context(|ctx| {
-            WasmtimeMemory::new(ctx, memory_type)
+            WasmtimeMemory::new(ctx, memory_type.clone())
                 .map_err(|e| WasmtimeError::Memory {
                     message: format!("Failed to create memory: {}", e),
                 })
@@ -529,6 +531,7 @@ impl Memory {
             inner,
             metadata: Arc::new(RwLock::new(metadata)),
             config,
+            memory_type,
             platform_allocator: None,
         })
     }
@@ -827,19 +830,27 @@ impl Memory {
         &self.inner
     }
 
+    /// Get memory type information from the underlying Wasmtime memory
+    /// This requires a Store to access the type information
+    pub fn get_type(&self, store: &Store) -> WasmtimeResult<MemoryType> {
+        store.with_context_ro(|ctx| {
+            Ok(self.inner.ty(ctx))
+        })
+    }
+
     /// Create Memory wrapper from existing Wasmtime memory (for memory exports)
     /// Note: This creates a wrapper with default metadata since we don't have store context
-    pub fn from_wasmtime_memory(wasmtime_memory: WasmtimeMemory) -> Self {
-        // Since we don't have store context here, use defaults for metadata
-        // The actual memory type information will be accessed when store is available
-        let initial_pages = 1; // Default - will be updated when store is available
-        let maximum_pages = None;
+    pub fn from_wasmtime_memory(wasmtime_memory: WasmtimeMemory, memory_type: MemoryType) -> Self {
+        // Extract configuration from memory type
+        let initial_pages = memory_type.minimum();
+        let maximum_pages = memory_type.maximum();
+        let is_shared = memory_type.is_shared();
 
         // Create configuration based on memory type
         let config = MemoryConfig {
             initial_pages,
             maximum_pages,
-            is_shared: false, // Default - will be updated when store is available
+            is_shared,
             memory_index: 0, // Default index for exported memory
             name: Some("exported_memory".to_string()),
         };
@@ -863,6 +874,7 @@ impl Memory {
             inner: wasmtime_memory,
             metadata: Arc::new(RwLock::new(metadata)),
             config,
+            memory_type,
             platform_allocator: None,
         }
     }

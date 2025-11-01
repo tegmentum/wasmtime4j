@@ -593,8 +593,10 @@ pub mod jni_instance {
 
             match memory_opt {
                 Some(memory) => {
+                    // Get memory type information from the store
+                    let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
                     // Create a new Memory wrapper and register the handle
-                    let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory);
+                    let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
                     let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
                     Ok(validated_ptr as jlong)
                 }
@@ -7160,18 +7162,11 @@ pub mod jni_memory {
             // Get memory reference
             let memory = unsafe { &*(memory_ptr as *const crate::memory::Memory) };
 
-            // Get metadata (current and maximum pages)
-            let metadata = memory.get_metadata()?;
-            let minimum = metadata.current_pages as i64;
-            let maximum = metadata.maximum_pages.map(|m| m as i64).unwrap_or(-1);
-
-            // Get config for is_shared
-            let config = memory.get_config();
-            let is_shared = if config.is_shared { 1i64 } else { 0i64 };
-
-            // Get is_64_bit from wasmtime memory type
-            // Note: WebAssembly 1.0 memories are all 32-bit, WebAssembly 2.0 adds 64-bit memories
-            let is_64_bit = 0i64;  // Currently all memories are 32-bit (wasmtime default)
+            // Get type information from cached memory_type
+            let minimum = memory.memory_type.minimum() as i64;
+            let maximum = memory.memory_type.maximum().map(|m| m as i64).unwrap_or(-1);
+            let is_shared = if memory.memory_type.is_shared() { 1i64 } else { 0i64 };
+            let is_64_bit = if memory.memory_type.is_64() { 1i64 } else { 0i64 };
 
             // Create long array with [minimum, maximum, is64Bit, isShared]
             let result_array = env.new_long_array(4)

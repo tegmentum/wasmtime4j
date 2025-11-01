@@ -2784,8 +2784,10 @@ pub mod table {
             let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
             let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
 
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
             // Create wrapped Memory from wasmtime::Memory
-            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
 
             crate::memory::core::memory_init(&memory, store, instance, dest_offset, data_segment_index, src_offset, len)?;
             Ok(())
@@ -2819,7 +2821,9 @@ pub mod table {
             let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
             let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
 
-            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
 
             crate::memory::core::memory_copy(&memory, store, dest_offset as usize, src_offset as usize, len as usize)?;
             Ok(())
@@ -2839,7 +2843,9 @@ pub mod table {
             let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
             let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
 
-            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory);
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
 
             crate::memory::core::memory_fill(&memory, store, offset as usize, value, len as usize)?;
             Ok(())
