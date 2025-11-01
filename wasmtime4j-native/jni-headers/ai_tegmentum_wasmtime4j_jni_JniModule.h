@@ -71,6 +71,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasE
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasImport
   (JNIEnv *, jobject, jlong, jstring, jstring);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetCustomSections
+ * Signature: (J)Ljava/util/Map;
+ */
+JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCustomSections
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

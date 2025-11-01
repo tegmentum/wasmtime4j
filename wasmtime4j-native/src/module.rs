@@ -207,7 +207,7 @@ impl Module {
             .map_err(|e| WasmtimeError::from_compilation_error(e))?;
 
         // Extract comprehensive metadata
-        let metadata = ModuleMetadata::extract(&module, wasm_bytes.len())?;
+        let metadata = ModuleMetadata::extract(&module, wasm_bytes.len(), wasm_bytes)?;
 
         // Parse element segments for table.init() support (hybrid design)
         let element_segments = parse_element_segments(wasm_bytes)
@@ -411,7 +411,7 @@ impl Module {
 }
 
 impl ModuleMetadata {
-    fn extract(module: &WasmtimeModule, size_bytes: usize) -> WasmtimeResult<Self> {
+    fn extract(module: &WasmtimeModule, size_bytes: usize, wasm_bytes: &[u8]) -> WasmtimeResult<Self> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
         let mut functions = Vec::new();
@@ -451,6 +451,9 @@ impl ModuleMetadata {
             }
         }
 
+        // Extract custom sections from raw WASM bytes
+        let custom_sections = extract_custom_sections(wasm_bytes);
+
         Ok(ModuleMetadata {
             name: None, // Not easily extractable from Wasmtime
             size_bytes,
@@ -460,7 +463,7 @@ impl ModuleMetadata {
             globals,
             memories,
             tables,
-            custom_sections: HashMap::new(), // Not easily extractable
+            custom_sections,
         })
     }
 
@@ -477,6 +480,29 @@ impl ModuleMetadata {
             custom_sections: HashMap::new(),
         }
     }
+}
+
+/// Extract custom sections from WebAssembly bytecode
+fn extract_custom_sections(wasm_bytes: &[u8]) -> HashMap<String, Vec<u8>> {
+    use wasmparser::{Parser, Payload};
+
+    let mut custom_sections = HashMap::new();
+
+    let parser = Parser::new(0);
+    for payload in parser.parse_all(wasm_bytes) {
+        match payload {
+            Ok(Payload::CustomSection(reader)) => {
+                let name = reader.name().to_string();
+                let data = reader.data().to_vec();
+                custom_sections.insert(name, data);
+            }
+            _ => {
+                // Continue parsing other sections
+            }
+        }
+    }
+
+    custom_sections
 }
 
 // Helper functions for type conversion

@@ -4201,6 +4201,56 @@ pub mod jni_module {
             _ => jni::sys::JNI_FALSE,
         }
     }
+
+    /// Get custom sections from the module
+    /// Returns a Map<String, String> where values are Base64-encoded binary data
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCustomSections(
+        mut env: JNIEnv,
+        _class: JClass,
+        module_ptr: jlong,
+    ) -> jobject {
+        use base64::Engine;
+
+        jni_utils::jni_try_object(&mut env, |env_ref| {
+            if module_ptr == 0 {
+                return Err(crate::error::WasmtimeError::Module {
+                    message: "Invalid module pointer".to_string(),
+                });
+            }
+
+            let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+            let metadata = crate::module::core::get_metadata(module);
+
+            // Create HashMap for custom sections
+            let hashmap_class = env_ref.find_class("java/util/HashMap")?;
+            let hashmap = env_ref.new_object(hashmap_class, "()V", &[])?;
+
+            // Iterate through custom sections and add them to the HashMap
+            for (name, data) in &metadata.custom_sections {
+                // Encode binary data as Base64 for safe transmission through JNI
+                let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+
+                let name_jstring = env_ref.new_string(name)?;
+                let data_jstring = env_ref.new_string(&encoded)?;
+
+                // Use call_method for safer invocation
+                env_ref.call_method(
+                    &hashmap,
+                    "put",
+                    "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                    &[
+                        (&name_jstring).into(),
+                        (&data_jstring).into(),
+                    ],
+                )?;
+            }
+
+            // Return hashmap as JObject with 'static lifetime
+            // Safety: The JNI framework manages the lifetime
+            Ok(unsafe { std::mem::transmute(hashmap) })
+        })
+    }
 }
 
 #[cfg(not(feature = "jni-bindings"))]

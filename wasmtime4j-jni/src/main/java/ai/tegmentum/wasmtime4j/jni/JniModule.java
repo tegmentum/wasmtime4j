@@ -120,8 +120,12 @@ public class JniModule implements Module {
 
   @Override
   public Map<String, String> getCustomSections() {
-    // TODO: Implement custom sections retrieval
-    return Collections.emptyMap();
+    ensureNotClosed();
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Module has invalid native handle");
+    }
+
+    return nativeGetCustomSections(nativeHandle);
   }
 
   @Override
@@ -419,4 +423,16 @@ public class JniModule implements Module {
    * @return true if import exists, false otherwise
    */
   private native boolean nativeHasImport(long moduleHandle, String moduleName, String fieldName);
+
+  /**
+   * Native method to get custom sections from the module.
+   *
+   * <p>Custom sections are binary data embedded in WebAssembly modules that can contain metadata,
+   * debug information, or other arbitrary data. The data is Base64-encoded for safe transmission
+   * through JNI.
+   *
+   * @param moduleHandle the native module handle
+   * @return map of custom section names to their Base64-encoded data
+   */
+  private native Map<String, String> nativeGetCustomSections(long moduleHandle);
 }
