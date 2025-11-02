@@ -317,16 +317,11 @@ impl EnhancedComponentEngine {
         // Update last accessed time
         instance_info.last_accessed = start_time;
 
-        let mut store_guard = instance_info.store.lock()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire store lock".to_string(),
-            })?;
-
         // Component function calling in Wasmtime 37.0.2 requires typed function handles
         // For now, this is a placeholder - actual implementation requires proper
         // type extraction and typed function calling
         let _exported_func = instance_info.instance
-            .get_export(&mut *store_guard, None, function_name)
+            .get_export(&mut instance_info.store, None, function_name)
             .ok_or_else(|| WasmtimeError::ImportExport {
                 message: format!("Function '{}' not found in component exports", function_name),
             })?;
