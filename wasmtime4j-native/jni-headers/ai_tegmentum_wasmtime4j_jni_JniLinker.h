@@ -65,6 +65,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstant
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeAlias
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAlias
+  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeEnableWasi
  * Signature: (J)V
  */

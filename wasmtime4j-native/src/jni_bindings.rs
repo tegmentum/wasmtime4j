@@ -3052,6 +3052,62 @@ pub mod jni_linker {
         })
     }
 
+    /// Create an alias for an export in the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAlias(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        from_module: JString,
+        from_name: JString,
+        to_module: JString,
+        to_name: JString,
+    ) {
+        // Validate parameters before attempting to convert
+        if from_module.is_null() || from_name.is_null() || to_module.is_null() || to_name.is_null() {
+            return;
+        }
+
+        // Convert all strings before the closure to avoid borrow checker issues
+        let from_module_str: String = match env.get_string(&from_module) {
+            Ok(s) => s.into(),
+            Err(_) => return,
+        };
+
+        let from_name_str: String = match env.get_string(&from_name) {
+            Ok(s) => s.into(),
+            Err(_) => return,
+        };
+
+        let to_module_str: String = match env.get_string(&to_module) {
+            Ok(s) => s.into(),
+            Err(_) => return,
+        };
+
+        let to_name_str: String = match env.get_string(&to_name) {
+            Ok(s) => s.into(),
+            Err(_) => return,
+        };
+
+        jni_utils::jni_try(&mut env, || {
+            use std::os::raw::c_void;
+
+            let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+
+            // Get the linker lock
+            let mut linker_lock = linker.inner()?;
+
+            // Use Wasmtime's alias method
+            linker_lock.alias(&from_module_str, &from_name_str, &to_module_str, &to_name_str)
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!("Failed to create alias from {}::{} to {}::{}: {}",
+                        from_module_str, from_name_str, to_module_str, to_name_str, e),
+                })?;
+
+            Ok(())
+        });
+    }
+
     /// Define a host function in the linker with JNI callback support
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(

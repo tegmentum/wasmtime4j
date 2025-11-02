@@ -312,8 +312,28 @@ public class JniLinker<T> implements Linker<T> {
   public void alias(
       final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
-    // TODO: Implement import aliasing
-    throw new UnsupportedOperationException("Import aliasing not yet implemented");
+    ensureNotClosed();
+    if (fromModule == null || fromModule.isEmpty()) {
+      throw new IllegalArgumentException("fromModule cannot be null or empty");
+    }
+    if (fromName == null || fromName.isEmpty()) {
+      throw new IllegalArgumentException("fromName cannot be null or empty");
+    }
+    if (toModule == null || toModule.isEmpty()) {
+      throw new IllegalArgumentException("toModule cannot be null or empty");
+    }
+    if (toName == null || toName.isEmpty()) {
+      throw new IllegalArgumentException("toName cannot be null or empty");
+    }
+
+    try {
+      nativeAlias(nativeHandle, fromModule, fromName, toModule, toName);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create alias", e);
+    }
   }
 
   @Override
@@ -714,6 +734,18 @@ public class JniLinker<T> implements Linker<T> {
    */
   private native long nativeInstantiateNamed(
       long linkerHandle, long storeHandle, String moduleName, long moduleHandle);
+
+  /**
+   * Creates an alias for an export.
+   *
+   * @param linkerHandle the linker handle
+   * @param fromModule the source module name
+   * @param fromName the source export name
+   * @param toModule the destination module name
+   * @param toName the destination export name
+   */
+  private native void nativeAlias(
+      long linkerHandle, String fromModule, String fromName, String toModule, String toName);
 
   /**
    * Enables WASI for the linker.
