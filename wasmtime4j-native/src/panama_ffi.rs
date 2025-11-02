@@ -844,7 +844,7 @@ pub mod store {
 #[cfg(feature = "component-model")]
 pub mod component {
     use super::*;
-    use crate::component_core::{EnhancedComponentEngine, ComponentInstanceInfo};
+    use crate::component_core::{EnhancedComponentEngine, ComponentInstanceHandle};
     use crate::wit_interfaces::WitInterfaceManager;
     use crate::component_orchestration::ComponentOrchestrator;
     use crate::component_resources::ComponentResourceManager;

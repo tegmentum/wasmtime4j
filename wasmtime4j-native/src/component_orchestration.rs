@@ -25,7 +25,7 @@ use wasmtime::{
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::component_core::{
-    EnhancedComponentEngine, ComponentInstanceInfo, ComponentStoreData, ComponentMetrics
+    EnhancedComponentEngine, ComponentInstanceHandle, ComponentStoreData, ComponentMetrics
 };
 use crate::wit_interfaces::{WitInterfaceManager, WitInterface, ValidationResult};
 
@@ -806,7 +806,7 @@ pub struct ManagedComponent {
     /// Component identifier
     pub id: ComponentId,
     /// Component instance information
-    pub instance_info: ComponentInstanceInfo,
+    pub instance_info: ComponentInstanceHandle,
     /// Component state
     pub state: ComponentState,
     /// Last health check result
@@ -986,7 +986,7 @@ pub struct InstancePool {
     /// Pool identifier
     pub id: String,
     /// Available instances
-    pub instances: Vec<ComponentInstanceInfo>,
+    pub instances: Vec<ComponentInstanceHandle>,
     /// Pool configuration
     pub config: PoolConfig,
     /// Current index for round-robin

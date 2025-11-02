@@ -186,6 +186,9 @@ pub mod wasi_security;
 // Type introspection system
 pub mod type_introspection;
 
+// WIT value marshalling for Component Model
+pub mod wit_value_marshal;
+
 // Source map integration for debugging
 pub mod sourcemap;
 
@@ -375,7 +378,7 @@ pub use component::{
 /*
 #[cfg(feature = "component-model")]
 pub use component_core::{
-    EnhancedComponentEngine, ComponentInstanceInfo, ComponentMetrics,
+    EnhancedComponentEngine, ComponentInstanceHandle, ComponentMetrics,
     ComponentInterface, ComponentFunction
 };
 */

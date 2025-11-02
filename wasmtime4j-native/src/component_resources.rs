@@ -22,10 +22,10 @@ use wasmtime::component::ResourceAny;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 // TODO: Re-enable when component_core module is available
-// use crate::component_core::{ComponentInstanceInfo, ComponentStoreData};
+// use crate::component_core::{ComponentInstanceHandle, ComponentStoreData};
 
 // Placeholder types until the real modules are available
-struct ComponentInstanceInfo;
+struct ComponentInstanceHandle;
 struct ComponentStoreData;
 
 /// Resource manager for component resource lifecycle and sharing

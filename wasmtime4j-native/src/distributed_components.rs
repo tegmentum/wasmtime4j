@@ -19,7 +19,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::net::{SocketAddr, IpAddr};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::component_core::{ComponentInstanceInfo, EnhancedComponentEngine};
+use crate::component_core::{ComponentInstanceHandle, EnhancedComponentEngine};
 use crate::component_orchestration::{ComponentId, ComponentOrchestrator, ManagedComponent, SemanticVersion, VersionConstraint};
 use crate::component_resources::{ComponentResourceManager, ResourceHandle};
 use crate::wit_interfaces::{InterfaceNegotiationManager, NegotiableInterface, InterfaceCapabilities};

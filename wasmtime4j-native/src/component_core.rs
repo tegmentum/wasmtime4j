@@ -47,7 +47,7 @@ pub struct EnhancedComponentEngine {
     /// Component linker for interface resolution
     linker: ComponentLinker<ComponentStoreData>,
     /// Active component instances with metadata
-    instances: Arc<RwLock<HashMap<u64, ComponentInstanceInfo>>>,
+    instances: Arc<RwLock<HashMap<u64, ComponentInstanceHandle>>>,
     /// Resource table for component resources
     resource_table: Arc<RwLock<ResourceTable>>,
     /// Next instance ID generator
@@ -76,13 +76,15 @@ impl std::fmt::Debug for ComponentStoreData {
     }
 }
 
-/// Information about an active component instance
-#[derive(Clone, Debug)]
-pub struct ComponentInstanceInfo {
-    /// Instance reference
-    pub instance: Arc<WasmtimeComponentInstance>,
-    /// Store reference
-    pub store: Arc<Mutex<Store<ComponentStoreData>>>,
+/// Handle for an active component instance with owned Store
+///
+/// This struct keeps Store and Instance together as required by Wasmtime's ownership model.
+/// Store must not be separated from Instance to prevent ownership violations.
+pub struct ComponentInstanceHandle {
+    /// Store owning the instance
+    pub store: Store<ComponentStoreData>,
+    /// Component instance
+    pub instance: WasmtimeComponentInstance,
     /// Component metadata
     pub metadata: ComponentMetadata,
     /// Creation timestamp
@@ -258,8 +260,8 @@ impl EnhancedComponentEngine {
     ///
     /// # Returns
     ///
-    /// Returns a `ComponentInstanceInfo` with complete instance metadata.
-    pub fn instantiate_component(&self, component: &Component) -> WasmtimeResult<ComponentInstanceInfo> {
+    /// Returns a `ComponentInstanceHandle` with owned Store and Instance.
+    pub fn instantiate_component(&self, component: &Component) -> WasmtimeResult<ComponentInstanceHandle> {
         let instance_id = self.get_next_instance_id()?;
         let start_time = Instant::now();
 
@@ -276,26 +278,21 @@ impl EnhancedComponentEngine {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
 
-        let instance_info = ComponentInstanceInfo {
-            instance: Arc::new(instance),
-            store: Arc::new(Mutex::new(store)),
+        let handle = ComponentInstanceHandle {
+            store,
+            instance,
             metadata: component.metadata().clone(),
             created_at: start_time,
             last_accessed: start_time,
             ref_count: 1,
         };
 
-        // Store instance information
-        if let Ok(mut instances) = self.instances.write() {
-            instances.insert(instance_id, instance_info.clone());
-        }
-
         // Update metrics
         if let Ok(mut metrics) = self.metrics.write() {
             metrics.instances_created += 1;
         }
 
-        Ok(instance_info)
+        Ok(handle)
     }
 
     /// Call a component function with typed parameters
@@ -311,7 +308,7 @@ impl EnhancedComponentEngine {
     /// Returns the function result values.
     pub fn call_component_function(
         &self,
-        instance_info: &mut ComponentInstanceInfo,
+        instance_info: &mut ComponentInstanceHandle,
         function_name: &str,
         params: &[Val],
     ) -> WasmtimeResult<Vec<Val>> {
@@ -809,7 +806,7 @@ pub mod core {
     }
 
     /// Instantiate component using enhanced engine
-    pub fn instantiate_component_enhanced(engine: &EnhancedComponentEngine, component: &Component) -> WasmtimeResult<ComponentInstanceInfo> {
+    pub fn instantiate_component_enhanced(engine: &EnhancedComponentEngine, component: &Component) -> WasmtimeResult<ComponentInstanceHandle> {
         engine.instantiate_component(component)
     }
 
@@ -885,7 +882,7 @@ pub mod core {
 
     /// Destroy enhanced component instance
     pub unsafe fn destroy_enhanced_component_instance(instance_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<ComponentInstanceInfo>(instance_ptr, "ComponentInstanceInfo");
+        ffi_utils::destroy_resource::<ComponentInstanceHandle>(instance_ptr, "ComponentInstanceHandle");
     }
 
     /// Core function to get number of exports in component
@@ -905,7 +902,7 @@ pub mod core {
 
     /// Call component function with enhanced engine
     pub fn call_component_function(
-        instance_info: &mut ComponentInstanceInfo,
+        instance_info: &mut ComponentInstanceHandle,
         function_name: &str,
         params: &[wasmtime::component::Val],
         engine: &EnhancedComponentEngine,

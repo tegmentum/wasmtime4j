@@ -29,13 +29,13 @@ use wasmtime::{Engine, component::Component};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::engine::Engine as WasmtimeEngine;
 // TODO: Re-enable when component modules are available
-// use crate::component_core::{EnhancedComponentEngine, ComponentInstanceInfo, ComponentStoreData};
+// use crate::component_core::{EnhancedComponentEngine, ComponentInstanceHandle, ComponentStoreData};
 // use crate::component_orchestration::dependency_resolution::{SemanticVersion, ComponentVersionRegistry};
 
 // Placeholder types until the real modules are available
 // struct EnhancedComponentEngine; // Replaced with real Engine
 #[derive(Debug, Clone)]
-struct ComponentInstanceInfo;
+struct ComponentInstanceHandle;
 struct ComponentStoreData;
 struct ComponentVersionRegistry;
 
@@ -107,7 +107,7 @@ pub struct ComponentVersion {
     /// Component instance
     pub component: Arc<Component>,
     /// Instance information
-    pub instance_info: ComponentInstanceInfo,
+    pub instance_info: ComponentInstanceHandle,
     /// Load timestamp
     pub loaded_at: Instant,
     /// Health status
