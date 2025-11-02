@@ -464,10 +464,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
       if (typeInfo.length < 4) {
         throw new IllegalStateException("Invalid memory type info from native");
       }
+
       final long minimum = typeInfo[0];
       final Long maximum = typeInfo[1] == -1 ? null : typeInfo[1];
       final boolean is64Bit = typeInfo[2] != 0;
       final boolean isShared = typeInfo[3] != 0;
+
       return new ai.tegmentum.wasmtime4j.jni.type.JniMemoryType(
           minimum, maximum, is64Bit, isShared);
     } catch (final Exception e) {

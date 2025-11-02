@@ -2,9 +2,10 @@
 
 ## MemoryType min/max Swap Issue
 
-**Status**: Under Investigation
+**Status**: RESOLVED ✅
 **Affected Test**: `ModuleImportValidationTest.testGetMemoryType`
 **File**: `wasmtime4j-comparison-tests/src/test/java/ai/tegmentum/wasmtime4j/comparison/module/ModuleImportValidationTest.java:177`
+**Fixed**: Fixed in commit [pending]
 
 ### Description
 
@@ -13,61 +14,59 @@ The test creates a WebAssembly memory with minimum=1 pages and maximum=10 pages:
 (memory (export "mem") 1 10)
 ```
 
-However, `MemoryType.getMinimum()` returns 10 and `MemoryType.getMaximum()` returns 1 (swapped values).
+The test was failing because `MemoryType.getMinimum()` returned 10 and `MemoryType.getMaximum()` returned 1 (swapped values), but was expecting the correct values.
 
-### Test Failure
+### Root Cause
 
+The bug was in `/Users/zacharywhitley/git/wasmtime4j/wasmtime4j-native/src/jni_bindings.rs` at line 7226 in the `nativeGetMemoryTypeInfo` function.
+
+The pointer `memory_ptr` pointed to a `ValidatedMemory` struct, but the code incorrectly cast it as `*const Memory`:
+```rust
+// BUGGY CODE:
+let memory = unsafe { &*(memory_ptr as *const crate::memory::Memory) };
 ```
-org.opentest4j.AssertionFailedError: expected: <1> but was: <10>
-    at ModuleImportValidationTest.testGetMemoryType(ModuleImportValidationTest.java:177)
+
+This caused reading from the wrong memory offset. The `ValidatedMemory` struct wraps `Memory`:
+```rust
+pub struct ValidatedMemory {
+    magic: u64,
+    memory: Memory,  // Memory is INSIDE ValidatedMemory, not at pointer address!
+    created_at: Instant,
+    access_count: AtomicU64,
+    is_destroyed: AtomicBool,
+}
 ```
 
-### Investigation Summary
+When casting the pointer directly to `Memory`, the code read at offset 0 (the `magic` field) thinking it was the `Memory` struct, which resulted in reading garbage bytes from the wrong memory location.
 
-The code path has been traced through:
-1. WAT `(memory (export "mem") 1 10)` → min=1, max=10 (correct per WebAssembly spec)
-2. Memory retrieved via `Instance.getMemory()` → `from_wasmtime_memory()` stores Wasmtime's MemoryType
-3. `nativeGetMemoryTypeInfo()` reads `memory.memory_type.minimum()` and `maximum()`
-4. Java receives values as `typeInfo[0]=10, typeInfo[1]=1` (swapped)
+### Solution
+
+Changed the pointer access pattern to correctly cast to `ValidatedMemory` first, then use the `access_memory()` method to safely access the inner `Memory` struct:
+
+```rust
+// FIXED CODE:
+let validated_memory = unsafe { &*(memory_ptr as *const crate::memory::core::ValidatedMemory) };
+let memory = validated_memory.access_memory()?;
+```
+
+This ensures the code properly reads from the correct memory offset to access the `memory_type` field containing the correct minimum and maximum values.
 
 ### Code Locations
 
-**Native Code**:
-- `wasmtime4j-native/src/jni_bindings.rs:599` - Memory exported from instance
-- `wasmtime4j-native/src/jni_bindings.rs:7222-7223` - MemoryType info retrieval
-- `wasmtime4j-native/src/memory.rs:843-880` - `from_wasmtime_memory()` function
+**Fixed File**:
+- `wasmtime4j-native/src/jni_bindings.rs:7218-7230` - Fixed pointer casting in `nativeGetMemoryTypeInfo()`
 
-**Java Code**:
-- `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/type/JniMemoryType.java:62-76` - Type info parsing
+**Related Files**:
+- `wasmtime4j-native/src/memory.rs:158-169` - `Memory` struct definition
+- `wasmtime4j-native/src/memory.rs:1837-1843` - `ValidatedMemory` struct definition
+- `wasmtime4j-native/src/memory.rs:1868-1878` - `ValidatedMemory::access_memory()` method
 
-### Potential Causes
+### Verification
 
-1. **Wasmtime API**: Wasmtime's `MemoryType::minimum()` and `maximum()` might return values in unexpected order
-2. **Parameter Order**: `MemoryType::new64()` at `memory.rs:502` might have swapped parameters
-3. **Subtle Bug**: Logic error in the type conversion chain that hasn't been identified
-
-### Next Steps
-
-1. Add debug logging to verify what Wasmtime actually returns:
-   ```rust
-   log::debug!("MemoryType from Wasmtime: minimum={}, maximum={:?}",
-       memory_type.minimum(), memory_type.maximum());
-   ```
-
-2. Create minimal Rust test case to verify Wasmtime behavior:
-   ```rust
-   let memory_type = MemoryType::new(1, Some(10));
-   assert_eq!(memory_type.minimum(), 1);
-   assert_eq!(memory_type.maximum(), Some(10));
-   ```
-
-3. Check if this is a known issue in the Wasmtime version being used
-
-4. Verify the parameters to `MemoryType::new64()` are in the correct order per Wasmtime docs
-
-### Workaround
-
-None currently. Test is disabled pending investigation.
+Test now passes successfully:
+```
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+```
 
 ### References
 

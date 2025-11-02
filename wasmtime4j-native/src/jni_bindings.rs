@@ -7215,8 +7215,9 @@ pub mod jni_memory {
                 });
             }
 
-            // Get memory reference
-            let memory = unsafe { &*(memory_ptr as *const crate::memory::Memory) };
+            // Get memory reference - pointer is to ValidatedMemory, not Memory directly
+            let validated_memory = unsafe { &*(memory_ptr as *const crate::memory::core::ValidatedMemory) };
+            let memory = validated_memory.access_memory()?;
 
             // Get type information from cached memory_type
             let minimum = memory.memory_type.minimum() as i64;
