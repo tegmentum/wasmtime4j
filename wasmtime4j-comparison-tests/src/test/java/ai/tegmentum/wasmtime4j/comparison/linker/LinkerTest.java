@@ -212,6 +212,8 @@ public class LinkerTest {
           (func $f1 (result i32) i32.const 10)
           (func $f2 (result i32) i32.const 20)
 
+          (elem declare func $f1 $f2)
+
           (func (export "init_table")
             i32.const 0
             ref.func $f1
