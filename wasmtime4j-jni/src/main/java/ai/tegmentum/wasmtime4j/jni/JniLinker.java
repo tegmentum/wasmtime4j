@@ -447,8 +447,8 @@ public class JniLinker<T> implements Linker<T> {
 
       final JniInstance instance = new JniInstance(instanceHandle, jniModule, jniStore);
 
-      // Define the instance in the linker so it can be used by other modules
-      defineInstance(moduleName, instance);
+      // Note: The instance is already defined in the linker by nativeInstantiateNamed,
+      // so we don't need to call defineInstance here.
 
       return instance;
     } catch (final Exception e) {

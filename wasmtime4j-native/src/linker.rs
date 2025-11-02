@@ -46,6 +46,8 @@ pub struct LinkerMetadata {
     pub wasi_enabled: bool,
     /// Whether this linker has been disposed
     pub disposed: bool,
+    /// Whether host functions have been instantiated
+    pub host_functions_instantiated: bool,
 }
 
 /// Host function definition with metadata
@@ -307,6 +309,7 @@ impl Linker {
             instantiation_count: 0,
             wasi_enabled: config.enable_wasi,
             disposed: false,
+            host_functions_instantiated: false,
         };
 
         let mut result = Self {
@@ -400,6 +403,12 @@ impl Linker {
             });
         }
 
+        // Check if host functions have already been instantiated
+        if self.metadata.host_functions_instantiated {
+            log::debug!("Host functions already instantiated, skipping");
+            return Ok(());
+        }
+
         let mut linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
@@ -424,6 +433,9 @@ impl Linker {
                 backtrace: None
             })?;
         }
+
+        // Mark host functions as instantiated
+        self.metadata.host_functions_instantiated = true;
 
         log::debug!("Successfully instantiated {} host functions", self.host_functions.len());
         Ok(())
