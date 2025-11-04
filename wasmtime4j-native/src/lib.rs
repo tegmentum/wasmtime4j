@@ -232,10 +232,8 @@ pub mod hot_reload;
 // WebAssembly GC implementation
 pub mod gc_types;
 pub mod gc_heap;
-// TODO: Fix wasmtime::I31Ref usage
-// pub mod gc_operations;
-// TODO: Re-enable when gc_operations module is available
-// pub mod gc;
+pub mod gc_operations;
+pub mod gc;
 
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};

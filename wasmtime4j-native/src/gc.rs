@@ -157,14 +157,18 @@ impl WasmGcRuntime {
     ) -> StructOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
-                .unwrap_or_else(|_| return StructOperationResult {
-                    success: false,
-                    object_id: None,
-                value: None,
-                    error: Some("Failed to acquire object ID lock".to_string()),
-                });
+            let mut next_id = match self.next_object_id.lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return StructOperationResult {
+                        success: false,
+                        object_id: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
             let id = *next_id;
             *next_id += 1;
             id
@@ -231,15 +235,15 @@ impl WasmGcRuntime {
     pub fn struct_new_default(&self, type_def: StructTypeDefinition) -> StructOperationResult {
         let default_values: Vec<GcValue> = type_def.fields.iter().map(|field| {
             match &field.field_type {
-                FieldType::I32 => GcValue::I32(0),
-                FieldType::I64 => GcValue::I64(0),
-                FieldType::F32 => GcValue::F32(0.0),
-                FieldType::F64 => GcValue::F64(0.0),
-                FieldType::V128 => GcValue::V128([0; 16]),
-                FieldType::V256 => GcValue::V256([0; 32]),
-                FieldType::V512 => GcValue::V512([0; 64]),
-                FieldType::PackedI8 | FieldType::PackedI16 => GcValue::I32(0),
-                FieldType::Reference(_) => GcValue::Null,
+                crate::gc_types::FieldType::I32 => GcValue::I32(0),
+                crate::gc_types::FieldType::I64 => GcValue::I64(0),
+                crate::gc_types::FieldType::F32 => GcValue::F32(0.0),
+                crate::gc_types::FieldType::F64 => GcValue::F64(0.0),
+                crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
+                crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
+                crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
+                crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => GcValue::I32(0),
+                crate::gc_types::FieldType::Reference(_) => GcValue::Null,
             }
         }).collect();
 
@@ -378,15 +382,19 @@ impl WasmGcRuntime {
     ) -> ArrayOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
-                .unwrap_or_else(|_| return ArrayOperationResult {
-                    success: false,
-                    object_id: None,
-                value: None,
-                    length: None,
-                    error: Some("Failed to acquire object ID lock".to_string()),
-                });
+            let mut next_id = match self.next_object_id.lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return ArrayOperationResult {
+                        success: false,
+                        object_id: None,
+                        value: None,
+                        length: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
             let id = *next_id;
             *next_id += 1;
             id
@@ -423,7 +431,7 @@ impl WasmGcRuntime {
             if let Some(gc_ref) = result.gc_array {
                 let wasmtime_ref = WasmtimeGcRef {
                     gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::ArrayRef(type_def.clone()),
+                    ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
                     object_id,
                 };
 
@@ -456,15 +464,15 @@ impl WasmGcRuntime {
     /// Create a new array instance with default values (array.new_default) including advanced SIMD
     pub fn array_new_default(&self, type_def: ArrayTypeDefinition, length: u32) -> ArrayOperationResult {
         let default_value = match &type_def.element_type {
-            FieldType::I32 => GcValue::I32(0),
-            FieldType::I64 => GcValue::I64(0),
-            FieldType::F32 => GcValue::F32(0.0),
-            FieldType::F64 => GcValue::F64(0.0),
-            FieldType::V128 => GcValue::V128([0; 16]),
-            FieldType::V256 => GcValue::V256([0; 32]),
-            FieldType::V512 => GcValue::V512([0; 64]),
-            FieldType::PackedI8 | FieldType::PackedI16 => GcValue::I32(0),
-            FieldType::Reference(_) => GcValue::Null,
+            crate::gc_types::FieldType::I32 => GcValue::I32(0),
+            crate::gc_types::FieldType::I64 => GcValue::I64(0),
+            crate::gc_types::FieldType::F32 => GcValue::F32(0.0),
+            crate::gc_types::FieldType::F64 => GcValue::F64(0.0),
+            crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
+            crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
+            crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
+            crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => GcValue::I32(0),
+            crate::gc_types::FieldType::Reference(_) => GcValue::Null,
         };
 
         let elements = vec![default_value; length as usize];
@@ -949,17 +957,21 @@ impl WasmGcRuntime {
     pub fn i31_new(&self, value: i32) -> RefOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
-                .unwrap_or_else(|_| return RefOperationResult {
-                    success: false,
-                    cast_result: None,
-                    test_result: None,
-                    eq_result: None,
-                    is_null: None,
-                value: None,
-                    error: Some("Failed to acquire object ID lock".to_string()),
-                });
+            let mut next_id = match self.next_object_id.lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return RefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
             let id = *next_id;
             *next_id += 1;
             id
@@ -1099,7 +1111,7 @@ impl WasmGcRuntime {
 
     /// Trigger garbage collection
     pub fn collect_garbage(&self) -> WasmtimeResult<GcCollectionResult> {
-        self.heap.collect_garbage(gc_heap::CollectionTrigger::Explicit)
+        self.heap.collect_garbage(CollectionTrigger::Explicit)
     }
 
     /// Create weak reference
@@ -1133,12 +1145,12 @@ impl WasmGcRuntime {
         // This prepares for future advanced GC algorithms in Wasmtime
         if concurrent {
             // Future: concurrent GC support
-            self.heap.collect_garbage(gc_heap::CollectionTrigger::Explicit)
+            self.heap.collect_garbage(CollectionTrigger::Explicit)
         } else if let Some(_pause_limit) = max_pause_millis {
             // Future: incremental GC with pause time limits
-            self.heap.collect_garbage(gc_heap::CollectionTrigger::Explicit)
+            self.heap.collect_garbage(CollectionTrigger::Explicit)
         } else {
-            self.heap.collect_garbage(gc_heap::CollectionTrigger::Explicit)
+            self.heap.collect_garbage(CollectionTrigger::Explicit)
         }
     }
 
@@ -1187,18 +1199,18 @@ impl WasmGcRuntime {
 
 
     /// Convert our FieldType to Wasmtime's ValType including advanced SIMD support
-    fn convert_field_type_to_wasmtime(&self, field_type: &FieldType) -> WasmtimeResult<ValType> {
+    fn convert_field_type_to_wasmtime(&self, field_type: &crate::gc_types::FieldType) -> WasmtimeResult<ValType> {
         match field_type {
-            FieldType::I32 => Ok(ValType::I32),
-            FieldType::I64 => Ok(ValType::I64),
-            FieldType::F32 => Ok(ValType::F32),
-            FieldType::F64 => Ok(ValType::F64),
-            FieldType::V128 => Ok(ValType::V128),
+            crate::gc_types::FieldType::I32 => Ok(ValType::I32),
+            crate::gc_types::FieldType::I64 => Ok(ValType::I64),
+            crate::gc_types::FieldType::F32 => Ok(ValType::F32),
+            crate::gc_types::FieldType::F64 => Ok(ValType::F64),
+            crate::gc_types::FieldType::V128 => Ok(ValType::V128),
             // Note: V256 and V512 are not standard Wasmtime types yet, map to V128 for now
-            FieldType::V256 => Ok(ValType::V128), // Future-ready: will map to native V256 when available
-            FieldType::V512 => Ok(ValType::V128), // Future-ready: will map to native V512 when available
-            FieldType::PackedI8 | FieldType::PackedI16 => Ok(ValType::I32), // Packed types stored as i32
-            FieldType::Reference(ref_type) => {
+            crate::gc_types::FieldType::V256 => Ok(ValType::V128), // Future-ready: will map to native V256 when available
+            crate::gc_types::FieldType::V512 => Ok(ValType::V128), // Future-ready: will map to native V512 when available
+            crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => Ok(ValType::I32), // Packed types stored as i32
+            crate::gc_types::FieldType::Reference(ref_type) => {
                 match ref_type {
                     GcReferenceType::AnyRef => Ok(ValType::Ref(RefType::new(true, HeapType::Any))),
                     GcReferenceType::EqRef => Ok(ValType::Ref(RefType::new(true, HeapType::Eq))),
@@ -1215,25 +1227,25 @@ impl WasmGcRuntime {
         match gc_value {
             GcValue::I32(i) => Ok(Val::I32(*i)),
             GcValue::I64(i) => Ok(Val::I64(*i)),
-            GcValue::F32(f) => Ok(Val::F32(*f)),
-            GcValue::F64(f) => Ok(Val::F64(*f)),
+            GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
+            GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
             GcValue::V128(bytes) => {
                 let value = u128::from_le_bytes(*bytes);
-                Ok(Val::V128(value))
+                Ok(Val::V128(V128::from(value)))
             },
             GcValue::V256(bytes) => {
                 // For V256, encode as V128 for now (future: native V256 support)
                 let mut v128_bytes = [0u8; 16];
                 v128_bytes.copy_from_slice(&bytes[0..16]); // Take first 128 bits
                 let value = u128::from_le_bytes(v128_bytes);
-                Ok(Val::V128(value))
+                Ok(Val::V128(V128::from(value)))
             },
             GcValue::V512(bytes) => {
                 // For V512, encode as V128 for now (future: native V512 support)
                 let mut v128_bytes = [0u8; 16];
                 v128_bytes.copy_from_slice(&bytes[0..16]); // Take first 128 bits
                 let value = u128::from_le_bytes(v128_bytes);
-                Ok(Val::V128(value))
+                Ok(Val::V128(V128::from(value)))
             },
             GcValue::Reference(_) => {
                 // For references, we'd need to resolve the ObjectId
@@ -1251,13 +1263,13 @@ impl WasmGcRuntime {
         match val {
             Val::I32(i) => Ok(GcValue::I32(*i)),
             Val::I64(i) => Ok(GcValue::I64(*i)),
-            Val::F32(f) => Ok(GcValue::F32(*f)),
-            Val::F64(f) => Ok(GcValue::F64(*f)),
+            Val::F32(f) => Ok(GcValue::F32(f32::from_bits(*f))),
+            Val::F64(f) => Ok(GcValue::F64(f64::from_bits(*f))),
             Val::V128(v) => {
-                let bytes = v.to_le_bytes();
+                let bytes = v.as_u128().to_le_bytes();
                 Ok(GcValue::V128(bytes))
             },
-            Val::AnyRef(_) | Val::FuncRef(_) => {
+            Val::AnyRef(_) | Val::FuncRef(_) | Val::ExternRef(_) | Val::ExnRef(_) | Val::ContRef(_) => {
                 // For references, we'd need more complex conversion
                 // For now, return null
                 Ok(GcValue::Null)
@@ -1303,7 +1315,7 @@ mod tests {
             fields: vec![
                 FieldDefinition {
                     name: Some("x".to_string()),
-                    field_type: FieldType::I32,
+                    field_type: crate::gc_types::FieldType::I32,
                     mutable: true,
                     index: 0,
                 },
@@ -1340,7 +1352,7 @@ mod tests {
         // Register array type
         let array_def = ArrayTypeDefinition {
             type_id: 0,
-            element_type: FieldType::I32,
+            element_type: crate::gc_types::FieldType::I32,
             mutable: true,
             name: Some("IntArray".to_string()),
         };
@@ -1466,7 +1478,7 @@ mod tests {
         // Register array type
         let array_def = ArrayTypeDefinition {
             type_id: 1,
-            element_type: FieldType::I32,
+            element_type: crate::gc_types::FieldType::I32,
             mutable: true,
             name: Some("IntArray".to_string()),
         };
@@ -1515,7 +1527,7 @@ mod tests {
         // Register array type
         let array_def = ArrayTypeDefinition {
             type_id: 1,
-            element_type: FieldType::I32,
+            element_type: crate::gc_types::FieldType::I32,
             mutable: true,
             name: Some("IntArray".to_string()),
         };
@@ -1629,13 +1641,13 @@ mod tests {
             fields: vec![
                 FieldDefinition {
                     name: Some("x".to_string()),
-                    field_type: FieldType::I32,
+                    field_type: crate::gc_types::FieldType::I32,
                     mutable: true,
                     index: 0,
                 },
                 FieldDefinition {
                     name: Some("y".to_string()),
-                    field_type: FieldType::F64,
+                    field_type: crate::gc_types::FieldType::F64,
                     mutable: true,
                     index: 1,
                 },

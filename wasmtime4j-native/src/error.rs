@@ -514,6 +514,14 @@ impl From<jni::errors::Error> for WasmtimeError {
 }
 
 impl WasmtimeError {
+    /// Create error from string (migration helper for GC implementation)
+    pub fn from_string(msg: impl Into<String>) -> Self {
+        WasmtimeError::Runtime {
+            message: msg.into(),
+            backtrace: None,
+        }
+    }
+
     /// Get error message as C string for FFI
     pub fn to_c_string(&self) -> CString {
         CString::new(self.to_string()).unwrap_or_else(|_| {
