@@ -128,14 +128,23 @@ public enum WasmValueType {
    * @return the native type code for Wasmtime
    */
   public int toNativeTypeCode() {
-    return switch (this) {
-      case I32 -> 0;
-      case I64 -> 1;
-      case F32 -> 2;
-      case F64 -> 3;
-      case V128 -> 4;
-      case FUNCREF -> 5;
-      case EXTERNREF -> 6;
-    };
+    switch (this) {
+      case I32:
+        return 0;
+      case I64:
+        return 1;
+      case F32:
+        return 2;
+      case F64:
+        return 3;
+      case V128:
+        return 4;
+      case FUNCREF:
+        return 5;
+      case EXTERNREF:
+        return 6;
+      default:
+        throw new IllegalStateException("Unknown value type: " + this);
+    }
   }
 }

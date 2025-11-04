@@ -213,17 +213,13 @@ public final class EquivalentJavaTestGenerator {
             saveWatToFile(watCode, metadata.getCategory(), metadata.getTestName());
         code.append(indent(generateWatLoadCode(resourcePath), 4));
       } else {
-        // Inline WAT string
-        code.append("    final String wat = \"\"\"\n");
-        code.append(indent(escapeWatCode(watCode), 8));
-        code.append("    \"\"\";\n");
+        // Inline WAT string (Java 8 compatible)
+        code.append(generateInlineWatString(watCode));
       }
     } catch (final IOException e) {
       LOGGER.warning("Failed to save WAT to file, falling back to inline: " + e.getMessage());
       // Fallback to inline
-      code.append("    final String wat = \"\"\"\n");
-      code.append(indent(escapeWatCode(watCode), 8));
-      code.append("    \"\"\";\n");
+      code.append(generateInlineWatString(watCode));
     }
     code.append("\n");
 
@@ -306,24 +302,55 @@ public final class EquivalentJavaTestGenerator {
   }
 
   /**
-   * Generates code to load WAT from a resource file.
+   * Generates code to load WAT from a resource file (Java 8 compatible).
    *
    * @param resourcePath path to the resource file
    * @return Java code to load WAT from file
    */
   private String generateWatLoadCode(final String resourcePath) {
-    return String.format(
-        """
-        final String wat;
-        try (final InputStream is = getClass().getResourceAsStream("%s")) {
-          if (is == null) {
-            throw new AssertionError("WAT resource not found: %s");
-          }
-          wat = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-        } catch (final java.io.IOException e) {
-          throw new AssertionError("Failed to load WAT resource: " + e.getMessage(), e);
-        }
-        """,
-        resourcePath, resourcePath);
+    final StringBuilder code = new StringBuilder();
+    code.append("    final String wat;\n");
+    code.append("    try (final InputStream is = getClass().getResourceAsStream(\"")
+        .append(resourcePath)
+        .append("\")) {\n");
+    code.append("      if (is == null) {\n");
+    code.append("        throw new AssertionError(\"WAT resource not found: ")
+        .append(resourcePath)
+        .append("\");\n");
+    code.append("      }\n");
+    code.append(
+        "      wat = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);\n");
+    code.append("    } catch (final java.io.IOException e) {\n");
+    code.append(
+        "      throw new AssertionError(\"Failed to load WAT resource: \" + e.getMessage(), e);\n");
+    code.append("    }\n");
+    return code.toString();
+  }
+
+  /**
+   * Generates inline WAT string as Java 8 compatible string concatenation.
+   *
+   * @param watCode the WAT code to inline
+   * @return Java code declaring WAT string variable
+   */
+  private String generateInlineWatString(final String watCode) {
+    final StringBuilder code = new StringBuilder();
+    final String escapedWat = escapeWatCode(watCode);
+    final String[] lines = escapedWat.split("\n");
+
+    code.append("    final String wat =\n");
+    for (int i = 0; i < lines.length; i++) {
+      code.append("        \"");
+      // Escape quotes for Java string literal
+      code.append(lines[i].replace("\"", "\\\""));
+      code.append("\\n\"");
+      if (i < lines.length - 1) {
+        code.append("\n            + ");
+      } else {
+        code.append(";\n");
+      }
+    }
+
+    return code.toString();
   }
 }
