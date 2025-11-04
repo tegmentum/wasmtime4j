@@ -40,12 +40,10 @@ class WitInterfaceParserTest {
   @DisplayName("Test simple interface parsing")
   void testSimpleInterfaceParsing() throws WasmException {
     final String witText =
-        """
-        interface calculator {
-            add: func(a: s32, b: s32) -> s32;
-            subtract: func(a: s32, b: s32) -> s32;
-        }
-        """;
+        "interface calculator {\n"
+            + "    add: func(a: s32, b: s32) -> s32;\n"
+            + "    subtract: func(a: s32, b: s32) -> s32;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "math");
 
@@ -68,23 +66,21 @@ class WitInterfaceParserTest {
   @DisplayName("Test interface with types parsing")
   void testInterfaceWithTypesParsing() throws WasmException {
     final String witText =
-        """
-        interface shapes {
-            type point = record {
-                x: f64,
-                y: f64
-            };
-
-            type color = enum {
-                red,
-                green,
-                blue
-            };
-
-            create-point: func(x: f64, y: f64) -> point;
-            get-distance: func(p1: point, p2: point) -> f64;
-        }
-        """;
+        "interface shapes {\n"
+            + "    type point = record {\n"
+            + "        x: f64,\n"
+            + "        y: f64\n"
+            + "    };\n"
+            + "\n"
+            + "    type color = enum {\n"
+            + "        red,\n"
+            + "        green,\n"
+            + "        blue\n"
+            + "    };\n"
+            + "\n"
+            + "    create-point: func(x: f64, y: f64) -> point;\n"
+            + "    get-distance: func(p1: point, p2: point) -> f64;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "graphics");
 
@@ -106,20 +102,18 @@ class WitInterfaceParserTest {
   @DisplayName("Test complex types parsing")
   void testComplexTypesParsing() throws WasmException {
     final String witText =
-        """
-        interface advanced {
-            type result-type = result<string, s32>;
-            type optional-value = option<f64>;
-            type string-list = list<string>;
-            type permissions = flags {
-                read,
-                write,
-                execute
-            };
-
-            process-data: func(input: string-list, perms: permissions) -> result-type;
-        }
-        """;
+        "interface advanced {\n"
+            + "    type result-type = result<string, s32>;\n"
+            + "    type optional-value = option<f64>;\n"
+            + "    type string-list = list<string>;\n"
+            + "    type permissions = flags {\n"
+            + "        read,\n"
+            + "        write,\n"
+            + "        execute\n"
+            + "    };\n"
+            + "\n"
+            + "    process-data: func(input: string-list, perms: permissions) -> result-type;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "advanced");
 
@@ -141,17 +135,15 @@ class WitInterfaceParserTest {
   @DisplayName("Test variant type parsing")
   void testVariantTypeParsing() throws WasmException {
     final String witText =
-        """
-        interface messaging {
-            type message = variant {
-                text(string),
-                binary(list<u8>),
-                empty
-            };
-
-            send-message: func(msg: message);
-        }
-        """;
+        "interface messaging {\n"
+            + "    type message = variant {\n"
+            + "        text(string),\n"
+            + "        binary(list<u8>),\n"
+            + "        empty\n"
+            + "    };\n"
+            + "\n"
+            + "    send-message: func(msg: message);\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "messaging");
 
@@ -168,12 +160,10 @@ class WitInterfaceParserTest {
   @DisplayName("Test function with no parameters")
   void testFunctionWithNoParameters() throws WasmException {
     final String witText =
-        """
-        interface service {
-            get-status: func() -> string;
-            reset: func();
-        }
-        """;
+        "interface service {\n"
+            + "    get-status: func() -> string;\n"
+            + "    reset: func();\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "service");
 
@@ -189,12 +179,10 @@ class WitInterfaceParserTest {
   @DisplayName("Test function with no return type")
   void testFunctionWithNoReturnType() throws WasmException {
     final String witText =
-        """
-        interface logger {
-            log-message: func(level: string, message: string);
-            clear-log: func();
-        }
-        """;
+        "interface logger {\n"
+            + "    log-message: func(level: string, message: string);\n"
+            + "    clear-log: func();\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "logging");
 
@@ -210,23 +198,21 @@ class WitInterfaceParserTest {
   @DisplayName("Test nested record types")
   void testNestedRecordTypes() throws WasmException {
     final String witText =
-        """
-        interface nested {
-            type address = record {
-                street: string,
-                city: string,
-                zip: string
-            };
-
-            type person = record {
-                name: string,
-                age: u32,
-                address: address
-            };
-
-            create-person: func(name: string, age: u32, addr: address) -> person;
-        }
-        """;
+        "interface nested {\n"
+            + "    type address = record {\n"
+            + "        street: string,\n"
+            + "        city: string,\n"
+            + "        zip: string\n"
+            + "    };\n"
+            + "\n"
+            + "    type person = record {\n"
+            + "        name: string,\n"
+            + "        age: u32,\n"
+            + "        address: address\n"
+            + "    };\n"
+            + "\n"
+            + "    create-person: func(name: string, age: u32, addr: address) -> person;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "people");
 
@@ -249,10 +235,7 @@ class WitInterfaceParserTest {
   @Test
   @DisplayName("Test empty interface")
   void testEmptyInterface() throws WasmException {
-    final String witText = """
-        interface empty {
-        }
-        """;
+    final String witText = "interface empty {\n" + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "empty");
 
@@ -265,18 +248,10 @@ class WitInterfaceParserTest {
   @DisplayName("Test interface compatibility checking")
   void testInterfaceCompatibilityChecking() throws WasmException {
     final String witText1 =
-        """
-        interface math {
-            add: func(a: s32, b: s32) -> s32;
-        }
-        """;
+        "interface math {\n" + "    add: func(a: s32, b: s32) -> s32;\n" + "}\n";
 
     final String witText2 =
-        """
-        interface math {
-            add: func(a: s32, b: s32) -> s32;
-        }
-        """;
+        "interface math {\n" + "    add: func(a: s32, b: s32) -> s32;\n" + "}\n";
 
     final WitInterfaceDefinition def1 = parser.parseInterface(witText1, "math");
     final WitInterfaceDefinition def2 = parser.parseInterface(witText2, "math");
@@ -290,18 +265,10 @@ class WitInterfaceParserTest {
   @DisplayName("Test interface incompatibility")
   void testInterfaceIncompatibility() throws WasmException {
     final String witText1 =
-        """
-        interface math {
-            add: func(a: s32, b: s32) -> s32;
-        }
-        """;
+        "interface math {\n" + "    add: func(a: s32, b: s32) -> s32;\n" + "}\n";
 
     final String witText2 =
-        """
-        interface calculator {
-            multiply: func(x: f64, y: f64) -> f64;
-        }
-        """;
+        "interface calculator {\n" + "    multiply: func(x: f64, y: f64) -> f64;\n" + "}\n";
 
     final WitInterfaceDefinition def1 = parser.parseInterface(witText1, "math");
     final WitInterfaceDefinition def2 = parser.parseInterface(witText2, "calc");
@@ -315,11 +282,7 @@ class WitInterfaceParserTest {
   @DisplayName("Test WIT text preservation")
   void testWitTextPreservation() throws WasmException {
     final String originalWitText =
-        """
-        interface test {
-            hello: func() -> string;
-        }
-        """;
+        "interface test {\n" + "    hello: func() -> string;\n" + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(originalWitText, "test");
     assertEquals(originalWitText, definition.getWitText());
@@ -338,23 +301,21 @@ class WitInterfaceParserTest {
   @DisplayName("Test multiple primitive types")
   void testMultiplePrimitiveTypes() throws WasmException {
     final String witText =
-        """
-        interface primitives {
-            test-bool: func(value: bool) -> bool;
-            test-u8: func(value: u8) -> u8;
-            test-s8: func(value: s8) -> s8;
-            test-u16: func(value: u16) -> u16;
-            test-s16: func(value: s16) -> s16;
-            test-u32: func(value: u32) -> u32;
-            test-s32: func(value: s32) -> s32;
-            test-u64: func(value: u64) -> u64;
-            test-s64: func(value: s64) -> s64;
-            test-float32: func(value: float32) -> float32;
-            test-float64: func(value: float64) -> float64;
-            test-char: func(value: char) -> char;
-            test-string: func(value: string) -> string;
-        }
-        """;
+        "interface primitives {\n"
+            + "    test-bool: func(value: bool) -> bool;\n"
+            + "    test-u8: func(value: u8) -> u8;\n"
+            + "    test-s8: func(value: s8) -> s8;\n"
+            + "    test-u16: func(value: u16) -> u16;\n"
+            + "    test-s16: func(value: s16) -> s16;\n"
+            + "    test-u32: func(value: u32) -> u32;\n"
+            + "    test-s32: func(value: s32) -> s32;\n"
+            + "    test-u64: func(value: u64) -> u64;\n"
+            + "    test-s64: func(value: s64) -> s64;\n"
+            + "    test-float32: func(value: float32) -> float32;\n"
+            + "    test-float64: func(value: float64) -> float64;\n"
+            + "    test-char: func(value: char) -> char;\n"
+            + "    test-string: func(value: string) -> string;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "primitives");
 
@@ -383,20 +344,18 @@ class WitInterfaceParserTest {
   @DisplayName("Test complex function signatures")
   void testComplexFunctionSignatures() throws WasmException {
     final String witText =
-        """
-        interface complex {
-            type data = record {
-                values: list<s32>,
-                metadata: option<string>
-            };
-
-            process: func(
-                input: data,
-                options: flags { verbose, debug, trace },
-                callback: option<string>
-            ) -> result<data, string>;
-        }
-        """;
+        "interface complex {\n"
+            + "    type data = record {\n"
+            + "        values: list<s32>,\n"
+            + "        metadata: option<string>\n"
+            + "    };\n"
+            + "\n"
+            + "    process: func(\n"
+            + "        input: data,\n"
+            + "        options: flags { verbose, debug, trace },\n"
+            + "        callback: option<string>\n"
+            + "    ) -> result<data, string>;\n"
+            + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(witText, "complex");
 

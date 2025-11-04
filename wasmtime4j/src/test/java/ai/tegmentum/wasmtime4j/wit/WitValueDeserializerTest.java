@@ -1,0 +1,664 @@
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.wit;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/** Comprehensive unit tests for WitValueDeserializer. */
+@DisplayName("WitValueDeserializer Tests")
+final class WitValueDeserializerTest {
+
+  @Test
+  @DisplayName("Deserialize bool true from binary format")
+  void testDeserializeBoolTrue() throws WitValueException {
+    final byte[] data = {(byte) 1};
+    final WitValue result = WitValueDeserializer.deserialize(1, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitBool.class, result, "Result should be WitBool");
+    assertTrue(((WitBool) result).getValue(), "Value should be true");
+  }
+
+  @Test
+  @DisplayName("Deserialize bool false from binary format")
+  void testDeserializeBoolFalse() throws WitValueException {
+    final byte[] data = {(byte) 0};
+    final WitValue result = WitValueDeserializer.deserialize(1, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitBool.class, result, "Result should be WitBool");
+    assertFalse(((WitBool) result).getValue(), "Value should be false");
+  }
+
+  @Test
+  @DisplayName("Deserialize bool with non-zero byte as true")
+  void testDeserializeBoolNonZero() throws WitValueException {
+    final byte[] data = {(byte) 255};
+    final WitValue result = WitValueDeserializer.deserialize(1, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitBool.class, result, "Result should be WitBool");
+    assertTrue(((WitBool) result).getValue(), "Non-zero byte should deserialize to true");
+  }
+
+  @Test
+  @DisplayName("Deserialize bool with invalid size throws exception")
+  void testDeserializeBoolInvalidSize() {
+    final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 1
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(1, data),
+            "Should throw exception for invalid size");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid bool data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 positive value from little-endian")
+  void testDeserializeS32Positive() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(42);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS32.class, result, "Result should be WitS32");
+    assertEquals(42, ((WitS32) result).getValue(), "Value should be 42");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 negative value from little-endian")
+  void testDeserializeS32Negative() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-999);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS32.class, result, "Result should be WitS32");
+    assertEquals(-999, ((WitS32) result).getValue(), "Value should be -999");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 max value")
+  void testDeserializeS32Max() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(Integer.MAX_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS32.class, result, "Result should be WitS32");
+    assertEquals(Integer.MAX_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MAX_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 min value")
+  void testDeserializeS32Min() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(Integer.MIN_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS32.class, result, "Result should be WitS32");
+    assertEquals(Integer.MIN_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MIN_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 with invalid size throws exception")
+  void testDeserializeS32InvalidSize() {
+    final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(2, data),
+            "Should throw exception for invalid size");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid s32 data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 positive value from little-endian")
+  void testDeserializeS64Positive() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(1_000_000_000_000L);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(3, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS64.class, result, "Result should be WitS64");
+    assertEquals(1_000_000_000_000L, ((WitS64) result).getValue(), "Value should be 1 trillion");
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 negative value from little-endian")
+  void testDeserializeS64Negative() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(-9_999_999_999L);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(3, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS64.class, result, "Result should be WitS64");
+    assertEquals(-9_999_999_999L, ((WitS64) result).getValue(), "Value should be -9999999999");
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 max value")
+  void testDeserializeS64Max() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(Long.MAX_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(3, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS64.class, result, "Result should be WitS64");
+    assertEquals(Long.MAX_VALUE, ((WitS64) result).getValue(), "Value should be Long.MAX_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 min value")
+  void testDeserializeS64Min() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(Long.MIN_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(3, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitS64.class, result, "Result should be WitS64");
+    assertEquals(Long.MIN_VALUE, ((WitS64) result).getValue(), "Value should be Long.MIN_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 with invalid size throws exception")
+  void testDeserializeS64InvalidSize() {
+    final byte[] data = {(byte) 0, (byte) 1, (byte) 2, (byte) 3}; // 4 bytes instead of 8
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(3, data),
+            "Should throw exception for invalid size");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid s64 data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 positive value from little-endian IEEE 754")
+  void testDeserializeFloat64Positive() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putDouble(3.14159);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(4, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
+    assertEquals(3.14159, ((WitFloat64) result).getValue(), 1e-10, "Value should be 3.14159");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 negative value from little-endian IEEE 754")
+  void testDeserializeFloat64Negative() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putDouble(-999.99);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(4, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
+    assertEquals(-999.99, ((WitFloat64) result).getValue(), 1e-10, "Value should be -999.99");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 zero")
+  void testDeserializeFloat64Zero() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putDouble(0.0);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(4, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
+    assertEquals(0.0, ((WitFloat64) result).getValue(), "Value should be 0.0");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 max value")
+  void testDeserializeFloat64Max() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putDouble(Double.MAX_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(4, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
+    assertEquals(
+        Double.MAX_VALUE, ((WitFloat64) result).getValue(), "Value should be Double.MAX_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 min positive value")
+  void testDeserializeFloat64MinPositive() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putDouble(Double.MIN_VALUE);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(4, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
+    assertEquals(
+        Double.MIN_VALUE, ((WitFloat64) result).getValue(), "Value should be Double.MIN_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 with invalid size throws exception")
+  void testDeserializeFloat64InvalidSize() {
+    final byte[] data = {(byte) 0, (byte) 1, (byte) 2, (byte) 3}; // 4 bytes instead of 8
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(4, data),
+            "Should throw exception for invalid size");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid float64 data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize char ASCII value from little-endian codepoint")
+  void testDeserializeCharAscii() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt((int) 'A');
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(5, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitChar.class, result, "Result should be WitChar");
+    assertEquals((int) 'A', ((WitChar) result).getCodepoint(), "Codepoint should be 'A'");
+  }
+
+  @Test
+  @DisplayName("Deserialize char Unicode emoji from little-endian codepoint")
+  void testDeserializeCharEmoji() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0x1F980); // 🦀 crab emoji
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(5, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitChar.class, result, "Result should be WitChar");
+    assertEquals(0x1F980, ((WitChar) result).getCodepoint(), "Codepoint should be crab emoji");
+  }
+
+  @Test
+  @DisplayName("Deserialize char Chinese character from little-endian codepoint")
+  void testDeserializeCharChinese() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt((int) '中');
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(5, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitChar.class, result, "Result should be WitChar");
+    assertEquals((int) '中', ((WitChar) result).getCodepoint(), "Codepoint should be '中'");
+  }
+
+  @Test
+  @DisplayName("Deserialize char null character")
+  void testDeserializeCharNull() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0x0000);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(5, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitChar.class, result, "Result should be WitChar");
+    assertEquals(0x0000, ((WitChar) result).getCodepoint(), "Codepoint should be null character");
+  }
+
+  @Test
+  @DisplayName("Deserialize char max Unicode value")
+  void testDeserializeCharMaxUnicode() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0x10FFFF);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(5, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitChar.class, result, "Result should be WitChar");
+    assertEquals(0x10FFFF, ((WitChar) result).getCodepoint(), "Codepoint should be max Unicode");
+  }
+
+  @Test
+  @DisplayName("Deserialize char with invalid size throws exception")
+  void testDeserializeCharInvalidSize() {
+    final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(5, data),
+            "Should throw exception for invalid size");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid char data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize char with invalid codepoint throws exception")
+  void testDeserializeCharInvalidCodepoint() {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0xD800); // Surrogate codepoint (invalid)
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(5, data),
+            "Should throw exception for invalid codepoint");
+
+    assertTrue(
+        exception.getMessage().contains("codepoint"),
+        "Exception message should mention codepoint: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize string empty")
+  void testDeserializeStringEmpty() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // Length 0
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals("", ((WitString) result).getValue(), "Value should be empty string");
+  }
+
+  @Test
+  @DisplayName("Deserialize string ASCII")
+  void testDeserializeStringAscii() throws WitValueException {
+    final byte[] utf8Bytes = "hello".getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(utf8Bytes.length);
+    buffer.put(utf8Bytes);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals("hello", ((WitString) result).getValue(), "Value should be 'hello'");
+  }
+
+  @Test
+  @DisplayName("Deserialize string with Unicode characters")
+  void testDeserializeStringUnicode() throws WitValueException {
+    final byte[] utf8Bytes = "Hello 🦀 中文".getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(utf8Bytes.length);
+    buffer.put(utf8Bytes);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals("Hello 🦀 中文", ((WitString) result).getValue(), "Value should match original");
+  }
+
+  @Test
+  @DisplayName("Deserialize string with special characters")
+  void testDeserializeStringSpecialChars() throws WitValueException {
+    final byte[] utf8Bytes = "Line1\nLine2\tTab\r\nCRLF".getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(utf8Bytes.length);
+    buffer.put(utf8Bytes);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Deserialized result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals(
+        "Line1\nLine2\tTab\r\nCRLF", ((WitString) result).getValue(), "Value should match original");
+  }
+
+  @Test
+  @DisplayName("Deserialize string with size too small for length header throws exception")
+  void testDeserializeStringInvalidSizeNoLength() {
+    final byte[] data = {(byte) 0, (byte) 1}; // Only 2 bytes, need at least 4 for length
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(6, data),
+            "Should throw exception for data too small");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid string data size"),
+        "Exception message should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize string with negative length throws exception")
+  void testDeserializeStringNegativeLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1);
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(6, data),
+            "Should throw exception for negative length");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid string length"),
+        "Exception message should mention invalid length: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize string with length mismatch throws exception")
+  void testDeserializeStringLengthMismatch() {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(10); // Claims 10 bytes
+    buffer.put("hi".getBytes(StandardCharsets.UTF_8)); // But only provides 2
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(6, data),
+            "Should throw exception for length mismatch");
+
+    assertTrue(
+        exception.getMessage().contains("String data size mismatch"),
+        "Exception message should mention mismatch: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize with null data throws exception")
+  void testDeserializeNullData() {
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(1, null),
+            "Should throw exception for null data");
+
+    assertTrue(
+        exception.getMessage().contains("null"),
+        "Exception message should mention null: " + exception.getMessage());
+    assertEquals(
+        WitValueException.ErrorCode.NULL_VALUE,
+        exception.getCode(),
+        "Error code should be NULL_VALUE");
+  }
+
+  @Test
+  @DisplayName("Deserialize with invalid discriminator throws exception")
+  void testDeserializeInvalidDiscriminator() {
+    final byte[] data = {(byte) 0};
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(99, data),
+            "Should throw exception for invalid discriminator");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid type discriminator"),
+        "Exception message should mention invalid discriminator: " + exception.getMessage());
+    assertEquals(
+        WitValueException.ErrorCode.INVALID_FORMAT,
+        exception.getCode(),
+        "Error code should be INVALID_FORMAT");
+  }
+
+  @Test
+  @DisplayName("Round-trip bool preserves value")
+  void testRoundTripBool() throws WitValueException {
+    final WitBool original = WitBool.of(true);
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(1, serialized);
+
+    assertInstanceOf(WitBool.class, deserialized, "Deserialized value should be WitBool");
+    assertEquals(
+        original.getValue(),
+        ((WitBool) deserialized).getValue(),
+        "Round-trip should preserve value");
+  }
+
+  @Test
+  @DisplayName("Round-trip s32 preserves value")
+  void testRoundTripS32() throws WitValueException {
+    final WitS32 original = WitS32.of(-12345);
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(2, serialized);
+
+    assertInstanceOf(WitS32.class, deserialized, "Deserialized value should be WitS32");
+    assertEquals(
+        original.getValue(),
+        ((WitS32) deserialized).getValue(),
+        "Round-trip should preserve value");
+  }
+
+  @Test
+  @DisplayName("Round-trip s64 preserves value")
+  void testRoundTripS64() throws WitValueException {
+    final WitS64 original = WitS64.of(9_876_543_210L);
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(3, serialized);
+
+    assertInstanceOf(WitS64.class, deserialized, "Deserialized value should be WitS64");
+    assertEquals(
+        original.getValue(),
+        ((WitS64) deserialized).getValue(),
+        "Round-trip should preserve value");
+  }
+
+  @Test
+  @DisplayName("Round-trip float64 preserves value")
+  void testRoundTripFloat64() throws WitValueException {
+    final WitFloat64 original = WitFloat64.of(123.456789);
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(4, serialized);
+
+    assertInstanceOf(WitFloat64.class, deserialized, "Deserialized value should be WitFloat64");
+    assertEquals(
+        original.getValue(),
+        ((WitFloat64) deserialized).getValue(),
+        1e-10,
+        "Round-trip should preserve value");
+  }
+
+  @Test
+  @DisplayName("Round-trip char preserves value")
+  void testRoundTripChar() throws WitValueException {
+    final WitChar original = WitChar.of(0x1F980); // 🦀
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(5, serialized);
+
+    assertInstanceOf(WitChar.class, deserialized, "Deserialized value should be WitChar");
+    assertEquals(
+        original.getCodepoint(),
+        ((WitChar) deserialized).getCodepoint(),
+        "Round-trip should preserve value");
+  }
+
+  @Test
+  @DisplayName("Round-trip string preserves value")
+  void testRoundTripString() throws WitValueException {
+    final WitString original = WitString.of("Hello 🦀 World 中文");
+    final byte[] serialized = WitValueSerializer.serialize(original);
+    final WitValue deserialized = WitValueDeserializer.deserialize(6, serialized);
+
+    assertInstanceOf(WitString.class, deserialized, "Deserialized value should be WitString");
+    assertEquals(
+        original.getValue(),
+        ((WitString) deserialized).getValue(),
+        "Round-trip should preserve value");
+  }
+}

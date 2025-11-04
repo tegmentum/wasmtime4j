@@ -167,6 +167,15 @@ public abstract class WitTypeKind {
   public abstract WitTypeCategory getCategory();
 
   /**
+   * Gets the primitive type (only for primitive type kinds).
+   *
+   * @return the primitive type, or empty for non-primitive types
+   */
+  public Optional<WitPrimitiveType> getPrimitiveType() {
+    return Optional.empty(); // Default implementation for non-primitive types
+  }
+
+  /**
    * Gets the record field types (only for record types).
    *
    * @return map of field names to types, or empty map for non-record types
@@ -215,6 +224,11 @@ public abstract class WitTypeKind {
     @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.PRIMITIVE;
+    }
+
+    @Override
+    public Optional<WitPrimitiveType> getPrimitiveType() {
+      return Optional.of(primitive);
     }
 
     @Override

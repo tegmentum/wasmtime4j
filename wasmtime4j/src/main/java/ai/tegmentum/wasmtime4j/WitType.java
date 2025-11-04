@@ -69,6 +69,36 @@ public final class WitType {
         Optional.empty());
   }
 
+  /** Creates a boolean WIT type. */
+  public static WitType createBool() {
+    return primitive(WitPrimitiveType.BOOL);
+  }
+
+  /** Creates a signed 32-bit integer WIT type. */
+  public static WitType createS32() {
+    return primitive(WitPrimitiveType.S32);
+  }
+
+  /** Creates a signed 64-bit integer WIT type. */
+  public static WitType createS64() {
+    return primitive(WitPrimitiveType.S64);
+  }
+
+  /** Creates a 64-bit floating-point WIT type. */
+  public static WitType createFloat64() {
+    return primitive(WitPrimitiveType.FLOAT64);
+  }
+
+  /** Creates a Unicode character WIT type. */
+  public static WitType createChar() {
+    return primitive(WitPrimitiveType.CHAR);
+  }
+
+  /** Creates a UTF-8 string WIT type. */
+  public static WitType createString() {
+    return primitive(WitPrimitiveType.STRING);
+  }
+
   /**
    * Creates a record WIT type.
    *
