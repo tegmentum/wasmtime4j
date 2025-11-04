@@ -236,7 +236,7 @@ public final class PanamaGcRuntime implements GcRuntime {
    * @param engineHandle the native engine handle
    * @throws PanamaException if runtime creation fails
    */
-  public PanamaGcRuntime(final long engineHandle) {
+  public PanamaGcRuntime(final long engineHandle) throws PanamaException {
     if (engineHandle == 0) {
       throw new PanamaException("Invalid engine handle");
     }
@@ -257,7 +257,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public StructInstance createStruct(final StructType structType, final List<GcValue> fieldValues) {
+  public StructInstance createStruct(final StructType structType, final List<GcValue> fieldValues)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
     validateNotNull(fieldValues, "fieldValues");
@@ -292,7 +293,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public StructInstance createStruct(final StructType structType) {
+  public StructInstance createStruct(final StructType structType) throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
 
@@ -321,7 +322,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements) {
+  public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     validateNotNull(elements, "elements");
@@ -356,7 +358,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public ArrayInstance createArray(final ArrayType arrayType, final int length) {
+  public ArrayInstance createArray(final ArrayType arrayType, final int length) throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
     if (length < 0) {
@@ -388,7 +390,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public I31Instance createI31(final int value) {
+  public I31Instance createI31(final int value) throws GcException {
     validateNotDisposed();
 
     lock.readLock().lock();
@@ -413,7 +415,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public GcValue getStructField(final StructInstance struct, final int fieldIndex) {
+  public GcValue getStructField(final StructInstance struct, final int fieldIndex)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(struct, "struct");
     if (fieldIndex < 0) {
@@ -459,7 +462,7 @@ public final class PanamaGcRuntime implements GcRuntime {
 
   @Override
   public void setStructField(
-      final StructInstance struct, final int fieldIndex, final GcValue value) {
+      final StructInstance struct, final int fieldIndex, final GcValue value) throws GcException {
     validateNotDisposed();
     validateNotNull(struct, "struct");
     validateNotNull(value, "value");
@@ -502,7 +505,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public GcValue getArrayElement(final ArrayInstance array, final int elementIndex) {
+  public GcValue getArrayElement(final ArrayInstance array, final int elementIndex)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(array, "array");
     if (elementIndex < 0) {
@@ -552,7 +556,7 @@ public final class PanamaGcRuntime implements GcRuntime {
 
   @Override
   public void setArrayElement(
-      final ArrayInstance array, final int elementIndex, final GcValue value) {
+      final ArrayInstance array, final int elementIndex, final GcValue value) throws GcException {
     validateNotDisposed();
     validateNotNull(array, "array");
     validateNotNull(value, "value");
@@ -607,11 +611,11 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       if (!(array instanceof PanamaArrayInstance)) {
-        throw new GcException("Invalid array instance type");
+        throw new IllegalArgumentException("Invalid array instance type");
       }
 
       final PanamaArrayInstance panamaArray = (PanamaArrayInstance) array;
@@ -619,12 +623,12 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final int length = (int) arrayLen.invokeExact(nativeHandle, panamaArray.getObjectId());
         if (length < 0) {
-          throw new GcException("Failed to get array length");
+          throw new IllegalStateException("Failed to get array length");
         }
 
         return length;
       } catch (final Throwable e) {
-        throw new GcException("Failed to get array length", e);
+        throw new IllegalStateException("Failed to get array length", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -640,7 +644,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -654,11 +658,19 @@ public final class PanamaGcRuntime implements GcRuntime {
 
         return createGcObjectFromId(castObjectId, targetType);
       } catch (final Throwable e) {
-        throw new GcException("Failed to cast reference", e);
+        throw new IllegalStateException("Failed to cast reference", e);
       }
     } finally {
       lock.readLock().unlock();
     }
+  }
+
+  @Override
+  public GcObject refCastOptimized(
+      final GcObject object, final GcReferenceType targetType, final boolean enableCaching) {
+    // For now, delegate to non-optimized version
+    // TODO: Implement caching when enableCaching is true
+    return refCast(object, targetType);
   }
 
   @Override
@@ -670,7 +682,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -680,7 +692,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final byte result = (byte) refTest.invokeExact(nativeHandle, objectId, targetTypeId);
         return result != 0;
       } catch (final Throwable e) {
-        throw new GcException("Failed to test reference", e);
+        throw new IllegalStateException("Failed to test reference", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -701,7 +713,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId1 = getObjectId(obj1);
@@ -711,7 +723,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final byte result = (byte) refEq.invokeExact(nativeHandle, objectId1, objectId2);
         return result != 0;
       } catch (final Throwable e) {
-        throw new GcException("Failed to compare references", e);
+        throw new IllegalStateException("Failed to compare references", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -729,7 +741,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final long objectId = getObjectId(object);
@@ -738,7 +750,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final byte result = (byte) refIsNull.invokeExact(nativeHandle, objectId);
         return result != 0;
       } catch (final Throwable e) {
-        throw new GcException("Failed to check if reference is null", e);
+        throw new IllegalStateException("Failed to check if reference is null", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -746,7 +758,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public int registerStructType(final StructType structType) {
+  public int registerStructType(final StructType structType) throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
 
@@ -763,7 +775,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public int registerArrayType(final ArrayType arrayType) {
+  public int registerArrayType(final ArrayType arrayType) throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
 
@@ -780,13 +792,48 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
+  public void pinObject(final GcObject object) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement object pinning in native code
+    LOGGER.fine("Pinning object (not yet implemented): " + getObjectId(object));
+  }
+
+  @Override
+  public void unpinObject(final GcObject object) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement object unpinning in native code
+    LOGGER.fine("Unpinning object (not yet implemented): " + getObjectId(object));
+  }
+
+  @Override
+  public GcStats collectGarbageAdvanced(final Long maxPauseMillis, final boolean concurrent) {
+    validateNotDisposed();
+    // TODO: Implement advanced GC with pause time and concurrency controls
+    LOGGER.fine(
+        "Advanced GC requested (maxPause=" + maxPauseMillis + "ms, concurrent=" + concurrent + ")");
+    return collectGarbage();
+  }
+
+  @Override
+  public WeakGcReference createWeakReferenceAdvanced(
+      final GcObject object, final Runnable finalizationCallback) {
+    validateNotDisposed();
+    validateNotNull(object, "object");
+    // TODO: Implement weak reference creation with finalization callback
+    LOGGER.fine("Creating weak reference with finalization callback: " + getObjectId(object));
+    return createWeakReference(object, finalizationCallback);
+  }
+
+  @Override
   public GcStats collectGarbage() {
     validateNotDisposed();
 
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final MemorySegment statsSegment = arena.allocate(GC_STATS_LAYOUT);
@@ -794,12 +841,12 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final int result = (int) collectGarbage.invokeExact(nativeHandle, statsSegment);
         if (result != 0) {
-          throw new GcException("Failed to collect garbage");
+          throw new IllegalStateException("Failed to collect garbage");
         }
 
         return convertNativeToGcStats(statsSegment);
       } catch (final Throwable e) {
-        throw new GcException("Failed to collect garbage", e);
+        throw new IllegalStateException("Failed to collect garbage", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -813,7 +860,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     lock.readLock().lock();
     try {
       if (disposed) {
-        throw new GcException("GC runtime has been disposed");
+        throw new IllegalStateException("GC runtime has been disposed");
       }
 
       final MemorySegment statsSegment = arena.allocate(GC_STATS_LAYOUT);
@@ -821,12 +868,12 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final int result = (int) getGcStats.invokeExact(nativeHandle, statsSegment);
         if (result != 0) {
-          throw new GcException("Failed to get GC stats");
+          throw new IllegalStateException("Failed to get GC stats");
         }
 
         return convertNativeToGcStats(statsSegment);
       } catch (final Throwable e) {
-        throw new GcException("Failed to get GC stats", e);
+        throw new IllegalStateException("Failed to get GC stats", e);
       }
     } finally {
       lock.readLock().unlock();
@@ -870,9 +917,9 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
   }
 
-  private int registerStructTypeInternal(final StructType structType) {
+  private int registerStructTypeInternal(final StructType structType) throws GcException {
     final String name = structType.getName() != null ? structType.getName() : "";
-    final List<FieldDefinition> fields = structType.getFields();
+    final List<ai.tegmentum.wasmtime4j.gc.FieldDefinition> fields = structType.getFields();
 
     final MemorySegment nameSegment = arena.allocateFrom(name);
     final MemorySegment fieldNamesSegment = arena.allocate(ADDRESS, fields.size());
@@ -881,7 +928,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     final MemorySegment fieldMutabilitiesSegment = arena.allocate(JAVA_BYTE, fields.size());
 
     for (int i = 0; i < fields.size(); i++) {
-      final FieldDefinition field = fields.get(i);
+      final ai.tegmentum.wasmtime4j.gc.FieldDefinition field = fields.get(i);
 
       // Field name
       final String fieldName = field.getName() != null ? field.getName() : "";
@@ -891,7 +938,7 @@ public final class PanamaGcRuntime implements GcRuntime {
           JAVA_INT, i, fieldName.getBytes(StandardCharsets.UTF_8).length);
 
       // Field type
-      fieldTypesSegment.setAtIndex(JAVA_INT, i, convertFieldTypeToNative(field.getType()));
+      fieldTypesSegment.setAtIndex(JAVA_INT, i, convertFieldTypeToNative(field.getFieldType()));
 
       // Field mutability
       fieldMutabilitiesSegment.setAtIndex(JAVA_BYTE, i, (byte) (field.isMutable() ? 1 : 0));
@@ -920,7 +967,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
   }
 
-  private int registerArrayTypeInternal(final ArrayType arrayType) {
+  private int registerArrayTypeInternal(final ArrayType arrayType) throws GcException {
     final String name = arrayType.getName() != null ? arrayType.getName() : "";
     final MemorySegment nameSegment = arena.allocateFrom(name);
     final int elementTypeId = convertFieldTypeToNative(arrayType.getElementType());
@@ -983,7 +1030,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         // References need special handling - for now, return as zero
         return new NativeValue(0, 5);
       default:
-        throw new GcException("Unsupported GC value type: " + value.getType());
+        throw new IllegalArgumentException("Unsupported GC value type: " + value.getType());
     }
   }
 
@@ -1026,7 +1073,7 @@ public final class PanamaGcRuntime implements GcRuntime {
       case REFERENCE:
         return 7;
       default:
-        throw new GcException("Unsupported field type: " + fieldType.getKind());
+        throw new IllegalArgumentException("Unsupported field type: " + fieldType.getKind());
     }
   }
 
@@ -1043,7 +1090,7 @@ public final class PanamaGcRuntime implements GcRuntime {
       case ARRAY_REF:
         return 4;
       default:
-        throw new GcException("Unsupported reference type: " + refType);
+        throw new IllegalArgumentException("Unsupported reference type: " + refType);
     }
   }
 
@@ -1051,7 +1098,7 @@ public final class PanamaGcRuntime implements GcRuntime {
     if (object instanceof PanamaGcObject) {
       return ((PanamaGcObject) object).getObjectId();
     } else {
-      throw new GcException("Invalid GC object type");
+      throw new IllegalArgumentException("Invalid GC object type");
     }
   }
 
@@ -1079,47 +1126,17 @@ public final class PanamaGcRuntime implements GcRuntime {
     final int currentHeapSize = (int) currentHeapSizeHandle.get(statsSegment);
     final int peakHeapSize = (int) peakHeapSizeHandle.get(statsSegment);
 
-    return new GcStats() {
-      @Override
-      public long getTotalAllocated() {
-        return totalAllocated;
-      }
-
-      @Override
-      public long getTotalCollected() {
-        return totalCollected;
-      }
-
-      @Override
-      public long getBytesAllocated() {
-        return bytesAllocated;
-      }
-
-      @Override
-      public long getBytesCollected() {
-        return bytesCollected;
-      }
-
-      @Override
-      public long getMinorCollections() {
-        return minorCollections;
-      }
-
-      @Override
-      public long getMajorCollections() {
-        return majorCollections;
-      }
-
-      @Override
-      public long getCurrentHeapSize() {
-        return currentHeapSize;
-      }
-
-      @Override
-      public long getPeakHeapSize() {
-        return peakHeapSize;
-      }
-    };
+    return GcStats.builder()
+        .totalAllocated(totalAllocated)
+        .totalCollected(totalCollected)
+        .bytesAllocated(bytesAllocated)
+        .bytesCollected(bytesCollected)
+        .minorCollections(minorCollections)
+        .majorCollections(majorCollections)
+        .currentHeapSize(currentHeapSize)
+        .peakHeapSize(peakHeapSize)
+        .maxHeapSize(0)
+        .build();
   }
 
   // Helper classes for Panama GC objects
@@ -1133,6 +1150,47 @@ public final class PanamaGcRuntime implements GcRuntime {
 
     public long getObjectId() {
       return objectId;
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // Size would need to be queried from native side
+      return 0;
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      if (other instanceof PanamaGcObject) {
+        return ((PanamaGcObject) other).objectId == this.objectId;
+      }
+      return false;
+    }
+
+    @Override
+    public GcObject castTo(final GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return type == GcReferenceType.ANY_REF;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.ANY_REF;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
     }
   }
 
@@ -1158,18 +1216,56 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcValue getField(final int index) {
+    public GcValue getField(final int index) throws GcException {
       return runtime.getStructField(this, index);
     }
 
     @Override
-    public void setField(final int index, final GcValue value) {
+    public void setField(final int index, final GcValue value) throws GcException {
       runtime.setStructField(this, index, value);
     }
 
     @Override
     public int getFieldCount() {
       return structType.getFields().size();
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // Return approximate size based on struct fields
+      return 16 + (structType.getFields().size() * 8);
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return type == GcReferenceType.STRUCT_REF;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.STRUCT_REF;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
     }
   }
 
@@ -1198,18 +1294,56 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcValue getElement(final int index) {
+    public GcValue getElement(final int index) throws GcException {
       return runtime.getArrayElement(this, index);
     }
 
     @Override
-    public void setElement(final int index, final GcValue value) {
+    public void setElement(final int index, final GcValue value) throws GcException {
       runtime.setArrayElement(this, index, value);
     }
 
     @Override
     public int getLength() {
       return length;
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // Return approximate size based on array length and element size
+      return 16 + (length * 8);
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return type == GcReferenceType.ARRAY_REF;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.ARRAY_REF;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
     }
   }
 
@@ -1224,8 +1358,9 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
 
     @Override
-    public Class<I31Type> getType() {
-      return I31Type.class;
+    public I31Type getType() {
+      // TODO: I31Type is a utility class, not an instance type - API design issue
+      return null;
     }
 
     @Override
@@ -1238,7 +1373,7 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         return (int) i31Get.invokeExact(runtime.nativeHandle, getObjectId(), (byte) 1);
       } catch (final Throwable e) {
-        throw new GcException("Failed to get signed I31 value", e);
+        throw new IllegalStateException("Failed to get signed I31 value", e);
       }
     }
 
@@ -1247,8 +1382,46 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         return (int) i31Get.invokeExact(runtime.nativeHandle, getObjectId(), (byte) 0);
       } catch (final Throwable e) {
-        throw new GcException("Failed to get unsigned I31 value", e);
+        throw new IllegalStateException("Failed to get unsigned I31 value", e);
       }
+    }
+
+    @Override
+    public int getSizeBytes() {
+      // I31 values are stored inline, minimal overhead
+      return 4;
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      return runtime.refEquals(this, other);
+    }
+
+    @Override
+    public GcObject castTo(final GcReferenceType type) {
+      // TODO: Implement proper type casting with validation
+      return this;
+    }
+
+    @Override
+    public boolean isOfType(final GcReferenceType type) {
+      // TODO: Implement proper type checking
+      return type == GcReferenceType.I31_REF;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.I31_REF;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
     }
   }
 
@@ -1297,21 +1470,23 @@ public final class PanamaGcRuntime implements GcRuntime {
   public StructInstance createPackedStruct(
       final StructType structType,
       final List<GcValue> fieldValues,
-      final Map<Integer, Integer> customAlignment) {
+      final Map<Integer, Integer> customAlignment)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public ArrayInstance createVariableLengthArray(
-      final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements) {
+      final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public ArrayInstance createNestedArray(
-      final ArrayType arrayType, final List<GcObject> nestedElements) {
+      final ArrayType arrayType, final List<GcObject> nestedElements) throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
@@ -1322,27 +1497,30 @@ public final class PanamaGcRuntime implements GcRuntime {
       final int sourceIndex,
       final ArrayInstance destArray,
       final int destIndex,
-      final int length) {
+      final int length)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public void fillArrayElements(
-      final ArrayInstance array, final int startIndex, final int length, final GcValue value) {
+      final ArrayInstance array, final int startIndex, final int length, final GcValue value)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public int registerRecursiveType(final String typeName, final Object typeDefinition) {
+  public int registerRecursiveType(final String typeName, final Object typeDefinition)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
   public Map<String, Integer> createTypeHierarchy(
-      final Object baseType, final List<Object> derivedTypes) {
+      final Object baseType, final List<Object> derivedTypes) throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
@@ -1360,7 +1538,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public void configureGcStrategy(final String strategy, final Map<String, Object> parameters) {
+  public void configureGcStrategy(final String strategy, final Map<String, Object> parameters)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
@@ -1391,19 +1570,20 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType) {
+  public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType)
+      throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public Object extractHostObject(final GcObject gcObject) {
+  public Object extractHostObject(final GcObject gcObject) throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }
 
   @Override
-  public Object createSharingBridge(final List<GcObject> objects) {
+  public Object createSharingBridge(final List<GcObject> objects) throws GcException {
     throw new UnsupportedOperationException(
         "Advanced GC features not yet implemented in Panama runtime");
   }

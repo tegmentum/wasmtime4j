@@ -480,12 +480,9 @@ pub use component_composition::{
 // };
 
 // Re-export WebAssembly GC types for garbage collection support
-// TODO: Re-enable when gc module is available
-/*
 pub use gc::{
     WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
 };
-*/
 
 // Re-export source map integration functionality
 pub use sourcemap::{
