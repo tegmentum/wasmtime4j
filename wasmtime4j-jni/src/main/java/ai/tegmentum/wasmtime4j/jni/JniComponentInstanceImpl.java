@@ -6,7 +6,10 @@ import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.wit.WitValue;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
 import java.util.logging.Logger;
 
 /**
@@ -135,9 +138,64 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public Object invoke(final String functionName, final Object... args)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    // TODO: Implement function invocation
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-        "Function invocation not yet implemented: " + functionName);
+    JniValidation.requireNonEmpty(functionName, "functionName");
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+
+    try {
+      // Convert arguments to WitValues - users must pass WitValue instances
+      final java.util.List<WitValue> witValues = new java.util.ArrayList<>(args.length);
+      for (int i = 0; i < args.length; i++) {
+        if (!(args[i] instanceof WitValue)) {
+          throw new WasmException(
+              "Argument "
+                  + i
+                  + " must be a WitValue instance, got "
+                  + (args[i] == null ? "null" : args[i].getClass().getName()));
+        }
+        witValues.add((WitValue) args[i]);
+      }
+
+      // Marshal all parameters
+      final java.util.List<WitValueMarshaller.MarshalledValue> marshalled =
+          WitValueMarshaller.marshalAll(witValues);
+
+      // Prepare arrays for JNI call
+      final int[] typeDiscriminators = new int[marshalled.size()];
+      final byte[][] data = new byte[marshalled.size()][];
+      for (int i = 0; i < marshalled.size(); i++) {
+        typeDiscriminators[i] = marshalled.get(i).getTypeDiscriminator();
+        data[i] = marshalled.get(i).getData();
+      }
+
+      // Call native function with engine handle and instance ID
+      final Object[] result =
+          JniComponent.nativeComponentInvokeFunction(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              functionName,
+              typeDiscriminators,
+              data);
+
+      // Handle void return (null result)
+      if (result == null || result.length == 0) {
+        return null;
+      }
+
+      // Unmarshal result
+      final int resultType = (Integer) result[0];
+      final byte[] resultData = (byte[]) result[1];
+      final WitValue resultValue = WitValueMarshaller.unmarshal(resultType, resultData);
+
+      // Convert back to Java type
+      return resultValue.toJava();
+
+    } catch (final WitValueException e) {
+      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
+    } catch (final Exception e) {
+      throw new WasmException("Function invocation failed: " + e.getMessage(), e);
+    }
   }
 
   /**

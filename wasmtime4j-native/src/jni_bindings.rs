@@ -4372,8 +4372,8 @@ pub mod jni_component {
         engine_ptr: jlong,
         component_ptr: jlong,
     ) -> jlong {
-        jni_utils::jni_try_ptr(&mut env, || {
-            // Use EnhancedComponentEngine which returns ComponentInstanceInfo with store field
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            // Use EnhancedComponentEngine which stores instances in HashMap
             let engine = unsafe {
                 &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
             };
@@ -4381,9 +4381,10 @@ pub mod jni_component {
                 crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
             };
 
-            // This returns ComponentInstanceInfo which includes the store field needed for invocation
-            engine.instantiate_component(component).map(Box::new)
-        }) as jlong
+            // This returns instance ID - instance is stored in engine's HashMap
+            // to maintain proper Wasmtime ownership (Engine/Store/Instance must stay together)
+            Ok(engine.instantiate_component(component)? as i64)
+        })
     }
 
     /// Get component size in bytes
@@ -4532,7 +4533,7 @@ pub mod jni_component {
         instance_ptr: jlong,
     ) {
         unsafe {
-            crate::component::core::destroy_component_instance(instance_ptr as *mut std::os::raw::c_void);
+            crate::component_core::core::destroy_enhanced_component_instance(instance_ptr as *mut std::os::raw::c_void);
         }
     }
 
@@ -4541,7 +4542,8 @@ pub mod jni_component {
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInvokeFunction(
         mut env: JNIEnv,
         _class: JClass,
-        instance_ptr: jlong,
+        engine_ptr: jlong,
+        instance_id: jlong,
         function_name: jstring,
         param_type_discriminators: jintArray,
         param_data: jobjectArray,
@@ -4549,15 +4551,34 @@ pub mod jni_component {
         jni_utils::jni_try_object(&mut env, |env| {
             use crate::error::WasmtimeError;
 
-            // Validate instance pointer
-            if instance_ptr == 0 {
+            // Validate parameters
+            if engine_ptr == 0 {
                 return Err(WasmtimeError::InvalidParameter {
-                    message: "Instance pointer is null".to_string(),
+                    message: "Engine pointer is null".to_string(),
+                });
+            }
+            if instance_id == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Instance ID is zero".to_string(),
                 });
             }
 
-            // Get instance handle (Store and Instance kept together per Wasmtime ownership model)
-            let handle = unsafe { &mut *(instance_ptr as *mut crate::component_core::ComponentInstanceHandle) };
+            // Get engine and look up instance from HashMap
+            // This maintains proper Wasmtime ownership (Engine/Store/Instance stay together)
+            let engine = unsafe {
+                &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
+            };
+
+            // Lock the instances HashMap and get mutable reference
+            let mut instances = engine.instances.write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                })?;
+
+            let handle = instances.get_mut(&(instance_id as u64))
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance ID {} not found in engine", instance_id),
+                })?;
 
             // Convert function name
             let func_name_jstring: JString = unsafe { JString::from_raw(function_name) };
@@ -4612,6 +4633,7 @@ pub mod jni_component {
             // Get the function export and call it
             // Store and Instance are kept together following Wasmtime's ownership model
             use wasmtime::component::Func;
+
             let func: Func = handle.instance
                 .get_func(&mut handle.store, &func_name)
                 .ok_or_else(|| WasmtimeError::ImportExport {

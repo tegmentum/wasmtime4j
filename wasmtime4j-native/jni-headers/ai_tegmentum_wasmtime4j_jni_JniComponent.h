@@ -199,6 +199,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitP
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitParserValidateSyntax
   (JNIEnv *, jclass, jlong, jstring);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInvokeFunction
+ * Signature: (JJLjava/lang/String;[I[[B)[Ljava/lang/Object;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInvokeFunction
+  (JNIEnv *, jclass, jlong, jlong, jstring, jintArray, jobjectArray);
+
 #ifdef __cplusplus
 }
 #endif

@@ -114,6 +114,15 @@ public final class JniComponentImpl implements Component {
     return metadata;
   }
 
+  /**
+   * Gets the component engine that created this component.
+   *
+   * @return the component engine
+   */
+  public JniComponentEngine getEngine() {
+    return engine;
+  }
+
   @Override
   public boolean exportsInterface(final String interfaceName) throws WasmException {
     JniValidation.requireNonEmpty(interfaceName, "interfaceName");

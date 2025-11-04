@@ -47,7 +47,7 @@ pub struct EnhancedComponentEngine {
     /// Component linker for interface resolution
     linker: ComponentLinker<ComponentStoreData>,
     /// Active component instances with metadata
-    instances: Arc<RwLock<HashMap<u64, ComponentInstanceHandle>>>,
+    pub(crate) instances: Arc<RwLock<HashMap<u64, ComponentInstanceHandle>>>,
     /// Resource table for component resources
     resource_table: Arc<RwLock<ResourceTable>>,
     /// Next instance ID generator
@@ -129,7 +129,7 @@ impl EnhancedComponentEngine {
     pub fn new() -> WasmtimeResult<Self> {
         let mut config = Config::new();
         config.wasm_component_model(true);
-        config.async_support(true);
+        // Async support disabled - we use synchronous Store and methods
         config.wasm_function_references(true);
         config.wasm_gc(true);
         config.wasm_multi_value(true);
@@ -260,8 +260,9 @@ impl EnhancedComponentEngine {
     ///
     /// # Returns
     ///
-    /// Returns a `ComponentInstanceHandle` with owned Store and Instance.
-    pub fn instantiate_component(&self, component: &Component) -> WasmtimeResult<ComponentInstanceHandle> {
+    /// Returns the instance ID. The instance is stored in the engine's HashMap to maintain
+    /// proper Wasmtime ownership (Engine must outlive Store, which must outlive Instance).
+    pub fn instantiate_component(&self, component: &Component) -> WasmtimeResult<u64> {
         let instance_id = self.get_next_instance_id()?;
         let start_time = Instant::now();
 
@@ -273,7 +274,11 @@ impl EnhancedComponentEngine {
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self.linker.instantiate(&mut store, component.wasmtime_component())
+        // Create a fresh linker for this instantiation
+        // This avoids potential issues with shared mutable state in the linker
+        let linker = ComponentLinker::new(&self.engine);
+
+        let instance = linker.instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
@@ -287,12 +292,22 @@ impl EnhancedComponentEngine {
             ref_count: 1,
         };
 
+        // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
+        // This prevents the ownership violation that causes SIGSEGV
+        {
+            let mut instances = self.instances.write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                })?;
+            instances.insert(instance_id, handle);
+        }
+
         // Update metrics
         if let Ok(mut metrics) = self.metrics.write() {
             metrics.instances_created += 1;
         }
 
-        Ok(handle)
+        Ok(instance_id)
     }
 
     /// Call a component function with typed parameters
@@ -800,8 +815,8 @@ pub mod core {
         engine.instantiate_component(component)
     }
 
-    /// Instantiate component using enhanced engine
-    pub fn instantiate_component_enhanced(engine: &EnhancedComponentEngine, component: &Component) -> WasmtimeResult<ComponentInstanceHandle> {
+    /// Instantiate component using enhanced engine (returns instance ID)
+    pub fn instantiate_component_enhanced(engine: &EnhancedComponentEngine, component: &Component) -> WasmtimeResult<u64> {
         engine.instantiate_component(component)
     }
 

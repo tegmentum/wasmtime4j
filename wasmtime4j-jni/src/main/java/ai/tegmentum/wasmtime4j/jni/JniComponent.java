@@ -279,6 +279,30 @@ public final class JniComponent {
   static native boolean nativeWitParserValidateSyntax(long parserHandle, String witText);
 
   /**
+   * Invokes a component function with marshalled WIT values.
+   *
+   * <p>This method accepts parameters as marshalled WIT values (type discriminators and binary
+   * data) and returns the result as a marshalled WIT value. The marshalling format follows the WIT
+   * value serialization specification for cross-language interoperability.
+   *
+   * @param engineHandle the native component engine handle
+   * @param instanceId the native component instance ID
+   * @param functionName the name of the function to invoke
+   * @param paramTypeDiscriminators array of type discriminators for parameters (1=bool, 2=s32,
+   *     3=s64, 4=float64, 5=char, 6=string)
+   * @param paramData array of serialized parameter data corresponding to each discriminator
+   * @return two-element array: [0]=result type discriminator, [1]=result data as byte array, or
+   *     null if function returns no value
+   * @throws RuntimeException if function invocation fails or parameters are invalid
+   */
+  static native Object[] nativeComponentInvokeFunction(
+      long engineHandle,
+      long instanceId,
+      String functionName,
+      int[] paramTypeDiscriminators,
+      byte[][] paramData);
+
+  /**
    * JNI wrapper for component engine operations.
    *
    * <p>Manages the lifecycle of a native component engine and provides methods for loading and
