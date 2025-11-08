@@ -8295,9 +8295,1351 @@ pub mod jni_simd {
         }
     }
 
-    // Additional SIMD operations can be added here following the same pattern
-    // For brevity, I'm including key examples. The full implementation would include
-    // all the remaining operations declared in JniWasmRuntime.java
+    /// SIMD vector division
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdDivide(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.divide(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD saturated addition
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdAddSaturated(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.add_saturated(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD bitwise AND
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdAnd(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.and(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD bitwise OR
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdOr(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.or(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD bitwise XOR
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdXor(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.xor(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD bitwise NOT
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdNot(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.not(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD equals comparison
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdEquals(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.equals(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD less than comparison
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLessThan(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.less_than(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD greater than comparison
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdGreaterThan(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.greater_than(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD fused multiply-subtract
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdFms(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+        c: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let c_len = match env.get_array_length(&c) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+        let mut c_bytes = vec![0i8; c_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(c, 0, &mut c_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+        let c_bytes_u8: Vec<u8> = c_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 || c_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let c_v128 = simd::V128 { data: c_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.fms(&a_v128, &b_v128, &c_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD reciprocal
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdReciprocal(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.reciprocal(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD square root
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSqrt(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.sqrt(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD reciprocal square root
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdRsqrt(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.rsqrt(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD vector shuffle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShuffle(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+        indices: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let indices_len = match env.get_array_length(&indices) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+        let mut indices_bytes = vec![0i8; indices_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(indices, 0, &mut indices_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+        let indices_u8: Vec<u8> = indices_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 || indices_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors and indices must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let indices_arr: [u8; 16] = indices_u8.try_into().unwrap();
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.shuffle(&a_v128, &b_v128, &indices_arr)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD relaxed add
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdRelaxedAdd(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let b_len = match env.get_array_length(&b) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+        let mut b_bytes = vec![0i8; b_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+        if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+        let b_bytes_u8: Vec<u8> = b_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || b_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vectors must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.relaxed_add(&a_v128, &b_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD convert I32 to F32
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdConvertI32ToF32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.convert_i32_to_f32(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD convert F32 to I32
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdConvertF32ToI32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.convert_f32_to_i32(&a_v128)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD extract I32 lane
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdExtractLaneI32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        lane: jint,
+    ) -> jint {
+        match env.convert_byte_array(a) {
+            Ok(a_bytes) => {
+                if a_bytes.len() == 16 && lane >= 0 && lane < 4 {
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+
+                    let simd_config = simd::SIMDConfig::default();
+                    match simd::SIMDOperations::new(simd_config) {
+                        Ok(simd_ops) => {
+                            match simd_ops.extract_lane_i32(&a_v128, lane as u8) {
+                                Ok(result) => result,
+                                Err(_) => 0,
+                            }
+                        }
+                        Err(_) => 0,
+                    }
+                } else {
+                    0
+                }
+            }
+            Err(_) => 0,
+        }
+    }
+
+    /// SIMD replace I32 lane
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdReplaceLaneI32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        lane: jint,
+        value: jint,
+    ) -> jbyteArray {
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        let mut a_bytes = vec![0i8; a_len as usize];
+
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            if a_bytes_u8.len() != 16 || lane < 0 || lane >= 4 {
+                return Err(crate::error::WasmtimeError::InvalidOperation {
+                    message: "SIMD vector must be 16 bytes and lane must be 0-3".to_string(),
+                });
+            }
+
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.replace_lane_i32(&a_v128, lane as u8, value)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD splat I32
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSplatI32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        value: jint,
+    ) -> jbyteArray {
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.splat_i32(value)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD splat F32
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSplatF32(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        value: jfloat,
+    ) -> jbyteArray {
+        let data_vec = jni_utils::jni_try_with_default(&mut env, vec![], || {
+            let simd_config = simd::SIMDConfig::default();
+            let simd_ops = simd::SIMDOperations::new(simd_config)?;
+
+            let result = simd_ops.splat_f32(value)?;
+            Ok(result.data.to_vec())
+        });
+
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data_i8: Vec<i8> = data_vec.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD horizontal min
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalMin(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jfloat {
+        match env.convert_byte_array(a) {
+            Ok(a_bytes) => {
+                if a_bytes.len() == 16 {
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+
+                    let simd_config = simd::SIMDConfig::default();
+                    match simd::SIMDOperations::new(simd_config) {
+                        Ok(simd_ops) => {
+                            match simd_ops.reduce_min_i32(&a_v128) {
+                                Ok(result) => result as f32,
+                                Err(_) => 0.0,
+                            }
+                        }
+                        Err(_) => 0.0,
+                    }
+                } else {
+                    0.0
+                }
+            }
+            Err(_) => 0.0,
+        }
+    }
+
+    /// SIMD horizontal max
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdHorizontalMax(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jfloat {
+        match env.convert_byte_array(a) {
+            Ok(a_bytes) => {
+                if a_bytes.len() == 16 {
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+
+                    let simd_config = simd::SIMDConfig::default();
+                    match simd::SIMDOperations::new(simd_config) {
+                        Ok(simd_ops) => {
+                            match simd_ops.reduce_max_i32(&a_v128) {
+                                Ok(result) => result as f32,
+                                Err(_) => 0.0,
+                            }
+                        }
+                        Err(_) => 0.0,
+                    }
+                } else {
+                    0.0
+                }
+            }
+            Err(_) => 0.0,
+        }
+    }
+
+    /// SIMD load from memory (stub - needs wasmtime Memory integration)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoad(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        memory_handle: jlong,
+        offset: jint,
+    ) -> jbyteArray {
+        // TODO: Integrate with wasmtime Memory API
+        // For now, return a zero vector
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data = vec![0i8; 16];
+                if env.set_byte_array_region(&byte_array, 0, &data).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD load aligned from memory (stub - needs wasmtime Memory integration)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoadAligned(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        memory_handle: jlong,
+        offset: jint,
+        alignment: jint,
+    ) -> jbyteArray {
+        // TODO: Integrate with wasmtime Memory API
+        // For now, return a zero vector
+        match env.new_byte_array(16) {
+            Ok(byte_array) => {
+                let data = vec![0i8; 16];
+                if env.set_byte_array_region(&byte_array, 0, &data).is_ok() {
+                    byte_array.into_raw()
+                } else {
+                    std::ptr::null_mut()
+                }
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// SIMD store to memory (stub - needs wasmtime Memory integration)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStore(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        memory_handle: jlong,
+        offset: jint,
+        vector: JByteArray,
+    ) -> jboolean {
+        // TODO: Integrate with wasmtime Memory API
+        0 // false - operation not yet implemented
+    }
+
+    /// SIMD store aligned to memory (stub - needs wasmtime Memory integration)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStoreAligned(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        memory_handle: jlong,
+        offset: jint,
+        vector: JByteArray,
+        alignment: jint,
+    ) -> jboolean {
+        // TODO: Integrate with wasmtime Memory API
+        0 // false - operation not yet implemented
+    }
+
+    /// SIMD popcount (stub - needs SIMD implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdPopcount(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+    ) -> jbyteArray {
+        // TODO: Implement popcount operation
+        // For now, return input unchanged
+        a.into_raw()
+    }
+
+    /// SIMD variable shift left (stub - needs SIMD implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShlVariable(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        // TODO: Implement variable shift left
+        // For now, return first input unchanged
+        a.into_raw()
+    }
+
+    /// SIMD variable shift right (stub - needs SIMD implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdShrVariable(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        // TODO: Implement variable shift right
+        // For now, return first input unchanged
+        a.into_raw()
+    }
+
+    /// SIMD select (stub - needs SIMD implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdSelect(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        mask: JByteArray,
+        a: JByteArray,
+        b: JByteArray,
+    ) -> jbyteArray {
+        // TODO: Implement select operation
+        // For now, return a unchanged
+        a.into_raw()
+    }
+
+    /// SIMD blend (stub - needs SIMD implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdBlend(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        a: JByteArray,
+        b: JByteArray,
+        mask: jint,
+    ) -> jbyteArray {
+        // TODO: Implement blend operation
+        // For now, return a unchanged
+        a.into_raw()
+    }
 
     /// Initialize table from element segment (JNI version)
     #[no_mangle]
