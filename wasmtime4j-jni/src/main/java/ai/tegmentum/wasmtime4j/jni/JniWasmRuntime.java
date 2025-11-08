@@ -385,8 +385,41 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Module compileModuleWat(final Engine engine, final String watText) throws WasmException {
-    // TODO: Implement WAT (WebAssembly Text) compilation
-    throw new UnsupportedOperationException("WAT compilation not yet implemented");
+    JniValidation.requireNonNull(engine, "engine");
+    JniValidation.requireNonNull(watText, "watText");
+
+    if (watText.trim().isEmpty()) {
+      throw new WasmException("WAT text cannot be empty");
+    }
+
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+    }
+
+    validateRuntimeState();
+
+    try {
+      final JniEngine jniEngine = (JniEngine) engine;
+      final Module module = jniEngine.compileWat(watText);
+
+      // Register module for resource management
+      concurrencyManager.registerResource(((JniModule) module).getNativeHandle());
+      phantomManager.register(module, ((JniModule) module).getNativeHandle(), "nativeDestroyModule");
+
+      // Cache the module (using WAT hash as key for potential reuse)
+      final String cacheKey = "wat-module-" + watText.hashCode();
+      resourceCache.put(cacheKey, module);
+
+      LOGGER.fine(
+          "Compiled WAT module with handle: 0x"
+              + Long.toHexString(((JniModule) module).getNativeHandle()));
+
+      return module;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error compiling WAT module", e);
+    }
   }
 
   @Override
