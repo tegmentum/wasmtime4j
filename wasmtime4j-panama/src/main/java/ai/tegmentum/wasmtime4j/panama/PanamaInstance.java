@@ -180,9 +180,16 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    // TODO: Implement global export retrieval
-    // This requires getting the native global pointer from the instance
-    throw new UnsupportedOperationException("Global export retrieval not yet implemented");
+    // Get the native global pointer from the instance
+    final MemorySegment globalPtr =
+        NATIVE_BINDINGS.instanceGetGlobalByName(nativeInstance, store.getNativeStore(), nameSegment);
+
+    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+
+    // Wrap the native global pointer in a PanamaGlobal
+    return Optional.of(new PanamaGlobal(globalPtr, store));
   }
 
   @Override
