@@ -9021,18 +9021,15 @@ pub mod jni_debugger {
         _class: JClass,
         engine_handle: jlong,
     ) -> jlong {
-        jni_utils::jni_try_ptr(&mut env, || {
-            if engine_handle == 0 {
-                return Err(WasmtimeError::InvalidParameter {
-                    message: "Engine handle cannot be null".to_string(),
-                });
-            }
+        if engine_handle == 0 {
+            log::error!("Invalid engine handle provided");
+            return 0;
+        }
 
-            // For now, return a stub handle (the debugger handle can be the same as engine)
-            // Full implementation would create an actual debug session
-            log::debug!("Creating debugger for engine 0x{:x}", engine_handle);
-            Ok(engine_handle as *mut c_void)
-        }) as jlong
+        // For now, return a stub handle (the debugger handle can be the same as engine)
+        // Full implementation would create an actual debug session
+        log::debug!("Creating debugger for engine 0x{:x}", engine_handle);
+        engine_handle
     }
 
     /// Close debugger
@@ -9060,11 +9057,11 @@ pub mod jni_debugger {
 
     /// Get debug capabilities - returns null for stub implementation
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCapabilities(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCapabilities<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
@@ -9076,15 +9073,13 @@ pub mod jni_debugger {
         debugger_handle: jlong,
         instance_handle: jlong,
     ) -> jlong {
-        jni_utils::jni_try_ptr(&mut env, || {
-            log::debug!(
-                "Attaching debugger 0x{:x} to instance 0x{:x}",
-                debugger_handle,
-                instance_handle
-            );
-            // Stub - return the instance handle as session handle
-            Ok(instance_handle as *mut c_void)
-        }) as jlong
+        log::debug!(
+            "Attaching debugger 0x{:x} to instance 0x{:x}",
+            debugger_handle,
+            instance_handle
+        );
+        // Stub - return the instance handle as session handle
+        instance_handle
     }
 
     /// Detach from instance
@@ -9100,11 +9095,11 @@ pub mod jni_debugger {
 
     /// Get debug info - returns null for stub implementation
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugInfo(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugInfo<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
@@ -9142,33 +9137,33 @@ pub mod jni_debugger {
 
     /// Get debug options - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugOptions(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugOptions<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Get DWARF info - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDwarfInfo(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDwarfInfo<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _module_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Create source map integration - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateSourceMapIntegration(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateSourceMapIntegration<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _module_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
@@ -9206,11 +9201,11 @@ pub mod jni_debugger {
 
     /// Get profiling data - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetProfilingData(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetProfilingData<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
@@ -9261,90 +9256,90 @@ pub mod jni_debugger {
 
     /// Get call stack - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCallStack(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCallStack<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _instance_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Get local variables - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLocalVariables(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLocalVariables<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _frame_index: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Evaluate expression - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
-        _expression: JObject,
-    ) -> JObject {
+        _expression: JObject<'local>,
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Inspect memory - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeInspectMemory(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeInspectMemory<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _address: jlong,
         _length: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Step into - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepInto(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepInto<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _instance_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Step over - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOver(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOver<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _instance_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Step out - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOut(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOut<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _instance_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 
     /// Continue execution - returns null for stub
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeContinue(
-        _env: JNIEnv,
-        _class: JClass,
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeContinue<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
         _debugger_handle: jlong,
         _instance_handle: jlong,
-    ) -> JObject {
+    ) -> JObject<'local> {
         JObject::null()
     }
 

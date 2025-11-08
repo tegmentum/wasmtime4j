@@ -5,8 +5,11 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.debug.DebugCapabilities;
 import ai.tegmentum.wasmtime4j.debug.DebugConfig;
+import ai.tegmentum.wasmtime4j.debug.DebugEventListener;
 import ai.tegmentum.wasmtime4j.debug.DebugInfo;
 import ai.tegmentum.wasmtime4j.debug.DebugOptions;
+import ai.tegmentum.wasmtime4j.debug.DebugSession;
+import ai.tegmentum.wasmtime4j.debug.Debugger;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniExceptionHandler;
 import java.util.ArrayList;
@@ -31,7 +34,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniDebugger {
+public final class JniDebugger implements Debugger {
 
   private static final Logger LOGGER = Logger.getLogger(JniDebugger.class.getName());
 
@@ -44,6 +47,7 @@ public final class JniDebugger {
   private volatile boolean closed;
   private volatile boolean dwarfEnabled;
   private volatile boolean profilingEnabled;
+  private volatile DebugEventListener eventListener;
 
   /**
    * Creates a JNI debugger instance.
@@ -146,6 +150,37 @@ public final class JniDebugger {
   public List<JniDebugSession> getActiveSessions() {
     validateNotClosed();
     return new java.util.ArrayList<>(activeSessions);
+  }
+
+  @Override
+  public DebugSession getCurrentSession() {
+    validateNotClosed();
+    if (activeSessions.isEmpty()) {
+      return null;
+    }
+    // Return the most recently created session
+    return activeSessions.get(activeSessions.size() - 1);
+  }
+
+  @Override
+  public String getDebuggerName() {
+    return "JniDebugger";
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return !closed;
+  }
+
+  @Override
+  public void setEventListener(final DebugEventListener listener) {
+    this.eventListener = listener;
+  }
+
+  @Override
+  public void detach() {
+    validateNotClosed();
+    closeAllSessions();
   }
 
   /** Javadoc placeholder. */
@@ -894,7 +929,7 @@ public final class JniDebugger {
   // Stub inner classes for debugging support
 
   /** Stub debug session implementation. */
-  private static final class JniDebugSession {
+  private static final class JniDebugSession implements DebugSession {
     private final JniDebugger debugger;
     private final long nativeHandle;
     private final String sessionId;
