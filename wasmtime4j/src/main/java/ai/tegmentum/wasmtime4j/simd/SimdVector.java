@@ -77,7 +77,7 @@ public final class SimdVector {
    *
    * @return the internal data array (do not modify!)
    */
-  byte[] getDataInternal() {
+  public byte[] getDataInternal() {
     return data;
   }
 

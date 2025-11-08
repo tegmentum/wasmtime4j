@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.simd;
 
-import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 
 /**
@@ -181,7 +181,7 @@ public interface SimdOperations {
    * @return new vector loaded from memory
    * @throws WasmException if memory access fails or offset is out of bounds
    */
-  SimdVector load(Memory memory, int offset, SimdLane lane) throws WasmException;
+  SimdVector load(WasmMemory memory, int offset, SimdLane lane) throws WasmException;
 
   /**
    * Loads a SIMD vector from aligned WebAssembly memory.
@@ -194,7 +194,7 @@ public interface SimdOperations {
    * @return new vector loaded from memory
    * @throws WasmException if memory access fails or offset is out of bounds
    */
-  SimdVector loadAligned(Memory memory, int offset, SimdLane lane) throws WasmException;
+  SimdVector loadAligned(WasmMemory memory, int offset, SimdLane lane) throws WasmException;
 
   /**
    * Stores a SIMD vector to WebAssembly memory.
@@ -204,7 +204,7 @@ public interface SimdOperations {
    * @param vector the vector to store
    * @throws WasmException if memory access fails or offset is out of bounds
    */
-  void store(Memory memory, int offset, SimdVector vector) throws WasmException;
+  void store(WasmMemory memory, int offset, SimdVector vector) throws WasmException;
 
   /**
    * Stores a SIMD vector to aligned WebAssembly memory.
@@ -216,7 +216,7 @@ public interface SimdOperations {
    * @param vector the vector to store
    * @throws WasmException if memory access fails or offset is out of bounds
    */
-  void storeAligned(Memory memory, int offset, SimdVector vector) throws WasmException;
+  void storeAligned(WasmMemory memory, int offset, SimdVector vector) throws WasmException;
 
   // ===== Lane Manipulation =====
 

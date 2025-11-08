@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.jni.simd;
+package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.JniMemory;
-import ai.tegmentum.wasmtime4j.jni.JniWasmRuntime;
 import ai.tegmentum.wasmtime4j.simd.SimdLane;
 import ai.tegmentum.wasmtime4j.simd.SimdOperations;
 import ai.tegmentum.wasmtime4j.simd.SimdVector;
@@ -143,7 +141,7 @@ public final class JniSimdOperations implements SimdOperations {
   }
 
   @Override
-  public SimdVector load(final Memory memory, final int offset, final SimdLane lane)
+  public SimdVector load(final WasmMemory memory, final int offset, final SimdLane lane)
       throws WasmException {
     Objects.requireNonNull(memory, "memory cannot be null");
     Objects.requireNonNull(lane, "lane cannot be null");
@@ -153,7 +151,7 @@ public final class JniSimdOperations implements SimdOperations {
   }
 
   @Override
-  public SimdVector loadAligned(final Memory memory, final int offset, final SimdLane lane)
+  public SimdVector loadAligned(final WasmMemory memory, final int offset, final SimdLane lane)
       throws WasmException {
     Objects.requireNonNull(memory, "memory cannot be null");
     Objects.requireNonNull(lane, "lane cannot be null");
@@ -164,7 +162,7 @@ public final class JniSimdOperations implements SimdOperations {
   }
 
   @Override
-  public void store(final Memory memory, final int offset, final SimdVector vector)
+  public void store(final WasmMemory memory, final int offset, final SimdVector vector)
       throws WasmException {
     Objects.requireNonNull(memory, "memory cannot be null");
     Objects.requireNonNull(vector, "vector cannot be null");
@@ -178,7 +176,7 @@ public final class JniSimdOperations implements SimdOperations {
   }
 
   @Override
-  public void storeAligned(final Memory memory, final int offset, final SimdVector vector)
+  public void storeAligned(final WasmMemory memory, final int offset, final SimdVector vector)
       throws WasmException {
     Objects.requireNonNull(memory, "memory cannot be null");
     Objects.requireNonNull(vector, "vector cannot be null");
@@ -442,11 +440,15 @@ public final class JniSimdOperations implements SimdOperations {
     }
   }
 
-  private long extractMemoryHandle(final Memory memory) {
-    if (!(memory instanceof JniMemory)) {
-      throw new IllegalArgumentException(
-          "Memory must be JniMemory instance for JNI SIMD operations");
+  private long extractMemoryHandle(final WasmMemory memory) {
+    // Check if the memory is backed by JNI implementation
+    // Note: Memory and WasmMemory are separate interfaces, but JNI memory instances
+    // will implement WasmMemory through JniMemory
+    if (memory instanceof JniMemory) {
+      return ((JniMemory) memory).getNativeHandle();
     }
-    return ((JniMemory) memory).getNativeHandle();
+    throw new IllegalArgumentException(
+        "Memory must be JniMemory instance for JNI SIMD operations. Got: "
+            + memory.getClass().getName());
   }
 }

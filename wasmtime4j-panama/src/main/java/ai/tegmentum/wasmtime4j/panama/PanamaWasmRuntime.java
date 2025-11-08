@@ -32,7 +32,6 @@ import ai.tegmentum.wasmtime4j.StoreLimits;
 import ai.tegmentum.wasmtime4j.WasiContext;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.io.IOException;
 import java.lang.foreign.Arena;
@@ -111,7 +110,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     return engine.compileModule(wasmBytes);
@@ -127,7 +127,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     ensureNotClosed();
@@ -141,7 +142,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     return engine.createStore();
@@ -169,7 +171,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     // TODO: Implement store with resource limits for Panama
@@ -193,7 +196,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     // TODO: Implement store with StoreLimits for Panama
@@ -208,7 +212,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     return new PanamaLinker<>(engine);
@@ -222,7 +227,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     // TODO: Implement linker configuration for Panama
@@ -241,7 +247,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Module must be a PanamaModule instance for Panama runtime");
     }
 
     final PanamaModule panamaModule = (PanamaModule) module;
@@ -258,7 +265,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Module must be a PanamaModule instance for Panama runtime");
     }
 
     final PanamaModule panamaModule = (PanamaModule) module;
@@ -300,11 +308,13 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance for Panama runtime");
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
     // TODO: Implement module deserialization for Panama
-    throw new UnsupportedOperationException("Module deserialization not yet implemented for Panama");
+    throw new UnsupportedOperationException(
+        "Module deserialization not yet implemented for Panama");
   }
 
   @Override
@@ -348,7 +358,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     ensureNotClosed();
 
     // TODO: Implement WASI linker integration for Panama
-    throw new UnsupportedOperationException("WASI linker integration not yet implemented for Panama");
+    throw new UnsupportedOperationException(
+        "WASI linker integration not yet implemented for Panama");
   }
 
   @Override

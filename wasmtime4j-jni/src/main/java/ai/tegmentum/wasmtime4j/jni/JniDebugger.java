@@ -193,6 +193,19 @@ public final class JniDebugger implements Debugger {
   }
 
   /** Javadoc placeholder. */
+  public boolean detach(final Instance instance) throws WasmException {
+    Objects.requireNonNull(instance, "instance cannot be null");
+    validateNotClosed();
+
+    try {
+      final long instanceHandle = extractInstanceHandle(instance);
+      return nativeDetachFromInstance(nativeHandle, instanceHandle);
+    } catch (final Exception e) {
+      throw JniExceptionHandler.wrapException(e, "Failed to detach from instance");
+    }
+  }
+
+  /** Javadoc placeholder. */
   public boolean closeSession(final JniDebugSession session) {
     Objects.requireNonNull(session, "session cannot be null");
     validateNotClosed();
@@ -266,19 +279,6 @@ public final class JniDebugger implements Debugger {
       return session;
     } catch (final Exception e) {
       throw JniExceptionHandler.wrapException(e, "Failed to attach to instance");
-    }
-  }
-
-  /** Javadoc placeholder. */
-  public boolean detach(final Instance instance) throws WasmException {
-    Objects.requireNonNull(instance, "instance cannot be null");
-    validateNotClosed();
-
-    try {
-      final long instanceHandle = extractInstanceHandle(instance);
-      return nativeDetachFromInstance(nativeHandle, instanceHandle);
-    } catch (final Exception e) {
-      throw JniExceptionHandler.wrapException(e, "Failed to detach from instance");
     }
   }
 

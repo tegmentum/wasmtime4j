@@ -4032,7 +4032,10 @@ public final class NativeFunctionBindings {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
       return callNativeFunction(
-          "wasmtime4j_panama_engine_supports_feature", Boolean.class, enginePtr, featureNameSegment);
+          "wasmtime4j_panama_engine_supports_feature",
+          Boolean.class,
+          enginePtr,
+          featureNameSegment);
     }
   }
 
@@ -4043,7 +4046,8 @@ public final class NativeFunctionBindings {
    * @return memory limit in pages, or -1 if not set
    */
   public int engineMemoryLimitPages(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_panama_engine_get_memory_limit", Integer.class, enginePtr);
+    return callNativeFunction(
+        "wasmtime4j_panama_engine_get_memory_limit", Integer.class, enginePtr);
   }
 
   /**
@@ -4063,7 +4067,8 @@ public final class NativeFunctionBindings {
    * @return true if fuel is enabled, false otherwise
    */
   public boolean engineFuelEnabled(final MemorySegment enginePtr) {
-    final int result = callNativeFunction("wasmtime4j_panama_engine_is_fuel_enabled", Integer.class, enginePtr);
+    final int result =
+        callNativeFunction("wasmtime4j_panama_engine_is_fuel_enabled", Integer.class, enginePtr);
     return result == 1;
   }
 
@@ -4074,8 +4079,9 @@ public final class NativeFunctionBindings {
    * @return true if epoch interruption is enabled, false otherwise
    */
   public boolean engineEpochInterruptionEnabled(final MemorySegment enginePtr) {
-    final int result = callNativeFunction(
-        "wasmtime4j_panama_engine_is_epoch_interruption_enabled", Integer.class, enginePtr);
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_engine_is_epoch_interruption_enabled", Integer.class, enginePtr);
     return result == 1;
   }
 
