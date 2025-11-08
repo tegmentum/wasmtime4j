@@ -552,16 +552,33 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine)
       throws WasmException {
-    // TODO: Implement WASI linker creation
-    throw new UnsupportedOperationException("WASI linker creation not yet implemented");
+    return createWasiLinker(engine, ai.tegmentum.wasmtime4j.wasi.WasiConfig.defaultConfig());
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(
       final Engine engine, final ai.tegmentum.wasmtime4j.wasi.WasiConfig config)
       throws WasmException {
-    // TODO: Implement WASI linker creation with config
-    throw new UnsupportedOperationException("WASI linker creation with config not yet implemented");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+    if (!(engine instanceof ai.tegmentum.wasmtime4j.jni.JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine for JNI runtime");
+    }
+
+    final ai.tegmentum.wasmtime4j.jni.JniEngine jniEngine =
+        (ai.tegmentum.wasmtime4j.jni.JniEngine) engine;
+
+    final long linkerHandle = nativeCreateWasiLinker(jniEngine.getNativeHandle());
+
+    if (linkerHandle == 0) {
+      throw new WasmException("Failed to create WASI linker");
+    }
+
+    return new ai.tegmentum.wasmtime4j.jni.wasi.JniWasiLinker(linkerHandle, jniEngine, config);
   }
 
   @Override
@@ -1002,4 +1019,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return the native module handle, or 0 on failure
    */
   private static native long nativeDeserializeModule(long engineHandle, byte[] serializedBytes);
+
+  /**
+   * Create a WASI-enabled linker.
+   *
+   * @param engineHandle the native engine handle
+   * @return the native linker handle, or 0 on failure
+   */
+  private static native long nativeCreateWasiLinker(long engineHandle);
 }

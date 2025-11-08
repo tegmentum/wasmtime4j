@@ -7653,6 +7653,30 @@ pub mod jni_runtime {
             crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
         }) as jlong
     }
+
+    /// Create a WASI-enabled linker with the specified configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateWasiLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            use crate::engine::core;
+            use crate::linker::Linker as WasmtimeLinker;
+
+            // Get engine reference
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+
+            // Create a new linker
+            let linker = WasmtimeLinker::new(engine)?;
+
+            // TODO: Add WASI imports to linker once WASI context integration is complete
+            // For now, return a basic linker that can be configured later
+
+            Ok(Box::new(linker))
+        }) as jlong
+    }
 }
 
 /// JNI bindings for WASI operations

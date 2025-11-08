@@ -431,6 +431,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCr
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDeserializeModule
   (JNIEnv *, jclass, jlong, jbyteArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeCreateWasiLinker
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateWasiLinker
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif
