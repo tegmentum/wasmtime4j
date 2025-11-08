@@ -7528,6 +7528,54 @@ pub mod jni_runtime {
         }) as jlong
     }
 
+    /// Create a linker with configuration options
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateLinkerWithConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+        runtime_handle: jlong,
+        engine_handle: jlong,
+        allow_shadowing: jboolean,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            if runtime_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateLinkerWithConfig: null runtime handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Runtime handle cannot be null".to_string(),
+                });
+            }
+
+            if engine_handle == 0 {
+                log::error!("JNI Runtime.nativeCreateLinkerWithConfig: null engine handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Engine handle cannot be null".to_string(),
+                });
+            }
+
+            log::debug!(
+                "Creating Linker with config for runtime 0x{:x}, engine 0x{:x}, allow_shadowing: {}",
+                runtime_handle, engine_handle, allow_shadowing != 0
+            );
+
+            // Get the engine reference
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_handle as *const std::os::raw::c_void)? };
+
+            // Create LinkerConfig
+            let config = crate::linker::LinkerConfig {
+                enable_wasi: false,
+                allow_shadowing: allow_shadowing != 0,
+                max_host_functions: None,
+                validate_signatures: true,
+            };
+
+            // Create a new Linker with the engine and config
+            let linker = crate::linker::ffi_core::create_linker_with_config(&engine, config)?;
+
+            log::debug!("Created Linker with config for runtime 0x{:x}", runtime_handle);
+            Ok(linker)
+        }) as jlong
+    }
+
     /// Add WASI context to a Linker (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiToLinker(

@@ -668,16 +668,36 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public ai.tegmentum.wasmtime4j.ComponentEngine createComponentEngine() throws WasmException {
-    // TODO: Implement component engine creation
-    throw new UnsupportedOperationException("Component engine creation not yet implemented");
+    return createComponentEngine(new ai.tegmentum.wasmtime4j.ComponentEngineConfig());
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.ComponentEngine createComponentEngine(
       final ai.tegmentum.wasmtime4j.ComponentEngineConfig config) throws WasmException {
-    // TODO: Implement component engine creation with config
-    throw new UnsupportedOperationException(
-        "Component engine creation with config not yet implemented");
+    if (config == null) {
+      throw new IllegalArgumentException("Component engine config cannot be null");
+    }
+
+    validateRuntimeState();
+
+    try {
+      final JniComponentEngine componentEngine = new JniComponentEngine(config);
+
+      // Register component engine for resource management
+      concurrencyManager.registerResource(componentEngine.getNativeHandle());
+      phantomManager.register(
+          componentEngine, componentEngine.getNativeHandle(), "nativeDestroyComponentEngine");
+
+      LOGGER.fine(
+          "Created component engine with handle: 0x"
+              + Long.toHexString(componentEngine.getNativeHandle()));
+
+      return componentEngine;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error creating component engine", e);
+    }
   }
 
   @Override
@@ -818,9 +838,48 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public <T> Linker<T> createLinker(
       final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
       throws WasmException {
-    // TODO: Implement createLinker with configuration options
-    // For now, delegate to the basic createLinker method
-    return createLinker(engine);
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+
+    validateRuntimeState();
+
+    try {
+      return concurrencyManager.executeWithWriteLock(
+          nativeHandle,
+          () -> {
+            final long engineHandle =
+                ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+            final long linkerHandle =
+                nativeCreateLinkerWithConfig(nativeHandle, engineHandle, allowShadowing);
+
+            if (linkerHandle == 0) {
+              throw new RuntimeException("Failed to create linker with configuration");
+            }
+
+            final ai.tegmentum.wasmtime4j.jni.JniLinker<T> linker =
+                new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
+
+            // Register linker for resource management
+            concurrencyManager.registerResource(linkerHandle);
+            phantomManager.register(linker, linkerHandle, "nativeDestroyLinker");
+
+            LOGGER.fine(
+                "Created linker with config - allowUnknownExports: "
+                    + allowUnknownExports
+                    + ", allowShadowing: "
+                    + allowShadowing
+                    + ", handle: 0x"
+                    + Long.toHexString(linkerHandle));
+
+            return linker;
+          });
+    } catch (final RuntimeException e) {
+      if (e.getCause() instanceof WasmException) {
+        throw (WasmException) e.getCause();
+      }
+      throw new WasmException("Unexpected error creating linker with configuration", e);
+    }
   }
 
   @Override
@@ -1093,6 +1152,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   private static native long nativeCreateWasiContext(long runtimeHandle);
 
   private static native long nativeCreateLinker(long runtimeHandle, long engineHandle);
+
+  private static native long nativeCreateLinkerWithConfig(
+      long runtimeHandle, long engineHandle, boolean allowShadowing);
 
   private static native int nativeAddWasiToLinker(
       long runtimeHandle, long linkerHandle, long contextHandle);
