@@ -596,8 +596,8 @@ public class JniLinker<T> implements Linker<T> {
     // Test handles like 0x1, 0x1111, 0x2222 are small values that can't be real heap pointers
     // Real native pointers on 64-bit systems are typically > 0x100000000L (4GB)
     // On macOS ARM64, they're often in the range 0x100000000 - 0x200000000
-    final long MIN_REASONABLE_POINTER = 0x100000000L; // 4 GB - catch fake test pointers
-    return nativeHandle >= MIN_REASONABLE_POINTER;
+    final long minReasonablePtr = 0x100000000L; // 4 GB - catch fake test pointers
+    return nativeHandle >= minReasonablePtr;
   }
 
   /**

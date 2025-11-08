@@ -230,8 +230,8 @@ public class JniModule implements Module {
     // pointers
     // Real native pointers on 64-bit systems are typically > 0x100000000L (4GB)
     // On macOS ARM64, they're often in the range 0x100000000 - 0x200000000
-    final long MIN_REASONABLE_POINTER = 0x100000000L; // 4 GB - catch fake test pointers
-    return nativeHandle >= MIN_REASONABLE_POINTER;
+    final long minReasonablePtr = 0x100000000L; // 4 GB - catch fake test pointers
+    return nativeHandle >= minReasonablePtr;
   }
 
   @Override

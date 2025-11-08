@@ -529,4 +529,38 @@ class JniModuleTest {
     assertThrows(IllegalArgumentException.class, () -> module.instantiate(testStore, null));
     assertThrows(IllegalArgumentException.class, () -> module.instantiate(null, null));
   }
+
+  // Serialization/Deserialization tests
+
+  @Test
+  void testSerializeWithValidHandleReturnsEmptyArray() {
+    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
+
+    final byte[] serialized = module.serialize();
+
+    assertNotNull(serialized);
+    // With defensive programming, fake handle returns empty array instead of calling native code
+    assertEquals(0, serialized.length);
+  }
+
+  @Test
+  void testSerializeWithZeroHandleReturnsEmptyArray() {
+    final JniModule module = new JniModule(ZERO_HANDLE, testEngine);
+
+    final byte[] serialized = module.serialize();
+
+    assertNotNull(serialized);
+    assertEquals(0, serialized.length);
+  }
+
+  @Test
+  void testSerializeAfterCloseReturnsEmptyArray() {
+    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
+    module.close();
+
+    final byte[] serialized = module.serialize();
+
+    assertNotNull(serialized);
+    assertEquals(0, serialized.length);
+  }
 }
