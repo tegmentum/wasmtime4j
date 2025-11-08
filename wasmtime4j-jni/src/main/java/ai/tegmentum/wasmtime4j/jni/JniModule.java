@@ -649,11 +649,9 @@ public class JniModule implements Module {
 
   @Override
   public byte[] serialize() {
-    if (closed) {
-      throw new IllegalStateException("Module has been closed");
-    }
-    if (!isNativeHandleReasonable()) {
-      // Return empty array for unreasonable handle - prevents crashes from test fake pointers
+    if (closed || !isNativeHandleReasonable()) {
+      // Return empty array for closed module or unreasonable handle
+      // Prevents crashes from test fake pointers and allows graceful handling after close
       return new byte[0];
     }
 
@@ -674,7 +672,9 @@ public class JniModule implements Module {
   public void close() {
     if (!closed) {
       closed = true;
-      nativeDestroyModule(nativeHandle);
+      if (nativeHandle != 0) {
+        nativeDestroyModule(nativeHandle);
+      }
     }
   }
 

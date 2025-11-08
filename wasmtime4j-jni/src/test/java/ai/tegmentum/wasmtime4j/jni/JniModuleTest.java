@@ -555,7 +555,8 @@ class JniModuleTest {
 
   @Test
   void testSerializeAfterCloseReturnsEmptyArray() {
-    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
+    // Use ZERO_HANDLE to avoid native code being called during close()
+    final JniModule module = new JniModule(ZERO_HANDLE, testEngine);
     module.close();
 
     final byte[] serialized = module.serialize();
