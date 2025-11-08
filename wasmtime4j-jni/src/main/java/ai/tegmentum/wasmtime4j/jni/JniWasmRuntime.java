@@ -571,8 +571,23 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     JniValidation.requireNonNull(engine, "engine");
     validateRuntimeState();
 
-    // TODO: Implement JniDebugger - currently excluded due to missing dependencies
-    throw new UnsupportedOperationException("Debugger not yet implemented");
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+    }
+
+    try {
+      final JniDebugger debugger = new JniDebugger(engine);
+
+      LOGGER.fine(
+          "Created debugger for engine: 0x"
+              + Long.toHexString(((JniEngine) engine).getNativeHandle()));
+
+      return debugger;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error creating debugger", e);
+    }
   }
 
   public boolean isDebuggingSupported() {

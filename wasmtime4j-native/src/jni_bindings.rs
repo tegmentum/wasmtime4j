@@ -9003,3 +9003,369 @@ pub mod jni_serializer {
         }
     }
 }
+
+/// JNI bindings for Debugger operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_debugger {
+    use super::*;
+    use crate::error::{jni_utils, WasmtimeError};
+    use jni::objects::{JClass, JObject};
+    use jni::sys::{jboolean, jlong};
+    use jni::JNIEnv;
+    use std::os::raw::c_void;
+
+    /// Create a debugger for an engine
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateDebugger(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            if engine_handle == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Engine handle cannot be null".to_string(),
+                });
+            }
+
+            // For now, return a stub handle (the debugger handle can be the same as engine)
+            // Full implementation would create an actual debug session
+            log::debug!("Creating debugger for engine 0x{:x}", engine_handle);
+            Ok(engine_handle as *mut c_void)
+        }) as jlong
+    }
+
+    /// Close debugger
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCloseDebugger(
+        _env: JNIEnv,
+        _class: JClass,
+        debugger_handle: jlong,
+    ) {
+        if debugger_handle != 0 {
+            log::debug!("Closing debugger 0x{:x}", debugger_handle);
+            // Stub - actual implementation would clean up debug resources
+        }
+    }
+
+    /// Check if debugger is valid
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeIsValidDebugger(
+        _env: JNIEnv,
+        _class: JClass,
+        debugger_handle: jlong,
+    ) -> jboolean {
+        (debugger_handle != 0) as jboolean
+    }
+
+    /// Get debug capabilities - returns null for stub implementation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCapabilities(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Attach to instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeAttachToInstance(
+        mut env: JNIEnv,
+        _class: JClass,
+        debugger_handle: jlong,
+        instance_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            log::debug!(
+                "Attaching debugger 0x{:x} to instance 0x{:x}",
+                debugger_handle,
+                instance_handle
+            );
+            // Stub - return the instance handle as session handle
+            Ok(instance_handle as *mut c_void)
+        }) as jlong
+    }
+
+    /// Detach from instance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeDetachFromInstance(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> jboolean {
+        1 // true - stub implementation
+    }
+
+    /// Get debug info - returns null for stub implementation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugInfo(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Set debug mode enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetDebugModeEnabled(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _enabled: jboolean,
+    ) {
+        // Stub implementation
+    }
+
+    /// Check if debug mode is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeIsDebugModeEnabled(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> jboolean {
+        1 // true - stub
+    }
+
+    /// Set debug options - stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetDebugOptions(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _options: JObject,
+    ) {
+        // Stub implementation
+    }
+
+    /// Get debug options - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugOptions(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Get DWARF info - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDwarfInfo(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _module_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Create source map integration - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateSourceMapIntegration(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _module_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Create execution tracer - returns stub handle
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateExecutionTracer(
+        _env: JNIEnv,
+        _class: JClass,
+        debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> jlong {
+        debugger_handle // Stub - return debugger handle
+    }
+
+    /// Start profiling - stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStartProfiling(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _sample_rate: jlong,
+    ) {
+        // Stub implementation
+    }
+
+    /// Stop profiling - stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStopProfiling(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) {
+        // Stub implementation
+    }
+
+    /// Get profiling data - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetProfilingData(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Set breakpoint at address - returns stub ID
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetBreakpointAtAddress(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _address: jlong,
+    ) -> jlong {
+        1 // Stub breakpoint ID
+    }
+
+    /// Set breakpoint at function - returns stub ID
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetBreakpointAtFunction(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _function_name: JObject,
+    ) -> jlong {
+        2 // Stub breakpoint ID
+    }
+
+    /// Set breakpoint at line - returns stub ID
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetBreakpointAtLine(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _file: JObject,
+        _line: jlong,
+    ) -> jlong {
+        3 // Stub breakpoint ID
+    }
+
+    /// Remove breakpoint
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeRemoveBreakpoint(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _breakpoint_id: jlong,
+    ) -> jboolean {
+        1 // true - stub
+    }
+
+    /// Get call stack - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCallStack(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Get local variables - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLocalVariables(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _frame_index: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Evaluate expression - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _expression: JObject,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Inspect memory - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeInspectMemory(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _address: jlong,
+        _length: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Step into - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepInto(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Step over - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOver(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Step out - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStepOut(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Continue execution - returns null for stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeContinue(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _instance_handle: jlong,
+    ) -> JObject {
+        JObject::null()
+    }
+
+    /// Enable DWARF - stub
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEnableDwarf(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+        _enabled: jboolean,
+    ) {
+        // Stub implementation
+    }
+
+    /// Check if DWARF is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeIsDwarfEnabled(
+        _env: JNIEnv,
+        _class: JClass,
+        _debugger_handle: jlong,
+    ) -> jboolean {
+        1 // true - stub
+    }
+}
