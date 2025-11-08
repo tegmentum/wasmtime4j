@@ -295,7 +295,9 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
       final MemorySegment resultData = arena.allocate(V128_SIZE);
-      final int status = NATIVE_BINDINGS.simdReplaceLaneI32(runtimeHandle, vectorData, laneIndex, value, resultData);
+      final int status =
+          NATIVE_BINDINGS.simdReplaceLaneI32(
+              runtimeHandle, vectorData, laneIndex, value, resultData);
       if (status != 0) {
         throw new WasmException("SIMD replaceLaneI32 operation failed with status: " + status);
       }
@@ -354,7 +356,8 @@ public final class PanamaSimdOperations implements SimdOperations {
       final MemorySegment indicesData = toMemorySegment(arena, indicesBytes);
 
       final MemorySegment resultData = arena.allocate(V128_SIZE);
-      final int status = NATIVE_BINDINGS.simdShuffle(runtimeHandle, aData, bData, indicesData, resultData);
+      final int status =
+          NATIVE_BINDINGS.simdShuffle(runtimeHandle, aData, bData, indicesData, resultData);
       if (status != 0) {
         throw new WasmException("SIMD shuffle operation failed with status: " + status);
       }
@@ -526,16 +529,13 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public String getSimdCapabilities() {
-    return "Panama SIMD: Arithmetic (add, subtract, multiply, divide, addSaturated), "
-        + "Bitwise (and, or, xor, not), "
-        + "Comparison (equals, lessThan, greaterThan), "
-        + "Math (sqrt, reciprocal, rsqrt, fma, fms), "
-        + "Lane operations (extractLaneI32, replaceLaneI32), "
-        + "Conversion (convertI32ToF32, convertF32ToI32), "
-        + "Reduction (horizontalSum, horizontalMin, horizontalMax), "
-        + "Advanced (shuffle, relaxedAdd). "
-        + "Unsupported: Memory operations (load/store), popcount, shifts (shlVariable/shrVariable), "
-        + "select, blend";
+    return "Panama SIMD: Arithmetic (add, subtract, multiply, divide, addSaturated), Bitwise (and,"
+        + " or, xor, not), Comparison (equals, lessThan, greaterThan), Math (sqrt,"
+        + " reciprocal, rsqrt, fma, fms), Lane operations (extractLaneI32, replaceLaneI32),"
+        + " Conversion (convertI32ToF32, convertF32ToI32), Reduction (horizontalSum,"
+        + " horizontalMin, horizontalMax), Advanced (shuffle, relaxedAdd). Unsupported:"
+        + " Memory operations (load/store), popcount, shifts (shlVariable/shrVariable),"
+        + " select, blend";
   }
 
   /**

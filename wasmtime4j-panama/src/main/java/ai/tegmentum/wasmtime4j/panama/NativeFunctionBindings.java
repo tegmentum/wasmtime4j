@@ -3667,34 +3667,22 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_panama_simd_not",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_sqrt",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_reciprocal",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_rsqrt",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_fma",
@@ -3737,18 +3725,12 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_panama_simd_convert_i32_to_f32",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_convert_f32_to_i32",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_horizontal_sum_i32",
@@ -3759,17 +3741,11 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_horizontal_min_i32",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS));
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_horizontal_max_i32",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS));
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_simd_relaxed_add",
@@ -4378,7 +4354,12 @@ public final class NativeFunctionBindings {
       final MemorySegment vectorB,
       final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_subtract", Integer.class, runtimeHandle, vectorA, vectorB, resultData);
+        "wasmtime4j_panama_simd_subtract",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        resultData);
   }
 
   /**
@@ -4395,7 +4376,12 @@ public final class NativeFunctionBindings {
       final MemorySegment vectorB,
       final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_multiply", Integer.class, runtimeHandle, vectorA, vectorB, resultData);
+        "wasmtime4j_panama_simd_multiply",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        resultData);
   }
 
   /**
@@ -4412,7 +4398,12 @@ public final class NativeFunctionBindings {
       final MemorySegment vectorB,
       final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_divide", Integer.class, runtimeHandle, vectorA, vectorB, resultData);
+        "wasmtime4j_panama_simd_divide",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        resultData);
   }
 
   /**
@@ -4493,7 +4484,12 @@ public final class NativeFunctionBindings {
       final MemorySegment vectorB,
       final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_equals", Integer.class, runtimeHandle, vectorA, vectorB, resultData);
+        "wasmtime4j_panama_simd_equals",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        resultData);
   }
 
   /**
@@ -4510,7 +4506,12 @@ public final class NativeFunctionBindings {
       final MemorySegment vectorB,
       final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_less_than", Integer.class, runtimeHandle, vectorA, vectorB, resultData);
+        "wasmtime4j_panama_simd_less_than",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        resultData);
   }
 
   /**
@@ -4704,11 +4705,7 @@ public final class NativeFunctionBindings {
   public int simdExtractLaneI32(
       final long runtimeHandle, final MemorySegment vector, final int laneIndex) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_extract_lane_i32",
-        Integer.class,
-        runtimeHandle,
-        vector,
-        laneIndex);
+        "wasmtime4j_panama_simd_extract_lane_i32", Integer.class, runtimeHandle, vector, laneIndex);
   }
 
   /**
@@ -4746,7 +4743,11 @@ public final class NativeFunctionBindings {
   public int simdConvertI32ToF32(
       final long runtimeHandle, final MemorySegment vector, final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_convert_i32_to_f32", Integer.class, runtimeHandle, vector, resultData);
+        "wasmtime4j_panama_simd_convert_i32_to_f32",
+        Integer.class,
+        runtimeHandle,
+        vector,
+        resultData);
   }
 
   /**
@@ -4759,7 +4760,11 @@ public final class NativeFunctionBindings {
   public int simdConvertF32ToI32(
       final long runtimeHandle, final MemorySegment vector, final MemorySegment resultData) {
     return callNativeFunction(
-        "wasmtime4j_panama_simd_convert_f32_to_i32", Integer.class, runtimeHandle, vector, resultData);
+        "wasmtime4j_panama_simd_convert_f32_to_i32",
+        Integer.class,
+        runtimeHandle,
+        vector,
+        resultData);
   }
 
   /**

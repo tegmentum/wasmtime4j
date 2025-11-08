@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.nio.file.Files;
@@ -157,9 +158,9 @@ public class PanamaGlobalTest {
 
     // Attempt to set I32 global with I64 value should throw
     assertThrows(
-        IllegalArgumentException.class,
+        WasmTypeException.class,
         () -> global.set(WasmValue.i64(999L)),
-        "Setting global with wrong type should throw IllegalArgumentException");
+        "Setting global with wrong type should throw WasmTypeException");
   }
 
   @Test

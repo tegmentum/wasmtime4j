@@ -104,6 +104,39 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     LOGGER.fine("Wrapped existing Panama global");
   }
 
+  /**
+   * Package-private constructor for wrapping an existing native global with known type and
+   * mutability.
+   *
+   * @param nativeGlobal the native global pointer
+   * @param type the value type of this global
+   * @param mutable whether this global is mutable
+   * @param store the store context
+   */
+  PanamaGlobal(
+      final MemorySegment nativeGlobal,
+      final WasmValueType type,
+      final boolean mutable,
+      final PanamaStore store) {
+    if (nativeGlobal == null || nativeGlobal.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native global cannot be null");
+    }
+    if (type == null) {
+      throw new IllegalArgumentException("Type cannot be null");
+    }
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+
+    this.nativeGlobal = nativeGlobal;
+    this.type = type;
+    this.mutable = mutable;
+    this.store = store;
+    this.arena = Arena.ofShared();
+
+    LOGGER.fine("Wrapped existing Panama global with type: " + type + ", mutable: " + mutable);
+  }
+
   @Override
   public WasmValue get() {
     ensureNotClosed();

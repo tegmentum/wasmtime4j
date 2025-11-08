@@ -55,8 +55,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public void setRegistry(final ComponentRegistry registry) {
-    throw new UnsupportedOperationException(
-        "Component registry not yet implemented for Panama");
+    throw new UnsupportedOperationException("Component registry not yet implemented for Panama");
   }
 
   @Override
@@ -91,14 +90,16 @@ public final class PanamaComponentEngine implements ComponentEngine {
   @Override
   public ComponentInstance createInstance(final ComponentSimple component, final Store store)
       throws WasmException {
-    throw new UnsupportedOperationException("Component instantiation not yet implemented for Panama");
+    throw new UnsupportedOperationException(
+        "Component instantiation not yet implemented for Panama");
   }
 
   @Override
   public ComponentInstance createInstance(
       final ComponentSimple component, final Store store, final List<ComponentSimple> dependencies)
       throws WasmException {
-    throw new UnsupportedOperationException("Component instantiation not yet implemented for Panama");
+    throw new UnsupportedOperationException(
+        "Component instantiation not yet implemented for Panama");
   }
 
   @Override
@@ -124,37 +125,44 @@ public final class PanamaComponentEngine implements ComponentEngine {
   // Engine interface methods
   @Override
   public Store createStore() throws WasmException {
-    throw new UnsupportedOperationException("Store creation not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Store creation not yet implemented for Panama component engine");
   }
 
   @Override
   public Store createStore(final Object storeData) throws WasmException {
-    throw new UnsupportedOperationException("Store creation not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Store creation not yet implemented for Panama component engine");
   }
 
   @Override
   public Module compileModule(final byte[] wasmBytes) throws WasmException {
-    throw new UnsupportedOperationException("Module compilation not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Module compilation not yet implemented for Panama component engine");
   }
 
   @Override
   public Module compileWat(final String watText) throws WasmException {
-    throw new UnsupportedOperationException("WAT compilation not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "WAT compilation not yet implemented for Panama component engine");
   }
 
   @Override
   public StreamingCompiler createStreamingCompiler() throws WasmException {
-    throw new UnsupportedOperationException("Streaming compiler not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Streaming compiler not yet implemented for Panama component engine");
   }
 
   @Override
   public void incrementEpoch() {
-    throw new UnsupportedOperationException("Epoch interruption not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Epoch interruption not yet implemented for Panama component engine");
   }
 
   @Override
   public EngineConfig getConfig() {
-    throw new UnsupportedOperationException("Engine config not yet implemented for Panama component engine");
+    throw new UnsupportedOperationException(
+        "Engine config not yet implemented for Panama component engine");
   }
 
   @Override

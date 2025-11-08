@@ -1,0 +1,257 @@
+package ai.tegmentum.wasmtime4j.panama;
+
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmTypeException;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.util.logging.Logger;
+
+/**
+ * Panama FFI implementation of WebAssembly Global that is bound to an instance export.
+ *
+ * <p>This class represents a global that is retrieved from a WebAssembly instance and uses
+ * instance-specific methods for getting and setting values rather than standalone global handles.
+ *
+ * @since 1.0.0
+ */
+final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
+  private static final Logger LOGGER = Logger.getLogger(PanamaInstanceGlobal.class.getName());
+
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
+
+  private final PanamaInstance instance;
+  private final PanamaStore store;
+  private final String name;
+  private final WasmValueType type;
+  private final boolean mutable;
+  private final Arena arena;
+  private volatile boolean closed = false;
+
+  /**
+   * Package-private constructor for wrapping a global export from an instance.
+   *
+   * @param instance the instance containing this global
+   * @param store the store context
+   * @param name the name of the global export
+   * @param type the value type of this global
+   * @param mutable whether this global is mutable
+   */
+  PanamaInstanceGlobal(
+      final PanamaInstance instance,
+      final PanamaStore store,
+      final String name,
+      final WasmValueType type,
+      final boolean mutable) {
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Name cannot be null or empty");
+    }
+    if (type == null) {
+      throw new IllegalArgumentException("Type cannot be null");
+    }
+
+    this.instance = instance;
+    this.store = store;
+    this.name = name;
+    this.type = type;
+    this.mutable = mutable;
+    this.arena = Arena.ofShared();
+
+    LOGGER.fine(
+        "Created instance global '" + name + "' with type: " + type + ", mutable: " + mutable);
+  }
+
+  @Override
+  public WasmValue get() {
+    ensureNotClosed();
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+      final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+      final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.instanceGetGlobalValue(
+              instance.getNativeInstance(),
+              store.getNativeStore(),
+              nameSegment,
+              i32Value,
+              i64Value,
+              f32Value,
+              f64Value,
+              refIdPresent,
+              refId);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get global value: error code " + result);
+      }
+
+      // Convert based on type
+      switch (type) {
+        case I32:
+          return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+        case I64:
+          return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+        case F32:
+          return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+        case F64:
+          return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+        case FUNCREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
+          return WasmValue.funcref(null);
+        case EXTERNREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
+          return WasmValue.externref(null);
+        default:
+          throw new UnsupportedOperationException("Unsupported type: " + type);
+      }
+    }
+  }
+
+  @Override
+  public void set(final WasmValue value) {
+    ensureNotClosed();
+
+    if (value == null) {
+      throw new IllegalArgumentException("Value cannot be null");
+    }
+    if (!mutable) {
+      throw new IllegalStateException("Cannot set value of immutable global");
+    }
+    if (value.getType() != type) {
+      throw new WasmTypeException(
+          "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
+    }
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+
+      // Extract value based on type
+      int valueTypeCode = type.toNativeTypeCode();
+      int i32Value = 0;
+      long i64Value = 0L;
+      double f32Value = 0.0;
+      double f64Value = 0.0;
+      int refIdPresent = 0;
+      long refId = 0L;
+
+      switch (type) {
+        case I32:
+          i32Value = value.asI32();
+          break;
+        case I64:
+          i64Value = value.asI64();
+          break;
+        case F32:
+          f32Value = value.asF32();
+          break;
+        case F64:
+          f64Value = value.asF64();
+          break;
+        case FUNCREF:
+        case EXTERNREF:
+          final Object refValue = value.getValue();
+          if (refValue != null) {
+            refIdPresent = 1;
+            if (refValue instanceof Long) {
+              refId = (Long) refValue;
+            } else if (refValue instanceof Integer) {
+              refId = ((Integer) refValue).longValue();
+            }
+          }
+          break;
+        default:
+          throw new UnsupportedOperationException("Unsupported type: " + type);
+      }
+
+      final int result =
+          NATIVE_BINDINGS.instanceSetGlobalValue(
+              instance.getNativeInstance(),
+              store.getNativeStore(),
+              nameSegment,
+              valueTypeCode,
+              i32Value,
+              i64Value,
+              f32Value,
+              f64Value,
+              refIdPresent,
+              refId);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to set global value: error code " + result);
+      }
+    }
+  }
+
+  @Override
+  public WasmValueType getType() {
+    return type;
+  }
+
+  @Override
+  public boolean isMutable() {
+    return mutable;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+    ensureNotClosed();
+    final WasmValueType valueType = getType();
+    final boolean mutableFlag = isMutable();
+    return new ai.tegmentum.wasmtime4j.GlobalType() {
+      @Override
+      public WasmValueType getValueType() {
+        return valueType;
+      }
+
+      @Override
+      public boolean isMutable() {
+        return mutableFlag;
+      }
+
+      @Override
+      public ai.tegmentum.wasmtime4j.WasmTypeKind getKind() {
+        return ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL;
+      }
+    };
+  }
+
+  @Override
+  public void close() {
+    if (closed) {
+      return;
+    }
+
+    closed = true;
+    if (arena != null && arena.scope().isAlive()) {
+      arena.close();
+    }
+
+    LOGGER.fine("Closed instance global: " + name);
+  }
+
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("Global has been closed");
+    }
+  }
+}

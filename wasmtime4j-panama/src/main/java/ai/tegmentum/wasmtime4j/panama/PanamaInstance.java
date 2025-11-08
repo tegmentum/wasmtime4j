@@ -180,16 +180,23 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    // Get the native global pointer from the instance
-    final MemorySegment globalPtr =
-        NATIVE_BINDINGS.instanceGetGlobalByName(nativeInstance, store.getNativeStore(), nameSegment);
+    // Query the global's type and mutability from the instance
+    final MemorySegment valueTypeOut = arena.allocate(ValueLayout.JAVA_INT);
+    final MemorySegment isMutableOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int typeResult =
+        NATIVE_BINDINGS.instanceGetGlobalType(
+            nativeInstance, store.getNativeStore(), nameSegment, valueTypeOut, isMutableOut);
 
-    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+    if (typeResult != 0) {
       return Optional.empty();
     }
 
-    // Wrap the native global pointer in a PanamaGlobal
-    return Optional.of(new PanamaGlobal(globalPtr, store));
+    final int typeCode = valueTypeOut.get(ValueLayout.JAVA_INT, 0);
+    final boolean mutable = isMutableOut.get(ValueLayout.JAVA_INT, 0) != 0;
+    final WasmValueType type = mapNativeTypeToWasmValueType(typeCode);
+
+    // Return an instance-bound global that uses instance-specific methods
+    return Optional.of(new PanamaInstanceGlobal(this, store, name, type, mutable));
   }
 
   @Override
@@ -555,6 +562,15 @@ public final class PanamaInstance implements Instance {
    */
   MemorySegment getNativeStore() {
     return store.getNativeStore();
+  }
+
+  /**
+   * Package-private accessor for native instance pointer.
+   *
+   * @return the native instance pointer
+   */
+  MemorySegment getNativeInstance() {
+    return nativeInstance;
   }
 
   @Override
@@ -962,15 +978,6 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Gets the native instance pointer.
-   *
-   * @return native instance memory segment
-   */
-  public MemorySegment getNativeInstance() {
-    return nativeInstance;
-  }
-
-  /**
    * Marshals a WasmValue to native memory.
    *
    * @param value the WasmValue to marshal
@@ -1066,6 +1073,34 @@ public final class PanamaInstance implements Instance {
     }
     if (disposed.get()) {
       throw new IllegalStateException("Instance has been disposed");
+    }
+  }
+
+  /**
+   * Maps native type code to WasmValueType.
+   *
+   * @param typeCode the type code from native
+   * @return the WasmValueType
+   */
+  private static WasmValueType mapNativeTypeToWasmValueType(final int typeCode) {
+    switch (typeCode) {
+      case 0:
+        return WasmValueType.I32;
+      case 1:
+        return WasmValueType.I64;
+      case 2:
+        return WasmValueType.F32;
+      case 3:
+        return WasmValueType.F64;
+      case 4:
+        return WasmValueType.V128;
+      case 5:
+        return WasmValueType.FUNCREF;
+      case 6:
+        return WasmValueType.EXTERNREF;
+      default:
+        LOGGER.warning("Unknown type code: " + typeCode);
+        return WasmValueType.I32; // Default fallback
     }
   }
 
