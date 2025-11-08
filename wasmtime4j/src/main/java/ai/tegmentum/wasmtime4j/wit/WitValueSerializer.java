@@ -24,9 +24,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Serializes WIT values to binary format for native marshalling.
  *
- * <p>This class provides efficient serialization of WIT values to byte arrays suitable for
- * passing through JNI boundaries to native code. The serialization format is optimized for
- * performance and minimal overhead.
+ * <p>This class provides efficient serialization of WIT values to byte arrays suitable for passing
+ * through JNI boundaries to native code. The serialization format is optimized for performance and
+ * minimal overhead.
  *
  * <p>Format for primitive values:
  *
@@ -62,7 +62,8 @@ public final class WitValueSerializer {
    */
   public static byte[] serialize(final WitValue value) throws WitValueException {
     if (value == null) {
-      throw new WitValueException("Cannot serialize null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new WitValueException(
+          "Cannot serialize null value", WitValueException.ErrorCode.NULL_VALUE);
     }
 
     if (!(value instanceof WitPrimitiveValue)) {
@@ -187,8 +188,8 @@ public final class WitValueSerializer {
    */
   public static int getTypeDiscriminator(final WitValue value) throws WitValueException {
     if (value == null) {
-      throw new WitValueException("Cannot get type discriminator for null value",
-          WitValueException.ErrorCode.NULL_VALUE);
+      throw new WitValueException(
+          "Cannot get type discriminator for null value", WitValueException.ErrorCode.NULL_VALUE);
     }
 
     if (value instanceof WitBool) {

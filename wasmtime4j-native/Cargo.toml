@@ -14,9 +14,9 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime
-wasmtime = { version = "37.0.2", features = ["component-model", "component-model-async", "async", "gc"] }
-wasmtime-wasi = { version = "37.0.2", optional = true }
-wasmtime-wast = { version = "37.0.2", features = ["component-model", "component-model-async"] }
+wasmtime = { version = "38.0.3", features = ["component-model", "component-model-async", "async", "gc"] }
+wasmtime-wasi = { version = "38.0.3", optional = true }
+wasmtime-wast = { version = "38.0.3", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"

@@ -30,16 +30,10 @@ public class GcComprehensiveTest {
     LOGGER.info("Setting up test: " + testInfo.getDisplayName());
 
     // Use the factory to get the appropriate runtime implementation
-    runtime = WasmRuntimeFactory.createRuntime();
+    runtime = WasmRuntimeFactory.create();
 
-    // Get the GC runtime - this will be JNI or Panama based on Java version
-    if (runtime instanceof ai.tegmentum.wasmtime4j.jni.JniWasmRuntime) {
-      gcRuntime = ((ai.tegmentum.wasmtime4j.jni.JniWasmRuntime) runtime).getGcRuntime();
-    } else if (runtime instanceof ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime) {
-      gcRuntime = ((ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime) runtime).getGcRuntime();
-    } else {
-      fail("Unsupported runtime type: " + runtime.getClass());
-    }
+    // Get the GC runtime - this method is now available on the WasmRuntime interface
+    gcRuntime = runtime.getGcRuntime();
 
     assertNotNull(gcRuntime, "GC runtime should be available");
   }
@@ -50,7 +44,7 @@ public class GcComprehensiveTest {
 
     if (runtime != null) {
       try {
-        runtime.dispose();
+        runtime.close();
       } catch (Exception e) {
         LOGGER.warning("Failed to dispose runtime: " + e.getMessage());
       }
@@ -58,7 +52,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testI31ReferenceOperations() {
+  void testI31ReferenceOperations() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing I31 reference operations");
 
     // Test creating I31 references with various values
@@ -98,7 +92,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testStructOperations() {
+  void testStructOperations() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing struct operations");
 
     // Create a struct type
@@ -148,7 +142,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testArrayOperations() {
+  void testArrayOperations() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing array operations");
 
     // Create an array type
@@ -209,7 +203,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testReferenceCastingAndTypeChecking() {
+  void testReferenceCastingAndTypeChecking() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing reference casting and type checking");
 
     // Create various objects
@@ -270,7 +264,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testGarbageCollection() {
+  void testGarbageCollection() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing garbage collection");
 
     // Get initial GC stats
@@ -279,6 +273,11 @@ public class GcComprehensiveTest {
 
     long initialAllocated = initialStats.getTotalAllocated();
     final long initialCollections = initialStats.getMajorCollections();
+    LOGGER.info(
+        "Initial stats: totalAllocated="
+            + initialAllocated
+            + ", majorCollections="
+            + initialCollections);
 
     // Allocate some objects
     for (int i = 0; i < 100; i++) {
@@ -288,6 +287,12 @@ public class GcComprehensiveTest {
 
     // Get stats after allocation
     GcStats afterAllocationStats = gcRuntime.getGcStats();
+    long afterAllocated = afterAllocationStats.getTotalAllocated();
+    LOGGER.info(
+        "After allocation stats: totalAllocated="
+            + afterAllocated
+            + ", expected > "
+            + initialAllocated);
     assertTrue(afterAllocationStats.getTotalAllocated() > initialAllocated);
 
     // Trigger garbage collection
@@ -307,7 +312,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testComplexNestedStructures() {
+  void testComplexNestedStructures() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing complex nested structures");
 
     // Create a nested struct type (struct containing arrays and other structs)
@@ -367,7 +372,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testErrorHandlingAndEdgeCases() {
+  void testErrorHandlingAndEdgeCases() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing error handling and edge cases");
 
     // Test null parameter validation
@@ -439,7 +444,7 @@ public class GcComprehensiveTest {
   }
 
   @Test
-  void testReferenceTypeHierarchy() {
+  void testReferenceTypeHierarchy() throws ai.tegmentum.wasmtime4j.gc.GcException {
     LOGGER.info("Testing reference type hierarchy compliance");
 
     // Test GcReferenceType subtype relationships

@@ -305,16 +305,12 @@ final class WitValueMarshallerTest {
   void testToJava() throws WitValueException {
     assertEquals(Boolean.TRUE, WitValueMarshaller.toJava(WitBool.of(true)), "Bool to Boolean");
     assertEquals(Integer.valueOf(42), WitValueMarshaller.toJava(WitS32.of(42)), "S32 to Integer");
-    assertEquals(
-        Long.valueOf(100L), WitValueMarshaller.toJava(WitS64.of(100L)), "S64 to Long");
+    assertEquals(Long.valueOf(100L), WitValueMarshaller.toJava(WitS64.of(100L)), "S64 to Long");
     assertEquals(
         Double.valueOf(3.14), WitValueMarshaller.toJava(WitFloat64.of(3.14)), "Float64 to Double");
     assertEquals(
-        Integer.valueOf((int) 'A'),
-        WitValueMarshaller.toJava(WitChar.of('A')),
-        "Char to Integer");
-    assertEquals(
-        "hello", WitValueMarshaller.toJava(WitString.of("hello")), "String to String");
+        Integer.valueOf((int) 'A'), WitValueMarshaller.toJava(WitChar.of('A')), "Char to Integer");
+    assertEquals("hello", WitValueMarshaller.toJava(WitString.of("hello")), "String to String");
   }
 
   @Test
@@ -509,15 +505,10 @@ final class WitValueMarshallerTest {
 
     assertTrue(((WitBool) unmarshalled.get(0)).getValue(), "Bool value preserved");
     assertEquals(-999, ((WitS32) unmarshalled.get(1)).getValue(), "S32 value preserved");
+    assertEquals(Long.MAX_VALUE, ((WitS64) unmarshalled.get(2)).getValue(), "S64 value preserved");
     assertEquals(
-        Long.MAX_VALUE, ((WitS64) unmarshalled.get(2)).getValue(), "S64 value preserved");
-    assertEquals(
-        Math.PI,
-        ((WitFloat64) unmarshalled.get(3)).getValue(),
-        1e-10,
-        "Float64 value preserved");
-    assertEquals(
-        0x1F680, ((WitChar) unmarshalled.get(4)).getCodepoint(), "Char value preserved");
+        Math.PI, ((WitFloat64) unmarshalled.get(3)).getValue(), 1e-10, "Float64 value preserved");
+    assertEquals(0x1F680, ((WitChar) unmarshalled.get(4)).getCodepoint(), "Char value preserved");
     assertEquals(
         "Hello 世界 🌍", ((WitString) unmarshalled.get(5)).getValue(), "String value preserved");
   }

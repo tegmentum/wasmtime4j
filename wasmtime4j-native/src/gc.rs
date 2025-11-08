@@ -20,6 +20,7 @@
 
 use wasmtime::*;
 use std::sync::{Arc, Mutex, RwLock};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::collections::HashMap;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc_types::*;
@@ -52,6 +53,10 @@ pub struct WasmGcRuntime {
     next_object_id: Mutex<ObjectId>,
     /// Real GC object mapping from ObjectId to Wasmtime GC references
     gc_objects: RwLock<HashMap<ObjectId, WasmtimeGcRef>>,
+    /// Direct stats tracking for Wasmtime GC allocations
+    allocation_count: AtomicU64,
+    /// Direct stats tracking for GC collections
+    collection_count: AtomicU64,
 }
 
 /// GC operation result for struct operations
@@ -122,6 +127,8 @@ impl WasmGcRuntime {
             gc_operations: Mutex::new(gc_operations),
             next_object_id: Mutex::new(1),
             gc_objects: RwLock::new(HashMap::new()),
+            allocation_count: AtomicU64::new(0),
+            collection_count: AtomicU64::new(0),
         })
     }
 
@@ -144,6 +151,8 @@ impl WasmGcRuntime {
             gc_operations: Mutex::new(gc_operations),
             next_object_id: Mutex::new(1),
             gc_objects: RwLock::new(HashMap::new()),
+            allocation_count: AtomicU64::new(0),
+            collection_count: AtomicU64::new(0),
         })
     }
 
@@ -212,8 +221,8 @@ impl WasmGcRuntime {
                 }
             }
 
-            // Also track in our heap for compatibility
-            let _ = self.heap.allocate_struct(type_def, field_values);
+            // Increment allocation count
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
 
             StructOperationResult {
                 success: true,
@@ -305,7 +314,7 @@ impl WasmGcRuntime {
 
         StructOperationResult {
             success: result.success,
-            object_id: None,
+            object_id: result.object_id,
             value: result.value,
             error: result.error,
         }
@@ -440,8 +449,8 @@ impl WasmGcRuntime {
                 }
             }
 
-            // Also track in our heap for compatibility
-            let _ = self.heap.allocate_array(type_def, elements.clone());
+            // Increment allocation count
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
 
             ArrayOperationResult {
                 success: true,
@@ -557,32 +566,67 @@ impl WasmGcRuntime {
 
     /// Set an array element value (array.set)
     pub fn array_set(&self, object_id: ObjectId, element_index: u32, value: GcValue) -> ArrayOperationResult {
-        match self.heap.get_object(object_id) {
-            Ok(object) => {
-                match self.heap.set_array_element(&object, element_index, value) {
-                    Ok(()) => ArrayOperationResult {
-                        success: true,
-                        object_id: None,
+        // Validate object exists
+        let gc_objects = match self.gc_objects.read() {
+            Ok(objects) => objects,
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
                     value: None,
-                        length: None,
-                        error: None,
-                    },
-                    Err(e) => ArrayOperationResult {
-                        success: false,
-                        object_id: None,
+                    length: None,
+                    error: Some("Failed to acquire GC objects lock".to_string()),
+                };
+            }
+        };
+
+        let wasmtime_ref = match gc_objects.get(&object_id) {
+            Some(r) => r,
+            None => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
                     value: None,
-                        length: None,
-                        error: Some(e.to_string()),
-                    },
-                }
-            },
-            Err(e) => ArrayOperationResult {
+                    length: None,
+                    error: Some(format!("Object {} not found", object_id)),
+                };
+            }
+        };
+
+        // Validate it's an array reference
+        if !matches!(wasmtime_ref.ref_type, GcReferenceType::ArrayRef(_)) {
+            return ArrayOperationResult {
                 success: false,
                 object_id: None,
                 value: None,
                 length: None,
-                error: Some(e.to_string()),
+                error: Some("Object is not an array".to_string()),
+            };
+        }
+
+        drop(gc_objects); // Release lock before acquiring operations lock
+
+        // Use real Wasmtime GC operations
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => return ArrayOperationResult {
+                success: false,
+                object_id: None,
+                value: None,
+                length: None,
+                error: Some("Failed to acquire GC operations lock".to_string()),
             },
+        };
+
+        // Set element value using real Wasmtime GC APIs
+        let result = gc_ops.array_set(object_id, element_index, &value);
+
+        ArrayOperationResult {
+            success: result.success,
+            object_id: None,
+            value: None,
+            length: None,
+            error: result.error,
         }
     }
 
@@ -1008,8 +1052,8 @@ impl WasmGcRuntime {
                 }
             }
 
-            // Also track in our heap for compatibility
-            let _ = self.heap.allocate_i31(value);
+            // Increment allocation count
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
 
             RefOperationResult {
                 success: true,
@@ -1106,12 +1150,28 @@ impl WasmGcRuntime {
 
     /// Get heap statistics
     pub fn get_heap_stats(&self) -> WasmtimeResult<GcHeapStats> {
-        self.heap.get_stats()
+        // Return stats based on our direct allocation tracking
+        let total_allocated = self.allocation_count.load(Ordering::Relaxed);
+
+        // Also get object count from gc_objects
+        let current_objects = self.gc_objects.read()
+            .map(|objects| objects.len() as u64)
+            .unwrap_or(0);
+
+        let collection_count = self.collection_count.load(Ordering::Relaxed);
+
+        let mut stats = GcHeapStats::default();
+        stats.total_allocated = total_allocated;
+        stats.current_heap_size = (current_objects * 32) as usize; // Rough estimate
+        stats.major_collections = collection_count;
+        Ok(stats)
     }
 
     /// Trigger garbage collection
     pub fn collect_garbage(&self) -> WasmtimeResult<GcCollectionResult> {
-        self.heap.collect_garbage(CollectionTrigger::Explicit)
+        let result = self.heap.collect_garbage(CollectionTrigger::Explicit)?;
+        self.collection_count.fetch_add(1, Ordering::Relaxed);
+        Ok(result)
     }
 
     /// Create weak reference
@@ -1143,15 +1203,17 @@ impl WasmGcRuntime {
     /// Advanced GC collection with incremental and concurrent support
     pub fn collect_garbage_advanced(&self, max_pause_millis: Option<u64>, concurrent: bool) -> WasmtimeResult<GcCollectionResult> {
         // This prepares for future advanced GC algorithms in Wasmtime
-        if concurrent {
+        let result = if concurrent {
             // Future: concurrent GC support
-            self.heap.collect_garbage(CollectionTrigger::Explicit)
+            self.heap.collect_garbage(CollectionTrigger::Explicit)?
         } else if let Some(_pause_limit) = max_pause_millis {
             // Future: incremental GC with pause time limits
-            self.heap.collect_garbage(CollectionTrigger::Explicit)
+            self.heap.collect_garbage(CollectionTrigger::Explicit)?
         } else {
-            self.heap.collect_garbage(CollectionTrigger::Explicit)
-        }
+            self.heap.collect_garbage(CollectionTrigger::Explicit)?
+        };
+        self.collection_count.fetch_add(1, Ordering::Relaxed);
+        Ok(result)
     }
 
     /// Support for GC object pinning (future WebAssembly GC feature)

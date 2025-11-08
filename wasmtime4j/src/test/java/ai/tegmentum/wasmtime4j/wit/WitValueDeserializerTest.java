@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -123,7 +122,8 @@ final class WitValueDeserializerTest {
 
     assertNotNull(result, "Deserialized result should not be null");
     assertInstanceOf(WitS32.class, result, "Result should be WitS32");
-    assertEquals(Integer.MAX_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MAX_VALUE");
+    assertEquals(
+        Integer.MAX_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MAX_VALUE");
   }
 
   @Test
@@ -137,7 +137,8 @@ final class WitValueDeserializerTest {
 
     assertNotNull(result, "Deserialized result should not be null");
     assertInstanceOf(WitS32.class, result, "Result should be WitS32");
-    assertEquals(Integer.MIN_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MIN_VALUE");
+    assertEquals(
+        Integer.MIN_VALUE, ((WitS32) result).getValue(), "Value should be Integer.MIN_VALUE");
   }
 
   @Test
@@ -483,7 +484,9 @@ final class WitValueDeserializerTest {
     assertNotNull(result, "Deserialized result should not be null");
     assertInstanceOf(WitString.class, result, "Result should be WitString");
     assertEquals(
-        "Line1\nLine2\tTab\r\nCRLF", ((WitString) result).getValue(), "Value should match original");
+        "Line1\nLine2\tTab\r\nCRLF",
+        ((WitString) result).getValue(),
+        "Value should match original");
   }
 
   @Test

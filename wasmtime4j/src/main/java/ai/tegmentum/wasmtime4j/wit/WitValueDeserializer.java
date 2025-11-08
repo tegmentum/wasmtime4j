@@ -88,8 +88,7 @@ public final class WitValueDeserializer {
   private static WitBool deserializeBool(final byte[] data) throws WitValueException {
     if (data.length != BOOL_SIZE) {
       throw new WitValueException(
-          "Invalid bool data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid bool data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     return WitBool.of(data[0] != 0);
   }
@@ -104,8 +103,7 @@ public final class WitValueDeserializer {
   private static WitS32 deserializeS32(final byte[] data) throws WitValueException {
     if (data.length != S32_SIZE) {
       throw new WitValueException(
-          "Invalid s32 data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid s32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS32.of(buffer.getInt());
@@ -121,8 +119,7 @@ public final class WitValueDeserializer {
   private static WitS64 deserializeS64(final byte[] data) throws WitValueException {
     if (data.length != S64_SIZE) {
       throw new WitValueException(
-          "Invalid s64 data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid s64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS64.of(buffer.getLong());
@@ -138,8 +135,7 @@ public final class WitValueDeserializer {
   private static WitFloat64 deserializeFloat64(final byte[] data) throws WitValueException {
     if (data.length != FLOAT64_SIZE) {
       throw new WitValueException(
-          "Invalid float64 data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid float64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitFloat64.of(buffer.getDouble());
@@ -155,8 +151,7 @@ public final class WitValueDeserializer {
   private static WitChar deserializeChar(final byte[] data) throws WitValueException {
     if (data.length != CHAR_SIZE) {
       throw new WitValueException(
-          "Invalid char data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid char data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int codepoint = buffer.getInt();
@@ -178,8 +173,7 @@ public final class WitValueDeserializer {
   private static WitString deserializeString(final byte[] data) throws WitValueException {
     if (data.length < STRING_LENGTH_SIZE) {
       throw new WitValueException(
-          "Invalid string data size: " + data.length,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+          "Invalid string data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);

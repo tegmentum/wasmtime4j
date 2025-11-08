@@ -17,6 +17,7 @@
 //! All operations use Wasmtime's native GC system for memory management and type safety.
 //! Comprehensive validation and defensive programming patterns ensure robust operation.
 
+use std::collections::HashMap;
 use wasmtime::*;
 use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -26,14 +27,22 @@ use crate::gc_types::{
 };
 use crate::gc_heap::ObjectId;
 
+/// Enum to hold different types of GC objects while preserving type information
+/// Stores OwnedRooted GC references for persistent storage beyond scope lifetimes
+pub enum GcObjectRef {
+    Struct(wasmtime::OwnedRooted<wasmtime::StructRef>),
+    Array(wasmtime::OwnedRooted<wasmtime::ArrayRef>),
+    Any(wasmtime::OwnedRooted<wasmtime::AnyRef>),
+}
+
 /// Real WebAssembly GC operations using Wasmtime's native GC runtime
 pub struct WasmtimeGcOperations {
     /// Wasmtime store for GC operations
     store: Store<()>,
     /// GC type definitions registered with Wasmtime
     gc_types: std::collections::HashMap<u32, wasmtime::HeapType>,
-    /// Real GC object references managed by Wasmtime
-    gc_objects: std::collections::HashMap<ObjectId, wasmtime::Rooted<wasmtime::AnyRef>>,
+    /// Real GC object references managed by Wasmtime with type preservation
+    gc_objects: std::collections::HashMap<ObjectId, GcObjectRef>,
 }
 
 /// Result of struct operations with actual Wasmtime GC integration
@@ -113,13 +122,12 @@ impl WasmtimeGcOperations {
         let mut wasmtime_fields = Vec::new();
 
         for field in &definition.fields {
-            let field_type = self.convert_field_type_to_wasmtime(&field.field_type)?;
+            let storage_type = self.convert_field_type_to_storage_type(&field.field_type)?;
             let mutability = if field.mutable {
                 wasmtime::Mutability::Var
             } else {
                 wasmtime::Mutability::Const
             };
-            let storage_type: wasmtime::StorageType = field_type.into();
             wasmtime_fields.push(wasmtime::FieldType::new(mutability, storage_type));
         }
 
@@ -140,13 +148,13 @@ impl WasmtimeGcOperations {
     /// Register an array type with Wasmtime's GC type system
     pub fn register_array_type(&mut self, definition: &ArrayTypeDefinition) -> WasmtimeResult<wasmtime::HeapType> {
         // Convert element type to Wasmtime array type
-        let element_type = self.convert_field_type_to_wasmtime(&definition.element_type)?;
+        let storage_type = self.convert_field_type_to_storage_type(&definition.element_type)?;
+
         let mutability = if definition.mutable {
             wasmtime::Mutability::Var
         } else {
             wasmtime::Mutability::Const
         };
-        let storage_type: wasmtime::StorageType = element_type.into();
         let field_type = wasmtime::FieldType::new(mutability, storage_type);
 
         // Create Wasmtime array type
@@ -182,23 +190,6 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert field values to Wasmtime values
-        let mut wasmtime_values = Vec::new();
-        for (i, value) in field_values.iter().enumerate() {
-            match self.convert_gc_value_to_wasmtime(value) {
-                Ok(val) => wasmtime_values.push(val),
-                Err(e) => {
-                    return RealStructOperationResult {
-                        success: false,
-                        gc_object: None,
-                        object_id: None,
-                        value: None,
-                        error: Some(format!("Failed to convert field {} value: {}", i, e)),
-                    };
-                }
-            }
-        }
-
         // Extract StructType from HeapType and create allocator
         let struct_type = match heap_type.as_concrete_struct() {
             Some(st) => st.clone(),
@@ -213,19 +204,69 @@ impl WasmtimeGcOperations {
             }
         };
 
+        // Debug: print struct type fields
+        let field_count = struct_type.fields().count();
+        eprintln!("[DEBUG] struct_new: StructType has {} fields", field_count);
+        for (i, field) in struct_type.fields().enumerate() {
+            let mutability = field.mutability();
+            eprintln!("[DEBUG] struct_new: field {}: mutability={:?}", i, mutability);
+        }
+
         let allocator = wasmtime::StructRefPre::new(&mut self.store, struct_type);
 
         // Create the struct using Wasmtime's GC APIs with RootScope
+        // IMPORTANT: Convert field values inside the scope to keep references rooted
+        // Convert to OwnedRooted for persistent storage
         let result = {
             let mut scope = wasmtime::RootScope::new(&mut self.store);
-            wasmtime::StructRef::new(&mut scope, &allocator, &wasmtime_values)
+
+            // Convert field values to Wasmtime values INSIDE the scope
+            let mut wasmtime_values = Vec::new();
+            for (i, value) in field_values.iter().enumerate() {
+                // Get field definition to check expected type
+                let field_def = &type_def.fields.get(i).ok_or_else(|| {
+                    WasmtimeError::from_string(&format!("Field {} not found in struct definition", i))
+                });
+
+                match Self::convert_gc_value_to_wasmtime_in_scope(&self.gc_objects, &mut scope, value) {
+                    Ok(val) => {
+                        eprintln!("[DEBUG] struct_new: field {} - converting {:?} (field_type: {:?}) to {:?}",
+                                  i, value, field_def.as_ref().map(|f| &f.field_type), val);
+                        wasmtime_values.push(val);
+                    },
+                    Err(e) => {
+                        return RealStructOperationResult {
+                            success: false,
+                            gc_object: None,
+                            object_id: None,
+                            value: None,
+                            error: Some(format!("Failed to convert field {} value: {}", i, e)),
+                        };
+                    }
+                }
+            }
+
+            match wasmtime::StructRef::new(&mut scope, &allocator, &wasmtime_values) {
+                Ok(struct_ref) => {
+                    // Convert to OwnedRooted before scope ends for persistent storage
+                    struct_ref.to_owned_rooted(&mut scope)
+                },
+                Err(e) => Err(e),
+            }
         };
 
         match result {
-            Ok(struct_ref) => {
-                // to_anyref() already returns Rooted<AnyRef>
-                let rooted_ref = struct_ref.to_anyref();
-                self.gc_objects.insert(object_id, rooted_ref.clone());
+            Ok(owned_struct_ref) => {
+                // Store the OwnedRooted<StructRef> for persistent access beyond scope lifetime
+                let gc_ref = GcObjectRef::Struct(owned_struct_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+
+                // Convert to AnyRef for return value - need new scope to get Rooted from OwnedRooted
+                let rooted_ref = {
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    let struct_rooted = owned_struct_ref.to_rooted(&mut scope);
+                    struct_rooted.to_anyref()
+                };
 
                 RealStructOperationResult {
                     success: true,
@@ -247,8 +288,8 @@ impl WasmtimeGcOperations {
 
     /// Get a struct field value using Wasmtime's GC system
     pub fn struct_get(&mut self, object_id: ObjectId, field_index: u32) -> RealStructOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealStructOperationResult {
@@ -261,44 +302,110 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to struct reference
-        match (*rooted_ref).unwrap_struct(&self.store) {
-            Ok(struct_ref) => {
-                // Get field value using Wasmtime's GC APIs
-                match struct_ref.field(&mut self.store, field_index as usize) {
-                    Ok(val) => {
-                        match self.convert_wasmtime_to_gc_value(&val) {
-                            Ok(gc_value) => RealStructOperationResult {
-                                success: true,
-                                gc_object: None,
-                                object_id: None,
-                                value: Some(gc_value),
-                                error: None,
-                            },
-                            Err(e) => RealStructOperationResult {
-                                success: false,
-                                gc_object: None,
-                                object_id: None,
-                                value: None,
-                                error: Some(format!("Failed to convert field value: {}", e)),
-                            },
-                        }
-                    },
-                    Err(e) => RealStructOperationResult {
-                        success: false,
-                        gc_object: None,
-                        object_id: None,
-                        value: None,
-                        error: Some(format!("Wasmtime struct field access failed: {}", e)),
-                    },
-                }
+        // Pattern match to extract OwnedRooted<StructRef>
+        let owned_struct_ref = match gc_ref {
+            GcObjectRef::Struct(s) => s,
+            _ => {
+                return RealStructOperationResult {
+                    success: false,
+                    gc_object: None,
+                    object_id: None,
+                    value: None,
+                    error: Some("Object is not a struct".to_string()),
+                };
+            }
+        };
+
+        // Get field value - convert OwnedRooted to Rooted in scope
+        // For reference types, we need to store them and return an object ID
+        let (gc_value, ref_object_id) = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+            let struct_ref = owned_struct_ref.to_rooted(&mut scope);
+            match struct_ref.field(&mut scope, field_index as usize) {
+                Ok(val) => {
+                    eprintln!("[DEBUG] struct_get: field {} - retrieved value {:?}", field_index, val);
+                    // Convert the value to GcValue BEFORE the scope ends
+                    match val {
+                        wasmtime::Val::I32(i) => (Ok(GcValue::I32(i)), None),
+                        wasmtime::Val::I64(i) => (Ok(GcValue::I64(i)), None),
+                        wasmtime::Val::F32(f) => (Ok(GcValue::F32(f32::from_bits(f))), None),
+                        wasmtime::Val::F64(f) => (Ok(GcValue::F64(f64::from_bits(f))), None),
+                        wasmtime::Val::V128(v) => {
+                            let bytes = v.as_u128().to_le_bytes();
+                            (Ok(GcValue::V128(bytes)), None)
+                        },
+                        wasmtime::Val::AnyRef(any_ref) => {
+                            if let Some(any) = any_ref {
+                                // Generate a unique object ID (use current size + random offset to avoid collisions)
+                                let new_object_id = (self.gc_objects.len() as u64 + 1) * 1000 + (std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_nanos() % 1000) as u64;
+
+                                // Try to convert to specific reference types and store
+                                if let Ok(Some(struct_ref)) = any.as_struct(&mut scope) {
+                                    match struct_ref.to_owned_rooted(&mut scope) {
+                                        Ok(owned) => {
+                                            self.gc_objects.insert(new_object_id, GcObjectRef::Struct(owned));
+                                            eprintln!("[DEBUG] struct_get: stored struct reference with object_id={}", new_object_id);
+                                            // Return Null for value, object_id carries the reference
+                                            (Ok(GcValue::Null), Some(new_object_id))
+                                        }
+                                        Err(e) => (Err(format!("Failed to root struct reference: {}", e)), None),
+                                    }
+                                } else if let Ok(Some(array_ref)) = any.as_array(&mut scope) {
+                                    match array_ref.to_owned_rooted(&mut scope) {
+                                        Ok(owned) => {
+                                            self.gc_objects.insert(new_object_id, GcObjectRef::Array(owned));
+                                            eprintln!("[DEBUG] struct_get: stored array reference with object_id={}", new_object_id);
+                                            // Return Null for value, object_id carries the reference
+                                            (Ok(GcValue::Null), Some(new_object_id))
+                                        }
+                                        Err(e) => (Err(format!("Failed to root array reference: {}", e)), None),
+                                    }
+                                } else {
+                                    // Generic AnyRef - store as Any variant
+                                    match any.to_owned_rooted(&mut scope) {
+                                        Ok(owned) => {
+                                            self.gc_objects.insert(new_object_id, GcObjectRef::Any(owned));
+                                            eprintln!("[DEBUG] struct_get: stored anyref reference with object_id={}", new_object_id);
+                                            // Return Null for value, object_id carries the reference
+                                            (Ok(GcValue::Null), Some(new_object_id))
+                                        }
+                                        Err(e) => (Err(format!("Failed to root anyref: {}", e)), None),
+                                    }
+                                }
+                            } else {
+                                (Ok(GcValue::Null), None)
+                            }
+                        },
+                        _ => (Ok(GcValue::Null), None),
+                    }
+                },
+                Err(e) => (Err(format!("Failed to get struct field: {}", e)), None),
+            }
+        };
+
+        // Now handle the conversion result
+        eprintln!("[DEBUG] struct_get: after scope, gc_value={:?}, ref_object_id={:?}", gc_value, ref_object_id);
+        match gc_value {
+            Ok(gc_val) => {
+                let result = RealStructOperationResult {
+                    success: true,
+                    gc_object: None,
+                    object_id: ref_object_id,
+                    value: Some(gc_val),
+                    error: None,
+                };
+                eprintln!("[DEBUG] struct_get: returning result with object_id={:?}", result.object_id);
+                result
             },
-            Err(_) => RealStructOperationResult {
+            Err(e) => RealStructOperationResult {
                 success: false,
                 gc_object: None,
                 object_id: None,
                 value: None,
-                error: Some("Object is not a struct".to_string()),
+                error: Some(e),
             },
         }
     }
@@ -310,8 +417,26 @@ impl WasmtimeGcOperations {
         field_index: u32,
         value: &GcValue,
     ) -> RealStructOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Convert GC value to Wasmtime value FIRST (before borrowing gc_objects)
+        let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
+            Ok(val) => {
+                eprintln!("[DEBUG] struct_set: object_id={}, field_index={}, value={:?}, wasmtime_value={:?}",
+                          object_id, field_index, value, val);
+                val
+            },
+            Err(e) => {
+                return RealStructOperationResult {
+                    success: false,
+                    gc_object: None,
+                    object_id: None,
+                    value: None,
+                    error: Some(format!("Failed to convert value: {}", e)),
+                };
+            }
+        };
+
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealStructOperationResult {
@@ -324,47 +449,44 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to struct reference
-        match (*rooted_ref).unwrap_struct(&self.store) {
-            Ok(struct_ref) => {
-                // Convert GC value to Wasmtime value
-                let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
-                    Ok(val) => val,
-                    Err(e) => {
-                        return RealStructOperationResult {
-                            success: false,
-                            gc_object: None,
-                            object_id: None,
-                            value: None,
-                            error: Some(format!("Failed to convert value: {}", e)),
-                        };
-                    }
+        // Pattern match to extract StructRef
+        let struct_ref = match gc_ref {
+            GcObjectRef::Struct(s) => s,
+            _ => {
+                return RealStructOperationResult {
+                    success: false,
+                    gc_object: None,
+                    object_id: None,
+                    value: None,
+                    error: Some("Object is not a struct".to_string()),
                 };
+            }
+        };
 
-                // Set field value using Wasmtime's GC APIs
-                match struct_ref.set_field(&mut self.store, field_index as usize, wasmtime_value) {
-                    Ok(()) => RealStructOperationResult {
-                        success: true,
-                        gc_object: None,
-                        object_id: None,
-                        value: None,
-                        error: None,
-                    },
-                    Err(e) => RealStructOperationResult {
-                        success: false,
-                        gc_object: None,
-                        object_id: None,
-                        value: None,
-                        error: Some(format!("Wasmtime struct field set failed: {}", e)),
-                    },
-                }
+        // Set field value - need to create scope to convert OwnedRooted to Rooted
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+            let struct_rooted = struct_ref.to_rooted(&mut scope);
+            eprintln!("[DEBUG] struct_set: calling set_field");
+            let set_result = struct_rooted.set_field(&mut scope, field_index as usize, wasmtime_value);
+            eprintln!("[DEBUG] struct_set: set_field result={:?}", set_result);
+            set_result
+        };
+
+        match result {
+            Ok(()) => RealStructOperationResult {
+                success: true,
+                gc_object: None,
+                object_id: None,
+                value: None,
+                error: None,
             },
-            Err(_) => RealStructOperationResult {
+            Err(e) => RealStructOperationResult {
                 success: false,
                 gc_object: None,
                 object_id: None,
                 value: None,
-                error: Some("Object is not a struct".to_string()),
+                error: Some(format!("Wasmtime struct field set failed: {}", e)),
             },
         }
     }
@@ -426,40 +548,87 @@ impl WasmtimeGcOperations {
 
         let allocator = wasmtime::ArrayRefPre::new(&mut self.store, array_type);
 
-        // Determine initial element and length
-        let initial_element = if let Some(first) = wasmtime_values.first() {
-            first.clone()
-        } else {
-            // Default to I32(0) for empty arrays
-            wasmtime::Val::I32(0)
-        };
-        let length = wasmtime_values.len() as u32;
-
         // Create the array using Wasmtime's GC APIs with RootScope
+        // For immutable arrays, use new_fixed with initial values
+        // For mutable arrays, create with first element then set the rest
+        eprintln!("[DEBUG] array_new: type_id={}, mutable={}, element_count={}",
+                  type_def.type_id, type_def.mutable, wasmtime_values.len());
+
         let result = {
             let mut scope = wasmtime::RootScope::new(&mut self.store);
-            wasmtime::ArrayRef::new(&mut scope, &allocator, &initial_element, length)
-        };
 
-        match result {
-            Ok(array_ref) => {
-                // Set array elements if there are any
-                for (i, val) in wasmtime_values.iter().enumerate() {
-                    if let Err(e) = array_ref.set(&mut self.store, i as u32, val.clone()) {
+            let array_ref = if !type_def.mutable && !wasmtime_values.is_empty() {
+                eprintln!("[DEBUG] array_new: using new_fixed for immutable array");
+                // Immutable array: use new_fixed to initialize with all values at once
+                match wasmtime::ArrayRef::new_fixed(&mut scope, &allocator, &wasmtime_values) {
+                    Ok(array_ref) => array_ref,
+                    Err(e) => {
                         return RealArrayOperationResult {
                             success: false,
                             gc_array: None,
                             object_id: None,
                             value: None,
                             length: None,
-                            error: Some(format!("Failed to set array element {}: {}", i, e)),
+                            error: Some(format!("Failed to create immutable array: {}", e)),
                         };
                     }
                 }
+            } else {
+                // Mutable array or empty array: create with initial element then set values
+                let initial_element = if let Some(first) = wasmtime_values.first() {
+                    first.clone()
+                } else {
+                    // Default to I32(0) for empty arrays
+                    wasmtime::Val::I32(0)
+                };
+                let length = wasmtime_values.len() as u32;
 
-                // to_anyref() already returns Rooted<AnyRef>
-                let rooted_ref = array_ref.to_anyref();
-                self.gc_objects.insert(object_id, rooted_ref.clone());
+                match wasmtime::ArrayRef::new(&mut scope, &allocator, &initial_element, length) {
+                    Ok(array_ref) => {
+                        // Set array elements if there are any
+                        for (i, val) in wasmtime_values.iter().enumerate() {
+                            if let Err(e) = array_ref.set(&mut scope, i as u32, val.clone()) {
+                                return RealArrayOperationResult {
+                                    success: false,
+                                    gc_array: None,
+                                    object_id: None,
+                                    value: None,
+                                    length: None,
+                                    error: Some(format!("Failed to set array element {}: {}", i, e)),
+                                };
+                            }
+                        }
+                        array_ref
+                    },
+                    Err(e) => {
+                        return RealArrayOperationResult {
+                            success: false,
+                            gc_array: None,
+                            object_id: None,
+                            value: None,
+                            length: None,
+                            error: Some(format!("Failed to create mutable array: {}", e)),
+                        };
+                    }
+                }
+            };
+
+            // Convert to OwnedRooted before scope ends for persistent storage
+            array_ref.to_owned_rooted(&mut scope)
+        };
+
+        match result {
+            Ok(owned_array_ref) => {
+                // Store the OwnedRooted<ArrayRef> for persistent access beyond scope lifetime
+                let gc_ref = GcObjectRef::Array(owned_array_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+
+                // Convert to AnyRef for return value - need new scope to get Rooted from OwnedRooted
+                let rooted_ref = {
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    let array_rooted = owned_array_ref.to_rooted(&mut scope);
+                    array_rooted.to_anyref()
+                };
 
                 RealArrayOperationResult {
                     success: true,
@@ -483,8 +652,8 @@ impl WasmtimeGcOperations {
 
     /// Get an array element using Wasmtime's GC system
     pub fn array_get(&mut self, object_id: ObjectId, element_index: u32) -> RealArrayOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealArrayOperationResult {
@@ -498,30 +667,38 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to array reference
-        match (*rooted_ref).unwrap_array(&self.store) {
-            Ok(array_ref) => {
-                // Get element value using Wasmtime's GC APIs
-                match array_ref.get(&mut self.store, element_index) {
-                    Ok(val) => {
-                        match self.convert_wasmtime_to_gc_value(&val) {
-                            Ok(gc_value) => RealArrayOperationResult {
-                                success: true,
-                                gc_array: None,
-                                object_id: None,
-                                value: Some(gc_value),
-                                length: None,
-                                error: None,
-                            },
-                            Err(e) => RealArrayOperationResult {
-                                success: false,
-                                gc_array: None,
-                                object_id: None,
-                                value: None,
-                                length: None,
-                                error: Some(format!("Failed to convert element value: {}", e)),
-                            },
-                        }
+        // Pattern match to extract OwnedRooted<ArrayRef>
+        let owned_array_ref = match gc_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Object is not an array".to_string()),
+                };
+            }
+        };
+
+        // Get element value using Wasmtime's GC APIs - convert OwnedRooted to Rooted in scope
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+            let array_ref = owned_array_ref.to_rooted(&mut scope);
+            array_ref.get(&mut scope, element_index)
+        };
+
+        match result {
+            Ok(val) => {
+                match self.convert_wasmtime_to_gc_value(&val) {
+                    Ok(gc_value) => RealArrayOperationResult {
+                        success: true,
+                        gc_array: None,
+                        object_id: None,
+                        value: Some(gc_value),
+                        length: None,
+                        error: None,
                     },
                     Err(e) => RealArrayOperationResult {
                         success: false,
@@ -529,17 +706,17 @@ impl WasmtimeGcOperations {
                         object_id: None,
                         value: None,
                         length: None,
-                        error: Some(format!("Wasmtime array element access failed: {}", e)),
+                        error: Some(format!("Failed to convert element value: {}", e)),
                     },
                 }
             },
-            Err(_) => RealArrayOperationResult {
+            Err(e) => RealArrayOperationResult {
                 success: false,
                 gc_array: None,
                 object_id: None,
                 value: None,
                 length: None,
-                error: Some("Object is not an array".to_string()),
+                error: Some(format!("Wasmtime array element access failed: {}", e)),
             },
         }
     }
@@ -551,8 +728,23 @@ impl WasmtimeGcOperations {
         element_index: u32,
         value: &GcValue,
     ) -> RealArrayOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Convert GC value to Wasmtime value FIRST (before borrowing gc_objects)
+        let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
+            Ok(val) => val,
+            Err(e) => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some(format!("Failed to convert value: {}", e)),
+                };
+            }
+        };
+
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealArrayOperationResult {
@@ -566,59 +758,52 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to array reference
-        match (*rooted_ref).unwrap_array(&self.store) {
-            Ok(array_ref) => {
-                // Convert GC value to Wasmtime value
-                let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
-                    Ok(val) => val,
-                    Err(e) => {
-                        return RealArrayOperationResult {
-                            success: false,
-                            gc_array: None,
-                            object_id: None,
-                            value: None,
-                            length: None,
-                            error: Some(format!("Failed to convert value: {}", e)),
-                        };
-                    }
+        // Pattern match to extract OwnedRooted<ArrayRef>
+        let owned_array_ref = match gc_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Object is not an array".to_string()),
                 };
+            }
+        };
 
-                // Set element value using Wasmtime's GC APIs
-                match array_ref.set(&mut self.store, element_index, wasmtime_value) {
-                    Ok(()) => RealArrayOperationResult {
-                        success: true,
-                        gc_array: None,
-                        object_id: None,
-                        value: None,
-                        length: None,
-                        error: None,
-                    },
-                    Err(e) => RealArrayOperationResult {
-                        success: false,
-                        gc_array: None,
-                        object_id: None,
-                        value: None,
-                        length: None,
-                        error: Some(format!("Wasmtime array element set failed: {}", e)),
-                    },
-                }
+        // Set element value using Wasmtime's GC APIs - convert OwnedRooted to Rooted in scope
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+            let array_ref = owned_array_ref.to_rooted(&mut scope);
+            array_ref.set(&mut scope, element_index, wasmtime_value)
+        };
+
+        match result {
+            Ok(()) => RealArrayOperationResult {
+                success: true,
+                gc_array: None,
+                object_id: None,
+                value: None,
+                length: None,
+                error: None,
             },
-            Err(_) => RealArrayOperationResult {
+            Err(e) => RealArrayOperationResult {
                 success: false,
                 gc_array: None,
                 object_id: None,
                 value: None,
                 length: None,
-                error: Some("Object is not an array".to_string()),
+                error: Some(format!("Wasmtime array element set failed: {}", e)),
             },
         }
     }
 
     /// Get array length using Wasmtime's GC system
     pub fn array_len(&mut self, object_id: ObjectId) -> RealArrayOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealArrayOperationResult {
@@ -632,36 +817,44 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to array reference
-        match (*rooted_ref).unwrap_array(&self.store) {
-            Ok(array_ref) => {
-                // Get array length using Wasmtime's GC APIs
-                match array_ref.len(&self.store) {
-                    Ok(length) => RealArrayOperationResult {
-                        success: true,
-                        gc_array: None,
-                        object_id: None,
-                        value: None,
-                        length: Some(length),
-                        error: None,
-                    },
-                    Err(e) => RealArrayOperationResult {
-                        success: false,
-                        gc_array: None,
-                        object_id: None,
-                        value: None,
-                        length: None,
-                        error: Some(format!("Failed to get array length: {}", e)),
-                    },
-                }
+        // Pattern match to extract OwnedRooted<ArrayRef>
+        let owned_array_ref = match gc_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Object is not an array".to_string()),
+                };
+            }
+        };
+
+        // Get array length using Wasmtime's GC APIs - convert OwnedRooted to Rooted in scope
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+            let array_ref = owned_array_ref.to_rooted(&mut scope);
+            array_ref.len(&scope)
+        };
+
+        match result {
+            Ok(length) => RealArrayOperationResult {
+                success: true,
+                gc_array: None,
+                object_id: None,
+                value: None,
+                length: Some(length),
+                error: None,
             },
-            Err(_) => RealArrayOperationResult {
+            Err(e) => RealArrayOperationResult {
                 success: false,
                 gc_array: None,
                 object_id: None,
                 value: None,
                 length: None,
-                error: Some("Object is not an array".to_string()),
+                error: Some(format!("Failed to get array length: {}", e)),
             },
         }
     }
@@ -704,10 +897,10 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to array references
-        let dest_array = match (*dest_ref).unwrap_array(&self.store) {
-            Ok(arr) => arr,
-            Err(_) => {
+        // Pattern match to extract destination ArrayRef
+        let dest_array = match dest_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
                 return RealArrayOperationResult {
                     success: false,
                     gc_array: None,
@@ -719,9 +912,10 @@ impl WasmtimeGcOperations {
             }
         };
 
-        let src_array = match (*src_ref).unwrap_array(&self.store) {
-            Ok(arr) => arr,
-            Err(_) => {
+        // Pattern match to extract source ArrayRef
+        let src_array = match src_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
                 return RealArrayOperationResult {
                     success: false,
                     gc_array: None,
@@ -836,8 +1030,23 @@ impl WasmtimeGcOperations {
         value: &GcValue,
         length: u32,
     ) -> RealArrayOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Convert GC value to Wasmtime value FIRST (before borrowing gc_objects)
+        let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
+            Ok(val) => val,
+            Err(e) => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some(format!("Failed to convert fill value: {}", e)),
+                };
+            }
+        };
+
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealArrayOperationResult {
@@ -851,10 +1060,10 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Convert to array reference
-        let array_ref = match (*rooted_ref).unwrap_array(&self.store) {
-            Ok(arr) => arr,
-            Err(_) => {
+        // Pattern match to extract ArrayRef
+        let array_ref = match gc_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
                 return RealArrayOperationResult {
                     success: false,
                     gc_array: None,
@@ -894,21 +1103,6 @@ impl WasmtimeGcOperations {
                 )),
             };
         }
-
-        // Convert GC value to Wasmtime value
-        let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
-            Ok(val) => val,
-            Err(e) => {
-                return RealArrayOperationResult {
-                    success: false,
-                    gc_array: None,
-                    object_id: None,
-                    value: None,
-                    length: None,
-                    error: Some(format!("Failed to convert fill value: {}", e)),
-                };
-            }
-        };
 
         // Fill array elements using Wasmtime's GC APIs
         for i in 0..length {
@@ -953,19 +1147,37 @@ impl WasmtimeGcOperations {
         // Create I31 reference using Wasmtime's GC APIs
         match wasmtime::I31::new_i32(value) {
             Some(i31) => {
-                // AnyRef::from_i31() already returns Rooted<AnyRef>
+                // AnyRef::from_i31() returns Rooted<AnyRef>, need to convert to OwnedRooted for storage
                 let rooted_ref = wasmtime::AnyRef::from_i31(&mut self.store, i31);
-                self.gc_objects.insert(object_id, rooted_ref.clone());
 
-                RealRefOperationResult {
-                    success: true,
-                    cast_result: Some(rooted_ref),
-                    cast_object_id: Some(object_id),
-                    test_result: None,
-                    eq_result: None,
-                    is_null: None,
-                    value: None,
-                    error: None,
+                // Convert to OwnedRooted for persistent storage
+                match rooted_ref.to_owned_rooted(&mut self.store) {
+                    Ok(owned_ref) => {
+                        // Store in enum as Any type (I31 doesn't need special handling)
+                        let gc_ref = GcObjectRef::Any(owned_ref.clone());
+                        self.gc_objects.insert(object_id, gc_ref);
+
+                        RealRefOperationResult {
+                            success: true,
+                            cast_result: Some(rooted_ref),
+                            cast_object_id: Some(object_id),
+                            test_result: None,
+                            eq_result: None,
+                            is_null: None,
+                            value: None,
+                            error: None,
+                        }
+                    },
+                    Err(e) => RealRefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        cast_object_id: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some(format!("Failed to convert I31 to OwnedRooted: {}", e)),
+                    },
                 }
             },
             None => RealRefOperationResult {
@@ -983,8 +1195,8 @@ impl WasmtimeGcOperations {
 
     /// Get I31 value using Wasmtime's GC system
     pub fn i31_get(&mut self, object_id: ObjectId, signed: bool) -> RealRefOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealRefOperationResult {
@@ -1000,8 +1212,25 @@ impl WasmtimeGcOperations {
             }
         };
 
+        // Extract AnyRef from enum (I31 is stored as Any)
+        let any_ref = match gc_ref {
+            GcObjectRef::Any(a) => a,
+            _ => {
+                return RealRefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    cast_object_id: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Object is not an I31".to_string()),
+                };
+            }
+        };
+
         // Convert to I31 reference
-        match (*rooted_ref).unwrap_i31(&self.store) {
+        match (*any_ref).unwrap_i31(&self.store) {
             Ok(i31) => {
                 // Get I31 value using Wasmtime's GC APIs
                 let value = if signed {
@@ -1040,8 +1269,8 @@ impl WasmtimeGcOperations {
         object_id: ObjectId,
         target_type: &GcReferenceType,
     ) -> RealRefOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealRefOperationResult {
@@ -1058,12 +1287,12 @@ impl WasmtimeGcOperations {
         };
 
         // Perform type cast using Wasmtime's GC type system
-        let cast_valid = self.validate_reference_cast(rooted_ref, target_type);
+        let cast_valid = self.validate_reference_cast(gc_ref, target_type);
 
         if cast_valid {
             RealRefOperationResult {
                 success: true,
-                cast_result: Some(rooted_ref.clone()),
+                cast_result: None,  // We return the object_id instead
                 cast_object_id: Some(object_id),
                 test_result: None,
                 eq_result: None,
@@ -1091,8 +1320,8 @@ impl WasmtimeGcOperations {
         object_id: ObjectId,
         target_type: &GcReferenceType,
     ) -> RealRefOperationResult {
-        // Get the rooted GC object
-        let rooted_ref = match self.gc_objects.get(&object_id) {
+        // Get the GC object from storage
+        let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
             None => {
                 return RealRefOperationResult {
@@ -1109,7 +1338,7 @@ impl WasmtimeGcOperations {
         };
 
         // Test type compatibility using Wasmtime's GC type system
-        let test_result = self.validate_reference_cast(rooted_ref, target_type);
+        let test_result = self.validate_reference_cast(gc_ref, target_type);
 
         RealRefOperationResult {
             success: true,
@@ -1167,6 +1396,41 @@ impl WasmtimeGcOperations {
     }
 
     /// Convert field type to Wasmtime's ValType
+    /// Convert FieldType to Wasmtime StorageType for struct/array fields
+    fn convert_field_type_to_storage_type(&self, field_type: &FieldType) -> WasmtimeResult<StorageType> {
+        match field_type {
+            FieldType::I32 => Ok(ValType::I32.into()),
+            FieldType::I64 => Ok(ValType::I64.into()),
+            FieldType::F32 => Ok(ValType::F32.into()),
+            FieldType::F64 => Ok(ValType::F64.into()),
+            FieldType::V128 => Ok(ValType::V128.into()),
+            FieldType::V256 => Ok(ValType::V128.into()),  // V256 not yet in Wasmtime, use V128
+            FieldType::V512 => Ok(ValType::V128.into()),  // V512 not yet in Wasmtime, use V128
+            FieldType::PackedI8 => Ok(StorageType::I8),
+            FieldType::PackedI16 => Ok(StorageType::I16),
+            FieldType::Reference(ref_type) => {
+                let heap_type = match ref_type {
+                    GcReferenceType::AnyRef => HeapType::Any,
+                    GcReferenceType::EqRef => HeapType::Eq,
+                    GcReferenceType::I31Ref => HeapType::I31,
+                    GcReferenceType::StructRef(struct_def) => {
+                        // Use registered struct type or fallback to Any
+                        self.gc_types.get(&struct_def.type_id)
+                            .cloned()
+                            .unwrap_or(HeapType::Any)
+                    },
+                    GcReferenceType::ArrayRef(array_def) => {
+                        // Use registered array type or fallback to Any
+                        self.gc_types.get(&array_def.type_id)
+                            .cloned()
+                            .unwrap_or(HeapType::Any)
+                    },
+                };
+                Ok(ValType::Ref(RefType::new(true, heap_type)).into())
+            },
+        }
+    }
+
     fn convert_field_type_to_wasmtime(&self, field_type: &FieldType) -> WasmtimeResult<ValType> {
         match field_type {
             FieldType::I32 => Ok(ValType::I32),
@@ -1200,11 +1464,110 @@ impl WasmtimeGcOperations {
         }
     }
 
-    /// Convert GC value to Wasmtime Val
-    fn convert_gc_value_to_wasmtime(&self, gc_value: &GcValue) -> WasmtimeResult<Val> {
+    /// Convert GC value to Wasmtime Val within a RootScope (for struct/array field values)
+    /// This version takes a scope to ensure GC references remain rooted
+    fn convert_gc_value_to_wasmtime_in_scope<T>(gc_objects: &HashMap<ObjectId, GcObjectRef>, scope: &mut wasmtime::RootScope<T>, gc_value: &GcValue) -> WasmtimeResult<Val>
+    where
+        T: wasmtime::AsContextMut,
+    {
         match gc_value {
             GcValue::I32(i) => Ok(Val::I32(*i)),
-            GcValue::I64(i) => Ok(Val::I64(*i)),
+            GcValue::I64(i) => {
+                // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
+                // If the value exists in gc_objects, treat it as a reference
+                let object_id = *i as u64;
+                eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: checking I64({}) as object ID, exists={}", i, gc_objects.contains_key(&object_id));
+                if let Some(gc_ref) = gc_objects.get(&object_id) {
+                    // Found an object with this ID - convert it to AnyRef within the provided scope
+                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: treating I64({}) as object ID", i);
+                    let any_ref = match gc_ref {
+                        GcObjectRef::Struct(owned_struct) => {
+                            let struct_rooted = owned_struct.to_rooted(scope);
+                            Ok(struct_rooted.to_anyref())
+                        },
+                        GcObjectRef::Array(owned_array) => {
+                            let array_rooted = owned_array.to_rooted(scope);
+                            Ok(array_rooted.to_anyref())
+                        },
+                        GcObjectRef::Any(owned_any) => {
+                            let any_rooted = owned_any.to_rooted(scope);
+                            Ok(any_rooted)
+                        },
+                    };
+                    any_ref.map(|a| Val::AnyRef(Some(a)))
+                } else {
+                    // Not an object ID, treat as regular i64
+                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: I64({}) not found in gc_objects, treating as regular i64", i);
+                    Ok(Val::I64(*i))
+                }
+            },
+            GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
+            GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
+            GcValue::V128(bytes) => {
+                let value = u128::from_le_bytes(*bytes);
+                Ok(Val::V128(value.into()))
+            },
+            GcValue::V256(bytes) => {
+                // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
+                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                let value = u128::from_le_bytes(v128_bytes);
+                Ok(Val::V128(value.into()))
+            },
+            GcValue::V512(bytes) => {
+                // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
+                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                let value = u128::from_le_bytes(v128_bytes);
+                Ok(Val::V128(value.into()))
+            },
+            GcValue::Reference(obj_ref) => {
+                // Convert object reference to Wasmtime AnyRef
+                match obj_ref {
+                    Some(_obj) => {
+                        // In a real implementation, this would map the object to a Wasmtime reference
+                        // For now, return null reference as placeholder
+                        Ok(Val::null_any_ref())
+                    },
+                    None => Ok(Val::null_any_ref()),
+                }
+            },
+            GcValue::Null => Ok(Val::null_any_ref()),
+        }
+    }
+
+    /// Convert GC value to Wasmtime Val
+    fn convert_gc_value_to_wasmtime(&mut self, gc_value: &GcValue) -> WasmtimeResult<Val> {
+        match gc_value {
+            GcValue::I32(i) => Ok(Val::I32(*i)),
+            GcValue::I64(i) => {
+                // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
+                // If the value exists in gc_objects, treat it as a reference
+                let object_id = *i as u64;
+                eprintln!("[DEBUG] convert_gc_value_to_wasmtime: checking I64({}) as object ID, exists={}", i, self.gc_objects.contains_key(&object_id));
+                if let Some(gc_ref) = self.gc_objects.get(&object_id) {
+                    // Found an object with this ID - convert it to AnyRef
+                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime: treating I64({}) as object ID", i);
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    let any_ref = match gc_ref {
+                        GcObjectRef::Struct(owned_struct) => {
+                            let struct_rooted = owned_struct.to_rooted(&mut scope);
+                            Ok(struct_rooted.to_anyref())
+                        },
+                        GcObjectRef::Array(owned_array) => {
+                            let array_rooted = owned_array.to_rooted(&mut scope);
+                            Ok(array_rooted.to_anyref())
+                        },
+                        GcObjectRef::Any(owned_any) => {
+                            let any_rooted = owned_any.to_rooted(&mut scope);
+                            Ok(any_rooted)
+                        },
+                    };
+                    any_ref.map(|a| Val::AnyRef(Some(a)))
+                } else {
+                    // Not an object ID, treat as regular i64
+                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime: I64({}) not found in gc_objects, treating as regular i64", i);
+                    Ok(Val::I64(*i))
+                }
+            },
             GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
             GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
             GcValue::V128(bytes) => {
@@ -1268,20 +1631,31 @@ impl WasmtimeGcOperations {
     /// Validate reference cast using Wasmtime's type system
     fn validate_reference_cast(
         &self,
-        rooted_ref: &wasmtime::Rooted<wasmtime::AnyRef>,
+        gc_ref: &GcObjectRef,
         target_type: &GcReferenceType,
     ) -> bool {
         match target_type {
             GcReferenceType::AnyRef => true, // Everything is a subtype of anyref
             GcReferenceType::EqRef => {
-                // Check if reference supports equality
-                (*rooted_ref).unwrap_i31(&self.store).is_ok() ||
-                (*rooted_ref).unwrap_struct(&self.store).is_ok() ||
-                (*rooted_ref).unwrap_array(&self.store).is_ok()
+                // Check if reference supports equality (i31, struct, or array)
+                match gc_ref {
+                    GcObjectRef::Struct(_) | GcObjectRef::Array(_) => true,
+                    GcObjectRef::Any(any_ref) => {
+                        // Check if it's an I31 reference
+                        (*any_ref).unwrap_i31(&self.store).is_ok()
+                    },
+                }
             },
-            GcReferenceType::I31Ref => (*rooted_ref).unwrap_i31(&self.store).is_ok(),
-            GcReferenceType::StructRef(_) => (*rooted_ref).unwrap_struct(&self.store).is_ok(),
-            GcReferenceType::ArrayRef(_) => (*rooted_ref).unwrap_array(&self.store).is_ok(),
+            GcReferenceType::I31Ref => {
+                // I31 is stored as Any variant
+                if let GcObjectRef::Any(any_ref) = gc_ref {
+                    (*any_ref).unwrap_i31(&self.store).is_ok()
+                } else {
+                    false
+                }
+            },
+            GcReferenceType::StructRef(_) => matches!(gc_ref, GcObjectRef::Struct(_)),
+            GcReferenceType::ArrayRef(_) => matches!(gc_ref, GcObjectRef::Array(_)),
         }
     }
 }

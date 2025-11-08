@@ -80,10 +80,10 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;
 
-    let store = Store::new(&engine, ());
-
     // Create WAST context for test execution (async mode to support component-model-async)
-    let mut wast_context = WastContext::new(store, wasmtime_wast::Async::Yes);
+    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::Yes, |store| {
+        let _ = store;
+    });
 
     // Register spectest infrastructure for both core and component model
     wast_context.register_spectest(&wasmtime_wast::SpectestConfig {
@@ -151,10 +151,10 @@ pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecuti
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;
 
-    let store = Store::new(&engine, ());
-
     // Create WAST context for test execution (async mode to support component-model-async)
-    let mut wast_context = WastContext::new(store, wasmtime_wast::Async::Yes);
+    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::Yes, |store| {
+        let _ = store;
+    });
 
     // Register spectest infrastructure for both core and component model
     wast_context.register_spectest(&wasmtime_wast::SpectestConfig {

@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.gc.StructType;
 import ai.tegmentum.wasmtime4j.gc.WeakGcReference;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +194,21 @@ public final class JniGcRuntime implements GcRuntime {
   public I31Instance createI31(final int value) throws GcException {
     validateNotDisposed();
 
+    // I31 values must fit in 31 bits (signed)
+    // Range: -(2^30) to (2^30 - 1) = -1073741824 to 1073741823
+    final int minI31 = -(1 << 30); // -1073741824
+    final int maxI31 = (1 << 30) - 1; // 1073741823
+    if (value < minI31 || value > maxI31) {
+      throw new IllegalArgumentException(
+          "I31 value out of range: "
+              + value
+              + " (must be between "
+              + minI31
+              + " and "
+              + maxI31
+              + ")");
+    }
+
     lock.readLock().lock();
     try {
       if (disposed) {
@@ -310,7 +326,7 @@ public final class JniGcRuntime implements GcRuntime {
     validateNotNull(array, "array");
     validateNotNull(value, "value");
     if (elementIndex < 0) {
-      throw new IllegalArgumentException("Element index cannot be negative: " + elementIndex);
+      throw new IndexOutOfBoundsException("Element index cannot be negative: " + elementIndex);
     }
 
     lock.readLock().lock();
@@ -1577,11 +1593,30 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   private Object[] convertGcValuesToNative(final List<GcValue> values) {
+    System.err.println(
+        "[JAVA DEBUG] convertGcValuesToNative: converting " + values.size() + " values");
+    for (int i = 0; i < values.size(); i++) {
+      final GcValue v = values.get(i);
+      System.err.println("[JAVA DEBUG]   value " + i + " type=" + v.getType());
+      if (v.getType() == GcValue.Type.REFERENCE) {
+        final ai.tegmentum.wasmtime4j.gc.GcObject ref = v.asReference();
+        System.err.println("[JAVA DEBUG]     ref is null? " + (ref == null));
+        if (ref != null) {
+          System.err.println("[JAVA DEBUG]     ref class=" + ref.getClass().getName());
+          System.err.println(
+              "[JAVA DEBUG]     ref instanceof JniGcObject? " + (ref instanceof JniGcObject));
+          if (ref instanceof JniGcObject) {
+            System.err.println("[JAVA DEBUG]     object ID=" + ((JniGcObject) ref).getObjectId());
+          }
+        }
+      }
+    }
     return values.stream().map(this::convertGcValueToNative).toArray();
   }
 
   private Object convertGcValueToNative(final GcValue value) {
-    switch (value.getType()) {
+    final GcValue.Type valueType = value.getType();
+    switch (valueType) {
       case I32:
         return value.asI32();
       case I64:
@@ -1593,16 +1628,53 @@ public final class JniGcRuntime implements GcRuntime {
       case V128:
         return value.asV128();
       case REFERENCE:
-        // For now, return null for references
-        return null;
+        // Extract object ID from the GcObject reference
+        final ai.tegmentum.wasmtime4j.gc.GcObject gcObject = value.asReference();
+        if (gcObject == null) {
+          // Null reference is valid
+          return null;
+        }
+        // Check if it's a JniGcObject and extract the object ID
+        if (gcObject instanceof JniGcObject) {
+          // CRITICAL: Must return Long object, not long primitive, so JNI can convert to jobject
+          return Long.valueOf(((JniGcObject) gcObject).getObjectId());
+        }
+        // If it's not a JniGcObject, this is a critical error
+        throw new IllegalStateException(
+            "BUG: convertGcValueToNative received GcObject that is not JniGcObject! "
+                + "Type="
+                + gcObject.getClass().getName()
+                + ", Superclass="
+                + (gcObject.getClass().getSuperclass() != null
+                    ? gcObject.getClass().getSuperclass().getName()
+                    : "null")
+                + ", Implemented interfaces="
+                + Arrays.toString(gcObject.getClass().getInterfaces()));
       default:
-        throw new IllegalStateException("Unsupported GC value type: " + value.getType());
+        throw new IllegalStateException("Unsupported GC value type: " + valueType);
     }
   }
 
   private GcValue convertNativeToGcValue(final Object nativeValue) {
     if (nativeValue == null) {
       return GcValue.nullValue();
+    }
+
+    // Check if this is a GC object reference marker
+    if (nativeValue instanceof GcReferenceMarker) {
+      final GcReferenceMarker marker = (GcReferenceMarker) nativeValue;
+      final long objectId = marker.getObjectId();
+      // Create a generic GC object wrapper for the reference
+      // We don't know if it's a struct or array at this point, so create a generic wrapper
+      final JniGcObject gcObject =
+          new JniGcObject(objectId) {
+            @Override
+            public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
+              // Return ANYREF as we don't know the specific type
+              return ai.tegmentum.wasmtime4j.gc.GcReferenceType.ANY_REF;
+            }
+          };
+      return GcValue.reference(gcObject);
     }
 
     if (nativeValue instanceof Integer) {
@@ -1661,11 +1733,8 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   private long getObjectId(final GcObject object) {
-    if (object instanceof JniGcObject) {
-      return ((JniGcObject) object).getObjectId();
-    } else {
-      throw new IllegalStateException("Invalid GC object type");
-    }
+    // All GcObject implementations have getObjectId() method
+    return object.getObjectId();
   }
 
   private GcObject createGcObjectFromId(final long objectId, final GcReferenceType type) {
@@ -1683,8 +1752,62 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   private GcStats convertNativeToGcStats(final Object nativeStats) {
-    // Implementation would extract fields from native stats object
-    // For now, return default stats
+    if (nativeStats == null) {
+      // Return default stats if native stats unavailable
+      return GcStats.builder()
+          .totalAllocated(0)
+          .totalCollected(0)
+          .bytesAllocated(0)
+          .bytesCollected(0)
+          .minorCollections(0)
+          .majorCollections(0)
+          .currentHeapSize(0)
+          .peakHeapSize(0)
+          .maxHeapSize(0)
+          .build();
+    }
+
+    // Handle GcCollectionResult (from collectGarbage operations)
+    if (nativeStats instanceof ai.tegmentum.wasmtime4j.gc.GcCollectionResult) {
+      final ai.tegmentum.wasmtime4j.gc.GcCollectionResult collectionResult =
+          (ai.tegmentum.wasmtime4j.gc.GcCollectionResult) nativeStats;
+
+      return GcStats.builder()
+          .totalAllocated(0) // Not tracked in collection result
+          .totalCollected(collectionResult.getObjectsCollected())
+          .bytesAllocated(0) // Not tracked in collection result
+          .bytesCollected(collectionResult.getBytesCollected())
+          .minorCollections(0) // Not tracked in collection result
+          .majorCollections(1) // Count this collection
+          .currentHeapSize(0) // Not tracked in collection result
+          .peakHeapSize(0) // Not tracked in collection result
+          .maxHeapSize(0) // Not tracked in collection result
+          .build();
+    }
+
+    // Handle GcHeapStats (from getGcStats operations)
+    if (nativeStats instanceof ai.tegmentum.wasmtime4j.gc.GcHeapStats) {
+      final ai.tegmentum.wasmtime4j.gc.GcHeapStats heapStats =
+          (ai.tegmentum.wasmtime4j.gc.GcHeapStats) nativeStats;
+
+      long totalAlloc = heapStats.getTotalAllocated();
+      long currentHeap = heapStats.getCurrentHeapSize();
+      long majorColl = heapStats.getMajorCollections();
+
+      return GcStats.builder()
+          .totalAllocated(totalAlloc)
+          .totalCollected(0) // Not tracked by GcHeapStats
+          .bytesAllocated(totalAlloc) // Use totalAllocated as bytes
+          .bytesCollected(0) // Not tracked by GcHeapStats
+          .minorCollections(0) // Not tracked by GcHeapStats
+          .majorCollections(majorColl)
+          .currentHeapSize((int) currentHeap)
+          .peakHeapSize(0) // Not tracked by GcHeapStats
+          .maxHeapSize(0) // Not tracked by GcHeapStats
+          .build();
+    }
+
+    // Unknown type - return defaults
     return GcStats.builder()
         .totalAllocated(0)
         .totalCollected(0)
@@ -1926,8 +2049,7 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   /** JNI implementation of struct instance for GC runtime. */
-  public static class JniStructInstance implements StructInstance {
-    private final long objectId;
+  public static class JniStructInstance extends JniGcObject implements StructInstance {
     private final JniGcRuntime runtime;
     private final StructType structType;
     private final int typeId;
@@ -1945,15 +2067,10 @@ public final class JniGcRuntime implements GcRuntime {
         final long objectId,
         final StructType structType,
         final int typeId) {
-      this.objectId = objectId;
+      super(objectId);
       this.runtime = runtime;
       this.structType = structType;
       this.typeId = typeId;
-    }
-
-    @Override
-    public long getObjectId() {
-      return objectId;
     }
 
     @Override
@@ -2010,14 +2127,13 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
-      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.STRUCT_REF;
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.STRUCT_REF;
     }
   }
 
   /** JNI implementation of array instance for GC runtime. */
-  public static class JniArrayInstance implements ArrayInstance {
-    private final long objectId;
+  public static class JniArrayInstance extends JniGcObject implements ArrayInstance {
     private final JniGcRuntime runtime;
     private final ArrayType arrayType;
     private final int typeId;
@@ -2038,16 +2154,11 @@ public final class JniGcRuntime implements GcRuntime {
         final ArrayType arrayType,
         final int typeId,
         final int length) {
-      this.objectId = objectId;
+      super(objectId);
       this.runtime = runtime;
       this.arrayType = arrayType;
       this.typeId = typeId;
       this.length = length;
-    }
-
-    @Override
-    public long getObjectId() {
-      return objectId;
     }
 
     @Override
@@ -2104,14 +2215,13 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
-      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.ARRAY_REF;
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.ARRAY_REF;
     }
   }
 
   /** JNI implementation of i31 instance for GC runtime. */
-  public static class JniI31Instance implements I31Instance {
-    private final long objectId;
+  public static class JniI31Instance extends JniGcObject implements I31Instance {
     private final JniGcRuntime runtime;
     private final int value;
 
@@ -2123,14 +2233,9 @@ public final class JniGcRuntime implements GcRuntime {
      * @param value the i31 value
      */
     public JniI31Instance(final JniGcRuntime runtime, final long objectId, final int value) {
-      this.objectId = objectId;
+      super(objectId);
       this.runtime = runtime;
       this.value = value;
-    }
-
-    @Override
-    public long getObjectId() {
-      return objectId;
     }
 
     @Override
@@ -2171,25 +2276,24 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type casting with validation
-      return this;
+    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
+      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF;
     }
 
     @Override
     public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type checking
-      return false;
+      // I31 is a subtype of ANY_REF and EQ_REF
+      return type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF
+          || type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.ANY_REF
+          || type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.EQ_REF;
     }
 
     @Override
-    public boolean isNull() {
-      return false;
-    }
-
-    @Override
-    public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
-      return ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF;
+    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
+      if (isOfType(type)) {
+        return this;
+      }
+      throw new ClassCastException("Cannot cast I31 to " + type + ": incompatible reference types");
     }
   }
 
@@ -2622,6 +2726,23 @@ public final class JniGcRuntime implements GcRuntime {
     @Override
     public Map<InvariantCategory, Object> getSpecificValidators() {
       return Collections.emptyMap();
+    }
+  }
+
+  /**
+   * Internal marker class used by JNI to indicate that a returned value is a GC object reference
+   * (object ID) rather than a primitive value. This class is package-private and only used
+   * internally by the JNI bindings to distinguish between i64 values and object IDs.
+   */
+  static class GcReferenceMarker {
+    private final long objectId;
+
+    GcReferenceMarker(final long objectId) {
+      this.objectId = objectId;
+    }
+
+    long getObjectId() {
+      return objectId;
     }
   }
 }

@@ -369,21 +369,24 @@ final class WitValueSerializerTest {
   @DisplayName("Get type discriminator for bool")
   void testGetTypeDiscriminatorBool() throws WitValueException {
     final WitBool value = WitBool.of(true);
-    assertEquals(1, WitValueSerializer.getTypeDiscriminator(value), "Bool discriminator should be 1");
+    assertEquals(
+        1, WitValueSerializer.getTypeDiscriminator(value), "Bool discriminator should be 1");
   }
 
   @Test
   @DisplayName("Get type discriminator for s32")
   void testGetTypeDiscriminatorS32() throws WitValueException {
     final WitS32 value = WitS32.of(42);
-    assertEquals(2, WitValueSerializer.getTypeDiscriminator(value), "S32 discriminator should be 2");
+    assertEquals(
+        2, WitValueSerializer.getTypeDiscriminator(value), "S32 discriminator should be 2");
   }
 
   @Test
   @DisplayName("Get type discriminator for s64")
   void testGetTypeDiscriminatorS64() throws WitValueException {
     final WitS64 value = WitS64.of(100L);
-    assertEquals(3, WitValueSerializer.getTypeDiscriminator(value), "S64 discriminator should be 3");
+    assertEquals(
+        3, WitValueSerializer.getTypeDiscriminator(value), "S64 discriminator should be 3");
   }
 
   @Test
@@ -398,7 +401,8 @@ final class WitValueSerializerTest {
   @DisplayName("Get type discriminator for char")
   void testGetTypeDiscriminatorChar() throws WitValueException {
     final WitChar value = WitChar.of('A');
-    assertEquals(5, WitValueSerializer.getTypeDiscriminator(value), "Char discriminator should be 5");
+    assertEquals(
+        5, WitValueSerializer.getTypeDiscriminator(value), "Char discriminator should be 5");
   }
 
   @Test

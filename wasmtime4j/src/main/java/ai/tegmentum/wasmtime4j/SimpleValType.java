@@ -106,9 +106,7 @@ final class SimpleValType implements ValType {
     return "ValType(" + valueType + ")";
   }
 
-  /**
-   * Static factory methods for creating ValType instances.
-   */
+  /** Static factory methods for creating ValType instances. */
   static final class Factory {
 
     private Factory() {

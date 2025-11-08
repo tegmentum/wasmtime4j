@@ -461,8 +461,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public void setStructField(
-      final StructInstance struct, final int fieldIndex, final GcValue value) throws GcException {
+  public void setStructField(final StructInstance struct, final int fieldIndex, final GcValue value)
+      throws GcException {
     validateNotDisposed();
     validateNotNull(struct, "struct");
     validateNotNull(value, "value");

@@ -281,8 +281,7 @@ class WitInterfaceParserTest {
   @Test
   @DisplayName("Test WIT text preservation")
   void testWitTextPreservation() throws WasmException {
-    final String originalWitText =
-        "interface test {\n" + "    hello: func() -> string;\n" + "}\n";
+    final String originalWitText = "interface test {\n" + "    hello: func() -> string;\n" + "}\n";
 
     final WitInterfaceDefinition definition = parser.parseInterface(originalWitText, "test");
     assertEquals(originalWitText, definition.getWitText());

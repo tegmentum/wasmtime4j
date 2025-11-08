@@ -401,6 +401,28 @@ public interface WasmRuntime extends Closeable {
   boolean supportsComponentModel();
 
   /**
+   * Gets the GC (Garbage Collection) runtime for this runtime instance.
+   *
+   * <p>The GC runtime provides access to WebAssembly GC proposal features including:
+   *
+   * <ul>
+   *   <li>Struct and array type operations
+   *   <li>Reference types (funcref, externref)
+   *   <li>i31 reference support
+   *   <li>GC heap management and statistics
+   * </ul>
+   *
+   * <p>This method uses lazy initialization - the GC runtime is created with a default engine on
+   * first access and cached for subsequent calls.
+   *
+   * @return the GC runtime instance
+   * @throws WasmException if the GC runtime cannot be created
+   * @throws UnsupportedOperationException if GC features are not supported by this runtime
+   * @since 1.0.0
+   */
+  ai.tegmentum.wasmtime4j.gc.GcRuntime getGcRuntime() throws WasmException;
+
+  /**
    * Deserializes a module from a file containing serialized module data.
    *
    * @param engine the engine to use for deserialization

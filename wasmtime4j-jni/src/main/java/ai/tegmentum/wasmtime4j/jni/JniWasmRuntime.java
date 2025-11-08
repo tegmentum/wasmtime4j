@@ -65,6 +65,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   /** Phantom reference manager for automatic cleanup. */
   private final JniPhantomReferenceManager phantomManager;
 
+  /** Cached default GC runtime for lazy initialization. */
+  private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
+
+  /** Lock object for GC runtime lazy initialization. */
+  private final Object gcRuntimeLock = new Object();
+
   /**
    * Creates a new JNI WebAssembly runtime.
    *
@@ -299,6 +305,30 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       }
       throw new WasmException("Unexpected error creating GC runtime", e);
     }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.gc.GcRuntime getGcRuntime() throws WasmException {
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    // Double-checked locking for lazy initialization
+    if (defaultGcRuntime == null) {
+      synchronized (gcRuntimeLock) {
+        if (defaultGcRuntime == null) {
+          try {
+            // Create a default engine for the GC runtime
+            final Engine engine = createEngine();
+            defaultGcRuntime = createGcRuntime(engine);
+            LOGGER.fine("Created default GC runtime with lazy initialization");
+          } catch (final Exception e) {
+            throw new WasmException("Failed to create default GC runtime", e);
+          }
+        }
+      }
+    }
+    return defaultGcRuntime;
   }
 
   @Override
