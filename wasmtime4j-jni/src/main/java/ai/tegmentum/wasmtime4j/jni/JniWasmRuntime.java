@@ -257,9 +257,61 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       final long memoryLimitBytes,
       final long executionTimeoutSeconds)
       throws WasmException {
-    // TODO: Implement store creation with resource limits
-    // For now, delegate to basic createStore
-    return createStore(engine);
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (fuelLimit < 0) {
+      throw new IllegalArgumentException("Fuel limit cannot be negative");
+    }
+    if (memoryLimitBytes < 0) {
+      throw new IllegalArgumentException("Memory limit cannot be negative");
+    }
+    if (executionTimeoutSeconds < 0) {
+      throw new IllegalArgumentException("Execution timeout cannot be negative");
+    }
+
+    validateRuntimeState();
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      final JniEngine jniEngine = (JniEngine) engine;
+      final long engineHandle = jniEngine.getNativeHandle();
+
+      // Call native method with resource limits
+      final long storeHandle =
+          nativeCreateStoreWithResourceLimits(
+              engineHandle, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
+
+      if (storeHandle == 0) {
+        throw new WasmException("Failed to create store with resource limits");
+      }
+
+      final JniStore store = new JniStore(storeHandle, jniEngine);
+
+      // Register store for concurrency management and cleanup
+      concurrencyManager.registerResource(storeHandle);
+      phantomManager.register(store, storeHandle, "nativeDestroyStore");
+
+      LOGGER.fine(
+          "Created store with resource limits - fuel: "
+              + fuelLimit
+              + ", memory: "
+              + memoryLimitBytes
+              + " bytes, timeout: "
+              + executionTimeoutSeconds
+              + "s, handle: 0x"
+              + Long.toHexString(storeHandle));
+
+      return store;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Unexpected error creating store with resource limits", e);
+    }
   }
 
   /**
@@ -1047,6 +1099,18 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return the native linker handle, or 0 on failure
    */
   private static native long nativeCreateWasiLinker(long engineHandle);
+
+  /**
+   * Creates a new store with comprehensive resource limits.
+   *
+   * @param engineHandle the native engine handle
+   * @param fuelLimit the fuel limit (0 = no limit)
+   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
+   * @param executionTimeoutSeconds the execution timeout in seconds (0 = no timeout)
+   * @return the native store handle, or 0 on failure
+   */
+  private static native long nativeCreateStoreWithResourceLimits(
+      long engineHandle, long fuelLimit, long memoryLimitBytes, long executionTimeoutSeconds);
 
   /**
    * Create a new module serializer with default configuration.

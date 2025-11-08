@@ -2407,6 +2407,35 @@ pub mod jni_store {
         }) as jlong
     }
 
+    /// Create a store with comprehensive resource limits including fuel and timeout
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateStoreWithResourceLimits(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        fuel_limit: jlong,           // 0 = no limit
+        memory_size: jlong,          // 0 = no limit
+        execution_timeout_secs: jlong, // 0 = no timeout
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+
+            let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
+            let memory_limit_opt = if memory_size == 0 { None } else { Some(memory_size as usize) };
+            let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
+
+            core::create_store_with_config(
+                engine,
+                fuel_limit_opt,
+                memory_limit_opt,
+                timeout_opt,
+                None,  // instances
+                None,  // table_elements
+                None,  // max_functions
+            )
+        }) as jlong
+    }
+
     #[allow(non_snake_case)]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
         mut env: JNIEnv,
