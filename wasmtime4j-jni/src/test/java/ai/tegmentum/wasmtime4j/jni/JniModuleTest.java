@@ -401,8 +401,12 @@ class JniModuleTest {
   void testValidateImportsWithNull() {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-    // Default implementation returns true even for null (not implemented yet)
-    assertTrue(module.validateImports(null));
+    // Should throw IllegalArgumentException for null imports
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> module.validateImports(null));
+
+    assertThat(exception.getMessage()).contains("imports");
+    assertThat(exception.getMessage()).contains("cannot be null");
   }
 
   @Test
