@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -292,18 +293,20 @@ class JniLinkerTest {
     assertThat(exception.getMessage()).contains("Module cannot be null");
   }
 
-  // Unimplemented methods tests
+  // Methods that work with fake handles (defensive programming skips native calls)
 
   @Test
-  void testEnableWasiThrowsUnsupportedOperationException() {
-    assertThrows(UnsupportedOperationException.class, () -> linker.enableWasi());
+  void testEnableWasiDoesNotCrashWithFakeHandle() throws WasmException {
+    // With fake handle, enableWasi should return early without calling native code
+    // This tests defensive programming - no crash, just graceful skip
+    linker.enableWasi(); // Should not throw or crash
   }
 
   @Test
-  void testAliasThrowsUnsupportedOperationException() {
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> linker.alias("from", "fromName", "to", "toName"));
+  void testAliasDoesNotCrashWithFakeHandle() throws WasmException {
+    // With fake handle, alias should return early without calling native code
+    // This tests defensive programming - no crash, just graceful skip
+    linker.alias("from", "fromName", "to", "toName"); // Should not throw or crash
   }
 
   @Test
