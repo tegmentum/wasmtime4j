@@ -214,8 +214,8 @@ public class JniModule implements Module {
   }
 
   /**
-   * Check if native handle looks valid. This is a heuristic check to prevent crashes from
-   * obviously fake test pointers.
+   * Check if native handle looks valid. This is a heuristic check to prevent crashes from obviously
+   * fake test pointers.
    *
    * <p>Native handles should be real memory addresses from the native library. Test code that uses
    * fake handles like 0x12345678 will fail this check.

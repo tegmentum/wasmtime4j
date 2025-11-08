@@ -1,6 +1,6 @@
 //! Panama Foreign Function Interface bindings for Java 23+
 
-use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong, c_void};
 use std::sync::Arc;
 use crate::ffi_common::error_handling;
 use crate::WasmtimeResult;
@@ -143,7 +143,7 @@ pub mod engine {
             Err(_) => return -1,
         };
 
-        // Parse feature name to WasmFeature enum - supports all 23 features
+        // Parse feature name to WasmFeature enum
         let feature = match feature_str {
             "THREADS" => WasmFeature::Threads,
             "REFERENCE_TYPES" => WasmFeature::ReferenceTypes,
@@ -153,21 +153,21 @@ pub mod engine {
             "TAIL_CALL" => WasmFeature::TailCall,
             "MULTI_MEMORY" => WasmFeature::MultiMemory,
             "MEMORY64" => WasmFeature::Memory64,
-            "EXCEPTION_HANDLING" => WasmFeature::ExceptionHandling,
+            "EXCEPTIONS" => WasmFeature::Exceptions,
             "RELAXED_SIMD" => WasmFeature::RelaxedSimd,
             "EXTENDED_CONST" => WasmFeature::ExtendedConst,
             "COMPONENT_MODEL" => WasmFeature::ComponentModel,
             "FUNCTION_REFERENCES" => WasmFeature::FunctionReferences,
             "GC" => WasmFeature::Gc,
             "CUSTOM_PAGE_SIZES" => WasmFeature::CustomPageSizes,
-            "SATURATING_FLOAT_TO_INT" => WasmFeature::SaturatingFloatToInt,
-            "SIGN_EXTENSION" => WasmFeature::SignExtension,
-            "MUTABLE_GLOBAL" => WasmFeature::MutableGlobal,
-            "FLOATS" => WasmFeature::Floats,
             "WIDE_ARITHMETIC" => WasmFeature::WideArithmetic,
-            "WASI" => WasmFeature::Wasi,
-            "WASI_PREVIEW_2" => WasmFeature::WasiPreview2,
+            "STACK_SWITCHING" => WasmFeature::StackSwitching,
+            "SHARED_EVERYTHING_THREADS" => WasmFeature::SharedEverythingThreads,
             "COMPONENT_MODEL_ASYNC" => WasmFeature::ComponentModelAsync,
+            "COMPONENT_MODEL_ASYNC_BUILTINS" => WasmFeature::ComponentModelAsyncBuiltins,
+            "COMPONENT_MODEL_ASYNC_STACKFUL" => WasmFeature::ComponentModelAsyncStackful,
+            "COMPONENT_MODEL_ERROR_CONTEXT" => WasmFeature::ComponentModelErrorContext,
+            "COMPONENT_MODEL_GC" => WasmFeature::ComponentModelGc,
             _ => return -1,
         };
 
