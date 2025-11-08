@@ -71,6 +71,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
+  /** Cached default SIMD operations for lazy initialization. */
+  private volatile ai.tegmentum.wasmtime4j.simd.SimdOperations defaultSimdOperations;
+
+  /** Lock object for SIMD operations lazy initialization. */
+  private final Object simdOperationsLock = new Object();
+
   /**
    * Creates a new JNI WebAssembly runtime.
    *
@@ -381,6 +387,28 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       }
     }
     return defaultGcRuntime;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException {
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    // Double-checked locking for lazy initialization
+    if (defaultSimdOperations == null) {
+      synchronized (simdOperationsLock) {
+        if (defaultSimdOperations == null) {
+          try {
+            defaultSimdOperations = new JniSimdOperations(this.nativeHandle);
+            LOGGER.fine("Created default SIMD operations with lazy initialization");
+          } catch (final Exception e) {
+            throw new WasmException("Failed to create default SIMD operations", e);
+          }
+        }
+      }
+    }
+    return defaultSimdOperations;
   }
 
   @Override
