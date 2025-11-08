@@ -74,6 +74,12 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
+  /** Cached default SIMD operations for lazy initialization. */
+  private volatile ai.tegmentum.wasmtime4j.simd.SimdOperations defaultSimdOperations;
+
+  /** Lock object for SIMD operations lazy initialization. */
+  private final Object simdOperationsLock = new Object();
+
   /**
    * Creates a new Panama WebAssembly runtime.
    *
@@ -216,7 +222,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
-    return new PanamaLinker<>(engine);
+    return new PanamaLinker<>((PanamaEngine) engine);
   }
 
   @Override
@@ -238,7 +244,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
             + ", allowShadowing: "
             + allowShadowing);
 
-    return new PanamaLinker<>(engine);
+    return new PanamaLinker<>((PanamaEngine) engine);
   }
 
   @Override
@@ -255,7 +261,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     final Engine engine = panamaModule.getEngine();
     final Store store = createStore(engine);
 
-    return panamaModule.instantiate(store, new ImportMap());
+    return panamaModule.instantiate(store, ImportMap.empty());
   }
 
   @Override
@@ -287,12 +293,20 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     PanamaValidation.requireNonNull(config, "config");
     ensureNotClosed();
 
-    return new PanamaComponentEngine(config);
+    // TODO: Apply config to component engine
+    LOGGER.fine("Creating component engine with config: " + config);
+    return new PanamaComponentEngine();
   }
 
   @Override
   public RuntimeInfo getRuntimeInfo() {
-    return new RuntimeInfo(RuntimeType.PANAMA, "1.0.0", "Wasmtime 36.0.2");
+    return new RuntimeInfo(
+        "Panama FFI Runtime",
+        "1.0.0",
+        "36.0.2",
+        RuntimeType.PANAMA,
+        System.getProperty("java.version"),
+        System.getProperty("os.name") + " " + System.getProperty("os.arch"));
   }
 
   @Override
@@ -422,11 +436,39 @@ public final class PanamaWasmRuntime implements WasmRuntime {
         return defaultGcRuntime;
       }
 
-      final Engine engine = createEngine();
-      defaultGcRuntime = new PanamaGcRuntime(engine);
+      try {
+        final Engine engine = createEngine();
+        final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
+        defaultGcRuntime = new PanamaGcRuntime(engineHandle);
 
-      LOGGER.fine("Initialized default GC runtime for Panama");
-      return defaultGcRuntime;
+        LOGGER.fine("Initialized default GC runtime for Panama");
+        return defaultGcRuntime;
+      } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaException e) {
+        throw new WasmException("Failed to create Panama GC runtime", e);
+      }
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException {
+    ensureNotClosed();
+
+    if (defaultSimdOperations != null) {
+      return defaultSimdOperations;
+    }
+
+    synchronized (simdOperationsLock) {
+      if (defaultSimdOperations != null) {
+        return defaultSimdOperations;
+      }
+
+      final Engine engine = createEngine();
+      final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
+      defaultSimdOperations =
+          new ai.tegmentum.wasmtime4j.panama.simd.PanamaSimdOperations(engineHandle);
+
+      LOGGER.fine("Initialized default SIMD operations for Panama");
+      return defaultSimdOperations;
     }
   }
 
@@ -449,13 +491,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     if (!closed) {
       closed = true;
 
-      try {
-        if (defaultGcRuntime != null) {
-          defaultGcRuntime.close();
-        }
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close GC runtime: " + e.getMessage());
-      }
+      // Note: GcRuntime does not have a close() method - it relies on engine lifecycle
+      defaultGcRuntime = null;
 
       try {
         if (arena != null) {

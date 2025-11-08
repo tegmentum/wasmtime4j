@@ -111,6 +111,8 @@ pub mod panama_gc_ffi;
 pub mod panama_hot_reload_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_experimental_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_simd_ffi;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]

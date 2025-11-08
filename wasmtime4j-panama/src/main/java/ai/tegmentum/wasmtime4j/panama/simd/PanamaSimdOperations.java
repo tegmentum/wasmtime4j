@@ -18,48 +18,92 @@ package ai.tegmentum.wasmtime4j.panama.simd;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
 import ai.tegmentum.wasmtime4j.simd.SimdLane;
 import ai.tegmentum.wasmtime4j.simd.SimdOperations;
 import ai.tegmentum.wasmtime4j.simd.SimdVector;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.util.Objects;
 
 /**
  * Panama FFI implementation of SIMD operations.
  *
- * <p>Note: SIMD support via Panama FFI is not yet fully implemented. This class provides stubs for
- * the SIMD API that will throw UnsupportedOperationException until native implementations are
- * complete.
- *
  * @since 1.0.0
  */
 public final class PanamaSimdOperations implements SimdOperations {
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
+  private static final int V128_SIZE = 16; // 128 bits = 16 bytes
+
+  private final long runtimeHandle;
 
   /**
    * Creates a Panama SIMD operations instance.
    *
-   * <p>Note: SIMD operations are not yet implemented for Panama FFI.
+   * @param runtimeHandle the native runtime handle
+   */
+  public PanamaSimdOperations(final long runtimeHandle) {
+    this.runtimeHandle = runtimeHandle;
+  }
+
+  /**
+   * Creates a Panama SIMD operations instance with default runtime.
+   *
+   * <p>Note: This constructor creates a runtime with handle 0. Prefer using constructor with
+   * explicit runtime handle.
    */
   public PanamaSimdOperations() {
-    // Placeholder constructor
+    this(0L);
   }
 
   @Override
   public SimdVector add(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdAdd(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector subtract(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdSubtract(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector multiply(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdMultiply(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector divide(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdDivide(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
@@ -69,22 +113,49 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public SimdVector and(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdAnd(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector or(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdOr(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector xor(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdXor(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector not(final SimdVector a) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(a, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdNot(runtimeHandle, aData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
@@ -229,11 +300,55 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public boolean isSimdSupported() {
-    return false; // Not yet implemented for Panama
+    return true; // Basic SIMD operations now supported
   }
 
   @Override
   public String getSimdCapabilities() {
-    return "SIMD not yet implemented for Panama FFI";
+    return "Panama SIMD: Basic operations (add, subtract, multiply, divide, and, or, xor, not)";
+  }
+
+  /**
+   * Validates that two vectors have the same lane type.
+   *
+   * @param a first vector
+   * @param b second vector
+   * @throws IllegalArgumentException if lane types don't match
+   */
+  private void validateSameLane(final SimdVector a, final SimdVector b) {
+    Objects.requireNonNull(a, "first vector cannot be null");
+    Objects.requireNonNull(b, "second vector cannot be null");
+    if (a.getLane() != b.getLane()) {
+      throw new IllegalArgumentException(
+          "Lane type mismatch: " + a.getLane() + " vs " + b.getLane());
+    }
+  }
+
+  /**
+   * Converts a byte array to a MemorySegment for passing to native code.
+   *
+   * @param arena the arena to allocate in
+   * @param data the byte array
+   * @return a MemorySegment containing the data
+   */
+  private MemorySegment toMemorySegment(final Arena arena, final byte[] data) {
+    if (data.length != V128_SIZE) {
+      throw new IllegalArgumentException("SIMD vector must be exactly " + V128_SIZE + " bytes");
+    }
+    final MemorySegment segment = arena.allocate(V128_SIZE);
+    MemorySegment.copy(data, 0, segment, ValueLayout.JAVA_BYTE, 0, V128_SIZE);
+    return segment;
+  }
+
+  /**
+   * Converts a MemorySegment from native code back to a byte array.
+   *
+   * @param segment the MemorySegment
+   * @return a byte array containing the data
+   */
+  private byte[] fromMemorySegment(final MemorySegment segment) {
+    final byte[] result = new byte[V128_SIZE];
+    MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0, result, 0, V128_SIZE);
+    return result;
   }
 }

@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -4029,7 +4030,7 @@ public final class NativeFunctionBindings {
    * @return true if supported, false otherwise
    */
   public boolean engineSupportsFeature(final MemorySegment enginePtr, final String featureName) {
-    try (final Arena arena = Arena.ofConfined()) {
+    try (final Arena arena = Arena.ofAuto()) {
       final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
       return callNativeFunction(
           "wasmtime4j_panama_engine_supports_feature",
@@ -4116,5 +4117,116 @@ public final class NativeFunctionBindings {
   public void engineIncrementEpoch(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);
+  }
+
+  // ===== SIMD Operations =====
+
+  /**
+   * SIMD vector addition.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdAdd(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_add", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD vector subtraction.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdSubtract(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_subtract", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD vector multiplication.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdMultiply(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_multiply", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD vector division.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdDivide(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_divide", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD bitwise AND.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdAnd(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_and", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD bitwise OR.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdOr(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_or", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD bitwise XOR.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdXor(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_xor", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD bitwise NOT.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdNot(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction("wasmtime4j_panama_simd_not", MemorySegment.class, runtimeHandle, vector);
   }
 }
