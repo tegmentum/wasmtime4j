@@ -108,7 +108,15 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public SimdVector addSaturated(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdAddSaturated(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
@@ -160,17 +168,39 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public SimdVector equals(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdEquals(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector lessThan(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdLessThan(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector greaterThan(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdGreaterThan(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
@@ -199,56 +229,143 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public int extractLaneI32(final SimdVector vector, final int laneIndex) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    if (laneIndex < 0 || laneIndex > 3) {
+      throw new IllegalArgumentException("Lane index must be between 0 and 3");
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      return NATIVE_BINDINGS.simdExtractLaneI32(runtimeHandle, vectorData, laneIndex);
+    }
   }
 
   @Override
   public SimdVector replaceLaneI32(final SimdVector vector, final int laneIndex, final int value)
       throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    if (laneIndex < 0 || laneIndex > 3) {
+      throw new IllegalArgumentException("Lane index must be between 0 and 3");
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdReplaceLaneI32(runtimeHandle, vectorData, laneIndex, value);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(vector.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector convertI32ToF32(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdConvertI32ToF32(runtimeHandle, vectorData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(SimdLane.F32X4, result);
+    }
   }
 
   @Override
   public SimdVector convertF32ToI32(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdConvertF32ToI32(runtimeHandle, vectorData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(SimdLane.I32X4, result);
+    }
   }
 
   @Override
   public SimdVector shuffle(final SimdVector a, final SimdVector b, final int[] indices)
       throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    Objects.requireNonNull(indices, "indices cannot be null");
+    if (indices.length != 16) {
+      throw new IllegalArgumentException("Shuffle indices must be exactly 16 elements");
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+
+      // Convert int[] to byte[] for indices
+      final byte[] indicesBytes = new byte[16];
+      for (int i = 0; i < 16; i++) {
+        indicesBytes[i] = (byte) indices[i];
+      }
+      final MemorySegment indicesData = toMemorySegment(arena, indicesBytes);
+
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdShuffle(runtimeHandle, aData, bData, indicesData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector fma(final SimdVector a, final SimdVector b, final SimdVector c)
       throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    validateSameLane(b, c);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment cData = toMemorySegment(arena, c.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdFma(runtimeHandle, aData, bData, cData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector fms(final SimdVector a, final SimdVector b, final SimdVector c)
       throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    validateSameLane(b, c);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment cData = toMemorySegment(arena, c.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdFms(runtimeHandle, aData, bData, cData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector reciprocal(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdReciprocal(runtimeHandle, vectorData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(vector.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector sqrt(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdSqrt(runtimeHandle, vectorData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(vector.getLane(), result);
+    }
   }
 
   @Override
   public SimdVector rsqrt(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final MemorySegment resultData = NATIVE_BINDINGS.simdRsqrt(runtimeHandle, vectorData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(vector.getLane(), result);
+    }
   }
 
   @Override
@@ -268,17 +385,32 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public float horizontalSum(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final int result = NATIVE_BINDINGS.simdHorizontalSumI32(runtimeHandle, vectorData);
+      return (float) result;
+    }
   }
 
   @Override
   public float horizontalMin(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final int result = NATIVE_BINDINGS.simdHorizontalMinI32(runtimeHandle, vectorData);
+      return (float) result;
+    }
   }
 
   @Override
   public float horizontalMax(final SimdVector vector) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    Objects.requireNonNull(vector, "vector cannot be null");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
+      final int result = NATIVE_BINDINGS.simdHorizontalMaxI32(runtimeHandle, vectorData);
+      return (float) result;
+    }
   }
 
   @Override
@@ -295,7 +427,15 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public SimdVector relaxedAdd(final SimdVector a, final SimdVector b) throws WasmException {
-    throw new UnsupportedOperationException("SIMD operations not yet implemented for Panama FFI");
+    validateSameLane(a, b);
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
+      final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
+      final MemorySegment resultData =
+          NATIVE_BINDINGS.simdRelaxedAdd(runtimeHandle, aData, bData);
+      final byte[] result = fromMemorySegment(resultData);
+      return new SimdVector(a.getLane(), result);
+    }
   }
 
   @Override
@@ -305,7 +445,16 @@ public final class PanamaSimdOperations implements SimdOperations {
 
   @Override
   public String getSimdCapabilities() {
-    return "Panama SIMD: Basic operations (add, subtract, multiply, divide, and, or, xor, not)";
+    return "Panama SIMD: Arithmetic (add, subtract, multiply, divide, addSaturated), "
+        + "Bitwise (and, or, xor, not), "
+        + "Comparison (equals, lessThan, greaterThan), "
+        + "Math (sqrt, reciprocal, rsqrt, fma, fms), "
+        + "Lane operations (extractLaneI32, replaceLaneI32), "
+        + "Conversion (convertI32ToF32, convertF32ToI32), "
+        + "Reduction (horizontalSum, horizontalMin, horizontalMax), "
+        + "Advanced (shuffle, relaxedAdd). "
+        + "Unsupported: Memory operations (load/store), popcount, shifts (shlVariable/shrVariable), "
+        + "select, blend";
   }
 
   /**

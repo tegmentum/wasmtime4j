@@ -4229,4 +4229,292 @@ public final class NativeFunctionBindings {
   public MemorySegment simdNot(final long runtimeHandle, final MemorySegment vector) {
     return callNativeFunction("wasmtime4j_panama_simd_not", MemorySegment.class, runtimeHandle, vector);
   }
+
+  /**
+   * SIMD equality comparison.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdEquals(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_equals", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD less than comparison.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdLessThan(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_less_than", MemorySegment.class, runtimeHandle, vectorA, vectorB);
+  }
+
+  /**
+   * SIMD greater than comparison.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdGreaterThan(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_greater_than",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB);
+  }
+
+  /**
+   * SIMD saturated addition.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdAddSaturated(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_add_saturated",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB);
+  }
+
+  /**
+   * SIMD square root.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdSqrt(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_sqrt", MemorySegment.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD reciprocal.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdReciprocal(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_reciprocal", MemorySegment.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD reciprocal square root.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdRsqrt(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_rsqrt", MemorySegment.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD fused multiply-add.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @param vectorC pointer to third vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdFma(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment vectorC) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_fma",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        vectorC);
+  }
+
+  /**
+   * SIMD fused multiply-subtract.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @param vectorC pointer to third vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdFms(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment vectorC) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_fms",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        vectorC);
+  }
+
+  /**
+   * SIMD shuffle.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @param indices pointer to indices bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdShuffle(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment indices) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_shuffle",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        indices);
+  }
+
+  /**
+   * SIMD relaxed addition.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA pointer to first vector bytes
+   * @param vectorB pointer to second vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdRelaxedAdd(
+      final long runtimeHandle, final MemorySegment vectorA, final MemorySegment vectorB) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_relaxed_add",
+        MemorySegment.class,
+        runtimeHandle,
+        vectorA,
+        vectorB);
+  }
+
+  /**
+   * SIMD extract lane i32.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @param laneIndex lane index (0-3)
+   * @return extracted lane value
+   */
+  public int simdExtractLaneI32(
+      final long runtimeHandle, final MemorySegment vector, final int laneIndex) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_extract_lane_i32",
+        Integer.class,
+        runtimeHandle,
+        vector,
+        laneIndex);
+  }
+
+  /**
+   * SIMD replace lane i32.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @param laneIndex lane index (0-3)
+   * @param value value to insert
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdReplaceLaneI32(
+      final long runtimeHandle,
+      final MemorySegment vector,
+      final int laneIndex,
+      final int value) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_replace_lane_i32",
+        MemorySegment.class,
+        runtimeHandle,
+        vector,
+        laneIndex,
+        value);
+  }
+
+  /**
+   * SIMD convert i32 to f32.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdConvertI32ToF32(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_convert_i32_to_f32", MemorySegment.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD convert f32 to i32.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return pointer to result vector bytes
+   */
+  public MemorySegment simdConvertF32ToI32(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_convert_f32_to_i32", MemorySegment.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD horizontal sum reduction.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return sum of all i32 lanes
+   */
+  public int simdHorizontalSumI32(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_horizontal_sum_i32", Integer.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD horizontal min reduction.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return minimum of all i32 lanes
+   */
+  public int simdHorizontalMinI32(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_horizontal_min_i32", Integer.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD horizontal max reduction.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector pointer to vector bytes
+   * @return maximum of all i32 lanes
+   */
+  public int simdHorizontalMaxI32(final long runtimeHandle, final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_horizontal_max_i32", Integer.class, runtimeHandle, vector);
+  }
 }
