@@ -508,15 +508,45 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public Module deserializeModule(final Engine engine, final byte[] serializedBytes)
       throws WasmException {
-    // TODO: Implement module deserialization from bytes
-    throw new UnsupportedOperationException("Module deserialization not yet implemented");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (serializedBytes == null) {
+      throw new IllegalArgumentException("Serialized bytes cannot be null");
+    }
+    if (serializedBytes.length == 0) {
+      throw new WasmException("Serialized bytes cannot be empty");
+    }
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine for JNI runtime");
+    }
+
+    final JniEngine jniEngine = (JniEngine) engine;
+    final long moduleHandle = nativeDeserializeModule(jniEngine.getNativeHandle(), serializedBytes);
+
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to deserialize module");
+    }
+
+    return new JniModule(moduleHandle, engine);
   }
 
   @Override
   public Module deserializeModuleFile(final Engine engine, final java.nio.file.Path path)
       throws WasmException {
-    // TODO: Implement module deserialization from file
-    throw new UnsupportedOperationException("Module deserialization not yet implemented");
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("Path cannot be null");
+    }
+
+    try {
+      final byte[] serializedBytes = java.nio.file.Files.readAllBytes(path);
+      return deserializeModule(engine, serializedBytes);
+    } catch (final java.io.IOException e) {
+      throw new WasmException("Failed to read module file: " + path, e);
+    }
   }
 
   @Override
@@ -963,4 +993,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   private static native long nativeCreateStoreWithLimits(
       long engineHandle, long memorySize, long tableElements, long instances);
+
+  /**
+   * Deserialize a module from bytes.
+   *
+   * @param engineHandle the native engine handle
+   * @param serializedBytes the serialized module bytes
+   * @return the native module handle, or 0 on failure
+   */
+  private static native long nativeDeserializeModule(long engineHandle, byte[] serializedBytes);
 }

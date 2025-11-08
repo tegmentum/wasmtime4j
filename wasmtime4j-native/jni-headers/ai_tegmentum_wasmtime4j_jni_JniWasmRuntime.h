@@ -423,6 +423,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativ
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateStoreWithLimits
   (JNIEnv *, jclass, jlong, jlong, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeDeserializeModule
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDeserializeModule
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif

@@ -7626,6 +7626,33 @@ pub mod jni_runtime {
             Ok(0)
         })
     }
+
+    /// Deserialize a module from bytes using the runtime's engine
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDeserializeModule(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        serialized_data: jbyteArray,
+    ) -> jlong {
+        // Convert byte array to Vec<u8> before moving env
+        let data = match (|| -> Result<Vec<u8>, jni::errors::Error> {
+            let byte_array = unsafe { JByteArray::from_raw(serialized_data) };
+            let array_elements = unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
+            let len = env.get_array_length(&byte_array)? as usize;
+            let slice = unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
+            Ok(slice.to_vec())
+        })() {
+            Ok(data) => data,
+            Err(_) => return 0 as jlong, // Return null on error
+        };
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            let byte_converter = jni_module::VecByteArrayConverter::new(data);
+            crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
+        }) as jlong
+    }
 }
 
 /// JNI bindings for WASI operations
