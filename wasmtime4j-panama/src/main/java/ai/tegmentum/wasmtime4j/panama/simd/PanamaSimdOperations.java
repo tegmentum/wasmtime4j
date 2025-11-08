@@ -64,7 +64,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdAdd(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdAdd(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD add operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -76,7 +80,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdSubtract(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdSubtract(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD subtract operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -88,7 +96,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdMultiply(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdMultiply(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD multiply operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -100,7 +112,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdDivide(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdDivide(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD divide operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -112,8 +128,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdAddSaturated(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdAddSaturated(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD addSaturated operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -125,7 +144,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdAnd(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdAnd(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD and operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -137,7 +160,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdOr(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdOr(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD or operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -149,7 +176,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdXor(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdXor(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD xor operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -160,7 +191,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(a, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdNot(runtimeHandle, aData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdNot(runtimeHandle, aData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD not operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -172,7 +207,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdEquals(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdEquals(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD equals operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -184,7 +223,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdLessThan(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdLessThan(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD lessThan operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -196,8 +239,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdGreaterThan(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdGreaterThan(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD greaterThan operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -248,8 +294,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     }
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdReplaceLaneI32(runtimeHandle, vectorData, laneIndex, value);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdReplaceLaneI32(runtimeHandle, vectorData, laneIndex, value, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD replaceLaneI32 operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(vector.getLane(), result);
     }
@@ -260,7 +309,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(vector, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdConvertI32ToF32(runtimeHandle, vectorData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdConvertI32ToF32(runtimeHandle, vectorData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD convertI32ToF32 operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(SimdLane.F32X4, result);
     }
@@ -271,7 +324,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(vector, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdConvertF32ToI32(runtimeHandle, vectorData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdConvertF32ToI32(runtimeHandle, vectorData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD convertF32ToI32 operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(SimdLane.I32X4, result);
     }
@@ -296,8 +353,11 @@ public final class PanamaSimdOperations implements SimdOperations {
       }
       final MemorySegment indicesData = toMemorySegment(arena, indicesBytes);
 
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdShuffle(runtimeHandle, aData, bData, indicesData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdShuffle(runtimeHandle, aData, bData, indicesData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD shuffle operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -312,8 +372,11 @@ public final class PanamaSimdOperations implements SimdOperations {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
       final MemorySegment cData = toMemorySegment(arena, c.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdFma(runtimeHandle, aData, bData, cData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdFma(runtimeHandle, aData, bData, cData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD fma operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -328,8 +391,11 @@ public final class PanamaSimdOperations implements SimdOperations {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
       final MemorySegment cData = toMemorySegment(arena, c.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdFms(runtimeHandle, aData, bData, cData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdFms(runtimeHandle, aData, bData, cData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD fms operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
@@ -340,7 +406,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(vector, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdReciprocal(runtimeHandle, vectorData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdReciprocal(runtimeHandle, vectorData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD reciprocal operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(vector.getLane(), result);
     }
@@ -351,7 +421,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(vector, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdSqrt(runtimeHandle, vectorData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdSqrt(runtimeHandle, vectorData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD sqrt operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(vector.getLane(), result);
     }
@@ -362,7 +436,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     Objects.requireNonNull(vector, "vector cannot be null");
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment vectorData = toMemorySegment(arena, vector.getDataInternal());
-      final MemorySegment resultData = NATIVE_BINDINGS.simdRsqrt(runtimeHandle, vectorData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdRsqrt(runtimeHandle, vectorData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD rsqrt operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(vector.getLane(), result);
     }
@@ -431,8 +509,11 @@ public final class PanamaSimdOperations implements SimdOperations {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment aData = toMemorySegment(arena, a.getDataInternal());
       final MemorySegment bData = toMemorySegment(arena, b.getDataInternal());
-      final MemorySegment resultData =
-          NATIVE_BINDINGS.simdRelaxedAdd(runtimeHandle, aData, bData);
+      final MemorySegment resultData = arena.allocate(V128_SIZE);
+      final int status = NATIVE_BINDINGS.simdRelaxedAdd(runtimeHandle, aData, bData, resultData);
+      if (status != 0) {
+        throw new WasmException("SIMD relaxedAdd operation failed with status: " + status);
+      }
       final byte[] result = fromMemorySegment(resultData);
       return new SimdVector(a.getLane(), result);
     }
