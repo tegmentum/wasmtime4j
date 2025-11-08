@@ -79,7 +79,7 @@ pub mod engine {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_engine_is_fuel_enabled(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
+            Ok(engine) => if engine.fuel_enabled() { 1 } else { 0 },
             Err(_) => -1,
         }
     }
@@ -88,7 +88,7 @@ pub mod engine {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_engine_is_epoch_interruption_enabled(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
+            Ok(engine) => if engine.epoch_interruption_enabled() { 1 } else { 0 },
             Err(_) => -1,
         }
     }
@@ -97,16 +97,16 @@ pub mod engine {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
         match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => core::get_memory_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
+            Ok(engine) => engine.memory_limit_pages().map(|limit| limit as c_int).unwrap_or(-1),
             Err(_) => -1,
         }
     }
 
     /// Get stack size limit in bytes (Panama FFI version)
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_int {
+    pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_long {
         match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => core::get_stack_limit(engine).map(|limit| limit as c_int).unwrap_or(-1),
+            Ok(engine) => engine.stack_size_limit().map(|limit| limit as c_long).unwrap_or(-1),
             Err(_) => -1,
         }
     }
@@ -129,25 +129,50 @@ pub mod engine {
         }
     }
 
-    /// Check if engine supports WebAssembly feature (Panama FFI version)
+    /// Check if engine supports WebAssembly feature by name (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_engine_supports_feature(
         engine_ptr: *mut c_void,
-        feature_id: c_int,
+        feature_name: *const c_char,
     ) -> c_int {
         use crate::engine::WasmFeature;
-        
-        let feature = match feature_id {
-            0 => WasmFeature::Threads,
-            1 => WasmFeature::ReferenceTypes,
-            2 => WasmFeature::Simd,
-            3 => WasmFeature::BulkMemory,
-            4 => WasmFeature::MultiValue,
+
+        // Convert C string to Rust string
+        let feature_str = match unsafe { std::ffi::CStr::from_ptr(feature_name) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return -1,
+        };
+
+        // Parse feature name to WasmFeature enum - supports all 23 features
+        let feature = match feature_str {
+            "THREADS" => WasmFeature::Threads,
+            "REFERENCE_TYPES" => WasmFeature::ReferenceTypes,
+            "SIMD" => WasmFeature::Simd,
+            "BULK_MEMORY" => WasmFeature::BulkMemory,
+            "MULTI_VALUE" => WasmFeature::MultiValue,
+            "TAIL_CALL" => WasmFeature::TailCall,
+            "MULTI_MEMORY" => WasmFeature::MultiMemory,
+            "MEMORY64" => WasmFeature::Memory64,
+            "EXCEPTION_HANDLING" => WasmFeature::ExceptionHandling,
+            "RELAXED_SIMD" => WasmFeature::RelaxedSimd,
+            "EXTENDED_CONST" => WasmFeature::ExtendedConst,
+            "COMPONENT_MODEL" => WasmFeature::ComponentModel,
+            "FUNCTION_REFERENCES" => WasmFeature::FunctionReferences,
+            "GC" => WasmFeature::Gc,
+            "CUSTOM_PAGE_SIZES" => WasmFeature::CustomPageSizes,
+            "SATURATING_FLOAT_TO_INT" => WasmFeature::SaturatingFloatToInt,
+            "SIGN_EXTENSION" => WasmFeature::SignExtension,
+            "MUTABLE_GLOBAL" => WasmFeature::MutableGlobal,
+            "FLOATS" => WasmFeature::Floats,
+            "WIDE_ARITHMETIC" => WasmFeature::WideArithmetic,
+            "WASI" => WasmFeature::Wasi,
+            "WASI_PREVIEW_2" => WasmFeature::WasiPreview2,
+            "COMPONENT_MODEL_ASYNC" => WasmFeature::ComponentModelAsync,
             _ => return -1,
         };
 
         match unsafe { core::get_engine_ref(engine_ptr) } {
-            Ok(engine) => if core::check_feature_support(engine, feature) { 1 } else { 0 },
+            Ok(engine) => if engine.supports_feature(feature) { 1 } else { 0 },
             Err(_) => -1,
         }
     }

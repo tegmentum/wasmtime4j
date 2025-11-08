@@ -126,37 +126,34 @@ public final class PanamaEngine implements Engine {
     if (feature == null) {
       return false;
     }
-    // TODO: Implement feature support query via Panama FFI
-    // Should query native engine configuration
-    return false;
+    ensureNotClosed();
+    return NATIVE_BINDINGS.engineSupportsFeature(nativeEngine, feature.name());
   }
 
   @Override
   public int getMemoryLimitPages() {
-    // TODO: Implement memory limit pages retrieval via Panama FFI
-    // Should query native engine configuration
-    return 0;
+    ensureNotClosed();
+    final int limit = NATIVE_BINDINGS.engineMemoryLimitPages(nativeEngine);
+    return limit == -1 ? 0 : limit;
   }
 
   @Override
   public long getStackSizeLimit() {
-    // TODO: Implement stack size limit retrieval via Panama FFI
-    // Should query native engine configuration
-    return 0;
+    ensureNotClosed();
+    final long limit = NATIVE_BINDINGS.engineStackSizeLimit(nativeEngine);
+    return limit == -1 ? 0 : limit;
   }
 
   @Override
   public boolean isFuelEnabled() {
-    // TODO: Implement fuel enabled check via Panama FFI
-    // Should query native engine configuration
-    return false;
+    ensureNotClosed();
+    return NATIVE_BINDINGS.engineFuelEnabled(nativeEngine);
   }
 
   @Override
   public boolean isEpochInterruptionEnabled() {
-    // TODO: Implement epoch interruption check via Panama FFI
-    // Should query native engine configuration
-    return false;
+    ensureNotClosed();
+    return NATIVE_BINDINGS.engineEpochInterruptionEnabled(nativeEngine);
   }
 
   @Override

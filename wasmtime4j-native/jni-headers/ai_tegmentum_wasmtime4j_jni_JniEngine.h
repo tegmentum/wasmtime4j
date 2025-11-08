@@ -39,6 +39,46 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateS
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeIsEpochInterruptionEnabled
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeIsFuelEnabled
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsFuelEnabled
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeGetStackSizeLimit
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackSizeLimit
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeGetMemoryLimitPages
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimitPages
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeSupportsFeature
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature
+  (JNIEnv *, jobject, jlong, jstring);
+
 #ifdef __cplusplus
 }
 #endif

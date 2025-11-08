@@ -4025,32 +4025,35 @@ public final class NativeFunctionBindings {
    * Checks if engine supports a feature.
    *
    * @param enginePtr pointer to the engine
-   * @param featureId feature identifier
+   * @param featureName feature name string
    * @return true if supported, false otherwise
    */
-  public boolean engineSupportsFeature(final MemorySegment enginePtr, final int featureId) {
-    return callNativeFunction(
-        "wasmtime4j_engine_supports_feature", Boolean.class, enginePtr, featureId);
+  public boolean engineSupportsFeature(final MemorySegment enginePtr, final String featureName) {
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
+      return callNativeFunction(
+          "wasmtime4j_panama_engine_supports_feature", Boolean.class, enginePtr, featureNameSegment);
+    }
   }
 
   /**
    * Gets the memory limit in pages.
    *
    * @param enginePtr pointer to the engine
-   * @return memory limit in pages
+   * @return memory limit in pages, or -1 if not set
    */
-  public long engineMemoryLimitPages(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_engine_memory_limit_pages", Long.class, enginePtr);
+  public int engineMemoryLimitPages(final MemorySegment enginePtr) {
+    return callNativeFunction("wasmtime4j_panama_engine_get_memory_limit", Integer.class, enginePtr);
   }
 
   /**
    * Gets the stack size limit.
    *
    * @param enginePtr pointer to the engine
-   * @return stack size limit in bytes
+   * @return stack size limit in bytes, or -1 if not set
    */
   public long engineStackSizeLimit(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_engine_stack_size_limit", Long.class, enginePtr);
+    return callNativeFunction("wasmtime4j_panama_engine_get_stack_limit", Long.class, enginePtr);
   }
 
   /**
@@ -4060,7 +4063,8 @@ public final class NativeFunctionBindings {
    * @return true if fuel is enabled, false otherwise
    */
   public boolean engineFuelEnabled(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_engine_fuel_enabled", Boolean.class, enginePtr);
+    final int result = callNativeFunction("wasmtime4j_panama_engine_is_fuel_enabled", Integer.class, enginePtr);
+    return result == 1;
   }
 
   /**
@@ -4070,8 +4074,9 @@ public final class NativeFunctionBindings {
    * @return true if epoch interruption is enabled, false otherwise
    */
   public boolean engineEpochInterruptionEnabled(final MemorySegment enginePtr) {
-    return callNativeFunction(
-        "wasmtime4j_engine_epoch_interruption_enabled", Boolean.class, enginePtr);
+    final int result = callNativeFunction(
+        "wasmtime4j_panama_engine_is_epoch_interruption_enabled", Integer.class, enginePtr);
+    return result == 1;
   }
 
   /**
