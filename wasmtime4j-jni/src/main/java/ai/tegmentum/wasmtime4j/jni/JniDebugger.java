@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.debug.Breakpoint;
 import ai.tegmentum.wasmtime4j.debug.DebugCapabilities;
 import ai.tegmentum.wasmtime4j.debug.DebugConfig;
 import ai.tegmentum.wasmtime4j.debug.DebugEventListener;
@@ -85,6 +86,14 @@ public final class JniDebugger implements Debugger {
   public Engine getEngine() {
     validateNotClosed();
     return engine;
+  }
+
+  @Override
+  public DebugSession createSession(final DebugConfig config) {
+    Objects.requireNonNull(config, "config cannot be null");
+    validateNotClosed();
+    // TODO: Implement config-based session creation
+    throw new UnsupportedOperationException("Config-based session creation not yet implemented");
   }
 
   /** Javadoc placeholder. */
@@ -227,6 +236,14 @@ public final class JniDebugger implements Debugger {
       // Return null on failure - TODO: create minimal capabilities object
       return null;
     }
+  }
+
+  @Override
+  public DebugSession attach(final String instanceId) {
+    Objects.requireNonNull(instanceId, "instanceId cannot be null");
+    validateNotClosed();
+    // TODO: Implement instance ID-based attachment
+    throw new UnsupportedOperationException("Instance ID-based attachment not yet implemented");
   }
 
   /** Javadoc placeholder. */
@@ -986,6 +1003,41 @@ public final class JniDebugger implements Debugger {
     /** Javadoc placeholder. */
     public void close() {
       active = false;
+    }
+
+    @Override
+    public void start() {
+      // TODO: Implement session start
+      active = true;
+    }
+
+    @Override
+    public void stop() {
+      active = false;
+    }
+
+    @Override
+    public void step(final StepType stepType) {
+      // TODO: Implement step execution
+      throw new UnsupportedOperationException("Step execution not yet implemented");
+    }
+
+    @Override
+    public void continueExecution() {
+      // TODO: Implement continue execution
+      throw new UnsupportedOperationException("Continue execution not yet implemented");
+    }
+
+    @Override
+    public void addBreakpoint(final Breakpoint breakpoint) {
+      // TODO: Implement add breakpoint
+      throw new UnsupportedOperationException("Add breakpoint not yet implemented");
+    }
+
+    @Override
+    public void removeBreakpoint(final Breakpoint breakpoint) {
+      // TODO: Implement remove breakpoint
+      throw new UnsupportedOperationException("Remove breakpoint not yet implemented");
     }
   }
 
