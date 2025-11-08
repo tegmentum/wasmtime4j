@@ -597,16 +597,36 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public ai.tegmentum.wasmtime4j.Serializer createSerializer() throws WasmException {
-    // TODO: Implement serializer creation
-    throw new UnsupportedOperationException("Serializer creation not yet implemented");
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(
+        nativeHandle,
+        () -> {
+          final long serializerHandle = nativeCreateSerializer();
+          if (serializerHandle == 0) {
+            throw new RuntimeException("Failed to create serializer");
+          }
+          return new JniSerializer(serializerHandle);
+        });
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.Serializer createSerializer(
       final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
       throws WasmException {
-    // TODO: Implement serializer creation with configuration
-    throw new UnsupportedOperationException("Serializer creation with config not yet implemented");
+    if (compressionLevel < 0 || compressionLevel > 9) {
+      throw new IllegalArgumentException("Compression level must be between 0 and 9");
+    }
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(
+        nativeHandle,
+        () -> {
+          final long serializerHandle =
+              nativeCreateSerializerWithConfig(maxCacheSize, enableCompression, compressionLevel);
+          if (serializerHandle == 0) {
+            throw new RuntimeException("Failed to create serializer with configuration");
+          }
+          return new JniSerializer(serializerHandle);
+        });
   }
 
   @Override
@@ -1027,4 +1047,22 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return the native linker handle, or 0 on failure
    */
   private static native long nativeCreateWasiLinker(long engineHandle);
+
+  /**
+   * Create a new module serializer with default configuration.
+   *
+   * @return the native serializer handle, or 0 on failure
+   */
+  private static native long nativeCreateSerializer();
+
+  /**
+   * Create a new module serializer with custom configuration.
+   *
+   * @param maxCacheSize the maximum cache size in bytes (0 = unlimited)
+   * @param enableCompression whether to enable compression
+   * @param compressionLevel the compression level (0-9)
+   * @return the native serializer handle, or 0 on failure
+   */
+  private static native long nativeCreateSerializerWithConfig(
+      long maxCacheSize, boolean enableCompression, int compressionLevel);
 }
