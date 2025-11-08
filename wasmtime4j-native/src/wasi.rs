@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, DirPerms, FilePerms};
+use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime::Linker;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
@@ -31,6 +32,19 @@ pub struct WasiContext {
     arguments: Vec<String>,
     /// Standard stream configurations
     stdio_config: StdioConfig,
+}
+
+impl Clone for WasiContext {
+    fn clone(&self) -> Self {
+        WasiContext {
+            inner: Arc::clone(&self.inner),  // Arc is cheap to clone
+            config: self.config.clone(),
+            directory_mappings: self.directory_mappings.clone(),
+            environment: self.environment.clone(),
+            arguments: self.arguments.clone(),
+            stdio_config: self.stdio_config.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for WasiContext {
@@ -389,15 +403,19 @@ impl WasiContext {
     }
 
     /// Add WASI imports to a Wasmtime linker
-    /// This method will be implemented when the proper API is determined
-    pub fn add_to_generic_linker<T>(
-        _linker: &mut Linker<T>,
-        _get_ctx: impl Fn(&mut T) -> &mut WasiCtx + Send + Sync + Copy + 'static,
+    /// Uses wasmtime-wasi's add_to_linker_sync for WASI Preview 1 support
+    pub fn add_to_generic_linker<T: Send + 'static>(
+        linker: &mut Linker<T>,
+        get_ctx: impl Fn(&mut T) -> &mut WasiP1Ctx + Send + Sync + Copy + 'static,
     ) -> WasmtimeResult<()> {
-        // TODO: Implement when wasmtime-wasi API is clarified
-        Err(WasmtimeError::Wasi {
-            message: "WASI linker integration not yet implemented".to_string(),
-        })
+        // Use wasmtime-wasi's built-in function to add all WASI Preview 1 imports to the linker
+        wasmtime_wasi::p1::add_to_linker_sync(linker, get_ctx)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to add WASI to linker: {}", e),
+            })?;
+
+        log::debug!("WASI Preview 1 imports successfully added to linker");
+        Ok(())
     }
 
     /// Check if a path is allowed based on current directory mappings
@@ -757,54 +775,89 @@ pub unsafe extern "C" fn wasi_ctx_add_to_store(
     store_ptr: *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let _wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
-        
-        // Store the WASI context reference in the store's user data
-        // This is a placeholder implementation - the actual Store integration 
-        // would depend on how the Store is structured
-        
-        // For now, just validate that both pointers are valid
+        // Dereference the WASI context pointer - this clones the Arc inside
+        let wasi_ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        // Validate store pointer
         if store_ptr.is_null() {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Store handle cannot be null".to_string(),
             });
         }
-        
-        // TODO: Implement proper Store-WASI context integration
-        // This would involve:
-        // 1. Getting mutable access to the Store
-        // 2. Adding WASI context to Store's StoreData
-        // 3. Setting up WASI imports in the Store's linker
-        
-        log::debug!("WASI context integration with Store - placeholder implementation");
+
+        // Cast store pointer to Store reference
+        let store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "Store")?;
+
+        // Create a new file descriptor manager for this store
+        let fd_manager = WasiFileDescriptorManager::new();
+
+        // Clone the WasiContext (it uses Arc internally, so this is cheap)
+        let wasi_context_clone = wasi_ctx.clone();
+
+        // Add WASI context to store's data
+        store.set_wasi_context(wasi_context_clone, fd_manager)?;
+
+        log::debug!("WASI context successfully added to Store");
         Ok(())
     })
 }
 
 /// Get the WASI context from a Store if one is attached
+/// Returns null pointer if no WASI context is attached (this is not an error)
 #[no_mangle]
 pub unsafe extern "C" fn wasi_ctx_get_from_store(
     store_ptr: *const c_void,
 ) -> *mut c_void {
-    let result = ffi_utils::ffi_try_ptr(|| {
-        if store_ptr.is_null() {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Store handle cannot be null".to_string(),
-            });
+    // Check for null store pointer
+    if store_ptr.is_null() {
+        ffi_utils::set_last_error(WasmtimeError::InvalidParameter {
+            message: "Store handle cannot be null".to_string(),
+        });
+        return std::ptr::null_mut();
+    }
+
+    // Cast store pointer to Store reference
+    let store = match ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "Store") {
+        Ok(s) => s,
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            return std::ptr::null_mut();
         }
-        
-        // TODO: Implement proper Store-WASI context retrieval
-        // This would involve:
-        // 1. Getting access to the Store
-        // 2. Retrieving WASI context from Store's StoreData
-        // 3. Returning a pointer to the WASI context
-        
-        log::debug!("Retrieving WASI context from Store - placeholder implementation");
-        
-        // For now, return null to indicate no WASI context attached
-        Ok(Box::new(std::ptr::null_mut::<WasiContext>()))
-    });
-    result
+    };
+
+    // Get WASI context from store if available
+    match store.get_wasi_context() {
+        Ok(Some(wasi_arc)) => {
+            // Lock the Arc<Mutex<...>> to get access to the tuple
+            match wasi_arc.lock() {
+                Ok(wasi_guard) => {
+                    // Clone the WasiContext from the tuple
+                    let wasi_context = wasi_guard.0.clone();
+
+                    // Box and return as pointer
+                    log::debug!("Retrieved WASI context from Store");
+                    ffi_utils::clear_last_error();
+                    Box::into_raw(Box::new(wasi_context)) as *mut c_void
+                }
+                Err(e) => {
+                    ffi_utils::set_last_error(WasmtimeError::Concurrency {
+                        message: format!("Failed to lock WASI context: {}", e),
+                    });
+                    std::ptr::null_mut()
+                }
+            }
+        }
+        Ok(None) => {
+            // No WASI context attached to this store - this is valid, just return null
+            log::debug!("No WASI context attached to Store");
+            ffi_utils::clear_last_error();
+            std::ptr::null_mut()
+        }
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            std::ptr::null_mut()
+        }
+    }
 }
 
 /// Check if a Store has a WASI context attached
