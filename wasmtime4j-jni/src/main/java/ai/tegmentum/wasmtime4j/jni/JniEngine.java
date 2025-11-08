@@ -70,10 +70,7 @@ public class JniEngine implements Engine {
     if (closed || nativeHandle == 0) {
       return false;
     }
-
-    // TODO: Query native engine configuration
-    // return nativeIsEpochInterruptionEnabled(nativeHandle);
-    return false; // Default: not enabled
+    return nativeIsEpochInterruptionEnabled(nativeHandle);
   }
 
   @Override
@@ -81,10 +78,7 @@ public class JniEngine implements Engine {
     if (closed || nativeHandle == 0) {
       return false;
     }
-
-    // TODO: Query native engine configuration
-    // return nativeIsFuelEnabled(nativeHandle);
-    return false; // Default: not enabled
+    return nativeIsFuelEnabled(nativeHandle);
   }
 
   @Override
@@ -92,10 +86,7 @@ public class JniEngine implements Engine {
     if (closed || nativeHandle == 0) {
       return 0;
     }
-
-    // TODO: Query native engine configuration
-    // return nativeGetStackSizeLimit(nativeHandle);
-    return 0; // Default: unlimited
+    return nativeGetStackSizeLimit(nativeHandle);
   }
 
   @Override
@@ -103,10 +94,7 @@ public class JniEngine implements Engine {
     if (closed || nativeHandle == 0) {
       return 0;
     }
-
-    // TODO: Query native engine configuration
-    // return nativeGetMemoryLimitPages(nativeHandle);
-    return 0; // Default: unlimited
+    return nativeGetMemoryLimitPages(nativeHandle);
   }
 
   @Override
@@ -117,10 +105,7 @@ public class JniEngine implements Engine {
     if (closed || nativeHandle == 0) {
       return false;
     }
-
-    // TODO: Query native engine for feature support
-    // return nativeSupportsFeature(nativeHandle, feature.name());
-    return false; // Default: feature not supported
+    return nativeSupportsFeature(nativeHandle, feature.name());
   }
 
   @Override
@@ -229,4 +214,14 @@ public class JniEngine implements Engine {
   private native long nativeCreateStore(long engineHandle);
 
   private native void nativeDestroyEngine(long handle);
+
+  private native boolean nativeIsEpochInterruptionEnabled(long engineHandle);
+
+  private native boolean nativeIsFuelEnabled(long engineHandle);
+
+  private native long nativeGetStackSizeLimit(long engineHandle);
+
+  private native int nativeGetMemoryLimitPages(long engineHandle);
+
+  private native boolean nativeSupportsFeature(long engineHandle, String featureName);
 }

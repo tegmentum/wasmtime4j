@@ -875,7 +875,7 @@ pub mod jni_instance {
 pub mod jni_engine {
     use super::*;
     use crate::engine::core;
-    use crate::error::jni_utils;
+    use crate::error::{jni_utils, WasmtimeError};
     use crate::ffi_common::parameter_conversion;
     
     /// Create a new Wasmtime engine with default configuration (JNI version)
@@ -944,7 +944,110 @@ pub mod jni_engine {
             core::destroy_engine(engine_ptr as *mut std::os::raw::c_void);
         }
     }
-    
+
+    /// Query if epoch interruption is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            Ok(engine.epoch_interruption_enabled())
+        }) as jboolean
+    }
+
+    /// Query if fuel consumption is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsFuelEnabled(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            Ok(engine.fuel_enabled())
+        }) as jboolean
+    }
+
+    /// Get stack size limit in bytes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackSizeLimit(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jlong {
+        jni_utils::jni_try(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            Ok(engine.stack_size_limit().unwrap_or(0) as jlong)
+        }).1
+    }
+
+    /// Get memory limit in pages (64KB per page)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimitPages(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jint {
+        jni_utils::jni_try(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            Ok(engine.memory_limit_pages().unwrap_or(0) as jint)
+        }).1
+    }
+
+    /// Query if a specific WebAssembly feature is supported (by feature name)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        feature_name: JString,
+    ) -> jboolean {
+        // Convert Java string first (outside the closure to avoid borrow issues)
+        let feature_str: String = match env.get_string(&feature_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        jni_utils::jni_try_bool(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+
+            // Parse feature name to WasmFeature enum
+            let feature = match feature_str.as_str() {
+                "THREADS" => crate::engine::WasmFeature::Threads,
+                "REFERENCE_TYPES" => crate::engine::WasmFeature::ReferenceTypes,
+                "SIMD" => crate::engine::WasmFeature::Simd,
+                "BULK_MEMORY" => crate::engine::WasmFeature::BulkMemory,
+                "MULTI_VALUE" => crate::engine::WasmFeature::MultiValue,
+                "MULTI_MEMORY" => crate::engine::WasmFeature::MultiMemory,
+                "TAIL_CALL" => crate::engine::WasmFeature::TailCall,
+                "RELAXED_SIMD" => crate::engine::WasmFeature::RelaxedSimd,
+                "FUNCTION_REFERENCES" => crate::engine::WasmFeature::FunctionReferences,
+                "GC" => crate::engine::WasmFeature::Gc,
+                "EXCEPTIONS" => crate::engine::WasmFeature::Exceptions,
+                "MEMORY64" => crate::engine::WasmFeature::Memory64,
+                "EXTENDED_CONST" => crate::engine::WasmFeature::ExtendedConst,
+                "COMPONENT_MODEL" => crate::engine::WasmFeature::ComponentModel,
+                "CUSTOM_PAGE_SIZES" => crate::engine::WasmFeature::CustomPageSizes,
+                "WIDE_ARITHMETIC" => crate::engine::WasmFeature::WideArithmetic,
+                "STACK_SWITCHING" => crate::engine::WasmFeature::StackSwitching,
+                "SHARED_EVERYTHING_THREADS" => crate::engine::WasmFeature::SharedEverythingThreads,
+                "COMPONENT_MODEL_ASYNC" => crate::engine::WasmFeature::ComponentModelAsync,
+                "COMPONENT_MODEL_ASYNC_BUILTINS" => crate::engine::WasmFeature::ComponentModelAsyncBuiltins,
+                "COMPONENT_MODEL_ASYNC_STACKFUL" => crate::engine::WasmFeature::ComponentModelAsyncStackful,
+                "COMPONENT_MODEL_ERROR_CONTEXT" => crate::engine::WasmFeature::ComponentModelErrorContext,
+                "COMPONENT_MODEL_GC" => crate::engine::WasmFeature::ComponentModelGc,
+                _ => return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown feature: {}", feature_str),
+                }),
+            };
+
+            Ok(engine.supports_feature(feature))
+        }) as jboolean
+    }
+
     /// Compile WebAssembly module
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileModule(
@@ -1037,109 +1140,6 @@ pub mod jni_engine {
             // Return false to indicate optimization level cannot be changed after engine creation
             Ok(false)
         }) as jboolean
-    }
-    
-    /// Check if fuel consumption is enabled (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsFuelEnabled(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jboolean {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => if core::is_fuel_enabled(engine) { 1 } else { 0 },
-            Err(_) => 0,
-        }
-    }
-
-    /// Check if epoch interruption is enabled (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jboolean {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => if core::is_epoch_interruption_enabled(engine) { 1 } else { 0 },
-            Err(_) => 0,
-        }
-    }
-
-    /// Get memory limit in pages (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimit(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jint {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => core::get_memory_limit(engine).map(|limit| limit as jint).unwrap_or(-1),
-            Err(_) => -1,
-        }
-    }
-
-    /// Get stack size limit in bytes (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackLimit(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jint {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => core::get_stack_limit(engine).map(|limit| limit as jint).unwrap_or(-1),
-            Err(_) => -1,
-        }
-    }
-
-    /// Get maximum instances limit (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMaxInstances(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jint {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => core::get_max_instances(engine).map(|limit| limit as jint).unwrap_or(-1),
-            Err(_) => -1,
-        }
-    }
-
-    /// Validate engine functionality (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeValidateEngine(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-    ) -> jboolean {
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => if core::validate_engine(engine).is_ok() { 1 } else { 0 },
-            Err(_) => 0,
-        }
-    }
-
-    /// Check if engine supports WebAssembly feature (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature(
-        mut env: JNIEnv,
-        _class: JClass,
-        engine_ptr: jlong,
-        feature_id: jint,
-    ) -> jboolean {
-        use crate::engine::WasmFeature;
-        
-        let feature = match feature_id {
-            0 => WasmFeature::Threads,
-            1 => WasmFeature::ReferenceTypes,
-            2 => WasmFeature::Simd,
-            3 => WasmFeature::BulkMemory,
-            4 => WasmFeature::MultiValue,
-            _ => return 0,
-        };
-
-        match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-            Ok(engine) => if core::check_feature_support(engine, feature) { 1 } else { 0 },
-            Err(_) => 0,
-        }
     }
 
     /// Get engine reference count for debugging (JNI version)
