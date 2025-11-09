@@ -460,10 +460,58 @@ impl GcTypeConverter {
     }
 
     /// Convert Wasmtime FieldType to our FieldType
-    fn convert_wasmtime_field_type(_field_type: &wasmtime::FieldType) -> WasmtimeResult<FieldType> {
-        // Simplified implementation for current wasmtime API compatibility
-        // TODO: Implement proper field type conversion when wasmtime GC types are stable
-        Ok(FieldType::I32) // Default fallback for now
+    fn convert_wasmtime_field_type(field_type: &wasmtime::FieldType) -> WasmtimeResult<FieldType> {
+        // Get the storage type from the field
+        let storage_type = field_type.element_type();
+
+        // Convert based on the storage type
+        match storage_type {
+            wasmtime::StorageType::I8 => Ok(FieldType::PackedI8),
+            wasmtime::StorageType::I16 => Ok(FieldType::PackedI16),
+            wasmtime::StorageType::ValType(val_type) => {
+                match val_type {
+                    wasmtime::ValType::I32 => Ok(FieldType::I32),
+                    wasmtime::ValType::I64 => Ok(FieldType::I64),
+                    wasmtime::ValType::F32 => Ok(FieldType::F32),
+                    wasmtime::ValType::F64 => Ok(FieldType::F64),
+                    wasmtime::ValType::V128 => Ok(FieldType::V128),
+                    wasmtime::ValType::Ref(ref_type) => {
+                        // Convert reference type
+                        let gc_ref_type = match ref_type.heap_type() {
+                            wasmtime::HeapType::Any => GcReferenceType::AnyRef,
+                            wasmtime::HeapType::Eq => GcReferenceType::EqRef,
+                            wasmtime::HeapType::I31 => GcReferenceType::I31Ref,
+                            wasmtime::HeapType::Struct => {
+                                // Generic struct reference without specific type definition
+                                // Use a placeholder struct definition
+                                GcReferenceType::StructRef(StructTypeDefinition {
+                                    type_id: 0,  // Unknown/generic type
+                                    name: Some("unknown_struct".to_string()),
+                                    fields: vec![],
+                                    supertype: None,
+                                })
+                            },
+                            wasmtime::HeapType::Array => {
+                                // Generic array reference without specific element type
+                                // Use a placeholder array definition
+                                GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
+                                    type_id: 0,  // Unknown/generic type
+                                    name: Some("unknown_array".to_string()),
+                                    element_type: FieldType::I32,  // Default element type
+                                    mutable: true,
+                                }))
+                            },
+                            _ => {
+                                // Other heap types (None, Func, Extern, Exn, Cont, etc.)
+                                // Fall back to AnyRef
+                                GcReferenceType::AnyRef
+                            }
+                        };
+                        Ok(FieldType::Reference(gc_ref_type))
+                    }
+                }
+            }
+        }
     }
 
     /// Convert a FieldType to a Wasmtime ValType with real GC type support
