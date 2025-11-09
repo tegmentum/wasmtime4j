@@ -74,9 +74,9 @@ public final class WastDirectiveResult {
   @Override
   public String toString() {
     if (passed) {
-      return String.format("Line %d: PASSED", lineNumber);
+      return String.format("WastDirectiveResult[Line %d: PASSED]", lineNumber);
     } else {
-      return String.format("Line %d: FAILED - %s", lineNumber, errorMessage);
+      return String.format("WastDirectiveResult[Line %d: FAILED - %s]", lineNumber, errorMessage);
     }
   }
 }
