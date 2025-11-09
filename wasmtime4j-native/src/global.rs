@@ -207,21 +207,12 @@ impl Global {
                     Val::FuncRef(None)
                 }
             },
-            GlobalValue::ExternRef(extern_id) => {
-                if let Some(id) = extern_id {
-                    // Look up external reference in the table reference registry
-                    use crate::table::core::get_external_reference;
-                    if let Some(_external) = get_external_reference(id)? {
-                        // For now, we'll convert Extern to ExternRef
-                        // This is a simplified implementation
-                        // TODO: Properly convert Extern to ExternRef
-                        Val::ExternRef(None)
-                    } else {
-                        Val::ExternRef(None)
-                    }
-                } else {
-                    Val::ExternRef(None)
-                }
+            GlobalValue::ExternRef(_extern_id) => {
+                // ExternRef requires Store context to create Rooted<ExternRef>
+                // Since global value conversion happens without Store context,
+                // we can only pass null externref values
+                // Full externref support requires Store-aware APIs
+                Val::ExternRef(None)
             },
             GlobalValue::AnyRef(_) => {
                 // AnyRef is not directly supported by wasmtime::Val
@@ -252,14 +243,17 @@ impl Global {
                     GlobalValue::FuncRef(None)
                 }
             },
-            Val::ExternRef(extern_ref) => {
-                // For now, only support null externref since we can't easily convert ExternRef to Extern
-                // TODO: Properly handle externref values when we support them
+            Val::ExternRef(_extern_ref) => {
+                // ExternRef is a GC object that requires Store context to access
+                // Cannot extract data without Store, so store as null
+                // Full externref support requires Store-aware APIs
                 GlobalValue::ExternRef(None)
             },
-            Val::AnyRef(_) => {
-                // TODO: Implement proper any reference ID mapping
-                GlobalValue::AnyRef(Some(0))
+            Val::AnyRef(_any_ref) => {
+                // AnyRef is part of GC proposal and requires Store context
+                // Cannot extract data without Store, so store as null
+                // Full anyref support requires Store-aware APIs
+                GlobalValue::AnyRef(None)
             },
             Val::ExnRef(_) => {
                 // ExnRef is not supported in GlobalValue, return error
