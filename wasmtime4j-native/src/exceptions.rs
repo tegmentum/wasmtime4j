@@ -4,7 +4,8 @@
 //! providing try/catch block support and exception throwing mechanisms.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc::{GcRuntime, GcValue}; // Import GC support from Task #308
+use crate::gc::WasmGcRuntime; // Import GC runtime support
+use crate::gc_types::GcValue; // Import GC value types
 use std::collections::HashMap;
 use std::ptr;
 use std::sync::{Arc, Mutex};

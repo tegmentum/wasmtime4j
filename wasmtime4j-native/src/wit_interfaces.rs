@@ -12,7 +12,7 @@
 //! - **Import/Export Resolution**: Automatic interface binding and resolution
 //! - **Error Handling**: Robust error propagation with detailed diagnostics
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeSet};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::fmt;
@@ -33,6 +33,9 @@ use crate::component::{
     Parameter, TypeDefinition, ResourceDefinition, FieldType, CaseType
 };
 use crate::component_orchestration::dependency_resolution::{SemanticVersion, VersionConstraint};
+
+// Import SecurityLevel from interface_negotiation module for use in outer scope
+use interface_negotiation::SecurityLevel;
 
 /// Advanced interface negotiation and adaptation system
 pub mod interface_negotiation {

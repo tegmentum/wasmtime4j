@@ -316,7 +316,7 @@ impl DebugSession {
             temporary: false,
         };
 
-        let mut breakpoints = self.breakpoints.write().map_err(|_| Error::LockError)?;
+        let mut breakpoints = self.breakpoints.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         breakpoints.insert(id, breakpoint.clone());
         drop(breakpoints);
 
@@ -331,7 +331,7 @@ impl DebugSession {
 
     /// Removes a breakpoint
     pub fn remove_breakpoint(&self, id: BreakpointId) -> Result<bool> {
-        let mut breakpoints = self.breakpoints.write().map_err(|_| Error::LockError)?;
+        let mut breakpoints = self.breakpoints.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if let Some(breakpoint) = breakpoints.remove(&id) {
             drop(breakpoints);
 
@@ -349,13 +349,13 @@ impl DebugSession {
 
     /// Gets all active breakpoints
     pub fn get_breakpoints(&self) -> Result<Vec<Breakpoint>> {
-        let breakpoints = self.breakpoints.read().map_err(|_| Error::LockError)?;
+        let breakpoints = self.breakpoints.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         Ok(breakpoints.values().cloned().collect())
     }
 
     /// Continues execution until next breakpoint
     pub fn continue_execution(&self) -> Result<ExecutionState> {
-        let mut state = self.execution_state.write().map_err(|_| Error::LockError)?;
+        let mut state = self.execution_state.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         state.state = ExecutionStateType::Running;
         state.timestamp = current_timestamp();
         state.can_continue = false;
@@ -368,7 +368,7 @@ impl DebugSession {
         // Update state based on result
         self.update_execution_state_from_native(result)?;
 
-        let state = self.execution_state.read().map_err(|_| Error::LockError)?;
+        let state = self.execution_state.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         Ok(state.clone())
     }
 
@@ -389,7 +389,7 @@ impl DebugSession {
 
     /// Pauses execution
     pub fn pause_execution(&self) -> Result<ExecutionState> {
-        let mut state = self.execution_state.write().map_err(|_| Error::LockError)?;
+        let mut state = self.execution_state.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         state.state = ExecutionStateType::PausedManual;
         state.reason = Some("Manual pause".to_string());
         state.timestamp = current_timestamp();
@@ -417,7 +417,7 @@ impl DebugSession {
         let enhanced_stack = self.enhance_stack_frames(native_stack)?;
 
         // Update cached call stack
-        let mut stack = self.call_stack.write().map_err(|_| Error::LockError)?;
+        let mut stack = self.call_stack.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         *stack = enhanced_stack.clone();
 
         Ok(enhanced_stack)
@@ -437,19 +437,19 @@ impl DebugSession {
     /// Gets variable value by name
     pub fn get_variable_value(&self, name: &str) -> Result<VariableValue> {
         // Try local variables first
-        let locals = self.variable_inspector.local_variables.read().map_err(|_| Error::LockError)?;
+        let locals = self.variable_inspector.local_variables.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if let Some(var) = locals.get(name) {
             return Ok(var.value.clone());
         }
         drop(locals);
 
         // Try global variables
-        let globals = self.variable_inspector.global_variables.read().map_err(|_| Error::LockError)?;
+        let globals = self.variable_inspector.global_variables.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if let Some(var) = globals.get(name) {
             return Ok(var.value.clone());
         }
 
-        Err(Error::DebugError(format!("Variable '{}' not found", name)))
+        Err(WasmtimeError::Internal { message: format!("Variable '{}' not found", name) })
     }
 
     /// Sets variable value by name
@@ -466,9 +466,9 @@ impl DebugSession {
     /// Reads memory at specified address
     pub fn read_memory(&self, address: u64, length: u32) -> Result<Vec<u8>> {
         // Validate address range
-        let memory_info = self.memory_inspector.memory_info.read().map_err(|_| Error::LockError)?;
+        let memory_info = self.memory_inspector.memory_info.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if address >= memory_info.current_size || address + length as u64 > memory_info.current_size {
-            return Err(Error::DebugError("Memory access out of bounds".to_string()));
+            return Err(WasmtimeError::Internal { message: "Memory access out of bounds".to_string() });
         }
         drop(memory_info);
 
@@ -479,9 +479,9 @@ impl DebugSession {
     /// Writes memory at specified address
     pub fn write_memory(&self, address: u64, data: &[u8]) -> Result<()> {
         // Validate address range
-        let memory_info = self.memory_inspector.memory_info.read().map_err(|_| Error::LockError)?;
+        let memory_info = self.memory_inspector.memory_info.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if address >= memory_info.current_size || address + data.len() as u64 > memory_info.current_size {
-            return Err(Error::DebugError("Memory access out of bounds".to_string()));
+            return Err(WasmtimeError::Internal { message: "Memory access out of bounds".to_string() });
         }
         drop(memory_info);
 
@@ -499,7 +499,7 @@ impl DebugSession {
         // Update memory info from native runtime
         let native_info = self.get_native_memory_info()?;
 
-        let mut memory_info = self.memory_inspector.memory_info.write().map_err(|_| Error::LockError)?;
+        let mut memory_info = self.memory_inspector.memory_info.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         *memory_info = native_info.clone();
 
         Ok(native_info)
@@ -508,12 +508,12 @@ impl DebugSession {
     /// Searches memory for a pattern
     pub fn search_memory(&self, pattern: &[u8], start_address: u64, end_address: u64) -> Result<Vec<u64>> {
         if start_address >= end_address {
-            return Err(Error::DebugError("Invalid address range".to_string()));
+            return Err(WasmtimeError::Internal { message: "Invalid address range".to_string() });
         }
 
         let search_size = end_address - start_address;
         if search_size > 1024 * 1024 * 10 { // 10MB limit
-            return Err(Error::DebugError("Search range too large".to_string()));
+            return Err(WasmtimeError::Internal { message: "Search range too large".to_string() });
         }
 
         let memory_data = self.read_memory(start_address, search_size as u32)?;
@@ -563,13 +563,13 @@ impl DebugSession {
 
     /// Gets current execution state
     pub fn get_execution_state(&self) -> Result<ExecutionState> {
-        let state = self.execution_state.read().map_err(|_| Error::LockError)?;
+        let state = self.execution_state.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         Ok(state.clone())
     }
 
     /// Gets profiling data
     pub fn get_profiling_data(&self) -> Result<ProfilingData> {
-        let profiling = self.profiling_data.read().map_err(|_| Error::LockError)?;
+        let profiling = self.profiling_data.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         Ok(profiling.clone())
     }
 
@@ -585,7 +585,7 @@ impl DebugSession {
 
     /// Closes the debug session
     pub fn close(&self) -> Result<()> {
-        let mut active = self.is_active.write().map_err(|_| Error::LockError)?;
+        let mut active = self.is_active.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         *active = false;
         drop(active);
 
@@ -593,9 +593,9 @@ impl DebugSession {
         self.cleanup_native_debug_session()?;
 
         // Clear all data structures
-        self.breakpoints.write().map_err(|_| Error::LockError)?.clear();
-        self.event_listeners.write().map_err(|_| Error::LockError)?.clear();
-        self.call_stack.write().map_err(|_| Error::LockError)?.clear();
+        self.breakpoints.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?.clear();
+        self.event_listeners.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?.clear();
+        self.call_stack.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?.clear();
 
         Ok(())
     }
@@ -603,7 +603,7 @@ impl DebugSession {
     // Private helper methods
 
     fn perform_step(&self, step_type: StepType) -> Result<ExecutionState> {
-        let mut state = self.execution_state.write().map_err(|_| Error::LockError)?;
+        let mut state = self.execution_state.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         state.state = ExecutionStateType::Running;
         state.timestamp = current_timestamp();
         state.can_continue = false;
@@ -616,7 +616,7 @@ impl DebugSession {
         // Update state
         self.update_execution_state_from_native(result)?;
 
-        let new_state = self.execution_state.read().map_err(|_| Error::LockError)?;
+        let new_state = self.execution_state.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         let result_state = new_state.clone();
         drop(new_state);
 
@@ -713,7 +713,7 @@ impl DebugSession {
     fn evaluate_native_expression(&self, expression: &str) -> Result<(VariableValue, String)> {
         // Implementation depends on the underlying runtime
         // This would parse and evaluate the expression
-        Err(Error::DebugError("Expression evaluation not implemented".to_string()))
+        Err(WasmtimeError::Internal { message: "Expression evaluation not implemented".to_string() })
     }
 
     fn set_native_profiling_enabled(&self, enabled: bool) -> Result<()> {
@@ -729,7 +729,7 @@ impl DebugSession {
     // Helper methods for state updates and notifications
 
     fn update_execution_state_from_native(&self, result: NativeExecutionResult) -> Result<()> {
-        let mut state = self.execution_state.write().map_err(|_| Error::LockError)?;
+        let mut state = self.execution_state.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         state.state = result.state_type;
         state.instruction_offset = result.instruction_offset;
         state.function_name = result.function_name;
@@ -786,7 +786,7 @@ impl DebugSession {
 
     fn update_variable_cache(&self, name: &str, value: VariableValue) -> Result<()> {
         // Update in local variables if it exists there
-        let mut locals = self.variable_inspector.local_variables.write().map_err(|_| Error::LockError)?;
+        let mut locals = self.variable_inspector.local_variables.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if let Some(var) = locals.get_mut(name) {
             var.value = value;
             return Ok(());
@@ -794,13 +794,13 @@ impl DebugSession {
         drop(locals);
 
         // Update in global variables if it exists there
-        let mut globals = self.variable_inspector.global_variables.write().map_err(|_| Error::LockError)?;
+        let mut globals = self.variable_inspector.global_variables.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
         if let Some(var) = globals.get_mut(name) {
             var.value = value;
             return Ok(());
         }
 
-        Err(Error::DebugError(format!("Variable '{}' not found in cache", name)))
+        Err(WasmtimeError::Internal { message: format!("Variable '{}' not found in cache", name) })
     }
 
     // Event notification methods
@@ -911,7 +911,7 @@ pub fn create_debug_session(
     let session = Arc::new(DebugSession::new(engine, store, instance, module)?);
     let session_id = session.id();
 
-    let mut sessions = DEBUG_SESSIONS.write().map_err(|_| Error::LockError)?;
+    let mut sessions = DEBUG_SESSIONS.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
     sessions.insert(session_id, session);
 
     Ok(session_id)
@@ -919,15 +919,15 @@ pub fn create_debug_session(
 
 /// Gets a debug session by ID
 pub fn get_debug_session(session_id: DebugSessionId) -> Result<Arc<DebugSession>> {
-    let sessions = DEBUG_SESSIONS.read().map_err(|_| Error::LockError)?;
+    let sessions = DEBUG_SESSIONS.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
     sessions.get(&session_id)
         .cloned()
-        .ok_or_else(|| Error::DebugError(format!("Debug session {} not found", session_id)))
+        .ok_or_else(|| WasmtimeError::Internal { message: format!("Debug session {} not found", session_id) })
 }
 
 /// Closes a debug session
 pub fn close_debug_session(session_id: DebugSessionId) -> Result<()> {
-    let mut sessions = DEBUG_SESSIONS.write().map_err(|_| Error::LockError)?;
+    let mut sessions = DEBUG_SESSIONS.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
     if let Some(session) = sessions.remove(&session_id) {
         session.close()?;
     }
@@ -936,7 +936,7 @@ pub fn close_debug_session(session_id: DebugSessionId) -> Result<()> {
 
 /// Gets all active debug session IDs
 pub fn get_active_debug_sessions() -> Result<Vec<DebugSessionId>> {
-    let sessions = DEBUG_SESSIONS.read().map_err(|_| Error::LockError)?;
+    let sessions = DEBUG_SESSIONS.read().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
     Ok(sessions.keys().cloned().collect())
 }
 
