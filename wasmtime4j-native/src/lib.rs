@@ -200,36 +200,32 @@ pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
 #[cfg(feature = "component-model")]
-// TODO: Re-enable when component module is available
-// pub mod wit_interfaces;
+pub mod wit_interfaces;
 #[cfg(feature = "component-model")]
-// TODO: Re-enable when component module is available
-// pub mod component_orchestration;
+pub mod component_orchestration;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
 #[cfg(feature = "component-model")]
 // TODO: Advanced distributed features need missing type implementations
 // pub mod distributed_components;
 #[cfg(feature = "component-model")]
-// TODO: Re-enable when component module is available
-// pub mod component_composition;
+pub mod component_composition;
 
 // Experimental modules for cutting-edge WebAssembly proposals
-// pub mod exceptions;
+pub mod exceptions;
 pub mod simd;
 pub mod simd_crypto;
 pub mod simd_ml;
 pub mod simd_domain;
-// pub mod multi_value;
+pub mod multi_value;
 
 // Development tooling modules for developer experience
-// pub mod module_analyzer;
+pub mod module_analyzer;
 pub mod hot_reload;
-// pub mod debug_server;
+pub mod debug_server;
 
 // Debugging support module
-// TODO: Advanced debugging features need missing type implementations
-// pub mod debug;
+pub mod debug;
 
 // WebAssembly GC implementation
 pub mod gc_types;
@@ -586,7 +582,7 @@ pub use cpu_cache_management::{
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Wasmtime version this library is built against
-pub const WASMTIME_VERSION: &str = "37.0.2";
+pub const WASMTIME_VERSION: &str = "38.0.3";
 
 /// Initialize the native library
 ///
