@@ -122,17 +122,43 @@ pub struct DynamicOptimizationConfig {
     pub feedback_directed_optimization: FeedbackDirectedOptimizationConfig,
 }
 
-/// Resource limits and quotas configuration (advanced features disabled)
-#[derive(Debug, Clone, Default)]
+/// Resource limits and quotas configuration
+#[derive(Debug, Clone)]
 pub struct ResourceLimitsConfig {
-    /// Placeholder for future advanced configuration
-    pub placeholder: bool,
-    // TODO: Implement advanced resource limits
-    // pub memory_limits: MemoryLimitsConfig,
-    // pub cpu_limits: CpuLimitsConfig,
-    // pub compilation_time_limits: CompilationTimeLimitsConfig,
-    // pub instance_limits: InstanceLimitsConfig,
-    // pub io_limits: IoLimitsConfig,
+    /// Maximum WebAssembly stack size in bytes (default: 512KB)
+    pub max_wasm_stack: Option<usize>,
+    /// Maximum memory size in bytes per instance (default: None/unlimited)
+    pub max_memory_size: Option<usize>,
+    /// Maximum number of tables per module (default: None/unlimited)
+    pub max_tables_per_module: Option<u32>,
+    /// Maximum number of memories per module (default: None/unlimited)
+    pub max_memories_per_module: Option<u32>,
+    /// Maximum core instance size in bytes (default: None/unlimited)
+    pub max_core_instance_size: Option<usize>,
+    /// Maximum component instance size in bytes (default: None/unlimited)
+    pub max_component_instance_size: Option<usize>,
+    /// Maximum core instances per component (default: None/unlimited)
+    pub max_core_instances_per_component: Option<u32>,
+    /// Maximum memories per component (default: None/unlimited)
+    pub max_memories_per_component: Option<u32>,
+    /// Maximum tables per component (default: None/unlimited)
+    pub max_tables_per_component: Option<u32>,
+}
+
+impl Default for ResourceLimitsConfig {
+    fn default() -> Self {
+        Self {
+            max_wasm_stack: Some(512 * 1024), // 512KB default
+            max_memory_size: None,  // Unlimited by default
+            max_tables_per_module: None,
+            max_memories_per_module: None,
+            max_core_instance_size: None,
+            max_component_instance_size: None,
+            max_core_instances_per_component: None,
+            max_memories_per_component: None,
+            max_tables_per_component: None,
+        }
+    }
 }
 
 /// Security configuration (advanced features disabled)
@@ -1285,6 +1311,32 @@ impl AdvancedEngineConfig {
                 .max_memory_size(self.allocation_strategy.pooling_allocator.memory_pool_size as usize);
                 // Note: max_table_elements method not available in current wasmtime version
 
+            // Apply resource limits to pooling config
+            if let Some(max_memory_size) = self.resource_limits.max_memory_size {
+                pooling_config.max_memory_size(max_memory_size);
+            }
+            if let Some(max_tables_per_module) = self.resource_limits.max_tables_per_module {
+                pooling_config.max_tables_per_module(max_tables_per_module);
+            }
+            if let Some(max_memories_per_module) = self.resource_limits.max_memories_per_module {
+                pooling_config.max_memories_per_module(max_memories_per_module);
+            }
+            if let Some(max_core_instance_size) = self.resource_limits.max_core_instance_size {
+                pooling_config.max_core_instance_size(max_core_instance_size);
+            }
+            if let Some(max_component_instance_size) = self.resource_limits.max_component_instance_size {
+                pooling_config.max_component_instance_size(max_component_instance_size);
+            }
+            if let Some(max_core_instances_per_component) = self.resource_limits.max_core_instances_per_component {
+                pooling_config.max_core_instances_per_component(max_core_instances_per_component);
+            }
+            if let Some(max_memories_per_component) = self.resource_limits.max_memories_per_component {
+                pooling_config.max_memories_per_component(max_memories_per_component);
+            }
+            if let Some(max_tables_per_component) = self.resource_limits.max_tables_per_component {
+                pooling_config.max_tables_per_component(max_tables_per_component);
+            }
+
             config.allocation_strategy(wasmtime::InstanceAllocationStrategy::Pooling(pooling_config));
         }
 
@@ -1304,7 +1356,10 @@ impl AdvancedEngineConfig {
         //     config.parallel_compilation(true);
         // }
 
-        // Additional configuration application would go here...
+        // Apply max_wasm_stack limit (applies to Config directly)
+        if let Some(max_wasm_stack) = self.resource_limits.max_wasm_stack {
+            config.max_wasm_stack(max_wasm_stack);
+        }
 
         Ok(())
     }
