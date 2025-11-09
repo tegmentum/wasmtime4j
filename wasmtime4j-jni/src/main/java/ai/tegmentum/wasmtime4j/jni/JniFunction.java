@@ -55,6 +55,9 @@ public final class JniFunction extends JniResource implements WasmFunction {
   /** Function name for debugging and identification. */
   private final String name;
 
+  /** Store context required for function calls. */
+  private final JniStore store;
+
   /** Cached function type for performance optimization. */
   private volatile FunctionType cachedFunctionType;
 
@@ -88,16 +91,19 @@ public final class JniFunction extends JniResource implements WasmFunction {
   }
 
   /**
-   * Creates a new JNI function with the given native handle and name.
+   * Creates a new JNI function with the given native handle, name, and store context.
    *
    * @param nativeHandle the native function handle
    * @param name the function name
-   * @throws JniResourceException if nativeHandle is invalid or name is null
+   * @param store the store context required for function calls
+   * @throws JniResourceException if nativeHandle is invalid or name/store is null
    */
-  JniFunction(final long nativeHandle, final String name) {
+  JniFunction(final long nativeHandle, final String name, final JniStore store) {
     super(nativeHandle);
     JniValidation.requireNonNull(name, "name");
+    JniValidation.requireNonNull(store, "store");
     this.name = name;
+    this.store = store;
     LOGGER.fine(
         "Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
   }
@@ -238,8 +244,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
         nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
       }
 
-      // Call native function
-      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), nativeParams);
+      // Call native function with store context
+      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
       if (nativeResults == null) {
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
@@ -300,7 +306,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
     ensureNotClosed();
 
     try {
-      return nativeCall(getNativeHandle(), parameters);
+      return nativeCall(getNativeHandle(), store.getNativeHandle(), parameters);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -593,7 +599,7 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Direct native call without additional overhead
-      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), nativeParams);
+      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
       if (nativeResults == null) {
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
@@ -674,19 +680,21 @@ public final class JniFunction extends JniResource implements WasmFunction {
    * Calls a function with generic parameters.
    *
    * @param functionHandle the native function handle
+   * @param storeHandle the native store handle
    * @param parameters the function parameters
    * @return the return value or null
    */
-  private static native Object nativeCall(long functionHandle, Object[] parameters);
+  private static native Object nativeCall(long functionHandle, long storeHandle, Object[] parameters);
 
   /**
    * Calls a function with parameters and returns multiple values.
    *
    * @param functionHandle the native function handle
+   * @param storeHandle the native store handle
    * @param parameters the function parameters
    * @return array of return values (never null, may be empty)
    */
-  private static native Object[] nativeCallMultiValue(long functionHandle, Object[] parameters);
+  private static native Object[] nativeCallMultiValue(long functionHandle, long storeHandle, Object[] parameters);
 
   /**
    * Calls a function with integer parameters (optimized).

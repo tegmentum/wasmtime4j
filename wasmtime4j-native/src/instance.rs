@@ -1537,7 +1537,7 @@ pub mod core {
     }
 
     /// Convert wasmtime::Val to WasmValue
-    fn wasmtime_val_to_wasm_value(val: &wasmtime::Val) -> WasmtimeResult<WasmValue> {
+    pub fn wasmtime_val_to_wasm_value(val: &wasmtime::Val) -> WasmtimeResult<WasmValue> {
         Ok(match val {
             wasmtime::Val::I32(v) => WasmValue::I32(*v),
             wasmtime::Val::I64(v) => WasmValue::I64(*v),

@@ -1483,14 +1483,12 @@ pub mod jni_function {
     }
     
     /// Call a function with generic parameters (JNI version)
-    /// TODO: This implementation requires Store context integration
-    /// Current blocker: Wasmtime functions need Store context to be invoked,
-    /// but our FunctionHandle doesn't include it. Need architectural solution.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_handle: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
         // Defensive programming: validate function pointer
@@ -1499,54 +1497,77 @@ pub mod jni_function {
             return std::ptr::null_mut();
         }
 
-        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
-            Ok(func_handle) => {
-                // Convert Java parameters to Wasmtime values
-                let param_types = func_handle.func_type.params().collect::<Vec<_>>();
-                match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
-                    Ok(wasmtime_params) => {
-                        // TODO: CRITICAL - Need Store context to call function
-                        // Options:
-                        // 1. Modify FunctionHandle to include Store ID + registry lookup
-                        // 2. Pass Store context through JNI interface
-                        // 3. Use thread-local Store context
-                        //
-                        // For now, return error indicating missing implementation
-                        let error = WasmtimeError::Function { 
-                            message: "Function calls require Store context integration - not yet implemented".to_string() 
-                        };
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                        
-                        // Future implementation would be:
-                        // let mut store = get_store_by_id(func_handle.store_id)?;
-                        // let mut results = vec![Val::I32(0); func_handle.func_type.results().len()];
-                        // match func_handle.func.call(&mut store, &wasmtime_params, &mut results) {
-                        //     Ok(()) => convert_wasmtime_vals_to_java_objects(&mut env, &results)?,
-                        //     Err(trap) => handle_wasmtime_trap(&mut env, trap),
-                        // }
-                    },
-                    Err(error) => {
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                    }
+        // Defensive programming: validate store handle
+        if store_handle == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_handle cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        use std::os::raw::c_void;
+        use crate::instance::core::get_function_ref;
+        use wasmtime::Val;
+
+        // Helper closure for the actual work
+        let result = (|| -> WasmtimeResult<jobjectArray> {
+            // Get function reference
+            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+
+            // Get store reference
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Lock the store for reentrant access
+            let mut store_lock = store.lock_store();
+
+            // Get function type for parameter conversion
+            let func_type = func.ty(&*store_lock);
+            let param_types = func_type.params().collect::<Vec<_>>();
+
+            // Convert Java parameters to Wasmtime values
+            let wasmtime_params = convert_java_params_to_wasmtime_vals(&mut env, params, &param_types)?;
+
+            // Prepare result storage
+            let result_count = func_type.results().len();
+            let mut results = vec![Val::I32(0); result_count];
+
+            // Call function
+            match func.call(&mut *store_lock, &wasmtime_params, &mut results) {
+                Ok(()) => {
+                    // Convert Wasmtime Val results to WasmValue
+                    let wasm_values: Result<Vec<_>, _> = results.iter()
+                        .map(|val| crate::instance::core::wasmtime_val_to_wasm_value(val))
+                        .collect();
+                    let wasm_values = wasm_values?;
+
+                    // Convert WasmValue to Java array
+                    let java_array = crate::jni_bindings::jni_linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
+                    Ok(java_array.as_raw())
+                },
+                Err(trap) => {
+                    // Handle Wasmtime trap
+                    Err(WasmtimeError::Runtime {
+                        message: format!("Function call trapped: {}", trap),
+                        backtrace: None,
+                    })
                 }
-            },
-            Err(memory_error) => {
-                let wasmtime_error = memory_error.to_wasmtime_error();
-                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+            }
+        })();
+
+        match result {
+            Ok(arr) => arr,
+            Err(error) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
                 std::ptr::null_mut()
             }
         }
     }
     
     /// Call a function with multiple return values (JNI version)
-    /// TODO: This implementation requires Store context integration (same as nativeCall)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMultiValue(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
+        store_handle: jlong,
         params: jobjectArray,
     ) -> jobjectArray {
         // Defensive programming: validate function pointer
@@ -1555,31 +1576,65 @@ pub mod jni_function {
             return std::ptr::null_mut();
         }
 
-        match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
-            Ok(func_handle) => {
-                // Convert Java parameters to Wasmtime values
-                let param_types = func_handle.func_type.params().collect::<Vec<_>>();
-                match convert_java_params_to_wasmtime_vals(&mut env, params, &param_types) {
-                    Ok(wasmtime_params) => {
-                        // TODO: CRITICAL - Need Store context to call function (same issue as nativeCall)
-                        let error = WasmtimeError::Function { 
-                            message: "Function calls require Store context integration - not yet implemented".to_string() 
-                        };
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                        
-                        // Future implementation would be identical to nativeCall
-                        // but this method explicitly supports multi-value returns
-                    },
-                    Err(error) => {
-                        jni_utils::throw_jni_exception(&mut env, &error);
-                        std::ptr::null_mut()
-                    }
+        // Defensive programming: validate store handle
+        if store_handle == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_handle cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        use std::os::raw::c_void;
+        use crate::instance::core::get_function_ref;
+        use wasmtime::Val;
+
+        // Helper closure for the actual work
+        let result = (|| -> WasmtimeResult<jobjectArray> {
+            // Get function reference
+            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+
+            // Get store reference
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Lock the store for reentrant access
+            let mut store_lock = store.lock_store();
+
+            // Get function type for parameter conversion
+            let func_type = func.ty(&*store_lock);
+            let param_types = func_type.params().collect::<Vec<_>>();
+
+            // Convert Java parameters to Wasmtime values
+            let wasmtime_params = convert_java_params_to_wasmtime_vals(&mut env, params, &param_types)?;
+
+            // Prepare result storage
+            let result_count = func_type.results().len();
+            let mut results = vec![Val::I32(0); result_count];
+
+            // Call function
+            match func.call(&mut *store_lock, &wasmtime_params, &mut results) {
+                Ok(()) => {
+                    // Convert Wasmtime Val results to WasmValue (supports multi-value returns)
+                    let wasm_values: Result<Vec<_>, _> = results.iter()
+                        .map(|val| crate::instance::core::wasmtime_val_to_wasm_value(val))
+                        .collect();
+                    let wasm_values = wasm_values?;
+
+                    // Convert WasmValue to Java array
+                    let java_array = crate::jni_bindings::jni_linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
+                    Ok(java_array.as_raw())
+                },
+                Err(trap) => {
+                    // Handle Wasmtime trap
+                    Err(WasmtimeError::Runtime {
+                        message: format!("Function call trapped: {}", trap),
+                        backtrace: None,
+                    })
                 }
-            },
-            Err(memory_error) => {
-                let wasmtime_error = memory_error.to_wasmtime_error();
-                jni_utils::throw_jni_exception(&mut env, &wasmtime_error);
+            }
+        })();
+
+        match result {
+            Ok(arr) => arr,
+            Err(error) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
                 std::ptr::null_mut()
             }
         }
@@ -2572,7 +2627,7 @@ pub mod jni_linker {
     }
 
     /// Convert Rust WasmValue slice to Java WasmValue array
-    fn wasm_values_to_java_array<'local>(env: &mut jni::JNIEnv<'local>, values: &[WasmValue]) -> WasmtimeResult<jni::objects::JObject<'local>> {
+    pub fn wasm_values_to_java_array<'local>(env: &mut jni::JNIEnv<'local>, values: &[WasmValue]) -> WasmtimeResult<jni::objects::JObject<'local>> {
         // Find WasmValue class
         let wasm_value_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValue")
             .map_err(|e| WasmtimeError::Runtime {

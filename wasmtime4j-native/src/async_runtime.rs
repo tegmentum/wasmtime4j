@@ -148,6 +148,14 @@ pub struct AsyncFunctionCallContext {
     pub user_data: SendableUserData,
 }
 
+// Explicitly implement Send for AsyncFunctionCallContext
+// Safety: All fields are Send-safe:
+// - Arc<Instance> and Arc<Mutex<Store>> are Send
+// - String and Vec are Send
+// - AsyncCallback (extern "C" fn) is Send
+// - SendableUserData is explicitly marked Send
+unsafe impl Send for AsyncFunctionCallContext {}
+
 /// Context for async module compilation
 pub struct AsyncCompilationContext {
     /// Module bytes to compile
@@ -163,6 +171,15 @@ pub struct AsyncCompilationContext {
     /// User data for callbacks
     pub user_data: SendableUserData,
 }
+
+// Explicitly implement Send for AsyncCompilationContext
+// Safety: All fields are Send-safe:
+// - Vec<u8> is Send
+// - CompilationOptions contains only primitive types
+// - AsyncCallback and ProgressCallback (extern "C" fn) are Send
+// - SendableUserData is explicitly marked Send
+unsafe impl Send for AsyncCompilationContext {}
+
 
 /// Options for async module compilation
 #[derive(Default)]

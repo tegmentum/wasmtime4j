@@ -928,7 +928,10 @@ impl Linker {
 
 impl Drop for Linker {
     fn drop(&mut self) {
-        self.dispose();
+        // Don't call dispose() here - accessing self.metadata.disposed during Drop
+        // can cause use-after-free crashes when fields are being deallocated.
+        // Rust will automatically drop all fields (inner, host_functions, imports_registry, metadata).
+        log::debug!("Linker dropped");
     }
 }
 

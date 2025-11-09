@@ -15,6 +15,15 @@ public class JniEngine implements Engine {
   private final long nativeHandle;
   private volatile boolean closed = false;
 
+  // Load native library when this class is first loaded
+  static {
+    try {
+      ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader.loadLibrary();
+    } catch (final RuntimeException e) {
+      throw new ExceptionInInitializerError(e);
+    }
+  }
+
   /**
    * Creates a new JNI engine with the given native handle.
    *

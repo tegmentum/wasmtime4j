@@ -63,6 +63,9 @@ pub struct ComponentStoreData {
     pub instance_id: u64,
     /// Resource table for this store
     pub resource_table: ResourceTable,
+    /// WASI context for Preview 2 support
+    #[cfg(feature = "wasi")]
+    pub wasi_ctx: wasmtime_wasi::WasiCtx,
     /// Start time for performance tracking
     pub start_time: Instant,
 }
@@ -270,6 +273,8 @@ impl EnhancedComponentEngine {
         let store_data = ComponentStoreData {
             instance_id,
             resource_table: ResourceTable::new(),
+            #[cfg(feature = "wasi")]
+            wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             start_time,
         };
 
@@ -713,12 +718,14 @@ impl EnhancedComponentEngine {
         if interface_name.starts_with("wasi:") {
             #[cfg(feature = "wasi")]
             {
-                // TODO: Update for Wasmtime 37.0.2 WASI preview modules (p0, p1, p2)
-                // For now, log that WASI component support needs implementation
-                log::warn!("WASI component model support requires updated API for Wasmtime 37.0.2");
-                return Err(WasmtimeError::EngineConfig {
-                    message: "WASI component model support not yet implemented for Wasmtime 37.0.2".to_string(),
-                });
+                // WASI Preview 2 (p2) component model support using wasmtime-wasi
+                // This adds all standard WASI interfaces (filesystem, networking, clocks, random, etc.)
+                wasmtime_wasi::p2::add_to_linker_async(&mut self.linker).map_err(|e| {
+                    WasmtimeError::EngineConfig {
+                        message: format!("Failed to add WASI Preview 2 interfaces: {}", e),
+                    }
+                })?;
+                log::info!("Successfully added WASI Preview 2 component model interfaces");
             }
             #[cfg(not(feature = "wasi"))]
             {
@@ -735,11 +742,24 @@ impl EnhancedComponentEngine {
     }
 }
 
+// Implement WasiView for ComponentStoreData to enable WASI Preview 2 component model
+#[cfg(feature = "wasi")]
+impl wasmtime_wasi::WasiView for ComponentStoreData {
+    fn ctx(&mut self) -> wasmtime_wasi::WasiCtxView<'_> {
+        wasmtime_wasi::WasiCtxView {
+            ctx: &mut self.wasi_ctx,
+            table: &mut self.resource_table,
+        }
+    }
+}
+
 impl Default for ComponentStoreData {
     fn default() -> Self {
         ComponentStoreData {
             instance_id: 0,
             resource_table: ResourceTable::new(),
+            #[cfg(feature = "wasi")]
+            wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             start_time: Instant::now(),
         }
     }

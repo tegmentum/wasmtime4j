@@ -105,7 +105,7 @@ public final class JniInstance extends JniResource implements Instance {
       if (functionHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniFunction(functionHandle, name));
+      return Optional.of(new JniFunction(functionHandle, name, jniStore));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

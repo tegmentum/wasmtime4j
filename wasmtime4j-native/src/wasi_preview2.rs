@@ -16,7 +16,7 @@ use std::os::raw::{c_int, c_void};
 
 use wasmtime::component::{Component, Instance, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
-use wasmtime_wasi::WasiCtx;
+use wasmtime_wasi::{WasiCtx, WasiView, WasiCtxView};
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
@@ -225,6 +225,16 @@ pub enum AsyncWasiOperationStatus {
     TimedOut,
 }
 
+// Implement WasiView for WasiPreview2StoreData to enable WASI Preview 2 component model
+impl WasiView for WasiPreview2StoreData {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.wasi_ctx,
+            table: &mut self.resource_table,
+        }
+    }
+}
+
 impl Default for WasiPreview2Config {
     fn default() -> Self {
         Self {
@@ -241,15 +251,16 @@ impl Default for WasiPreview2Config {
 impl WasiPreview2Context {
     /// Create a new WASI Preview 2 context
     pub fn new(engine: Engine, config: WasiPreview2Config) -> WasmtimeResult<Self> {
-        let linker: Linker<WasiPreview2StoreData> = Linker::new(&engine);
+        let mut linker: Linker<WasiPreview2StoreData> = Linker::new(&engine);
 
-        // TODO: Add proper WASI Preview 2 component model imports
-        // For now, commented out to resolve type mismatch - needs component-specific WASI function
-        // add_to_linker_async(&mut linker, |ctx: &mut WasiPreview2StoreData| &mut ctx.wasi_ctx).map_err(|e| {
-        //     WasmtimeError::Wasi {
-        //         message: format!("Failed to add WASI Preview 2 imports: {}", e),
-        //     }
-        // })?;
+        // Add WASI Preview 2 component model imports
+        // This uses the wasmtime_wasi::p2 module's add_to_linker_async which provides
+        // all WASI interfaces for component model instances
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker).map_err(|e| {
+            WasmtimeError::Wasi {
+                message: format!("Failed to add WASI Preview 2 imports: {}", e),
+            }
+        })?;
 
         let resource_table = Arc::new(Mutex::new(ResourceTable::new()));
         let wasi_ctx = Arc::new(Mutex::new(WasiCtx::builder().build()));
