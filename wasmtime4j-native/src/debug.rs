@@ -13,6 +13,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+/// Result type alias for debug operations
+pub type Result<T> = WasmtimeResult<T>;
+
 /// Debug session identifier
 pub type DebugSessionId = u64;
 
@@ -947,6 +950,7 @@ pub fn get_active_debug_sessions() -> Result<Vec<DebugSessionId>> {
 pub mod jni_debug_exports {
     use super::*;
     use crate::jni_bindings::*;
+    use jni::{JNIEnv, objects::JClass, sys::{jlong, jboolean, JNI_TRUE, JNI_FALSE}};
 
     #[no_mangle]
     pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_createDebugSession(
