@@ -9570,7 +9570,7 @@ pub mod jni_simd {
         0 // false - operation not yet implemented
     }
 
-    /// SIMD popcount (stub - needs SIMD implementation)
+    /// SIMD popcount - count set bits in each byte of the vector
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdPopcount(
         mut env: JNIEnv,
@@ -9578,9 +9578,42 @@ pub mod jni_simd {
         runtime_handle: jlong,
         a: JByteArray,
     ) -> jbyteArray {
-        // TODO: Implement popcount operation
-        // For now, return input unchanged
-        a.into_raw()
+        // Get array length
+        let a_len = match env.get_array_length(&a) {
+            Ok(len) => len,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        // Read input bytes
+        let mut a_bytes = vec![0i8; a_len as usize];
+        if env.get_byte_array_region(a, 0, &mut a_bytes).is_err() {
+            return std::ptr::null_mut();
+        }
+
+        // Convert to u8
+        let a_bytes_u8: Vec<u8> = a_bytes.iter().map(|&x| x as u8).collect();
+
+        // Ensure we have exactly 16 bytes (128-bit SIMD vector)
+        if a_bytes_u8.len() != 16 {
+            return std::ptr::null_mut();
+        }
+
+        // Compute popcount for each byte
+        let mut result = vec![0i8; 16];
+        for i in 0..16 {
+            result[i] = a_bytes_u8[i].count_ones() as i8;
+        }
+
+        // Create result array
+        match env.new_byte_array(16) {
+            Ok(result_array) => {
+                if env.set_byte_array_region(&result_array, 0, &result).is_err() {
+                    return std::ptr::null_mut();
+                }
+                result_array.into_raw()
+            }
+            Err(_) => std::ptr::null_mut(),
+        }
     }
 
     /// SIMD variable shift left (stub - needs SIMD implementation)
