@@ -989,10 +989,20 @@ impl Instance {
                 // For now, always pass NULL to prevent parameter count mismatch
                 Ok(Val::ExternRef(None))
             }
-            WasmValue::FuncRef(_ref_id) => {
-                // FuncRef requires actual Func handle - not implementable with just an ID
-                // This needs access to the store and function registry
-                Ok(Val::FuncRef(None))  // TODO: Implement proper funcref support
+            WasmValue::FuncRef(ref_id) => {
+                // Convert funcref ID to Func handle using the function registry
+                if let Some(id) = ref_id {
+                    use crate::table::core::get_function_reference;
+                    // Convert i64 to u64 for registry lookup
+                    let u_id = *id as u64;
+                    if let Some(func) = get_function_reference(u_id)? {
+                        Ok(Val::FuncRef(Some(func)))
+                    } else {
+                        Ok(Val::FuncRef(None))
+                    }
+                } else {
+                    Ok(Val::FuncRef(None))
+                }
             }
         }
     }
@@ -1010,7 +1020,17 @@ impl Instance {
                 // For now, just preserve None
                 Ok(WasmValue::ExternRef(None))
             }
-            Val::FuncRef(_) => Ok(WasmValue::FuncRef(None)),  // TODO: Extract funcref ID
+            Val::FuncRef(func_ref) => {
+                // Extract funcref and register it to get an ID
+                if let Some(func) = func_ref {
+                    use crate::table::core::register_function_reference;
+                    let id = register_function_reference(func)?;
+                    // Convert u64 to i64 for WasmValue storage
+                    Ok(WasmValue::FuncRef(Some(id as i64)))
+                } else {
+                    Ok(WasmValue::FuncRef(None))
+                }
+            }
             Val::AnyRef(_) => Ok(WasmValue::ExternRef(None)),
             Val::ExnRef(_) => Ok(WasmValue::ExternRef(None)),
             Val::ContRef(_) => Ok(WasmValue::ExternRef(None)),
