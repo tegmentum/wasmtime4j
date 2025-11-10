@@ -22,6 +22,10 @@ use crate::element_segment_parser::{parse_element_segments, parse_data_segments}
 #[derive(Debug, Clone)]
 pub struct Module {
     inner: Arc<WasmtimeModule>,
+    /// Reference to the Engine to ensure same Engine Arc is used for validation
+    /// CRITICAL: Wasmtime validates Module/Store compatibility using Arc::ptr_eq(),
+    /// so we must maintain a reference to the same Engine (which contains Arc<WasmtimeEngine>)
+    engine: Engine,
     pub metadata: ModuleMetadata,
     /// Element segments for table.init() operations (hybrid design - only passive segments cached)
     pub element_segments: Vec<Option<ElementSegment>>,
@@ -225,6 +229,7 @@ impl Module {
 
         Ok(Module {
             inner: Arc::new(module),
+            engine: engine.clone(),
             metadata,
             element_segments,
             data_segments,
@@ -296,6 +301,12 @@ impl Module {
     #[allow(dead_code)]
     pub(crate) fn inner(&self) -> &WasmtimeModule {
         &self.inner
+    }
+
+    /// Get reference to the engine this module was compiled with
+    /// CRITICAL: This ensures Store uses the same Engine Arc for validation
+    pub(crate) fn engine(&self) -> &Engine {
+        &self.engine
     }
 
     /// Get module metadata for introspection
@@ -403,6 +414,7 @@ impl Module {
 
         Ok(Module {
             inner: Arc::new(module),
+            engine: engine.clone(),
             metadata,
             element_segments,
             data_segments,

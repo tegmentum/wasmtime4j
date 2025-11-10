@@ -25,6 +25,10 @@ pub struct Store {
     /// Unique identifier for this store
     id: u64,
     inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
+    /// Reference to the Engine to ensure same Engine Arc is used for validation
+    /// CRITICAL: Wasmtime validates Module/Store compatibility using Arc::ptr_eq(),
+    /// so we must maintain a reference to the same Engine (which contains Arc<WasmtimeEngine>)
+    engine: Engine,
     metadata: StoreMetadata,
 }
 
@@ -464,6 +468,7 @@ impl StoreBuilder {
         Ok(Store {
             id: store_id,
             inner: Arc::new(ReentrantLock::new(wasmtime_store)),
+            engine: engine.clone(),
             metadata,
         })
     }
