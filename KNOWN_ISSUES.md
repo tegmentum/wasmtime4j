@@ -136,28 +136,42 @@ Java: module.instantiate(store)
 
 ### Proposed Fix
 
-**Recommended Approach**: Store Engine Arc reference in Module and Store wrappers
+**Status**: PARTIALLY IMPLEMENTED (Commit 2ca37647)
 
-Modify `wasmtime4j-native/src/module.rs` and `wasmtime4j-native/src/store.rs`:
+**Phase 1 (COMPLETED)**: Store Engine reference in Module and Store wrappers
+
+Modified `wasmtime4j-native/src/module.rs` and `wasmtime4j-native/src/store.rs`:
 
 ```rust
 pub struct Module {
     inner: Arc<WasmtimeModule>,
-    engine: Arc<Engine>,  // ADD: Keep reference to original Engine Arc
+    engine: Engine,  // ADDED: Keep reference to Engine wrapper
     metadata: ModuleMetadata,
     // ...
 }
 
 pub struct Store {
     inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
-    engine_ref: Arc<Engine>,  // ADD: Keep reference to ensure same Arc
+    engine: Engine,  // ADDED: Keep reference to Engine wrapper
     metadata: StoreMetadata,
     // ...
 }
 ```
 
-Then when creating Module and Store, pass the Engine as `Arc<Engine>` and store it, ensuring
-both Module and Store maintain references to the SAME Arc pointer that Wasmtime can validate.
+Both Module and Store now store the Engine, which contains `Arc<WasmtimeEngine>`.
+
+**Phase 2 (PENDING)**: Use Module's engine for Store creation or implement alternative solution
+
+The current fix is incomplete because even though Module and Store hold references to the same
+wasmtime4j Engine wrapper (which shares `Arc<WasmtimeEngine>`), when `WasmtimeModule::new(engine.inner(), bytes)`
+and `WasmtimeStore::new(engine.inner(), data)` are called, Wasmtime internally clones the Arc,
+creating different Arc pointers.
+
+Possible solutions:
+1. Use `wasmtime::Module::engine()` method to get the Arc from Module and use it for Store creation
+2. Create Store using the Module's engine via `Store::new(module.engine())`
+3. Upgrade to a newer Wasmtime version if this issue was fixed
+4. Implement a workaround in Instance creation to re-create Store if needed
 
 ### Workaround
 
