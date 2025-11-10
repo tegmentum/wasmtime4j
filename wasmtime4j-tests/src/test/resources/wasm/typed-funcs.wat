@@ -4,6 +4,30 @@
     nop)
   (export "noop" (func $noop))
 
+  ;; (i32) -> void - side effect operation
+  (func $consume_i32 (param $x i32)
+    ;; Just consume the parameter, no return
+    nop)
+  (export "consume_i32" (func $consume_i32))
+
+  ;; (i32, i32) -> void - side effect operation
+  (func $consume_i32i32 (param $a i32) (param $b i32)
+    ;; Just consume the parameters, no return
+    nop)
+  (export "consume_i32i32" (func $consume_i32i32))
+
+  ;; (i64) -> void - side effect operation
+  (func $consume_i64 (param $x i64)
+    ;; Just consume the parameter, no return
+    nop)
+  (export "consume_i64" (func $consume_i64))
+
+  ;; (i64, i64) -> void - side effect operation
+  (func $consume_i64i64 (param $a i64) (param $b i64)
+    ;; Just consume the parameters, no return
+    nop)
+  (export "consume_i64i64" (func $consume_i64i64))
+
   ;; (i32) -> i32
   (func $increment_i32 (param $x i32) (result i32)
     local.get $x

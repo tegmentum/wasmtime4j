@@ -154,6 +154,52 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   }
 
   /**
+   * Calls a typed function with i32 parameter and void result: (i32) -> ().
+   *
+   * @param param the i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI32ToVoid(final int param) throws WasmException {
+    ensureNotClosed();
+    nativeCallI32ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+  }
+
+  /**
+   * Calls a typed function with (i32, i32) parameters and void result: (i32, i32) -> ().
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI32I32ToVoid(final int param1, final int param2) throws WasmException {
+    ensureNotClosed();
+    nativeCallI32I32ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+  }
+
+  /**
+   * Calls a typed function with i64 parameter and void result: (i64) -> ().
+   *
+   * @param param the i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI64ToVoid(final long param) throws WasmException {
+    ensureNotClosed();
+    nativeCallI64ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+  }
+
+  /**
+   * Calls a typed function with (i64, i64) parameters and void result: (i64, i64) -> ().
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI64I64ToVoid(final long param1, final long param2) throws WasmException {
+    ensureNotClosed();
+    nativeCallI64I64ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+  }
+
+  /**
    * Calls a typed function with i32 parameter and i32 result: (i32) -> i32.
    *
    * @param param the i32 parameter
@@ -313,6 +359,16 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   private static native long nativeCreate(long storePtr, long funcPtr, String signature);
 
   private static native void nativeCallVoidToVoid(long handlePtr, long storePtr);
+
+  private static native void nativeCallI32ToVoid(long handlePtr, long storePtr, int param);
+
+  private static native void nativeCallI32I32ToVoid(
+      long handlePtr, long storePtr, int param1, int param2);
+
+  private static native void nativeCallI64ToVoid(long handlePtr, long storePtr, long param);
+
+  private static native void nativeCallI64I64ToVoid(
+      long handlePtr, long storePtr, long param1, long param2);
 
   private static native int nativeCallI32ToI32(long handlePtr, long storePtr, int param);
 

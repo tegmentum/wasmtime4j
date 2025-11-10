@@ -125,6 +125,122 @@ class TypedFuncTest {
         });
   }
 
+  // Test (i32) -> void signature
+
+  @Test
+  void testCallI32ToVoid() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i32").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "i->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI32ToVoid(42);
+        });
+  }
+
+  @Test
+  void testCallI32ToVoidWithZero() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i32").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "i->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI32ToVoid(0);
+        });
+  }
+
+  @Test
+  void testCallI32ToVoidWithNegative() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i32").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "i->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI32ToVoid(-100);
+        });
+  }
+
+  // Test (i32, i32) -> void signature
+
+  @Test
+  void testCallI32I32ToVoid() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i32i32").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "ii->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI32I32ToVoid(10, 20);
+        });
+  }
+
+  @Test
+  void testCallI32I32ToVoidWithZeros() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i32i32").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "ii->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI32I32ToVoid(0, 0);
+        });
+  }
+
+  // Test (i64) -> void signature
+
+  @Test
+  void testCallI64ToVoid() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i64").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "I->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI64ToVoid(9999999999L);
+        });
+  }
+
+  @Test
+  void testCallI64ToVoidWithZero() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i64").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "I->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI64ToVoid(0L);
+        });
+  }
+
+  // Test (i64, i64) -> void signature
+
+  @Test
+  void testCallI64I64ToVoid() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i64i64").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "II->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI64I64ToVoid(100000000000L, 200000000000L);
+        });
+  }
+
+  @Test
+  void testCallI64I64ToVoidWithZeros() throws WasmException {
+    final WasmFunction consumeFunc = instance.getFunction("consume_i64i64").orElseThrow();
+    final TypedFunc typedConsume = TypedFunc.create(consumeFunc, "II->v");
+
+    // Should execute without throwing
+    assertDoesNotThrow(
+        () -> {
+          typedConsume.callI64I64ToVoid(0L, 0L);
+        });
+  }
+
   // Test i32 -> i32 signature
 
   @Test

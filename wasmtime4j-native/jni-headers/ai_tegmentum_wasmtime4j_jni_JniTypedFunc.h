@@ -25,6 +25,38 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallV
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI32ToVoid
+ * Signature: (JJI)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToVoid
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI32I32ToVoid
+ * Signature: (JJII)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32ToVoid
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI64ToVoid
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToVoid
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI64I64ToVoid
+ * Signature: (JJJJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64ToVoid
+  (JNIEnv *, jclass, jlong, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
  * Method:    nativeCallI32ToI32
  * Signature: (JJI)I
  */

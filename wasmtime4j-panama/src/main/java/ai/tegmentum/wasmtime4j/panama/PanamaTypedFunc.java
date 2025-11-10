@@ -106,6 +106,52 @@ public final class PanamaTypedFunc implements TypedFunc {
   }
 
   /**
+   * Calls a typed function with i32 parameter and void result: (i32) -> ().
+   *
+   * @param param the i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI32ToVoid(final int param) throws WasmException {
+    ensureNotClosed();
+    function.call(WasmValue.i32(param));
+  }
+
+  /**
+   * Calls a typed function with (i32, i32) parameters and void result: (i32, i32) -> ().
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI32I32ToVoid(final int param1, final int param2) throws WasmException {
+    ensureNotClosed();
+    function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+  }
+
+  /**
+   * Calls a typed function with i64 parameter and void result: (i64) -> ().
+   *
+   * @param param the i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI64ToVoid(final long param) throws WasmException {
+    ensureNotClosed();
+    function.call(WasmValue.i64(param));
+  }
+
+  /**
+   * Calls a typed function with (i64, i64) parameters and void result: (i64, i64) -> ().
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  public void callI64I64ToVoid(final long param1, final long param2) throws WasmException {
+    ensureNotClosed();
+    function.call(WasmValue.i64(param1), WasmValue.i64(param2));
+  }
+
+  /**
    * Calls a typed function with i32 parameter and i32 result: (i32) -> i32.
    *
    * @param param the i32 parameter

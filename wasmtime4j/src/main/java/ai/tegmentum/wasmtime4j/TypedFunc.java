@@ -27,10 +27,14 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *
  * <ul>
  *   <li>() -> void - {@link #callVoidToVoid()}
+ *   <li>(i32) -> void - {@link #callI32ToVoid(int)}
  *   <li>(i32) -> i32 - {@link #callI32ToI32(int)}
+ *   <li>(i32, i32) -> void - {@link #callI32I32ToVoid(int, int)}
  *   <li>(i32, i32) -> i32 - {@link #callI32I32ToI32(int, int)}
  *   <li>(i32, i32, i32) -> i32 - {@link #callI32I32I32ToI32(int, int, int)}
+ *   <li>(i64) -> void - {@link #callI64ToVoid(long)}
  *   <li>(i64) -> i64 - {@link #callI64ToI64(long)}
+ *   <li>(i64, i64) -> void - {@link #callI64I64ToVoid(long, long)}
  *   <li>(i64, i64) -> i64 - {@link #callI64I64ToI64(long, long)}
  *   <li>(i64, i64, i64) -> i64 - {@link #callI64I64I64ToI64(long, long, long)}
  *   <li>(f32) -> f32 - {@link #callF32ToF32(float)}
@@ -68,6 +72,40 @@ public interface TypedFunc extends AutoCloseable {
    * @throws WasmException if function execution fails
    */
   void callVoidToVoid() throws WasmException;
+
+  /**
+   * Calls a typed function with i32 parameter and void result: (i32) -> ().
+   *
+   * @param param the i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  void callI32ToVoid(int param) throws WasmException;
+
+  /**
+   * Calls a typed function with (i32, i32) parameters and void result: (i32, i32) -> ().
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @throws WasmException if function execution fails
+   */
+  void callI32I32ToVoid(int param1, int param2) throws WasmException;
+
+  /**
+   * Calls a typed function with i64 parameter and void result: (i64) -> ().
+   *
+   * @param param the i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  void callI64ToVoid(long param) throws WasmException;
+
+  /**
+   * Calls a typed function with (i64, i64) parameters and void result: (i64, i64) -> ().
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @throws WasmException if function execution fails
+   */
+  void callI64I64ToVoid(long param1, long param2) throws WasmException;
 
   /**
    * Calls a typed function with i32 parameter and i32 result: (i32) -> i32.
