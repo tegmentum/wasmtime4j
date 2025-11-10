@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -44,7 +45,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaTypedFunc {
+public final class PanamaTypedFunc implements TypedFunc {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaTypedFunc.class.getName());
 
@@ -198,20 +199,12 @@ public final class PanamaTypedFunc {
     return results[0].asF64();
   }
 
-  /**
-   * Gets the signature string for this typed function.
-   *
-   * @return the signature string
-   */
+  @Override
   public String getSignature() {
     return signature;
   }
 
-  /**
-   * Gets the underlying function.
-   *
-   * @return the wrapped function
-   */
+  @Override
   public WasmFunction getFunction() {
     return function;
   }

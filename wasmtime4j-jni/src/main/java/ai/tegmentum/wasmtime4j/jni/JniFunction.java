@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -38,7 +39,8 @@ import java.util.logging.Logger;
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
  * comprehensive type checking for all function operations.
  */
-public final class JniFunction extends JniResource implements WasmFunction {
+public final class JniFunction extends JniResource
+    implements WasmFunction, TypedFunc.TypedFunctionSupport {
 
   private static final Logger LOGGER = Logger.getLogger(JniFunction.class.getName());
 
@@ -414,6 +416,21 @@ public final class JniFunction extends JniResource implements WasmFunction {
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error calling function '" + name + "'", e);
     }
+  }
+
+  /**
+   * Creates a typed function wrapper with the specified signature.
+   *
+   * <p>This method provides zero-cost typed function calls by eliminating runtime type checking
+   * overhead. The signature string encodes parameter and return types in a compact format.
+   *
+   * @param signature the signature string (e.g., "ii->i" for (i32, i32) -> i32)
+   * @return a new TypedFunc instance wrapping this function
+   * @throws IllegalArgumentException if signature is invalid
+   */
+  @Override
+  public TypedFunc asTyped(final String signature) {
+    return new JniTypedFunc(this.store, this, signature);
   }
 
   /**

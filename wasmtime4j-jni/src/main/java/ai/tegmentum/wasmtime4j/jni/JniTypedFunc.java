@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
@@ -45,7 +46,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniTypedFunc extends JniResource {
+public final class JniTypedFunc extends JniResource implements TypedFunc {
 
   private static final Logger LOGGER = Logger.getLogger(JniTypedFunc.class.getName());
 
@@ -64,6 +65,9 @@ public final class JniTypedFunc extends JniResource {
 
   /** Function signature string (e.g., "ii->i" for (i32, i32) -> i32). */
   private final String signature;
+
+  /** The original function being wrapped. */
+  private final WasmFunction function;
 
   /**
    * Creates a typed function wrapper from a regular function.
@@ -97,6 +101,7 @@ public final class JniTypedFunc extends JniResource {
 
     this.store = store;
     this.signature = signature;
+    this.function = func;
 
     LOGGER.log(Level.FINE, "Created TypedFunc with signature: {0}", signature);
   }
@@ -221,13 +226,14 @@ public final class JniTypedFunc extends JniResource {
     return nativeCallF64ToF64(getNativeHandle(), store.getNativeHandle(), param);
   }
 
-  /**
-   * Gets the signature string for this typed function.
-   *
-   * @return the signature string
-   */
+  @Override
   public String getSignature() {
     return signature;
+  }
+
+  @Override
+  public WasmFunction getFunction() {
+    return function;
   }
 
   @Override

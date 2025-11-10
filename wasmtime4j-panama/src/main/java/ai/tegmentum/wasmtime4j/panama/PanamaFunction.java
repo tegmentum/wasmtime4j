@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -11,7 +12,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaFunction implements WasmFunction {
+public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFunctionSupport {
   private static final Logger LOGGER = Logger.getLogger(PanamaFunction.class.getName());
 
   private final PanamaInstance instance;
@@ -62,6 +63,21 @@ public final class PanamaFunction implements WasmFunction {
   @Override
   public String getName() {
     return name;
+  }
+
+  /**
+   * Creates a typed function wrapper with the specified signature.
+   *
+   * <p>This method provides zero-cost typed function calls by eliminating runtime type checking
+   * overhead. The signature string encodes parameter and return types in a compact format.
+   *
+   * @param signature the signature string (e.g., "ii->i" for (i32, i32) -> i32)
+   * @return a new TypedFunc instance wrapping this function
+   * @throws IllegalArgumentException if signature is invalid
+   */
+  @Override
+  public TypedFunc asTyped(final String signature) {
+    return new PanamaTypedFunc(this, signature);
   }
 
   /** Closes the function and releases resources. */
