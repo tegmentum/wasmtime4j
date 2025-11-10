@@ -31,16 +31,22 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *   <li>(i32) -> i32 - {@link #callI32ToI32(int)}
  *   <li>(i32, i32) -> void - {@link #callI32I32ToVoid(int, int)}
  *   <li>(i32, i32) -> i32 - {@link #callI32I32ToI32(int, int)}
+ *   <li>(i32, i32) -> i64 - {@link #callI32I32ToI64(int, int)}
  *   <li>(i32, i32, i32) -> i32 - {@link #callI32I32I32ToI32(int, int, int)}
+ *   <li>(i32, f32) -> f32 - {@link #callI32F32ToF32(int, float)}
  *   <li>(i64) -> void - {@link #callI64ToVoid(long)}
+ *   <li>(i64) -> i32 - {@link #callI64ToI32(long)}
  *   <li>(i64) -> i64 - {@link #callI64ToI64(long)}
  *   <li>(i64, i64) -> void - {@link #callI64I64ToVoid(long, long)}
  *   <li>(i64, i64) -> i64 - {@link #callI64I64ToI64(long, long)}
  *   <li>(i64, i64, i64) -> i64 - {@link #callI64I64I64ToI64(long, long, long)}
  *   <li>(f32) -> f32 - {@link #callF32ToF32(float)}
+ *   <li>(f32, i32) -> f32 - {@link #callF32I32ToF32(float, int)}
  *   <li>(f32, f32) -> f32 - {@link #callF32F32ToF32(float, float)}
+ *   <li>(f32, f32, f32) -> f32 - {@link #callF32F32F32ToF32(float, float, float)}
  *   <li>(f64) -> f64 - {@link #callF64ToF64(double)}
  *   <li>(f64, f64) -> f64 - {@link #callF64F64ToF64(double, double)}
+ *   <li>(f64, f64, f64) -> f64 - {@link #callF64F64F64ToF64(double, double, double)}
  * </ul>
  *
  * <p>Signature format: "params->results" where:
@@ -206,6 +212,85 @@ public interface TypedFunc extends AutoCloseable {
    * @throws WasmException if function execution fails
    */
   long callI64I64I64ToI64(long param1, long param2, long param3) throws WasmException;
+
+  /**
+   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) ->
+   * f32.
+   *
+   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and
+   * other three-operand floating-point operations.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @param param3 the third f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  float callF32F32F32ToF32(float param1, float param2, float param3) throws WasmException;
+
+  /**
+   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) ->
+   * f64.
+   *
+   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and
+   * other three-operand double-precision floating-point operations.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @param param3 the third f64 parameter
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  double callF64F64F64ToF64(double param1, double param2, double param3) throws WasmException;
+
+  /**
+   * Calls a typed function with (i32, i32) parameters and i64 result: (i32, i32) -> i64.
+   *
+   * <p>Useful for combining two 32-bit values into a single 64-bit value (e.g., high/low word
+   * combination).
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  long callI32I32ToI64(int param1, int param2) throws WasmException;
+
+  /**
+   * Calls a typed function with i64 parameter and i32 result: (i64) -> i32.
+   *
+   * <p>Useful for extracting the low 32 bits from a 64-bit value or performing truncation
+   * operations.
+   *
+   * @param param the i64 parameter
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  int callI64ToI32(long param) throws WasmException;
+
+  /**
+   * Calls a typed function with (i32, f32) parameters and f32 result: (i32, f32) -> f32.
+   *
+   * <p>Useful for array-style operations with integer index and float value.
+   *
+   * @param param1 the i32 parameter
+   * @param param2 the f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  float callI32F32ToF32(int param1, float param2) throws WasmException;
+
+  /**
+   * Calls a typed function with (f32, i32) parameters and f32 result: (f32, i32) -> f32.
+   *
+   * <p>Useful for float operations with integer parameters (e.g., power, shift-like operations).
+   *
+   * @param param1 the f32 parameter
+   * @param param2 the i32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  float callF32I32ToF32(float param1, int param2) throws WasmException;
 
   /**
    * Gets the signature string for this typed function.

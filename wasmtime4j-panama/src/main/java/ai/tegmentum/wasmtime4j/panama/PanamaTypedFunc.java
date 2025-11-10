@@ -335,6 +335,115 @@ public final class PanamaTypedFunc implements TypedFunc {
     return function;
   }
 
+  /**
+   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) ->
+   * f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @param param3 the third f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  public float callF32F32F32ToF32(final float param1, final float param2, final float param3)
+      throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results =
+        function.call(WasmValue.f32(param1), WasmValue.f32(param2), WasmValue.f32(param3));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF32();
+  }
+
+  /**
+   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) ->
+   * f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @param param3 the third f64 parameter
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  public double callF64F64F64ToF64(final double param1, final double param2, final double param3)
+      throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results =
+        function.call(WasmValue.f64(param1), WasmValue.f64(param2), WasmValue.f64(param3));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF64();
+  }
+
+  /**
+   * Calls a typed function with (i32, i32) parameters and i64 result: (i32, i32) -> i64.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  public long callI32I32ToI64(final int param1, final int param2) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asI64();
+  }
+
+  /**
+   * Calls a typed function with i64 parameter and i32 result: (i64) -> i32.
+   *
+   * @param param the i64 parameter
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callI64ToI32(final long param) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.i64(param));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asI32();
+  }
+
+  /**
+   * Calls a typed function with (i32, f32) parameters and f32 result: (i32, f32) -> f32.
+   *
+   * @param param1 the i32 parameter
+   * @param param2 the f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  public float callI32F32ToF32(final int param1, final float param2) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.f32(param2));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF32();
+  }
+
+  /**
+   * Calls a typed function with (f32, i32) parameters and f32 result: (f32, i32) -> f32.
+   *
+   * @param param1 the f32 parameter
+   * @param param2 the i32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  public float callF32I32ToF32(final float param1, final int param2) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.i32(param2));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF32();
+  }
+
   /** Closes the typed function and releases resources. */
   public void close() {
     if (closed) {

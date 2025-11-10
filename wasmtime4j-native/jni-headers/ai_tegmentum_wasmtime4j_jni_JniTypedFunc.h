@@ -137,6 +137,54 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCall
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallF32F32F32ToF32
+ * Signature: (JJFFF)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32F32ToF32
+  (JNIEnv *, jclass, jlong, jlong, jfloat, jfloat, jfloat);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallF64F64F64ToF64
+ * Signature: (JJDDD)D
+ */
+JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64F64ToF64
+  (JNIEnv *, jclass, jlong, jlong, jdouble, jdouble, jdouble);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI32I32ToI64
+ * Signature: (JJII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32ToI64
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI64ToI32
+ * Signature: (JJJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI32
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallI32F32ToF32
+ * Signature: (JJIF)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32ToF32
+  (JNIEnv *, jclass, jlong, jlong, jint, jfloat);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
+ * Method:    nativeCallF32I32ToF32
+ * Signature: (JJFI)F
+ */
+JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32ToF32
+  (JNIEnv *, jclass, jlong, jlong, jfloat, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
  * Method:    nativeDestroy
  * Signature: (J)V
  */
