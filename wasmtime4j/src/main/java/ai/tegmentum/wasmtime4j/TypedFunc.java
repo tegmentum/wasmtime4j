@@ -29,10 +29,14 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *   <li>() -> void - {@link #callVoidToVoid()}
  *   <li>(i32) -> i32 - {@link #callI32ToI32(int)}
  *   <li>(i32, i32) -> i32 - {@link #callI32I32ToI32(int, int)}
+ *   <li>(i32, i32, i32) -> i32 - {@link #callI32I32I32ToI32(int, int, int)}
  *   <li>(i64) -> i64 - {@link #callI64ToI64(long)}
  *   <li>(i64, i64) -> i64 - {@link #callI64I64ToI64(long, long)}
+ *   <li>(i64, i64, i64) -> i64 - {@link #callI64I64I64ToI64(long, long, long)}
  *   <li>(f32) -> f32 - {@link #callF32ToF32(float)}
+ *   <li>(f32, f32) -> f32 - {@link #callF32F32ToF32(float, float)}
  *   <li>(f64) -> f64 - {@link #callF64ToF64(double)}
+ *   <li>(f64, f64) -> f64 - {@link #callF64F64ToF64(double, double)}
  * </ul>
  *
  * <p>Signature format: "params->results" where:
@@ -120,6 +124,50 @@ public interface TypedFunc extends AutoCloseable {
    * @throws WasmException if function execution fails
    */
   double callF64ToF64(double param) throws WasmException;
+
+  /**
+   * Calls a typed function with (f32, f32) parameters and f32 result: (f32, f32) -> f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  float callF32F32ToF32(float param1, float param2) throws WasmException;
+
+  /**
+   * Calls a typed function with (f64, f64) parameters and f64 result: (f64, f64) -> f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  double callF64F64ToF64(double param1, double param2) throws WasmException;
+
+  /**
+   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) ->
+   * i32.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @param param3 the third i32 parameter
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  int callI32I32I32ToI32(int param1, int param2, int param3) throws WasmException;
+
+  /**
+   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) ->
+   * i64.
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @param param3 the third i64 parameter
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  long callI64I64I64ToI64(long param1, long param2, long param3) throws WasmException;
 
   /**
    * Gets the signature string for this typed function.

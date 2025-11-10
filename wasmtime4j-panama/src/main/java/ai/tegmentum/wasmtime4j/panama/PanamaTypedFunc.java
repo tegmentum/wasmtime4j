@@ -29,10 +29,14 @@ import java.util.logging.Logger;
  *   <li>() -> void
  *   <li>(i32) -> i32
  *   <li>(i32, i32) -> i32
+ *   <li>(i32, i32, i32) -> i32
  *   <li>(i64) -> i64
  *   <li>(i64, i64) -> i64
+ *   <li>(i64, i64, i64) -> i64
  *   <li>(f32) -> f32
+ *   <li>(f32, f32) -> f32
  *   <li>(f64) -> f64
+ *   <li>(f64, f64) -> f64
  * </ul>
  *
  * <p>Example usage:
@@ -197,6 +201,82 @@ public final class PanamaTypedFunc implements TypedFunc {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
     return results[0].asF64();
+  }
+
+  /**
+   * Calls a typed function with (f32, f32) parameters and f32 result: (f32, f32) -> f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.f32(param2));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF32();
+  }
+
+  /**
+   * Calls a typed function with (f64, f64) parameters and f64 result: (f64, f64) -> f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results = function.call(WasmValue.f64(param1), WasmValue.f64(param2));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asF64();
+  }
+
+  /**
+   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) ->
+   * i32.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @param param3 the third i32 parameter
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callI32I32I32ToI32(final int param1, final int param2, final int param3)
+      throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results =
+        function.call(WasmValue.i32(param1), WasmValue.i32(param2), WasmValue.i32(param3));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asI32();
+  }
+
+  /**
+   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) ->
+   * i64.
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @param param3 the third i64 parameter
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  public long callI64I64I64ToI64(final long param1, final long param2, final long param3)
+      throws WasmException {
+    ensureNotClosed();
+    final WasmValue[] results =
+        function.call(WasmValue.i64(param1), WasmValue.i64(param2), WasmValue.i64(param3));
+    if (results.length != 1) {
+      throw new WasmException("Expected 1 result, got " + results.length);
+    }
+    return results[0].asI64();
   }
 
   @Override

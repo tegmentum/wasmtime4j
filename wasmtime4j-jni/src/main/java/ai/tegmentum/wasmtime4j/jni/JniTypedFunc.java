@@ -227,6 +227,66 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
     return nativeCallF64ToF64(getNativeHandle(), store.getNativeHandle(), param);
   }
 
+  /**
+   * Calls a typed function with (f32, f32) parameters and f32 result: (f32, f32) -> f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @return the f32 result
+   * @throws WasmException if function execution fails
+   */
+  public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
+    ensureNotClosed();
+    return nativeCallF32F32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+  }
+
+  /**
+   * Calls a typed function with (f64, f64) parameters and f64 result: (f64, f64) -> f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
+    ensureNotClosed();
+    return nativeCallF64F64ToF64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+  }
+
+  /**
+   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) ->
+   * i32.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @param param3 the third i32 parameter
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callI32I32I32ToI32(final int param1, final int param2, final int param3)
+      throws WasmException {
+    ensureNotClosed();
+    return nativeCallI32I32I32ToI32(
+        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+  }
+
+  /**
+   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) ->
+   * i64.
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @param param3 the third i64 parameter
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  public long callI64I64I64ToI64(final long param1, final long param2, final long param3)
+      throws WasmException {
+    ensureNotClosed();
+    return nativeCallI64I64I64ToI64(
+        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+  }
+
   @Override
   public String getSignature() {
     return signature;
@@ -267,6 +327,18 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   private static native float nativeCallF32ToF32(long handlePtr, long storePtr, float param);
 
   private static native double nativeCallF64ToF64(long handlePtr, long storePtr, double param);
+
+  private static native float nativeCallF32F32ToF32(
+      long handlePtr, long storePtr, float param1, float param2);
+
+  private static native double nativeCallF64F64ToF64(
+      long handlePtr, long storePtr, double param1, double param2);
+
+  private static native int nativeCallI32I32I32ToI32(
+      long handlePtr, long storePtr, int param1, int param2, int param3);
+
+  private static native long nativeCallI64I64I64ToI64(
+      long handlePtr, long storePtr, long param1, long param2, long param3);
 
   private static native void nativeDestroy(long handlePtr);
 }

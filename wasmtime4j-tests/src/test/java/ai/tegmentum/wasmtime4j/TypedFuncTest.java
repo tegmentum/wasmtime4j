@@ -336,6 +336,141 @@ class TypedFuncTest {
     assertThat(result).isEqualTo(-9876543210.123456789, offset(0.000000001));
   }
 
+  // Test (f32, f32) -> f32 signature
+
+  @Test
+  void testCallF32F32ToF32() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f32").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "ff->f");
+
+    final float result = typedAdd.callF32F32ToF32(1.5f, 2.5f);
+    assertThat(result).isEqualTo(4.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32F32ToF32WithZeros() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f32").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "ff->f");
+
+    final float result = typedAdd.callF32F32ToF32(0.0f, 0.0f);
+    assertThat(result).isEqualTo(0.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32F32ToF32WithNegatives() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f32").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "ff->f");
+
+    final float result = typedAdd.callF32F32ToF32(-3.5f, 1.5f);
+    assertThat(result).isEqualTo(-2.0f, offset(0.0001f));
+  }
+
+  // Test (f64, f64) -> f64 signature
+
+  @Test
+  void testCallF64F64ToF64() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f64").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "FF->F");
+
+    final double result = typedAdd.callF64F64ToF64(123.456, 789.012);
+    assertThat(result).isEqualTo(912.468, offset(0.000001));
+  }
+
+  @Test
+  void testCallF64F64ToF64WithZeros() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f64").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "FF->F");
+
+    final double result = typedAdd.callF64F64ToF64(0.0, 0.0);
+    assertThat(result).isEqualTo(0.0, offset(0.000001));
+  }
+
+  @Test
+  void testCallF64F64ToF64WithNegatives() throws WasmException {
+    final WasmFunction addFunc = instance.getFunction("add_f64").orElseThrow();
+    final TypedFunc typedAdd = TypedFunc.create(addFunc, "FF->F");
+
+    final double result = typedAdd.callF64F64ToF64(-999.999, 111.111);
+    assertThat(result).isEqualTo(-888.888, offset(0.000001));
+  }
+
+  // Test (i32, i32, i32) -> i32 signature
+
+  @Test
+  void testCallI32I32I32ToI32() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i32").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "iii->i");
+
+    final int result = typedAddThree.callI32I32I32ToI32(10, 20, 30);
+    assertThat(result).isEqualTo(60);
+  }
+
+  @Test
+  void testCallI32I32I32ToI32WithZeros() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i32").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "iii->i");
+
+    final int result = typedAddThree.callI32I32I32ToI32(0, 0, 0);
+    assertThat(result).isEqualTo(0);
+  }
+
+  @Test
+  void testCallI32I32I32ToI32WithNegatives() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i32").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "iii->i");
+
+    final int result = typedAddThree.callI32I32I32ToI32(-100, 50, 25);
+    assertThat(result).isEqualTo(-25);
+  }
+
+  @Test
+  void testCallI32I32I32ToI32WithLargeValues() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i32").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "iii->i");
+
+    final int result = typedAddThree.callI32I32I32ToI32(1_000_000, 2_000_000, 3_000_000);
+    assertThat(result).isEqualTo(6_000_000);
+  }
+
+  // Test (i64, i64, i64) -> i64 signature
+
+  @Test
+  void testCallI64I64I64ToI64() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i64").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "III->I");
+
+    final long result = typedAddThree.callI64I64I64ToI64(100L, 200L, 300L);
+    assertThat(result).isEqualTo(600L);
+  }
+
+  @Test
+  void testCallI64I64I64ToI64WithZeros() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i64").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "III->I");
+
+    final long result = typedAddThree.callI64I64I64ToI64(0L, 0L, 0L);
+    assertThat(result).isEqualTo(0L);
+  }
+
+  @Test
+  void testCallI64I64I64ToI64WithNegatives() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i64").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "III->I");
+
+    final long result = typedAddThree.callI64I64I64ToI64(-1000000000000L, 500000000000L, 250000000000L);
+    assertThat(result).isEqualTo(-250000000000L);
+  }
+
+  @Test
+  void testCallI64I64I64ToI64WithLargeValues() throws WasmException {
+    final WasmFunction addThreeFunc = instance.getFunction("add_three_i64").orElseThrow();
+    final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "III->I");
+
+    final long result =
+        typedAddThree.callI64I64I64ToI64(100000000000L, 200000000000L, 300000000000L);
+    assertThat(result).isEqualTo(600000000000L);
+  }
+
   // Test resource management
 
   @Test

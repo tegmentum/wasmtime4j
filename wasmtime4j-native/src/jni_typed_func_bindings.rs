@@ -197,6 +197,96 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
     }
 }
 
+/// Call a typed function with (f32, f32) -> f32
+#[no_mangle]
+pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32ToF32(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle_ptr: jlong,
+    store_ptr: jlong,
+    param1: jfloat,
+    param2: jfloat,
+) -> jfloat {
+    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
+    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+
+    match call_typed_f32f32_to_f32(&handle.func, store, param1, param2) {
+        Ok(result) => result,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            0.0
+        }
+    }
+}
+
+/// Call a typed function with (f64, f64) -> f64
+#[no_mangle]
+pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64ToF64(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle_ptr: jlong,
+    store_ptr: jlong,
+    param1: jdouble,
+    param2: jdouble,
+) -> jdouble {
+    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
+    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+
+    match call_typed_f64f64_to_f64(&handle.func, store, param1, param2) {
+        Ok(result) => result,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            0.0
+        }
+    }
+}
+
+/// Call a typed function with (i32, i32, i32) -> i32
+#[no_mangle]
+pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32I32ToI32(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle_ptr: jlong,
+    store_ptr: jlong,
+    param1: jint,
+    param2: jint,
+    param3: jint,
+) -> jint {
+    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
+    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+
+    match call_typed_i32i32i32_to_i32(&handle.func, store, param1, param2, param3) {
+        Ok(result) => result,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            0
+        }
+    }
+}
+
+/// Call a typed function with (i64, i64, i64) -> i64
+#[no_mangle]
+pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64I64ToI64(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle_ptr: jlong,
+    store_ptr: jlong,
+    param1: jlong,
+    param2: jlong,
+    param3: jlong,
+) -> jlong {
+    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
+    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+
+    match call_typed_i64i64i64_to_i64(&handle.func, store, param1, param2, param3) {
+        Ok(result) => result,
+        Err(e) => {
+            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            0
+        }
+    }
+}
+
 /// Destroy a typed function handle
 #[no_mangle]
 pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeDestroy(
@@ -252,4 +342,24 @@ fn call_typed_f64_to_f64(func: &Func, mut store: &mut Store<()>, param: f64) -> 
 fn call_typed_void_to_void(func: &Func, mut store: &mut Store<()>) -> WasmtimeResult<()> {
     let typed = CustomTypedFunc::<(), ()>::new(&mut store, func)?;
     typed.call(&mut store, ())
+}
+
+fn call_typed_f32f32_to_f32(func: &Func, mut store: &mut Store<()>, p1: f32, p2: f32) -> WasmtimeResult<f32> {
+    let typed = CustomTypedFunc::<(f32, f32), f32>::new(&mut store, func)?;
+    typed.call(&mut store, (p1, p2))
+}
+
+fn call_typed_f64f64_to_f64(func: &Func, mut store: &mut Store<()>, p1: f64, p2: f64) -> WasmtimeResult<f64> {
+    let typed = CustomTypedFunc::<(f64, f64), f64>::new(&mut store, func)?;
+    typed.call(&mut store, (p1, p2))
+}
+
+fn call_typed_i32i32i32_to_i32(func: &Func, mut store: &mut Store<()>, p1: i32, p2: i32, p3: i32) -> WasmtimeResult<i32> {
+    let typed = CustomTypedFunc::<(i32, i32, i32), i32>::new(&mut store, func)?;
+    typed.call(&mut store, (p1, p2, p3))
+}
+
+fn call_typed_i64i64i64_to_i64(func: &Func, mut store: &mut Store<()>, p1: i64, p2: i64, p3: i64) -> WasmtimeResult<i64> {
+    let typed = CustomTypedFunc::<(i64, i64, i64), i64>::new(&mut store, func)?;
+    typed.call(&mut store, (p1, p2, p3))
 }
