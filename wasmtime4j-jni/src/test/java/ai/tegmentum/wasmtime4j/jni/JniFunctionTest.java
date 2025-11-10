@@ -41,7 +41,8 @@ class JniFunctionTest {
   @Test
   void testConstructorWithInvalidHandle() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniFunction(0L, FUNCTION_NAME, MOCK_STORE));
+        assertThrows(
+            JniValidationException.class, () -> new JniFunction(0L, FUNCTION_NAME, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -50,7 +51,8 @@ class JniFunctionTest {
   @Test
   void testConstructorWithNullName() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniFunction(VALID_HANDLE, null, MOCK_STORE));
+        assertThrows(
+            JniValidationException.class, () -> new JniFunction(VALID_HANDLE, null, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -59,7 +61,8 @@ class JniFunctionTest {
   @Test
   void testConstructorWithNullStore() {
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniFunction(VALID_HANDLE, FUNCTION_NAME, null));
+        assertThrows(
+            JniValidationException.class, () -> new JniFunction(VALID_HANDLE, FUNCTION_NAME, null));
 
     assertThat(exception.getMessage()).contains("store");
     assertThat(exception.getMessage()).contains("must not be null");

@@ -114,7 +114,8 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @param signature the signature string
    * @return the native handle
    */
-  private static long createHandle(final JniStore store, final WasmFunction func, final String signature) {
+  private static long createHandle(
+      final JniStore store, final WasmFunction func, final String signature) {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
