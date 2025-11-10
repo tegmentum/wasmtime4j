@@ -245,7 +245,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Call native function with store context
-      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
+      final Object[] nativeResults =
+          nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
       if (nativeResults == null) {
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
@@ -599,7 +600,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
       }
 
       // Direct native call without additional overhead
-      final Object[] nativeResults = nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
+      final Object[] nativeResults =
+          nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
       if (nativeResults == null) {
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
@@ -684,7 +686,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
    * @param parameters the function parameters
    * @return the return value or null
    */
-  private static native Object nativeCall(long functionHandle, long storeHandle, Object[] parameters);
+  private static native Object nativeCall(
+      long functionHandle, long storeHandle, Object[] parameters);
 
   /**
    * Calls a function with parameters and returns multiple values.
@@ -694,7 +697,8 @@ public final class JniFunction extends JniResource implements WasmFunction {
    * @param parameters the function parameters
    * @return array of return values (never null, may be empty)
    */
-  private static native Object[] nativeCallMultiValue(long functionHandle, long storeHandle, Object[] parameters);
+  private static native Object[] nativeCallMultiValue(
+      long functionHandle, long storeHandle, Object[] parameters);
 
   /**
    * Calls a function with integer parameters (optimized).

@@ -44,6 +44,7 @@ pub mod module;
 pub mod store;
 pub mod instance;
 pub mod hostfunc;
+pub mod typed_func;  // Typed function wrapper for zero-cost calls
 pub mod memory;
 pub mod global;
 pub mod table;
@@ -97,6 +98,8 @@ pub mod jni_gc_bindings;
 pub mod jni_snapshot_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_hot_reload_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_typed_func_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod platform_memory_jni;
 #[cfg(feature = "jni-bindings")]
