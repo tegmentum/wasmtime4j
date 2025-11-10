@@ -300,8 +300,7 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   }
 
   /**
-   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) ->
-   * i32.
+   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) -> i32.
    *
    * @param param1 the first i32 parameter
    * @param param2 the second i32 parameter
@@ -317,8 +316,7 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   }
 
   /**
-   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) ->
-   * i64.
+   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) -> i64.
    *
    * @param param1 the first i64 parameter
    * @param param2 the second i64 parameter
@@ -334,8 +332,7 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   }
 
   /**
-   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) ->
-   * f32.
+   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) -> f32.
    *
    * @param param1 the first f32 parameter
    * @param param2 the second f32 parameter
@@ -351,8 +348,7 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
   }
 
   /**
-   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) ->
-   * f64.
+   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) -> f64.
    *
    * @param param1 the first f64 parameter
    * @param param2 the second f64 parameter

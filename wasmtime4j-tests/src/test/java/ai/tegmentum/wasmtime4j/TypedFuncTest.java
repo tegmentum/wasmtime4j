@@ -573,7 +573,8 @@ class TypedFuncTest {
     final WasmFunction addThreeFunc = instance.getFunction("add_three_i64").orElseThrow();
     final TypedFunc typedAddThree = TypedFunc.create(addThreeFunc, "III->I");
 
-    final long result = typedAddThree.callI64I64I64ToI64(-1000000000000L, 500000000000L, 250000000000L);
+    final long result =
+        typedAddThree.callI64I64I64ToI64(-1000000000000L, 500000000000L, 250000000000L);
     assertThat(result).isEqualTo(-250000000000L);
   }
 
@@ -585,6 +586,255 @@ class TypedFuncTest {
     final long result =
         typedAddThree.callI64I64I64ToI64(100000000000L, 200000000000L, 300000000000L);
     assertThat(result).isEqualTo(600000000000L);
+  }
+
+  // Test (f32, f32, f32) -> f32 signature
+
+  @Test
+  void testCallF32F32F32ToF32() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f32").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "fff->f");
+
+    // Test fused multiply-add: a * b + c = 2.0 * 3.0 + 4.0 = 10.0
+    final float result = typedFma.callF32F32F32ToF32(2.0f, 3.0f, 4.0f);
+    assertThat(result).isEqualTo(10.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32F32F32ToF32WithZeros() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f32").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "fff->f");
+
+    // 0 * 0 + 0 = 0
+    final float result = typedFma.callF32F32F32ToF32(0.0f, 0.0f, 0.0f);
+    assertThat(result).isEqualTo(0.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32F32F32ToF32WithNegatives() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f32").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "fff->f");
+
+    // -2.0 * 3.0 + 5.0 = -6.0 + 5.0 = -1.0
+    final float result = typedFma.callF32F32F32ToF32(-2.0f, 3.0f, 5.0f);
+    assertThat(result).isEqualTo(-1.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32F32F32ToF32WithLargeValues() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f32").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "fff->f");
+
+    // 100.5 * 200.5 + 300.5 = 20,150.25 + 300.5 = 20,450.75
+    final float result = typedFma.callF32F32F32ToF32(100.5f, 200.5f, 300.5f);
+    assertThat(result).isEqualTo(20450.75f, offset(0.01f));
+  }
+
+  // Test (f64, f64, f64) -> f64 signature
+
+  @Test
+  void testCallF64F64F64ToF64() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f64").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "FFF->F");
+
+    // Test fused multiply-add: a * b + c = 2.5 * 4.0 + 1.5 = 11.5
+    final double result = typedFma.callF64F64F64ToF64(2.5, 4.0, 1.5);
+    assertThat(result).isEqualTo(11.5, offset(0.000001));
+  }
+
+  @Test
+  void testCallF64F64F64ToF64WithZeros() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f64").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "FFF->F");
+
+    // 0 * 0 + 0 = 0
+    final double result = typedFma.callF64F64F64ToF64(0.0, 0.0, 0.0);
+    assertThat(result).isEqualTo(0.0, offset(0.000001));
+  }
+
+  @Test
+  void testCallF64F64F64ToF64WithNegatives() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f64").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "FFF->F");
+
+    // -3.5 * 2.0 + 10.0 = -7.0 + 10.0 = 3.0
+    final double result = typedFma.callF64F64F64ToF64(-3.5, 2.0, 10.0);
+    assertThat(result).isEqualTo(3.0, offset(0.000001));
+  }
+
+  @Test
+  void testCallF64F64F64ToF64WithLargeValues() throws WasmException {
+    final WasmFunction fmaFunc = instance.getFunction("fma_f64").orElseThrow();
+    final TypedFunc typedFma = TypedFunc.create(fmaFunc, "FFF->F");
+
+    // 1234.5678 * 9876.5432 + 5000.0
+    final double result = typedFma.callF64F64F64ToF64(1234.5678, 9876.5432, 5000.0);
+    assertThat(result).isEqualTo(12193268.41850496, offset(0.001));
+  }
+
+  // Test (i32, i32) -> i64 signature
+
+  @Test
+  void testCallI32I32ToI64() throws WasmException {
+    final WasmFunction combineFunc = instance.getFunction("combine_i32").orElseThrow();
+    final TypedFunc typedCombine = TypedFunc.create(combineFunc, "ii->I");
+
+    // Combine 0x00000001 and 0x00000002 into 0x0000000100000002
+    final long result = typedCombine.callI32I32ToI64(1, 2);
+    assertThat(result).isEqualTo(0x0000000100000002L);
+  }
+
+  @Test
+  void testCallI32I32ToI64WithZeros() throws WasmException {
+    final WasmFunction combineFunc = instance.getFunction("combine_i32").orElseThrow();
+    final TypedFunc typedCombine = TypedFunc.create(combineFunc, "ii->I");
+
+    final long result = typedCombine.callI32I32ToI64(0, 0);
+    assertThat(result).isEqualTo(0L);
+  }
+
+  @Test
+  void testCallI32I32ToI64WithMaxValues() throws WasmException {
+    final WasmFunction combineFunc = instance.getFunction("combine_i32").orElseThrow();
+    final TypedFunc typedCombine = TypedFunc.create(combineFunc, "ii->I");
+
+    // Combine 0xFFFFFFFF and 0xFFFFFFFF into 0xFFFFFFFFFFFFFFFF
+    final long result = typedCombine.callI32I32ToI64(-1, -1);
+    assertThat(result).isEqualTo(0xFFFFFFFFFFFFFFFFL);
+  }
+
+  @Test
+  void testCallI32I32ToI64WithMixedValues() throws WasmException {
+    final WasmFunction combineFunc = instance.getFunction("combine_i32").orElseThrow();
+    final TypedFunc typedCombine = TypedFunc.create(combineFunc, "ii->I");
+
+    // Combine 0x12345678 and 0x9ABCDEF0
+    final long result = typedCombine.callI32I32ToI64(0x12345678, 0x9ABCDEF0);
+    assertThat(result).isEqualTo(0x123456789ABCDEF0L);
+  }
+
+  // Test (i64) -> i32 signature
+
+  @Test
+  void testCallI64ToI32() throws WasmException {
+    final WasmFunction truncateFunc = instance.getFunction("truncate_i64").orElseThrow();
+    final TypedFunc typedTruncate = TypedFunc.create(truncateFunc, "I->i");
+
+    // Extract low 32 bits from 0x123456789ABCDEF0 -> 0x9ABCDEF0
+    final int result = typedTruncate.callI64ToI32(0x123456789ABCDEF0L);
+    assertThat(result).isEqualTo(0x9ABCDEF0);
+  }
+
+  @Test
+  void testCallI64ToI32WithZero() throws WasmException {
+    final WasmFunction truncateFunc = instance.getFunction("truncate_i64").orElseThrow();
+    final TypedFunc typedTruncate = TypedFunc.create(truncateFunc, "I->i");
+
+    final int result = typedTruncate.callI64ToI32(0L);
+    assertThat(result).isEqualTo(0);
+  }
+
+  @Test
+  void testCallI64ToI32WithSmallValue() throws WasmException {
+    final WasmFunction truncateFunc = instance.getFunction("truncate_i64").orElseThrow();
+    final TypedFunc typedTruncate = TypedFunc.create(truncateFunc, "I->i");
+
+    // Low 32 bits of 42 is just 42
+    final int result = typedTruncate.callI64ToI32(42L);
+    assertThat(result).isEqualTo(42);
+  }
+
+  @Test
+  void testCallI64ToI32WithLargeValue() throws WasmException {
+    final WasmFunction truncateFunc = instance.getFunction("truncate_i64").orElseThrow();
+    final TypedFunc typedTruncate = TypedFunc.create(truncateFunc, "I->i");
+
+    // Extract low 32 bits from large value
+    final int result = typedTruncate.callI64ToI32(0xFFFFFFFFFFFFFFFFL);
+    assertThat(result).isEqualTo(-1);
+  }
+
+  // Test (i32, f32) -> f32 signature
+
+  @Test
+  void testCallI32F32ToF32() throws WasmException {
+    final WasmFunction arrayOpFunc = instance.getFunction("array_op_if").orElseThrow();
+    final TypedFunc typedArrayOp = TypedFunc.create(arrayOpFunc, "if->f");
+
+    // Multiply i32(5) converted to f32(5.0) by f32(3.0) = 15.0
+    final float result = typedArrayOp.callI32F32ToF32(5, 3.0f);
+    assertThat(result).isEqualTo(15.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallI32F32ToF32WithZeros() throws WasmException {
+    final WasmFunction arrayOpFunc = instance.getFunction("array_op_if").orElseThrow();
+    final TypedFunc typedArrayOp = TypedFunc.create(arrayOpFunc, "if->f");
+
+    final float result = typedArrayOp.callI32F32ToF32(0, 0.0f);
+    assertThat(result).isEqualTo(0.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallI32F32ToF32WithNegative() throws WasmException {
+    final WasmFunction arrayOpFunc = instance.getFunction("array_op_if").orElseThrow();
+    final TypedFunc typedArrayOp = TypedFunc.create(arrayOpFunc, "if->f");
+
+    // Multiply i32(-10) converted to f32(-10.0) by f32(2.5) = -25.0
+    final float result = typedArrayOp.callI32F32ToF32(-10, 2.5f);
+    assertThat(result).isEqualTo(-25.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallI32F32ToF32WithLargeValues() throws WasmException {
+    final WasmFunction arrayOpFunc = instance.getFunction("array_op_if").orElseThrow();
+    final TypedFunc typedArrayOp = TypedFunc.create(arrayOpFunc, "if->f");
+
+    // Multiply i32(1000) converted to f32(1000.0) by f32(0.5) = 500.0
+    final float result = typedArrayOp.callI32F32ToF32(1000, 0.5f);
+    assertThat(result).isEqualTo(500.0f, offset(0.01f));
+  }
+
+  // Test (f32, i32) -> f32 signature
+
+  @Test
+  void testCallF32I32ToF32() throws WasmException {
+    final WasmFunction powerFunc = instance.getFunction("power_fi").orElseThrow();
+    final TypedFunc typedPower = TypedFunc.create(powerFunc, "fi->f");
+
+    // 2.0 ^ 3 = 8.0
+    final float result = typedPower.callF32I32ToF32(2.0f, 3);
+    assertThat(result).isEqualTo(8.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32I32ToF32WithZeroExponent() throws WasmException {
+    final WasmFunction powerFunc = instance.getFunction("power_fi").orElseThrow();
+    final TypedFunc typedPower = TypedFunc.create(powerFunc, "fi->f");
+
+    // Any number ^ 0 = 1.0
+    final float result = typedPower.callF32I32ToF32(5.0f, 0);
+    assertThat(result).isEqualTo(1.0f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32I32ToF32WithOneExponent() throws WasmException {
+    final WasmFunction powerFunc = instance.getFunction("power_fi").orElseThrow();
+    final TypedFunc typedPower = TypedFunc.create(powerFunc, "fi->f");
+
+    // 7.5 ^ 1 = 7.5
+    final float result = typedPower.callF32I32ToF32(7.5f, 1);
+    assertThat(result).isEqualTo(7.5f, offset(0.0001f));
+  }
+
+  @Test
+  void testCallF32I32ToF32WithLargeExponent() throws WasmException {
+    final WasmFunction powerFunc = instance.getFunction("power_fi").orElseThrow();
+    final TypedFunc typedPower = TypedFunc.create(powerFunc, "fi->f");
+
+    // 1.5 ^ 5 = 7.59375
+    final float result = typedPower.callF32I32ToF32(1.5f, 5);
+    assertThat(result).isEqualTo(7.59375f, offset(0.0001f));
   }
 
   // Test resource management

@@ -190,8 +190,7 @@ public interface TypedFunc extends AutoCloseable {
   double callF64F64ToF64(double param1, double param2) throws WasmException;
 
   /**
-   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) ->
-   * i32.
+   * Calls a typed function with (i32, i32, i32) parameters and i32 result: (i32, i32, i32) -> i32.
    *
    * @param param1 the first i32 parameter
    * @param param2 the second i32 parameter
@@ -202,8 +201,7 @@ public interface TypedFunc extends AutoCloseable {
   int callI32I32I32ToI32(int param1, int param2, int param3) throws WasmException;
 
   /**
-   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) ->
-   * i64.
+   * Calls a typed function with (i64, i64, i64) parameters and i64 result: (i64, i64, i64) -> i64.
    *
    * @param param1 the first i64 parameter
    * @param param2 the second i64 parameter
@@ -214,11 +212,10 @@ public interface TypedFunc extends AutoCloseable {
   long callI64I64I64ToI64(long param1, long param2, long param3) throws WasmException;
 
   /**
-   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) ->
-   * f32.
+   * Calls a typed function with (f32, f32, f32) parameters and f32 result: (f32, f32, f32) -> f32.
    *
-   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and
-   * other three-operand floating-point operations.
+   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and other
+   * three-operand floating-point operations.
    *
    * @param param1 the first f32 parameter
    * @param param2 the second f32 parameter
@@ -229,11 +226,10 @@ public interface TypedFunc extends AutoCloseable {
   float callF32F32F32ToF32(float param1, float param2, float param3) throws WasmException;
 
   /**
-   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) ->
-   * f64.
+   * Calls a typed function with (f64, f64, f64) parameters and f64 result: (f64, f64, f64) -> f64.
    *
-   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and
-   * other three-operand double-precision floating-point operations.
+   * <p>Useful for operations like fused multiply-add (FMA), linear interpolation (lerp), and other
+   * three-operand double-precision floating-point operations.
    *
    * @param param1 the first f64 parameter
    * @param param2 the second f64 parameter
