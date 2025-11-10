@@ -72,3 +72,105 @@ Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 
 - WebAssembly Spec: Memory limits specified as `(memory initial maximum)`
 - MDN WebAssembly.Memory: Takes `initial` and `maximum` in pages (64KiB each)
+
+---
+
+## Cross-Engine Instantiation Error
+
+**Status**: ACTIVE BUG 🔴
+**Severity**: Critical
+**Affects**: All tests that create Module and Instance
+**First Identified**: 2025-11-10
+
+### Symptom
+
+When running tests, you'll see:
+```
+InstantiationException: Instance error: Failed to create instance:
+cross-`Engine` instantiation is not currently supported
+```
+
+### Root Cause
+
+This is a Rust-level Arc pointer equality issue in the Wasmtime integration:
+
+1. The `Engine` struct wraps `Arc<WasmtimeEngine>`
+2. When `Module::compile(engine, bytes)` is called, it uses `engine.inner()` which returns `&WasmtimeEngine`
+3. When `Store::new(engine)` is called, it also uses `engine.inner()`
+4. Wasmtime's `Module::new()` and `Store::new()` internally **clone the Engine Arc** and store their own Arc reference
+5. Even though both start with references to the SAME `Arc<WasmtimeEngine>`, Wasmtime creates NEW Arc references
+6. Wasmtime's `Instance::new()` checks if `module.engine() == store.engine()` by comparing Arc pointers using `Arc::ptr_eq()`
+7. Since Module and Store have DIFFERENT Arc clones (different pointer addresses, same data), the comparison **FAILS**
+
+### Code Locations
+
+- Module compilation: `wasmtime4j-native/src/module.rs:207`
+- Store creation: `wasmtime4j-native/src/store.rs:446`
+- Instance validation: `wasmtime4j-native/src/instance.rs:169`
+- Engine wrapper: `wasmtime4j-native/src/engine.rs:13,149`
+
+### Execution Flow
+
+```
+Java: Engine.create()
+  → Native: Box::new(Engine { inner: Arc::new(WasmtimeEngine) })  → Returns ptr A
+
+Java: engine.compileModule()
+  → Native: get_engine_ref(ptr A) → &Engine
+  → Module::compile(engine, bytes)
+    → WasmtimeModule::new(engine.inner(), bytes)  → Wasmtime clones Arc → Arc B
+    → Returns Module { inner: Arc B }
+
+Java: engine.createStore()
+  → Native: get_engine_ref(ptr A) → &Engine
+  → Store::new(engine)
+    → WasmtimeStore::new(engine.inner(), data) → Wasmtime clones Arc → Arc C
+    → Returns Store with Arc C
+
+Java: module.instantiate(store)
+  → Native: WasmtimeInstance::new(store, module, [])
+    → Wasmtime checks: module.engine() == store.engine()
+    → Compares: Arc B == Arc C → FALSE (different Arc pointers!)
+    → ERROR: "cross-`Engine` instantiation is not currently supported"
+```
+
+### Proposed Fix
+
+**Recommended Approach**: Store Engine Arc reference in Module and Store wrappers
+
+Modify `wasmtime4j-native/src/module.rs` and `wasmtime4j-native/src/store.rs`:
+
+```rust
+pub struct Module {
+    inner: Arc<WasmtimeModule>,
+    engine: Arc<Engine>,  // ADD: Keep reference to original Engine Arc
+    metadata: ModuleMetadata,
+    // ...
+}
+
+pub struct Store {
+    inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
+    engine_ref: Arc<Engine>,  // ADD: Keep reference to ensure same Arc
+    metadata: StoreMetadata,
+    // ...
+}
+```
+
+Then when creating Module and Store, pass the Engine as `Arc<Engine>` and store it, ensuring
+both Module and Store maintain references to the SAME Arc pointer that Wasmtime can validate.
+
+### Workaround
+
+Currently, there is no workaround. Tests that require Module instantiation will fail.
+
+### Impact
+
+- All TypedFunc tests fail (80 tests)
+- Any integration tests that create instances will fail
+- Basic functionality like loading and executing WASM modules is blocked
+
+### Related Changes
+
+- Commit 2357676e: Added TypedFunc tests (currently failing due to this issue)
+- Commit 3ba49f8d: Added TypedFunc signatures (implementation complete, tests blocked)
+- Java-side improvement in JniWasmRuntime.compileModule to delegate to Engine (correct design but insufficient to fix bug)

@@ -460,6 +460,31 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new WasmException("WebAssembly bytecode cannot be empty");
     }
 
+    // Validate engine type
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a JniEngine instance, got: " + engine.getClass().getName());
+    }
+
+    // Delegate to the engine's compile method to ensure the module is compiled
+    // with the correct engine instance and avoid cross-Engine instantiation errors
+    return engine.compileModule(wasmBytes);
+  }
+
+  /**
+   * Legacy compile method that creates a module without an explicit engine reference.
+   *
+   * @deprecated This method creates a new engine internally which can lead to cross-Engine
+   *     instantiation errors. Use {@link #compileModule(Engine, byte[])} instead.
+   */
+  @Deprecated
+  private Module compileModuleLegacy(final byte[] wasmBytes) throws WasmException {
+    JniValidation.requireNonNull(wasmBytes, "wasmBytes");
+
+    if (wasmBytes.length == 0) {
+      throw new WasmException("WebAssembly bytecode cannot be empty");
+    }
+
     try {
       return concurrencyManager.executeWithReadLock(
           getNativeHandle(),
@@ -470,7 +495,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
                 throw new WasmException("Failed to compile WebAssembly module");
               }
 
-              final JniModule module = new JniModule(moduleHandle, (JniEngine) engine);
+              // Note: This creates a module without a proper engine reference
+              // which can cause cross-Engine instantiation issues
+              final JniModule module = new JniModule(moduleHandle, null);
 
               // Register module for concurrency management and cleanup
               concurrencyManager.registerResource(moduleHandle);
