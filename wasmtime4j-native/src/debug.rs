@@ -733,7 +733,7 @@ impl DebugSession {
 
     fn update_execution_state_from_native(&self, result: NativeExecutionResult) -> Result<()> {
         let mut state = self.execution_state.write().map_err(|_| WasmtimeError::Concurrency { message: "Lock acquisition failed".to_string() })?;
-        state.state = result.state_type;
+        state.state = result.state_type.clone();
         state.instruction_offset = result.instruction_offset;
         state.function_name = result.function_name;
         state.line = result.line;
@@ -954,29 +954,27 @@ pub mod jni_debug_exports {
 
     #[no_mangle]
     pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_createDebugSession(
-        env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
-        engine_handle: jlong,
-        instance_handle: jlong,
-        module_handle: jlong,
+        _engine_handle: jlong,
+        _instance_handle: jlong,
+        _module_handle: jlong,
     ) -> jlong {
-        handle_jni_result(&env, || {
-            // Implementation would extract native objects and create debug session
-            // For now, return a placeholder
-            Ok(1i64)
-        }).unwrap_or(0)
+        // Implementation would extract native objects and create debug session
+        // For now, return a placeholder
+        1i64
     }
 
     #[no_mangle]
     pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_closeDebugSession(
-        env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
         session_id: jlong,
     ) -> jboolean {
-        handle_jni_result(&env, || {
-            close_debug_session(session_id as u64)?;
-            Ok(JNI_TRUE as jboolean)
-        }).unwrap_or(JNI_FALSE as jboolean)
+        match close_debug_session(session_id as u64) {
+            Ok(_) => JNI_TRUE as jboolean,
+            Err(_) => JNI_FALSE as jboolean,
+        }
     }
 }
 

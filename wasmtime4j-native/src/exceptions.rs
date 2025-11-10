@@ -81,7 +81,7 @@ pub struct ExceptionHandler {
     /// Next tag handle
     next_handle: Arc<Mutex<u64>>,
     /// GC runtime for GC-aware exception handling
-    gc_runtime: Option<Arc<GcRuntime>>,
+    gc_runtime: Option<Arc<WasmGcRuntime>>,
     /// Debug information collector
     debug_collector: Option<DebugInfoCollector>,
 }
@@ -111,7 +111,7 @@ impl ExceptionHandler {
     /// Creates a new exception handler with GC runtime
     pub fn new_with_gc(
         config: ExceptionHandlingConfig,
-        gc_runtime: Arc<GcRuntime>
+        gc_runtime: Arc<WasmGcRuntime>
     ) -> WasmtimeResult<Self> {
         let mut handler = Self::new(config)?;
         handler.gc_runtime = Some(gc_runtime);
@@ -136,26 +136,26 @@ impl ExceptionHandler {
         source_location: Option<String>,
     ) -> WasmtimeResult<ExceptionTag> {
         if name.is_empty() {
-            return Err(WasmtimeError::InvalidInput(
-                "Exception tag name cannot be empty".to_string(),
-            ));
+            return Err(WasmtimeError::InvalidParameter { message:
+                "Exception tag name cannot be empty".to_string()
+            });
         }
 
         // Validate GC integration
         if is_gc_aware && !self.config.enable_gc_integration {
-            return Err(WasmtimeError::InvalidInput(
+            return Err(WasmtimeError::InvalidParameter { message: 
                 "GC integration is not enabled for this handler".to_string(),
-            ));
+            });
         }
 
         if is_gc_aware && self.gc_runtime.is_none() {
-            return Err(WasmtimeError::InvalidInput(
+            return Err(WasmtimeError::InvalidParameter { message: 
                 "GC-aware exception tag requires GC runtime".to_string(),
-            ));
+            });
         }
 
         let mut next_handle = self.next_handle.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire handle lock".to_string())
+            WasmtimeError::Internal { message: "Failed to acquire handle lock".to_string() }
         })?;
 
         let handle = *next_handle;
@@ -180,7 +180,7 @@ impl ExceptionHandler {
         };
 
         let mut tags = self.tags.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire tags lock".to_string())
+            WasmtimeError::Internal { message: "Failed to acquire tags lock".to_string() }
         })?;
 
         tags.insert(name.to_string(), tag.clone());
@@ -200,23 +200,23 @@ impl ExceptionHandler {
         }
 
         if payload.len() != tag.parameter_types.len() {
-            return Err(WasmtimeError::ValidationError(format!(
+            return Err(WasmtimeError::Validation { message: format!(
                 "Exception payload size ({}) doesn't match tag parameter count ({})",
                 payload.len(),
                 tag.parameter_types.len()
-            )));
+            )});
         }
 
         for (i, (expected_type, actual_value)) in
             tag.parameter_types.iter().zip(payload.iter()).enumerate()
         {
             if !self.value_matches_type(actual_value, expected_type) {
-                return Err(WasmtimeError::ValidationError(format!(
-                    "Exception payload parameter {} type mismatch. Expected: {:?}, Actual: {:?}",
+                return Err(WasmtimeError::Validation { message: format!(
+                    "Exception payload parameter {} type mismatch. Expected: {:?}, Actual: {}",
                     i,
                     expected_type,
-                    actual_value.ty()
-                )));
+                    Self::value_type_name(actual_value)
+                )});
             }
         }
 
@@ -231,16 +231,34 @@ impl ExceptionHandler {
             (Val::F32(_), ValType::F32) => true,
             (Val::F64(_), ValType::F64) => true,
             (Val::V128(_), ValType::V128) => true,
-            (Val::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
-            (Val::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
+            (Val::FuncRef(_), ValType::Ref(_)) => true,
+            (Val::ExternRef(_), ValType::Ref(_)) => true,
+            (Val::AnyRef(_), ValType::Ref(_)) => true,
+            (Val::ExnRef(_), ValType::Ref(_)) => true,
             _ => false,
+        }
+    }
+
+    /// Gets the type name of a value for error messages
+    fn value_type_name(value: &Val) -> &'static str {
+        match value {
+            Val::I32(_) => "I32",
+            Val::I64(_) => "I64",
+            Val::F32(_) => "F32",
+            Val::F64(_) => "F64",
+            Val::V128(_) => "V128",
+            Val::FuncRef(_) => "FuncRef",
+            Val::ExternRef(_) => "ExternRef",
+            Val::AnyRef(_) => "AnyRef",
+            Val::ExnRef(_) => "ExnRef",
+            Val::ContRef(_) => "ContRef",
         }
     }
 
     /// Gets an exception tag by name
     pub fn get_exception_tag(&self, name: &str) -> WasmtimeResult<Option<ExceptionTag>> {
         let tags = self.tags.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire tags lock".to_string())
+            WasmtimeError::Internal { message: "Failed to acquire tags lock".to_string() }
         })?;
 
         Ok(tags.get(name).cloned())
@@ -249,7 +267,7 @@ impl ExceptionHandler {
     /// Lists all exception tags
     pub fn list_exception_tags(&self) -> WasmtimeResult<Vec<ExceptionTag>> {
         let tags = self.tags.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire tags lock".to_string())
+            WasmtimeError::Internal { message: "Failed to acquire tags lock".to_string() }
         })?;
 
         Ok(tags.values().cloned().collect())
@@ -323,13 +341,13 @@ impl DebugInfoCollector {
         // Placeholder implementation - would integrate with Wasmtime's stack trace APIs
         let mut trace = String::new();
         writeln!(trace, "WebAssembly Stack Trace:").map_err(|_| {
-            WasmtimeError::Internal("Failed to format stack trace".to_string())
+            WasmtimeError::Internal { message: "Failed to format stack trace".to_string() }
         })?;
         writeln!(trace, "  at wasm function 'main'").map_err(|_| {
-            WasmtimeError::Internal("Failed to format stack trace".to_string())
+            WasmtimeError::Internal { message: "Failed to format stack trace".to_string() }
         })?;
         writeln!(trace, "  at wasm function 'start'").map_err(|_| {
-            WasmtimeError::Internal("Failed to format stack trace".to_string())
+            WasmtimeError::Internal { message: "Failed to format stack trace".to_string() }
         })?;
 
         Ok(trace)
@@ -459,9 +477,10 @@ impl UnwindContext {
     /// Starts unwinding with an exception
     pub fn start_unwind(&mut self, exception: ExceptionPayload) -> WasmtimeResult<()> {
         if self.depth >= self.max_depth {
-            return Err(WasmtimeError::Runtime(
-                "Maximum unwind depth exceeded".to_string(),
-            ));
+            return Err(WasmtimeError::Runtime {
+                message: "Maximum unwind depth exceeded".to_string(),
+                backtrace: None,
+            });
         }
 
         self.exception = Some(exception);
@@ -472,9 +491,10 @@ impl UnwindContext {
     /// Continues unwinding
     pub fn continue_unwind(&mut self) -> WasmtimeResult<()> {
         if self.depth >= self.max_depth {
-            return Err(WasmtimeError::Runtime(
-                "Maximum unwind depth exceeded".to_string(),
-            ));
+            return Err(WasmtimeError::Runtime {
+                message: "Maximum unwind depth exceeded".to_string(),
+                backtrace: None,
+            });
         }
 
         self.depth += 1;
@@ -630,6 +650,9 @@ pub mod jni_bindings {
             enable_exception_unwinding: enable_unwinding,
             max_unwind_depth: max_depth,
             validate_exception_types: validate_types,
+            enable_stack_traces: true,
+            enable_exception_propagation: true,
+            enable_gc_integration: false,
         })
     }
 
@@ -657,7 +680,7 @@ pub mod jni_bindings {
                 "V128" => ValType::V128,
                 "FUNCREF" => ValType::Ref(RefType::FUNCREF),
                 "EXTERNREF" => ValType::Ref(RefType::EXTERNREF),
-                _ => return Err(WasmtimeError::InvalidInput(format!("Unknown value type: {}", type_str))),
+                _ => return Err(WasmtimeError::InvalidParameter { message: format!("Unknown value type: {}", type_str) }),
             };
 
             types.push(val_type);

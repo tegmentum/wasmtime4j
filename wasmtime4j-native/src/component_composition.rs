@@ -1980,7 +1980,7 @@ pub struct OptimizationConfiguration {
 }
 
 /// Optimization constraints
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OptimizationConstraints {
     /// Maximum resource usage
     pub max_resource_usage: HashMap<String, f64>,
@@ -1991,7 +1991,7 @@ pub struct OptimizationConstraints {
 }
 
 /// Stability requirements
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StabilityRequirements {
     /// Maximum performance variance
     pub max_variance: f64,

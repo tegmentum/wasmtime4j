@@ -160,7 +160,10 @@ impl MultiValueFunction {
 
         // Call the function
         func.call(store, parameters, &mut results)
-            .map_err(|e| WasmtimeError::Runtime(format!("Function call failed: {}", e)))?;
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Function call failed: {}", e),
+                backtrace: None,
+            })?;
 
         // Validate return values if enabled
         if self.config.validate_return_types {
@@ -184,30 +187,30 @@ impl MultiValueFunction {
         let sig_clone = signature.clone();
 
         let func = Func::new(
-            &mut Store::default(),
+            &mut Store::<()>::default(),
             func_type,
             move |_caller, params, results| {
                 // Validate parameters
                 if config.enable_parameter_validation {
                     if let Err(e) = Self::validate_parameters_static(&sig_clone, params) {
-                        return Err(Trap::new(format!("Parameter validation failed: {}", e)));
+                        return Err(anyhow::anyhow!("Parameter validation failed: {}", e).into());
                     }
                 }
 
                 // Call the implementation
                 let result = implementation(params)
-                    .map_err(|e| Trap::new(format!("Host function failed: {}", e)))?;
+                    .map_err(|e| anyhow::anyhow!("Host function failed: {}", e))?;
 
                 // Validate return values
                 if config.validate_return_types {
                     if let Err(e) = Self::validate_return_values_static(&sig_clone, &result.values) {
-                        return Err(Trap::new(format!("Return value validation failed: {}", e)));
+                        return Err(anyhow::anyhow!("Return value validation failed: {}", e).into());
                     }
                 }
 
                 // Copy results
                 if results.len() != result.values.len() {
-                    return Err(Trap::new("Result count mismatch"));
+                    return Err(anyhow::anyhow!("Result count mismatch").into());
                 }
 
                 for (i, value) in result.values.iter().enumerate() {
@@ -228,7 +231,9 @@ impl MultiValueFunction {
         function: Box<dyn MultiValueHostFunction>,
     ) -> WasmtimeResult<()> {
         let mut host_functions = self.host_functions.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire host functions lock".to_string())
+            WasmtimeError::Internal {
+                message: "Failed to acquire host functions lock".to_string()
+            }
         })?;
 
         host_functions.insert(name, function);
@@ -238,7 +243,9 @@ impl MultiValueFunction {
     /// Gets a registered host function
     pub fn get_host_function(&self, name: &str) -> WasmtimeResult<Option<Box<dyn MultiValueHostFunction>>> {
         let host_functions = self.host_functions.lock().map_err(|_| {
-            WasmtimeError::Internal("Failed to acquire host functions lock".to_string())
+            WasmtimeError::Internal {
+                message: "Failed to acquire host functions lock".to_string()
+            }
         })?;
 
         // Note: This is a simplified implementation. In practice, you'd need
@@ -261,11 +268,11 @@ impl MultiValueFunction {
         parameters: &[Val],
     ) -> WasmtimeResult<()> {
         if parameters.len() != signature.parameter_types.len() {
-            return Err(WasmtimeError::ValidationError(format!(
+            return Err(WasmtimeError::Validation { message: format!(
                 "Parameter count mismatch. Expected: {}, Actual: {}",
                 signature.parameter_types.len(),
                 parameters.len()
-            )));
+            ) });
         }
 
         for (i, (expected_type, actual_value)) in signature
@@ -275,12 +282,12 @@ impl MultiValueFunction {
             .enumerate()
         {
             if !Self::value_matches_type(actual_value, expected_type) {
-                return Err(WasmtimeError::ValidationError(format!(
-                    "Parameter {} type mismatch. Expected: {:?}, Actual: {:?}",
+                return Err(WasmtimeError::Validation { message: format!(
+                    "Parameter {} type mismatch. Expected: {:?}, Actual: {}",
                     i,
                     expected_type,
-                    actual_value.ty()
-                )));
+                    Self::value_type_name(actual_value)
+                ) });
             }
         }
 
@@ -302,24 +309,24 @@ impl MultiValueFunction {
         return_values: &[Val],
     ) -> WasmtimeResult<()> {
         if return_values.len() > 16 {
-            return Err(WasmtimeError::ValidationError(format!(
+            return Err(WasmtimeError::Validation { message: format!(
                 "Too many return values: {} (max allowed: 16)",
                 return_values.len()
-            )));
+            ) });
         }
 
         if return_values.is_empty() && !signature.return_types.is_empty() {
-            return Err(WasmtimeError::ValidationError(
+            return Err(WasmtimeError::Validation { message:
                 "Function returned no values but signature expects return values".to_string(),
-            ));
+            });
         }
 
         if return_values.len() != signature.return_types.len() {
-            return Err(WasmtimeError::ValidationError(format!(
+            return Err(WasmtimeError::Validation { message: format!(
                 "Return value count mismatch. Expected: {}, Actual: {}",
                 signature.return_types.len(),
                 return_values.len()
-            )));
+            ) });
         }
 
         for (i, (expected_type, actual_value)) in signature
@@ -329,12 +336,12 @@ impl MultiValueFunction {
             .enumerate()
         {
             if !Self::value_matches_type(actual_value, expected_type) {
-                return Err(WasmtimeError::ValidationError(format!(
-                    "Return value {} type mismatch. Expected: {:?}, Actual: {:?}",
+                return Err(WasmtimeError::Validation { message: format!(
+                    "Return value {} type mismatch. Expected: {:?}, Actual: {}",
                     i,
                     expected_type,
-                    actual_value.ty()
-                )));
+                    Self::value_type_name(actual_value)
+                ) });
             }
         }
 
@@ -349,9 +356,27 @@ impl MultiValueFunction {
             (Val::F32(_), ValType::F32) => true,
             (Val::F64(_), ValType::F64) => true,
             (Val::V128(_), ValType::V128) => true,
-            (Val::FuncRef(_), ValType::Ref(RefType::FUNCREF)) => true,
-            (Val::ExternRef(_), ValType::Ref(RefType::EXTERNREF)) => true,
+            (Val::FuncRef(_), ValType::Ref(_)) => true,
+            (Val::ExternRef(_), ValType::Ref(_)) => true,
+            (Val::AnyRef(_), ValType::Ref(_)) => true,
+            (Val::ExnRef(_), ValType::Ref(_)) => true,
             _ => false,
+        }
+    }
+
+    /// Gets the type name of a value for error messages
+    fn value_type_name(value: &Val) -> &'static str {
+        match value {
+            Val::I32(_) => "I32",
+            Val::I64(_) => "I64",
+            Val::F32(_) => "F32",
+            Val::F64(_) => "F64",
+            Val::V128(_) => "V128",
+            Val::FuncRef(_) => "FuncRef",
+            Val::ExternRef(_) => "ExternRef",
+            Val::AnyRef(_) => "AnyRef",
+            Val::ExnRef(_) => "ExnRef",
+            Val::ContRef(_) => "ContRef",
         }
     }
 
@@ -483,9 +508,9 @@ mod tests {
     fn test_closure_host_function() {
         let host_func = ClosureHostFunction::new(|params: &[Val]| {
             if params.len() != 2 {
-                return Err(WasmtimeError::ValidationError(
+                return Err(WasmtimeError::Validation { message:
                     "Expected 2 parameters".to_string(),
-                ));
+                });
             }
 
             if let (Val::I32(a), Val::I32(b)) = (&params[0], &params[1]) {
@@ -493,9 +518,9 @@ mod tests {
                 let product = a * b;
                 Ok(MultiValueResult::new(vec![Val::I32(sum), Val::I32(product)]))
             } else {
-                Err(WasmtimeError::ValidationError(
+                Err(WasmtimeError::Validation { message:
                     "Expected I32 parameters".to_string(),
-                ))
+                })
             }
         });
 

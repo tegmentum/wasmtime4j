@@ -606,7 +606,6 @@ pub mod interface_negotiation {
     }
 
     /// Negotiation result
-    #[derive(Debug, Clone)]
     pub struct NegotiationResult {
         /// Success status
         pub success: bool,
@@ -761,20 +760,20 @@ pub mod interface_negotiation {
             let client_interface = interfaces
                 .get(client_interface_name)
                 .and_then(|versions| versions.get(client_version))
-                .ok_or_else(|| WasmtimeError::InterfaceError {
+                .ok_or_else(|| WasmtimeError::Module {
                     message: format!("Client interface {}:{} not found", client_interface_name, client_version),
                 })?;
 
             let server_interface = interfaces
                 .get(server_interface_name)
                 .and_then(|versions| versions.get(server_version))
-                .ok_or_else(|| WasmtimeError::InterfaceError {
+                .ok_or_else(|| WasmtimeError::Module {
                     message: format!("Server interface {}:{} not found", server_interface_name, server_version),
                 })?;
 
             // Get protocol handler
             let handler = self.protocol_handlers.get(&protocol)
-                .ok_or_else(|| WasmtimeError::InterfaceError {
+                .ok_or_else(|| WasmtimeError::Module {
                     message: format!("Protocol handler not found for {:?}", protocol),
                 })?;
 
@@ -898,23 +897,14 @@ pub mod interface_negotiation {
         }
 
         /// Get cached negotiation result
-        fn get_cached_result(&self, cache_key: &str) -> WasmtimeResult<Option<NegotiationResult>> {
-            let cache = self.negotiation_cache.read()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire cache read lock".to_string(),
-                })?;
-
-            Ok(cache.get(cache_key).cloned())
+        fn get_cached_result(&self, _cache_key: &str) -> WasmtimeResult<Option<NegotiationResult>> {
+            // Caching disabled because NegotiationResult contains trait objects that cannot be cloned
+            Ok(None)
         }
 
         /// Cache negotiation result
-        fn cache_result(&self, cache_key: &str, result: &NegotiationResult) -> WasmtimeResult<()> {
-            let mut cache = self.negotiation_cache.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire cache write lock".to_string(),
-                })?;
-
-            cache.insert(cache_key.to_string(), result.clone());
+        fn cache_result(&self, _cache_key: &str, _result: &NegotiationResult) -> WasmtimeResult<()> {
+            // Caching disabled because NegotiationResult contains trait objects that cannot be cloned
             Ok(())
         }
 
@@ -1034,8 +1024,6 @@ pub struct WitInterfaceManager {
 pub struct WitInterface {
     /// Interface definition
     pub definition: InterfaceDefinition,
-    /// Runtime component type
-    pub component_type: Option<ComponentType>,
     /// Interface methods with type information
     pub methods: HashMap<String, WitMethod>,
     /// Interface types
@@ -1449,7 +1437,7 @@ impl WitInterfaceManager {
     ) -> WasmtimeResult<Vec<Val>> {
         // Get the exported function from the component instance
         let exported_func = context.instance
-            .get_export(context.store, method_name)
+            .get_export(&mut *context.store, None, method_name)
             .ok_or_else(|| WasmtimeError::ImportExport {
                 message: format!("Method '{}' not found in component exports", method_name),
             })?;
@@ -1457,23 +1445,13 @@ impl WitInterfaceManager {
         // Validate parameters against method signature
         self.validate_method_parameters(context.method, &parameters)?;
 
-        // Use Wasmtime's component model call mechanism
-        let results = match exported_func {
-            Func::Typed(func) => {
-                // Call typed function with component model semantics
-                let mut func_results = Vec::new();
-                func.call(context.store, &parameters)
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Component method invocation failed: {}", e),
-                    })?;
-                func_results
-            }
-        };
+        // TODO: Use Wasmtime's component model call mechanism
+        // This is placeholder code - full implementation requires proper type handling
 
-        // Validate return values against method signature
-        self.validate_method_results(context.method, &results)?;
-
-        Ok(results)
+        // For now, return an error until proper component invocation is implemented
+        Err(WasmtimeError::Module {
+            message: format!("Component method invocation not yet fully implemented for method '{}'", method_name),
+        })
     }
 
     /// Convert ComponentValueType to WitType
@@ -1733,7 +1711,6 @@ impl WitInterfaceManager {
 
         Ok(WitInterface {
             definition: interface_def,
-            component_type: None, // Would be set during component binding
             methods,
             types,
             resources,
@@ -1743,7 +1720,7 @@ impl WitInterfaceManager {
 
     /// Convert FunctionDefinition to WitMethod
     fn convert_function_definition(&self, func_def: &FunctionDefinition) -> WasmtimeResult<WitMethod> {
-        let parameters = func_def.parameters.iter().map(|p| {
+        let parameters: Vec<WitParameter> = func_def.parameters.iter().map(|p| {
             WitParameter {
                 name: p.name.clone(),
                 wit_type: self.convert_component_value_type(&p.value_type),
@@ -1752,7 +1729,7 @@ impl WitInterfaceManager {
             }
         }).collect();
 
-        let return_types = func_def.results.iter().map(|r| {
+        let return_types: Vec<WitType> = func_def.results.iter().map(|r| {
             self.convert_component_value_type(r)
         }).collect();
 
@@ -2473,18 +2450,18 @@ impl WitInterfaceEvolutionManager {
                 message: "Failed to acquire version registry read lock".to_string(),
             })?;
 
-        let versions = registry.get(interface_name).ok_or_else(|| WasmtimeError::InterfaceError {
+        let versions = registry.get(interface_name).ok_or_else(|| WasmtimeError::Module {
             message: format!("Interface '{}' not found", interface_name),
         })?;
 
         let source = versions.iter().find(|v| v.version == source_version).ok_or_else(|| {
-            WasmtimeError::InterfaceError {
+            WasmtimeError::Module {
                 message: format!("Source version '{}' not found", source_version),
             }
         })?;
 
         let target = versions.iter().find(|v| v.version == target_version).ok_or_else(|| {
-            WasmtimeError::InterfaceError {
+            WasmtimeError::Module {
                 message: format!("Target version '{}' not found", target_version),
             }
         })?;
@@ -2818,7 +2795,7 @@ impl WitInterfaceEvolutionManager {
         let versions = self.get_interface_versions(interface_name)?;
 
         let source = versions.iter().find(|v| v.version == source_version).ok_or_else(|| {
-            WasmtimeError::InterfaceError {
+            WasmtimeError::Module {
                 message: format!("Source version '{}' not found", source_version),
             }
         })?;

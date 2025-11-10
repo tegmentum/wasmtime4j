@@ -372,27 +372,10 @@ impl DebugSession {
         Ok(stack.clone())
     }
 
-    pub fn inspect_memory(&self, address: u64, length: u32) -> Result<Vec<u8>, anyhow::Error> {
-        let instance = self.instance.lock().unwrap();
-
-        // Get memory export (simplified)
-        if let Some(memory) = instance.get_memory("memory") {
-            let memory_size = memory.data_size() as u64;
-
-            if address >= memory_size {
-                return Err(anyhow::anyhow!("Address out of bounds: {}", address));
-            }
-
-            let actual_length = std::cmp::min(length as u64, memory_size - address) as usize;
-
-            unsafe {
-                let data_ptr = memory.data_ptr().add(address as usize);
-                let data = std::slice::from_raw_parts(data_ptr, actual_length);
-                Ok(data.to_vec())
-            }
-        } else {
-            Err(anyhow::anyhow!("No memory found in instance"))
-        }
+    pub fn inspect_memory(&self, _address: u64, _length: u32) -> Result<Vec<u8>, anyhow::Error> {
+        // TODO: Implement with proper store access
+        // Memory inspection now requires store context in Wasmtime 38+
+        Err(anyhow::anyhow!("Memory inspection not yet implemented for Wasmtime 38+"))
     }
 
     pub fn get_variables(&self) -> Result<HashMap<String, VariableValue>, anyhow::Error> {

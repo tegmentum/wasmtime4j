@@ -306,7 +306,8 @@ impl ModuleAnalyzer {
         };
 
         // Add some variation based on module analysis results
-        let complexity_multiplier = if self.has_control_flow() { 1.5 } else { 1.0 };
+        // Assume complexity multiplier (conservative estimate)
+        let complexity_multiplier = 1.5;
         let estimated = (base_instructions as f64 * complexity_multiplier) as u32;
 
         Ok(estimated)

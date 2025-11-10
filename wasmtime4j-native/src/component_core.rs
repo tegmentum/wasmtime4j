@@ -84,6 +84,7 @@ impl std::fmt::Debug for ComponentStoreData {
 ///
 /// This struct keeps Store and Instance together as required by Wasmtime's ownership model.
 /// Store must not be separated from Instance to prevent ownership violations.
+#[derive(Debug)]
 pub struct ComponentInstanceHandle {
     /// Store owning the instance
     pub store: Store<ComponentStoreData>,
@@ -187,6 +188,11 @@ impl EnhancedComponentEngine {
             next_instance_id: Arc::new(Mutex::new(1)),
             metrics: Arc::new(RwLock::new(ComponentMetrics::default())),
         })
+    }
+
+    /// Get a reference to the underlying Wasmtime engine
+    pub fn engine(&self) -> &Engine {
+        &self.engine
     }
 
     /// Load and compile a component from WebAssembly bytes

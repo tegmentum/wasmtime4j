@@ -81,7 +81,7 @@ pub mod dependency_resolution {
     }
 
     /// Information about a specific component version
-    #[derive(Debug, Clone)]
+    #[derive(Clone)]
     pub struct ComponentVersionInfo {
         pub version: SemanticVersion,
         pub component: Arc<Component>,
@@ -145,7 +145,7 @@ pub mod dependency_resolution {
     }
 
     /// Result of dependency resolution
-    #[derive(Debug, Clone)]
+    #[derive(Clone)]
     pub struct DependencyResolutionResult {
         pub resolved_components: BTreeMap<String, ComponentVersionInfo>,
         pub resolution_graph: DependencyGraph,
@@ -293,10 +293,24 @@ pub mod dependency_resolution {
                             }
                         }
                         other => other,
-                    }
+                    },
+                    other => other,
                 }
                 other => other,
             }
+        }
+    }
+
+    impl std::fmt::Display for SemanticVersion {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}.{}.{}", self.major, self.minor, self.patch)?;
+            if let Some(pre) = &self.pre_release {
+                write!(f, "-{}", pre)?;
+            }
+            if let Some(build) = &self.build_metadata {
+                write!(f, "+{}", build)?;
+            }
+            Ok(())
         }
     }
 
@@ -439,7 +453,7 @@ pub mod dependency_resolution {
             root_dependencies: &[ComponentDependency],
             start_time: Instant,
         ) -> WasmtimeResult<DependencyResolutionResult> {
-            let mut resolved_components = BTreeMap::new();
+            let mut resolved_components: BTreeMap<String, ComponentVersionInfo> = BTreeMap::new();
             let mut conflicts = Vec::new();
             let mut warnings = Vec::new();
             let mut dependency_graph = DependencyGraph {
@@ -707,7 +721,7 @@ pub type ComponentId = String;
 pub type ChannelId = String;
 
 /// Component dependency graph representation
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ComponentGraph {
     /// Component nodes with metadata
     nodes: HashMap<ComponentId, ComponentNode>,
@@ -720,7 +734,7 @@ pub struct ComponentGraph {
 }
 
 /// Component node in the dependency graph
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ComponentNode {
     /// Component identifier
     pub id: ComponentId,
@@ -805,8 +819,8 @@ pub enum HealthCheckMethod {
 pub struct ManagedComponent {
     /// Component identifier
     pub id: ComponentId,
-    /// Component instance information
-    pub instance_info: ComponentInstanceHandle,
+    /// Component instance ID
+    pub instance_info: u64,
     /// Component state
     pub state: ComponentState,
     /// Last health check result
@@ -981,7 +995,7 @@ pub enum LoadBalancingStrategy {
 }
 
 /// Pool of component instances for load balancing
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct InstancePool {
     /// Pool identifier
     pub id: String,
@@ -1210,7 +1224,7 @@ impl ComponentOrchestrator {
         let mut exports = Vec::new();
 
         // Process actual component imports
-        for (import_name, import_item) in component_type.imports() {
+        for (import_name, import_item) in component_type.imports(self.engine.engine()) {
             imports.push(crate::component::InterfaceDefinition {
                 name: import_name.to_string(),
                 namespace: None,
@@ -1222,7 +1236,7 @@ impl ComponentOrchestrator {
         }
 
         // Process actual component exports
-        for (export_name, export_item) in component_type.exports() {
+        for (export_name, export_item) in component_type.exports(self.engine.engine()) {
             exports.push(crate::component::InterfaceDefinition {
                 name: export_name.to_string(),
                 namespace: None,
@@ -1556,13 +1570,18 @@ impl ComponentOrchestrator {
                     message: "Failed to acquire dependency graph read lock".to_string(),
                 })?;
             let node = graph.get_component(component_id)?;
-            node.component.metadata.clone()
+            // Create metadata from node configuration since Component no longer has metadata field
+            crate::component::ComponentMetadata {
+                imports: Vec::new(), // Import info not stored in node
+                exports: Vec::new(), // Export info not stored in node
+                size_bytes: 0,
+            }
         };
 
-        let instance_info = self.engine.instantiate_component(&crate::component::Component {
-            component: (*component).clone(),
-            metadata: component_metadata,
-        })?;
+        let instance_info = self.engine.instantiate_component(&crate::component::Component::new(
+            (*component).clone(),
+            component_metadata,
+        ))?;
 
         let managed_component = ManagedComponent {
             id: component_id.clone(),
@@ -1846,8 +1865,7 @@ impl ComponentLoadBalancer {
 
     /// Scale a component to the target number of instances using actual instance management
     pub fn scale_component(&mut self, component_id: &ComponentId, target_instances: usize) -> WasmtimeResult<()> {
-        let current_pool = self.instance_pools.get(component_id).cloned();
-        let current_count = current_pool.as_ref().map(|p| p.instances.len()).unwrap_or(0);
+        let current_count = self.instance_pools.get(component_id).map(|p| p.instances.len()).unwrap_or(0);
 
         if target_instances > current_count {
             // Scale up by creating new instances
@@ -1862,7 +1880,7 @@ impl ComponentLoadBalancer {
             }
 
             // Update the instance pool
-            let mut pool = current_pool.unwrap_or_else(|| InstancePool {
+            let mut pool = self.instance_pools.remove(component_id).unwrap_or_else(|| InstancePool {
                 id: component_id.clone(),
                 instances: Vec::new(),
                 config: PoolConfig::default(),
