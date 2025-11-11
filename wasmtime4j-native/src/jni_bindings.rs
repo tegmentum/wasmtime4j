@@ -523,7 +523,7 @@ pub mod jni_instance {
             match func_opt {
                 Some(func) => {
                     // Create FunctionHandle with cached type information
-                    let func_handle = FunctionHandle::new(func, name_str.clone(), store);
+                    let func_handle = jni_function::FunctionHandle::new(func, name_str.clone(), store);
                     Ok(Box::into_raw(Box::new(func_handle)) as jlong)
                 }
                 None => Ok(0), // Return 0 for not found
