@@ -63,9 +63,8 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
         return 0;
     }
 
-    // Note: store_ptr is passed but not used in this function
-    // TypedFunc stores the Func itself, Store is passed separately on each call
-    let func = unsafe { &*(func_ptr as *const Func) };
+    // Validate we can dereference the func pointer
+    let _func = unsafe { &*(func_ptr as *const Func) };
 
     // Get signature string
     let sig_str: String = match env.get_string(&signature.into()) {
@@ -76,9 +75,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
         }
     };
 
-    // Create a TypedFuncHandle that stores both the function and signature
+    // Create a TypedFuncHandle that stores func_ptr, NOT the Func itself
+    // This prevents Store binding issues - we get fresh Func reference on each call
     let handle = Box::new(TypedFuncHandle {
-        func: func.clone(),
+        func_ptr,  // Store pointer, not cloned Func
         signature: sig_str,
     });
 
@@ -107,7 +107,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToI
         return 0;
     }
 
-    match call_typed_i32_to_i32(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i32_to_i32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -139,7 +142,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         return 0;
     }
 
-    match call_typed_i32i32_to_i32(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i32i32_to_i32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -170,7 +176,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
         return 0;
     }
 
-    match call_typed_i64_to_i64(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i64_to_i64(func, store, param) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -202,7 +211,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
         return 0;
     }
 
-    match call_typed_i64i64_to_i64(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i64i64_to_i64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -233,7 +245,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
         return 0.0;
     }
 
-    match call_typed_f32_to_f32(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f32_to_f32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -264,7 +279,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
         return 0.0;
     }
 
-    match call_typed_f64_to_f64(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f64_to_f64(func, store, param) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -294,7 +312,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
         return;
     }
 
-    if let Err(e) = call_typed_void_to_void(&handle.func, store) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    if let Err(e) = call_typed_void_to_void(func, store) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
     }
 }
@@ -321,7 +342,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
         return;
     }
 
-    if let Err(e) = call_typed_i32_to_void(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    if let Err(e) = call_typed_i32_to_void(func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
     }
 }
@@ -349,7 +373,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         return;
     }
 
-    if let Err(e) = call_typed_i32i32_to_void(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    if let Err(e) = call_typed_i32i32_to_void(func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
     }
 }
@@ -376,7 +403,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
         return;
     }
 
-    if let Err(e) = call_typed_i64_to_void(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    if let Err(e) = call_typed_i64_to_void(func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
     }
 }
@@ -404,7 +434,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
         return;
     }
 
-    if let Err(e) = call_typed_i64i64_to_void(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    if let Err(e) = call_typed_i64i64_to_void(func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
     }
 }
@@ -432,7 +465,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
         return 0.0;
     }
 
-    match call_typed_f32f32_to_f32(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f32f32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -464,7 +500,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
         return 0.0;
     }
 
-    match call_typed_f64f64_to_f64(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f64f64_to_f64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -497,7 +536,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         return 0;
     }
 
-    match call_typed_i32i32i32_to_i32(&handle.func, store, param1, param2, param3) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i32i32i32_to_i32(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -530,7 +572,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
         return 0;
     }
 
-    match call_typed_i64i64i64_to_i64(&handle.func, store, param1, param2, param3) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i64i64i64_to_i64(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -563,7 +608,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
         return 0.0;
     }
 
-    match call_typed_f32f32f32_to_f32(&handle.func, store, param1, param2, param3) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f32f32f32_to_f32(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -596,7 +644,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
         return 0.0;
     }
 
-    match call_typed_f64f64f64_to_f64(&handle.func, store, param1, param2, param3) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f64f64f64_to_f64(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -628,7 +679,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         return 0;
     }
 
-    match call_typed_i32i32_to_i64(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i32i32_to_i64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -659,7 +713,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
         return 0;
     }
 
-    match call_typed_i64_to_i32(&handle.func, store, param) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i64_to_i32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -691,7 +748,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
         return 0.0;
     }
 
-    match call_typed_i32f32_to_f32(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_i32f32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -723,7 +783,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
         return 0.0;
     }
 
-    match call_typed_f32i32_to_f32(&handle.func, store, param1, param2) {
+    // Get fresh Func reference from func_ptr (not Store-bound)
+    let func = unsafe { &*(handle.func_ptr as *const Func) };
+
+    match call_typed_f32i32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -747,8 +810,11 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeDestroy(
 }
 
 /// Handle for typed functions
+///
+/// CRITICAL: Does NOT store Func directly because Func is Store-bound.
+/// Instead stores func_ptr to get fresh Func reference on each call.
 struct TypedFuncHandle {
-    func: Func,
+    func_ptr: jlong,  // Pointer to Func, not the Func itself
     signature: String,
 }
 
