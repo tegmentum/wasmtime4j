@@ -57,7 +57,14 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     func_ptr: jlong,
     signature: JObject,
 ) -> jlong {
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate func pointer
+    if func_ptr == 0 {
+        let _ = env.throw_new("java/lang/IllegalStateException", "Function pointer is null");
+        return 0;
+    }
+
+    // Note: store_ptr is passed but not used in this function
+    // TypedFunc stores the Func itself, Store is passed separately on each call
     let func = unsafe { &*(func_ptr as *const Func) };
 
     // Get signature string
@@ -68,10 +75,6 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
             return 0;
         }
     };
-
-    // Parse signature and create appropriate typed function
-    // For now, we'll create a generic wrapper that stores the signature
-    // The actual typed call will be handled based on the signature at call time
 
     // Create a TypedFuncHandle that stores both the function and signature
     let handle = Box::new(TypedFuncHandle {
