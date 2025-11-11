@@ -522,8 +522,9 @@ pub mod jni_instance {
 
             match func_opt {
                 Some(func) => {
-                    // Box the function and return its pointer
-                    Ok(Box::into_raw(Box::new(func)) as jlong)
+                    // Create FunctionHandle with cached type information
+                    let func_handle = FunctionHandle::new(func, name_str.clone(), store);
+                    Ok(Box::into_raw(Box::new(func_handle)) as jlong)
                 }
                 None => Ok(0), // Return 0 for not found
             }
@@ -1175,6 +1176,7 @@ pub mod jni_function {
     use wasmtime::{Func, FuncType, Val, ValType};
     use crate::error::{WasmtimeError, WasmtimeResult, jni_utils};
     use crate::ffi_common::memory_utils;
+    use crate::store::Store;
     use jni::sys::{jintArray, jlongArray, jfloatArray, jdoubleArray, jobjectArray};
     use jni::objects::{JObject, JObjectArray};
     
@@ -1184,30 +1186,41 @@ pub mod jni_function {
     pub struct FunctionHandle {
         /// The actual Wasmtime function
         pub func: Func,
-        /// Cached function type for efficient access
-        pub func_type: FuncType,
         /// Function name for debugging
         pub name: String,
+        /// Cached parameter type strings (Store-independent)
+        param_types: Vec<String>,
+        /// Cached return type strings (Store-independent)
+        return_types: Vec<String>,
     }
-    
+
     impl FunctionHandle {
-        /// Create a new function handle with type caching
-        pub fn new(func: Func, func_type: FuncType, name: String) -> Self {
+        /// Create a new function handle with type information cached as strings
+        ///
+        /// IMPORTANT: Caches type info as strings at creation time, avoiding Store-bound FuncType
+        pub fn new(func: Func, name: String, store: &mut Store) -> Self {
+            let store_guard = store.inner.lock();
+            let func_type = func.ty(&*store_guard);
+
+            let param_types = func_type.params().map(|vt| valtype_to_string(&vt)).collect();
+            let return_types = func_type.results().map(|vt| valtype_to_string(&vt)).collect();
+
             Self {
                 func,
-                func_type,
                 name,
+                param_types,
+                return_types,
             }
         }
-        
-        /// Get parameter types as strings
-        pub fn get_param_type_strings(&self) -> Vec<String> {
-            self.func_type.params().map(|vt| valtype_to_string(&vt)).collect()
+
+        /// Get parameter types as strings (cached at creation, Store-independent)
+        pub fn get_param_type_strings(&self) -> &[String] {
+            &self.param_types
         }
-        
-        /// Get return types as strings  
-        pub fn get_return_type_strings(&self) -> Vec<String> {
-            self.func_type.results().map(|vt| valtype_to_string(&vt)).collect()
+
+        /// Get return types as strings (cached at creation, Store-independent)
+        pub fn get_return_type_strings(&self) -> &[String] {
+            &self.return_types
         }
     }
     
@@ -1432,8 +1445,8 @@ pub mod jni_function {
         match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
             Ok(func_handle) => {
                 let param_type_strings = func_handle.get_param_type_strings();
-                
-                match create_java_string_array(&mut env, &param_type_strings) {
+
+                match create_java_string_array(&mut env, param_type_strings) {
                     Ok(array) => array,
                     Err(error) => {
                         jni_utils::throw_jni_exception(&mut env, &error);
@@ -1465,8 +1478,8 @@ pub mod jni_function {
         match memory_utils::safe_deref(function_ptr as *const FunctionHandle, "function_ptr") {
             Ok(func_handle) => {
                 let return_type_strings = func_handle.get_return_type_strings();
-                
-                match create_java_string_array(&mut env, &return_type_strings) {
+
+                match create_java_string_array(&mut env, return_type_strings) {
                     Ok(array) => array,
                     Err(error) => {
                         jni_utils::throw_jni_exception(&mut env, &error);

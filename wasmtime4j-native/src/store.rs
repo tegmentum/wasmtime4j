@@ -24,7 +24,7 @@ static STORE_ID_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
 pub struct Store {
     /// Unique identifier for this store
     id: u64,
-    inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
+    pub(crate) inner: Arc<ReentrantLock<WasmtimeStore<StoreData>>>,
     /// Reference to the Engine to ensure same Engine Arc is used for validation
     /// CRITICAL: Wasmtime validates Module/Store compatibility using Arc::ptr_eq(),
     /// so we must maintain a reference to the same Engine (which contains Arc<WasmtimeEngine>)
