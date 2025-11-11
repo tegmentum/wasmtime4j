@@ -45,6 +45,8 @@ pub struct StoreMetadata {
     pub execution_timeout: Option<Duration>,
     /// Number of instances created in this store
     pub instance_count: usize,
+    /// Closed flag to prevent use-after-close
+    pub is_closed: Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// Store-specific data for host function context
@@ -242,6 +244,14 @@ impl Store {
 
     /// Validate store is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
+        // Check if store has been closed
+        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(WasmtimeError::Store {
+                message: format!("Store {} has been closed and cannot be used", self.id),
+            });
+        }
+
+        // Check if store can be locked (not corrupted)
         if let Some(_guard) = self.inner.try_lock() {
             Ok(())
         } else {
@@ -463,6 +473,7 @@ impl StoreBuilder {
             memory_limit_bytes: self.memory_limit_bytes,
             execution_timeout: self.execution_timeout,
             instance_count: 0,
+            is_closed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         };
 
         Ok(Store {
@@ -1132,6 +1143,11 @@ pub mod ffi_core {
 
     /// Core function to destroy a store (safe cleanup)
     pub unsafe fn destroy_store(store_ptr: *mut c_void) {
+        // Mark store as closed before destroying
+        if !store_ptr.is_null() {
+            let store = &*(store_ptr as *const Store);
+            store.metadata.is_closed.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
         ffi_utils::destroy_resource::<Store>(store_ptr, "Store");
     }
 
