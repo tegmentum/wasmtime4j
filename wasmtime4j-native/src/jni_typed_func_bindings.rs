@@ -123,8 +123,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param1: jint,
     param2: jint,
 ) -> jint {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i32i32_to_i32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -144,8 +154,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     store_ptr: jlong,
     param: jlong,
 ) -> jlong {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i64_to_i64(&handle.func, store, param) {
         Ok(result) => result,
@@ -166,8 +186,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param1: jlong,
     param2: jlong,
 ) -> jlong {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i64i64_to_i64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -187,8 +217,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
     store_ptr: jlong,
     param: jfloat,
 ) -> jfloat {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f32_to_f32(&handle.func, store, param) {
         Ok(result) => result,
@@ -208,8 +248,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
     store_ptr: jlong,
     param: jdouble,
 ) -> jdouble {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f64_to_f64(&handle.func, store, param) {
         Ok(result) => result,
@@ -228,8 +278,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
     handle_ptr: jlong,
     store_ptr: jlong,
 ) {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return;
+    }
 
     if let Err(e) = call_typed_void_to_void(&handle.func, store) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -245,8 +305,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
     store_ptr: jlong,
     param: jint,
 ) {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return;
+    }
 
     if let Err(e) = call_typed_i32_to_void(&handle.func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -263,8 +333,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param1: jint,
     param2: jint,
 ) {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return;
+    }
 
     if let Err(e) = call_typed_i32i32_to_void(&handle.func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -280,8 +360,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
     store_ptr: jlong,
     param: jlong,
 ) {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return;
+    }
 
     if let Err(e) = call_typed_i64_to_void(&handle.func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -298,8 +388,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param1: jlong,
     param2: jlong,
 ) {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return;
+    }
 
     if let Err(e) = call_typed_i64i64_to_void(&handle.func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -316,8 +416,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     param1: jfloat,
     param2: jfloat,
 ) -> jfloat {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f32f32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -338,8 +448,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     param1: jdouble,
     param2: jdouble,
 ) -> jdouble {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f64f64_to_f64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -361,8 +481,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param2: jint,
     param3: jint,
 ) -> jint {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i32i32i32_to_i32(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -384,8 +514,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param2: jlong,
     param3: jlong,
 ) -> jlong {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i64i64i64_to_i64(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -407,8 +547,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     param2: jfloat,
     param3: jfloat,
 ) -> jfloat {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f32f32f32_to_f32(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -430,8 +580,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     param2: jdouble,
     param3: jdouble,
 ) -> jdouble {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f64f64f64_to_f64(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -452,8 +612,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param1: jint,
     param2: jint,
 ) -> jlong {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0;
+    }
 
     match call_typed_i32i32_to_i64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -505,8 +675,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
     param1: jint,
     param2: jfloat,
 ) -> jfloat {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_i32f32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -527,8 +707,18 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
     param1: jfloat,
     param2: jint,
 ) -> jfloat {
-    let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
+    // Validate pointers before dereferencing
+    let handle = validate_and_deref!(env, handle_ptr, TypedFuncHandle, "TypedFunc handle");
+    let store = validate_and_deref!(mut env, store_ptr, WasmStore, "Store");
+
+    // Validate Store is not closed/corrupted
+    if let Err(e) = store.validate() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            format!("Store is invalid or closed: {}", e)
+        );
+        return 0.0;
+    }
 
     match call_typed_f32i32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
