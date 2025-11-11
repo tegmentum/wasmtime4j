@@ -141,6 +141,8 @@
                         <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
                         <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
                         <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
+                        <!-- Force JNI runtime for tests until Panama implementation is complete -->
+                        <wasmtime4j.runtime>jni</wasmtime4j.runtime>
                     </systemPropertyVariables>
                     <argLine>-Xmx${test.memory} -XX:+HeapDumpOnOutOfMemoryError</argLine>
                 </configuration>
