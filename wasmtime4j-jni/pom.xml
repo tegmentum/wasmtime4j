@@ -104,6 +104,28 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
 
+            <!-- Unpack native libraries from wasmtime4j-native -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-native-libraries</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeGroupIds>ai.tegmentum</includeGroupIds>
+                            <includeArtifactIds>wasmtime4j-native</includeArtifactIds>
+                            <includes>natives/**</includes>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Copy generated headers to native directory -->
             <plugin>

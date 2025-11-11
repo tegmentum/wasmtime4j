@@ -52,7 +52,7 @@ public final class NativeLibraryLoader {
       }
 
       try {
-        loadInfo = NativeLoader.loadLibrary("wasmtime4j_v2");
+        loadInfo = NativeLoader.loadLibrary("wasmtime4j");
         if (loadInfo.isSuccessful()) {
           LIBRARY_LOADED.set(true);
           LOGGER.info("Successfully loaded native library for JNI: " + loadInfo);

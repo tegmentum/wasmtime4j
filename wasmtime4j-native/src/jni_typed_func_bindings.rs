@@ -3,12 +3,14 @@
 //! Provides Java Native Interface bindings for zero-cost typed function calls.
 
 use crate::error::WasmtimeResult;
+use crate::store::Store as WasmStore;
 use crate::typed_func::TypedFunc as CustomTypedFunc;
 use jni::objects::{JClass, JObject, JValue};
 use jni::sys::{jboolean, jdouble, jfloat, jint, jlong, jobject};
 use jni::JNIEnv;
+use std::os::raw::c_void;
 use std::sync::Arc;
-use wasmtime::{Func, Store, WasmParams, WasmResults};
+use wasmtime::{Func, WasmParams, WasmResults};
 
 /// Create a typed function from a regular function
 ///
@@ -28,7 +30,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     func_ptr: jlong,
     signature: JObject,
 ) -> jlong {
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
     let func = unsafe { &*(func_ptr as *const Func) };
 
     // Get signature string
@@ -63,7 +65,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToI
     param: jint,
 ) -> jint {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i32_to_i32(&handle.func, store, param) {
         Ok(result) => result,
@@ -85,7 +87,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param2: jint,
 ) -> jint {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i32i32_to_i32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -106,7 +108,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     param: jlong,
 ) -> jlong {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i64_to_i64(&handle.func, store, param) {
         Ok(result) => result,
@@ -128,7 +130,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param2: jlong,
 ) -> jlong {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i64i64_to_i64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -149,7 +151,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
     param: jfloat,
 ) -> jfloat {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f32_to_f32(&handle.func, store, param) {
         Ok(result) => result,
@@ -170,7 +172,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
     param: jdouble,
 ) -> jdouble {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f64_to_f64(&handle.func, store, param) {
         Ok(result) => result,
@@ -190,7 +192,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
     store_ptr: jlong,
 ) {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     if let Err(e) = call_typed_void_to_void(&handle.func, store) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -207,7 +209,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
     param: jint,
 ) {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     if let Err(e) = call_typed_i32_to_void(&handle.func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -225,7 +227,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param2: jint,
 ) {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     if let Err(e) = call_typed_i32i32_to_void(&handle.func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -242,7 +244,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
     param: jlong,
 ) {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     if let Err(e) = call_typed_i64_to_void(&handle.func, store, param) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -260,7 +262,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param2: jlong,
 ) {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     if let Err(e) = call_typed_i64i64_to_void(&handle.func, store, param1, param2) {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
@@ -278,7 +280,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     param2: jfloat,
 ) -> jfloat {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f32f32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -300,7 +302,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     param2: jdouble,
 ) -> jdouble {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f64f64_to_f64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -323,7 +325,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param3: jint,
 ) -> jint {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i32i32i32_to_i32(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -346,7 +348,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     param3: jlong,
 ) -> jlong {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i64i64i64_to_i64(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -369,7 +371,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     param3: jfloat,
 ) -> jfloat {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f32f32f32_to_f32(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -392,7 +394,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     param3: jdouble,
 ) -> jdouble {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f64f64f64_to_f64(&handle.func, store, param1, param2, param3) {
         Ok(result) => result,
@@ -414,7 +416,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     param2: jint,
 ) -> jlong {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i32i32_to_i64(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -435,7 +437,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     param: jlong,
 ) -> jint {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i64_to_i32(&handle.func, store, param) {
         Ok(result) => result,
@@ -457,7 +459,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
     param2: jfloat,
 ) -> jfloat {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_i32f32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -479,7 +481,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
     param2: jint,
 ) -> jfloat {
     let handle = unsafe { &*(handle_ptr as *const TypedFuncHandle) };
-    let store = unsafe { &mut *(store_ptr as *mut Store<()>) };
+    let store = unsafe { &mut *(store_ptr as *mut WasmStore) };
 
     match call_typed_f32i32_to_f32(&handle.func, store, param1, param2) {
         Ok(result) => result,
@@ -512,107 +514,128 @@ struct TypedFuncHandle {
 
 // Helper functions for common typed call patterns
 
-fn call_typed_i32_to_i32(func: &Func, mut store: &mut Store<()>, param: i32) -> WasmtimeResult<i32> {
-    let typed = CustomTypedFunc::<i32, i32>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_i32_to_i32(func: &Func, store: &WasmStore, param: i32) -> WasmtimeResult<i32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<i32, i32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32i32_to_i32(func: &Func, mut store: &mut Store<()>, p1: i32, p2: i32) -> WasmtimeResult<i32> {
-    let typed = CustomTypedFunc::<(i32, i32), i32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i32i32_to_i32(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<i32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i32, i32), i32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_i64_to_i64(func: &Func, mut store: &mut Store<()>, param: i64) -> WasmtimeResult<i64> {
-    let typed = CustomTypedFunc::<i64, i64>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_i64_to_i64(func: &Func, store: &WasmStore, param: i64) -> WasmtimeResult<i64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<i64, i64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i64i64_to_i64(func: &Func, mut store: &mut Store<()>, p1: i64, p2: i64) -> WasmtimeResult<i64> {
-    let typed = CustomTypedFunc::<(i64, i64), i64>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i64i64_to_i64(func: &Func, store: &WasmStore, p1: i64, p2: i64) -> WasmtimeResult<i64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i64, i64), i64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f32_to_f32(func: &Func, mut store: &mut Store<()>, param: f32) -> WasmtimeResult<f32> {
-    let typed = CustomTypedFunc::<f32, f32>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_f32_to_f32(func: &Func, store: &WasmStore, param: f32) -> WasmtimeResult<f32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<f32, f32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_f64_to_f64(func: &Func, mut store: &mut Store<()>, param: f64) -> WasmtimeResult<f64> {
-    let typed = CustomTypedFunc::<f64, f64>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_f64_to_f64(func: &Func, store: &WasmStore, param: f64) -> WasmtimeResult<f64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<f64, f64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_void_to_void(func: &Func, mut store: &mut Store<()>) -> WasmtimeResult<()> {
-    let typed = CustomTypedFunc::<(), ()>::new(&mut store, func)?;
-    typed.call(&mut store, ())
+fn call_typed_void_to_void(func: &Func, store: &WasmStore) -> WasmtimeResult<()> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(), ()>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, ())
 }
 
-fn call_typed_i32_to_void(func: &Func, mut store: &mut Store<()>, param: i32) -> WasmtimeResult<()> {
-    let typed = CustomTypedFunc::<i32, ()>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_i32_to_void(func: &Func, store: &WasmStore, param: i32) -> WasmtimeResult<()> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<i32, ()>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32i32_to_void(func: &Func, mut store: &mut Store<()>, p1: i32, p2: i32) -> WasmtimeResult<()> {
-    let typed = CustomTypedFunc::<(i32, i32), ()>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i32i32_to_void(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<()> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i32, i32), ()>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_i64_to_void(func: &Func, mut store: &mut Store<()>, param: i64) -> WasmtimeResult<()> {
-    let typed = CustomTypedFunc::<i64, ()>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_i64_to_void(func: &Func, store: &WasmStore, param: i64) -> WasmtimeResult<()> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<i64, ()>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i64i64_to_void(func: &Func, mut store: &mut Store<()>, p1: i64, p2: i64) -> WasmtimeResult<()> {
-    let typed = CustomTypedFunc::<(i64, i64), ()>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i64i64_to_void(func: &Func, store: &WasmStore, p1: i64, p2: i64) -> WasmtimeResult<()> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i64, i64), ()>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f32f32_to_f32(func: &Func, mut store: &mut Store<()>, p1: f32, p2: f32) -> WasmtimeResult<f32> {
-    let typed = CustomTypedFunc::<(f32, f32), f32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_f32f32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: f32) -> WasmtimeResult<f32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(f32, f32), f32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f64f64_to_f64(func: &Func, mut store: &mut Store<()>, p1: f64, p2: f64) -> WasmtimeResult<f64> {
-    let typed = CustomTypedFunc::<(f64, f64), f64>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_f64f64_to_f64(func: &Func, store: &WasmStore, p1: f64, p2: f64) -> WasmtimeResult<f64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(f64, f64), f64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_i32i32i32_to_i32(func: &Func, mut store: &mut Store<()>, p1: i32, p2: i32, p3: i32) -> WasmtimeResult<i32> {
-    let typed = CustomTypedFunc::<(i32, i32, i32), i32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2, p3))
+fn call_typed_i32i32i32_to_i32(func: &Func, store: &WasmStore, p1: i32, p2: i32, p3: i32) -> WasmtimeResult<i32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i32, i32, i32), i32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_i64i64i64_to_i64(func: &Func, mut store: &mut Store<()>, p1: i64, p2: i64, p3: i64) -> WasmtimeResult<i64> {
-    let typed = CustomTypedFunc::<(i64, i64, i64), i64>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2, p3))
+fn call_typed_i64i64i64_to_i64(func: &Func, store: &WasmStore, p1: i64, p2: i64, p3: i64) -> WasmtimeResult<i64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i64, i64, i64), i64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_f32f32f32_to_f32(func: &Func, mut store: &mut Store<()>, p1: f32, p2: f32, p3: f32) -> WasmtimeResult<f32> {
-    let typed = CustomTypedFunc::<(f32, f32, f32), f32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2, p3))
+fn call_typed_f32f32f32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: f32, p3: f32) -> WasmtimeResult<f32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(f32, f32, f32), f32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_f64f64f64_to_f64(func: &Func, mut store: &mut Store<()>, p1: f64, p2: f64, p3: f64) -> WasmtimeResult<f64> {
-    let typed = CustomTypedFunc::<(f64, f64, f64), f64>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2, p3))
+fn call_typed_f64f64f64_to_f64(func: &Func, store: &WasmStore, p1: f64, p2: f64, p3: f64) -> WasmtimeResult<f64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(f64, f64, f64), f64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_i32i32_to_i64(func: &Func, mut store: &mut Store<()>, p1: i32, p2: i32) -> WasmtimeResult<i64> {
-    let typed = CustomTypedFunc::<(i32, i32), i64>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i32i32_to_i64(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<i64> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i32, i32), i64>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_i64_to_i32(func: &Func, mut store: &mut Store<()>, param: i64) -> WasmtimeResult<i32> {
-    let typed = CustomTypedFunc::<i64, i32>::new(&mut store, func)?;
-    typed.call(&mut store, param)
+fn call_typed_i64_to_i32(func: &Func, store: &WasmStore, param: i64) -> WasmtimeResult<i32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<i64, i32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32f32_to_f32(func: &Func, mut store: &mut Store<()>, p1: i32, p2: f32) -> WasmtimeResult<f32> {
-    let typed = CustomTypedFunc::<(i32, f32), f32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_i32f32_to_f32(func: &Func, store: &WasmStore, p1: i32, p2: f32) -> WasmtimeResult<f32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(i32, f32), f32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f32i32_to_f32(func: &Func, mut store: &mut Store<()>, p1: f32, p2: i32) -> WasmtimeResult<f32> {
-    let typed = CustomTypedFunc::<(f32, i32), f32>::new(&mut store, func)?;
-    typed.call(&mut store, (p1, p2))
+fn call_typed_f32i32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: i32) -> WasmtimeResult<f32> {
+    let mut store_guard = store.lock_store();
+    let typed = CustomTypedFunc::<(f32, i32), f32>::new(&mut *store_guard, func)?;
+    typed.call(&mut *store_guard, (p1, p2))
 }
