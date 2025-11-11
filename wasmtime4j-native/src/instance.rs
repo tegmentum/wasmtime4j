@@ -167,27 +167,22 @@ impl Instance {
         let mut store_guard = store.lock_store();
 
         // CRITICAL FIX for cross-Engine instantiation error:
-        // Use Linker for instantiation instead of direct Instance::new().
-        // Linker handles Engine compatibility internally and is the idiomatic Wasmtime approach.
-        use wasmtime::Linker;
-
-        let mut linker: Linker<StoreData> = Linker::new(module.inner().engine());
-
-        // If no imports provided, just instantiate directly
-        let instance = if imports.is_empty() {
-            linker.instantiate(&mut *store_guard, module.inner())
-                .map_err(|e| WasmtimeError::Instance {
-                    message: format!("Failed to instantiate module: {}", e),
-                })?
-        } else {
-            // With imports, we need to define them in the linker first
-            // For now, fall back to direct instantiation (will fail with cross-Engine error)
-            // TODO: Implement import definition in Linker
-            WasmtimeInstance::new(&mut *store_guard, module.inner(), imports)
-                .map_err(|e| WasmtimeError::Instance {
-                    message: format!("Failed to create instance with imports: {}", e),
-                })?
-        };
+        // Wasmtime validates Module/Store compatibility using Arc::ptr_eq() on the Engine Arc.
+        // Even though Module and Store are created from the same wasmtime4j Engine wrapper,
+        // Wasmtime's Module::new() and Store::new() internally clone the Engine Arc differently,
+        // resulting in different Arc pointers.
+        //
+        // SOLUTION: The Store wrapper maintains a reference to the wasmtime4j Engine (store.engine),
+        // which should be the SAME Engine instance used to compile the Module.
+        // Since both Module and Store hold references to the same wasmtime4j Engine wrapper,
+        // and that wrapper contains the Arc<WasmtimeEngine>, the Arc::ptr_eq() check should pass.
+        //
+        // The previous Linker approach was a workaround that introduced its own bugs.
+        // Direct Instance::new() is the correct approach when Arc sharing is handled properly.
+        let instance = WasmtimeInstance::new(&mut *store_guard, module.inner(), imports)
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to create instance: {}", e),
+            })?;
 
         // Build comprehensive metadata and mappings
         // Need to create a mutable context from the store
