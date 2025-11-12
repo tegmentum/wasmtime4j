@@ -310,7 +310,8 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public boolean isShared() {
     ensureNotClosed();
-    // TODO: Implement shared check
+    // Shared memory check not implemented - return false (non-shared)
+    // Matches JNI backend which defaults to false on query failure
     return false;
   }
 
