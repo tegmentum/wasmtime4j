@@ -4011,6 +4011,38 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Creates an alias for an export in the linker.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param fromModulePtr pointer to the source module name
+   * @param fromNamePtr pointer to the source export name
+   * @param toModulePtr pointer to the destination module name
+   * @param toNamePtr pointer to the destination export name
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerAlias(
+      final MemorySegment linkerPtr,
+      final MemorySegment fromModulePtr,
+      final MemorySegment fromNamePtr,
+      final MemorySegment toModulePtr,
+      final MemorySegment toNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(fromModulePtr, "fromModulePtr");
+    validatePointer(fromNamePtr, "fromNamePtr");
+    validatePointer(toModulePtr, "toModulePtr");
+    validatePointer(toNamePtr, "toNamePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_alias",
+        Integer.class,
+        linkerPtr,
+        fromModulePtr,
+        fromNamePtr,
+        toModulePtr,
+        toNamePtr);
+  }
+
+  /**
    * Destroys a Panama linker.
    *
    * @param linkerPtr pointer to the linker to destroy

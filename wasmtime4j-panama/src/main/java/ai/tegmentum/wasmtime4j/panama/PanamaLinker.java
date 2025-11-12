@@ -369,8 +369,35 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("To name cannot be null");
     }
     ensureNotClosed();
-    // TODO: Implement aliasing
-    throw new UnsupportedOperationException("Aliasing not yet implemented");
+
+    // Allocate C strings
+    final MemorySegment fromModulePtr = arena.allocateFrom(fromModule);
+    final MemorySegment fromNamePtr = arena.allocateFrom(fromName);
+    final MemorySegment toModulePtr = arena.allocateFrom(toModule);
+    final MemorySegment toNamePtr = arena.allocateFrom(toName);
+
+    // Call native function to create alias
+    final int result =
+        NATIVE_BINDINGS.panamaLinkerAlias(
+            nativeLinker, fromModulePtr, fromNamePtr, toModulePtr, toNamePtr);
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to create alias from "
+              + fromModule
+              + "::"
+              + fromName
+              + " to "
+              + toModule
+              + "::"
+              + toName
+              + " (error code: "
+              + result
+              + ")");
+    }
+
+    LOGGER.fine(
+        "Created alias from " + fromModule + "::" + fromName + " to " + toModule + "::" + toName);
   }
 
   @Override

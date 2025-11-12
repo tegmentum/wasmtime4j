@@ -3907,6 +3907,60 @@ pub mod linker {
         })
     }
 
+    /// Create an alias for an export (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_alias(
+        linker_ptr: *mut c_void,
+        from_module: *const c_char,
+        from_name: *const c_char,
+        to_module: *const c_char,
+        to_name: *const c_char,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Validate pointers
+                if linker_ptr.is_null() || from_module.is_null() || from_name.is_null()
+                    || to_module.is_null() || to_name.is_null() {
+                    return Err(crate::error::WasmtimeError::Linker {
+                        message: "Null pointer in linker alias parameters".to_string(),
+                    });
+                }
+
+                // Convert C strings to Rust strings
+                let from_module_str = CStr::from_ptr(from_module)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let from_name_str = CStr::from_ptr(from_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let to_module_str = CStr::from_ptr(to_module)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let to_name_str = CStr::from_ptr(to_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Lock linker
+                let mut linker_lock = linker.inner()?;
+
+                // Use Wasmtime's alias method
+                linker_lock.alias(from_module_str, from_name_str, to_module_str, to_name_str)
+                    .map_err(|e| crate::error::WasmtimeError::Linker {
+                        message: format!("Failed to create alias from {}::{} to {}::{}: {}",
+                            from_module_str, from_name_str, to_module_str, to_name_str, e),
+                    })?;
+
+                Ok(())
+            }
+        })
+    }
+
     /// Destroy a linker (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
