@@ -2877,6 +2877,469 @@ pub mod table {
         })
     }
 
+    //==========================================================================================
+    // Atomic Memory Operations (Panama FFI versions)
+    //==========================================================================================
+
+    /// Atomic compare-and-swap on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_compare_and_swap_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        expected: i32,
+        new_value: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_compare_and_swap_i32(&memory, store, offset, expected, new_value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic compare-and-swap on 64-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_compare_and_swap_i64(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        expected: i64,
+        new_value: i64,
+        result_out: *mut i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_compare_and_swap_i64(&memory, store, offset, expected, new_value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic load of 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_load_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_load_i32(&memory, store, offset)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic load of 64-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_load_i64(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        result_out: *mut i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_load_i64(&memory, store, offset)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic store of 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_store_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            crate::memory::core::atomic_store_i32(&memory, store, offset, value)?;
+            Ok(())
+        })
+    }
+
+    /// Atomic store of 64-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_store_i64(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            crate::memory::core::atomic_store_i64(&memory, store, offset, value)?;
+            Ok(())
+        })
+    }
+
+    /// Atomic add on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_add_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_add_i32(&memory, store, offset, value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic add on 64-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_add_i64(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i64,
+        result_out: *mut i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_add_i64(&memory, store, offset, value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic AND on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_and_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_and_i32(&memory, store, offset, value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic OR on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_or_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_or_i32(&memory, store, offset, value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic XOR on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_xor_i32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        value: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_xor_i32(&memory, store, offset, value)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic memory fence (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_fence(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            crate::memory::core::atomic_fence(&memory, store)?;
+            Ok(())
+        })
+    }
+
+    /// Atomic notify/wake (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_notify(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        count: i32,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_notify(&memory, store, offset, count)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic wait on 32-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_wait32(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        expected: i32,
+        timeout_nanos: i64,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_wait32(&memory, store, offset, expected, timeout_nanos)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Atomic wait on 64-bit value (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_atomic_wait64(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        offset: usize,
+        expected: i64,
+        timeout_nanos: i64,
+        result_out: *mut i32,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+            if result_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Result output pointer cannot be null".to_string(),
+                });
+            }
+
+            // Get memory type information from the store
+            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
+            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
+
+            let result = crate::memory::core::atomic_wait64(&memory, store, offset, expected, timeout_nanos)?;
+
+            unsafe {
+                *result_out = result;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Copy elements within a table (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_table_copy(

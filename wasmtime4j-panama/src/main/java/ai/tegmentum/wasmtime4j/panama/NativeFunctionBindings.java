@@ -319,6 +319,428 @@ public final class NativeFunctionBindings {
         "wasmtime4j_panama_data_drop", Integer.class, instancePtr, dataSegmentIndex);
   }
 
+  //====================================================================================
+  // Atomic Memory Operations
+  //====================================================================================
+
+  /**
+   * Atomic compare-and-swap on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param expected expected value
+   * @param newValue new value to swap in
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicCompareAndSwapI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int expected,
+      final int newValue,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_compare_and_swap_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        expected,
+        newValue,
+        resultOut);
+  }
+
+  /**
+   * Atomic compare-and-swap on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param expected expected value
+   * @param newValue new value to swap in
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicCompareAndSwapI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long expected,
+      final long newValue,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_compare_and_swap_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        expected,
+        newValue,
+        resultOut);
+  }
+
+  /**
+   * Atomic load of 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param resultOut pointer to store the value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicLoadI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_load_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        resultOut);
+  }
+
+  /**
+   * Atomic load of 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param resultOut pointer to store the value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicLoadI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_load_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        resultOut);
+  }
+
+  /**
+   * Atomic store of 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to store
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicStoreI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int value) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_store_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value);
+  }
+
+  /**
+   * Atomic store of 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to store
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicStoreI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long value) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_store_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value);
+  }
+
+  /**
+   * Atomic add on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to add
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicAddI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_add_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic add on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to add
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicAddI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_add_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic AND on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to AND
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicAndI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_and_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic OR on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to OR
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicOrI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_or_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic XOR on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to XOR
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicXorI32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_xor_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic memory fence.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicFence(final MemorySegment memoryPtr, final MemorySegment storePtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_fence", Integer.class, memoryPtr, storePtr);
+  }
+
+  /**
+   * Atomic notify/wake.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param count number of waiters to wake
+   * @param resultOut pointer to store number of waiters woken
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicNotify(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int count,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_notify",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        count,
+        resultOut);
+  }
+
+  /**
+   * Atomic wait on 32-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param expected expected value
+   * @param timeoutNanos timeout in nanoseconds (-1 for infinite)
+   * @param resultOut pointer to store the wait result (0=ok, 1=not-equal, 2=timed-out)
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicWait32(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final int expected,
+      final long timeoutNanos,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_wait32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        expected,
+        timeoutNanos,
+        resultOut);
+  }
+
+  /**
+   * Atomic wait on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param expected expected value
+   * @param timeoutNanos timeout in nanoseconds (-1 for infinite)
+   * @param resultOut pointer to store the wait result (0=ok, 1=not-equal, 2=timed-out)
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicWait64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long expected,
+      final long timeoutNanos,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_wait64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        expected,
+        timeoutNanos,
+        resultOut);
+  }
+
   /**
    * Creates a WebAssembly module from WAT text (Panama FFI).
    *
