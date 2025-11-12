@@ -306,6 +306,20 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Drops a data segment from memory.
+   *
+   * @param instancePtr pointer to the instance
+   * @param dataSegmentIndex data segment index to drop
+   * @return 0 on success, non-zero on error
+   */
+  public int dataSegmentDrop(final MemorySegment instancePtr, final int dataSegmentIndex) {
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_data_drop", Integer.class, instancePtr, dataSegmentIndex);
+  }
+
+  /**
    * Creates a WebAssembly module from WAT text (Panama FFI).
    *
    * @param enginePtr pointer to the engine
