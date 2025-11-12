@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
@@ -330,14 +331,64 @@ public final class PanamaMemory implements WasmMemory {
         minimum, maximum, is64Bit, isShared, arena, nativeMemory);
   }
 
+  /**
+   * Helper method to get the PanamaStore from either store or instance.
+   *
+   * @return PanamaStore instance
+   */
+  private PanamaStore getPanamaStore() {
+    if (store != null) {
+      return store;
+    }
+    if (instance != null) {
+      return (PanamaStore) instance.getStore();
+    }
+    throw new IllegalStateException("No store available");
+  }
+
+  /**
+   * Helper method to get the memory pointer for atomic operations.
+   *
+   * @return memory segment pointer
+   */
+  private MemorySegment getMemoryPointer() {
+    if (instance != null && memoryName != null) {
+      // For instance-exported memories, look up by name
+      final MemorySegment nameSegment = arena.allocateFrom(memoryName);
+      final PanamaStore actualStore = getPanamaStore();
+      return NATIVE_BINDINGS.instanceGetMemoryByName(
+          instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
+    } else {
+      // For store-created memories, use cached pointer
+      return nativeMemory;
+    }
+  }
+
   @Override
   public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
     if (offset < 0 || offset % 4 != 0) {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic CAS int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicCompareAndSwapI32(
+            memPtr, storePtr, offset, expected, newValue, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic CAS i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -346,8 +397,25 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic CAS long
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicCompareAndSwapI64(
+            memPtr, storePtr, offset, expected, newValue, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic CAS i64 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
   }
 
   @Override
@@ -356,8 +424,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic load int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic load i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -366,8 +450,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic load long
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic load i64 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
   }
 
   @Override
@@ -376,8 +476,21 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic store int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic store i32 failed with error code: " + errorCode);
+    }
   }
 
   @Override
@@ -386,8 +499,21 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic store long
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic store i64 failed with error code: " + errorCode);
+    }
   }
 
   @Override
@@ -396,8 +522,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic add int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic add i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -406,8 +548,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic add long
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic add i64 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
   }
 
   @Override
@@ -416,8 +574,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic and int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic and i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -426,8 +600,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic or int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic or i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -436,8 +626,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
     ensureNotClosed();
-    // TODO: Implement atomic xor int
-    throw new UnsupportedOperationException("Atomic operations not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic xor i32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -488,8 +694,20 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public void atomicFence() {
     ensureNotClosed();
-    // TODO: Implement atomic fence
-    throw new UnsupportedOperationException("Atomic fence not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final int errorCode = NATIVE_BINDINGS.memoryAtomicFence(memPtr, storePtr);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic fence failed with error code: " + errorCode);
+    }
   }
 
   @Override
@@ -501,8 +719,24 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Count cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement atomic notify
-    throw new UnsupportedOperationException("Atomic notify not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic notify failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -514,8 +748,25 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Timeout must be non-negative or -1 for infinite");
     }
     ensureNotClosed();
-    // TODO: Implement atomic wait for 32-bit value
-    throw new UnsupportedOperationException("Atomic wait32 not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicWait32(
+            memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic wait32 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -527,8 +778,25 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Timeout must be non-negative or -1 for infinite");
     }
     ensureNotClosed();
-    // TODO: Implement atomic wait for 64-bit value
-    throw new UnsupportedOperationException("Atomic wait64 not yet implemented");
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicWait64(
+            memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+
+    if (errorCode != 0) {
+      throw new RuntimeException("Atomic wait64 failed with error code: " + errorCode);
+    }
+
+    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   /** Closes the memory and releases resources. */
