@@ -259,6 +259,26 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Serializes a WebAssembly module.
+   *
+   * @param modulePtr pointer to the module to serialize
+   * @param dataPtrPtr pointer to receive the serialized data pointer
+   * @param lenPtr pointer to receive the data length
+   * @return 0 on success, non-zero on error
+   */
+  public int moduleSerialize(
+      final MemorySegment modulePtr,
+      final MemorySegment dataPtrPtr,
+      final MemorySegment lenPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(dataPtrPtr, "dataPtrPtr");
+    validatePointer(lenPtr, "lenPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_serialize", Integer.class, modulePtr, dataPtrPtr, lenPtr);
+  }
+
+  /**
    * Destroys a WebAssembly module.
    *
    * @param modulePtr pointer to the module to destroy
