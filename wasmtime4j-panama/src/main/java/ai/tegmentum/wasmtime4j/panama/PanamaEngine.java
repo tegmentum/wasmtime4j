@@ -172,13 +172,15 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public int getMaxInstances() {
-    // TODO: Implement max instances retrieval
-    return 0;
+    // Max instances tracking not implemented - return unlimited
+    // Matches JNI backend which returns Integer.MAX_VALUE
+    return Integer.MAX_VALUE;
   }
 
   @Override
   public long getReferenceCount() {
-    // TODO: Implement reference counting
+    // Reference counting not implemented - return single reference
+    // Matches JNI backend behavior
     return 1;
   }
 
