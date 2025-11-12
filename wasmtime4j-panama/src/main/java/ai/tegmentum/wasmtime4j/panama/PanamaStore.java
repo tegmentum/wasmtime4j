@@ -215,8 +215,9 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.HostFunction implementation)
       throws WasmException {
     ensureNotClosed();
-    // TODO: Implement host function creation
-    throw new UnsupportedOperationException("Host function creation not yet implemented");
+    // TODO: Implement host function creation - requires callback infrastructure
+    throw new UnsupportedOperationException(
+        "Host function creation not yet implemented - requires callback infrastructure");
   }
 
   @Override
@@ -439,7 +440,8 @@ public final class PanamaStore implements Store {
       throws WasmException {
     ensureNotClosed();
     // TODO: Implement function reference creation from host function
-    throw new UnsupportedOperationException("Function reference not yet implemented");
+    throw new UnsupportedOperationException(
+        "Function reference from host function not yet implemented - requires callback infrastructure");
   }
 
   @Override
@@ -447,13 +449,15 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.WasmFunction function) throws WasmException {
     ensureNotClosed();
     // TODO: Implement function reference creation from WASM function
-    throw new UnsupportedOperationException("Function reference not yet implemented");
+    throw new UnsupportedOperationException(
+        "Function reference from WASM function not yet implemented - requires callback infrastructure");
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.CallbackRegistry getCallbackRegistry() {
-    // TODO: Implement callback registry
-    throw new UnsupportedOperationException("Callback registry not yet implemented");
+    // TODO: Implement callback registry - requires arena manager and error handler infrastructure
+    throw new UnsupportedOperationException(
+        "Callback registry not yet implemented - requires callback infrastructure");
   }
 
   @Override
