@@ -187,9 +187,25 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final PanamaStore panamaStore = (PanamaStore) store;
     final PanamaMemory panamaMemory = (PanamaMemory) memory;
 
-    // TODO: PanamaMemory needs to expose getNativeMemory() method before this can be implemented
-    throw new UnsupportedOperationException(
-        "Memory definition requires PanamaMemory.getNativeMemory() to be implemented");
+    // Allocate C strings for module name and memory name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    // Call native function to define memory
+    final int result =
+        NATIVE_BINDINGS.panamaLinkerDefineMemory(
+            nativeLinker,
+            panamaStore.getNativeStore(),
+            moduleNamePtr,
+            namePtr,
+            panamaMemory.getNativeMemory());
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to define memory: " + moduleName + "::" + name + " (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Defined memory: " + moduleName + "::" + name);
   }
 
   @Override
@@ -378,10 +394,17 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final PanamaStore panamaStore = (PanamaStore) store;
     final PanamaModule panamaModule = (PanamaModule) module;
 
-    // TODO: Linker-based instantiation needs native support that returns instance handle
-    // PanamaInstance constructor creates instance internally, but we need linker to do it
-    throw new UnsupportedOperationException(
-        "Linker instantiation requires native linker instantiate to be fully wired");
+    // Call native function to instantiate module using linker
+    final MemorySegment instancePtr =
+        NATIVE_BINDINGS.panamaLinkerInstantiate(
+            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to instantiate module via linker");
+    }
+
+    // Wrap the native instance pointer
+    return new PanamaInstance(instancePtr, panamaModule, panamaStore);
   }
 
   @Override
@@ -406,10 +429,19 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Module must be a PanamaModule");
     }
 
-    // TODO: Linker-based instantiation needs native support that returns instance handle
-    // PanamaInstance constructor creates instance internally, but we need linker to do it
-    throw new UnsupportedOperationException(
-        "Linker named instantiation requires native linker instantiate to be fully wired");
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    // Instantiate the module using the linker
+    final Instance instance = instantiate(store, module);
+
+    // Define the instance in the linker under the specified module name
+    // This allows other modules to import from this instance
+    defineInstance(moduleName, instance);
+
+    LOGGER.fine("Instantiated and registered module: " + moduleName);
+
+    return instance;
   }
 
   @Override
