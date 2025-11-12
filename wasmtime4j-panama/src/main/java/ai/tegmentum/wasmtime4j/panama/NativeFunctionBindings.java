@@ -239,6 +239,26 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Compiles a WebAssembly module from WAT (WebAssembly Text format).
+   *
+   * @param enginePtr pointer to the engine
+   * @param watText pointer to the WAT text string
+   * @param modulePtr pointer to store the compiled module
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleCompileWat(
+      final MemorySegment enginePtr,
+      final MemorySegment watText,
+      final MemorySegment modulePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(watText, "watText");
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_compile_wat", Integer.class, enginePtr, watText, modulePtr);
+  }
+
+  /**
    * Destroys a WebAssembly module.
    *
    * @param modulePtr pointer to the module to destroy

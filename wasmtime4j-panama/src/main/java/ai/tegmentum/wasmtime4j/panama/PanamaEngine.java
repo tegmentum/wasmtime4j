@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
 
 /**
@@ -94,14 +95,27 @@ public final class PanamaEngine implements Engine {
     }
     ensureNotClosed();
 
-    // TODO: Implement WAT compilation
-    // Options:
-    // 1. Use wabt-java library to convert WAT->WASM in Java
-    // 2. Add a native function to get serialized bytes from compiled module
-    // 3. Add a PanamaModule constructor that accepts native module pointer
-    // For now, throw UnsupportedOperationException
-    throw new UnsupportedOperationException(
-        "WAT compilation not yet implemented for Panama - use compileModule with WASM bytes");
+    // Allocate C string for WAT text
+    final MemorySegment watSegment = arena.allocateFrom(wat);
+
+    // Allocate pointer for output module
+    final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
+
+    // Call native function
+    final int result = NATIVE_BINDINGS.moduleCompileWat(nativeEngine, watSegment, modulePtr);
+
+    if (result != 0) {
+      throw new WasmException("Failed to compile WAT (error code: " + result + ")");
+    }
+
+    // Get the module pointer
+    final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
+
+    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Native WAT compilation returned null module pointer");
+    }
+
+    return new PanamaModule(this, nativeModulePtr);
   }
 
   @Override

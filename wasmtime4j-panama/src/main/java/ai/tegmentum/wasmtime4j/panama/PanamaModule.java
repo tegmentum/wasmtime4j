@@ -78,6 +78,34 @@ public final class PanamaModule implements Module {
     LOGGER.fine("Created Panama module");
   }
 
+  /**
+   * Creates a new PanamaModule from an existing native module pointer. Package-private constructor
+   * for use by PanamaEngine.compileWat().
+   *
+   * @param engine the engine to use
+   * @param nativeModulePtr the native module pointer
+   * @throws WasmException if module is invalid
+   */
+  PanamaModule(final PanamaEngine engine, final MemorySegment nativeModulePtr)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
+    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Native module pointer is null");
+    }
+
+    this.engine = engine;
+    this.wasmBytes = null; // WAT modules don't have original bytes
+    this.arena = Arena.ofShared();
+    this.nativeModule = nativeModulePtr;
+
+    LOGGER.fine("Created Panama module from native pointer");
+  }
+
   @Override
   public Instance instantiate(final Store store) throws WasmException {
     if (store == null) {
