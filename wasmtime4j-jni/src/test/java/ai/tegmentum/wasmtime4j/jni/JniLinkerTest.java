@@ -115,7 +115,7 @@ class JniLinkerTest {
 
   @Test
   void testDefineMemoryWithNullStore() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniMemory memory = new JniMemory(VALID_HANDLE, testStore);
 
     final IllegalArgumentException exception =
         assertThrows(
@@ -127,7 +127,7 @@ class JniLinkerTest {
 
   @Test
   void testDefineMemoryWithNullModuleName() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniMemory memory = new JniMemory(VALID_HANDLE, testStore);
 
     final IllegalArgumentException exception =
         assertThrows(

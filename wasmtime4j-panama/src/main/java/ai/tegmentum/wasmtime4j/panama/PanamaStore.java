@@ -441,7 +441,8 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
     // TODO: Implement function reference creation from host function
     throw new UnsupportedOperationException(
-        "Function reference from host function not yet implemented - requires callback infrastructure");
+        "Function reference from host function not yet implemented - requires callback"
+            + " infrastructure");
   }
 
   @Override
@@ -450,7 +451,8 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
     // TODO: Implement function reference creation from WASM function
     throw new UnsupportedOperationException(
-        "Function reference from WASM function not yet implemented - requires callback infrastructure");
+        "Function reference from WASM function not yet implemented - requires callback"
+            + " infrastructure");
   }
 
   @Override

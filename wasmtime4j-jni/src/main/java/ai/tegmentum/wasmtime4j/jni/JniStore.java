@@ -604,7 +604,7 @@ public final class JniStore extends JniResource implements Store {
         throw new JniException("Native memory creation returned null handle");
       }
 
-      final JniMemory memory = new JniMemory(memoryHandle);
+      final JniMemory memory = new JniMemory(memoryHandle, this);
       LOGGER.fine(
           "Created memory with initial="
               + initialPages

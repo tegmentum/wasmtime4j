@@ -247,9 +247,7 @@ public final class NativeFunctionBindings {
    * @return 0 on success, negative error code on failure
    */
   public int moduleCompileWat(
-      final MemorySegment enginePtr,
-      final MemorySegment watText,
-      final MemorySegment modulePtr) {
+      final MemorySegment enginePtr, final MemorySegment watText, final MemorySegment modulePtr) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(watText, "watText");
     validatePointer(modulePtr, "modulePtr");
@@ -267,9 +265,7 @@ public final class NativeFunctionBindings {
    * @return 0 on success, non-zero on error
    */
   public int moduleSerialize(
-      final MemorySegment modulePtr,
-      final MemorySegment dataPtrPtr,
-      final MemorySegment lenPtr) {
+      final MemorySegment modulePtr, final MemorySegment dataPtrPtr, final MemorySegment lenPtr) {
     validatePointer(modulePtr, "modulePtr");
     validatePointer(dataPtrPtr, "dataPtrPtr");
     validatePointer(lenPtr, "lenPtr");
@@ -319,9 +315,9 @@ public final class NativeFunctionBindings {
         "wasmtime4j_panama_data_drop", Integer.class, instancePtr, dataSegmentIndex);
   }
 
-  //====================================================================================
+  // ====================================================================================
   // Atomic Memory Operations
-  //====================================================================================
+  // ====================================================================================
 
   /**
    * Atomic compare-and-swap on 32-bit value.

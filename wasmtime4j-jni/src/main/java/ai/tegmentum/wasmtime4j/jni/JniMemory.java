@@ -34,6 +34,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   // Memory64 instruction support
   private final Memory64InstructionHandler instructionHandler = new Memory64InstructionHandler();
 
+  // Store reference for atomic operations
+  private final JniStore store;
+
   // Load native library when this class is first loaded
   static {
     try {
@@ -48,10 +51,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * Creates a new JNI memory with the given native handle.
    *
    * @param nativeHandle the native memory handle
+   * @param store the store this memory belongs to
    * @throws JniResourceException if nativeHandle is invalid
    */
-  JniMemory(final long nativeHandle) {
+  JniMemory(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
+    this.store = store;
     LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -131,6 +136,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public byte readByte(final long offset) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, 1);
 
     try {
@@ -159,6 +167,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void writeByte(final long offset, final byte value) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, 1);
 
     try {
@@ -189,6 +200,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNull(buffer, "buffer");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, buffer.length);
 
     try {
@@ -242,6 +256,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(offset, "offset");
     JniValidation.requireNonNull(buffer, "buffer");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, buffer.length);
 
     try {
@@ -386,6 +403,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public int readInt(final int offset) {
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, 4);
 
     try {
@@ -415,6 +435,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public void writeInt(final int offset, final int value) {
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset(offset, 4);
 
     try {
@@ -707,7 +730,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public boolean isShared() {
     ensureNotClosed();
     try {
-      return nativeIsShared(getNativeHandle());
+      return nativeIsShared(getNativeHandle(), store.getNativeHandle());
     } catch (final Exception e) {
       return false; // Default to non-shared if query fails
     }
@@ -716,12 +739,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicCompareAndSwapInt(getNativeHandle(), offset, expected, newValue);
+      return nativeAtomicCompareAndSwapInt(
+          getNativeHandle(), store.getNativeHandle(), offset, expected, newValue);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -732,12 +759,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public long atomicCompareAndSwapLong(final int offset, final long expected, final long newValue) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 8);
     validateOffset(offset, 8);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicCompareAndSwapLong(getNativeHandle(), offset, expected, newValue);
+      return nativeAtomicCompareAndSwapLong(
+          getNativeHandle(), store.getNativeHandle(), offset, expected, newValue);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -748,12 +779,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicLoadInt(final int offset) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicLoadInt(getNativeHandle(), offset);
+      return nativeAtomicLoadInt(getNativeHandle(), store.getNativeHandle(), offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -764,12 +798,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public long atomicLoadLong(final int offset) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 8);
     validateOffset(offset, 8);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicLoadLong(getNativeHandle(), offset);
+      return nativeAtomicLoadLong(getNativeHandle(), store.getNativeHandle(), offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -780,12 +817,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void atomicStoreInt(final int offset, final int value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      nativeAtomicStoreInt(getNativeHandle(), offset, value);
+      nativeAtomicStoreInt(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -796,12 +836,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void atomicStoreLong(final int offset, final long value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 8);
     validateOffset(offset, 8);
+    checkSharedMemory();
 
     try {
-      nativeAtomicStoreLong(getNativeHandle(), offset, value);
+      nativeAtomicStoreLong(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -812,12 +855,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicAddInt(final int offset, final int value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicAddInt(getNativeHandle(), offset, value);
+      return nativeAtomicAddInt(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -828,12 +874,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public long atomicAddLong(final int offset, final long value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 8);
     validateOffset(offset, 8);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicAddLong(getNativeHandle(), offset, value);
+      return nativeAtomicAddLong(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -844,12 +893,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicAndInt(final int offset, final int value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicAndInt(getNativeHandle(), offset, value);
+      return nativeAtomicAndInt(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -860,12 +912,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicOrInt(final int offset, final int value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicOrInt(getNativeHandle(), offset, value);
+      return nativeAtomicOrInt(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -876,12 +931,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicXorInt(final int offset, final int value) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicXorInt(getNativeHandle(), offset, value);
+      return nativeAtomicXorInt(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -895,7 +953,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     checkSharedMemory();
 
     try {
-      nativeAtomicFence(getNativeHandle());
+      nativeAtomicFence(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -906,13 +964,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicNotify(final int offset, final int count) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
     JniValidation.requireNonNegative(count, "count");
+    checkSharedMemory();
 
     try {
-      return nativeAtomicNotify(getNativeHandle(), offset, count);
+      return nativeAtomicNotify(getNativeHandle(), store.getNativeHandle(), offset, count);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -923,12 +984,19 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicWait32(final int offset, final int expected, final long timeoutNanos) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
+    if (timeoutNanos < -1) {
+      throw new IllegalArgumentException("Timeout must be non-negative or -1");
+    }
     checkAligned(offset, 4);
     validateOffset(offset, 4);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicWait32(getNativeHandle(), offset, expected, timeoutNanos);
+      return nativeAtomicWait32(
+          getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -939,12 +1007,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public int atomicWait64(final int offset, final long expected, final long timeoutNanos) {
     ensureNotClosed();
-    checkSharedMemory();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     checkAligned(offset, 8);
     validateOffset(offset, 8);
+    checkSharedMemory();
 
     try {
-      return nativeAtomicWait64(getNativeHandle(), offset, expected, timeoutNanos);
+      return nativeAtomicWait64(
+          getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -955,11 +1027,11 @@ public final class JniMemory extends JniResource implements WasmMemory {
   /**
    * Checks if this memory is shared, throwing an exception if not.
    *
-   * @throws IllegalStateException if this memory is not shared
+   * @throws UnsupportedOperationException if this memory is not shared
    */
   private void checkSharedMemory() {
     if (!isShared()) {
-      throw new IllegalStateException("Operation requires shared memory");
+      throw new UnsupportedOperationException("Operation requires shared memory");
     }
   }
 
@@ -983,9 +1055,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * Checks if memory is shared.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @return true if memory is shared
    */
-  private static native boolean nativeIsShared(long memoryHandle);
+  private static native boolean nativeIsShared(long memoryHandle, long storeHandle);
 
   /**
    * Performs atomic compare-and-swap on a 32-bit value.
@@ -997,7 +1070,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @return the original value
    */
   private static native int nativeAtomicCompareAndSwapInt(
-      long memoryHandle, int offset, int expected, int newValue);
+      long memoryHandle, long storeHandle, int offset, int expected, int newValue);
 
   /**
    * Performs atomic compare-and-swap on a 64-bit value.
@@ -1009,7 +1082,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @return the original value
    */
   private static native long nativeAtomicCompareAndSwapLong(
-      long memoryHandle, int offset, long expected, long newValue);
+      long memoryHandle, long storeHandle, int offset, long expected, long newValue);
 
   /**
    * Performs atomic load on a 32-bit value.
@@ -1018,7 +1091,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param offset the byte offset
    * @return the loaded value
    */
-  private static native int nativeAtomicLoadInt(long memoryHandle, int offset);
+  private static native int nativeAtomicLoadInt(long memoryHandle, long storeHandle, int offset);
 
   /**
    * Performs atomic load on a 64-bit value.
@@ -1027,7 +1100,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param offset the byte offset
    * @return the loaded value
    */
-  private static native long nativeAtomicLoadLong(long memoryHandle, int offset);
+  private static native long nativeAtomicLoadLong(long memoryHandle, long storeHandle, int offset);
 
   /**
    * Performs atomic store on a 32-bit value.
@@ -1036,7 +1109,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param offset the byte offset
    * @param value the value to store
    */
-  private static native void nativeAtomicStoreInt(long memoryHandle, int offset, int value);
+  private static native void nativeAtomicStoreInt(
+      long memoryHandle, long storeHandle, int offset, int value);
 
   /**
    * Performs atomic store on a 64-bit value.
@@ -1045,7 +1119,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param offset the byte offset
    * @param value the value to store
    */
-  private static native void nativeAtomicStoreLong(long memoryHandle, int offset, long value);
+  private static native void nativeAtomicStoreLong(
+      long memoryHandle, long storeHandle, int offset, long value);
 
   /**
    * Performs atomic add on a 32-bit value.
@@ -1055,7 +1130,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param value the value to add
    * @return the original value
    */
-  private static native int nativeAtomicAddInt(long memoryHandle, int offset, int value);
+  private static native int nativeAtomicAddInt(
+      long memoryHandle, long storeHandle, int offset, int value);
 
   /**
    * Performs atomic add on a 64-bit value.
@@ -1065,7 +1141,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param value the value to add
    * @return the original value
    */
-  private static native long nativeAtomicAddLong(long memoryHandle, int offset, long value);
+  private static native long nativeAtomicAddLong(
+      long memoryHandle, long storeHandle, int offset, long value);
 
   /**
    * Performs atomic AND on a 32-bit value.
@@ -1075,7 +1152,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param value the value to AND with
    * @return the original value
    */
-  private static native int nativeAtomicAndInt(long memoryHandle, int offset, int value);
+  private static native int nativeAtomicAndInt(
+      long memoryHandle, long storeHandle, int offset, int value);
 
   /**
    * Performs atomic OR on a 32-bit value.
@@ -1085,7 +1163,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param value the value to OR with
    * @return the original value
    */
-  private static native int nativeAtomicOrInt(long memoryHandle, int offset, int value);
+  private static native int nativeAtomicOrInt(
+      long memoryHandle, long storeHandle, int offset, int value);
 
   /**
    * Performs atomic XOR on a 32-bit value.
@@ -1095,14 +1174,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param value the value to XOR with
    * @return the original value
    */
-  private static native int nativeAtomicXorInt(long memoryHandle, int offset, int value);
+  private static native int nativeAtomicXorInt(
+      long memoryHandle, long storeHandle, int offset, int value);
 
   /**
    * Performs atomic memory fence.
    *
    * @param memoryHandle the native memory handle
    */
-  private static native void nativeAtomicFence(long memoryHandle);
+  private static native void nativeAtomicFence(long memoryHandle, long storeHandle);
 
   /**
    * Notifies threads waiting on a memory location.
@@ -1112,7 +1192,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param count the number of threads to notify
    * @return the number of threads notified
    */
-  private static native int nativeAtomicNotify(long memoryHandle, int offset, int count);
+  private static native int nativeAtomicNotify(
+      long memoryHandle, long storeHandle, int offset, int count);
 
   /**
    * Waits for notification on a 32-bit memory location.
@@ -1124,19 +1205,20 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @return wait result (0=notified, 1=mismatch, 2=timeout)
    */
   private static native int nativeAtomicWait32(
-      long memoryHandle, int offset, int expected, long timeoutNanos);
+      long memoryHandle, long storeHandle, int offset, int expected, long timeoutNanos);
 
   /**
    * Waits for notification on a 64-bit memory location.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param offset the byte offset
    * @param expected the expected value
    * @param timeoutNanos the timeout in nanoseconds
    * @return wait result (0=notified, 1=mismatch, 2=timeout)
    */
   private static native int nativeAtomicWait64(
-      long memoryHandle, int offset, long expected, long timeoutNanos);
+      long memoryHandle, long storeHandle, int offset, long expected, long timeoutNanos);
 
   // 64-bit Memory Operations Implementation
 
@@ -1173,6 +1255,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public byte readByte64(final long offset) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset64(offset, 1);
 
     try {
@@ -1188,6 +1273,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void writeByte64(final long offset, final byte value) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
     validateOffset64(offset, 1);
 
     try {

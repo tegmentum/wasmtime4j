@@ -10027,6 +10027,642 @@ pub mod jni_simd {
         })
     }
 
+    // ==================== Atomic Memory Operations ====================
+
+    /// Check if memory is shared (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeIsShared(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let is_shared = crate::memory::core::memory_is_shared(memory, store)?;
+            Ok(if is_shared { 1 } else { 0 })
+        })
+    }
+
+    /// Atomic compare-and-swap on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicCompareAndSwapInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        expected: jint,
+        new_value: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_compare_and_swap_i32(
+                memory,
+                store,
+                offset as usize,
+                expected,
+                new_value,
+            )?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic compare-and-swap on 64-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicCompareAndSwapLong(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        expected: jlong,
+        new_value: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_compare_and_swap_i64(
+                memory,
+                store,
+                offset as usize,
+                expected,
+                new_value,
+            )?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic load of 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicLoadInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_load_i32(memory, store, offset as usize)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic load of 64-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicLoadLong(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+    ) -> jlong {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_load_i64(memory, store, offset as usize)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic store of 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicStoreInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jint,
+    ) {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            crate::memory::core::atomic_store_i32(memory, store, offset as usize, value)?;
+
+            Ok(())
+        });
+    }
+
+    /// Atomic store of 64-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicStoreLong(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jlong,
+    ) {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            crate::memory::core::atomic_store_i64(memory, store, offset as usize, value)?;
+
+            Ok(())
+        });
+    }
+
+    /// Atomic add on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAddInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_add_i32(memory, store, offset as usize, value)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic add on 64-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAddLong(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_add_i64(memory, store, offset as usize, value)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic bitwise AND on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAndInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_and_i32(memory, store, offset as usize, value)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic bitwise OR on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicOrInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_or_i32(memory, store, offset as usize, value)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic bitwise XOR on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXorInt(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        value: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_xor_i32(memory, store, offset as usize, value)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic memory fence (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicFence(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+    ) {
+        jni_utils::jni_try_code(&mut env, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            crate::memory::core::atomic_fence(memory, store)?;
+
+            Ok(())
+        });
+    }
+
+    /// Atomic notify (wake threads waiting on a memory location) (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicNotify(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        count: jint,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+            if count < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid count: {}", count),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_notify(memory, store, offset as usize, count)?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic wait on 32-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicWait32(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        expected: jint,
+        timeout_nanos: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+            if timeout_nanos < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid timeout: {}", timeout_nanos),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_wait32(
+                memory,
+                store,
+                offset as usize,
+                expected,
+                timeout_nanos,
+            )?;
+
+            Ok(result)
+        })
+    }
+
+    /// Atomic wait on 64-bit value (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicWait64(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+        store_ptr: jlong,
+        offset: jint,
+        expected: jlong,
+        timeout_nanos: jlong,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            if memory_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+            if store_ptr == 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null".to_string(),
+                });
+            }
+            if offset < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid offset: {}", offset),
+                });
+            }
+            if timeout_nanos < 0 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid timeout: {}", timeout_nanos),
+                });
+            }
+
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *mut c_void)? };
+
+            let result = crate::memory::core::atomic_wait64(
+                memory,
+                store,
+                offset as usize,
+                expected,
+                timeout_nanos,
+            )?;
+
+            Ok(result)
+        })
+    }
+
     /// Copy elements within a table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopy(

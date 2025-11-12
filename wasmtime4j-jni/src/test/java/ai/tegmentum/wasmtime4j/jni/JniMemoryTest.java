@@ -20,10 +20,23 @@ import org.junit.jupiter.api.Test;
 class JniMemoryTest {
 
   private static final long VALID_HANDLE = 0xABCDEF12L;
+  private static final long VALID_STORE_HANDLE = 0x12345678L;
+
+  /**
+   * Creates a mock JniStore for unit tests. Note: This creates a store with fake handles that won't
+   * work with actual native calls. Real integration tests use actual Engine and Store instances.
+   */
+  private static JniStore createMockStore() {
+    // Create mock engine first
+    final JniEngine mockEngine = new JniEngine(VALID_STORE_HANDLE);
+    // Create store with mock engine
+    return new JniStore(VALID_STORE_HANDLE, mockEngine);
+  }
 
   @Test
   void testConstructorWithValidHandle() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     assertThat(memory.getResourceType()).isEqualTo("Memory");
     assertFalse(memory.isClosed());
@@ -32,8 +45,9 @@ class JniMemoryTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
+    final JniStore mockStore = createMockStore();
     final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniMemory(0L));
+        assertThrows(JniValidationException.class, () -> new JniMemory(0L, mockStore));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -41,7 +55,8 @@ class JniMemoryTest {
 
   @Test
   void testResourceManagement() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     assertFalse(memory.isClosed());
 
     // Note: This test only verifies the initial state since close() requires native methods
@@ -50,7 +65,8 @@ class JniMemoryTest {
 
   @Test
   void testGrowWithNegativePagesLong() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.grow(-1L));
@@ -62,7 +78,8 @@ class JniMemoryTest {
 
   @Test
   void testGrowWithNegativePagesInt() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.grow(-1));
@@ -74,7 +91,8 @@ class JniMemoryTest {
 
   @Test
   void testReadByteWithNegativeOffsetLong() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.readByte(-1L));
@@ -86,7 +104,8 @@ class JniMemoryTest {
 
   @Test
   void testReadByteWithNegativeOffsetInt() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.readByte(-1));
@@ -98,7 +117,8 @@ class JniMemoryTest {
 
   @Test
   void testWriteByteWithNegativeOffsetLong() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.writeByte(-1L, (byte) 0));
@@ -110,7 +130,8 @@ class JniMemoryTest {
 
   @Test
   void testWriteByteWithNegativeOffsetInt() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.writeByte(-1, (byte) 0));
@@ -122,7 +143,8 @@ class JniMemoryTest {
 
   @Test
   void testReadBytesWithNullBuffer() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.readBytes(0L, null));
@@ -134,7 +156,8 @@ class JniMemoryTest {
 
   @Test
   void testReadBytesWithNegativeOffset() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     final byte[] buffer = new byte[10];
 
     final JniValidationException exception =
@@ -147,7 +170,8 @@ class JniMemoryTest {
 
   @Test
   void testWriteBytesWithNullBuffer() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.writeBytes(0L, null));
@@ -159,7 +183,8 @@ class JniMemoryTest {
 
   @Test
   void testWriteBytesWithNegativeOffset() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     final byte[] buffer = new byte[10];
 
     final JniValidationException exception =
@@ -172,7 +197,8 @@ class JniMemoryTest {
 
   @Test
   void testReadBytesWithDestinationNullCheck() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.readBytes(0, null, 0, 10));
@@ -184,7 +210,8 @@ class JniMemoryTest {
 
   @Test
   void testWriteBytesWithSourceNullCheck() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> memory.writeBytes(0, null, 0, 10));
@@ -200,7 +227,8 @@ class JniMemoryTest {
     // Since close() requires native methods, this is covered in integration tests
     // This unit test verifies parameter validation only
 
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     assertFalse(memory.isClosed());
 
     // Test that operations work on open memory (would call native methods in real implementation)
@@ -209,7 +237,8 @@ class JniMemoryTest {
 
   @Test
   void testToString() {
-    final JniMemory memory = new JniMemory(VALID_HANDLE);
+    final JniStore mockStore = createMockStore();
+    final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     final String toString = memory.toString();
 
     assertThat(toString).contains("Memory");

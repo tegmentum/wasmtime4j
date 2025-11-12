@@ -304,7 +304,8 @@ public final class PanamaMemory implements WasmMemory {
     ensureNotClosed();
 
     // Data segments are dropped automatically by the runtime
-    // This is a no-op matching pattern from PanamaTable as Wasmtime manages data segments internally
+    // This is a no-op matching pattern from PanamaTable as Wasmtime manages data segments
+    // internally
     LOGGER.fine("Dropped data segment: " + dataSegmentIndex);
   }
 
@@ -434,8 +435,7 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut);
+    final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
       throw new RuntimeException("Atomic load i32 failed with error code: " + errorCode);
@@ -460,8 +460,7 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut);
+    final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
       throw new RuntimeException("Atomic load i64 failed with error code: " + errorCode);
@@ -485,8 +484,7 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalStateException("Memory pointer is null");
     }
 
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value);
+    final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
       throw new RuntimeException("Atomic store i32 failed with error code: " + errorCode);
@@ -508,8 +506,7 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalStateException("Memory pointer is null");
     }
 
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value);
+    final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
       throw new RuntimeException("Atomic store i64 failed with error code: " + errorCode);
