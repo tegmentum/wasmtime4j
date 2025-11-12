@@ -1184,8 +1184,6 @@ pub mod jni_function {
     /// This allows for efficient type introspection without requiring a store context
     #[derive(Debug)]
     pub struct FunctionHandle {
-        /// The actual Wasmtime function
-        pub func: Func,
         /// Function name for debugging
         pub name: String,
         /// Cached parameter type strings (Store-independent)
@@ -1198,6 +1196,7 @@ pub mod jni_function {
         /// Create a new function handle with type information cached as strings
         ///
         /// IMPORTANT: Caches type info as strings at creation time, avoiding Store-bound FuncType
+        /// The Func parameter is only used for extracting type information and is not stored
         pub fn new(func: Func, name: String, store: &mut Store) -> Self {
             let store_guard = store.inner.lock();
             let func_type = func.ty(&*store_guard);
@@ -1206,7 +1205,6 @@ pub mod jni_function {
             let return_types = func_type.results().map(|vt| valtype_to_string(&vt)).collect();
 
             Self {
-                func,
                 name,
                 param_types,
                 return_types,
