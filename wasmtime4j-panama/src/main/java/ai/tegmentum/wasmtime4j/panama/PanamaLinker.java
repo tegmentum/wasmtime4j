@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.ImportInfo;
+import ai.tegmentum.wasmtime4j.ImportIssue;
 import ai.tegmentum.wasmtime4j.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstantiationPlan;
@@ -13,6 +14,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -20,9 +22,12 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -606,12 +611,102 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public ImportValidation validateImports(final Module... modules) {
-    if (modules == null || modules.length == 0) {
-      throw new IllegalArgumentException("Modules cannot be null or empty");
+    if (modules == null) {
+      throw new IllegalArgumentException("Modules cannot be null");
+    }
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("At least one module must be provided");
     }
     ensureNotClosed();
-    // TODO: Implement import validation
-    throw new UnsupportedOperationException("Import validation not yet implemented");
+
+    final long startTime = System.nanoTime();
+
+    final List<ImportIssue> issues = new ArrayList<>();
+    final List<ImportInfo> validatedImports = new ArrayList<>();
+
+    int totalImports = 0;
+    int validImports = 0;
+
+    // Validate each module's imports
+    for (final Module module : modules) {
+      final List<ai.tegmentum.wasmtime4j.ImportType> moduleImports = module.getImports();
+      totalImports += moduleImports.size();
+
+      for (final ai.tegmentum.wasmtime4j.ImportType importType : moduleImports) {
+        final String moduleName = importType.getModuleName();
+        final String importName = importType.getName();
+
+        // Check if import is defined in linker
+        final boolean isDefined = hasImport(moduleName, importName);
+
+        if (isDefined) {
+          validImports++;
+
+          // Create ImportInfo for valid import
+          final ImportInfo.ImportType infoType = mapImportTypeToInfoType(importType);
+          final Optional<String> typeSignature = Optional.of(importType.getType().toString());
+
+          final ImportInfo info =
+              new ImportInfo(
+                  moduleName,
+                  importName,
+                  infoType,
+                  typeSignature,
+                  java.time.Instant.now(),
+                  true, // All imports in linker are host functions in this simplified
+                  // implementation
+                  Optional.of("Defined in linker"));
+
+          validatedImports.add(info);
+        } else {
+          // Create ImportIssue for missing import
+          final ImportIssue issue =
+              new ImportIssue(
+                  ImportIssue.Severity.ERROR,
+                  ImportIssue.Type.MISSING_IMPORT,
+                  moduleName,
+                  importName,
+                  "Import not defined in linker",
+                  importType.getType().toString(),
+                  null);
+
+          issues.add(issue);
+        }
+      }
+    }
+
+    final long endTime = System.nanoTime();
+    final Duration validationTime = Duration.ofNanos(endTime - startTime);
+
+    final boolean valid = issues.isEmpty();
+
+    return new ImportValidation(
+        valid, issues, validatedImports, totalImports, validImports, validationTime);
+  }
+
+  /**
+   * Maps ImportType to ImportInfo.ImportType.
+   *
+   * @param importType the import type from module
+   * @return the corresponding ImportInfo.ImportType
+   */
+  private ImportInfo.ImportType mapImportTypeToInfoType(
+      final ai.tegmentum.wasmtime4j.ImportType importType) {
+    final WasmTypeKind kind = importType.getType().getKind();
+
+    switch (kind) {
+      case FUNCTION:
+        return ImportInfo.ImportType.FUNCTION;
+      case MEMORY:
+        return ImportInfo.ImportType.MEMORY;
+      case TABLE:
+        return ImportInfo.ImportType.TABLE;
+      case GLOBAL:
+        return ImportInfo.ImportType.GLOBAL;
+      default:
+        // Default to FUNCTION if we can't determine
+        return ImportInfo.ImportType.FUNCTION;
+    }
   }
 
   @Override

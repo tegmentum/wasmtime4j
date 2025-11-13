@@ -391,8 +391,104 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public ai.tegmentum.wasmtime4j.ImportValidation validateImports(final Module... modules) {
-    // TODO: Implement import validation
-    throw new UnsupportedOperationException("Import validation not yet implemented");
+    if (modules == null) {
+      throw new IllegalArgumentException("Modules cannot be null");
+    }
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("At least one module must be provided");
+    }
+
+    final long startTime = System.nanoTime();
+
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports =
+        new java.util.ArrayList<>();
+
+    int totalImports = 0;
+    int validImports = 0;
+
+    // Validate each module's imports
+    for (final Module module : modules) {
+      final java.util.List<ai.tegmentum.wasmtime4j.ImportType> moduleImports = module.getImports();
+      totalImports += moduleImports.size();
+
+      for (final ai.tegmentum.wasmtime4j.ImportType importType : moduleImports) {
+        final String moduleName = importType.getModuleName();
+        final String importName = importType.getName();
+
+        // Check if import is defined in linker
+        final boolean isDefined = hasImport(moduleName, importName);
+
+        if (isDefined) {
+          validImports++;
+
+          // Create ImportInfo for valid import
+          final ai.tegmentum.wasmtime4j.ImportInfo.ImportType infoType =
+              mapImportTypeToInfoType(importType);
+          final java.util.Optional<String> typeSignature =
+              java.util.Optional.of(importType.getType().toString());
+
+          final ai.tegmentum.wasmtime4j.ImportInfo info =
+              new ai.tegmentum.wasmtime4j.ImportInfo(
+                  moduleName,
+                  importName,
+                  infoType,
+                  typeSignature,
+                  java.time.Instant.now(),
+                  true, // All imports in linker are host functions in this simplified
+                  // implementation
+                  java.util.Optional.of("Defined in linker"));
+
+          validatedImports.add(info);
+        } else {
+          // Create ImportIssue for missing import
+          final ai.tegmentum.wasmtime4j.ImportIssue issue =
+              new ai.tegmentum.wasmtime4j.ImportIssue(
+                  ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
+                  ai.tegmentum.wasmtime4j.ImportIssue.Type.MISSING_IMPORT,
+                  moduleName,
+                  importName,
+                  "Import not defined in linker",
+                  importType.getType().toString(),
+                  null);
+
+          issues.add(issue);
+        }
+      }
+    }
+
+    final long endTime = System.nanoTime();
+    final java.time.Duration validationTime = java.time.Duration.ofNanos(endTime - startTime);
+
+    final boolean valid = issues.isEmpty();
+
+    return new ai.tegmentum.wasmtime4j.ImportValidation(
+        valid, issues, validatedImports, totalImports, validImports, validationTime);
+  }
+
+  /**
+   * Maps ImportType to ImportInfo.ImportType.
+   *
+   * @param importType the import type from module
+   * @return the corresponding ImportInfo.ImportType
+   */
+  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType mapImportTypeToInfoType(
+      final ai.tegmentum.wasmtime4j.ImportType importType) {
+    final ai.tegmentum.wasmtime4j.WasmTypeKind kind = importType.getType().getKind();
+
+    switch (kind) {
+      case FUNCTION:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+      case MEMORY:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+      case TABLE:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+      case GLOBAL:
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+      default:
+        // Default to FUNCTION if we can't determine
+        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+    }
   }
 
   @Override
