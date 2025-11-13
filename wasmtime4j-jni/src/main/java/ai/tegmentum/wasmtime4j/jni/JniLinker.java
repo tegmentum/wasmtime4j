@@ -395,6 +395,7 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
+    ensureNotClosed();
     return new java.util.ArrayList<>(importRegistry.values());
   }
 
@@ -772,6 +773,7 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
+    ensureNotClosed();
     return imports.contains(moduleName + "::" + name);
   }
 
