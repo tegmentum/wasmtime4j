@@ -30,7 +30,7 @@ class LinkerAdvancedResolutionTest {
   @BeforeEach
   void setUp() throws WasmException {
     engine = Engine.create();
-    store = Store.create(engine, null);
+    store = Store.create(engine);
     linker = Linker.create(engine);
   }
 
@@ -62,11 +62,11 @@ class LinkerAdvancedResolutionTest {
     @DisplayName("hasImport should return true after defining host function")
     void testHasImportReturnsTrueAfterDefiningHostFunction() throws WasmException {
       final FunctionType funcType =
-          FunctionType.create(
+          new FunctionType(
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
               new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction hostFunc = (caller, params) -> new WasmValue[] {WasmValue.i32(42)};
+      final HostFunction hostFunc = (params) -> new WasmValue[] {WasmValue.i32(42)};
 
       linker.defineHostFunction("env", "test_function", funcType, hostFunc);
 
@@ -221,10 +221,10 @@ class LinkerAdvancedResolutionTest {
     @DisplayName("getImportRegistry should include defined host functions")
     void testGetImportRegistryIncludesHostFunctions() throws WasmException {
       final FunctionType funcType =
-          FunctionType.create(
+          new FunctionType(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction hostFunc = (caller, params) -> new WasmValue[] {WasmValue.i32(42)};
+      final HostFunction hostFunc = (params) -> new WasmValue[] {WasmValue.i32(42)};
 
       linker.defineHostFunction("env", "test_function", funcType, hostFunc);
 
