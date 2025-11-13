@@ -407,6 +407,7 @@ public class JniLinker<T> implements Linker<T> {
     if (modules.length == 0) {
       throw new IllegalArgumentException("At least one module must be provided");
     }
+    ensureNotClosed();
 
     final long startTime = System.nanoTime();
 
@@ -510,6 +511,7 @@ public class JniLinker<T> implements Linker<T> {
     if (modules.length == 0) {
       throw new IllegalArgumentException("At least one module must be provided");
     }
+    ensureNotClosed();
 
     final long startTime = System.nanoTime();
 
@@ -924,6 +926,7 @@ public class JniLinker<T> implements Linker<T> {
     if (modules.length == 0) {
       throw new IllegalArgumentException("At least one module must be provided");
     }
+    ensureNotClosed();
 
     final long startTime = System.nanoTime();
 

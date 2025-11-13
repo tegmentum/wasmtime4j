@@ -528,6 +528,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (modules.length == 0) {
       throw new IllegalArgumentException("At least one module must be provided");
     }
+    ensureNotClosed();
 
     final long startTime = System.nanoTime();
 
@@ -730,6 +731,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (modules.length == 0) {
       throw new IllegalArgumentException("At least one module must be provided");
     }
+    ensureNotClosed();
 
     final long startTime = System.nanoTime();
 
