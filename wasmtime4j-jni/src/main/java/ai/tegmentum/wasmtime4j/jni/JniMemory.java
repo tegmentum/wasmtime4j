@@ -136,9 +136,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public byte readByte(final long offset) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset(offset, 1);
 
     try {
@@ -167,9 +164,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void writeByte(final long offset, final byte value) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset(offset, 1);
 
     try {
@@ -1255,9 +1249,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public byte readByte64(final long offset) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset64(offset, 1);
 
     try {
@@ -1273,9 +1264,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void writeByte64(final long offset, final byte value) {
     JniValidation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset64(offset, 1);
 
     try {
