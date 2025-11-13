@@ -510,12 +510,98 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public DependencyResolution resolveDependencies(final Module... modules) throws WasmException {
-    if (modules == null || modules.length == 0) {
-      throw new IllegalArgumentException("Modules cannot be null or empty");
+    if (modules == null) {
+      throw new IllegalArgumentException("Modules cannot be null");
     }
-    ensureNotClosed();
-    // TODO: Implement dependency resolution
-    throw new UnsupportedOperationException("Dependency resolution not yet implemented");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("At least one module must be provided");
+    }
+
+    final long startTime = System.nanoTime();
+
+    try {
+      // Step 1: Build maps of imports and exports
+      final java.util.Map<String, Module> exportProviders = new java.util.HashMap<>();
+      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>>
+          moduleImports = new java.util.HashMap<>();
+      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
+          new java.util.ArrayList<>();
+
+      // Collect exports from all modules
+      // Note: Exports don't have module names - they're provided by the module itself
+      // We map export names to the providing module
+      for (final Module module : modules) {
+        final java.util.List<ai.tegmentum.wasmtime4j.ExportType> exports = module.getExports();
+        for (final ai.tegmentum.wasmtime4j.ExportType export : exports) {
+          // Just use the export name as the key
+          exportProviders.put(export.getName(), module);
+        }
+      }
+
+      // Analyze imports for each module
+      int resolvedCount = 0;
+      for (final Module module : modules) {
+        final java.util.List<ai.tegmentum.wasmtime4j.ImportType> imports = module.getImports();
+        moduleImports.put(module, imports);
+
+        for (final ai.tegmentum.wasmtime4j.ImportType importType : imports) {
+          // Import has both a module name (like "env") and a field name (like "memory")
+          // We need to check if the linker or another module provides this
+          final boolean resolvedByLinker =
+              hasImport(importType.getModuleName(), importType.getName());
+          final Module provider = exportProviders.get(importType.getName());
+          final boolean resolvedByModule = provider != null;
+          final boolean resolved = resolvedByLinker || resolvedByModule;
+
+          if (resolved) {
+            resolvedCount++;
+          }
+
+          // Create dependency edge
+          if (resolvedByModule) {
+            final ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType depType =
+                mapImportTypeToDependencyType(importType);
+            dependencies.add(
+                new ai.tegmentum.wasmtime4j.DependencyEdge(
+                    module,
+                    provider,
+                    importType.getModuleName(),
+                    importType.getName(),
+                    depType,
+                    true));
+          }
+        }
+      }
+
+      // Step 2: Detect circular dependencies
+      final CircularDependencyResult circularResult = detectCircularDependencies(dependencies);
+
+      // Step 3: Perform topological sort for instantiation order
+      final java.util.List<Module> instantiationOrder =
+          circularResult.hasCircular
+              ? new java.util.ArrayList<>()
+              : topologicalSort(modules, dependencies);
+
+      // Step 4: Build result
+      final long endTime = System.nanoTime();
+      final java.time.Duration analysisTime = java.time.Duration.ofNanos(endTime - startTime);
+
+      final boolean successful =
+          !circularResult.hasCircular && resolvedCount == countTotalImports(moduleImports);
+
+      return new ai.tegmentum.wasmtime4j.DependencyResolution(
+          instantiationOrder,
+          dependencies,
+          circularResult.hasCircular,
+          circularResult.chains,
+          modules.length,
+          resolvedCount,
+          analysisTime,
+          successful);
+
+    } catch (final Exception e) {
+      throw new WasmException("Failed to resolve dependencies: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -537,12 +623,251 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public InstantiationPlan createInstantiationPlan(final Module... modules) throws WasmException {
-    if (modules == null || modules.length == 0) {
-      throw new IllegalArgumentException("Modules cannot be null or empty");
+    if (modules == null) {
+      throw new IllegalArgumentException("Modules cannot be null");
     }
-    ensureNotClosed();
-    // TODO: Implement instantiation plan creation
-    throw new UnsupportedOperationException("Instantiation plan not yet implemented");
+    if (modules.length == 0) {
+      throw new IllegalArgumentException("At least one module must be provided");
+    }
+
+    final long startTime = System.nanoTime();
+
+    try {
+      // Step 1: Resolve dependencies to get instantiation order
+      final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
+
+      // Step 2: Check if plan is executable
+      final boolean executable =
+          resolution.isResolutionSuccessful() && !resolution.hasCircularDependencies();
+
+      // Step 3: Create instantiation steps
+      final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps =
+          new java.util.ArrayList<>();
+
+      if (executable) {
+        final java.util.List<Module> orderedModules = resolution.getInstantiationOrder();
+
+        for (int i = 0; i < orderedModules.size(); i++) {
+          final Module module = orderedModules.get(i);
+          final int stepNumber = i + 1;
+
+          // Collect required imports for this module
+          final java.util.List<String> requiredImports = new java.util.ArrayList<>();
+          for (final ai.tegmentum.wasmtime4j.ImportType importType : module.getImports()) {
+            requiredImports.add(importType.getModuleName() + "::" + importType.getName());
+          }
+
+          // Collect provided exports for this module
+          final java.util.List<String> providedExports = new java.util.ArrayList<>();
+          for (final ai.tegmentum.wasmtime4j.ExportType exportType : module.getExports()) {
+            providedExports.add(exportType.getName());
+          }
+
+          // Build description
+          final String description =
+              String.format(
+                  "Instantiate module %d/%d with %d imports and %d exports",
+                  stepNumber,
+                  orderedModules.size(),
+                  requiredImports.size(),
+                  providedExports.size());
+
+          // Create instance name (optional)
+          final java.util.Optional<String> instanceName =
+              java.util.Optional.of("module_" + stepNumber);
+
+          // Create instantiation step
+          final ai.tegmentum.wasmtime4j.InstantiationStep step =
+              new ai.tegmentum.wasmtime4j.InstantiationStep(
+                  stepNumber, module, instanceName, requiredImports, providedExports, description);
+
+          steps.add(step);
+        }
+      }
+
+      // Step 4: Build and return instantiation plan
+      final long endTime = System.nanoTime();
+      final java.time.Duration planningTime = java.time.Duration.ofNanos(endTime - startTime);
+
+      return new ai.tegmentum.wasmtime4j.InstantiationPlan(
+          steps, resolution, planningTime, executable);
+
+    } catch (final Exception e) {
+      throw new WasmException("Failed to create instantiation plan: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Maps an ImportType to a DependencyType.
+   *
+   * @param importType the import type
+   * @return the corresponding dependency type
+   */
+  private ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType mapImportTypeToDependencyType(
+      final ai.tegmentum.wasmtime4j.ImportType importType) {
+    // For now, we infer from the import type string
+    // A more robust implementation would use actual type inspection
+    return ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType.FUNCTION;
+  }
+
+  /**
+   * Counts total imports across all modules.
+   *
+   * @param moduleImports map of modules to their imports
+   * @return total import count
+   */
+  private int countTotalImports(
+      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>>
+          moduleImports) {
+    return moduleImports.values().stream().mapToInt(java.util.List::size).sum();
+  }
+
+  /**
+   * Detects circular dependencies in the dependency graph.
+   *
+   * @param dependencies list of dependency edges
+   * @return circular dependency detection result
+   */
+  private CircularDependencyResult detectCircularDependencies(
+      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+    final java.util.Map<Module, java.util.Set<Module>> graph = new java.util.HashMap<>();
+    final java.util.Set<Module> visited = new java.util.HashSet<>();
+    final java.util.Set<Module> recursionStack = new java.util.HashSet<>();
+    final java.util.List<String> chains = new java.util.ArrayList<>();
+
+    // Build adjacency list
+    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+      graph
+          .computeIfAbsent(edge.getDependent(), k -> new java.util.HashSet<>())
+          .add(edge.getDependency());
+    }
+
+    // DFS to detect cycles
+    for (final Module module : graph.keySet()) {
+      if (!visited.contains(module)) {
+        final java.util.List<Module> path = new java.util.ArrayList<>();
+        if (hasCycleDFS(module, graph, visited, recursionStack, path, chains)) {
+          return new CircularDependencyResult(true, chains);
+        }
+      }
+    }
+
+    return new CircularDependencyResult(false, java.util.Collections.emptyList());
+  }
+
+  /**
+   * DFS helper for cycle detection.
+   *
+   * @param node current node
+   * @param graph dependency graph
+   * @param visited visited nodes
+   * @param recursionStack current recursion stack
+   * @param path current path
+   * @param chains detected cycle descriptions
+   * @return true if cycle detected
+   */
+  private boolean hasCycleDFS(
+      final Module node,
+      final java.util.Map<Module, java.util.Set<Module>> graph,
+      final java.util.Set<Module> visited,
+      final java.util.Set<Module> recursionStack,
+      final java.util.List<Module> path,
+      final java.util.List<String> chains) {
+    visited.add(node);
+    recursionStack.add(node);
+    path.add(node);
+
+    final java.util.Set<Module> neighbors =
+        graph.getOrDefault(node, java.util.Collections.emptySet());
+    for (final Module neighbor : neighbors) {
+      if (!visited.contains(neighbor)) {
+        if (hasCycleDFS(neighbor, graph, visited, recursionStack, path, chains)) {
+          return true;
+        }
+      } else if (recursionStack.contains(neighbor)) {
+        // Found a cycle
+        final int cycleStart = path.indexOf(neighbor);
+        final StringBuilder chain = new StringBuilder();
+        for (int i = cycleStart; i < path.size(); i++) {
+          chain.append("Module");
+          if (i < path.size() - 1) {
+            chain.append(" -> ");
+          }
+        }
+        chain.append(" -> Module");
+        chains.add(chain.toString());
+        return true;
+      }
+    }
+
+    path.remove(path.size() - 1);
+    recursionStack.remove(node);
+    return false;
+  }
+
+  /**
+   * Performs topological sort to determine instantiation order.
+   *
+   * @param modules array of modules
+   * @param dependencies list of dependency edges
+   * @return ordered list of modules
+   */
+  private java.util.List<Module> topologicalSort(
+      final Module[] modules,
+      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+    final java.util.Map<Module, Integer> inDegree = new java.util.HashMap<>();
+    final java.util.Map<Module, java.util.List<Module>> graph = new java.util.HashMap<>();
+
+    // Initialize
+    for (final Module module : modules) {
+      inDegree.put(module, 0);
+      graph.put(module, new java.util.ArrayList<>());
+    }
+
+    // Build graph and calculate in-degrees
+    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+      final Module dependent = edge.getDependent();
+      final Module dependency = edge.getDependency();
+
+      graph.get(dependency).add(dependent);
+      inDegree.put(dependent, inDegree.get(dependent) + 1);
+    }
+
+    // Queue modules with no dependencies
+    final java.util.Queue<Module> queue = new java.util.LinkedList<>();
+    for (final Module module : modules) {
+      if (inDegree.get(module) == 0) {
+        queue.offer(module);
+      }
+    }
+
+    // Process queue
+    final java.util.List<Module> result = new java.util.ArrayList<>();
+    while (!queue.isEmpty()) {
+      final Module current = queue.poll();
+      result.add(current);
+
+      for (final Module dependent : graph.get(current)) {
+        final int newInDegree = inDegree.get(dependent) - 1;
+        inDegree.put(dependent, newInDegree);
+        if (newInDegree == 0) {
+          queue.offer(dependent);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /** Helper class for circular dependency detection results. */
+  private static final class CircularDependencyResult {
+    final boolean hasCircular;
+    final java.util.List<String> chains;
+
+    CircularDependencyResult(final boolean hasCircular, final java.util.List<String> chains) {
+      this.hasCircular = hasCircular;
+      this.chains = chains;
+    }
   }
 
   @Override
