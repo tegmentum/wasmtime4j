@@ -179,6 +179,19 @@ public final class WasmValue {
   }
 
   /**
+   * Gets this value as a reference (funcref or externref).
+   *
+   * @return the reference value (may be null)
+   * @throws ClassCastException if this value is not a reference type
+   */
+  public Object asReference() {
+    if (type != WasmValueType.FUNCREF && type != WasmValueType.EXTERNREF) {
+      throw new ClassCastException("Value is not a reference type, but " + type);
+    }
+    return value;
+  }
+
+  /**
    * Checks if this value is a 32-bit integer.
    *
    * @return true if this value is of type I32, false otherwise
