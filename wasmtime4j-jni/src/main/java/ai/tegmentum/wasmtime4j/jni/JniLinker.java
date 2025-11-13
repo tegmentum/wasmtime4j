@@ -776,6 +776,12 @@ public class JniLinker<T> implements Linker<T> {
   @Override
   public boolean hasImport(final String moduleName, final String name) {
     ensureNotClosed();
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Import name cannot be null or empty");
+    }
     return imports.contains(moduleName + "::" + name);
   }
 

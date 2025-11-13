@@ -514,7 +514,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new IllegalArgumentException("Module name cannot be null or empty");
     }
     if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Name cannot be null or empty");
+      throw new IllegalArgumentException("Import name cannot be null or empty");
     }
     ensureNotClosed();
     return imports.contains(moduleName + "::" + name);
