@@ -24,7 +24,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +49,9 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private final Arena arena;
   private final MemorySegment nativeLinker;
   private volatile boolean closed = false;
+  private final Set<String> imports = new HashSet<>();
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.ImportInfo> importRegistry =
+      new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
 
   /**
@@ -144,6 +146,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       if (result != 0) {
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
       }
+
+      addImportWithMetadata(
+          moduleName,
+          name,
+          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          functionType.toString());
 
       LOGGER.fine(
           "Defined host function: "
@@ -502,15 +510,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    if (moduleName == null) {
-      throw new IllegalArgumentException("Module name cannot be null");
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("Module name cannot be null or empty");
     }
-    if (name == null) {
-      throw new IllegalArgumentException("Name cannot be null");
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Name cannot be null or empty");
     }
     ensureNotClosed();
-    // TODO: Implement import check
-    return false;
+    return imports.contains(moduleName + "::" + name);
   }
 
   @Override
@@ -712,8 +719,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   @Override
   public List<ImportInfo> getImportRegistry() {
     ensureNotClosed();
-    // TODO: Implement import registry
-    return Collections.emptyList();
+    return new ArrayList<>(importRegistry.values());
   }
 
   @Override
@@ -1042,6 +1048,33 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     } catch (final Exception e) {
       throw new IllegalStateException("Failed to create callback upcall stub", e);
     }
+  }
+
+  /**
+   * Adds an import to the registry with full metadata.
+   *
+   * @param moduleName the module name
+   * @param name the import name
+   * @param importType the import type
+   * @param typeSignature the type signature (optional)
+   */
+  void addImportWithMetadata(
+      final String moduleName,
+      final String name,
+      final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType,
+      final String typeSignature) {
+    imports.add(moduleName + "::" + name);
+    final String key = moduleName + "::" + name;
+    final ai.tegmentum.wasmtime4j.ImportInfo info =
+        new ai.tegmentum.wasmtime4j.ImportInfo(
+            moduleName,
+            name,
+            importType,
+            java.util.Optional.ofNullable(typeSignature),
+            java.time.Instant.now(),
+            true, // All imports registered via define* methods are host-provided
+            java.util.Optional.of("Host-provided import"));
+    importRegistry.put(key, info);
   }
 
   /**

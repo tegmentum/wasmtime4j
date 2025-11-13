@@ -32,6 +32,8 @@ public class JniLinker<T> implements Linker<T> {
   private final Engine engine;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.ImportInfo> importRegistry =
+      new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
 
   /**
@@ -95,7 +97,11 @@ public class JniLinker<T> implements Linker<T> {
     // DEFENSIVE: Check if handle looks valid before calling native code
     if (!isNativeHandleReasonable()) {
       // For test code with fake handles, just track the import without calling native code
-      addImport(moduleName, name);
+      addImportWithMetadata(
+          moduleName,
+          name,
+          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          functionType.toString());
       return;
     }
 
@@ -108,7 +114,11 @@ public class JniLinker<T> implements Linker<T> {
         throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
       }
 
-      addImport(moduleName, name);
+      addImportWithMetadata(
+          moduleName,
+          name,
+          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          functionType.toString());
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
@@ -385,8 +395,7 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
-    // TODO: Implement import registry retrieval
-    return java.util.Collections.emptyList();
+    return new java.util.ArrayList<>(importRegistry.values());
   }
 
   @Override
@@ -774,6 +783,33 @@ public class JniLinker<T> implements Linker<T> {
    */
   void addImport(final String moduleName, final String name) {
     imports.add(moduleName + "::" + name);
+  }
+
+  /**
+   * Adds an import with full metadata to the tracking registry.
+   *
+   * @param moduleName the module name
+   * @param name the import name
+   * @param importType the import type
+   * @param typeSignature the type signature
+   */
+  void addImportWithMetadata(
+      final String moduleName,
+      final String name,
+      final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType,
+      final String typeSignature) {
+    imports.add(moduleName + "::" + name);
+    final String key = moduleName + "::" + name;
+    final ai.tegmentum.wasmtime4j.ImportInfo info =
+        new ai.tegmentum.wasmtime4j.ImportInfo(
+            moduleName,
+            name,
+            importType,
+            java.util.Optional.ofNullable(typeSignature),
+            java.time.Instant.now(),
+            true, // All imports registered via define* methods are host-provided
+            java.util.Optional.of("Host-provided import"));
+    importRegistry.put(key, info);
   }
 
   @Override
