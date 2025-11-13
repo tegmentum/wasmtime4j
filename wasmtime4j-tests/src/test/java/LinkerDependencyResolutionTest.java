@@ -221,12 +221,7 @@ class LinkerDependencyResolutionTest {
 
     final DependencyEdge edge =
         new DependencyEdge(
-            module1,
-            module2,
-            "env",
-            "test_function",
-            DependencyEdge.DependencyType.FUNCTION,
-            true);
+            module1, module2, "env", "test_function", DependencyEdge.DependencyType.FUNCTION, true);
 
     assertEquals(module1, edge.getDependent());
     assertEquals(module2, edge.getDependency());
@@ -243,5 +238,21 @@ class LinkerDependencyResolutionTest {
     assertNotNull(toString);
     assertTrue(toString.contains("FUNCTION"));
     assertTrue(toString.contains("resolved=true"));
+  }
+
+  @Test
+  @DisplayName("methods should handle closed linker gracefully")
+  void testClosedLinkerHandling() throws WasmException {
+    final byte[] wasmBytecode =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6D, // magic number "\0asm"
+          0x01, 0x00, 0x00, 0x00 // version 1
+        };
+
+    final Module module = Module.compile(engine, wasmBytecode);
+    linker.close();
+
+    assertThrows(IllegalStateException.class, () -> linker.resolveDependencies(module));
+    assertThrows(IllegalStateException.class, () -> linker.createInstantiationPlan(module));
   }
 }

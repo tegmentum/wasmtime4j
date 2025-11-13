@@ -341,11 +341,21 @@ class LinkerAdvancedResolutionTest {
 
     @Test
     @DisplayName("methods should handle closed linker gracefully")
-    void testClosedLinkerHandling() {
+    void testClosedLinkerHandling() throws WasmException {
+      final byte[] wasmBytecode =
+          new byte[] {
+            0x00, 0x61, 0x73, 0x6D, // magic number "\0asm"
+            0x01, 0x00, 0x00, 0x00 // version 1
+          };
+
+      final Module module = Module.compile(engine, wasmBytecode);
       linker.close();
 
       assertThrows(IllegalStateException.class, () -> linker.hasImport("env", "test"));
       assertThrows(IllegalStateException.class, () -> linker.getImportRegistry());
+      assertThrows(IllegalStateException.class, () -> linker.validateImports(module));
+      assertThrows(IllegalStateException.class, () -> linker.resolveDependencies(module));
+      assertThrows(IllegalStateException.class, () -> linker.createInstantiationPlan(module));
     }
   }
 
