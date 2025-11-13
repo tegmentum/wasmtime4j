@@ -410,8 +410,8 @@ public class JniLinker<T> implements Linker<T> {
     try {
       // Step 1: Build maps of imports and exports
       final java.util.Map<String, Module> exportProviders = new java.util.HashMap<>();
-      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>> moduleImports =
-          new java.util.HashMap<>();
+      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>>
+          moduleImports = new java.util.HashMap<>();
       final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
           new java.util.ArrayList<>();
 
@@ -472,8 +472,7 @@ public class JniLinker<T> implements Linker<T> {
 
       // Step 4: Build result
       final long endTime = System.nanoTime();
-      final java.time.Duration analysisTime =
-          java.time.Duration.ofNanos(endTime - startTime);
+      final java.time.Duration analysisTime = java.time.Duration.ofNanos(endTime - startTime);
 
       final boolean successful =
           !circularResult.hasCircular && resolvedCount == countTotalImports(moduleImports);
@@ -533,7 +532,8 @@ public class JniLinker<T> implements Linker<T> {
 
     // Build adjacency list
     for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
-      graph.computeIfAbsent(edge.getDependent(), k -> new java.util.HashSet<>())
+      graph
+          .computeIfAbsent(edge.getDependent(), k -> new java.util.HashSet<>())
           .add(edge.getDependency());
     }
 
@@ -828,7 +828,10 @@ public class JniLinker<T> implements Linker<T> {
           final String description =
               String.format(
                   "Instantiate module %d/%d with %d imports and %d exports",
-                  stepNumber, orderedModules.size(), requiredImports.size(), providedExports.size());
+                  stepNumber,
+                  orderedModules.size(),
+                  requiredImports.size(),
+                  providedExports.size());
 
           // Create instance name (optional)
           final java.util.Optional<String> instanceName =
