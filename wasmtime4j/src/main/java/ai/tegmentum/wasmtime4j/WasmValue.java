@@ -179,6 +179,69 @@ public final class WasmValue {
   }
 
   /**
+   * Checks if this value is a 32-bit integer.
+   *
+   * @return true if this value is of type I32, false otherwise
+   */
+  public boolean isI32() {
+    return type == WasmValueType.I32;
+  }
+
+  /**
+   * Checks if this value is a 64-bit integer.
+   *
+   * @return true if this value is of type I64, false otherwise
+   */
+  public boolean isI64() {
+    return type == WasmValueType.I64;
+  }
+
+  /**
+   * Checks if this value is a 32-bit float.
+   *
+   * @return true if this value is of type F32, false otherwise
+   */
+  public boolean isF32() {
+    return type == WasmValueType.F32;
+  }
+
+  /**
+   * Checks if this value is a 64-bit float.
+   *
+   * @return true if this value is of type F64, false otherwise
+   */
+  public boolean isF64() {
+    return type == WasmValueType.F64;
+  }
+
+  /**
+   * Checks if this value is a 128-bit vector.
+   *
+   * @return true if this value is of type V128, false otherwise
+   */
+  public boolean isV128() {
+    return type == WasmValueType.V128;
+  }
+
+  /**
+   * Checks if this value is a function reference.
+   *
+   * @return true if this value is of type FUNCREF, false otherwise
+   */
+  public boolean isFuncref() {
+    return type == WasmValueType.FUNCREF;
+  }
+
+  /**
+   * Checks if this value is an external reference.
+   *
+   * @return true if this value is of type EXTERNREF, false otherwise
+   */
+  public boolean isExternref() {
+    return type == WasmValueType.EXTERNREF;
+  }
+
+  /**
    * Creates a 32-bit integer value.
    *
    * @param value the integer value
