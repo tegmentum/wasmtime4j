@@ -4264,6 +4264,127 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_load",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_load_aligned",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_store",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_store_aligned",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_popcount",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_shl_variable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_shr_variable",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_select",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_simd_blend",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    // Component Model functions
+    addFunctionBinding(
+        "wasmtime4j_component_engine_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS)); // config
+
+    addFunctionBinding(
+        "wasmtime4j_component_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_load_from_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return component handle
+            ValueLayout.ADDRESS, // engineHandle
+            ValueLayout.ADDRESS, // bytes
+            ValueLayout.JAVA_LONG)); // length
+
+    addFunctionBinding(
+        "wasmtime4j_component_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code (0 = success)
+            ValueLayout.ADDRESS, // engineHandle
+            ValueLayout.ADDRESS, // componentHandle
+            ValueLayout.ADDRESS)); // instanceOut (pointer to pointer)
+
+    addFunctionBinding(
+        "wasmtime4j_component_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_get_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_exports_interface",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_imports_interface",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
   }
 
   // Panama Linker Functions
@@ -5305,5 +5426,321 @@ public final class NativeFunctionBindings {
   public int simdHorizontalMaxI32(final long runtimeHandle, final MemorySegment vector) {
     return callNativeFunction(
         "wasmtime4j_panama_simd_horizontal_max_i32", Integer.class, runtimeHandle, vector);
+  }
+
+  /**
+   * SIMD load from memory.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param memoryHandle the memory handle
+   * @param offset the offset in memory
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdLoad(
+      final long runtimeHandle,
+      final MemorySegment memoryHandle,
+      final int offset,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_load", Integer.class, runtimeHandle, memoryHandle, offset, result);
+  }
+
+  /**
+   * SIMD aligned load from memory.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param memoryHandle the memory handle
+   * @param offset the offset in memory
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdLoadAligned(
+      final long runtimeHandle,
+      final MemorySegment memoryHandle,
+      final int offset,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_load_aligned",
+        Integer.class,
+        runtimeHandle,
+        memoryHandle,
+        offset,
+        result);
+  }
+
+  /**
+   * SIMD store to memory.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param memoryHandle the memory handle
+   * @param offset the offset in memory
+   * @param vector the vector data
+   * @return status code (0 for success)
+   */
+  public int simdStore(
+      final long runtimeHandle,
+      final MemorySegment memoryHandle,
+      final int offset,
+      final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_store", Integer.class, runtimeHandle, memoryHandle, offset, vector);
+  }
+
+  /**
+   * SIMD aligned store to memory.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param memoryHandle the memory handle
+   * @param offset the offset in memory
+   * @param vector the vector data
+   * @return status code (0 for success)
+   */
+  public int simdStoreAligned(
+      final long runtimeHandle,
+      final MemorySegment memoryHandle,
+      final int offset,
+      final MemorySegment vector) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_store_aligned",
+        Integer.class,
+        runtimeHandle,
+        memoryHandle,
+        offset,
+        vector);
+  }
+
+  /**
+   * SIMD popcount operation.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vector the vector data
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdPopcount(
+      final long runtimeHandle, final MemorySegment vector, final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_popcount", Integer.class, runtimeHandle, vector, result);
+  }
+
+  /**
+   * SIMD variable shift left.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA the first vector
+   * @param vectorB the shift amounts vector
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdShlVariable(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_shl_variable",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        result);
+  }
+
+  /**
+   * SIMD variable shift right.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA the first vector
+   * @param vectorB the shift amounts vector
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdShrVariable(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_shr_variable",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        result);
+  }
+
+  /**
+   * SIMD select operation.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param mask the mask vector
+   * @param vectorA the first vector
+   * @param vectorB the second vector
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdSelect(
+      final long runtimeHandle,
+      final MemorySegment mask,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_select",
+        Integer.class,
+        runtimeHandle,
+        mask,
+        vectorA,
+        vectorB,
+        result);
+  }
+
+  /**
+   * SIMD blend operation.
+   *
+   * @param runtimeHandle the runtime handle
+   * @param vectorA the first vector
+   * @param vectorB the second vector
+   * @param mask the blend mask
+   * @param result the result buffer
+   * @return status code (0 for success)
+   */
+  public int simdBlend(
+      final long runtimeHandle,
+      final MemorySegment vectorA,
+      final MemorySegment vectorB,
+      final int mask,
+      final MemorySegment result) {
+    return callNativeFunction(
+        "wasmtime4j_panama_simd_blend",
+        Integer.class,
+        runtimeHandle,
+        vectorA,
+        vectorB,
+        mask,
+        result);
+  }
+
+  // Component Model Functions
+
+  /**
+   * Creates a new component engine.
+   *
+   * @param config the engine configuration
+   * @return memory segment pointer to the component engine, or null on failure
+   */
+  public MemorySegment componentEngineCreate(final MemorySegment config) {
+    return callNativeFunction("wasmtime4j_component_engine_create", MemorySegment.class, config);
+  }
+
+  /**
+   * Destroys a component engine.
+   *
+   * @param engineHandle pointer to the component engine to destroy
+   */
+  public void componentEngineDestroy(final MemorySegment engineHandle) {
+    validatePointer(engineHandle, "engineHandle");
+    callNativeFunction("wasmtime4j_component_engine_destroy", Void.class, engineHandle);
+  }
+
+  /**
+   * Loads a component from bytecode.
+   *
+   * @param engineHandle the component engine handle
+   * @param bytes the component bytecode
+   * @param length the bytecode length
+   * @return memory segment pointer to the component, or null on failure
+   */
+  public MemorySegment componentLoadFromBytes(
+      final MemorySegment engineHandle, final MemorySegment bytes, final long length) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(bytes, "bytes");
+    return callNativeFunction(
+        "wasmtime4j_component_load_from_bytes", MemorySegment.class, engineHandle, bytes, length);
+  }
+
+  /**
+   * Instantiates a component.
+   *
+   * @param engineHandle the engine handle
+   * @param componentHandle the component handle
+   * @param instanceOut pointer to where the instance handle will be written
+   * @return error code (0 = success, non-zero = error)
+   */
+  public int componentInstantiate(
+      final MemorySegment engineHandle,
+      final MemorySegment componentHandle,
+      final MemorySegment instanceOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(instanceOut, "instanceOut");
+    return callNativeFunction(
+        "wasmtime4j_component_instantiate",
+        Integer.class,
+        engineHandle,
+        componentHandle,
+        instanceOut);
+  }
+
+  /**
+   * Destroys a component.
+   *
+   * @param componentHandle pointer to the component to destroy
+   */
+  public void componentDestroy(final MemorySegment componentHandle) {
+    validatePointer(componentHandle, "componentHandle");
+    callNativeFunction("wasmtime4j_component_destroy", Void.class, componentHandle);
+  }
+
+  /**
+   * Destroys a component instance.
+   *
+   * @param instanceHandle pointer to the component instance to destroy
+   */
+  public void componentInstanceDestroy(final MemorySegment instanceHandle) {
+    validatePointer(instanceHandle, "instanceHandle");
+    callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instanceHandle);
+  }
+
+  /**
+   * Gets the size of a component.
+   *
+   * @param componentHandle the component handle
+   * @return the component size in bytes
+   */
+  public long componentGetSize(final MemorySegment componentHandle) {
+    validatePointer(componentHandle, "componentHandle");
+    return callNativeFunction("wasmtime4j_component_get_size", Long.class, componentHandle);
+  }
+
+  /**
+   * Checks if a component exports an interface.
+   *
+   * @param componentHandle the component handle
+   * @param interfaceName the interface name (C string)
+   * @return 1 if exports the interface, 0 otherwise
+   */
+  public int componentExportsInterface(
+      final MemorySegment componentHandle, final MemorySegment interfaceName) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(interfaceName, "interfaceName");
+    return callNativeFunction(
+        "wasmtime4j_component_exports_interface", Integer.class, componentHandle, interfaceName);
+  }
+
+  /**
+   * Checks if a component imports an interface.
+   *
+   * @param componentHandle the component handle
+   * @param interfaceName the interface name (C string)
+   * @return 1 if imports the interface, 0 otherwise
+   */
+  public int componentImportsInterface(
+      final MemorySegment componentHandle, final MemorySegment interfaceName) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(interfaceName, "interfaceName");
+    return callNativeFunction(
+        "wasmtime4j_component_imports_interface", Integer.class, componentHandle, interfaceName);
   }
 }

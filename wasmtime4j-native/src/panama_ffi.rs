@@ -861,13 +861,15 @@ pub mod store {
 }
 
 /// Panama FFI bindings for WebAssembly Component Model operations (WASI Preview 2)
-/// 
-/// This module provides C-compatible functions for creating, instantiating,
-/// and managing WebAssembly components through the Panama Foreign Function Interface.
-// TODO: Re-enable when component modules are available
+///
+/// Component Model FFI functions are provided directly by the component.rs module.
+/// No additional Panama-specific wrappers are needed as the existing FFI exports
+/// are compatible with both JNI and Panama Foreign Function API.
+
+// TODO: Re-enable when component modules with enhanced features are available
 /*
 #[cfg(feature = "component-model")]
-pub mod component {
+pub mod component_enhanced {
     use super::*;
     use crate::component_core::{EnhancedComponentEngine, ComponentInstanceHandle};
     use crate::wit_interfaces::WitInterfaceManager;

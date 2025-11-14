@@ -293,9 +293,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     PanamaValidation.requireNonNull(config, "config");
     ensureNotClosed();
 
-    // TODO: Apply config to component engine
     LOGGER.fine("Creating component engine with config: " + config);
-    return new PanamaComponentEngine();
+    return new PanamaComponentEngine(config);
   }
 
   @Override
