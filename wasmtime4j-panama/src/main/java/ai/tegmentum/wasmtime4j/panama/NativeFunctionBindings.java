@@ -4405,6 +4405,25 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_validate",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_get_export_name",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_get_import_name",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_free_string", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
   }
 
   // Panama Linker Functions
@@ -5825,5 +5844,48 @@ public final class NativeFunctionBindings {
   public int componentValidate(final MemorySegment componentHandle) {
     validatePointer(componentHandle, "componentHandle");
     return callNativeFunction("wasmtime4j_component_validate", Integer.class, componentHandle);
+  }
+
+  /**
+   * Gets an export interface name by index.
+   *
+   * @param componentHandle the component handle
+   * @param index the export index
+   * @param nameOut pointer to receive the name string
+   * @return 0 on success, non-zero on error
+   */
+  public int componentGetExportName(
+      final MemorySegment componentHandle, final long index, final MemorySegment nameOut) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(nameOut, "nameOut");
+    return callNativeFunction(
+        "wasmtime4j_component_get_export_name", Integer.class, componentHandle, index, nameOut);
+  }
+
+  /**
+   * Gets an import interface name by index.
+   *
+   * @param componentHandle the component handle
+   * @param index the import index
+   * @param nameOut pointer to receive the name string
+   * @return 0 on success, non-zero on error
+   */
+  public int componentGetImportName(
+      final MemorySegment componentHandle, final long index, final MemorySegment nameOut) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(nameOut, "nameOut");
+    return callNativeFunction(
+        "wasmtime4j_component_get_import_name", Integer.class, componentHandle, index, nameOut);
+  }
+
+  /**
+   * Frees a string returned by component functions.
+   *
+   * @param stringPtr the string pointer to free
+   */
+  public void componentFreeString(final MemorySegment stringPtr) {
+    if (stringPtr != null && !stringPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_component_free_string", Void.class, stringPtr);
+    }
   }
 }

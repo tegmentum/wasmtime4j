@@ -85,14 +85,64 @@ final class PanamaComponentSimple implements ComponentSimple {
 
   @Override
   public Set<String> getExportedInterfaces() throws WasmException {
-    // TODO: Implement
-    return Set.of();
+    ensureNotClosed();
+    final long exportCount = NATIVE_BINDINGS.componentExportCount(componentHandle);
+    final Set<String> exports = new java.util.HashSet<>();
+
+    try (Arena arena = Arena.ofConfined()) {
+      for (long i = 0; i < exportCount; i++) {
+        final MemorySegment nameOut = arena.allocate(ValueLayout.ADDRESS);
+        final int errorCode =
+            NATIVE_BINDINGS.componentGetExportName(componentHandle, i, nameOut);
+
+        if (errorCode != 0) {
+          continue; // Skip this export if we can't get the name
+        }
+
+        final MemorySegment namePtr = nameOut.get(ValueLayout.ADDRESS, 0);
+        if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+          try {
+            final String exportName = namePtr.getString(0);
+            exports.add(exportName);
+          } finally {
+            NATIVE_BINDINGS.componentFreeString(namePtr);
+          }
+        }
+      }
+    }
+
+    return Set.copyOf(exports);
   }
 
   @Override
   public Set<String> getImportedInterfaces() throws WasmException {
-    // TODO: Implement
-    return Set.of();
+    ensureNotClosed();
+    final long importCount = NATIVE_BINDINGS.componentImportCount(componentHandle);
+    final Set<String> imports = new java.util.HashSet<>();
+
+    try (Arena arena = Arena.ofConfined()) {
+      for (long i = 0; i < importCount; i++) {
+        final MemorySegment nameOut = arena.allocate(ValueLayout.ADDRESS);
+        final int errorCode =
+            NATIVE_BINDINGS.componentGetImportName(componentHandle, i, nameOut);
+
+        if (errorCode != 0) {
+          continue; // Skip this import if we can't get the name
+        }
+
+        final MemorySegment namePtr = nameOut.get(ValueLayout.ADDRESS, 0);
+        if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+          try {
+            final String importName = namePtr.getString(0);
+            imports.add(importName);
+          } finally {
+            NATIVE_BINDINGS.componentFreeString(namePtr);
+          }
+        }
+      }
+    }
+
+    return Set.copyOf(imports);
   }
 
   @Override

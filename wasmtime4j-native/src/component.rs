@@ -1587,6 +1587,70 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_interface(
     }
 }
 
+/// Get export interface name by index
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
+    component_ptr: *const c_void,
+    index: usize,
+    name_out: *mut *mut c_char,
+) -> c_int {
+    if component_ptr.is_null() || name_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+
+    if index >= component.metadata.exports.len() {
+        return FFI_ERROR;
+    }
+
+    let export_name = &component.metadata.exports[index].name;
+
+    match CString::new(export_name.as_str()) {
+        Ok(c_string) => {
+            *name_out = c_string.into_raw();
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get import interface name by index
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_get_import_name(
+    component_ptr: *const c_void,
+    index: usize,
+    name_out: *mut *mut c_char,
+) -> c_int {
+    if component_ptr.is_null() || name_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+
+    if index >= component.metadata.imports.len() {
+        return FFI_ERROR;
+    }
+
+    let import_name = &component.metadata.imports[index].name;
+
+    match CString::new(import_name.as_str()) {
+        Ok(c_string) => {
+            *name_out = c_string.into_raw();
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Free a string returned by component functions
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_free_string(str_ptr: *mut c_char) {
+    if !str_ptr.is_null() {
+        let _ = CString::from_raw(str_ptr);
+    }
+}
+
 /// Free a JSON string returned by interface functions
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_free_json_string(json_ptr: *mut c_char) {
