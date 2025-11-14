@@ -67,23 +67,39 @@ final class PanamaComponentInstance implements ComponentInstance {
   public Object invoke(final String functionName, final Object... args) throws WasmException {
     Objects.requireNonNull(functionName, "functionName cannot be null");
     ensureNotClosed();
-    // TODO: Implement native function invocation
-    throw new UnsupportedOperationException("Not yet implemented");
+    // Component Model function invocation requires full WIT type marshalling
+    // and canonical ABI implementation, which is a complex feature requiring:
+    // 1. WIT type parsing and validation
+    // 2. Canonical ABI encoding/decoding
+    // 3. Resource handle management
+    // 4. Async function support
+    throw new UnsupportedOperationException(
+        "Component Model function invocation not yet implemented - "
+            + "requires full WIT type system and canonical ABI support");
   }
 
   @Override
   public boolean hasFunction(final String functionName) {
     Objects.requireNonNull(functionName, "functionName cannot be null");
     ensureNotClosed();
-    // TODO: Implement native function query
-    return false;
+    // Check if the function name is in the list of exported interfaces
+    try {
+      return component.getExportedInterfaces().contains(functionName);
+    } catch (final WasmException e) {
+      return false;
+    }
   }
 
   @Override
   public Set<String> getExportedFunctions() {
     ensureNotClosed();
-    // TODO: Implement native export query
-    return Set.of();
+    // Get exported interfaces from the component
+    try {
+      return component.getExportedInterfaces();
+    } catch (final WasmException e) {
+      // If we can't get exports, return empty set
+      return Set.of();
+    }
   }
 
   @Override
@@ -99,8 +115,15 @@ final class PanamaComponentInstance implements ComponentInstance {
     Objects.requireNonNull(interfaceName, "interfaceName cannot be null");
     Objects.requireNonNull(implementation, "implementation cannot be null");
     ensureNotClosed();
-    // TODO: Implement native interface binding
-    throw new UnsupportedOperationException("Not yet implemented");
+    // Interface binding requires full WIT type system implementation including:
+    // 1. WIT interface parsing and validation
+    // 2. Java-to-WIT type mapping
+    // 3. Canonical ABI encoding/decoding
+    // 4. Host function registration and lifecycle management
+    // 5. Resource handle tracking
+    throw new UnsupportedOperationException(
+        "Component Model interface binding not yet implemented - "
+            + "requires full WIT type system and host function support");
   }
 
   @Override
