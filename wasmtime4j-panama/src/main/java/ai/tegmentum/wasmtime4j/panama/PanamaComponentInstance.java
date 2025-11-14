@@ -105,7 +105,11 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public Map<String, WitInterfaceDefinition> getExportedInterfaces() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement native interface query
+    // Interface definition extraction requires full WIT type system implementation including:
+    // 1. WIT parser for component metadata
+    // 2. Interface definition extraction with full type information
+    // 3. Type hierarchy and relationship resolution
+    // Currently returns empty map - use getExportedFunctions() for interface names only
     return Map.of();
   }
 
@@ -144,22 +148,40 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public void pause() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement native pause operation
-    throw new UnsupportedOperationException("Not yet implemented");
+    // Component instance lifecycle control requires native runtime support for:
+    // 1. Instance state suspension and serialization
+    // 2. Execution context preservation
+    // 3. Resource handle freezing
+    // 4. Thread-safe state transitions
+    throw new UnsupportedOperationException(
+        "Component instance pause not yet implemented - "
+            + "requires native runtime lifecycle support");
   }
 
   @Override
   public void resume() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement native resume operation
-    throw new UnsupportedOperationException("Not yet implemented");
+    // Component instance lifecycle control requires native runtime support for:
+    // 1. Instance state restoration and deserialization
+    // 2. Execution context reconstruction
+    // 3. Resource handle reactivation
+    // 4. Thread-safe state transitions
+    throw new UnsupportedOperationException(
+        "Component instance resume not yet implemented - "
+            + "requires native runtime lifecycle support");
   }
 
   @Override
   public void stop() throws WasmException {
     ensureNotClosed();
-    // TODO: Implement native stop operation
-    throw new UnsupportedOperationException("Not yet implemented");
+    // Component instance lifecycle control requires native runtime support for:
+    // 1. Graceful instance termination
+    // 2. Resource cleanup and release
+    // 3. Execution context teardown
+    // 4. Thread-safe state transitions
+    throw new UnsupportedOperationException(
+        "Component instance stop not yet implemented - "
+            + "requires native runtime lifecycle support");
   }
 
   @Override
