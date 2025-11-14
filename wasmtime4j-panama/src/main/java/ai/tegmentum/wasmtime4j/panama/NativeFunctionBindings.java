@@ -4385,6 +4385,26 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_imports_interface",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_export_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_import_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_has_export",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_has_import",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_component_validate",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
   }
 
   // Panama Linker Functions
@@ -5742,5 +5762,68 @@ public final class NativeFunctionBindings {
     validatePointer(interfaceName, "interfaceName");
     return callNativeFunction(
         "wasmtime4j_component_imports_interface", Integer.class, componentHandle, interfaceName);
+  }
+
+  /**
+   * Gets the count of exports in a component.
+   *
+   * @param componentHandle the component handle
+   * @return number of exports
+   */
+  public long componentExportCount(final MemorySegment componentHandle) {
+    validatePointer(componentHandle, "componentHandle");
+    return callNativeFunction("wasmtime4j_component_export_count", Long.class, componentHandle);
+  }
+
+  /**
+   * Gets the count of imports in a component.
+   *
+   * @param componentHandle the component handle
+   * @return number of imports
+   */
+  public long componentImportCount(final MemorySegment componentHandle) {
+    validatePointer(componentHandle, "componentHandle");
+    return callNativeFunction("wasmtime4j_component_import_count", Long.class, componentHandle);
+  }
+
+  /**
+   * Checks if a component has a specific export.
+   *
+   * @param componentHandle the component handle
+   * @param exportName the export name (C string)
+   * @return 1 if has the export, 0 otherwise
+   */
+  public int componentHasExport(
+      final MemorySegment componentHandle, final MemorySegment exportName) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(exportName, "exportName");
+    return callNativeFunction(
+        "wasmtime4j_component_has_export", Integer.class, componentHandle, exportName);
+  }
+
+  /**
+   * Checks if a component has a specific import.
+   *
+   * @param componentHandle the component handle
+   * @param importName the import name (C string)
+   * @return 1 if has the import, 0 otherwise
+   */
+  public int componentHasImport(
+      final MemorySegment componentHandle, final MemorySegment importName) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(importName, "importName");
+    return callNativeFunction(
+        "wasmtime4j_component_has_import", Integer.class, componentHandle, importName);
+  }
+
+  /**
+   * Validates a component.
+   *
+   * @param componentHandle the component handle
+   * @return 1 if valid, 0 otherwise
+   */
+  public int componentValidate(final MemorySegment componentHandle) {
+    validatePointer(componentHandle, "componentHandle");
+    return callNativeFunction("wasmtime4j_component_validate", Integer.class, componentHandle);
   }
 }
