@@ -656,6 +656,216 @@ pub fn get_global_thread_pool() -> &'static WasmThreadPool {
     &GLOBAL_THREAD_POOL
 }
 
+//==============================================================================
+// FFI Exports for Panama
+//==============================================================================
+
+use std::os::raw::{c_char, c_int, c_void};
+use std::ffi::CStr;
+use crate::error::ffi_utils;
+
+/// Put an integer value into thread-local storage (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `key_ptr` - Pointer to null-terminated C string key
+/// * `value` - Integer value to store
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_put_int(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    value: c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        thread.put_thread_local(key, ThreadLocalValue::Int(value))?;
+
+        log::debug!("Put integer value {} into TLS", value);
+        Ok(())
+    })
+}
+
+/// Get an integer value from thread-local storage (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `key_ptr` - Pointer to null-terminated C string key
+/// * `out_value` - Pointer to write the retrieved integer value
+///
+/// # Returns
+/// 0 on success, error code on failure (including key not found or type mismatch)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_get_int(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_value: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_value.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output value pointer cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+
+        match value {
+            Some(ThreadLocalValue::Int(int_value)) => {
+                *out_value = int_value;
+                log::debug!("Retrieved integer value {} from TLS", int_value);
+                Ok(())
+            }
+            Some(_) => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local value for key '{}' is not an integer", key),
+            }),
+            None => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local key '{}' not found", key),
+            }),
+        }
+    })
+}
+
+/// Check if a thread-local key exists (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `key_ptr` - Pointer to null-terminated C string key
+/// * `out_exists` - Pointer to write existence flag (1 = exists, 0 = does not exist)
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_contains_key(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_exists: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_exists.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output exists pointer cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+        *out_exists = if value.is_some() { 1 } else { 0 };
+
+        Ok(())
+    })
+}
+
+/// Remove a thread-local key (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `key_ptr` - Pointer to null-terminated C string key
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_remove_key(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        thread.remove_thread_local(&key)?;
+        log::debug!("Removed thread-local key '{}'", key);
+
+        Ok(())
+    })
+}
+
+/// Clear all thread-local storage (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_clear_storage(
+    thread_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        thread.clear_thread_local_storage()?;
+        log::debug!("Cleared all thread-local storage");
+        Ok(())
+    })
+}
+
+/// Get the size of thread-local storage (number of keys) (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `out_size` - Pointer to write the size
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_storage_size(
+    thread_ptr: *mut c_void,
+    out_size: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+
+        if out_size.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output size pointer cannot be null".to_string(),
+            });
+        }
+
+        let size = thread.get_thread_local_storage_size()?;
+        *out_size = size as c_int;
+
+        Ok(())
+    })
+}
+
+/// Get the memory usage of thread-local storage in bytes (Panama FFI)
+///
+/// # Arguments
+/// * `thread_ptr` - Pointer to WasmThread
+/// * `out_memory_usage` - Pointer to write the memory usage in bytes
+///
+/// # Returns
+/// 0 on success, error code on failure
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_storage_memory_usage(
+    thread_ptr: *mut c_void,
+    out_memory_usage: *mut i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+
+        if out_memory_usage.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output memory usage pointer cannot be null".to_string(),
+            });
+        }
+
+        let memory_usage = thread.get_thread_local_storage_memory_usage()?;
+        *out_memory_usage = memory_usage as i64;
+
+        Ok(())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
