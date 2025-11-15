@@ -1233,16 +1233,6 @@ public final class NativeFunctionBindings {
         "wasmtime4j_wasi_context_set_args", Integer.class, contextPtr, argsPtr, argsCount);
   }
 
-  /**
-   * Destroys a WASI context.
-   *
-   * @param wasiContextPtr pointer to the WASI context to destroy
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextDestroy(final MemorySegment wasiContextPtr) {
-    validatePointer(wasiContextPtr, "wasiContextPtr");
-    return callNativeFunction("wasmtime4j_wasi_context_destroy", Integer.class, wasiContextPtr);
-  }
 
   /**
    * Adds a directory mapping to a WASI context.
