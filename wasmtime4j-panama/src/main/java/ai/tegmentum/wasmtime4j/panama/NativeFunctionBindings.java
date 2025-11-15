@@ -4464,6 +4464,58 @@ public final class NativeFunctionBindings {
     // WASI Linker Integration
     addFunctionBinding(
         "wasmtime4j_linker_add_wasi", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    // Thread-Local Storage (TLS) Functions
+    addFunctionBinding(
+        "wasmtime4j_thread_put_int",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.JAVA_INT)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_thread_get_int",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS)); // out_value pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_contains_key",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS)); // out_exists pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_remove_key",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS)); // key_ptr (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_thread_clear_storage",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // thread_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_thread_storage_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS)); // out_size pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_storage_memory_usage",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS)); // out_memory_usage pointer (i64)
   }
 
   // Panama Linker Functions
@@ -6122,5 +6174,107 @@ public final class NativeFunctionBindings {
   public int linkerAddWasi(final MemorySegment linkerHandle) {
     validatePointer(linkerHandle, "linkerHandle");
     return callNativeFunction("wasmtime4j_linker_add_wasi", Integer.class, linkerHandle);
+  }
+
+  // Thread-Local Storage (TLS) Functions
+
+  /**
+   * Puts an integer value into thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param value the integer value to store
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadPutInt(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final int value) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    return callNativeFunction("wasmtime4j_thread_put_int", Integer.class, threadHandle, keyPtr, value);
+  }
+
+  /**
+   * Gets an integer value from thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outValue pointer to store the retrieved value
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadGetInt(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final MemorySegment outValue) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outValue, "outValue");
+    return callNativeFunction("wasmtime4j_thread_get_int", Integer.class, threadHandle, keyPtr, outValue);
+  }
+
+  /**
+   * Checks if a thread-local key exists.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outExists pointer to store the existence flag (1 = exists, 0 = not exists)
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadContainsKey(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final MemorySegment outExists) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outExists, "outExists");
+    return callNativeFunction(
+        "wasmtime4j_thread_contains_key", Integer.class, threadHandle, keyPtr, outExists);
+  }
+
+  /**
+   * Removes a thread-local key.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadRemoveKey(final MemorySegment threadHandle, final MemorySegment keyPtr) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    return callNativeFunction("wasmtime4j_thread_remove_key", Integer.class, threadHandle, keyPtr);
+  }
+
+  /**
+   * Clears all thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadClearStorage(final MemorySegment threadHandle) {
+    validatePointer(threadHandle, "threadHandle");
+    return callNativeFunction("wasmtime4j_thread_clear_storage", Integer.class, threadHandle);
+  }
+
+  /**
+   * Gets the size of thread-local storage (number of keys).
+   *
+   * @param threadHandle pointer to the thread
+   * @param outSize pointer to store the size
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadStorageSize(final MemorySegment threadHandle, final MemorySegment outSize) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(outSize, "outSize");
+    return callNativeFunction("wasmtime4j_thread_storage_size", Integer.class, threadHandle, outSize);
+  }
+
+  /**
+   * Gets the memory usage of thread-local storage in bytes.
+   *
+   * @param threadHandle pointer to the thread
+   * @param outMemoryUsage pointer to store the memory usage (i64)
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadStorageMemoryUsage(
+      final MemorySegment threadHandle, final MemorySegment outMemoryUsage) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(outMemoryUsage, "outMemoryUsage");
+    return callNativeFunction(
+        "wasmtime4j_thread_storage_memory_usage", Integer.class, threadHandle, outMemoryUsage);
   }
 }
