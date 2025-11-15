@@ -1060,6 +1060,51 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_with_perms(
     )
 }
 
+/// Add WASI to a linker (Panama FFI version)
+///
+/// This function adds all WASI Preview 1 imports to the provided linker.
+/// The linker will be configured to extract WASI context from any store that has one.
+///
+/// # Safety
+/// This function is unsafe because it deals with raw pointers from FFI.
+/// Caller must ensure linker_ptr is a valid pointer.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_add_wasi(
+    linker_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        use crate::store::StoreData;
+        use wasmtime::Linker;
+
+        // Dereference linker pointer
+        let linker = ffi_utils::deref_ptr_mut::<Linker<StoreData>>(linker_ptr, "linker")?;
+
+        // Add WASI to linker using wasmtime-wasi's built-in function
+        // The closure extracts the WasiP1Ctx from the store's data when a module is instantiated
+        wasmtime_wasi::p1::add_to_linker_sync(linker, |data: &mut StoreData| {
+            // Get the WASI context from store data
+            if let Some(wasi_arc) = &data.wasi_context {
+                let mut wasi_guard = wasi_arc.lock().unwrap();
+                // Access the inner WasiCtx
+                let inner_mutex = &wasi_guard.0.inner;
+                let wasi_ctx = &mut *inner_mutex.lock().unwrap();
+                // WasiP1Ctx is a newtype wrapper around WasiCtx, convert using unsafe transmute
+                // This is safe because WasiP1Ctx is repr(transparent) or has the same layout as WasiCtx
+                unsafe { std::mem::transmute::<&mut WasiCtx, &mut WasiP1Ctx>(wasi_ctx) }
+            } else {
+                // If no WASI context is attached, panic with a clear message
+                panic!("Store does not have a WASI context attached. Call wasi_ctx_add_to_store before instantiating modules that require WASI.");
+            }
+        })
+        .map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to add WASI to linker: {}", e),
+        })?;
+
+        log::debug!("WASI Preview 1 imports successfully added to linker via Panama FFI");
+        Ok(())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
