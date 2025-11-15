@@ -488,8 +488,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   public void enableWasi() throws WasmException {
     ensureNotClosed();
 
-    // Call native function to enable WASI
-    final int result = NATIVE_BINDINGS.panamaLinkerEnableWasi(nativeLinker);
+    // Add WASI Preview 1 imports to the linker
+    final int result = NATIVE_BINDINGS.linkerAddWasi(nativeLinker);
 
     if (result != 0) {
       throw new WasmException("Failed to enable WASI (error code: " + result + ")");

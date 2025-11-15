@@ -4044,12 +4044,6 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
-        "wasmtime4j_panama_linker_enable_wasi",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return result code
-            ValueLayout.ADDRESS)); // linker_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_linker_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
 
@@ -4674,18 +4668,6 @@ public final class NativeFunctionBindings {
         linkerPtr,
         storePtr,
         modulePtr);
-  }
-
-  /**
-   * Enables WASI for the linker (Panama FFI version).
-   *
-   * @param linkerPtr pointer to the linker
-   * @return 0 on success, negative error code on failure
-   */
-  public int panamaLinkerEnableWasi(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-
-    return callNativeFunction("wasmtime4j_panama_linker_enable_wasi", Integer.class, linkerPtr);
   }
 
   /**
