@@ -4466,6 +4466,10 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT));
+
+    // WASI Linker Integration
+    addFunctionBinding(
+        "wasmtime4j_linker_add_wasi", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
   }
 
   // Panama Linker Functions
@@ -6122,5 +6126,19 @@ public final class NativeFunctionBindings {
         canRead,
         canWrite,
         canCreate);
+  }
+
+  /**
+   * Adds WASI Preview 1 imports to a linker.
+   *
+   * <p>Configures the linker to extract WASI context from store data when instantiating modules.
+   * The store must have a WASI context attached before instantiating WASI-enabled modules.
+   *
+   * @param linkerHandle pointer to the linker
+   * @return 0 on success, non-zero on failure
+   */
+  public int linkerAddWasi(final MemorySegment linkerHandle) {
+    validatePointer(linkerHandle, "linkerHandle");
+    return callNativeFunction("wasmtime4j_linker_add_wasi", Integer.class, linkerHandle);
   }
 }
