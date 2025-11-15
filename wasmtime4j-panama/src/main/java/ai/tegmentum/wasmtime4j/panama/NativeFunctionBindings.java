@@ -4516,6 +4516,73 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // thread_ptr
             ValueLayout.ADDRESS)); // out_memory_usage pointer (i64)
+
+    // Additional TLS data types
+    addFunctionBinding(
+        "wasmtime4j_thread_put_long",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.JAVA_LONG)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_thread_get_long",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS)); // out_value pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_put_float",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.JAVA_FLOAT)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_thread_get_float",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS)); // out_value pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_put_double",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.JAVA_DOUBLE)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_thread_get_double",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS)); // out_value pointer
+
+    addFunctionBinding(
+        "wasmtime4j_thread_put_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS, // bytes_ptr
+            ValueLayout.JAVA_LONG)); // bytes_len
+
+    addFunctionBinding(
+        "wasmtime4j_thread_get_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_ptr
+            ValueLayout.ADDRESS, // key_ptr (C string)
+            ValueLayout.ADDRESS, // out_bytes_ptr
+            ValueLayout.ADDRESS)); // out_bytes_len
   }
 
   // Panama Linker Functions
@@ -6276,5 +6343,143 @@ public final class NativeFunctionBindings {
     validatePointer(outMemoryUsage, "outMemoryUsage");
     return callNativeFunction(
         "wasmtime4j_thread_storage_memory_usage", Integer.class, threadHandle, outMemoryUsage);
+  }
+
+  // Additional TLS data type wrapper methods
+
+  /**
+   * Puts a long value into thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param value the long value to store
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadPutLong(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final long value) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    return callNativeFunction("wasmtime4j_thread_put_long", Integer.class, threadHandle, keyPtr, value);
+  }
+
+  /**
+   * Gets a long value from thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outValue pointer to store the retrieved value
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadGetLong(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final MemorySegment outValue) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outValue, "outValue");
+    return callNativeFunction("wasmtime4j_thread_get_long", Integer.class, threadHandle, keyPtr, outValue);
+  }
+
+  /**
+   * Puts a float value into thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param value the float value to store
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadPutFloat(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final float value) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    return callNativeFunction("wasmtime4j_thread_put_float", Integer.class, threadHandle, keyPtr, value);
+  }
+
+  /**
+   * Gets a float value from thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outValue pointer to store the retrieved value
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadGetFloat(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final MemorySegment outValue) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outValue, "outValue");
+    return callNativeFunction("wasmtime4j_thread_get_float", Integer.class, threadHandle, keyPtr, outValue);
+  }
+
+  /**
+   * Puts a double value into thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param value the double value to store
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadPutDouble(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final double value) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    return callNativeFunction("wasmtime4j_thread_put_double", Integer.class, threadHandle, keyPtr, value);
+  }
+
+  /**
+   * Gets a double value from thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outValue pointer to store the retrieved value
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadGetDouble(
+      final MemorySegment threadHandle, final MemorySegment keyPtr, final MemorySegment outValue) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outValue, "outValue");
+    return callNativeFunction("wasmtime4j_thread_get_double", Integer.class, threadHandle, keyPtr, outValue);
+  }
+
+  /**
+   * Puts a byte array into thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param bytesPtr pointer to the byte array
+   * @param bytesLen length of the byte array
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadPutBytes(
+      final MemorySegment threadHandle,
+      final MemorySegment keyPtr,
+      final MemorySegment bytesPtr,
+      final long bytesLen) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(bytesPtr, "bytesPtr");
+    return callNativeFunction(
+        "wasmtime4j_thread_put_bytes", Integer.class, threadHandle, keyPtr, bytesPtr, bytesLen);
+  }
+
+  /**
+   * Gets a byte array from thread-local storage.
+   *
+   * @param threadHandle pointer to the thread
+   * @param keyPtr pointer to the key C string
+   * @param outBytesPtr pointer to store the byte array pointer
+   * @param outBytesLen pointer to store the byte array length
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadGetBytes(
+      final MemorySegment threadHandle,
+      final MemorySegment keyPtr,
+      final MemorySegment outBytesPtr,
+      final MemorySegment outBytesLen) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(outBytesPtr, "outBytesPtr");
+    validatePointer(outBytesLen, "outBytesLen");
+    return callNativeFunction(
+        "wasmtime4j_thread_get_bytes", Integer.class, threadHandle, keyPtr, outBytesPtr, outBytesLen);
   }
 }
