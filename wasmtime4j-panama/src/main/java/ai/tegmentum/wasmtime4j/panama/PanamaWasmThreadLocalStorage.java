@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,6 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorage {
 
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
+
   /** Native thread handle for storage operations. */
   private final MemorySegment nativeThreadHandle;
 
@@ -36,11 +40,6 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
 
   /** Whether this storage has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
-
-  static {
-    // TODO: Implement PanamaNativeLoader for thread-local storage bindings
-    // PanamaNativeLoader.loadNativeLibrary();
-  }
 
   /**
    * Creates a new Panama thread-local storage instance.
@@ -67,9 +66,14 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    // TODO: Implement PanamaThreadingBindings for thread-local storage
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final int result = NATIVE_BINDINGS.threadPutInt(nativeThreadHandle, keyPtr, value);
+
+      if (result != 0) {
+        throw new WasmException("Failed to put integer value in thread-local storage");
+      }
+    }
   }
 
   @Override
@@ -77,8 +81,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outValue = tempArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result = NATIVE_BINDINGS.threadGetInt(nativeThreadHandle, keyPtr, outValue);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get integer value from thread-local storage");
+      }
+
+      return outValue.get(ValueLayout.JAVA_INT, 0);
+    }
   }
 
   @Override
@@ -182,8 +196,15 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final int result = NATIVE_BINDINGS.threadRemoveKey(nativeThreadHandle, keyPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to remove key from thread-local storage");
+      }
+      return true;
+    }
   }
 
   @Override
@@ -191,32 +212,64 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outExists = tempArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result = NATIVE_BINDINGS.threadContainsKey(nativeThreadHandle, keyPtr, outExists);
+
+      if (result != 0) {
+        throw new WasmException("Failed to check if key exists in thread-local storage");
+      }
+
+      return outExists.get(ValueLayout.JAVA_INT, 0) != 0;
+    }
   }
 
   @Override
   public void clear() throws WasmException {
     ensureNotClosed();
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    final int result = NATIVE_BINDINGS.threadClearStorage(nativeThreadHandle);
+
+    if (result != 0) {
+      throw new WasmException("Failed to clear thread-local storage");
+    }
   }
 
   @Override
   public int size() throws WasmException {
     ensureNotClosed();
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outSize = tempArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result = NATIVE_BINDINGS.threadStorageSize(nativeThreadHandle, outSize);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get thread-local storage size");
+      }
+
+      return outSize.get(ValueLayout.JAVA_INT, 0);
+    }
   }
 
   @Override
   public long getMemoryUsage() throws WasmException {
     ensureNotClosed();
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outMemoryUsage = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.threadStorageMemoryUsage(nativeThreadHandle, outMemoryUsage);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get thread-local storage memory usage");
+      }
+
+      return outMemoryUsage.get(ValueLayout.JAVA_LONG, 0);
+    }
   }
 
   /**
