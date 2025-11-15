@@ -4409,21 +4409,73 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_get_export_name",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_component_get_import_name",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.JAVA_LONG,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_component_free_string", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // WASI context functions
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_argv",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_env",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_inherit_env",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_inherit_stdio",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_stdin",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_stdout",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_stderr",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_preopen_dir",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_preopen_dir_readonly",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_preopen_dir_with_perms",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
   }
 
   // Panama Linker Functions
@@ -5887,5 +5939,198 @@ public final class NativeFunctionBindings {
     if (stringPtr != null && !stringPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_component_free_string", Void.class, stringPtr);
     }
+  }
+
+  // WASI Context Functions
+
+  /**
+   * Creates a new WASI context.
+   *
+   * @return pointer to the WASI context, or null on failure
+   */
+  public MemorySegment wasiContextCreate() {
+    return callNativeFunction("wasmtime4j_wasi_context_create", MemorySegment.class);
+  }
+
+  /**
+   * Destroys a WASI context.
+   *
+   * @param contextHandle the WASI context handle
+   */
+  public void wasiContextDestroy(final MemorySegment contextHandle) {
+    if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_wasi_context_destroy", Void.class, contextHandle);
+    }
+  }
+
+  /**
+   * Sets command line arguments for the WASI context.
+   *
+   * @param contextHandle the WASI context handle
+   * @param args pointer to array of C strings
+   * @param argCount number of arguments
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetArgv(
+      final MemorySegment contextHandle, final MemorySegment args, final long argCount) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_argv", Integer.class, contextHandle, args, argCount);
+  }
+
+  /**
+   * Sets an environment variable in the WASI context.
+   *
+   * @param contextHandle the WASI context handle
+   * @param key the environment variable name (C string)
+   * @param value the environment variable value (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetEnv(
+      final MemorySegment contextHandle, final MemorySegment key, final MemorySegment value) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(key, "key");
+    validatePointer(value, "value");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_env", Integer.class, contextHandle, key, value);
+  }
+
+  /**
+   * Inherits all host environment variables.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextInheritEnv(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction("wasmtime4j_wasi_context_inherit_env", Integer.class, contextHandle);
+  }
+
+  /**
+   * Inherits host stdio streams.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextInheritStdio(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_inherit_stdio", Integer.class, contextHandle);
+  }
+
+  /**
+   * Sets stdin to read from a file.
+   *
+   * @param contextHandle the WASI context handle
+   * @param path the file path (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStdin(final MemorySegment contextHandle, final MemorySegment path) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(path, "path");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stdin", Integer.class, contextHandle, path);
+  }
+
+  /**
+   * Sets stdout to write to a file.
+   *
+   * @param contextHandle the WASI context handle
+   * @param path the file path (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStdout(final MemorySegment contextHandle, final MemorySegment path) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(path, "path");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stdout", Integer.class, contextHandle, path);
+  }
+
+  /**
+   * Sets stderr to write to a file.
+   *
+   * @param contextHandle the WASI context handle
+   * @param path the file path (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStderr(final MemorySegment contextHandle, final MemorySegment path) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(path, "path");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stderr", Integer.class, contextHandle, path);
+  }
+
+  /**
+   * Adds a pre-opened directory with full permissions.
+   *
+   * @param contextHandle the WASI context handle
+   * @param hostPath the host filesystem path (C string)
+   * @param guestPath the guest path visible to WASI module (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextPreopenDir(
+      final MemorySegment contextHandle,
+      final MemorySegment hostPath,
+      final MemorySegment guestPath) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(hostPath, "hostPath");
+    validatePointer(guestPath, "guestPath");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_preopen_dir", Integer.class, contextHandle, hostPath, guestPath);
+  }
+
+  /**
+   * Adds a pre-opened directory with read-only permissions.
+   *
+   * @param contextHandle the WASI context handle
+   * @param hostPath the host filesystem path (C string)
+   * @param guestPath the guest path visible to WASI module (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextPreopenDirReadonly(
+      final MemorySegment contextHandle,
+      final MemorySegment hostPath,
+      final MemorySegment guestPath) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(hostPath, "hostPath");
+    validatePointer(guestPath, "guestPath");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_preopen_dir_readonly",
+        Integer.class,
+        contextHandle,
+        hostPath,
+        guestPath);
+  }
+
+  /**
+   * Adds a pre-opened directory with custom permissions.
+   *
+   * @param contextHandle the WASI context handle
+   * @param hostPath the host filesystem path (C string)
+   * @param guestPath the guest path visible to WASI module (C string)
+   * @param canRead whether reading is allowed
+   * @param canWrite whether writing is allowed
+   * @param canCreate whether file creation is allowed
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextPreopenDirWithPerms(
+      final MemorySegment contextHandle,
+      final MemorySegment hostPath,
+      final MemorySegment guestPath,
+      final int canRead,
+      final int canWrite,
+      final int canCreate) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(hostPath, "hostPath");
+    validatePointer(guestPath, "guestPath");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_preopen_dir_with_perms",
+        Integer.class,
+        contextHandle,
+        hostPath,
+        guestPath,
+        canRead,
+        canWrite,
+        canCreate);
   }
 }

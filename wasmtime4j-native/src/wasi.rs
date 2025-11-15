@@ -880,6 +880,186 @@ pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
     result.1
 }
 
+// ============================================================================
+// Panama FFI exports for WASI context management
+// ============================================================================
+
+/// Create a new WASI context (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_create() -> *mut c_void {
+    wasi_ctx_new()
+}
+
+/// Destroy a WASI context (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_destroy(ctx_ptr: *mut c_void) {
+    wasi_ctx_destroy(ctx_ptr);
+}
+
+/// Set command line arguments for WASI context (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_argv(
+    ctx_ptr: *mut c_void,
+    args: *const *const c_char,
+    args_len: usize,
+) -> c_int {
+    wasi_ctx_set_args(ctx_ptr, args, args_len)
+}
+
+/// Set environment variable in WASI context (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_env(
+    ctx_ptr: *mut c_void,
+    key: *const c_char,
+    value: *const c_char,
+) -> c_int {
+    wasi_ctx_set_env(ctx_ptr, key, value)
+}
+
+/// Inherit host environment variables (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_env(ctx_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        // Set all current environment variables
+        for (key, value) in std::env::vars() {
+            ctx.set_environment_variable(&key, &value)?;
+        }
+        Ok(())
+    })
+}
+
+/// Inherit host stdio (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_stdio(ctx_ptr: *mut c_void) -> c_int {
+    wasi_ctx_configure_stdio(
+        ctx_ptr,
+        0,  // stdin: Inherit
+        std::ptr::null(),
+        0,  // stdout: Inherit
+        std::ptr::null(),
+        0,  // stderr: Inherit
+        std::ptr::null(),
+    )
+}
+
+/// Set stdin to read from file (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdin(
+    ctx_ptr: *mut c_void,
+    path: *const c_char,
+) -> c_int {
+    wasi_ctx_configure_stdio(
+        ctx_ptr,
+        2,  // stdin: File
+        path,
+        0,  // stdout: Inherit (keep current)
+        std::ptr::null(),
+        0,  // stderr: Inherit (keep current)
+        std::ptr::null(),
+    )
+}
+
+/// Set stdout to write to file (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdout(
+    ctx_ptr: *mut c_void,
+    path: *const c_char,
+) -> c_int {
+    wasi_ctx_configure_stdio(
+        ctx_ptr,
+        0,  // stdin: Inherit (keep current)
+        std::ptr::null(),
+        2,  // stdout: File
+        path,
+        0,  // stderr: Inherit (keep current)
+        std::ptr::null(),
+    )
+}
+
+/// Set stderr to write to file (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr(
+    ctx_ptr: *mut c_void,
+    path: *const c_char,
+) -> c_int {
+    wasi_ctx_configure_stdio(
+        ctx_ptr,
+        0,  // stdin: Inherit (keep current)
+        std::ptr::null(),
+        0,  // stdout: Inherit (keep current)
+        std::ptr::null(),
+        2,  // stderr: File
+        path,
+    )
+}
+
+/// Add a pre-opened directory with full permissions (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir(
+    ctx_ptr: *mut c_void,
+    host_path: *const c_char,
+    guest_path: *const c_char,
+) -> c_int {
+    wasi_ctx_add_dir(
+        ctx_ptr,
+        host_path,
+        guest_path,
+        1,  // can_create
+        1,  // can_read
+        1,  // can_remove
+        1,  // file_read
+        1,  // file_write
+        1,  // file_create
+        1,  // file_truncate
+    )
+}
+
+/// Add a pre-opened directory with read-only permissions (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_readonly(
+    ctx_ptr: *mut c_void,
+    host_path: *const c_char,
+    guest_path: *const c_char,
+) -> c_int {
+    wasi_ctx_add_dir(
+        ctx_ptr,
+        host_path,
+        guest_path,
+        0,  // can_create: false
+        1,  // can_read: true
+        0,  // can_remove: false
+        1,  // file_read: true
+        0,  // file_write: false
+        0,  // file_create: false
+        0,  // file_truncate: false
+    )
+}
+
+/// Add a pre-opened directory with custom permissions (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_with_perms(
+    ctx_ptr: *mut c_void,
+    host_path: *const c_char,
+    guest_path: *const c_char,
+    can_read: c_int,
+    can_write: c_int,
+    can_create: c_int,
+) -> c_int {
+    wasi_ctx_add_dir(
+        ctx_ptr,
+        host_path,
+        guest_path,
+        can_create,
+        can_read,
+        can_create,  // can_remove matches can_create
+        can_read,
+        can_write,
+        can_create,
+        can_write,   // file_truncate matches can_write
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

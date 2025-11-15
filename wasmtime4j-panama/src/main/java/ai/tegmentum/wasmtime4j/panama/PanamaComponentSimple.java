@@ -93,8 +93,7 @@ final class PanamaComponentSimple implements ComponentSimple {
     try (Arena arena = Arena.ofConfined()) {
       for (long i = 0; i < exportCount; i++) {
         final MemorySegment nameOut = arena.allocate(ValueLayout.ADDRESS);
-        final int errorCode =
-            NATIVE_BINDINGS.componentGetExportName(componentHandle, i, nameOut);
+        final int errorCode = NATIVE_BINDINGS.componentGetExportName(componentHandle, i, nameOut);
 
         if (errorCode != 0) {
           continue; // Skip this export if we can't get the name
@@ -124,8 +123,7 @@ final class PanamaComponentSimple implements ComponentSimple {
     try (Arena arena = Arena.ofConfined()) {
       for (long i = 0; i < importCount; i++) {
         final MemorySegment nameOut = arena.allocate(ValueLayout.ADDRESS);
-        final int errorCode =
-            NATIVE_BINDINGS.componentGetImportName(componentHandle, i, nameOut);
+        final int errorCode = NATIVE_BINDINGS.componentGetImportName(componentHandle, i, nameOut);
 
         if (errorCode != 0) {
           continue; // Skip this import if we can't get the name
