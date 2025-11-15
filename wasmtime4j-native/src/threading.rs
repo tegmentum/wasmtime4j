@@ -866,6 +866,236 @@ pub unsafe extern "C" fn wasmtime4j_thread_storage_memory_usage(
     })
 }
 
+/// Put a long value into thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_put_long(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    value: i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        thread.put_thread_local(key, ThreadLocalValue::Long(value))?;
+
+        log::debug!("Put long value {} into TLS", value);
+        Ok(())
+    })
+}
+
+/// Get a long value from thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_get_long(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_value: *mut i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_value.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output value pointer cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+
+        match value {
+            Some(ThreadLocalValue::Long(long_value)) => {
+                *out_value = long_value;
+                log::debug!("Retrieved long value {} from TLS", long_value);
+                Ok(())
+            }
+            Some(_) => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local value for key '{}' is not a long", key),
+            }),
+            None => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local key '{}' not found", key),
+            }),
+        }
+    })
+}
+
+/// Put a float value into thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_put_float(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    value: f32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        thread.put_thread_local(key, ThreadLocalValue::Float(value))?;
+
+        log::debug!("Put float value {} into TLS", value);
+        Ok(())
+    })
+}
+
+/// Get a float value from thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_get_float(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_value: *mut f32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_value.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output value pointer cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+
+        match value {
+            Some(ThreadLocalValue::Float(float_value)) => {
+                *out_value = float_value;
+                log::debug!("Retrieved float value {} from TLS", float_value);
+                Ok(())
+            }
+            Some(_) => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local value for key '{}' is not a float", key),
+            }),
+            None => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local key '{}' not found", key),
+            }),
+        }
+    })
+}
+
+/// Put a double value into thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_put_double(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    value: f64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        thread.put_thread_local(key, ThreadLocalValue::Double(value))?;
+
+        log::debug!("Put double value {} into TLS", value);
+        Ok(())
+    })
+}
+
+/// Get a double value from thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_get_double(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_value: *mut f64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_value.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output value pointer cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+
+        match value {
+            Some(ThreadLocalValue::Double(double_value)) => {
+                *out_value = double_value;
+                log::debug!("Retrieved double value {} from TLS", double_value);
+                Ok(())
+            }
+            Some(_) => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local value for key '{}' is not a double", key),
+            }),
+            None => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local key '{}' not found", key),
+            }),
+        }
+    })
+}
+
+/// Put a byte array into thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_put_bytes(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    bytes_ptr: *const u8,
+    bytes_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if bytes_ptr.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Bytes pointer cannot be null".to_string(),
+            });
+        }
+
+        let bytes = std::slice::from_raw_parts(bytes_ptr, bytes_len).to_vec();
+        thread.put_thread_local(key, ThreadLocalValue::Bytes(bytes))?;
+
+        log::debug!("Put byte array of length {} into TLS", bytes_len);
+        Ok(())
+    })
+}
+
+/// Get a byte array from thread-local storage (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_get_bytes(
+    thread_ptr: *mut c_void,
+    key_ptr: *const c_char,
+    out_bytes_ptr: *mut *mut u8,
+    out_bytes_len: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
+        let key = ffi_utils::c_str_to_string(key_ptr, "key")?;
+
+        if out_bytes_ptr.is_null() || out_bytes_len.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output pointers cannot be null".to_string(),
+            });
+        }
+
+        let value = thread.get_thread_local(&key)?;
+
+        match value {
+            Some(ThreadLocalValue::Bytes(bytes)) => {
+                let len = bytes.len();
+                let ptr = libc::malloc(len) as *mut u8;
+                if ptr.is_null() {
+                    return Err(crate::error::WasmtimeError::InvalidParameter {
+                        message: "Failed to allocate memory for byte array".to_string(),
+                    });
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, len);
+                *out_bytes_ptr = ptr;
+                *out_bytes_len = len;
+                log::debug!("Retrieved byte array of length {} from TLS", len);
+                Ok(())
+            }
+            Some(_) => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local value for key '{}' is not a byte array", key),
+            }),
+            None => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Thread-local key '{}' not found", key),
+            }),
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
