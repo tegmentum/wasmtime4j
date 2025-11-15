@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,9 @@ import java.util.function.Supplier;
  * @since 1.0.0
  */
 public final class PanamaWasmThread implements WasmThread {
+
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   /** Native thread handle memory segment. */
   private final MemorySegment nativeHandle;
@@ -195,19 +199,10 @@ public final class PanamaWasmThread implements WasmThread {
   public void join() throws WasmException, InterruptedException {
     ensureNotClosed();
 
-    // TODO: Implement when PanamaThreadingBindings is available
-    throw new UnsupportedOperationException("Thread join not yet implemented in Panama backend");
-
-    /*
-    try {
-      PanamaThreadingBindings.joinThread(nativeHandle);
-    } catch (final Exception e) {
-      if (e instanceof InterruptedException) {
-        throw (InterruptedException) e;
-      }
-      throw new WasmException("Thread join failed: " + e.getMessage(), e);
+    final int result = NATIVE_BINDINGS.threadJoin(nativeHandle);
+    if (result != 0) {
+      throw new WasmException("Thread join failed");
     }
-    */
   }
 
   @Override
@@ -218,20 +213,16 @@ public final class PanamaWasmThread implements WasmThread {
       throw new IllegalArgumentException("Timeout must be non-negative");
     }
 
-    // TODO: Implement when PanamaThreadingBindings is available
-    throw new UnsupportedOperationException(
-        "Thread join with timeout not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outJoined = tempArena.allocate(ValueLayout.JAVA_INT);
+      final int result = NATIVE_BINDINGS.threadJoinTimeout(nativeHandle, timeoutMs, outJoined);
 
-    /*
-    try {
-      return PanamaThreadingBindings.joinThreadTimeout(nativeHandle, timeoutMs);
-    } catch (final Exception e) {
-      if (e instanceof InterruptedException) {
-        throw (InterruptedException) e;
+      if (result != 0) {
+        throw new WasmException("Thread join with timeout failed");
       }
-      throw new WasmException("Thread join with timeout failed: " + e.getMessage(), e);
+
+      return outJoined.get(ValueLayout.JAVA_INT, 0) != 0;
     }
-    */
   }
 
   @Override
@@ -240,16 +231,13 @@ public final class PanamaWasmThread implements WasmThread {
       return CompletableFuture.completedFuture(null);
     }
 
-    // TODO: Implement when PanamaThreadingBindings is available
-    return CompletableFuture.failedFuture(
-        new UnsupportedOperationException(
-            "Thread termination not yet implemented in Panama backend"));
-
-    /*
     return CompletableFuture.runAsync(
         () -> {
           try {
-            PanamaThreadingBindings.requestTermination(nativeHandle);
+            final int result = NATIVE_BINDINGS.threadRequestTermination(nativeHandle);
+            if (result != 0) {
+              throw new RuntimeException("Failed to request thread termination");
+            }
 
             // Wait for termination to complete
             final long timeout = 30000; // 30 seconds
@@ -268,25 +256,17 @@ public final class PanamaWasmThread implements WasmThread {
             throw new RuntimeException("Thread termination failed", e);
           }
         });
-    */
   }
 
   @Override
   public void forceTerminate() throws WasmException {
     ensureNotClosed();
 
-    // TODO: Implement when PanamaThreadingBindings is available
-    throw new UnsupportedOperationException(
-        "Force termination not yet implemented in Panama backend");
-
-    /*
-    try {
-      PanamaThreadingBindings.forceTerminate(nativeHandle);
-      currentState.set(WasmThreadState.KILLED);
-    } catch (final Exception e) {
-      throw new WasmException("Force termination failed: " + e.getMessage(), e);
+    final int result = NATIVE_BINDINGS.threadForceTerminate(nativeHandle);
+    if (result != 0) {
+      throw new WasmException("Force termination failed");
     }
-    */
+    currentState.set(WasmThreadState.KILLED);
   }
 
   @Override
@@ -319,16 +299,18 @@ public final class PanamaWasmThread implements WasmThread {
       return false;
     }
 
-    // TODO: Implement when PanamaThreadingBindings is available
-    return false;
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outRequested = tempArena.allocate(ValueLayout.JAVA_INT);
+      final int result = NATIVE_BINDINGS.threadIsTerminationRequested(nativeHandle, outRequested);
 
-    /*
-    try {
-      return PanamaThreadingBindings.isTerminationRequested(nativeHandle);
+      if (result != 0) {
+        return false;
+      }
+
+      return outRequested.get(ValueLayout.JAVA_INT, 0) != 0;
     } catch (final Exception e) {
       return false;
     }
-    */
   }
 
   @Override

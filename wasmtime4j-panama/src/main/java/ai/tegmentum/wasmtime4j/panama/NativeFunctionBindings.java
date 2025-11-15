@@ -4584,6 +4584,34 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // out_bytes_ptr
             ValueLayout.ADDRESS)); // out_bytes_len
 
+    // Thread Lifecycle Functions
+    addFunctionBinding(
+        "wasmtime4j_thread_join",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // thread_handle
+
+    addFunctionBinding(
+        "wasmtime4j_thread_join_timeout",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_handle
+            ValueLayout.JAVA_LONG, // timeout_ms
+            ValueLayout.ADDRESS)); // out_joined
+
+    addFunctionBinding(
+        "wasmtime4j_thread_request_termination",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // thread_handle
+
+    addFunctionBinding(
+        "wasmtime4j_thread_force_terminate",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // thread_handle
+
+    addFunctionBinding(
+        "wasmtime4j_thread_is_termination_requested",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // thread_handle
+            ValueLayout.ADDRESS)); // out_requested
+
     // Memory Management Functions
     addFunctionBinding("wasmtime4j_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // ptr
   }
@@ -6498,6 +6526,73 @@ public final class NativeFunctionBindings {
         keyPtr,
         outBytesPtr,
         outBytesLen);
+  }
+
+  // Thread Lifecycle Functions
+
+  /**
+   * Joins a thread and waits for it to complete.
+   *
+   * @param threadHandle pointer to the thread
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadJoin(final MemorySegment threadHandle) {
+    validatePointer(threadHandle, "threadHandle");
+    return callNativeFunction("wasmtime4j_thread_join", Integer.class, threadHandle);
+  }
+
+  /**
+   * Joins a thread with a timeout.
+   *
+   * @param threadHandle pointer to the thread
+   * @param timeoutMs timeout in milliseconds
+   * @param outJoined pointer to store whether thread joined (1) or timed out (0)
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadJoinTimeout(
+      final MemorySegment threadHandle, final long timeoutMs, final MemorySegment outJoined) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(outJoined, "outJoined");
+    return callNativeFunction(
+        "wasmtime4j_thread_join_timeout", Integer.class, threadHandle, timeoutMs, outJoined);
+  }
+
+  /**
+   * Requests graceful thread termination.
+   *
+   * @param threadHandle pointer to the thread
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadRequestTermination(final MemorySegment threadHandle) {
+    validatePointer(threadHandle, "threadHandle");
+    return callNativeFunction("wasmtime4j_thread_request_termination", Integer.class, threadHandle);
+  }
+
+  /**
+   * Forces thread termination.
+   *
+   * @param threadHandle pointer to the thread
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadForceTerminate(final MemorySegment threadHandle) {
+    validatePointer(threadHandle, "threadHandle");
+    return callNativeFunction("wasmtime4j_thread_force_terminate", Integer.class, threadHandle);
+  }
+
+  /**
+   * Checks if thread termination has been requested.
+   *
+   * @param threadHandle pointer to the thread
+   * @param outRequested pointer to store termination request flag (1 = requested, 0 = not
+   *     requested)
+   * @return 0 on success, non-zero on failure
+   */
+  public int threadIsTerminationRequested(
+      final MemorySegment threadHandle, final MemorySegment outRequested) {
+    validatePointer(threadHandle, "threadHandle");
+    validatePointer(outRequested, "outRequested");
+    return callNativeFunction(
+        "wasmtime4j_thread_is_termination_requested", Integer.class, threadHandle, outRequested);
   }
 
   // Memory Management Functions

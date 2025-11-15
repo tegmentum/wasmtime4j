@@ -1096,6 +1096,86 @@ pub unsafe extern "C" fn wasmtime4j_thread_get_bytes(
     })
 }
 
+/// Join a thread and wait for it to complete (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_join(thread_handle: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
+        thread.join()?;
+        Ok(())
+    })
+}
+
+/// Join a thread with timeout (Panama FFI)
+/// Returns 1 if thread joined successfully, 0 if timeout occurred
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_join_timeout(
+    thread_handle: *mut c_void,
+    timeout_ms: i64,
+    out_joined: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
+
+        if out_joined.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output parameter cannot be null".to_string(),
+            });
+        }
+
+        if timeout_ms < 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Timeout must be non-negative".to_string(),
+            });
+        }
+
+        let joined = thread.join_timeout(std::time::Duration::from_millis(timeout_ms as u64))?;
+        *out_joined = if joined { 1 } else { 0 };
+        Ok(())
+    })
+}
+
+/// Request thread termination (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_request_termination(thread_handle: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
+        thread.request_termination();
+        Ok(())
+    })
+}
+
+/// Force terminate a thread (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_force_terminate(thread_handle: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
+        thread.force_terminate()?;
+        Ok(())
+    })
+}
+
+/// Check if termination has been requested (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_thread_is_termination_requested(
+    thread_handle: *mut c_void,
+    out_requested: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
+
+        if out_requested.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Output parameter cannot be null".to_string(),
+            });
+        }
+
+        let requested = thread.is_termination_requested();
+        *out_requested = if requested { 1 } else { 0 };
+        Ok(())
+    })
+}
+
 /// Free memory allocated by native functions (Panama FFI)
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_free(ptr: *mut c_void) {
