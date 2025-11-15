@@ -1096,6 +1096,14 @@ pub unsafe extern "C" fn wasmtime4j_thread_get_bytes(
     })
 }
 
+/// Free memory allocated by native functions (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_free(ptr: *mut c_void) {
+    if !ptr.is_null() {
+        libc::free(ptr);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

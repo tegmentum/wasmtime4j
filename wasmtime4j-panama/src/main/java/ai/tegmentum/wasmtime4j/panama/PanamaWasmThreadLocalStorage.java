@@ -100,8 +100,14 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final int result = NATIVE_BINDINGS.threadPutLong(nativeThreadHandle, keyPtr, value);
+
+      if (result != 0) {
+        throw new WasmException("Failed to put long value in thread-local storage");
+      }
+    }
   }
 
   @Override
@@ -109,8 +115,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outValue = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = NATIVE_BINDINGS.threadGetLong(nativeThreadHandle, keyPtr, outValue);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get long value from thread-local storage");
+      }
+
+      return outValue.get(ValueLayout.JAVA_LONG, 0);
+    }
   }
 
   @Override
@@ -118,8 +134,14 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final int result = NATIVE_BINDINGS.threadPutFloat(nativeThreadHandle, keyPtr, value);
+
+      if (result != 0) {
+        throw new WasmException("Failed to put float value in thread-local storage");
+      }
+    }
   }
 
   @Override
@@ -127,8 +149,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outValue = tempArena.allocate(ValueLayout.JAVA_FLOAT);
+
+      final int result = NATIVE_BINDINGS.threadGetFloat(nativeThreadHandle, keyPtr, outValue);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get float value from thread-local storage");
+      }
+
+      return outValue.get(ValueLayout.JAVA_FLOAT, 0);
+    }
   }
 
   @Override
@@ -136,8 +168,14 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final int result = NATIVE_BINDINGS.threadPutDouble(nativeThreadHandle, keyPtr, value);
+
+      if (result != 0) {
+        throw new WasmException("Failed to put double value in thread-local storage");
+      }
+    }
   }
 
   @Override
@@ -145,8 +183,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outValue = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+
+      final int result = NATIVE_BINDINGS.threadGetDouble(nativeThreadHandle, keyPtr, outValue);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get double value from thread-local storage");
+      }
+
+      return outValue.get(ValueLayout.JAVA_DOUBLE, 0);
+    }
   }
 
   @Override
@@ -155,8 +203,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     validateKey(key);
     validateNotNull(value, "value");
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment bytesPtr = tempArena.allocate(value.length);
+      MemorySegment.copy(value, 0, bytesPtr, ValueLayout.JAVA_BYTE, 0, value.length);
+
+      final int result =
+          NATIVE_BINDINGS.threadPutBytes(nativeThreadHandle, keyPtr, bytesPtr, value.length);
+
+      if (result != 0) {
+        throw new WasmException("Failed to put byte array in thread-local storage");
+      }
+    }
   }
 
   @Override
@@ -164,8 +222,33 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
     ensureNotClosed();
     validateKey(key);
 
-    throw new UnsupportedOperationException(
-        "Thread-local storage not yet implemented in Panama backend");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment keyPtr = tempArena.allocateFrom(key);
+      final MemorySegment outBytesPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outBytesLen = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.threadGetBytes(nativeThreadHandle, keyPtr, outBytesPtr, outBytesLen);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get byte array from thread-local storage");
+      }
+
+      final MemorySegment bytesPtr = outBytesPtr.get(ValueLayout.ADDRESS, 0);
+      final long bytesLen = outBytesLen.get(ValueLayout.JAVA_LONG, 0);
+
+      if (bytesPtr == null || bytesPtr.equals(MemorySegment.NULL) || bytesLen == 0) {
+        return new byte[0];
+      }
+
+      final byte[] result_bytes = new byte[(int) bytesLen];
+      MemorySegment.copy(bytesPtr, ValueLayout.JAVA_BYTE, 0, result_bytes, 0, (int) bytesLen);
+
+      // Free the native memory allocated by the native function
+      NATIVE_BINDINGS.free(bytesPtr);
+
+      return result_bytes;
+    }
   }
 
   @Override

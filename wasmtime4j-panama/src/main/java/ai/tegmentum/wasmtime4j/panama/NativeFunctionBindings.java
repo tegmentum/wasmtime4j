@@ -1233,7 +1233,6 @@ public final class NativeFunctionBindings {
         "wasmtime4j_wasi_context_set_args", Integer.class, contextPtr, argsPtr, argsCount);
   }
 
-
   /**
    * Adds a directory mapping to a WASI context.
    *
@@ -4463,7 +4462,8 @@ public final class NativeFunctionBindings {
 
     // WASI Linker Integration
     addFunctionBinding(
-        "wasmtime4j_linker_add_wasi", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+        "wasmtime4j_linker_add_wasi",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
     // Thread-Local Storage (TLS) Functions
     addFunctionBinding(
@@ -4583,6 +4583,9 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // key_ptr (C string)
             ValueLayout.ADDRESS, // out_bytes_ptr
             ValueLayout.ADDRESS)); // out_bytes_len
+
+    // Memory Management Functions
+    addFunctionBinding("wasmtime4j_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // ptr
   }
 
   // Panama Linker Functions
@@ -6257,7 +6260,8 @@ public final class NativeFunctionBindings {
       final MemorySegment threadHandle, final MemorySegment keyPtr, final int value) {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
-    return callNativeFunction("wasmtime4j_thread_put_int", Integer.class, threadHandle, keyPtr, value);
+    return callNativeFunction(
+        "wasmtime4j_thread_put_int", Integer.class, threadHandle, keyPtr, value);
   }
 
   /**
@@ -6273,7 +6277,8 @@ public final class NativeFunctionBindings {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
     validatePointer(outValue, "outValue");
-    return callNativeFunction("wasmtime4j_thread_get_int", Integer.class, threadHandle, keyPtr, outValue);
+    return callNativeFunction(
+        "wasmtime4j_thread_get_int", Integer.class, threadHandle, keyPtr, outValue);
   }
 
   /**
@@ -6327,7 +6332,8 @@ public final class NativeFunctionBindings {
   public int threadStorageSize(final MemorySegment threadHandle, final MemorySegment outSize) {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(outSize, "outSize");
-    return callNativeFunction("wasmtime4j_thread_storage_size", Integer.class, threadHandle, outSize);
+    return callNativeFunction(
+        "wasmtime4j_thread_storage_size", Integer.class, threadHandle, outSize);
   }
 
   /**
@@ -6359,7 +6365,8 @@ public final class NativeFunctionBindings {
       final MemorySegment threadHandle, final MemorySegment keyPtr, final long value) {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
-    return callNativeFunction("wasmtime4j_thread_put_long", Integer.class, threadHandle, keyPtr, value);
+    return callNativeFunction(
+        "wasmtime4j_thread_put_long", Integer.class, threadHandle, keyPtr, value);
   }
 
   /**
@@ -6375,7 +6382,8 @@ public final class NativeFunctionBindings {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
     validatePointer(outValue, "outValue");
-    return callNativeFunction("wasmtime4j_thread_get_long", Integer.class, threadHandle, keyPtr, outValue);
+    return callNativeFunction(
+        "wasmtime4j_thread_get_long", Integer.class, threadHandle, keyPtr, outValue);
   }
 
   /**
@@ -6390,7 +6398,8 @@ public final class NativeFunctionBindings {
       final MemorySegment threadHandle, final MemorySegment keyPtr, final float value) {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
-    return callNativeFunction("wasmtime4j_thread_put_float", Integer.class, threadHandle, keyPtr, value);
+    return callNativeFunction(
+        "wasmtime4j_thread_put_float", Integer.class, threadHandle, keyPtr, value);
   }
 
   /**
@@ -6406,7 +6415,8 @@ public final class NativeFunctionBindings {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
     validatePointer(outValue, "outValue");
-    return callNativeFunction("wasmtime4j_thread_get_float", Integer.class, threadHandle, keyPtr, outValue);
+    return callNativeFunction(
+        "wasmtime4j_thread_get_float", Integer.class, threadHandle, keyPtr, outValue);
   }
 
   /**
@@ -6421,7 +6431,8 @@ public final class NativeFunctionBindings {
       final MemorySegment threadHandle, final MemorySegment keyPtr, final double value) {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
-    return callNativeFunction("wasmtime4j_thread_put_double", Integer.class, threadHandle, keyPtr, value);
+    return callNativeFunction(
+        "wasmtime4j_thread_put_double", Integer.class, threadHandle, keyPtr, value);
   }
 
   /**
@@ -6437,7 +6448,8 @@ public final class NativeFunctionBindings {
     validatePointer(threadHandle, "threadHandle");
     validatePointer(keyPtr, "keyPtr");
     validatePointer(outValue, "outValue");
-    return callNativeFunction("wasmtime4j_thread_get_double", Integer.class, threadHandle, keyPtr, outValue);
+    return callNativeFunction(
+        "wasmtime4j_thread_get_double", Integer.class, threadHandle, keyPtr, outValue);
   }
 
   /**
@@ -6480,6 +6492,24 @@ public final class NativeFunctionBindings {
     validatePointer(outBytesPtr, "outBytesPtr");
     validatePointer(outBytesLen, "outBytesLen");
     return callNativeFunction(
-        "wasmtime4j_thread_get_bytes", Integer.class, threadHandle, keyPtr, outBytesPtr, outBytesLen);
+        "wasmtime4j_thread_get_bytes",
+        Integer.class,
+        threadHandle,
+        keyPtr,
+        outBytesPtr,
+        outBytesLen);
+  }
+
+  // Memory Management Functions
+
+  /**
+   * Frees memory allocated by native functions.
+   *
+   * @param ptr the memory pointer to free
+   */
+  public void free(final MemorySegment ptr) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_free", Void.class, ptr);
+    }
   }
 }
