@@ -113,115 +113,117 @@ public final class PanamaGcRuntime implements GcRuntime {
       GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("peak_heap_size"));
 
   static {
+    // Ensure native library is loaded before trying to find symbols
+    final NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
     final Linker linker = Linker.nativeLinker();
-    final SymbolLookup stdlib = linker.defaultLookup();
+    final SymbolLookup lookup = loader.getSymbolLookup();
 
     try {
       createRuntime =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_create_runtime").orElseThrow(),
+              lookup.find("wasmtime4j_gc_create_runtime").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG));
 
       destroyRuntime =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_destroy_runtime").orElseThrow(),
+              lookup.find("wasmtime4j_gc_destroy_runtime").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
 
       registerStructType =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_register_struct_type").orElseThrow(),
+              lookup.find("wasmtime4j_gc_register_struct_type").orElseThrow(),
               FunctionDescriptor.of(
                   JAVA_INT, JAVA_LONG, ADDRESS, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS, ADDRESS,
                   ADDRESS));
 
       registerArrayType =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_register_array_type").orElseThrow(),
+              lookup.find("wasmtime4j_gc_register_array_type").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS, JAVA_INT, JAVA_INT, JAVA_BYTE));
 
       structNew =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_struct_new").orElseThrow(),
+              lookup.find("wasmtime4j_gc_struct_new").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, JAVA_INT));
 
       structNewDefault =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_struct_new_default").orElseThrow(),
+              lookup.find("wasmtime4j_gc_struct_new_default").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
 
       structGet =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_struct_get").orElseThrow(),
+              lookup.find("wasmtime4j_gc_struct_get").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS));
 
       structSet =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_struct_set").orElseThrow(),
+              lookup.find("wasmtime4j_gc_struct_set").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT));
 
       arrayNew =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_array_new").orElseThrow(),
+              lookup.find("wasmtime4j_gc_array_new").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, JAVA_INT));
 
       arrayNewDefault =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_array_new_default").orElseThrow(),
+              lookup.find("wasmtime4j_gc_array_new_default").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_INT));
 
       arrayGet =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_array_get").orElseThrow(),
+              lookup.find("wasmtime4j_gc_array_get").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS));
 
       arraySet =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_array_set").orElseThrow(),
+              lookup.find("wasmtime4j_gc_array_set").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT));
 
       arrayLen =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_array_len").orElseThrow(),
+              lookup.find("wasmtime4j_gc_array_len").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG));
 
       i31New =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_i31_new").orElseThrow(),
+              lookup.find("wasmtime4j_gc_i31_new").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
 
       i31Get =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_i31_get").orElseThrow(),
+              lookup.find("wasmtime4j_gc_i31_get").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_BYTE));
 
       refCast =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_ref_cast").orElseThrow(),
+              lookup.find("wasmtime4j_gc_ref_cast").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG, JAVA_INT));
 
       refTest =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_ref_test").orElseThrow(),
+              lookup.find("wasmtime4j_gc_ref_test").orElseThrow(),
               FunctionDescriptor.of(JAVA_BYTE, JAVA_LONG, JAVA_LONG, JAVA_INT));
 
       refEq =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_ref_eq").orElseThrow(),
+              lookup.find("wasmtime4j_gc_ref_eq").orElseThrow(),
               FunctionDescriptor.of(JAVA_BYTE, JAVA_LONG, JAVA_LONG, JAVA_LONG));
 
       refIsNull =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_ref_is_null").orElseThrow(),
+              lookup.find("wasmtime4j_gc_ref_is_null").orElseThrow(),
               FunctionDescriptor.of(JAVA_BYTE, JAVA_LONG, JAVA_LONG));
 
       collectGarbage =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_collect_garbage").orElseThrow(),
+              lookup.find("wasmtime4j_gc_collect_garbage").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS));
 
       getGcStats =
           linker.downcallHandle(
-              stdlib.find("wasmtime4j_gc_get_stats").orElseThrow(),
+              lookup.find("wasmtime4j_gc_get_stats").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS));
 
     } catch (final Throwable e) {

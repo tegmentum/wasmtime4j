@@ -185,6 +185,19 @@ public final class NativeLibraryLoader {
   }
 
   /**
+   * Gets the SymbolLookup for the loaded native library.
+   *
+   * @return the symbol lookup
+   * @throws IllegalStateException if the library is not loaded
+   */
+  public SymbolLookup getSymbolLookup() {
+    if (!isLoaded() || symbolLookup == null) {
+      throw new IllegalStateException("Native library not loaded");
+    }
+    return symbolLookup;
+  }
+
+  /**
    * Gets the Arena used for library resource management.
    *
    * @return the library arena

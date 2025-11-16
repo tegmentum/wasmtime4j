@@ -9,11 +9,13 @@
 //! high performance with minimal overhead. Memory management is handled safely
 //! through Panama's memory segments.
 
-// TODO: Re-enable when gc module is available
-// use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
+use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
+use crate::error::{WasmtimeResult, WasmtimeError};
+use crate::gc_types::{FieldType, FieldDefinition, StructTypeDefinition, ArrayTypeDefinition, GcValue};
+use crate::gc_heap::ObjectId;
 
-// TODO: Re-enable all GC FFI functions when gc module is available
-/*
+const FFI_SUCCESS: i32 = 0;
+const FFI_ERROR: i32 = 1;
 
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
@@ -499,7 +501,7 @@ fn register_array_type_internal(
         1 => FieldType::I64,
         2 => FieldType::F32,
         3 => FieldType::F64,
-        _ => return Err(WasmtimeError::InvalidParameter { message:"Invalid element type")),
+        _ => return Err(WasmtimeError::InvalidParameter { message:"Invalid element type".to_string() }),
     };
 
     let array_def = ArrayTypeDefinition {
@@ -548,7 +550,7 @@ fn struct_new_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -565,7 +567,7 @@ fn struct_new_default_internal(runtime_handle: i64, type_id: i32) -> WasmtimeRes
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -592,10 +594,10 @@ fn struct_get_internal(
                 _ => Ok((0, 0)),
             }
         } else {
-            Err(WasmtimeError::InvalidParameter { message:"No value returned"))
+            Err(WasmtimeError::InvalidParameter { message:"No value returned".to_string() })
         }
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -625,7 +627,7 @@ fn struct_set_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -665,7 +667,7 @@ fn array_new_internal(runtime_handle: i64, type_id: i32, elements_ptr: *const i6
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -696,7 +698,7 @@ fn array_len_internal(runtime_handle: i64, object_id: i64) -> WasmtimeResult<u32
     if result.success {
         Ok(result.length.unwrap_or(0))
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -712,7 +714,7 @@ fn i31_new_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId>
     if result.success {
         Ok(result.cast_result.unwrap_or(0))
     } else {
-        Err(WasmtimeError::InvalidParameter { message:&result.error.unwrap_or_default()))
+        Err(WasmtimeError::InvalidParameter { message:result.error.unwrap_or_default() })
     }
 }
 
@@ -772,5 +774,3 @@ fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
         max_heap_size: 0,
     })
 }
-
-*/
