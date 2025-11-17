@@ -292,7 +292,7 @@
                             <Native-Library-Name>${native.library.name}</Native-Library-Name>
                             <Wasmtime-Version>${wasmtime.version}</Wasmtime-Version>
                             <Build-Platform>${os.name}-${os.arch}</Build-Platform>
-                            <Supported-Platforms>linux-x86_64,linux-aarch64,windows-x86_64,macos-x86_64,macos-aarch64</Supported-Platforms>
+                            <Supported-Platforms>linux-x86_64,linux-aarch64,windows-x86_64,darwin-x86_64,darwin-aarch64</Supported-Platforms>
                         </manifestEntries>
                     </archive>
                 </configuration>
@@ -383,40 +383,40 @@
                     </execution>
                     
                     <execution>
-                        <id>macos-x86_64-jar</id>
+                        <id>darwin-x86_64-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>macos-x86_64</classifier>
+                            <classifier>darwin-x86_64</classifier>
                             <includes>
-                                <include>natives/macos-x86_64/**</include>
+                                <include>natives/darwin-x86_64/**</include>
                                 <include>META-INF/**</include>
                             </includes>
                             <archive>
                                 <manifestEntries>
-                                    <Target-Platform>macos-x86_64</Target-Platform>
+                                    <Target-Platform>darwin-x86_64</Target-Platform>
                                 </manifestEntries>
                             </archive>
                         </configuration>
                     </execution>
-                    
+
                     <execution>
-                        <id>macos-aarch64-jar</id>
+                        <id>darwin-aarch64-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>macos-aarch64</classifier>
+                            <classifier>darwin-aarch64</classifier>
                             <includes>
-                                <include>natives/macos-aarch64/**</include>
+                                <include>natives/darwin-aarch64/**</include>
                                 <include>META-INF/**</include>
                             </includes>
                             <archive>
                                 <manifestEntries>
-                                    <Target-Platform>macos-aarch64</Target-Platform>
+                                    <Target-Platform>darwin-aarch64</Target-Platform>
                                 </manifestEntries>
                             </archive>
                         </configuration>
@@ -586,7 +586,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>install-macos-x86_64-target</id>
+                                <id>install-darwin-x86_64-target</id>
                                 <phase>initialize</phase>
                                 <goals>
                                     <goal>exec</goal>
@@ -601,7 +601,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>install-macos-aarch64-target</id>
+                                <id>install-darwin-aarch64-target</id>
                                 <phase>initialize</phase>
                                 <goals>
                                     <goal>exec</goal>
@@ -803,7 +803,7 @@
                             
                             <!-- Build macOS x86_64 -->
                             <execution>
-                                <id>build-macos-x86_64</id>
+                                <id>build-darwin-x86_64</id>
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>exec</goal>
@@ -820,7 +820,7 @@
                             
                             <!-- Build macOS aarch64 -->
                             <execution>
-                                <id>build-macos-aarch64</id>
+                                <id>build-darwin-aarch64</id>
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>exec</goal>

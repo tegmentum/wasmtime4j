@@ -107,10 +107,14 @@ public final class PanamaGcRuntime implements GcRuntime {
       GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("minor_collections"));
   private static final VarHandle majorCollectionsHandle =
       GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("major_collections"));
+  private static final VarHandle totalGcTimeNanosHandle =
+      GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("total_gc_time_nanos"));
   private static final VarHandle currentHeapSizeHandle =
       GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("current_heap_size"));
   private static final VarHandle peakHeapSizeHandle =
       GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("peak_heap_size"));
+  private static final VarHandle maxHeapSizeHandle =
+      GC_STATS_LAYOUT.varHandle(MemoryLayout.PathElement.groupElement("max_heap_size"));
 
   static {
     // Ensure native library is loaded before trying to find symbols
@@ -444,7 +448,11 @@ public final class PanamaGcRuntime implements GcRuntime {
         final int result =
             (int)
                 structGet.invokeExact(
-                    nativeHandle, panamaStruct.getObjectId(), fieldIndex, resultValue, resultType);
+                    nativeHandle,
+                    panamaStruct.getObjectId(),
+                    fieldIndex,
+                    resultValue.address(),
+                    resultType.address());
 
         if (result != 0) {
           throw new GcException("Failed to get struct field");
@@ -538,7 +546,11 @@ public final class PanamaGcRuntime implements GcRuntime {
         final int result =
             (int)
                 arrayGet.invokeExact(
-                    nativeHandle, panamaArray.getObjectId(), elementIndex, resultValue, resultType);
+                    nativeHandle,
+                    panamaArray.getObjectId(),
+                    elementIndex,
+                    resultValue.address(),
+                    resultType.address());
 
         if (result != 0) {
           throw new GcException("Failed to get array element");
@@ -1119,14 +1131,15 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   private GcStats convertNativeToGcStats(final MemorySegment statsSegment) {
-    final long totalAllocated = (long) totalAllocatedHandle.get(statsSegment);
-    final long totalCollected = (long) totalCollectedHandle.get(statsSegment);
-    final long bytesAllocated = (long) bytesAllocatedHandle.get(statsSegment);
-    final long bytesCollected = (long) bytesCollectedHandle.get(statsSegment);
-    final long minorCollections = (long) minorCollectionsHandle.get(statsSegment);
-    final long majorCollections = (long) majorCollectionsHandle.get(statsSegment);
-    final int currentHeapSize = (int) currentHeapSizeHandle.get(statsSegment);
-    final int peakHeapSize = (int) peakHeapSizeHandle.get(statsSegment);
+    final long totalAllocated = (long) totalAllocatedHandle.get(statsSegment, 0L);
+    final long totalCollected = (long) totalCollectedHandle.get(statsSegment, 0L);
+    final long bytesAllocated = (long) bytesAllocatedHandle.get(statsSegment, 0L);
+    final long bytesCollected = (long) bytesCollectedHandle.get(statsSegment, 0L);
+    final long minorCollections = (long) minorCollectionsHandle.get(statsSegment, 0L);
+    final long majorCollections = (long) majorCollectionsHandle.get(statsSegment, 0L);
+    final int currentHeapSize = (int) currentHeapSizeHandle.get(statsSegment, 0L);
+    final int peakHeapSize = (int) peakHeapSizeHandle.get(statsSegment, 0L);
+    final int maxHeapSize = (int) maxHeapSizeHandle.get(statsSegment, 0L);
 
     return GcStats.builder()
         .totalAllocated(totalAllocated)
@@ -1137,7 +1150,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         .majorCollections(majorCollections)
         .currentHeapSize(currentHeapSize)
         .peakHeapSize(peakHeapSize)
-        .maxHeapSize(0)
+        .maxHeapSize(maxHeapSize)
         .build();
   }
 

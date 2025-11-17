@@ -116,9 +116,9 @@ build_target() {
             ;;
         *darwin*)
             if [[ $target == *aarch64* ]]; then
-                output_dir="$NATIVE_DIR/macos-aarch64"
+                output_dir="$NATIVE_DIR/darwin-aarch64"
             else
-                output_dir="$NATIVE_DIR/macos-x86_64"
+                output_dir="$NATIVE_DIR/darwin-x86_64"
             fi
             lib_extension="dylib"
             ;;
@@ -155,8 +155,8 @@ TARGETS_LIST=(
     "x86_64-unknown-linux-gnu:linux-x86_64"
     "aarch64-unknown-linux-gnu:linux-aarch64"
     "x86_64-pc-windows-msvc:windows-x86_64"
-    "x86_64-apple-darwin:macos-x86_64"
-    "aarch64-apple-darwin:macos-aarch64"
+    "x86_64-apple-darwin:darwin-x86_64"
+    "aarch64-apple-darwin:darwin-aarch64"
 )
 
 # Library configuration per platform
@@ -164,8 +164,8 @@ LIB_CONFIG_LIST=(
     "linux-x86_64:lib:so"
     "linux-aarch64:lib:so"
     "windows-x86_64::dll"
-    "macos-x86_64:lib:dylib"
-    "macos-aarch64:lib:dylib"
+    "darwin-x86_64:lib:dylib"
+    "darwin-aarch64:lib:dylib"
 )
 
 # Helper functions
@@ -359,7 +359,7 @@ verify_library() {
                 fi
             fi
             ;;
-        macos-*)
+        darwin-*)
             if command -v file &> /dev/null; then
                 if file "$lib_path" | grep -q "Mach-O.*dynamically linked shared library"; then
                     log_debug "Library format verification passed (Mach-O dylib)"
