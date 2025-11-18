@@ -96,11 +96,19 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
     try (Arena tempArena = Arena.ofConfined()) {
       final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
-      final MemorySegment componentHandle =
-          NATIVE_BINDINGS.componentLoadFromBytes(engineHandle, bytesSegment, wasmBytes.length);
+      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
 
+      final int errorCode =
+          NATIVE_BINDINGS.componentLoadFromBytes(
+              engineHandle, bytesSegment, wasmBytes.length, componentOut);
+
+      if (errorCode != 0) {
+        throw new WasmException("Failed to compile component (error code: " + errorCode + ")");
+      }
+
+      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
       if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to compile component");
+        throw new WasmException("Failed to compile component: null component returned");
       }
 
       final String componentId = generateComponentId();

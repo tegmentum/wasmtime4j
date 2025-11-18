@@ -5867,14 +5867,19 @@ public final class NativeFunctionBindings {
    * @param engineHandle the component engine handle
    * @param bytes the component bytecode
    * @param length the bytecode length
-   * @return memory segment pointer to the component, or null on failure
+   * @param componentOut pointer to receive the component handle
+   * @return 0 on success, non-zero on error
    */
-  public MemorySegment componentLoadFromBytes(
-      final MemorySegment engineHandle, final MemorySegment bytes, final long length) {
+  public int componentLoadFromBytes(
+      final MemorySegment engineHandle,
+      final MemorySegment bytes,
+      final long length,
+      final MemorySegment componentOut) {
     validatePointer(engineHandle, "engineHandle");
     validatePointer(bytes, "bytes");
+    validatePointer(componentOut, "componentOut");
     return callNativeFunction(
-        "wasmtime4j_component_load_from_bytes", MemorySegment.class, engineHandle, bytes, length);
+        "wasmtime4j_component_compile", Integer.class, engineHandle, bytes, length, componentOut);
   }
 
   /**
@@ -5928,7 +5933,7 @@ public final class NativeFunctionBindings {
    */
   public long componentGetSize(final MemorySegment componentHandle) {
     validatePointer(componentHandle, "componentHandle");
-    return callNativeFunction("wasmtime4j_component_get_size", Long.class, componentHandle);
+    return callNativeFunction("wasmtime4j_component_size_bytes", Long.class, componentHandle);
   }
 
   /**
