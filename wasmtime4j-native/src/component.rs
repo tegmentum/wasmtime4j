@@ -1483,6 +1483,44 @@ pub unsafe extern "C" fn wasmtime4j_component_has_import(
     if has_import { 1 } else { 0 }
 }
 
+/// Check if a component exports a specific interface
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_exports_interface(
+    component_ptr: *const c_void,
+    interface_name: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || interface_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(interface_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    if component.exports_interface(name_str) { 1 } else { 0 }
+}
+
+/// Check if a component imports a specific interface
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_imports_interface(
+    component_ptr: *const c_void,
+    interface_name: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || interface_name.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(interface_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    if component.imports_interface(name_str) { 1 } else { 0 }
+}
+
 /// Validate a component against WIT interface requirements
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_validate(
