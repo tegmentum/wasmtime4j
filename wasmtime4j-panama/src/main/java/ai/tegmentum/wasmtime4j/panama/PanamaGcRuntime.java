@@ -451,8 +451,8 @@ public final class PanamaGcRuntime implements GcRuntime {
                     nativeHandle,
                     panamaStruct.getObjectId(),
                     fieldIndex,
-                    resultValue.address(),
-                    resultType.address());
+                    resultValue,
+                    resultType);
 
         if (result != 0) {
           throw new GcException("Failed to get struct field");
@@ -549,8 +549,8 @@ public final class PanamaGcRuntime implements GcRuntime {
                     nativeHandle,
                     panamaArray.getObjectId(),
                     elementIndex,
-                    resultValue.address(),
-                    resultType.address());
+                    resultValue,
+                    resultType);
 
         if (result != 0) {
           throw new GcException("Failed to get array element");
