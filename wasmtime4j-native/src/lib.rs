@@ -106,6 +106,8 @@ pub mod platform_memory_jni;
 pub mod jni_experimental_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wast_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wit_value_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]

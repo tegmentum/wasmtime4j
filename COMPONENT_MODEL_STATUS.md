@@ -18,10 +18,11 @@
 - Component linker with dependency analysis (complete)
 - WIT tooling classes (WitTypeValidator, WitFunctionBinder, WitInterfaceParser, WitResourceManager)
 
-### JNI Implementation (wasmtime4j-jni): 🟡 PARTIAL (60% complete)
+### JNI Implementation (wasmtime4j-jni): 🟡 MOSTLY COMPLETE (80% complete)
 - Core components implemented (engine, instance)
-- Basic linker support
-- **MISSING:** ComponentRegistry, WIT value marshallers
+- Component linking with WitInterfaceLinker ✅
+- WIT value marshalling (JniWitValueMarshaller) ✅
+- **MISSING:** ComponentRegistry only
 
 ### Panama Implementation (wasmtime4j-panama): ✅ MOSTLY COMPLETE (85% complete)
 - Core components implemented (engine, instance, registry)
@@ -117,6 +118,7 @@
 - All 6 primitive WIT value types are in public API ✅
 - JniComponentImpl (implements ComponentSimple through Component interface) ✅
 - Component linking integration with WitInterfaceLinker ✅
+- JniWitValueMarshaller - JNI marshalling for WIT values ✅
 
 ❌ **NOT YET IMPLEMENTED:**
 
@@ -124,10 +126,6 @@
    - Missing registry implementation
    - Component discovery and management
    - Estimated: 200-300 lines
-
-2. **JniWitValueMarshaller.java** ⭐ HIGH
-   - JNI-specific marshaller for WIT values
-   - Estimated: 300-400 lines
 
 ---
 
@@ -144,16 +142,18 @@
 
 **Result:** Basic component model functionality is operational in Panama runtime.
 
-### Phase 2: JNI Component Model Support (NEXT PRIORITY)
+### Phase 2: JNI Component Model Support (IN PROGRESS - ~80% COMPLETE)
 **Goal:** Bring JNI up to Panama feature level
 
-**Required Tasks:**
-1. JniComponentRegistry - Component discovery and management (~200-300 lines)
-2. JniComponentSimple - Simple component interface (~150-200 lines)
-3. JniWitValueMarshaller - JNI-specific marshaller (~400-500 lines)
-4. Component linking integration - Integrate WitInterfaceLinker (~30-50 lines)
+**Completed Tasks:**
+1. ✅ JniComponentImpl - Already implements ComponentSimple through Component interface
+2. ✅ Component linking integration - WitInterfaceLinker integrated (~30 lines)
+3. ✅ JniWitValueMarshaller - JNI-specific marshaller (~160 lines Java, ~120 lines Rust)
 
-**Estimated Effort:** 15-20 hours
+**Remaining Tasks:**
+1. JniComponentRegistry - Component discovery and management (~200-300 lines)
+
+**Estimated Remaining Effort:** 3-5 hours
 **Dependencies:** Native bindings already exist
 
 ### Phase 3: Composite WIT Types (LOW PRIORITY)
@@ -334,11 +334,9 @@ The Component Model API implementation is **much more complete than initially do
 
 **Panama:** Only composite types needed when required for advanced use cases (~20-25 hours)
 
-**JNI:** Bring up to Panama parity (~15-20 hours):
-- JniComponentRegistry and JniComponentSimple
-- JniWitValueMarshaller
-- Component linking integration
+**JNI:** Bring up to Panama parity (~3-5 hours):
+- JniComponentRegistry (only remaining item)
 
-**Current State:** Panama runtime has **functional primitive type support** for component model. JNI needs ~15-20 hours to reach parity.
+**Current State:** Panama runtime has **functional primitive type support** for component model. JNI is ~80% complete and needs ~3-5 hours to reach parity.
 
-**Estimated Remaining Effort:** 15-20 hours for JNI parity, 20-25 hours for composite types (low priority).
+**Estimated Remaining Effort:** 3-5 hours for JNI parity, 20-25 hours for composite types (low priority).
