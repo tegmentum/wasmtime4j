@@ -176,25 +176,6 @@ public class JniEngine implements Engine {
   private native long nativeCompileWat(long engineHandle, String wat);
 
   @Override
-  public ai.tegmentum.wasmtime4j.StreamingCompiler createStreamingCompiler() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
-
-    // TODO: Call native method to create streaming compiler
-    // long compilerHandle = nativeCreateStreamingCompiler(nativeHandle);
-    // if (compilerHandle == 0) {
-    //   throw new WasmException("Failed to create streaming compiler");
-    // }
-    // return new JniStreamingCompiler(compilerHandle, this);
-    throw new UnsupportedOperationException(
-        "Streaming compiler creation not yet implemented - " + "native library required");
-  }
-
-  @Override
   public EngineConfig getConfig() {
     // TODO: Implement config retrieval
     return null;

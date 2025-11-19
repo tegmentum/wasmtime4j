@@ -119,13 +119,6 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
-  public StreamingCompiler createStreamingCompiler() throws WasmException {
-    ensureNotClosed();
-    // TODO: Implement streaming compiler
-    throw new UnsupportedOperationException("Streaming compiler not yet implemented");
-  }
-
-  @Override
   public EngineConfig getConfig() {
     return config;
   }
