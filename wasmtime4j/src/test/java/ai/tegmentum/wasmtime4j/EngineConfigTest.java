@@ -1,0 +1,100 @@
+package ai.tegmentum.wasmtime4j;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Unit tests for EngineConfig.
+ *
+ * <p>Tests verify configuration options and factory methods.
+ */
+class EngineConfigTest {
+
+  @Test
+  @DisplayName("Should have guestDebug disabled by default")
+  void shouldHaveGuestDebugDisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isGuestDebug(), "guestDebug should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should enable guestDebug when set to true")
+  void shouldEnableGuestDebugWhenSetToTrue() {
+    final EngineConfig config = new EngineConfig().guestDebug(true);
+    assertTrue(config.isGuestDebug(), "guestDebug should be enabled");
+  }
+
+  @Test
+  @DisplayName("Should disable guestDebug when set to false")
+  void shouldDisableGuestDebugWhenSetToFalse() {
+    final EngineConfig config = new EngineConfig().guestDebug(true).guestDebug(false);
+    assertFalse(config.isGuestDebug(), "guestDebug should be disabled");
+  }
+
+  @Test
+  @DisplayName("Should enable guestDebug in forDebug factory method")
+  void shouldEnableGuestDebugInForDebugFactory() {
+    final EngineConfig config = EngineConfig.forDebug();
+    assertTrue(config.isGuestDebug(), "forDebug() should enable guestDebug");
+    assertTrue(config.isDebugInfo(), "forDebug() should enable debugInfo");
+    assertEquals(
+        OptimizationLevel.NONE,
+        config.getOptimizationLevel(),
+        "forDebug() should set optimization to NONE");
+    assertTrue(
+        config.isCraneliftDebugVerifier(), "forDebug() should enable cranelift debug verifier");
+  }
+
+  @Test
+  @DisplayName("Should support method chaining for guestDebug")
+  void shouldSupportMethodChainingForGuestDebug() {
+    final EngineConfig config =
+        new EngineConfig()
+            .guestDebug(true)
+            .debugInfo(true)
+            .optimizationLevel(OptimizationLevel.NONE);
+
+    assertTrue(config.isGuestDebug(), "guestDebug should be enabled");
+    assertTrue(config.isDebugInfo(), "debugInfo should be enabled");
+    assertEquals(
+        OptimizationLevel.NONE,
+        config.getOptimizationLevel(),
+        "optimization level should be NONE");
+  }
+
+  @Test
+  @DisplayName("Should have debugInfo disabled by default")
+  void shouldHaveDebugInfoDisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isDebugInfo(), "debugInfo should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should enable debugInfo when set to true")
+  void shouldEnableDebugInfoWhenSetToTrue() {
+    final EngineConfig config = new EngineConfig().debugInfo(true);
+    assertTrue(config.isDebugInfo(), "debugInfo should be enabled");
+  }
+
+  @Test
+  @DisplayName("Should have correct defaults for factory methods")
+  void shouldHaveCorrectDefaultsForFactoryMethods() {
+    final EngineConfig speedConfig = EngineConfig.forSpeed();
+    assertEquals(
+        OptimizationLevel.SPEED,
+        speedConfig.getOptimizationLevel(),
+        "forSpeed() should use SPEED optimization");
+    assertTrue(
+        speedConfig.isParallelCompilation(), "forSpeed() should enable parallel compilation");
+
+    final EngineConfig sizeConfig = EngineConfig.forSize();
+    assertEquals(
+        OptimizationLevel.SIZE,
+        sizeConfig.getOptimizationLevel(),
+        "forSize() should use SIZE optimization");
+    assertTrue(
+        sizeConfig.isParallelCompilation(), "forSize() should enable parallel compilation");
+  }
+}

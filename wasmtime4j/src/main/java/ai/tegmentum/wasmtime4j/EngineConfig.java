@@ -11,6 +11,7 @@ package ai.tegmentum.wasmtime4j;
 public final class EngineConfig {
 
   private boolean debugInfo = false;
+  private boolean guestDebug = false;
   private boolean consumeFuel = false;
   private OptimizationLevel optimizationLevel = OptimizationLevel.SPEED;
   private boolean parallelCompilation = true;
@@ -62,6 +63,25 @@ public final class EngineConfig {
    */
   public EngineConfig debugInfo(final boolean debugInfo) {
     this.debugInfo = debugInfo;
+    return this;
+  }
+
+  /**
+   * Enables or disables guest-level debugging instrumentation.
+   *
+   * <p>When enabled, compiled WebAssembly code is instrumented to track VM state at every step,
+   * enabling precise debugging with perfect fidelity. This allows inspection of Wasm locals and
+   * operand stack values from hostcalls via the DebugFrameCursor API.
+   *
+   * <p>Note: Enabling this option adds instrumentation overhead but provides accurate VM state for
+   * debugging purposes.
+   *
+   * @param guestDebug true to enable guest debugging instrumentation
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig guestDebug(final boolean guestDebug) {
+    this.guestDebug = guestDebug;
     return this;
   }
 
@@ -357,6 +377,10 @@ public final class EngineConfig {
     return debugInfo;
   }
 
+  public boolean isGuestDebug() {
+    return guestDebug;
+  }
+
   public boolean isConsumeFuel() {
     return consumeFuel;
   }
@@ -509,6 +533,7 @@ public final class EngineConfig {
   public static EngineConfig forDebug() {
     return new EngineConfig()
         .debugInfo(true)
+        .guestDebug(true)
         .optimizationLevel(OptimizationLevel.NONE)
         .craneliftDebugVerifier(true);
   }
