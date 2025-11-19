@@ -29,6 +29,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StreamingCompiler;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.WitSupportInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -356,30 +357,25 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
     ensureNotClosed();
 
-    try {
-      // Validate component compatibility before linking
-      for (int i = 0; i < components.size() - 1; i++) {
-        final ComponentSimple current = components.get(i);
-        final ComponentSimple next = components.get(i + 1);
-        final WitCompatibilityResult compatibility = checkCompatibility(current, next);
-        if (!compatibility.isCompatible()) {
-          throw new WasmException(
-              "Components are not compatible for linking: " + compatibility.getDetails());
-        }
-      }
+    // Use WitInterfaceLinker for dependency analysis and validation
+    final WitInterfaceLinker linker = new WitInterfaceLinker();
+    final WitInterfaceLinker.ComponentLinkResult linkResult = linker.linkComponents(components);
 
-      // Create linked component by combining interfaces
-      final String linkedId = generateComponentId();
-      final ComponentSimple primaryComponent = components.get(0);
-
-      // For now, return the primary component as the linked result
-      // Full implementation would create a new composite component
-      LOGGER.info("Linked " + components.size() + " components into: " + linkedId);
-      return primaryComponent;
-
-    } catch (final Exception e) {
-      throw new WasmException("Failed to link components", e);
+    if (!linkResult.isSuccess()) {
+      throw new WasmException("Component linking failed: " + linkResult.getMessage());
     }
+
+    // For now, return the first component as the "linked" component
+    // Full native linking would require Wasmtime's component composition API
+    // which is more complex and may not be fully exposed yet
+    LOGGER.info(
+        "Linked "
+            + components.size()
+            + " components with "
+            + linkResult.getLinks().size()
+            + " interface links");
+
+    return components.get(0);
   }
 
   @Override
