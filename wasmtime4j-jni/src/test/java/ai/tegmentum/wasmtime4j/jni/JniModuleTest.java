@@ -234,6 +234,16 @@ class JniModuleTest {
           public long getTotalFuelConsumed() {
             return 0;
           }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
+            return null;
+          }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
+            return null;
+          }
         };
 
     final IllegalArgumentException exception =

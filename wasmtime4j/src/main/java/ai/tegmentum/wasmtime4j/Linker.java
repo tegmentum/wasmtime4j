@@ -243,21 +243,6 @@ public interface Linker<T> extends Closeable {
   java.util.List<ImportInfo> getImportRegistry();
 
   /**
-   * Creates an instantiation plan for multiple interdependent modules.
-   *
-   * <p>This method analyzes the dependency relationships and creates an optimized plan for
-   * instantiating all modules in the correct order. The plan can be executed incrementally and
-   * provides detailed progress tracking.
-   *
-   * @param modules the modules to create an instantiation plan for
-   * @return an instantiation plan with ordered steps and dependency information
-   * @throws WasmException if planning fails due to unresolvable dependencies
-   * @throws IllegalArgumentException if modules is null or empty
-   * @since 1.0.0
-   */
-  InstantiationPlan createInstantiationPlan(Module... modules) throws WasmException;
-
-  /**
    * Closes the linker and releases associated resources.
    *
    * <p>After closing, the linker becomes invalid and should not be used.

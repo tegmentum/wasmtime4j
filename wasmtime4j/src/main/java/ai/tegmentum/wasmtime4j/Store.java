@@ -285,6 +285,28 @@ public interface Store extends Closeable {
   long getTotalExecutionTimeMicros();
 
   /**
+   * Captures a WebAssembly backtrace from this store.
+   *
+   * <p>This method captures the current call stack if backtrace capture is enabled in the engine
+   * configuration. If backtrace capture is disabled, this may return an empty backtrace.
+   *
+   * @return a WasmBacktrace containing the current call stack
+   * @since 1.0.0
+   */
+  WasmBacktrace captureBacktrace();
+
+  /**
+   * Forces capture of a WebAssembly backtrace from this store.
+   *
+   * <p>This method always captures the call stack, even if backtrace capture is disabled in the
+   * engine configuration. Force-captured backtraces may have performance implications.
+   *
+   * @return a WasmBacktrace containing the current call stack
+   * @since 1.0.0
+   */
+  WasmBacktrace forceCaptureBacktrace();
+
+  /**
    * Closes the store and releases associated resources.
    *
    * <p>After closing, the store becomes invalid and should not be used. All instances and other

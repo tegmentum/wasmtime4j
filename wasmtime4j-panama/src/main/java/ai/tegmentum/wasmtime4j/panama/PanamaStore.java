@@ -623,6 +623,24 @@ public final class PanamaStore implements Store {
     }
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
+    ensureNotClosed();
+    // TODO: Implement Panama FFI backtrace capture
+    // Requires complex FFI data marshaling for backtrace frames
+    throw new UnsupportedOperationException(
+        "Backtrace capture not yet implemented for Panama FFI - use JNI runtime");
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
+    ensureNotClosed();
+    // TODO: Implement Panama FFI force backtrace capture
+    // Requires complex FFI data marshaling for backtrace frames
+    throw new UnsupportedOperationException(
+        "Force backtrace capture not yet implemented for Panama FFI - use JNI runtime");
+  }
+
   /**
    * Ensures the store is not closed.
    *

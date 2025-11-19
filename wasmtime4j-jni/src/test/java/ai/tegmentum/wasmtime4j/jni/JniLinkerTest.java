@@ -331,13 +331,6 @@ class JniLinkerTest {
     assertThrows(UnsupportedOperationException.class, () -> linker.resolveDependencies(module));
   }
 
-  @Test
-  void testCreateInstantiationPlanThrowsUnsupportedOperationException() {
-    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-    assertThrows(UnsupportedOperationException.class, () -> linker.createInstantiationPlan(module));
-  }
-
   // State validation tests
 
   @Test

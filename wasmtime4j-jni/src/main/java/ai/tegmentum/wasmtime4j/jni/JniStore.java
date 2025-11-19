@@ -1296,4 +1296,21 @@ public final class JniStore extends JniResource implements Store {
 
     return components;
   }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
+    ensureNotClosed();
+    return nativeCaptureBacktrace(nativeHandle);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
+    ensureNotClosed();
+    return nativeForceCaptureBacktrace(nativeHandle);
+  }
+
+  private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeCaptureBacktrace(long storeHandle);
+
+  private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeForceCaptureBacktrace(
+      long storeHandle);
 }

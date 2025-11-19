@@ -2512,6 +2512,194 @@ pub mod jni_store {
             core::destroy_store(store_ptr as *mut std::os::raw::c_void);
         }
     }
+
+    #[allow(non_snake_case)]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBacktrace<'local>(
+        mut env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        store_ptr: jlong,
+    ) -> JObject<'local> {
+        let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
+            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store = store_ref.inner.lock();
+            let backtrace = wasmtime::WasmBacktrace::capture(&*store);
+            create_backtrace_object(&mut env, &backtrace, false)
+        })();
+
+        match result {
+            Ok(obj) => obj,
+            Err(_) => JObject::null(),
+        }
+    }
+
+    #[allow(non_snake_case)]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace<'local>(
+        mut env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        store_ptr: jlong,
+    ) -> JObject<'local> {
+        let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
+            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store = store_ref.inner.lock();
+            let backtrace = wasmtime::WasmBacktrace::force_capture(&*store);
+            create_backtrace_object(&mut env, &backtrace, true)
+        })();
+
+        match result {
+            Ok(obj) => obj,
+            Err(_) => JObject::null(),
+        }
+    }
+
+    fn create_backtrace_object<'local>(
+        env: &mut JNIEnv<'local>,
+        backtrace: &wasmtime::WasmBacktrace,
+        force_capture: bool,
+    ) -> Result<JObject<'local>, crate::error::WasmtimeError> {
+        // Create ArrayList for frames
+        let frames_list = env.new_object(
+            "java/util/ArrayList",
+            "()V",
+            &[],
+        )?;
+
+        // Convert each frame
+        for frame in backtrace.frames() {
+            let frame_obj = create_frame_info_object(env, frame)?;
+            env.call_method(
+                &frames_list,
+                "add",
+                "(Ljava/lang/Object;)Z",
+                &[JValue::Object(&frame_obj)],
+            )?;
+        }
+
+        // Create WasmBacktrace object
+        let backtrace_obj = env.new_object(
+            "ai/tegmentum/wasmtime4j/WasmBacktrace",
+            "(Ljava/util/List;Z)V",
+            &[JValue::Object(&frames_list), JValue::Bool(force_capture as u8)],
+        )?;
+
+        Ok(backtrace_obj)
+    }
+
+    fn create_frame_info_object<'local>(
+        env: &mut JNIEnv<'local>,
+        frame: &wasmtime::FrameInfo,
+    ) -> Result<JObject<'local>, crate::error::WasmtimeError> {
+        let func_index = frame.func_index() as i32;
+
+        // Get module - for now pass null, would need proper module reference
+        let module_obj = JObject::null();
+
+        // Get function name - create binding to extend lifetime
+        let func_name_string = frame.func_name()
+            .map(|name| env.new_string(name))
+            .transpose()?;
+        let null_func_name = JObject::null();
+        let func_name = func_name_string
+            .as_ref()
+            .map(|s| JValue::Object(s.as_ref()))
+            .unwrap_or(JValue::Object(&null_func_name));
+
+        // Get offsets - create bindings to extend lifetime
+        let module_offset_obj = frame.module_offset()
+            .map(|o| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(o as i32)]))
+            .transpose()?;
+        let null_module_offset = JObject::null();
+        let module_offset = module_offset_obj
+            .as_ref()
+            .map(|o| JValue::Object(o))
+            .unwrap_or(JValue::Object(&null_module_offset));
+
+        let func_offset_obj = frame.func_offset()
+            .map(|o| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(o as i32)]))
+            .transpose()?;
+        let null_func_offset = JObject::null();
+        let func_offset = func_offset_obj
+            .as_ref()
+            .map(|o| JValue::Object(o))
+            .unwrap_or(JValue::Object(&null_func_offset));
+
+        // Create symbols list
+        let symbols_list = env.new_object("java/util/ArrayList", "()V", &[])?;
+        for symbol in frame.symbols() {
+            let symbol_obj = create_frame_symbol_object(env, symbol)?;
+            env.call_method(
+                &symbols_list,
+                "add",
+                "(Ljava/lang/Object;)Z",
+                &[JValue::Object(&symbol_obj)],
+            )?;
+        }
+
+        // Create FrameInfo object
+        let frame_obj = env.new_object(
+            "ai/tegmentum/wasmtime4j/FrameInfo",
+            "(ILai/tegmentum/wasmtime4j/Module;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;)V",
+            &[
+                JValue::Int(func_index),
+                JValue::Object(&module_obj),
+                func_name,
+                module_offset,
+                func_offset,
+                JValue::Object(&symbols_list),
+            ],
+        )?;
+
+        Ok(frame_obj)
+    }
+
+    fn create_frame_symbol_object<'local>(
+        env: &mut JNIEnv<'local>,
+        symbol: &wasmtime::FrameSymbol,
+    ) -> Result<JObject<'local>, crate::error::WasmtimeError> {
+        // Create bindings to extend lifetime
+        let name_string = symbol.name()
+            .map(|n| env.new_string(n))
+            .transpose()?;
+        let null_name = JObject::null();
+        let name = name_string
+            .as_ref()
+            .map(|s| JValue::Object(s.as_ref()))
+            .unwrap_or(JValue::Object(&null_name));
+
+        let file_string = symbol.file()
+            .map(|f| env.new_string(f))
+            .transpose()?;
+        let null_file = JObject::null();
+        let file = file_string
+            .as_ref()
+            .map(|s| JValue::Object(s.as_ref()))
+            .unwrap_or(JValue::Object(&null_file));
+
+        let line_obj = symbol.line()
+            .map(|l| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(l as i32)]))
+            .transpose()?;
+        let null_line = JObject::null();
+        let line = line_obj
+            .as_ref()
+            .map(|o| JValue::Object(o))
+            .unwrap_or(JValue::Object(&null_line));
+
+        let column_obj = symbol.column()
+            .map(|c| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(c as i32)]))
+            .transpose()?;
+        let null_column = JObject::null();
+        let column = column_obj
+            .as_ref()
+            .map(|o| JValue::Object(o))
+            .unwrap_or(JValue::Object(&null_column));
+
+        let symbol_obj = env.new_object(
+            "ai/tegmentum/wasmtime4j/FrameSymbol",
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)V",
+            &[name, file, line, column],
+        )?;
+
+        Ok(symbol_obj)
+    }
 }
 
 /// JNI bindings for Linker operations

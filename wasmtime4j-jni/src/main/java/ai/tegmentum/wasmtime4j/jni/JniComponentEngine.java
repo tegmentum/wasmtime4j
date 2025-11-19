@@ -26,7 +26,6 @@ import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.StreamingCompiler;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
@@ -155,12 +154,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     ensureNotClosed();
     throw new UnsupportedOperationException(
         "ComponentEngine does not support WAT compilation - use compileComponent() instead");
-  }
-
-  @Override
-  public StreamingCompiler createStreamingCompiler() throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException("ComponentEngine does not support StreamingCompiler");
   }
 
   @Override
