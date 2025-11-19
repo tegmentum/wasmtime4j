@@ -217,6 +217,147 @@ fn serialize_string(value: &str) -> Vec<u8> {
     data
 }
 
+// C-ABI exports for Java FFI
+
+use std::os::raw::c_int;
+
+const FFI_SUCCESS: c_int = 0;
+const FFI_ERROR: c_int = -1;
+
+/// Serialize a WIT value to binary format.
+///
+/// # Arguments
+///
+/// * `type_discriminator` - The type discriminator (1-6)
+/// * `value_ptr` - Pointer to the value data
+/// * `value_len` - Length of the value data
+/// * `out_data` - Output buffer for serialized data
+/// * `out_len` - Output parameter for data length
+///
+/// # Safety
+///
+/// This function is unsafe because it operates on raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_value_serialize(
+    type_discriminator: c_int,
+    value_ptr: *const u8,
+    value_len: usize,
+    out_data: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if value_ptr.is_null() || out_data.is_null() || out_len.is_null() {
+        return FFI_ERROR;
+    }
+
+    // Convert raw bytes to slice
+    let data = std::slice::from_raw_parts(value_ptr, value_len);
+
+    // Deserialize to Val
+    let val = match deserialize_to_val(type_discriminator, data) {
+        Ok(v) => v,
+        Err(_) => return FFI_ERROR,
+    };
+
+    // Serialize back (validation round-trip)
+    let (_, serialized) = match serialize_from_val(&val) {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    // Allocate output buffer and copy data
+    let output_buf = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
+    *out_data = output_buf;
+    *out_len = value_len;
+
+    FFI_SUCCESS
+}
+
+/// Deserialize a WIT value from binary format.
+///
+/// # Arguments
+///
+/// * `type_discriminator` - The type discriminator (1-6)
+/// * `data_ptr` - Pointer to the serialized data
+/// * `data_len` - Length of the data
+/// * `out_value` - Output buffer for deserialized value
+/// * `out_len` - Output parameter for value length
+///
+/// # Safety
+///
+/// This function is unsafe because it operates on raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_value_deserialize(
+    type_discriminator: c_int,
+    data_ptr: *const u8,
+    data_len: usize,
+    out_value: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if data_ptr.is_null() || out_value.is_null() || out_len.is_null() {
+        return FFI_ERROR;
+    }
+
+    // Convert raw bytes to slice
+    let data = std::slice::from_raw_parts(data_ptr, data_len);
+
+    // Deserialize to Val
+    let val = match deserialize_to_val(type_discriminator, data) {
+        Ok(v) => v,
+        Err(_) => return FFI_ERROR,
+    };
+
+    // Serialize to output format
+    let (_, serialized) = match serialize_from_val(&val) {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    // Allocate output buffer and copy data
+    let len = serialized.len();
+    let output_buf = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
+    *out_value = output_buf;
+    *out_len = len;
+
+    FFI_SUCCESS
+}
+
+/// Validate a type discriminator.
+///
+/// # Arguments
+///
+/// * `type_discriminator` - The type discriminator to validate
+///
+/// # Returns
+///
+/// 1 if valid, 0 if invalid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
+    type_discriminator: c_int,
+) -> c_int {
+    match type_discriminator {
+        1..=6 => 1,
+        _ => 0,
+    }
+}
+
+/// Free a buffer allocated by WIT value marshalling functions.
+///
+/// # Arguments
+///
+/// * `ptr` - Pointer to the buffer to free
+/// * `len` - Length of the buffer
+///
+/// # Safety
+///
+/// This function is unsafe because it operates on raw pointers.
+/// The pointer must have been allocated by a WIT value marshalling function.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wit_value_free_buffer(ptr: *mut u8, len: usize) {
+    if !ptr.is_null() && len > 0 {
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, len));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

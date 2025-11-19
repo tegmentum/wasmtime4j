@@ -6072,6 +6072,91 @@ public final class NativeFunctionBindings {
     }
   }
 
+  // WIT Value Marshalling Functions
+
+  /**
+   * Serializes a WIT value to binary format.
+   *
+   * @param typeDiscriminator the type discriminator (1-6)
+   * @param valuePtr pointer to the value data
+   * @param valueLen length of the value data
+   * @param outData output buffer for serialized data
+   * @param outLen output parameter for data length
+   * @return 0 on success, non-zero on error
+   */
+  public int witValueSerialize(
+      final int typeDiscriminator,
+      final MemorySegment valuePtr,
+      final long valueLen,
+      final MemorySegment outData,
+      final MemorySegment outLen) {
+    validatePointer(valuePtr, "valuePtr");
+    validatePointer(outData, "outData");
+    validatePointer(outLen, "outLen");
+    return callNativeFunction(
+        "wasmtime4j_wit_value_serialize",
+        Integer.class,
+        typeDiscriminator,
+        valuePtr,
+        valueLen,
+        outData,
+        outLen);
+  }
+
+  /**
+   * Deserializes a WIT value from binary format.
+   *
+   * @param typeDiscriminator the type discriminator (1-6)
+   * @param dataPtr pointer to the serialized data
+   * @param dataLen length of the data
+   * @param outValue output buffer for deserialized value
+   * @param outLen output parameter for value length
+   * @return 0 on success, non-zero on error
+   */
+  public int witValueDeserialize(
+      final int typeDiscriminator,
+      final MemorySegment dataPtr,
+      final long dataLen,
+      final MemorySegment outValue,
+      final MemorySegment outLen) {
+    validatePointer(dataPtr, "dataPtr");
+    validatePointer(outValue, "outValue");
+    validatePointer(outLen, "outLen");
+    return callNativeFunction(
+        "wasmtime4j_wit_value_deserialize",
+        Integer.class,
+        typeDiscriminator,
+        dataPtr,
+        dataLen,
+        outValue,
+        outLen);
+  }
+
+  /**
+   * Validates a type discriminator.
+   *
+   * @param typeDiscriminator the type discriminator to validate
+   * @return true if valid (1), false otherwise (0)
+   */
+  public boolean witValueValidateDiscriminator(final int typeDiscriminator) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_wit_value_validate_discriminator", Integer.class, typeDiscriminator);
+    return result == 1;
+  }
+
+  /**
+   * Frees a buffer allocated by WIT value marshalling functions.
+   *
+   * @param ptr pointer to the buffer to free
+   * @param len length of the buffer
+   */
+  public void witValueFreeBuffer(final MemorySegment ptr, final long len) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL) && len > 0) {
+      callNativeFunction("wasmtime4j_wit_value_free_buffer", Void.class, ptr, len);
+    }
+  }
+
   // WASI Context Functions
 
   /**
