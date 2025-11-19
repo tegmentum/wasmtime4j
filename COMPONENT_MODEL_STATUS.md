@@ -115,6 +115,7 @@
 ✅ **COMPLETED:**
 - All WIT tooling classes (WitTypeValidator, WitFunctionBinder, WitInterfaceParser, WitResourceManager) are in public API ✅
 - All 6 primitive WIT value types are in public API ✅
+- JniComponentImpl (implements ComponentSimple through Component interface) ✅
 
 ❌ **NOT YET IMPLEMENTED:**
 
@@ -123,16 +124,11 @@
    - Component discovery and management
    - Estimated: 200-300 lines
 
-2. **JniComponentSimple.java** ⭐ MEDIUM
-   - Missing simple component interface
-   - Basic component operations
-   - Estimated: 150-200 lines
-
-3. **JniWitValueMarshaller.java** ⭐ HIGH
+2. **JniWitValueMarshaller.java** ⭐ HIGH
    - JNI-specific marshaller for WIT values
-   - Estimated: 400-500 lines
+   - Estimated: 300-400 lines
 
-4. **Component linking integration** ⭐ MEDIUM
+3. **Component linking integration** ⭐ MEDIUM
    - Integrate WitInterfaceLinker into JniComponentEngine.linkComponents()
    - Estimated: 30-50 lines
 
