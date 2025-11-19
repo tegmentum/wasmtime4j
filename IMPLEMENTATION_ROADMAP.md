@@ -18,22 +18,20 @@ The wasmtime4j project has achieved significantly more progress than previously 
 - ✅ **Linker Advanced Features**: Fully implemented (resolveDependencies, createInstantiationPlan)
 - ✅ **Component Model**: JNI at 100% parity with Panama for primitive types
 - ✅ **GC Implementation**: Comprehensive support in both JNI and Panama
-- ✅ **Java APIs for Debugging**: Complete implementation (1136 lines), needs native backing
+- ✅ **Engine Configuration Queries**: Fully implemented (Java + native)
 
-### What Needs Native Implementation
-- ❌ **Engine Configuration Queries**: Java complete, native TODO
-- ❌ **Debugging APIs**: Java complete (all methods), 4 native methods TODO
-- ❌ **Streaming Compilation**: Interfaces defined, needs implementation
+### What Needs Implementation
+- ❌ **Debugging APIs**: Not implemented (needs both Java and native)
+- ❌ **Streaming Compilation**: Interfaces defined, needs full implementation
 
 ---
 
 ## HIGH PRIORITY IMPLEMENTATIONS
 
 ### 1. Engine Configuration Queries ⭐⭐⭐
-**Status**: ✅ JAVA API COMPLETE (JniEngine.java, PanamaEngine.java)
-**Native Status**: ❌ Needs native implementation
+**Status**: ✅ FULLY COMPLETE (Java API + native implementation)
 **Impact**: High - Essential for production deployments
-**Effort**: Low-Medium (1-2 days for native implementation only)
+**Effort**: N/A - Already implemented
 
 #### Implementation Status:
 
@@ -79,8 +77,8 @@ private static native int nativeGetMemoryLimitPages(long engineHandle);
 private static native boolean nativeSupportsFeature(long engineHandle, String featureName);
 ```
 
-##### Rust Native Implementation (jni_bindings.rs) - ❌ TODO
-Need to add to `jni_engine` module:
+##### Rust Native Implementation (jni_bindings.rs) - ✅ COMPLETE
+Implemented in `jni_engine` module (jni_bindings.rs:951-1018):
 
 ```rust
 #[no_mangle]
@@ -342,21 +340,21 @@ Requires native Wasmtime memory64 support and extending Memory API:
 - 64-bit memory growth
 
 ### 6. Full Debugging APIs
-**Status**: ✅ JAVA API COMPLETE (JniDebugger.java - 1136 lines)
-**Native Status**: ❌ Needs native implementation for 4 methods in JniDebugSession
+**Status**: ❌ NOT IMPLEMENTED (No Java API, no native implementation)
 **Impact**: Medium - Important for development and debugging
-**Effort**: Low-Medium (2-3 days for native implementation only)
+**Effort**: High (5-7 days for full implementation)
 
-#### Implementation Summary:
-Java layer extensively implemented with all debugging features:
-- ✅ Call stack introspection: `getCallStack()` (JniDebugger.java:632)
-- ✅ Variable inspection: `getLocalVariables()` (JniDebugger.java:652)
-- ✅ Breakpoint management: `setBreakpointAtAddress()` (JniDebugger.java:548), `removeBreakpoint()` (JniDebugger.java:612)
-- ✅ Step execution: `stepInto()` (JniDebugger.java:716), `stepOver()` (JniDebugger.java:735), `stepOut()` (JniDebugger.java:754)
+#### Implementation Requirements:
+Complete implementation needed from scratch:
+- ❌ Debugger interface and implementation classes
+- ❌ DebugSession management
+- ❌ Call stack introspection APIs
+- ❌ Variable inspection APIs
+- ❌ Breakpoint management (set, remove, list)
+- ❌ Step execution (stepInto, stepOver, stepOut)
+- ❌ Native Rust implementations with DWARF debugging support
 
-Remaining work (only native backing needed):
-- ❌ JniDebugSession inner class methods (lines 1022, 1028, 1034, 1040) throw UnsupportedOperationException
-- Native Rust implementations for DWARF debugging support
+**Note**: Previous roadmap incorrectly stated this was Java-complete. Investigation shows no debugging classes exist.
 
 ---
 
@@ -384,14 +382,13 @@ Requires:
 ## IMPLEMENTATION ORDER RECOMMENDATION
 
 ### Sprint 1 (COMPLETED):
-1. ✅ Engine configuration queries - Java API complete, needs native backing
+1. ✅ Engine configuration queries - **FULLY COMPLETE** (Java + native)
 2. ✅ SIMD Java API wrapper - **FULLY COMPLETE**
 3. ✅ Linker advanced features - **FULLY COMPLETE**
 
 ### Sprint 2 (REMAINING HIGH PRIORITY):
-1. Engine configuration native implementations (1-2 days)
-2. Debugging API native implementations (2-3 days)
-3. Streaming compilation infrastructure (1-2 weeks)
+1. Streaming compilation infrastructure (1-2 weeks)
+2. Full debugging APIs implementation (5-7 days, both Java and native)
 
 ### Sprint 3 (MEDIUM PRIORITY):
 1. Memory64 support (4-5 days)
