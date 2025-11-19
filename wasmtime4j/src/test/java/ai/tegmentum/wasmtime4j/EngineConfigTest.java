@@ -97,4 +97,21 @@ class EngineConfigTest {
     assertTrue(
         sizeConfig.isParallelCompilation(), "forSize() should enable parallel compilation");
   }
+
+  @Test
+  @DisplayName("Should have wasmMemory64 disabled by default")
+  void shouldHaveWasmMemory64DisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isWasmMemory64(), "wasmMemory64 should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should have isWasmMemory64 getter method")
+  void shouldHaveIsWasmMemory64GetterMethod() {
+    final EngineConfig config = new EngineConfig();
+    // Verify the getter method exists and returns a boolean
+    assertNotNull(
+        Boolean.valueOf(config.isWasmMemory64()),
+        "isWasmMemory64() should return a boolean value");
+  }
 }

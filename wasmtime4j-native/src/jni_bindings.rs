@@ -10851,6 +10851,35 @@ pub mod jni_simd {
         })
     }
 
+    /// Check if memory supports 64-bit addressing (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeSupports64BitAddressing(
+        mut env: JNIEnv,
+        _class: JClass,
+        memory_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_default(&env, 0, || {
+            if memory_ptr == 0 {
+                log::error!("JNI Memory.nativeSupports64BitAddressing: null memory handle");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Memory handle cannot be null".to_string(),
+                });
+            }
+
+            // Get memory reference
+            let memory = unsafe {
+                crate::memory::core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)?
+            };
+
+            // Check if it's a 64-bit memory from the cached memory type
+            let is_64 = memory.memory_type.is_64();
+
+            log::debug!("Memory 0x{:x} is {}",  memory_ptr, if is_64 { "64-bit" } else { "32-bit" });
+
+            Ok(if is_64 { 1 } else { 0 })
+        }) as jboolean
+    }
+
     /// Copy elements within a table (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopy(
