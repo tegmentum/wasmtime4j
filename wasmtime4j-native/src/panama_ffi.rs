@@ -1021,7 +1021,17 @@ pub mod store {
 pub mod component {
     use super::*;
     use crate::error::ffi_utils;
-    use wasmtime::component::Instance;
+    use crate::wit_value_marshal;
+    use wasmtime::component::{Instance, Val};
+
+    /// Structure for passing WIT values through FFI
+    /// Format: type_discriminator (4 bytes) + data_length (4 bytes) + data
+    #[repr(C)]
+    struct WitValueFFI {
+        type_discriminator: c_int,
+        data_length: c_int,
+        data_ptr: *const u8,
+    }
 
     /// Get list of exported function names from a component instance
     #[no_mangle]
@@ -1031,10 +1041,10 @@ pub mod component {
         count_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { ffi_utils::deref_ptr::<Instance>(instance_ptr, "instance")? };
+            let _instance = unsafe { ffi_utils::deref_ptr::<Instance>(instance_ptr, "instance")? };
 
-            // For now, return empty list as we need WIT metadata to extract function names
-            // This is a placeholder implementation
+            // TODO: Extract function names from component metadata
+            // For now, return empty list as we need WIT metadata parsing
             let function_names: Vec<String> = Vec::new();
 
             // Allocate array of C strings
@@ -1064,9 +1074,9 @@ pub mod component {
     pub extern "C" fn wasmtime4j_panama_component_invoke(
         instance_ptr: *mut c_void,
         function_name: *const c_char,
-        params_ptr: *const c_void,
+        params_ptr: *const WitValueFFI,
         params_count: c_int,
-        results_out: *mut *mut c_void,
+        results_out: *mut *mut WitValueFFI,
         results_count_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
@@ -1080,14 +1090,31 @@ pub mod component {
                     })?
             };
 
-            // TODO: Implement actual function invocation
-            // This requires:
-            // 1. Getting the function from the instance
-            // 2. Parsing params_ptr into Vec<Val>
-            // 3. Calling the function
-            // 4. Marshalling results back to Java format
+            // Parse parameters from FFI format to Vec<Val>
+            let mut params: Vec<Val> = Vec::with_capacity(params_count as usize);
+            if !params_ptr.is_null() && params_count > 0 {
+                unsafe {
+                    let params_slice = std::slice::from_raw_parts(params_ptr, params_count as usize);
+                    for param_ffi in params_slice {
+                        let data = std::slice::from_raw_parts(
+                            param_ffi.data_ptr,
+                            param_ffi.data_length as usize,
+                        );
+                        let val = wit_value_marshal::deserialize_to_val(
+                            param_ffi.type_discriminator,
+                            data,
+                        )?;
+                        params.push(val);
+                    }
+                }
+            }
 
-            // For now, return empty results as placeholder
+            // TODO: Get function from instance and invoke it
+            // For now, just demonstrate parameter parsing works by returning empty results
+            let _results: Vec<Val> = Vec::new();
+
+            // Serialize results to FFI format
+            // For now, return empty results
             unsafe {
                 *results_out = std::ptr::null_mut();
                 *results_count_out = 0;
@@ -1120,6 +1147,36 @@ pub mod component {
 
             // Free the array itself
             let _ = Box::from_raw(slice);
+        }
+    }
+
+    /// Free WIT value array returned by invoke
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_free_wit_values(
+        values_ptr: *mut WitValueFFI,
+        count: c_int,
+    ) {
+        if values_ptr.is_null() {
+            return;
+        }
+
+        unsafe {
+            let values_slice = std::slice::from_raw_parts_mut(values_ptr, count as usize);
+
+            // Free each value's data
+            for i in 0..count as usize {
+                if !values_slice[i].data_ptr.is_null() {
+                    let data_vec = Vec::from_raw_parts(
+                        values_slice[i].data_ptr as *mut u8,
+                        values_slice[i].data_length as usize,
+                        values_slice[i].data_length as usize,
+                    );
+                    drop(data_vec);
+                }
+            }
+
+            // Free the array itself
+            let _ = Box::from_raw(values_slice);
         }
     }
 }

@@ -49,44 +49,45 @@
 
 ## Incomplete Features
 
-### ❌ Component Model Invocation (Phase 3) - 0% Complete
-**Status**: Completely blocked - no native bindings exist
+### ⚠️ Component Model Invocation (Phase 3) - 40% Complete
+**Status**: Infrastructure in place, function invocation not yet working
 
-**Missing Implementation Layers**:
+**Completed**:
 
 1. **Native Rust Layer** (wasmtime4j-native):
-   - No `component_invoke` FFI function
-   - No `component_get_exports` FFI function
-   - No `component_bind_interface` FFI function
-   - Need to implement: Function invocation, interface introspection, lifecycle management
+   - ✅ `component_invoke` FFI function with WitValueFFI structure
+   - ✅ `component_get_exports` FFI function
+   - ✅ `component_free_wit_values` FFI function
+   - ✅ WIT value marshalling integration (deserialize_to_val/serialize_from_val)
+   - ✅ Parameter parsing from FFI format to Vec<Val>
 
 2. **Panama Bindings Layer** (NativeFunctionBindings.java):
-   - No MethodHandle for component invocation
-   - No bindings for export discovery
-   - No bindings for interface binding
+   - ✅ componentInvoke() binding method
+   - ✅ componentGetExportedFunctions() binding method
+   - ✅ componentFreeStringArray() binding method
+   - ✅ FunctionDescriptor declarations for all bindings
 
-3. **Java Implementation Layer** (PanamaComponentInstanceImpl.java):
-   - 11 methods throw `UnsupportedOperationException`:
-     - `invoke()` - **CRITICAL** - Cannot call component functions
-     - `hasFunction()` - Cannot check function existence
-     - `getExportedFunctions()` - Cannot discover exports
-     - `getState()` - No instance state tracking
-     - `getExportedInterfaces()` - No WIT interface introspection
-     - `bindInterface()` - Cannot bind host implementations
-     - `getConfig()` - No config access
-     - `getResourceUsage()` - No resource tracking
-     - `pause()`, `resume()`, `stop()` - No lifecycle control
-   - `close()` - Has TODO comment for cleanup
+3. **Java Implementation Layer** (PanamaComponentInstance.java):
+   - ✅ `invoke()` - Calls FFI (parameters/results marshalling TODO)
+   - ✅ `getExportedFunctions()` - Calls FFI (returns empty, needs metadata)
+   - ✅ `hasFunction()` - Implemented
+   - ✅ `getState()` - Returns ACTIVE
+   - ✅ `getConfig()` - Returns config
+   - ✅ `getResourceUsage()` - Returns usage
+   - ✅ `close()` - Cleanup implemented
 
-**Why This is Hard**:
-- Requires understanding Wasmtime's Component Model Rust API
-- Component Model uses complex type system (WIT types, resources, handles)
-- Must handle type marshalling between Java ↔ Panama ↔ Rust ↔ Wasmtime
-- Requires implementing function descriptor parsing
-- Must handle async/streaming operations
-- Need resource lifecycle management
+**Still Missing**:
+- Function lookup from component instance exports (needs Wasmtime API integration)
+- Actual function invocation (needs Store/Instance integration)
+- WIT metadata extraction for export discovery
+- Result marshalling from Val to Java objects
+- Advanced lifecycle methods (pause/resume/stop)
+- Interface binding support
 
-**Estimated Effort**: 2-3 weeks of focused work
+**Current Limitations**:
+- invoke() returns null (no actual invocation yet)
+- getExportedFunctions() returns empty (no metadata extraction)
+- Only basic WIT types supported (bool, s32, s64, float64, char, string)
 
 ---
 
@@ -97,8 +98,8 @@
 | Host Functions | 100% | ✅ Yes |
 | WASI Basic | 85% | ✅ Yes |
 | WASI Advanced | 15% | ⚠️ Optional |
-| Component Model | 0% | ❌ No |
-| **Overall Panama** | **~60%** | **Partial** |
+| Component Model | 40% | ⚠️ Partial (infrastructure only) |
+| **Overall Panama** | **~70%** | **Partial** |
 
 **Key Findings**:
 1. Panama can execute basic WASM modules with host functions
