@@ -4513,6 +4513,44 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // strings pointer
             ValueLayout.JAVA_INT)); // count
 
+    // Enhanced component engine functions (using instance IDs)
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_engine_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns engine pointer
+
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // component handle
+            ValueLayout.ADDRESS)); // instance ID out (pointer to u64)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_invoke",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.JAVA_LONG, // instance ID
+            ValueLayout.ADDRESS, // function name
+            ValueLayout.ADDRESS, // params pointer
+            ValueLayout.JAVA_INT, // params count
+            ValueLayout.ADDRESS, // results out
+            ValueLayout.ADDRESS)); // results count out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_get_exports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.JAVA_LONG, // instance ID
+            ValueLayout.ADDRESS, // functions out (pointer to pointer array)
+            ValueLayout.ADDRESS)); // count out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_engine_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine handle
+
     // WASI context functions
     addFunctionBinding(
         "wasmtime4j_wasi_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -6249,6 +6287,115 @@ public final class NativeFunctionBindings {
     if (stringsPtr != null && !stringsPtr.equals(MemorySegment.NULL)) {
       callNativeFunction(
           "wasmtime4j_panama_component_free_string_array", Void.class, stringsPtr, count);
+    }
+  }
+
+  // Enhanced Component Engine Functions (using instance IDs)
+
+  /**
+   * Creates an enhanced component engine for managing component instances.
+   *
+   * @return pointer to the enhanced component engine, or NULL on failure
+   */
+  public MemorySegment enhancedComponentEngineCreate() {
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_engine_create", MemorySegment.class);
+  }
+
+  /**
+   * Instantiates a component and returns an instance ID.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param componentHandle the component handle
+   * @param instanceIdOut output parameter for the instance ID (u64)
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int enhancedComponentInstantiate(
+      final MemorySegment engineHandle,
+      final MemorySegment componentHandle,
+      final MemorySegment instanceIdOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(instanceIdOut, "instanceIdOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_instantiate",
+        Integer.class,
+        engineHandle,
+        componentHandle,
+        instanceIdOut);
+  }
+
+  /**
+   * Invokes a component function using instance ID.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the instance ID returned from instantiation
+   * @param functionName the function name to invoke
+   * @param paramsPtr pointer to the parameters array
+   * @param paramsCount number of parameters
+   * @param resultsOut output parameter for results array
+   * @param resultsCountOut output parameter for results count
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int enhancedComponentInvoke(
+      final MemorySegment engineHandle,
+      final long instanceId,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final int paramsCount,
+      final MemorySegment resultsOut,
+      final MemorySegment resultsCountOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(functionName, "functionName");
+    validatePointer(resultsOut, "resultsOut");
+    validatePointer(resultsCountOut, "resultsCountOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_invoke",
+        Integer.class,
+        engineHandle,
+        instanceId,
+        functionName,
+        paramsPtr,
+        paramsCount,
+        resultsOut,
+        resultsCountOut);
+  }
+
+  /**
+   * Gets the list of exported function names using instance ID.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the instance ID
+   * @param functionsOut output parameter for array of function name pointers
+   * @param countOut output parameter for count of functions
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int enhancedComponentGetExports(
+      final MemorySegment engineHandle,
+      final long instanceId,
+      final MemorySegment functionsOut,
+      final MemorySegment countOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(functionsOut, "functionsOut");
+    validatePointer(countOut, "countOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_get_exports",
+        Integer.class,
+        engineHandle,
+        instanceId,
+        functionsOut,
+        countOut);
+  }
+
+  /**
+   * Destroys an enhanced component engine and all its instances.
+   *
+   * @param engineHandle the enhanced component engine handle
+   */
+  public void enhancedComponentEngineDestroy(final MemorySegment engineHandle) {
+    if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction(
+          "wasmtime4j_panama_enhanced_component_engine_destroy", Void.class, engineHandle);
     }
   }
 

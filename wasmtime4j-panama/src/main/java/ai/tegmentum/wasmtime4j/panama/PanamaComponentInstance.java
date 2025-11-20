@@ -26,23 +26,27 @@ final class PanamaComponentInstance implements ComponentInstance {
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
-  private final MemorySegment instanceHandle;
+  private final MemorySegment enhancedEngineHandle;
+  private final long instanceId;
   private final PanamaComponentSimple component;
   private final PanamaStore store;
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
-   * Creates a new Panama component instance.
+   * Creates a new Panama component instance using enhanced component engine.
    *
-   * @param instanceHandle the native instance handle
+   * @param enhancedEngineHandle the enhanced component engine handle
+   * @param instanceId the instance ID returned from enhanced instantiation
    * @param component the parent component
    * @param store the store
    */
   PanamaComponentInstance(
-      final MemorySegment instanceHandle,
+      final MemorySegment enhancedEngineHandle,
+      final long instanceId,
       final PanamaComponentSimple component,
       final PanamaStore store) {
-    this.instanceHandle = instanceHandle;
+    this.enhancedEngineHandle = enhancedEngineHandle;
+    this.instanceId = instanceId;
     this.component = component;
     this.store = store;
   }
@@ -82,14 +86,24 @@ final class PanamaComponentInstance implements ComponentInstance {
       final MemorySegment resultsCountOut =
           arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
 
-      // Call native function
+      // Call enhanced component invoke with instance ID
       final int errorCode =
-          NATIVE_BINDINGS.componentInvoke(
-              instanceHandle, funcNameSegment, paramsPtr, paramsCount, resultsOut, resultsCountOut);
+          NATIVE_BINDINGS.enhancedComponentInvoke(
+              enhancedEngineHandle,
+              instanceId,
+              funcNameSegment,
+              paramsPtr,
+              paramsCount,
+              resultsOut,
+              resultsCountOut);
 
       if (errorCode != 0) {
         throw new WasmException(
-            "Failed to invoke component function '" + functionName + "' (error code: " + errorCode + ")");
+            "Failed to invoke component function '"
+                + functionName
+                + "' (error code: "
+                + errorCode
+                + ")");
       }
 
       // TODO: Marshal results from native format to Java objects
@@ -118,12 +132,12 @@ final class PanamaComponentInstance implements ComponentInstance {
       // Allocate output parameters
       final MemorySegment functionsOut =
           arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
-      final MemorySegment countOut =
-          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      final MemorySegment countOut = arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
 
-      // Call native function
+      // Call enhanced component get exports with instance ID
       final int errorCode =
-          NATIVE_BINDINGS.componentGetExportedFunctions(instanceHandle, functionsOut, countOut);
+          NATIVE_BINDINGS.enhancedComponentGetExports(
+              enhancedEngineHandle, instanceId, functionsOut, countOut);
 
       if (errorCode != 0) {
         // If we can't get exports, return empty set
@@ -205,7 +219,10 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   @Override
   public boolean isValid() {
-    return !closed.get() && instanceHandle != null && !instanceHandle.equals(MemorySegment.NULL);
+    return !closed.get()
+        && enhancedEngineHandle != null
+        && !enhancedEngineHandle.equals(MemorySegment.NULL)
+        && instanceId != 0;
   }
 
   @Override
@@ -250,23 +267,28 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public void close() {
     if (closed.compareAndSet(false, true)) {
-      if (instanceHandle != null && !instanceHandle.equals(MemorySegment.NULL)) {
-        try {
-          NATIVE_BINDINGS.componentInstanceDestroy(instanceHandle);
-        } catch (final Exception e) {
-          // Log and continue
-        }
-      }
+      // Enhanced component engine manages instance lifecycle
+      // Instances are automatically cleaned up when engine is destroyed
+      // No need to manually destroy individual instances
     }
   }
 
   /**
-   * Gets the native instance handle.
+   * Gets the instance ID.
    *
-   * @return the native instance handle
+   * @return the instance ID
    */
-  MemorySegment getNativeHandle() {
-    return instanceHandle;
+  long getInstanceId() {
+    return instanceId;
+  }
+
+  /**
+   * Gets the enhanced engine handle.
+   *
+   * @return the enhanced engine handle
+   */
+  MemorySegment getEnhancedEngineHandle() {
+    return enhancedEngineHandle;
   }
 
   /**

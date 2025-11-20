@@ -53,7 +53,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   private final String engineId;
   private final ComponentEngineConfig config;
-  private final MemorySegment engineHandle;
+  private final MemorySegment enhancedEngineHandle;
   private final Arena arena;
   private final ConcurrentMap<String, PanamaComponentSimple> loadedComponents;
   private final AtomicLong componentIdCounter;
@@ -73,12 +73,11 @@ public final class PanamaComponentEngine implements ComponentEngine {
     this.loadedComponents = new ConcurrentHashMap<>();
     this.componentIdCounter = new AtomicLong(0);
 
-    // Create native engine - for now, pass null config
-    final MemorySegment configSegment = MemorySegment.NULL;
-    this.engineHandle = NATIVE_BINDINGS.componentEngineCreate(configSegment);
+    // Create enhanced component engine for proper Store/Instance lifecycle management
+    this.enhancedEngineHandle = NATIVE_BINDINGS.enhancedComponentEngineCreate();
 
-    if (engineHandle == null || engineHandle.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to create component engine");
+    if (enhancedEngineHandle == null || enhancedEngineHandle.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to create enhanced component engine");
     }
   }
 
@@ -102,7 +101,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
       final int errorCode =
           NATIVE_BINDINGS.componentLoadFromBytes(
-              engineHandle, bytesSegment, wasmBytes.length, componentOut);
+              enhancedEngineHandle, bytesSegment, wasmBytes.length, componentOut);
 
       if (errorCode != 0) {
         throw new WasmException("Failed to compile component (error code: " + errorCode + ")");
@@ -149,29 +148,28 @@ public final class PanamaComponentEngine implements ComponentEngine {
     final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
     final PanamaStore panamaStore = (PanamaStore) store;
 
-    // Allocate memory for the output instance pointer
+    // Allocate memory for the output instance ID
     try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment instanceOut = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-      // Call native function with engine handle, component handle, and output pointer
-      // Note: The native implementation creates its own store, so the store parameter is currently
-      // unused
+      // Call enhanced instantiation which returns instance ID
       final int errorCode =
-          NATIVE_BINDINGS.componentInstantiate(
-              engineHandle, panamaComponent.getNativeHandle(), instanceOut);
+          NATIVE_BINDINGS.enhancedComponentInstantiate(
+              enhancedEngineHandle, panamaComponent.getNativeHandle(), instanceIdOut);
 
       if (errorCode != 0) {
         throw new WasmException("Failed to instantiate component (error code: " + errorCode + ")");
       }
 
-      // Read the instance handle from the output parameter
-      final MemorySegment instanceHandle = instanceOut.get(ValueLayout.ADDRESS, 0);
+      // Read the instance ID from the output parameter
+      final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
 
-      if (instanceHandle == null || instanceHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to instantiate component: null instance returned");
+      if (instanceId == 0) {
+        throw new WasmException("Failed to instantiate component: invalid instance ID returned");
       }
 
-      return new PanamaComponentInstance(instanceHandle, panamaComponent, panamaStore);
+      return new PanamaComponentInstance(
+          enhancedEngineHandle, instanceId, panamaComponent, panamaStore);
     }
   }
 
@@ -315,10 +313,10 @@ public final class PanamaComponentEngine implements ComponentEngine {
     }
     loadedComponents.clear();
 
-    // Destroy native engine
-    if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
+    // Destroy enhanced component engine
+    if (enhancedEngineHandle != null && !enhancedEngineHandle.equals(MemorySegment.NULL)) {
       try {
-        NATIVE_BINDINGS.componentEngineDestroy(engineHandle);
+        NATIVE_BINDINGS.enhancedComponentEngineDestroy(enhancedEngineHandle);
       } catch (final Exception e) {
         // Log and continue
       }
@@ -374,7 +372,9 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public boolean isValid() {
-    return !closed && engineHandle != null && !engineHandle.equals(MemorySegment.NULL);
+    return !closed
+        && enhancedEngineHandle != null
+        && !enhancedEngineHandle.equals(MemorySegment.NULL);
   }
 
   @Override
@@ -426,12 +426,12 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   /**
-   * Gets the native engine handle.
+   * Gets the enhanced component engine handle.
    *
-   * @return the native engine handle
+   * @return the enhanced component engine handle
    */
   MemorySegment getNativeHandle() {
-    return engineHandle;
+    return enhancedEngineHandle;
   }
 
   /**
