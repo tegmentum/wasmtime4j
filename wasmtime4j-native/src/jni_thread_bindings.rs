@@ -100,11 +100,39 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExec
             .map_err(|e| WasmtimeError::JniError(format!("Failed to convert arguments: {}", e)))?;
 
         // TODO: Implement full thread execution integration
-        // This requires:
-        // 1. Get Func reference from function_handle (need to create get_func_ref helper)
+        //
+        // ARCHITECTURAL CHALLENGE:
+        // Wasmtime's Func is Store-bound and cannot be safely passed between threads.
+        // The current WasmThread::execute_function takes a closure, not a Wasmtime Func.
+        //
+        // POSSIBLE SOLUTIONS:
+        //
+        // Option 1: Thread-local Store approach (RECOMMENDED)
+        //   - Create a Store in each thread's context
+        //   - Recreate the Instance from Module in thread context
+        //   - Look up function by name
+        //   - Requires passing Module + function name instead of Func handle
+        //
+        // Option 2: Shared Store with synchronization
+        //   - Use Arc<Mutex<Store>> to share Store between threads
+        //   - Execute functions with locked Store
+        //   - May have performance implications
+        //
+        // Option 3: Message passing
+        //   - Thread sends function call request via channel
+        //   - Main thread executes and returns results
+        //   - Avoids Store threading issues but serializes execution
+        //
+        // IMPLEMENTATION STEPS (Option 1):
+        // 1. Change function_handle to encode Module handle + function name
         // 2. Deserialize args_bytes into Vec<Val>
-        // 3. Execute function with the thread's store context
-        // 4. Serialize results back to bytes
+        // 3. In thread context:
+        //    a. Create thread-local Store
+        //    b. Instantiate Module
+        //    c. Look up function by name
+        //    d. Call function with deserialized args
+        // 4. Serialize results back to byte array
+        //
         // For now, we return an empty array as placeholder
 
         // Placeholder: Return empty array
