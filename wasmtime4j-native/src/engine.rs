@@ -79,6 +79,8 @@ pub struct EngineConfigSummary {
     pub epoch_interruption: bool,
     /// Maximum number of WebAssembly instances per engine
     pub max_instances: Option<u32>,
+    /// Whether async execution support is enabled
+    pub async_support: bool,
 }
 
 /// Builder for creating configured engines
@@ -117,6 +119,7 @@ pub struct EngineBuilder {
     wasm_component_model_async_stackful: bool,
     wasm_component_model_error_context: bool,
     wasm_component_model_gc: bool,
+    async_support: bool,
 }
 
 impl Engine {
@@ -259,7 +262,7 @@ pub mod core {
     
     /// Core function to create an engine with custom configuration
     pub fn create_engine_with_config(
-        strategy: Option<Strategy>, 
+        strategy: Option<Strategy>,
         opt_level: Option<OptLevel>,
         debug_info: bool,
         wasm_threads: bool,
@@ -272,6 +275,7 @@ pub mod core {
         max_stack_size: Option<usize>,
         epoch_interruption: bool,
         max_instances: Option<u32>,
+        async_support: bool,
     ) -> WasmtimeResult<Box<Engine>> {
         let mut builder = Engine::builder();
         
@@ -291,7 +295,8 @@ pub mod core {
             .wasm_bulk_memory(wasm_bulk_memory)
             .wasm_multi_value(wasm_multi_value)
             .fuel_enabled(fuel_enabled)
-            .epoch_interruption(epoch_interruption);
+            .epoch_interruption(epoch_interruption)
+            .async_support(async_support);
 
         if let Some(pages) = max_memory_pages {
             builder = builder.max_memory_pages(pages);
@@ -437,6 +442,7 @@ impl EngineBuilder {
             wasm_component_model_async_stackful: false,  // Component model extension - off by default
             wasm_component_model_error_context: false,  // Component model extension - off by default
             wasm_component_model_gc: false,  // Component model extension - off by default
+            async_support: false,  // Async execution support - off by default
         }
     }
 
@@ -663,6 +669,13 @@ impl EngineBuilder {
         self
     }
 
+    /// Enable or disable async execution support
+    pub fn async_support(mut self, enable: bool) -> Self {
+        self.config.async_support(enable);
+        self.async_support = enable;
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);
@@ -715,6 +728,7 @@ impl EngineConfigSummary {
             max_stack_size: None,              // No limit by default
             epoch_interruption: false,         // Default assumption
             max_instances: None,               // No limit by default
+            async_support: false,              // Off by default
         }
     }
 
@@ -759,6 +773,7 @@ impl EngineConfigSummary {
             max_stack_size: builder.max_stack_size,
             epoch_interruption: builder.epoch_interruption,
             max_instances: builder.max_instances,
+            async_support: builder.async_support,
         }
     }
 }
@@ -859,6 +874,7 @@ impl Default for Engine {
                             max_stack_size: None,
                             epoch_interruption: false,
                             max_instances: None,
+                            async_support: false,
                         },
                     },
                     Err(_) => {
@@ -900,6 +916,7 @@ impl Default for Engine {
                                 max_stack_size: None,
                                 epoch_interruption: false,
                                 max_instances: None,
+                                async_support: false,
                             },
                         }
                     }
@@ -1103,6 +1120,7 @@ pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
         opt_max_stack_size,
         epoch_interruption != 0,
         opt_max_instances,
+        false,  // async_support - TODO: add parameter
     ) {
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(_) => std::ptr::null_mut(),

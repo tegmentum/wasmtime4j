@@ -930,6 +930,7 @@ pub mod jni_engine {
                 max_stack_size_opt,
                 parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
                 max_instances_opt,
+                false,  // async_support - TODO: add JNI parameter
             )
         }) as jlong
     }
