@@ -275,22 +275,51 @@ Reference implementation:
 
 ## LOW PRIORITY / FUTURE WORK
 
-### 7. Async Operations
-**Effort**: Very High (2-3 weeks)
+### 7. Async Operations ⚠️ PARTIALLY IMPLEMENTED (40% Complete)
+**Status**: Infrastructure exists, native integration needed
+**Impact**: High - Enables non-blocking I/O and async WASI
+**Effort**: 1-2 weeks to complete (See ASYNC_IMPLEMENTATION_ROADMAP.md)
 
-Requires:
-- Async WASI implementation
-- Future/Promise-based Java API
-- Tokio integration in native layer
+#### What's Implemented:
+- ✅ **Java async API** - `AsyncEngineConfig`, `AsyncHostFunction`, `AsyncFunctionCall` fully implemented
+- ✅ **Tokio runtime** - Global multi-threaded runtime initialized in `async_runtime.rs`
+- ✅ **EngineConfig.asyncSupport()** - Configuration flag added (2025-11-19)
+- ✅ **Async structures** - `AsyncOperation`, `AsyncOperationStatus` defined
+- ⚠️ **C API stubs** - Exist but not functional due to Send trait issues
 
-### 8. Full Thread Support
-**Effort**: Very High (2-3 weeks)
+#### What Needs Implementation:
+- ❌ **Fix Send trait issues** - Callback threading blockers (critical)
+- ❌ **Connect EngineConfig to Wasmtime** - Apply `Config::async_support()` in engine creation
+- ❌ **Func::new_async binding** - Create async host functions
+- ❌ **Func::call_async binding** - Async WASM function calls
+- ❌ **Store async methods** - `epoch_deadline_async_yield_and_update`, `call_hook_async`
+- ❌ **WASI async integration** - Use `add_to_linker_async` with Tokio
 
-Requires:
-- Wasm threads proposal implementation
-- Shared memory support
-- Atomic operations
-- Thread synchronization primitives
+**Primary Blocker**: JNI + Tokio thread safety issues with callbacks
+
+See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
+
+### 8. Full Thread Support ⚠️ PARTIALLY IMPLEMENTED (30% Complete)
+**Status**: Java interfaces exist, native implementation needed
+**Impact**: Medium - Enables WebAssembly threads proposal
+**Effort**: 1-2 weeks to complete
+
+#### What's Implemented:
+- ✅ **WasmThread interface** - Fully defined with Future-based execution
+- ✅ **JniWasmThread/PanamaWasmThread** - Implementation stubs exist
+- ✅ **Thread state management** - `WasmThreadState`, `WasmThreadStatistics` defined
+
+#### What Needs Implementation:
+- ❌ **Config::wasm_threads()** - Enable threads proposal in engine config
+- ❌ **SharedMemory bindings** - Create and manage shared linear memory
+- ❌ **Atomic operations** - Implement `memory.atomic.{wait32,wait64,notify}`
+- ❌ **Thread spawning** - WASI-threads or shared-everything-threads
+- ❌ **Thread synchronization** - Wait/notify primitives
+
+**Note**: WebAssembly threads proposal is Phase 4 (standardized). Wasmtime has known limitations:
+- Not integrated with resource limits
+- No pooling allocator support
+- Future direction is shared-everything-threads for WASI v0.2+
 
 ---
 
@@ -311,9 +340,30 @@ Requires:
 ### Sprint 3 (COMPLETED):
 1. ✅ Memory64 support - **COMPLETE** (discovered existing implementation, added missing native binding)
 
-### Sprint 4 (LOW PRIORITY / FUTURE):
-1. Async operations (2-3 weeks)
-2. Full thread support (2-3 weeks)
+### Sprint 4 (IN PROGRESS - 35% Complete):
+**Started**: 2025-11-19
+**Status**: Research and planning complete, infrastructure audit complete
+
+1. ⚠️ Async operations - **40% COMPLETE** (Java API done, native integration needed)
+   - ✅ Research Wasmtime async APIs and capabilities
+   - ✅ Audit existing infrastructure
+   - ✅ Add `EngineConfig.asyncSupport()` configuration
+   - ✅ Create detailed implementation roadmap (ASYNC_IMPLEMENTATION_ROADMAP.md)
+   - ❌ Fix Send trait issues in async_runtime.rs
+   - ❌ Implement Wasmtime async API bindings
+   - ❌ Connect WASI async support
+   - **Remaining effort**: 1-2 weeks
+
+2. ⚠️ Thread support - **30% COMPLETE** (Java interfaces done, native implementation needed)
+   - ✅ Research WebAssembly threads proposal
+   - ✅ Audit existing thread infrastructure
+   - ❌ Implement Config::wasm_threads binding
+   - ❌ Implement SharedMemory bindings
+   - ❌ Implement atomic operations
+   - ❌ Implement thread spawning
+   - **Remaining effort**: 1-2 weeks
+
+**Next Steps**: Choose between completing async or threads first, or mark as future work
 
 ---
 

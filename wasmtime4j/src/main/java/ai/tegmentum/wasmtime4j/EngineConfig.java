@@ -28,6 +28,7 @@ public final class EngineConfig {
   private boolean wasmMemory64 = false;
   private long maxWasmStack = 0; // 0 means unlimited
   private long asyncStackSize = 0; // 0 means unlimited
+  private boolean asyncSupport = false;
   private boolean generateDebugInfo = false;
   private boolean epochInterruption = false;
 
@@ -187,6 +188,24 @@ public final class EngineConfig {
       throw new IllegalArgumentException("Async stack size cannot be negative");
     }
     this.asyncStackSize = bytes;
+    return this;
+  }
+
+  /**
+   * Enables or disables asynchronous execution support.
+   *
+   * <p>When enabled, allows creation of async host functions and async execution of WebAssembly
+   * code using Tokio runtime. This is required for non-blocking I/O operations and async WASI.
+   *
+   * <p>Note: Enabling async support requires the native Tokio runtime and may increase memory
+   * usage due to async stack allocation.
+   *
+   * @param asyncSupport true to enable async execution support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig asyncSupport(final boolean asyncSupport) {
+    this.asyncSupport = asyncSupport;
     return this;
   }
 
@@ -445,6 +464,10 @@ public final class EngineConfig {
     return asyncStackSize;
   }
 
+  public boolean isAsyncSupport() {
+    return asyncSupport;
+  }
+
   public boolean isGenerateDebugInfo() {
     return generateDebugInfo;
   }
@@ -606,6 +629,7 @@ public final class EngineConfig {
         .setEpochInterruption(this.epochInterruption)
         .setMaxWasmStack(this.maxWasmStack)
         .setAsyncStackSize(this.asyncStackSize)
+        .asyncSupport(this.asyncSupport)
         .setCraneliftSettings(new java.util.HashMap<>(this.craneliftSettings))
         .setWasmFeatures(new java.util.HashSet<>(this.wasmFeatures));
   }
