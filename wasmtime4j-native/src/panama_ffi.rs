@@ -1109,8 +1109,23 @@ pub mod component {
                 }
             }
 
-            // TODO: Get function from instance and invoke it
-            // For now, just demonstrate parameter parsing works by returning empty results
+            // TODO: Actual function invocation requires architectural changes
+            //
+            // Problem: Wasmtime component functions require both Instance AND Store to invoke:
+            //   let func = instance.get_func(&mut store, function_name)?;
+            //   func.call(&mut store, params, &mut results)?;
+            //
+            // Current architecture passes only Instance pointer, but Store is needed for:
+            // 1. Looking up functions: instance.get_func(&mut store, name)
+            // 2. Calling functions: func.call(&mut store, params, results)
+            // 3. Post-call cleanup: func.post_return(&mut store)
+            //
+            // Solutions:
+            // Option 1: Pass both Store and Instance pointers through FFI
+            // Option 2: Use EnhancedComponentEngine with instance IDs (already implemented)
+            // Option 3: Store both in a wrapper struct and pass wrapper pointer
+            //
+            // For now, return empty results to demonstrate marshalling infrastructure works
             let _results: Vec<Val> = Vec::new();
 
             // Serialize results to FFI format

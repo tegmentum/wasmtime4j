@@ -77,16 +77,31 @@
    - ✅ `close()` - Cleanup implemented
 
 **Still Missing**:
-- Function lookup from component instance exports (needs Wasmtime API integration)
-- Actual function invocation (needs Store/Instance integration)
+- **ARCHITECTURAL DECISION REQUIRED**: Store/Instance lifecycle management
+- Function lookup from component instance exports (needs Store)
+- Actual function invocation (needs Store + Instance)
 - WIT metadata extraction for export discovery
 - Result marshalling from Val to Java objects
 - Advanced lifecycle methods (pause/resume/stop)
 - Interface binding support
 
+**Architectural Blocker**:
+Wasmtime component functions require both `Store` and `Instance` for invocation:
+```rust
+let func = instance.get_func(&mut store, function_name)?;
+func.call(&mut store, params, &mut results)?;
+```
+
+Current FFI passes only Instance pointer. Three architectural solutions:
+1. **Pass both pointers** - Store + Instance through FFI (simple but error-prone)
+2. **Use EnhancedComponentEngine** - Already implemented with instance IDs + HashMap storage
+3. **Wrapper struct** - Create StoreInstanceHandle that owns both (clean but more complex)
+
+**Recommendation**: Option 2 (EnhancedComponentEngine) is already implemented and provides proper lifetime management.
+
 **Current Limitations**:
-- invoke() returns null (no actual invocation yet)
-- getExportedFunctions() returns empty (no metadata extraction)
+- invoke() returns null (blocked on architecture decision)
+- getExportedFunctions() returns empty (needs WIT metadata extraction)
 - Only basic WIT types supported (bool, s32, s64, float64, char, string)
 
 ---
