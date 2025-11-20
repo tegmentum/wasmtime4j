@@ -91,6 +91,8 @@ pub mod test_runtime_completion;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_bindings;
 #[cfg(feature = "jni-bindings")]
+pub mod jni_thread_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;

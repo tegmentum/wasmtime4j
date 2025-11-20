@@ -1,0 +1,322 @@
+//! JNI bindings for WebAssembly thread operations
+//!
+//! This module provides the JNI interface for WebAssembly threading capabilities,
+//! including thread spawning, execution, synchronization, and lifecycle management.
+
+use crate::error::{WasmtimeError, WasmtimeResult, jni_utils};
+use crate::threading::{WasmThread, WasmThreadState};
+use jni::objects::{JByteArray, JClass, JObject};
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
+use jni::JNIEnv;
+use std::os::raw::c_void;
+use std::sync::Arc;
+
+/// Get a reference to a WasmThread from a native handle
+///
+/// # Safety
+/// The handle must be a valid pointer to a WasmThread
+unsafe fn get_thread_ref(handle: *const c_void) -> WasmtimeResult<&'static WasmThread> {
+    if handle.is_null() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Thread handle cannot be null".to_string(),
+        });
+    }
+    Ok(&*(handle as *const WasmThread))
+}
+
+/// Get a mutable reference to a WasmThread from a native handle
+///
+/// # Safety
+/// The handle must be a valid pointer to a WasmThread
+unsafe fn get_thread_ref_mut(handle: *mut c_void) -> WasmtimeResult<&'static mut WasmThread> {
+    if handle.is_null() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Thread handle cannot be null".to_string(),
+        });
+    }
+    Ok(&mut *(handle as *mut WasmThread))
+}
+
+/// Get thread state
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetState(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref(handle as *const c_void)? };
+        let state = thread.get_state();
+
+        // Convert WasmThreadState to integer
+        let state_value = match state {
+            WasmThreadState::New => 0,
+            WasmThreadState::Running => 1,
+            WasmThreadState::Waiting => 2,
+            WasmThreadState::TimedWaiting => 3,
+            WasmThreadState::Blocked => 4,
+            WasmThreadState::Suspended => 5,
+            WasmThreadState::Terminated => 6,
+            WasmThreadState::Error => 7,
+            WasmThreadState::Killed => 8,
+        };
+
+        Ok(state_value)
+    })
+}
+
+/// Execute a function on the thread
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction(
+    mut env: JNIEnv,
+    _class: JClass,
+    thread_handle: jlong,
+    function_handle: jlong,
+    serialized_args: JByteArray,
+) -> jbyteArray {
+    jni_utils::jni_try_object(&mut env, |env_ref| {
+        if thread_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+        if function_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Function handle cannot be null".to_string(),
+            });
+        }
+
+        let _thread = unsafe { get_thread_ref(thread_handle as *const c_void)? };
+        let _function_handle = function_handle;
+
+        // Get serialized arguments from Java
+        let _args_bytes = env_ref.convert_byte_array(&serialized_args)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to convert arguments: {}", e)))?;
+
+        // TODO: Implement full thread execution integration
+        // This requires:
+        // 1. Get Func reference from function_handle (need to create get_func_ref helper)
+        // 2. Deserialize args_bytes into Vec<Val>
+        // 3. Execute function with the thread's store context
+        // 4. Serialize results back to bytes
+        // For now, we return an empty array as placeholder
+
+        // Placeholder: Return empty array
+        let result_array = env_ref.new_byte_array(0)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to create result array: {}", e)))?;
+
+        Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
+    })
+}
+
+/// Join the thread (wait for completion)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoin(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
+
+        // Wait for thread to complete
+        thread.join()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Thread join failed: {}", e),
+                backtrace: None,
+            })?;
+
+        Ok(())
+    });
+}
+
+/// Join the thread with timeout
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoinTimeout(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    timeout_ms: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+        if timeout_ms < 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Timeout must be non-negative".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
+
+        // Wait for thread to complete with timeout
+        let completed = thread.join_timeout(std::time::Duration::from_millis(timeout_ms as u64))
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Thread join with timeout failed: {}", e),
+                backtrace: None,
+            })?;
+
+        Ok(if completed { 1 } else { 0 })
+    }) as jboolean
+}
+
+/// Request termination of the thread
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeRequestTermination(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref(handle as *const c_void)? };
+        thread.request_termination();
+
+        Ok(())
+    });
+}
+
+/// Force terminate the thread
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeForceTerminate(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
+        thread.force_terminate()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Force termination failed: {}", e),
+                backtrace: None,
+            })?;
+
+        Ok(())
+    });
+}
+
+/// Check if termination has been requested
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeIsTerminationRequested(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref(handle as *const c_void)? };
+        let requested = thread.is_termination_requested();
+
+        Ok(if requested { 1 } else { 0 })
+    }) as jboolean
+}
+
+/// Get thread statistics
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetStatistics(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) -> jlongArray {
+    jni_utils::jni_try_object(&mut env, |env_ref| {
+        if handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Thread handle cannot be null".to_string(),
+            });
+        }
+
+        let thread = unsafe { get_thread_ref(handle as *const c_void)? };
+        let stats = thread.get_statistics()?;
+
+        // Create array: [functionsExecuted, totalExecutionTime, atomicOperations,
+        //                memoryAccesses, waitNotifyOperations, peakMemoryUsage]
+        let stats_array = env_ref.new_long_array(6)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to create statistics array: {}", e)))?;
+
+        let stats_data = vec![
+            stats.functions_executed as i64,
+            stats.total_execution_time as i64,
+            stats.atomic_operations as i64,
+            stats.memory_accesses as i64,
+            stats.wait_notify_operations as i64,
+            stats.peak_memory_usage as i64,
+        ];
+
+        env_ref.set_long_array_region(&stats_array, 0, &stats_data)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to set statistics data: {}", e)))?;
+
+        Ok(unsafe { jni::objects::JObject::from_raw(stats_array.as_raw()) })
+    })
+}
+
+/// Destroy thread resources
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeDestroy(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if handle == 0 {
+            return Ok(()); // Already destroyed
+        }
+
+        // Convert handle to Box and drop it
+        unsafe {
+            let _thread = Box::from_raw(handle as *mut WasmThread);
+            // Box will be dropped here, cleaning up resources
+        }
+
+        Ok(())
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_state_conversion() {
+        // Verify state enum values match Java expectations
+        assert_eq!(WasmThreadState::New as i32, 0);
+        assert_eq!(WasmThreadState::Running as i32, 1);
+        assert_eq!(WasmThreadState::Waiting as i32, 2);
+        assert_eq!(WasmThreadState::TimedWaiting as i32, 3);
+        assert_eq!(WasmThreadState::Blocked as i32, 4);
+        assert_eq!(WasmThreadState::Suspended as i32, 5);
+        assert_eq!(WasmThreadState::Terminated as i32, 6);
+        assert_eq!(WasmThreadState::Error as i32, 7);
+        assert_eq!(WasmThreadState::Killed as i32, 8);
+    }
+}
