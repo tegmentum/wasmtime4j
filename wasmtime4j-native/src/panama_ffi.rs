@@ -816,7 +816,67 @@ pub mod store {
             core::destroy_store(store_ptr);
         }
     }
-    
+
+    /// Capture backtrace from a WebAssembly store (Panama FFI version)
+    ///
+    /// Returns a serialized backtrace as a byte array, or null on error.
+    /// The caller must free the returned buffer using wasmtime4j_panama_free_buffer.
+    ///
+    /// Format: [frame_count: u32][force_capture: u8][frames...]
+    /// Each frame: [func_index: u32][has_func_name: u8][func_name_len: u32][func_name: bytes]
+    ///             [has_module_offset: u8][module_offset: u32][has_func_offset: u8][func_offset: u32]
+    ///             [symbol_count: u32][symbols...]
+    /// Each symbol: [has_name: u8][name_len: u32][name: bytes][has_file: u8][file_len: u32][file: bytes]
+    ///              [has_line: u8][line: u32][has_column: u8][column: u32]
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_capture_backtrace(
+        store_ptr: *mut c_void,
+        buffer_out: *mut *mut c_uchar,
+        buffer_len_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let store_lock = store.inner.lock();
+            let backtrace = wasmtime::WasmBacktrace::capture(&*store_lock);
+
+            let serialized = serialize_backtrace(&backtrace, false)?;
+
+            unsafe {
+                let buffer = Box::into_raw(serialized.into_boxed_slice());
+                *buffer_out = (*buffer).as_mut_ptr();
+                *buffer_len_out = (&(*buffer)).len() as c_uint;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Force capture backtrace from a WebAssembly store (Panama FFI version)
+    ///
+    /// Same as capture_backtrace but forces capture even if backtrace capture is disabled.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_force_capture_backtrace(
+        store_ptr: *mut c_void,
+        buffer_out: *mut *mut c_uchar,
+        buffer_len_out: *mut c_uint,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let store_lock = store.inner.lock();
+            let backtrace = wasmtime::WasmBacktrace::force_capture(&*store_lock);
+
+            let serialized = serialize_backtrace(&backtrace, true)?;
+
+            unsafe {
+                let buffer = Box::into_raw(serialized.into_boxed_slice());
+                *buffer_out = (*buffer).as_mut_ptr();
+                *buffer_len_out = (&(*buffer)).len() as c_uint;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Set fuel for a WebAssembly store (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_store_set_fuel(
@@ -824,12 +884,102 @@ pub mod store {
         fuel: c_ulong,
     ) -> c_int {
         use crate::error::ffi_utils;
-        
+
         ffi_utils::ffi_try_code(|| {
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
             crate::store::core::set_fuel_level(store, fuel as u64)?;
             Ok(())
         })
+    }
+
+    /// Helper function to serialize a backtrace into a byte buffer
+    fn serialize_backtrace(
+        backtrace: &wasmtime::WasmBacktrace,
+        force_capture: bool,
+    ) -> WasmtimeResult<Vec<u8>> {
+        let mut buffer = Vec::new();
+
+        // Write frame count
+        buffer.extend_from_slice(&(backtrace.frames().len() as u32).to_le_bytes());
+
+        // Write force_capture flag
+        buffer.push(if force_capture { 1 } else { 0 });
+
+        // Write each frame
+        for frame in backtrace.frames() {
+            // Function index
+            buffer.extend_from_slice(&(frame.func_index() as u32).to_le_bytes());
+
+            // Function name (optional)
+            if let Some(func_name) = frame.func_name() {
+                buffer.push(1); // has_func_name = true
+                let name_bytes = func_name.as_bytes();
+                buffer.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+                buffer.extend_from_slice(name_bytes);
+            } else {
+                buffer.push(0); // has_func_name = false
+            }
+
+            // Module offset (optional)
+            if let Some(offset) = frame.module_offset() {
+                buffer.push(1); // has_module_offset = true
+                buffer.extend_from_slice(&(offset as u32).to_le_bytes());
+            } else {
+                buffer.push(0); // has_module_offset = false
+            }
+
+            // Function offset (optional)
+            if let Some(offset) = frame.func_offset() {
+                buffer.push(1); // has_func_offset = true
+                buffer.extend_from_slice(&(offset as u32).to_le_bytes());
+            } else {
+                buffer.push(0); // has_func_offset = false
+            }
+
+            // Symbols
+            let symbols = frame.symbols();
+            buffer.extend_from_slice(&(symbols.len() as u32).to_le_bytes());
+
+            for symbol in symbols.iter() {
+                // Symbol name (optional)
+                if let Some(name) = symbol.name() {
+                    buffer.push(1); // has_name = true
+                    let name_bytes = name.as_bytes();
+                    buffer.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+                    buffer.extend_from_slice(name_bytes);
+                } else {
+                    buffer.push(0); // has_name = false
+                }
+
+                // Source file (optional)
+                if let Some(file) = symbol.file() {
+                    buffer.push(1); // has_file = true
+                    let file_bytes = file.as_bytes();
+                    buffer.extend_from_slice(&(file_bytes.len() as u32).to_le_bytes());
+                    buffer.extend_from_slice(file_bytes);
+                } else {
+                    buffer.push(0); // has_file = false
+                }
+
+                // Line number (optional)
+                if let Some(line) = symbol.line() {
+                    buffer.push(1); // has_line = true
+                    buffer.extend_from_slice(&(line as u32).to_le_bytes());
+                } else {
+                    buffer.push(0); // has_line = false
+                }
+
+                // Column number (optional)
+                if let Some(column) = symbol.column() {
+                    buffer.push(1); // has_column = true
+                    buffer.extend_from_slice(&(column as u32).to_le_bytes());
+                } else {
+                    buffer.push(0); // has_column = false
+                }
+            }
+        }
+
+        Ok(buffer)
     }
     
     /// Get remaining fuel from a WebAssembly store (Panama FFI version)
