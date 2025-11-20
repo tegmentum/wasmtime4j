@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.ImportInfo;
 import ai.tegmentum.wasmtime4j.ImportIssue;
 import ai.tegmentum.wasmtime4j.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.InstantiationPlan;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
@@ -721,83 +720,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   public List<ImportInfo> getImportRegistry() {
     ensureNotClosed();
     return new ArrayList<>(importRegistry.values());
-  }
-
-  @Override
-  public InstantiationPlan createInstantiationPlan(final Module... modules) throws WasmException {
-    if (modules == null) {
-      throw new IllegalArgumentException("Modules cannot be null");
-    }
-    if (modules.length == 0) {
-      throw new IllegalArgumentException("At least one module must be provided");
-    }
-    ensureNotClosed();
-
-    final long startTime = System.nanoTime();
-
-    try {
-      // Step 1: Resolve dependencies to get instantiation order
-      final ai.tegmentum.wasmtime4j.DependencyResolution resolution = resolveDependencies(modules);
-
-      // Step 2: Check if plan is executable
-      final boolean executable =
-          resolution.isResolutionSuccessful() && !resolution.hasCircularDependencies();
-
-      // Step 3: Create instantiation steps
-      final java.util.List<ai.tegmentum.wasmtime4j.InstantiationStep> steps =
-          new java.util.ArrayList<>();
-
-      if (executable) {
-        final java.util.List<Module> orderedModules = resolution.getInstantiationOrder();
-
-        for (int i = 0; i < orderedModules.size(); i++) {
-          final Module module = orderedModules.get(i);
-          final int stepNumber = i + 1;
-
-          // Collect required imports for this module
-          final java.util.List<String> requiredImports = new java.util.ArrayList<>();
-          for (final ai.tegmentum.wasmtime4j.ImportType importType : module.getImports()) {
-            requiredImports.add(importType.getModuleName() + "::" + importType.getName());
-          }
-
-          // Collect provided exports for this module
-          final java.util.List<String> providedExports = new java.util.ArrayList<>();
-          for (final ai.tegmentum.wasmtime4j.ExportType exportType : module.getExports()) {
-            providedExports.add(exportType.getName());
-          }
-
-          // Build description
-          final String description =
-              String.format(
-                  "Instantiate module %d/%d with %d imports and %d exports",
-                  stepNumber,
-                  orderedModules.size(),
-                  requiredImports.size(),
-                  providedExports.size());
-
-          // Create instance name (optional)
-          final java.util.Optional<String> instanceName =
-              java.util.Optional.of("module_" + stepNumber);
-
-          // Create instantiation step
-          final ai.tegmentum.wasmtime4j.InstantiationStep step =
-              new ai.tegmentum.wasmtime4j.InstantiationStep(
-                  stepNumber, module, instanceName, requiredImports, providedExports, description);
-
-          steps.add(step);
-        }
-      }
-
-      // Step 4: Build and return instantiation plan
-      final long endTime = System.nanoTime();
-      final java.time.Duration planningTime = java.time.Duration.ofNanos(endTime - startTime);
-
-      return new ai.tegmentum.wasmtime4j.InstantiationPlan(
-          steps, resolution, planningTime, executable);
-
-    } catch (final Exception e) {
-      throw new WasmException("Failed to create instantiation plan: " + e.getMessage(), e);
-    }
   }
 
   /**

@@ -660,7 +660,7 @@ public final class PanamaStore implements Store {
       }
 
       if (result != 0) {
-        throw new WasmException("Failed to capture backtrace: error code " + result);
+        throw new RuntimeException("Failed to capture backtrace: error code " + result);
       }
 
       // Read the buffer pointer and length
@@ -680,10 +680,8 @@ public final class PanamaStore implements Store {
       // Deserialize backtrace
       return ai.tegmentum.wasmtime4j.panama.util.BacktraceDeserializer.deserialize(data);
 
-    } catch (final WasmException e) {
-      throw e;
     } catch (final Exception e) {
-      throw new WasmException("Error capturing backtrace: " + e.getMessage(), e);
+      throw new RuntimeException("Error capturing backtrace: " + e.getMessage(), e);
     }
   }
 

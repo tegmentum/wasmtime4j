@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.StreamingCompiler;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
@@ -359,12 +358,6 @@ public final class PanamaComponentEngine implements ComponentEngine {
   public Module compileWat(final String watText) throws WasmException {
     throw new UnsupportedOperationException(
         "WAT compilation not supported - use PanamaEngine for WAT compilation");
-  }
-
-  @Override
-  public StreamingCompiler createStreamingCompiler() throws WasmException {
-    throw new UnsupportedOperationException(
-        "Streaming compiler not supported - use PanamaEngine for streaming compilation");
   }
 
   @Override

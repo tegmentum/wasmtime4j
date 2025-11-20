@@ -275,6 +275,46 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Deserializes a WebAssembly module from serialized bytes.
+   *
+   * @param enginePtr pointer to the engine
+   * @param dataPtr pointer to the serialized module data
+   * @param len length of the serialized data
+   * @param modulePtrPtr pointer to store the deserialized module pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleDeserialize(
+      final MemorySegment enginePtr,
+      final MemorySegment dataPtr,
+      final long len,
+      final MemorySegment modulePtrPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(dataPtr, "dataPtr");
+    validatePointer(modulePtrPtr, "modulePtrPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_deserialize",
+        Integer.class,
+        enginePtr,
+        dataPtr,
+        len,
+        modulePtrPtr);
+  }
+
+  /**
+   * Frees serialized module data.
+   *
+   * @param dataPtr pointer to the serialized data
+   * @param len length of the data
+   */
+  public void moduleFreeSerializedData(final MemorySegment dataPtr, final long len) {
+    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction(
+          "wasmtime4j_panama_module_free_serialized_data", Void.class, dataPtr, len);
+    }
+  }
+
+  /**
    * Destroys a WebAssembly module.
    *
    * @param modulePtr pointer to the module to destroy
