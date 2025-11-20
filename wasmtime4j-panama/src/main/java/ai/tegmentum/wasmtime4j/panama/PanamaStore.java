@@ -7,6 +7,7 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -626,19 +627,64 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
     ensureNotClosed();
-    // TODO: Implement Panama FFI backtrace capture
-    // Requires complex FFI data marshaling for backtrace frames
-    throw new UnsupportedOperationException(
-        "Backtrace capture not yet implemented for Panama FFI - use JNI runtime");
+    return captureBacktraceInternal(false);
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
     ensureNotClosed();
-    // TODO: Implement Panama FFI force backtrace capture
-    // Requires complex FFI data marshaling for backtrace frames
-    throw new UnsupportedOperationException(
-        "Force backtrace capture not yet implemented for Panama FFI - use JNI runtime");
+    return captureBacktraceInternal(true);
+  }
+
+  /**
+   * Internal method to capture backtrace.
+   *
+   * @param forceCapture whether to force capture
+   * @return the captured backtrace
+   * @throws WasmException if backtrace capture fails
+   */
+  private ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktraceInternal(
+      final boolean forceCapture) {
+    try {
+      // Allocate output parameters
+      final MemorySegment bufferOutPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment bufferLenPtr = arena.allocate(ValueLayout.JAVA_INT);
+
+      // Call native function
+      final int result;
+      if (forceCapture) {
+        result =
+            NATIVE_BINDINGS.storeForceCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenPtr);
+      } else {
+        result = NATIVE_BINDINGS.storeCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenPtr);
+      }
+
+      if (result != 0) {
+        throw new WasmException("Failed to capture backtrace: error code " + result);
+      }
+
+      // Read the buffer pointer and length
+      final MemorySegment bufferPtr = bufferOutPtr.get(ValueLayout.ADDRESS, 0);
+      final int bufferLen = bufferLenPtr.get(ValueLayout.JAVA_INT, 0);
+
+      if (bufferPtr == null || bufferPtr.equals(MemorySegment.NULL) || bufferLen <= 0) {
+        // Empty backtrace
+        return new ai.tegmentum.wasmtime4j.WasmBacktrace(new ArrayList<>(), forceCapture);
+      }
+
+      // Copy buffer data to Java byte array
+      final byte[] data = new byte[bufferLen];
+      final MemorySegment dataSegment = bufferPtr.reinterpret(bufferLen);
+      MemorySegment.copy(dataSegment, ValueLayout.JAVA_BYTE, 0, data, 0, bufferLen);
+
+      // Deserialize backtrace
+      return ai.tegmentum.wasmtime4j.panama.util.BacktraceDeserializer.deserialize(data);
+
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error capturing backtrace: " + e.getMessage(), e);
+    }
   }
 
   /**

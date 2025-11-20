@@ -1143,6 +1143,52 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Captures backtrace from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param bufferOutPtr pointer to store the backtrace buffer pointer
+   * @param bufferLenOutPtr pointer to store the buffer length
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeCaptureBacktrace(
+      final MemorySegment storePtr,
+      final MemorySegment bufferOutPtr,
+      final MemorySegment bufferLenOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(bufferOutPtr, "bufferOutPtr");
+    validatePointer(bufferLenOutPtr, "bufferLenOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_capture_backtrace",
+        Integer.class,
+        storePtr,
+        bufferOutPtr,
+        bufferLenOutPtr);
+  }
+
+  /**
+   * Force captures backtrace from a WebAssembly store.
+   *
+   * @param storePtr pointer to the store
+   * @param bufferOutPtr pointer to store the backtrace buffer pointer
+   * @param bufferLenOutPtr pointer to store the buffer length
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeForceCaptureBacktrace(
+      final MemorySegment storePtr,
+      final MemorySegment bufferOutPtr,
+      final MemorySegment bufferLenOutPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(bufferOutPtr, "bufferOutPtr");
+    validatePointer(bufferLenOutPtr, "bufferLenOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_force_capture_backtrace",
+        Integer.class,
+        storePtr,
+        bufferOutPtr,
+        bufferLenOutPtr);
+  }
+
+  /**
    * Gets metadata information from a WebAssembly store.
    *
    * @param storePtr pointer to the store
