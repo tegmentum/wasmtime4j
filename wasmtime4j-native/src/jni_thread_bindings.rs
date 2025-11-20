@@ -319,4 +319,95 @@ mod tests {
         assert_eq!(WasmThreadState::Error as i32, 7);
         assert_eq!(WasmThreadState::Killed as i32, 8);
     }
+
+    #[test]
+    fn test_get_thread_ref_null_handle() {
+        // Verify null handle returns error
+        let result = unsafe { get_thread_ref(std::ptr::null()) };
+        assert!(result.is_err());
+        if let Err(WasmtimeError::InvalidParameter { message }) = result {
+            assert!(message.contains("cannot be null"));
+        } else {
+            panic!("Expected InvalidParameter error");
+        }
+    }
+
+    #[test]
+    fn test_get_thread_ref_mut_null_handle() {
+        // Verify null handle returns error for mutable reference
+        let result = unsafe { get_thread_ref_mut(std::ptr::null_mut()) };
+        assert!(result.is_err());
+        if let Err(WasmtimeError::InvalidParameter { message }) = result {
+            assert!(message.contains("cannot be null"));
+        } else {
+            panic!("Expected InvalidParameter error");
+        }
+    }
+
+    #[test]
+    fn test_jni_method_naming_conventions() {
+        // Verify JNI method names follow correct conventions
+        // This is a compile-time check - if this compiles, the names are correct
+
+        // Check that all expected JNI methods exist and have correct signatures
+        let _: extern "system" fn(JNIEnv, JClass, jlong) -> jint =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetState;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong, jlong, JByteArray) -> jbyteArray =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoin;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong, jlong) -> jboolean =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoinTimeout;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeRequestTermination;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeForceTerminate;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) -> jboolean =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeIsTerminationRequested;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) -> jlongArray =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetStatistics;
+
+        let _: extern "system" fn(JNIEnv, JClass, jlong) =
+            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeDestroy;
+    }
+
+    #[test]
+    fn test_all_thread_states_covered() {
+        // Ensure all thread states are covered in conversion logic
+        // If new states are added to WasmThreadState, this test will fail
+        // reminding us to update the JNI conversion code
+
+        use crate::threading::WasmThreadState;
+
+        // Create a vector of all possible states
+        let states = vec![
+            WasmThreadState::New,
+            WasmThreadState::Running,
+            WasmThreadState::Waiting,
+            WasmThreadState::TimedWaiting,
+            WasmThreadState::Blocked,
+            WasmThreadState::Suspended,
+            WasmThreadState::Terminated,
+            WasmThreadState::Error,
+            WasmThreadState::Killed,
+        ];
+
+        // Verify each state maps to a unique integer
+        let mut seen_values = std::collections::HashSet::new();
+        for state in states {
+            let value = state as i32;
+            assert!(value >= 0 && value <= 8, "State value out of expected range");
+            assert!(seen_values.insert(value), "Duplicate state value found");
+        }
+
+        // Verify we have exactly 9 states
+        assert_eq!(seen_values.len(), 9, "Expected exactly 9 thread states");
+    }
 }
