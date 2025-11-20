@@ -241,6 +241,62 @@ impl HostFunction {
         Ok(func)
     }
 
+    /// Create an async Wasmtime Func for this host function
+    #[cfg(feature = "async")]
+    pub fn create_wasmtime_func_async(&self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<Func> {
+        use std::future::Future;
+
+        let host_func_id = self.id;
+        let func_type = self.func_type.clone();
+        let requires_caller = self.requires_caller_context;
+        let usage = self.caller_context_usage;
+
+        let func = Func::new_async(
+            store,
+            func_type,
+            move |mut caller, params: &[Val], results: &mut [Val]| {
+                Box::new(async move {
+                    // Look up the host function in the registry
+                    let host_function = {
+                        let registry = get_host_function_registry().lock().map_err(|e| {
+                            anyhow::anyhow!("Failed to lock host function registry: {}", e)
+                        })?;
+
+                        registry.get(&host_func_id).cloned().ok_or_else(|| {
+                            anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
+                        })?
+                    };
+
+                    // Optimize execution based on caller context requirements
+                    if !requires_caller {
+                        // Zero-overhead path: no caller context needed
+                        let wasm_params = marshal_params_from_wasmtime(params)?;
+                        let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                            anyhow::anyhow!("Host function execution failed: {}", e)
+                        })?;
+                        marshal_results_to_wasmtime(&wasm_results, results)?;
+                    } else {
+                        // Full caller context path
+                        let wasm_params = marshal_params_from_wasmtime(params)?;
+
+                        // Create minimal caller context based on usage pattern
+                        let _context = create_optimized_caller_context(&mut caller, usage)?;
+
+                        let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                            anyhow::anyhow!("Host function execution failed: {}", e)
+                        })?;
+
+                        marshal_results_to_wasmtime(&wasm_results, results)?;
+                    }
+
+                    Ok(())
+                }) as Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>
+            },
+        );
+
+        Ok(func)
+    }
+
     /// Get optimization information for this host function
     pub fn get_optimization_info(&self) -> (CallerContextUsage, bool) {
         (self.caller_context_usage, self.requires_caller_context)
