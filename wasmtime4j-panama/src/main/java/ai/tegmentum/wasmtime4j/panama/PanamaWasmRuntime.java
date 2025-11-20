@@ -35,6 +35,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.io.IOException;
 import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
@@ -325,17 +327,47 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
-    // TODO: Implement module deserialization for Panama
-    throw new UnsupportedOperationException(
-        "Module deserialization not yet implemented for Panama");
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+    try (Arena arena = Arena.ofConfined()) {
+      // Allocate output parameter for module pointer
+      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      // Copy serialized bytes to native memory
+      final MemorySegment dataSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, serializedBytes);
+
+      // Call native deserialize
+      final int result =
+          NativeFunctionBindings.getInstance()
+              .moduleDeserialize(
+                  panamaEngine.getNativeEngine(),
+                  dataSegment,
+                  serializedBytes.length,
+                  modulePtrPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to deserialize module: error code " + result);
+      }
+
+      // Get the module pointer
+      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Module deserialization returned null");
+      }
+
+      return new PanamaModule(panamaEngine, modulePtr);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error deserializing module: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public Serializer createSerializer() throws WasmException {
     ensureNotClosed();
-
-    // TODO: Implement serializer for Panama
-    throw new UnsupportedOperationException("Serializer not yet implemented for Panama");
+    return new PanamaSerializer(this);
   }
 
   @Override
@@ -347,9 +379,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
 
     ensureNotClosed();
-
-    // TODO: Implement serializer with config for Panama
-    throw new UnsupportedOperationException("Serializer not yet implemented for Panama");
+    return new PanamaSerializer(this, maxCacheSize, enableCompression, compressionLevel);
   }
 
   @Override
