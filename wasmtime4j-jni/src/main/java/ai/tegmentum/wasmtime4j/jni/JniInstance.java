@@ -105,7 +105,10 @@ public final class JniInstance extends JniResource implements Instance {
       if (functionHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniFunction(functionHandle, name, jniStore));
+      // Get module handle for thread-local execution
+      final long moduleHandle =
+          (module instanceof JniModule) ? ((JniModule) module).getNativeHandle() : 0;
+      return Optional.of(new JniFunction(functionHandle, name, moduleHandle, jniStore));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

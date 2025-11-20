@@ -57,6 +57,9 @@ public final class JniFunction extends JniResource
   /** Function name for debugging and identification. */
   private final String name;
 
+  /** Module handle for thread-local execution. */
+  private final long moduleHandle;
+
   /** Store context required for function calls. */
   private final JniStore store;
 
@@ -93,21 +96,30 @@ public final class JniFunction extends JniResource
   }
 
   /**
-   * Creates a new JNI function with the given native handle, name, and store context.
+   * Creates a new JNI function with the given native handle, name, module handle, and store
+   * context.
    *
    * @param nativeHandle the native function handle
    * @param name the function name
+   * @param moduleHandle the module handle for thread-local execution
    * @param store the store context required for function calls
    * @throws JniResourceException if nativeHandle is invalid or name/store is null
    */
-  JniFunction(final long nativeHandle, final String name, final JniStore store) {
+  JniFunction(
+      final long nativeHandle, final String name, final long moduleHandle, final JniStore store) {
     super(nativeHandle);
     JniValidation.requireNonNull(name, "name");
     JniValidation.requireNonNull(store, "store");
     this.name = name;
+    this.moduleHandle = moduleHandle;
     this.store = store;
     LOGGER.fine(
-        "Created JNI function '" + name + "' with handle: 0x" + Long.toHexString(nativeHandle));
+        "Created JNI function '"
+            + name
+            + "' with handle: 0x"
+            + Long.toHexString(nativeHandle)
+            + ", module: 0x"
+            + Long.toHexString(moduleHandle));
   }
 
   /**
@@ -117,6 +129,18 @@ public final class JniFunction extends JniResource
    */
   public String getName() {
     return name;
+  }
+
+  /**
+   * Gets the module handle for thread-local execution.
+   *
+   * <p>This handle is used when executing functions on WebAssembly threads, where each thread
+   * creates its own Store and Instance from the Module.
+   *
+   * @return the native module handle
+   */
+  public long getModuleHandle() {
+    return moduleHandle;
   }
 
   /**
