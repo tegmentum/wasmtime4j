@@ -67,15 +67,35 @@ final class PanamaComponentInstance implements ComponentInstance {
   public Object invoke(final String functionName, final Object... args) throws WasmException {
     Objects.requireNonNull(functionName, "functionName cannot be null");
     ensureNotClosed();
-    // Component Model function invocation requires full WIT type marshalling
-    // and canonical ABI implementation, which is a complex feature requiring:
-    // 1. WIT type parsing and validation
-    // 2. Canonical ABI encoding/decoding
-    // 3. Resource handle management
-    // 4. Async function support
-    throw new UnsupportedOperationException(
-        "Component Model function invocation not yet implemented - "
-            + "requires full WIT type system and canonical ABI support");
+
+    try (var arena = java.lang.foreign.Arena.ofConfined()) {
+      // Allocate C string for function name
+      final MemorySegment funcNameSegment = arena.allocateFrom(functionName);
+
+      // For now, pass null params (no parameters)
+      final MemorySegment paramsPtr = MemorySegment.NULL;
+      final int paramsCount = 0;
+
+      // Allocate output parameters
+      final MemorySegment resultsOut =
+          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      final MemorySegment resultsCountOut =
+          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+      // Call native function
+      final int errorCode =
+          NATIVE_BINDINGS.componentInvoke(
+              instanceHandle, funcNameSegment, paramsPtr, paramsCount, resultsOut, resultsCountOut);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to invoke component function '" + functionName + "' (error code: " + errorCode + ")");
+      }
+
+      // TODO: Marshal results from native format to Java objects
+      // For now, return null as placeholder
+      return null;
+    }
   }
 
   @Override
@@ -93,10 +113,53 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public Set<String> getExportedFunctions() {
     ensureNotClosed();
-    // Get exported interfaces from the component
-    try {
-      return component.getExportedInterfaces();
-    } catch (final WasmException e) {
+
+    try (var arena = java.lang.foreign.Arena.ofConfined()) {
+      // Allocate output parameters
+      final MemorySegment functionsOut =
+          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      final MemorySegment countOut =
+          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+      // Call native function
+      final int errorCode =
+          NATIVE_BINDINGS.componentGetExportedFunctions(instanceHandle, functionsOut, countOut);
+
+      if (errorCode != 0) {
+        // If we can't get exports, return empty set
+        return Set.of();
+      }
+
+      // Read the count
+      final int count = countOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+
+      if (count == 0) {
+        return Set.of();
+      }
+
+      // Read the array of string pointers
+      final MemorySegment stringsPtr =
+          functionsOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+
+      if (stringsPtr == null || stringsPtr.equals(MemorySegment.NULL)) {
+        return Set.of();
+      }
+
+      // Extract function names
+      final Set<String> functionNames = new java.util.HashSet<>();
+      for (int i = 0; i < count; i++) {
+        final MemorySegment strPtr =
+            stringsPtr.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+        if (strPtr != null && !strPtr.equals(MemorySegment.NULL)) {
+          functionNames.add(strPtr.getString(0));
+        }
+      }
+
+      // Free the string array
+      NATIVE_BINDINGS.componentFreeStringArray(stringsPtr, count);
+
+      return functionNames;
+    } catch (final Exception e) {
       // If we can't get exports, return empty set
       return Set.of();
     }

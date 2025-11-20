@@ -384,6 +384,66 @@ impl EnhancedComponentEngine {
         Ok(results)
     }
 
+    /// Get list of exported function names from a component instance
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of function names exported by the component instance.
+    pub fn get_exported_function_names(&self, instance_id: u64) -> WasmtimeResult<Vec<String>> {
+        let instances = self.instances.read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances read lock".to_string(),
+            })?;
+
+        let handle = instances.get(&instance_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
+            })?;
+
+        let mut function_names = Vec::new();
+        for export in &handle.metadata.exports {
+            for func in &export.functions {
+                function_names.push(func.name.clone());
+            }
+        }
+
+        Ok(function_names)
+    }
+
+    /// Invoke a component function by instance ID
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `function_name` - The name of the function to invoke
+    /// * `params` - The parameters to pass to the function
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of result values from the function invocation.
+    pub fn invoke_component_function(
+        &self,
+        instance_id: u64,
+        function_name: &str,
+        params: &[wasmtime::component::Val],
+    ) -> WasmtimeResult<Vec<wasmtime::component::Val>> {
+        let mut instances = self.instances.write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle = instances.get_mut(&instance_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
+            })?;
+
+        self.call_component_function(handle, function_name, params)
+    }
+
     /// Extract detailed metadata from a compiled component
     ///
     /// # Arguments

@@ -1017,6 +1017,113 @@ pub mod store {
 /// No additional Panama-specific wrappers are needed as the existing FFI exports
 /// are compatible with both JNI and Panama Foreign Function API.
 
+/// Active Component Model FFI functions for Panama
+pub mod component {
+    use super::*;
+    use crate::error::ffi_utils;
+    use wasmtime::component::Instance;
+
+    /// Get list of exported function names from a component instance
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_get_exported_functions(
+        instance_ptr: *mut c_void,
+        functions_out: *mut *mut *mut c_char,
+        count_out: *mut c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let instance = unsafe { ffi_utils::deref_ptr::<Instance>(instance_ptr, "instance")? };
+
+            // For now, return empty list as we need WIT metadata to extract function names
+            // This is a placeholder implementation
+            let function_names: Vec<String> = Vec::new();
+
+            // Allocate array of C strings
+            let count = function_names.len();
+            let mut c_strings: Vec<*mut c_char> = Vec::with_capacity(count);
+
+            for name in function_names {
+                let c_string = std::ffi::CString::new(name)
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid function name: {}", e),
+                    })?;
+                c_strings.push(c_string.into_raw());
+            }
+
+            // Box the array and return pointer
+            unsafe {
+                *functions_out = Box::into_raw(c_strings.into_boxed_slice()) as *mut *mut c_char;
+                *count_out = count as c_int;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Invoke a component function with parameters
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_invoke(
+        instance_ptr: *mut c_void,
+        function_name: *const c_char,
+        params_ptr: *const c_void,
+        params_count: c_int,
+        results_out: *mut *mut c_void,
+        results_count_out: *mut c_int,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let _instance = unsafe { ffi_utils::deref_ptr::<Instance>(instance_ptr, "instance")? };
+
+            let _func_name = unsafe {
+                std::ffi::CStr::from_ptr(function_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                        message: format!("Invalid function name: {}", e),
+                    })?
+            };
+
+            // TODO: Implement actual function invocation
+            // This requires:
+            // 1. Getting the function from the instance
+            // 2. Parsing params_ptr into Vec<Val>
+            // 3. Calling the function
+            // 4. Marshalling results back to Java format
+
+            // For now, return empty results as placeholder
+            unsafe {
+                *results_out = std::ptr::null_mut();
+                *results_count_out = 0;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Free the array of C strings returned by get_exported_functions
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_free_string_array(
+        strings: *mut *mut c_char,
+        count: c_int,
+    ) {
+        if strings.is_null() {
+            return;
+        }
+
+        unsafe {
+            // Reconstruct the boxed slice
+            let slice = std::slice::from_raw_parts_mut(strings, count as usize);
+
+            // Free each C string
+            for i in 0..count as usize {
+                if !slice[i].is_null() {
+                    let _ = std::ffi::CString::from_raw(slice[i]);
+                }
+            }
+
+            // Free the array itself
+            let _ = Box::from_raw(slice);
+        }
+    }
+}
+
 // TODO: Re-enable when component modules with enhanced features are available
 /*
 #[cfg(feature = "component-model")]

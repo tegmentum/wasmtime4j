@@ -4488,6 +4488,31 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_component_free_string", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasmtime4j_panama_component_get_exported_functions",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // instance handle
+            ValueLayout.ADDRESS, // functions out (pointer to pointer array)
+            ValueLayout.ADDRESS)); // count out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_invoke",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // instance handle
+            ValueLayout.ADDRESS, // function name
+            ValueLayout.ADDRESS, // params pointer
+            ValueLayout.JAVA_INT, // params count
+            ValueLayout.ADDRESS, // results out
+            ValueLayout.ADDRESS)); // results count out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_free_string_array",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // strings pointer
+            ValueLayout.JAVA_INT)); // count
+
     // WASI context functions
     addFunctionBinding(
         "wasmtime4j_wasi_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -6155,6 +6180,75 @@ public final class NativeFunctionBindings {
   public void componentFreeString(final MemorySegment stringPtr) {
     if (stringPtr != null && !stringPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_component_free_string", Void.class, stringPtr);
+    }
+  }
+
+  /**
+   * Gets the list of exported function names from a component instance.
+   *
+   * @param instanceHandle the component instance handle
+   * @param functionsOut output parameter for array of function name pointers
+   * @param countOut output parameter for count of functions
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int componentGetExportedFunctions(
+      final MemorySegment instanceHandle,
+      final MemorySegment functionsOut,
+      final MemorySegment countOut) {
+    validatePointer(instanceHandle, "instanceHandle");
+    validatePointer(functionsOut, "functionsOut");
+    validatePointer(countOut, "countOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_get_exported_functions",
+        Integer.class,
+        instanceHandle,
+        functionsOut,
+        countOut);
+  }
+
+  /**
+   * Invokes a component function with parameters.
+   *
+   * @param instanceHandle the component instance handle
+   * @param functionName the function name to invoke
+   * @param paramsPtr pointer to the parameters array
+   * @param paramsCount number of parameters
+   * @param resultsOut output parameter for results array
+   * @param resultsCountOut output parameter for results count
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int componentInvoke(
+      final MemorySegment instanceHandle,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final int paramsCount,
+      final MemorySegment resultsOut,
+      final MemorySegment resultsCountOut) {
+    validatePointer(instanceHandle, "instanceHandle");
+    validatePointer(functionName, "functionName");
+    validatePointer(resultsOut, "resultsOut");
+    validatePointer(resultsCountOut, "resultsCountOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_invoke",
+        Integer.class,
+        instanceHandle,
+        functionName,
+        paramsPtr,
+        paramsCount,
+        resultsOut,
+        resultsCountOut);
+  }
+
+  /**
+   * Frees an array of C strings returned by component functions.
+   *
+   * @param stringsPtr pointer to array of string pointers
+   * @param count number of strings in the array
+   */
+  public void componentFreeStringArray(final MemorySegment stringsPtr, final int count) {
+    if (stringsPtr != null && !stringsPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction(
+          "wasmtime4j_panama_component_free_string_array", Void.class, stringsPtr, count);
     }
   }
 
