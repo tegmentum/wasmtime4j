@@ -55,6 +55,7 @@ pub mod linker;
 pub mod wast_runner;  // WAST test execution
 pub mod caller;
 pub mod serialization;
+pub mod value_serialization;  // WASM value serialization for thread execution
 pub mod threading;
 pub mod streaming_compiler;
 
