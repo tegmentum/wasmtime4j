@@ -71,72 +71,89 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetS
     })
 }
 
-/// Execute a function on the thread
+/// Execute a function on the thread with thread-local Store
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction(
     mut env: JNIEnv,
     _class: JClass,
     thread_handle: jlong,
-    function_handle: jlong,
+    module_handle: jlong,
+    function_name: jni::objects::JString,
     serialized_args: JByteArray,
 ) -> jbyteArray {
     jni_utils::jni_try_object(&mut env, |env_ref| {
+        // Validate parameters
         if thread_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Thread handle cannot be null".to_string(),
             });
         }
-        if function_handle == 0 {
+        if module_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
-                message: "Function handle cannot be null".to_string(),
+                message: "Module handle cannot be null".to_string(),
             });
         }
 
-        let _thread = unsafe { get_thread_ref(thread_handle as *const c_void)? };
-        let _function_handle = function_handle;
+        // Get thread reference
+        let thread = unsafe { get_thread_ref(thread_handle as *const c_void)? };
 
-        // Get serialized arguments from Java
-        let _args_bytes = env_ref.convert_byte_array(&serialized_args)
+        // Get module reference
+        let module = unsafe {
+            if (module_handle as *const c_void).is_null() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Module handle is null".to_string(),
+                });
+            }
+            &*(module_handle as *const wasmtime::Module)
+        };
+
+        // Get function name
+        let func_name: String = env_ref.get_string(&function_name)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to get function name: {}", e)))?
+            .into();
+
+        // Deserialize arguments
+        let args_bytes = env_ref.convert_byte_array(&serialized_args)
             .map_err(|e| WasmtimeError::JniError(format!("Failed to convert arguments: {}", e)))?;
 
-        // TODO: Implement full thread execution integration
-        //
-        // ARCHITECTURAL CHALLENGE:
-        // Wasmtime's Func is Store-bound and cannot be safely passed between threads.
-        // The current WasmThread::execute_function takes a closure, not a Wasmtime Func.
-        //
-        // POSSIBLE SOLUTIONS:
-        //
-        // Option 1: Thread-local Store approach (RECOMMENDED)
-        //   - Create a Store in each thread's context
-        //   - Recreate the Instance from Module in thread context
-        //   - Look up function by name
-        //   - Requires passing Module + function name instead of Func handle
-        //
-        // Option 2: Shared Store with synchronization
-        //   - Use Arc<Mutex<Store>> to share Store between threads
-        //   - Execute functions with locked Store
-        //   - May have performance implications
-        //
-        // Option 3: Message passing
-        //   - Thread sends function call request via channel
-        //   - Main thread executes and returns results
-        //   - Avoids Store threading issues but serializes execution
-        //
-        // IMPLEMENTATION STEPS (Option 1):
-        // 1. Change function_handle to encode Module handle + function name
-        // 2. Deserialize args_bytes into Vec<Val>
-        // 3. In thread context:
-        //    a. Create thread-local Store
-        //    b. Instantiate Module
-        //    c. Look up function by name
-        //    d. Call function with deserialized args
-        // 4. Serialize results back to byte array
-        //
-        // For now, we return an empty array as placeholder
+        let args: Vec<wasmtime::Val> = crate::value_serialization::deserialize_values(&args_bytes)?;
 
-        // Placeholder: Return empty array
-        let result_array = env_ref.new_byte_array(0)
+        // Execute function in thread context with thread-local Store
+        let result = thread.execute_function(move || {
+            // Create thread-local Store
+            let engine = module.engine();
+            let mut store = wasmtime::Store::new(&engine, ());
+
+            // Instantiate module in this thread's context
+            let instance = wasmtime::Instance::new(&mut store, module, &[])
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to instantiate module: {}", e),
+                    backtrace: None,
+                })?;
+
+            // Look up function by name
+            let func = instance.get_func(&mut store, &func_name)
+                .ok_or_else(|| WasmtimeError::Function {
+                    message: format!("Function '{}' not found", func_name),
+                })?;
+
+            // Prepare results buffer
+            let func_type = func.ty(&store);
+            let mut results = vec![wasmtime::Val::I32(0); func_type.results().len()];
+
+            // Execute function
+            func.call(&mut store, &args, &mut results)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Function execution failed: {}", e),
+                    backtrace: None,
+                })?;
+
+            Ok(results)
+        })?;
+
+        // Serialize results
+        let result_bytes = crate::value_serialization::serialize_values(&result)?;
+        let result_array = env_ref.byte_array_from_slice(&result_bytes)
             .map_err(|e| WasmtimeError::JniError(format!("Failed to create result array: {}", e)))?;
 
         Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
