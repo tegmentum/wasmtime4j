@@ -27,6 +27,7 @@ public final class PanamaStore implements Store {
   private final Arena arena;
   private final MemorySegment nativeStore;
   private final AtomicReference<Object> userData = new AtomicReference<>();
+  private final ArenaResourceManager resourceManager;
   private volatile boolean closed = false;
 
   /**
@@ -53,6 +54,9 @@ public final class PanamaStore implements Store {
       arena.close();
       throw new WasmException("Failed to create native store");
     }
+
+    // Create resource manager for host functions and other managed resources
+    this.resourceManager = new ArenaResourceManager(arena, true);
 
     LOGGER.fine("Created Panama store");
   }
@@ -215,10 +219,29 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.FunctionType functionType,
       final ai.tegmentum.wasmtime4j.HostFunction implementation)
       throws WasmException {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("functionType cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("implementation cannot be null");
+    }
     ensureNotClosed();
-    // TODO: Implement host function creation - requires callback infrastructure
-    throw new UnsupportedOperationException(
-        "Host function creation not yet implemented - requires callback infrastructure");
+
+    // Adapt the HostFunction interface to PanamaHostFunction.HostFunctionCallback
+    final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
+
+    // Create error handler for this host function
+    final PanamaErrorHandler errorHandler = new PanamaErrorHandler();
+
+    // Create the Panama host function
+    final PanamaHostFunction hostFunction =
+        new PanamaHostFunction(name, functionType, callback, resourceManager, errorHandler);
+
+    LOGGER.fine("Created host function '" + name + "' in store");
+    return hostFunction;
   }
 
   @Override
@@ -551,6 +574,11 @@ public final class PanamaStore implements Store {
     }
 
     try {
+      // Close resource manager first (cleans up host functions and managed resources)
+      if (resourceManager != null) {
+        resourceManager.close();
+      }
+
       // Destroy native store
       if (nativeStore != null && !nativeStore.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.storeDestroy(nativeStore);
@@ -578,8 +606,8 @@ public final class PanamaStore implements Store {
    * @return the arena resource manager
    */
   public ArenaResourceManager getResourceManager() {
-    // TODO: Return actual resource manager
-    throw new UnsupportedOperationException("Resource manager not yet implemented");
+    ensureNotClosed();
+    return resourceManager;
   }
 
   /**

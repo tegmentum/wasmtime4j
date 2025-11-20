@@ -79,9 +79,9 @@ public final class PanamaErrorHandler {
   /** Internal system error. */
   private static final int NATIVE_ERROR_INTERNAL = -18;
 
-  /** Private constructor to prevent instantiation of utility class. */
-  private PanamaErrorHandler() {
-    throw new AssertionError("Utility class should not be instantiated");
+  /** Default constructor for creating error handler instances. */
+  public PanamaErrorHandler() {
+    // Error handler instances can be created for use with host functions
   }
 
   /**
