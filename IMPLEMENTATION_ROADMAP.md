@@ -300,22 +300,31 @@ Reference implementation:
 
 See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
 
-### 8. Full Thread Support ⚠️ PARTIALLY IMPLEMENTED (30% Complete)
-**Status**: Java interfaces exist, native implementation needed
+### 8. Full Thread Support ⚠️ PARTIALLY IMPLEMENTED (70% Complete)
+**Status**: Core infrastructure complete, missing JNI bindings and real atomic ops
 **Impact**: Medium - Enables WebAssembly threads proposal
-**Effort**: 1-2 weeks to complete
+**Effort**: 3-5 days to complete remaining items
+**Last Audited**: 2025-11-19
 
 #### What's Implemented:
-- ✅ **WasmThread interface** - Fully defined with Future-based execution
-- ✅ **JniWasmThread/PanamaWasmThread** - Implementation stubs exist
-- ✅ **Thread state management** - `WasmThreadState`, `WasmThreadStatistics` defined
+- ✅ **Config::wasm_threads()** - FULLY IMPLEMENTED in EngineBuilder (src/engine.rs:476-480)
+- ✅ **Thread structures** - WasmThread, WasmThreadPool, WasmThreadState (src/threading.rs)
+- ✅ **Thread-local storage** - Full implementation with all value types (src/threading.rs:332-393)
+- ✅ **Synchronization primitives** - Comprehensive implementations (src/sync_primitives.rs:1616 lines)
+  - AdvancedRwLock with priority queues and fairness
+  - AdvancedCondvar with spurious wakeup prevention
+  - AdvancedSemaphore with adaptive backoff
+  - AdvancedBarrier with dynamic participant management
+- ✅ **WASI-threads scaffolding** - Extensive framework (src/wasi_threads.rs:1411 lines)
+- ✅ **Thread pool management** - Work-stealing, NUMA-aware scheduling
+- ✅ **Panama FFI exports** - Thread-local storage operations (src/threading.rs:676-867)
+- ⚠️ **SharedMemory usage** - Uses Wasmtime's SharedMemory internally
 
 #### What Needs Implementation:
-- ❌ **Config::wasm_threads()** - Enable threads proposal in engine config
-- ❌ **SharedMemory bindings** - Create and manage shared linear memory
-- ❌ **Atomic operations** - Implement `memory.atomic.{wait32,wait64,notify}`
-- ❌ **Thread spawning** - WASI-threads or shared-everything-threads
-- ❌ **Thread synchronization** - Wait/notify primitives
+- ❌ **JNI bindings for SharedMemory** - Create and manage shared memory from Java
+- ❌ **Real atomic operations** - Replace stubs with Wasmtime's atomic APIs (src/threading.rs:535-646)
+- ❌ **Thread execution integration** - Connect WasmThread to actual WASM function execution
+- ❌ **WASI-threads implementation** - Complete stubbed methods in WasiThreadsContext
 
 **Note**: WebAssembly threads proposal is Phase 4 (standardized). Wasmtime has known limitations:
 - Not integrated with resource limits
@@ -341,10 +350,11 @@ See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
 ### Sprint 3 (COMPLETED):
 1. ✅ Memory64 support - **COMPLETE** (discovered existing implementation, added missing native binding)
 
-### Sprint 4 (IN PROGRESS - 65% Complete):
+### Sprint 4 (IN PROGRESS - 85% Complete):
 **Started**: 2025-11-19
 **Async Completed**: 2025-11-19
-**Status**: Async operations complete, thread support in progress
+**Thread Research Completed**: 2025-11-19
+**Status**: Async operations complete, thread infrastructure mostly complete
 
 1. ✅ Async operations - **100% COMPLETE** (Production-ready)
    - ✅ Research Wasmtime async APIs and capabilities
@@ -357,16 +367,20 @@ See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
    - ✅ Create comprehensive integration tests
    - **Completed**: 2025-11-19
 
-2. ⚠️ Thread support - **30% COMPLETE** (Java interfaces done, native implementation needed)
+2. ⚠️ Thread support - **70% COMPLETE** (Core infrastructure complete, 4 items remaining)
    - ✅ Research WebAssembly threads proposal
-   - ✅ Audit existing thread infrastructure
-   - ❌ Implement Config::wasm_threads binding
-   - ❌ Implement SharedMemory bindings
-   - ❌ Implement atomic operations
-   - ❌ Implement thread spawning
-   - **Remaining effort**: 1-2 weeks
+   - ✅ Audit existing thread infrastructure (discovered 70% already implemented!)
+   - ✅ Config::wasm_threads() - **ALREADY IMPLEMENTED** (engine.rs:476-480)
+   - ✅ Thread structures and management - **COMPLETE** (threading.rs, sync_primitives.rs)
+   - ✅ Thread-local storage - **COMPLETE** with FFI exports
+   - ✅ Advanced synchronization primitives - **COMPLETE** (1616 lines)
+   - ❌ JNI bindings for SharedMemory creation
+   - ❌ Real atomic operations implementation (replace stubs)
+   - ❌ Thread execution with WASM functions
+   - ❌ Complete WASI-threads stubbed methods
+   - **Remaining effort**: 3-5 days
 
-**Next Steps**: Complete thread support implementation or mark as future work
+**Next Steps**: Implement JNI SharedMemory bindings and real atomic operations
 
 ---
 
