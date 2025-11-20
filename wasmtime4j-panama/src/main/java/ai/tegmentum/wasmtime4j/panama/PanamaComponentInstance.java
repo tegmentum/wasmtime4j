@@ -7,7 +7,21 @@ import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
+import ai.tegmentum.wasmtime4j.wit.WitBool;
+import ai.tegmentum.wasmtime4j.wit.WitChar;
+import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitS32;
+import ai.tegmentum.wasmtime4j.wit.WitS64;
+import ai.tegmentum.wasmtime4j.wit.WitString;
+import ai.tegmentum.wasmtime4j.wit.WitValue;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -72,19 +86,53 @@ final class PanamaComponentInstance implements ComponentInstance {
     Objects.requireNonNull(functionName, "functionName cannot be null");
     ensureNotClosed();
 
-    try (var arena = java.lang.foreign.Arena.ofConfined()) {
+    try (var arena = Arena.ofConfined()) {
       // Allocate C string for function name
       final MemorySegment funcNameSegment = arena.allocateFrom(functionName);
 
-      // For now, pass null params (no parameters)
-      final MemorySegment paramsPtr = MemorySegment.NULL;
-      final int paramsCount = 0;
+      // Marshal parameters
+      final MemorySegment paramsPtr;
+      final int paramsCount;
+
+      if (args != null && args.length > 0) {
+        // Convert arguments to WIT values and marshal
+        final List<MarshalledValue> marshalledParams = new ArrayList<>(args.length);
+
+        for (final Object arg : args) {
+          final WitValue witValue = convertToWitValue(arg);
+          final MarshalledValue marshalled = PanamaWitValueMarshaller.marshal(witValue, arena);
+          marshalledParams.add(marshalled);
+        }
+
+        // Allocate WitValueFFI array
+        final int ffiStructSize = 12; // sizeof(WitValueFFI): i32 + i32 + ptr
+        paramsPtr = arena.allocate(ffiStructSize * marshalledParams.size());
+
+        // Fill WitValueFFI structures
+        for (int i = 0; i < marshalledParams.size(); i++) {
+          final MarshalledValue marshalled = marshalledParams.get(i);
+          final long offset = (long) i * ffiStructSize;
+
+          // WitValueFFI { type_discriminator: i32, data_length: i32, data_ptr: *const u8 }
+          paramsPtr.set(ValueLayout.JAVA_INT, offset, marshalled.getTypeDiscriminator());
+          paramsPtr.set(
+              ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
+
+          // Allocate and copy data
+          final MemorySegment dataSegment =
+              arena.allocateFrom(ValueLayout.JAVA_BYTE, marshalled.getData());
+          paramsPtr.set(ValueLayout.ADDRESS, offset + 8, dataSegment);
+        }
+
+        paramsCount = marshalledParams.size();
+      } else {
+        paramsPtr = MemorySegment.NULL;
+        paramsCount = 0;
+      }
 
       // Allocate output parameters
-      final MemorySegment resultsOut =
-          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
-      final MemorySegment resultsCountOut =
-          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
 
       // Call enhanced component invoke with instance ID
       final int errorCode =
@@ -106,10 +154,96 @@ final class PanamaComponentInstance implements ComponentInstance {
                 + ")");
       }
 
-      // TODO: Marshal results from native format to Java objects
-      // For now, return null as placeholder
-      return null;
+      // Unmarshal results
+      final int resultCount = resultsCountOut.get(ValueLayout.JAVA_INT, 0);
+
+      if (resultCount == 0) {
+        return null;
+      }
+
+      final MemorySegment resultsArrayPtr = resultsOut.get(ValueLayout.ADDRESS, 0);
+
+      if (resultsArrayPtr == null || resultsArrayPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+
+      // Read WitValueFFI results
+      final int ffiStructSize = 12;
+      final List<Object> results = new ArrayList<>(resultCount);
+
+      for (int i = 0; i < resultCount; i++) {
+        final long offset = (long) i * ffiStructSize;
+
+        final int typeDiscriminator = resultsArrayPtr.get(ValueLayout.JAVA_INT, offset);
+        final int dataLength = resultsArrayPtr.get(ValueLayout.JAVA_INT, offset + 4);
+        final MemorySegment dataPtr = resultsArrayPtr.get(ValueLayout.ADDRESS, offset + 8);
+
+        // Copy data from native memory
+        final byte[] data = new byte[dataLength];
+        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
+
+        // Unmarshal using PanamaWitValueMarshaller
+        final WitValue witValue =
+            PanamaWitValueMarshaller.unmarshal(typeDiscriminator, data, arena);
+        results.add(witValue.toJava());
+      }
+
+      // Return single result or list based on count
+      if (resultCount == 1) {
+        return results.get(0);
+      } else {
+        return results;
+      }
+
+    } catch (final WitValueException e) {
+      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Converts a Java object to a WIT value.
+   *
+   * @param obj the Java object to convert
+   * @return the WIT value
+   * @throws WitValueException if conversion fails
+   */
+  private static WitValue convertToWitValue(final Object obj) throws WitValueException {
+    if (obj == null) {
+      throw new WitValueException(
+          "Cannot convert null to WIT value", WitValueException.ErrorCode.NULL_VALUE);
+    }
+
+    if (obj instanceof WitValue) {
+      return (WitValue) obj;
+    }
+
+    if (obj instanceof Boolean) {
+      return WitBool.of((Boolean) obj);
+    }
+
+    if (obj instanceof Integer) {
+      return WitS32.of((Integer) obj);
+    }
+
+    if (obj instanceof Long) {
+      return WitS64.of((Long) obj);
+    }
+
+    if (obj instanceof Double || obj instanceof Float) {
+      return WitFloat64.of(((Number) obj).doubleValue());
+    }
+
+    if (obj instanceof Character) {
+      return WitChar.of((Character) obj);
+    }
+
+    if (obj instanceof String) {
+      return WitString.of((String) obj);
+    }
+
+    throw new WitValueException(
+        "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
+        WitValueException.ErrorCode.TYPE_MISMATCH);
   }
 
   @Override
