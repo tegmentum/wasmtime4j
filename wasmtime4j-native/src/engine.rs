@@ -224,6 +224,11 @@ impl Engine {
         self.config_summary.max_instances
     }
 
+    /// Check if async execution support is enabled
+    pub fn async_support_enabled(&self) -> bool {
+        self.config_summary.async_support
+    }
+
     /// Check engine reference count for debugging
     pub fn reference_count(&self) -> usize {
         Arc::strong_count(&self.inner)
@@ -1054,6 +1059,20 @@ mod tests {
         assert_eq!(config.strategy, "Cranelift");
         assert_eq!(config.opt_level, "SpeedAndSize");
         assert!(config.debug_info);
+    }
+
+    #[test]
+    fn test_async_support() {
+        let engine = Engine::builder()
+            .async_support(true)
+            .build()
+            .expect("Failed to build engine with async support");
+
+        assert!(engine.validate().is_ok());
+        assert!(engine.async_support_enabled());
+
+        let config = engine.config_summary();
+        assert!(config.async_support);
     }
 }
 
