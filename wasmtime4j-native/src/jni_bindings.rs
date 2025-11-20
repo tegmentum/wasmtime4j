@@ -1572,7 +1572,88 @@ pub mod jni_function {
             }
         }
     }
-    
+
+    /// Call a WebAssembly function asynchronously (JNI version)
+    #[no_mangle]
+    #[cfg(feature = "async")]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAsync(
+        mut env: JNIEnv,
+        _class: JClass,
+        function_ptr: jlong,
+        store_handle: jlong,
+        params: jobjectArray,
+    ) -> jobjectArray {
+        // Defensive programming: validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        // Defensive programming: validate store handle
+        if store_handle == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::invalid_parameter("store_handle cannot be null"));
+            return std::ptr::null_mut();
+        }
+
+        use std::os::raw::c_void;
+        use crate::instance::core::get_function_ref;
+        use wasmtime::Val;
+
+        // Helper closure for the actual work
+        let result = (|| -> WasmtimeResult<jobjectArray> {
+            // Get function reference
+            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+
+            // Get store reference
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Lock the store for reentrant access
+            let mut store_lock = store.lock_store();
+
+            // Get function type for parameter conversion
+            let func_type = func.ty(&*store_lock);
+            let param_types = func_type.params().collect::<Vec<_>>();
+
+            // Convert Java parameters to Wasmtime values
+            let wasmtime_params = convert_java_params_to_wasmtime_vals(&mut env, params, &param_types)?;
+
+            // Prepare result storage
+            let result_count = func_type.results().len();
+            let mut results = vec![Val::I32(0); result_count];
+
+            // Call function asynchronously using the global runtime
+            let runtime = crate::async_runtime::get_async_runtime();
+            match runtime.block_on(func.call_async(&mut *store_lock, &wasmtime_params, &mut results)) {
+                Ok(()) => {
+                    // Convert Wasmtime Val results to WasmValue
+                    let wasm_values: Result<Vec<_>, _> = results.iter()
+                        .map(|val| crate::instance::core::wasmtime_val_to_wasm_value(val))
+                        .collect();
+                    let wasm_values = wasm_values?;
+
+                    // Convert WasmValue to Java array
+                    let java_array = crate::jni_bindings::jni_linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
+                    Ok(java_array.as_raw())
+                },
+                Err(trap) => {
+                    // Handle Wasmtime trap
+                    Err(WasmtimeError::Runtime {
+                        message: format!("Async function call trapped: {}", trap),
+                        backtrace: None,
+                    })
+                }
+            }
+        })();
+
+        match result {
+            Ok(arr) => arr,
+            Err(error) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                std::ptr::null_mut()
+            }
+        }
+    }
+
     /// Call a function with multiple return values (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMultiValue(
