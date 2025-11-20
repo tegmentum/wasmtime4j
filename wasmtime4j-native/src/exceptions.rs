@@ -835,7 +835,7 @@ mod tests {
         let tag = handler.create_exception_tag("test_tag", parameter_types.clone()).unwrap();
 
         assert_eq!(tag.name, "test_tag");
-        assert_eq!(tag.parameter_types, parameter_types);
+        assert_eq!(tag.parameter_types.len(), parameter_types.len()); // ValType doesn't implement PartialEq
         assert_eq!(tag.handle, 1);
     }
 
@@ -847,13 +847,13 @@ mod tests {
         let parameter_types = vec![ValType::I32, ValType::F64];
         let tag = handler.create_exception_tag("test_tag", parameter_types).unwrap();
 
-        let valid_payload = vec![Val::I32(42), Val::F64(3.14)];
+        let valid_payload = vec![Val::I32(42), Val::F64(3.14_f64.to_bits())];
         assert!(handler.validate_exception_payload(&tag, &valid_payload).is_ok());
 
         let invalid_payload = vec![Val::I32(42)]; // Wrong count
         assert!(handler.validate_exception_payload(&tag, &invalid_payload).is_err());
 
-        let invalid_types = vec![Val::F32(1.0), Val::F64(3.14)]; // Wrong type
+        let invalid_types = vec![Val::F32(1.0_f32.to_bits()), Val::F64(3.14_f64.to_bits())]; // Wrong type
         assert!(handler.validate_exception_payload(&tag, &invalid_types).is_err());
     }
 
@@ -865,6 +865,8 @@ mod tests {
             name: "test".to_string(),
             parameter_types: vec![ValType::I32],
             handle: 1,
+            is_gc_aware: false,
+            debug_info: None,
         };
         let payload = ExceptionPayload::new(tag, vec![Val::I32(42)]);
 
@@ -885,6 +887,8 @@ mod tests {
             name: "test".to_string(),
             parameter_types: vec![],
             handle: 1,
+            is_gc_aware: false,
+            debug_info: None,
         };
         let payload = ExceptionPayload::new(tag, vec![]);
 

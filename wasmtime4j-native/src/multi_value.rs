@@ -439,7 +439,7 @@ mod tests {
 
     #[test]
     fn test_multi_value_result() {
-        let values = vec![Val::I32(42), Val::F64(3.14), Val::I32(100)];
+        let values = vec![Val::I32(42), Val::F64(3.14_f64.to_bits()), Val::I32(100)];
         let result = MultiValueResult::new(values);
 
         assert_eq!(result.value_count(), 3);
@@ -452,7 +452,7 @@ mod tests {
         }
 
         if let Some(Val::F64(second)) = result.get_value(1) {
-            assert_eq!(*second, 3.14);
+            assert_eq!(*second, 3.14_f64.to_bits());
         } else {
             panic!("Expected F64 value");
         }
@@ -476,13 +476,13 @@ mod tests {
             vec![ValType::I32],
         );
 
-        let valid_params = vec![Val::I32(42), Val::F64(3.14)];
+        let valid_params = vec![Val::I32(42), Val::F64(3.14_f64.to_bits())];
         assert!(MultiValueFunction::validate_parameters_static(&signature, &valid_params).is_ok());
 
         let invalid_count = vec![Val::I32(42)];
         assert!(MultiValueFunction::validate_parameters_static(&signature, &invalid_count).is_err());
 
-        let invalid_types = vec![Val::F32(1.0), Val::F64(3.14)];
+        let invalid_types = vec![Val::F32(1.0_f32.to_bits()), Val::F64(3.14_f64.to_bits())];
         assert!(MultiValueFunction::validate_parameters_static(&signature, &invalid_types).is_err());
     }
 
@@ -494,13 +494,13 @@ mod tests {
             vec![ValType::I32, ValType::F64],
         );
 
-        let valid_returns = vec![Val::I32(42), Val::F64(3.14)];
+        let valid_returns = vec![Val::I32(42), Val::F64(3.14_f64.to_bits())];
         assert!(MultiValueFunction::validate_return_values_static(&signature, &valid_returns).is_ok());
 
         let invalid_count = vec![Val::I32(42)];
         assert!(MultiValueFunction::validate_return_values_static(&signature, &invalid_count).is_err());
 
-        let invalid_types = vec![Val::F32(1.0), Val::F64(3.14)];
+        let invalid_types = vec![Val::F32(1.0_f32.to_bits()), Val::F64(3.14_f64.to_bits())];
         assert!(MultiValueFunction::validate_return_values_static(&signature, &invalid_types).is_err());
     }
 

@@ -1670,7 +1670,11 @@ mod tests {
         config.wasm_gc(true);
         config.wasm_reference_types(true);
 
-        let engine = wasmtime::Engine::new(&config)?;
+        let engine = wasmtime::Engine::new(&config)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create engine: {}", e),
+                backtrace: None,
+            })?;
         let store = wasmtime::Store::new(&engine, ());
 
         WasmtimeGcOperations::new(store)
