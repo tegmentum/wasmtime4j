@@ -300,11 +300,11 @@ Reference implementation:
 
 See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
 
-### 8. Full Thread Support ⚠️ PARTIALLY IMPLEMENTED (90% Complete)
-**Status**: Nearly complete - only thread execution and WASI-threads stubs remaining
+### 8. Full Thread Support ⚠️ PARTIALLY IMPLEMENTED (95% Complete)
+**Status**: Nearly complete - only thread function execution needs full implementation
 **Impact**: Medium - Enables WebAssembly threads proposal
-**Effort**: 2-3 days to complete remaining items
-**Last Audited**: 2025-11-19 (Second audit - discovered atomic ops complete!)
+**Effort**: 1-2 days to complete remaining items
+**Last Audited**: 2025-11-19 (Third audit - JNI bindings complete!)
 
 #### What's Fully Implemented:
 - ✅ **Config::wasm_threads()** - FULLY IMPLEMENTED in EngineBuilder (src/engine.rs:476-480)
@@ -326,10 +326,18 @@ See `ASYNC_IMPLEMENTATION_ROADMAP.md` for detailed implementation plan.
 - ✅ **WASI-threads scaffolding** - Extensive framework (src/wasi_threads.rs:1411 lines)
 - ✅ **Thread pool management** - Work-stealing, NUMA-aware scheduling
 - ✅ **Panama FFI exports** - Thread-local storage operations (src/threading.rs:676-867)
+- ✅ **JNI thread bindings** - Complete JNI interface for WasmThread operations (src/jni_thread_bindings.rs:326 lines)
+  - nativeGetState, nativeJoin, nativeJoinTimeout
+  - nativeRequestTermination, nativeForceTerminate, nativeIsTerminationRequested
+  - nativeGetStatistics, nativeDestroy
+  - nativeExecuteFunction (placeholder, awaiting Func reference helper)
 
-#### What Needs Implementation (2 items):
-- ❌ **Thread execution integration** - Connect WasmThread::executeFunction() to actual WASM function execution
-- ❌ **WASI-threads implementation** - Complete stubbed methods in WasiThreadsContext
+#### What Needs Implementation (1 item):
+- ⚠️ **Thread function execution** - Implement Func reference helper and complete nativeExecuteFunction
+  - Create get_func_ref helper to extract Func from handle
+  - Deserialize arguments from Java byte array to Vec<Val>
+  - Execute function in thread's store context
+  - Serialize results back to byte array
 
 **Note**: The stubs in threading.rs:535-646 (AtomicMemoryOperations) are UNUSED. JNI bindings correctly call the real implementations in memory::core.
 
