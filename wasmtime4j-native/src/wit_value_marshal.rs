@@ -27,6 +27,8 @@
 //! - 4 = float64
 //! - 5 = char (Unicode codepoint)
 //! - 6 = string
+//! - 7 = record
+//! - 8 = tuple
 //!
 //! # Binary Format (little-endian)
 //!
@@ -36,6 +38,8 @@
 //! - float64 → 8 bytes (f64 IEEE 754)
 //! - char → 4 bytes (Unicode codepoint as u32)
 //! - string → 4 bytes length + UTF-8 bytes
+//! - record → 4 bytes field count + (discriminator + data) for each field
+//! - tuple → 4 bytes element count + (discriminator + data) for each element
 
 use crate::error::WasmtimeError;
 use wasmtime::component::Val;
@@ -44,7 +48,7 @@ use wasmtime::component::Val;
 ///
 /// # Arguments
 ///
-/// * `type_discriminator` - The type discriminator (1-6)
+/// * `type_discriminator` - The type discriminator (1-8)
 /// * `data` - The serialized byte array
 ///
 /// # Returns
@@ -65,6 +69,8 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         4 => deserialize_float64(data),
         5 => deserialize_char(data),
         6 => deserialize_string(data),
+        7 => deserialize_record(data),
+        8 => deserialize_tuple(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -92,6 +98,8 @@ pub fn serialize_from_val(val: &Val) -> Result<(i32, Vec<u8>), WasmtimeError> {
         Val::Float64(f) => Ok((4, serialize_float64(*f))),
         Val::Char(c) => Ok((5, serialize_char(*c))),
         Val::String(s) => Ok((6, serialize_string(s))),
+        Val::Record(fields) => Ok((7, serialize_record(fields)?)),
+        Val::Tuple(elements) => Ok((8, serialize_tuple(elements)?)),
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported Val type for serialization: {:?}", val),
             backtrace: None,
@@ -264,10 +272,13 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_serialize(
         Err(_) => return FFI_ERROR,
     };
 
+    // Store length before moving serialized data
+    let serialized_len = serialized.len();
+
     // Allocate output buffer and copy data
     let output_buf = Box::into_raw(serialized.into_boxed_slice()) as *mut u8;
     *out_data = output_buf;
-    *out_len = value_len;
+    *out_len = serialized_len;
 
     FFI_SUCCESS
 }
@@ -346,6 +357,142 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
 ///
 /// * `ptr` - Pointer to the buffer to free
 /// * `len` - Length of the buffer
+// Record deserialization
+fn deserialize_record(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Record data too short for field count".to_string(),
+        });
+    }
+
+    let field_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let mut offset = 4;
+    let mut fields = Vec::with_capacity(field_count);
+
+    for _ in 0..field_count {
+        if offset >= data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Record data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Record field data truncated".to_string(),
+            });
+        }
+
+        let field_data = &data[offset..offset + length];
+        let field_val = deserialize_to_val(discriminator, field_data)?;
+        fields.push((String::new(), field_val)); // Field names not included in serialization
+        offset += length;
+    }
+
+    Ok(Val::Record(fields.into()))
+}
+
+// Tuple deserialization
+fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Tuple data too short for element count".to_string(),
+        });
+    }
+
+    let element_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let mut offset = 4;
+    let mut elements = Vec::with_capacity(element_count);
+
+    for _ in 0..element_count {
+        if offset >= data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Tuple data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Tuple element data truncated".to_string(),
+            });
+        }
+
+        let element_data = &data[offset..offset + length];
+        let element_val = deserialize_to_val(discriminator, element_data)?;
+        elements.push(element_val);
+        offset += length;
+    }
+
+    Ok(Val::Tuple(elements.into()))
+}
+
+// Record serialization
+fn serialize_record(fields: &[(String, Val)]) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Field count
+    result.extend_from_slice(&(fields.len() as u32).to_le_bytes());
+
+    // Serialize each field
+    for (_, field_val) in fields {
+        let (discriminator, field_data) = serialize_from_val(field_val)?;
+        result.extend_from_slice(&discriminator.to_le_bytes());
+        result.extend_from_slice(&(field_data.len() as u32).to_le_bytes());
+        result.extend_from_slice(&field_data);
+    }
+
+    Ok(result)
+}
+
+// Tuple serialization
+fn serialize_tuple(elements: &[Val]) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Element count
+    result.extend_from_slice(&(elements.len() as u32).to_le_bytes());
+
+    // Serialize each element
+    for element in elements {
+        let (discriminator, element_data) = serialize_from_val(element)?;
+        result.extend_from_slice(&discriminator.to_le_bytes());
+        result.extend_from_slice(&(element_data.len() as u32).to_le_bytes());
+        result.extend_from_slice(&element_data);
+    }
+
+    Ok(result)
+}
+
 ///
 /// # Safety
 ///

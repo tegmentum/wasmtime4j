@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
  *   <li>float64 → 8 bytes (little-endian IEEE 754)
  *   <li>char → 4 bytes (little-endian Unicode codepoint)
  *   <li>string → 4 bytes length + UTF-8 bytes
+ *   <li>record → 4 bytes field count + (discriminator + length + data) for each field
  * </ul>
  *
  * @since 1.0.0
@@ -66,9 +67,15 @@ public final class WitValueSerializer {
           "Cannot serialize null value", WitValueException.ErrorCode.NULL_VALUE);
     }
 
+    // Handle composite types first
+    if (value instanceof WitRecord) {
+      return serializeRecord((WitRecord) value);
+    }
+
+    // Handle primitive types
     if (!(value instanceof WitPrimitiveValue)) {
       throw new WitValueException(
-          "Only primitive values are currently supported for serialization",
+          "Unsupported value type for serialization: " + value.getClass().getName(),
           WitValueException.ErrorCode.UNSUPPORTED_OPERATION);
     }
 
@@ -169,6 +176,51 @@ public final class WitValueSerializer {
   }
 
   /**
+   * Serializes a record value.
+   *
+   * @param record the record value
+   * @return serialized bytes
+   * @throws WitValueException if serialization fails
+   */
+  private static byte[] serializeRecord(final WitRecord record) throws WitValueException {
+    final var fields = record.getFields();
+
+    // Calculate total size: 4 bytes for count + all field data
+    int totalSize = 4; // field count
+    final java.util.List<byte[]> fieldData = new java.util.ArrayList<>(fields.size());
+
+    for (final java.util.Map.Entry<String, WitValue> entry : fields.entrySet()) {
+      final WitValue fieldValue = entry.getValue();
+      final int discriminator = getTypeDiscriminator(fieldValue);
+      final byte[] data = serialize(fieldValue);
+
+      totalSize += 4; // discriminator
+      totalSize += 4; // length
+      totalSize += data.length; // field data
+
+      fieldData.add(data);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write field count
+    buffer.putInt(fields.size());
+
+    // Write each field
+    int fieldIndex = 0;
+    for (final java.util.Map.Entry<String, WitValue> entry : fields.entrySet()) {
+      final WitValue fieldValue = entry.getValue();
+      final byte[] data = fieldData.get(fieldIndex++);
+
+      buffer.putInt(getTypeDiscriminator(fieldValue));
+      buffer.putInt(data.length);
+      buffer.put(data);
+    }
+
+    return buffer.array();
+  }
+
+  /**
    * Gets the type discriminator for a WIT value.
    *
    * <p>Type discriminators are used by the native layer to identify the value type:
@@ -180,6 +232,7 @@ public final class WitValueSerializer {
    *   <li>4 = float64
    *   <li>5 = char
    *   <li>6 = string
+   *   <li>7 = record
    * </ul>
    *
    * @param value the WIT value
@@ -204,6 +257,8 @@ public final class WitValueSerializer {
       return 5;
     } else if (value instanceof WitString) {
       return 6;
+    } else if (value instanceof WitRecord) {
+      return 7;
     } else {
       throw new WitValueException(
           "Unsupported value type: " + value.getClass().getName(),

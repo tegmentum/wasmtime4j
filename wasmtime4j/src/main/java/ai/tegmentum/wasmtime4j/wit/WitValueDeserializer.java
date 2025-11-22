@@ -46,7 +46,7 @@ public final class WitValueDeserializer {
   /**
    * Deserializes a WIT value from binary format.
    *
-   * @param typeDiscriminator the type discriminator (1-6)
+   * @param typeDiscriminator the type discriminator (1-7)
    * @param data the serialized byte array
    * @return the deserialized WIT value
    * @throws WitValueException if deserialization fails
@@ -71,6 +71,8 @@ public final class WitValueDeserializer {
         return deserializeChar(data);
       case 6:
         return deserializeString(data);
+      case 7:
+        return deserializeRecord(data);
       default:
         throw new WitValueException(
             "Invalid type discriminator: " + typeDiscriminator,
@@ -202,5 +204,59 @@ public final class WitValueDeserializer {
       throw new WitValueException(
           "Failed to create WitString", WitValueException.ErrorCode.MARSHALLING_ERROR, e);
     }
+  }
+
+  /**
+   * Deserializes a record value.
+   *
+   * @param data the serialized bytes
+   * @return the record value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitRecord deserializeRecord(final byte[] data) throws WitValueException {
+    if (data.length < 4) {
+      throw new WitValueException(
+          "Record data too short for field count", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final int fieldCount = buffer.getInt();
+
+    if (fieldCount < 0) {
+      throw new WitValueException(
+          "Invalid field count: " + fieldCount, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final java.util.Map<String, WitValue> fields =
+        new java.util.LinkedHashMap<>(fieldCount);
+
+    for (int i = 0; i < fieldCount; i++) {
+      if (buffer.remaining() < 8) { // Need at least discriminator + length
+        throw new WitValueException(
+            "Record data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new WitValueException(
+            "Invalid field data length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new WitValueException(
+            "Field data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] fieldData = new byte[length];
+      buffer.get(fieldData);
+
+      final WitValue fieldValue = deserialize(discriminator, fieldData);
+      // Field names are not preserved in serialization, use index as name
+      fields.put("field" + i, fieldValue);
+    }
+
+    return WitRecord.of(fields);
   }
 }
