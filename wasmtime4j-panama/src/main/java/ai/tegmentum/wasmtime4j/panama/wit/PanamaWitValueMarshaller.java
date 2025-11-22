@@ -93,9 +93,12 @@ public final class PanamaWitValueMarshaller {
     final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
     final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
 
+    // Reinterpret the pointer with the correct size
+    final MemorySegment dataPtrWithSize = dataPtr.reinterpret(dataLen);
+
     // Copy data from native memory
     final byte[] marshalledData = new byte[(int) dataLen];
-    MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, marshalledData, 0, (int) dataLen);
+    MemorySegment.copy(dataPtrWithSize, ValueLayout.JAVA_BYTE, 0, marshalledData, 0, (int) dataLen);
 
     // Free native buffer
     NATIVE_BINDINGS.witValueFreeBuffer(dataPtr, dataLen);
@@ -113,8 +116,7 @@ public final class PanamaWitValueMarshaller {
    * @throws WitValueException if unmarshalling fails
    */
   public static WitValue unmarshal(
-      final int typeDiscriminator, final byte[] data, final Arena arena)
-      throws WitValueException {
+      final int typeDiscriminator, final byte[] data, final Arena arena) throws WitValueException {
     if (data == null) {
       throw new WitValueException(
           "Cannot unmarshal null data", WitValueException.ErrorCode.NULL_VALUE);
@@ -150,9 +152,13 @@ public final class PanamaWitValueMarshaller {
     final MemorySegment valuePtr = outValuePtr.get(ValueLayout.ADDRESS, 0);
     final long valueLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
 
+    // Reinterpret pointer with correct size
+    final MemorySegment valuePtrWithSize = valuePtr.reinterpret(valueLen);
+
     // Copy data from native memory
     final byte[] unmarshalledData = new byte[(int) valueLen];
-    MemorySegment.copy(valuePtr, ValueLayout.JAVA_BYTE, 0, unmarshalledData, 0, (int) valueLen);
+    MemorySegment.copy(
+        valuePtrWithSize, ValueLayout.JAVA_BYTE, 0, unmarshalledData, 0, (int) valueLen);
 
     // Free native buffer
     NATIVE_BINDINGS.witValueFreeBuffer(valuePtr, valueLen);

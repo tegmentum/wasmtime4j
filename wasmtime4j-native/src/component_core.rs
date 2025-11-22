@@ -280,7 +280,7 @@ impl EnhancedComponentEngine {
             instance_id,
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi")]
-            wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
+            wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
             start_time,
         };
 
@@ -288,12 +288,46 @@ impl EnhancedComponentEngine {
 
         // Create a fresh linker for this instantiation
         // This avoids potential issues with shared mutable state in the linker
-        let linker = ComponentLinker::new(&self.engine);
+        let mut linker: ComponentLinker<ComponentStoreData> = ComponentLinker::new(&self.engine);
+
+        // Add WASI Preview 2 imports to the linker
+        #[cfg(feature = "wasi")]
+        {
+            wasmtime_wasi::p2::add_to_linker_sync(&mut linker)
+                .map_err(|e| {
+                    WasmtimeError::Instance {
+                        message: format!("Failed to add WASI to linker: {}", e),
+                    }
+                })?;
+        }
+
+        {
+            use std::io::Write;
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+                let _ = writeln!(f, "DEBUG: Attempting component instantiation...");
+            }
+        }
 
         let instance = linker.instantiate(&mut store, component.wasmtime_component())
-            .map_err(|e| WasmtimeError::Instance {
-                message: format!("Failed to instantiate component: {}", e),
+            .map_err(|e| {
+                use std::io::Write;
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+                    let _ = writeln!(f, "ERROR: Component instantiation failed: {}", e);
+                    let _ = writeln!(f, "ERROR: Full error: {:?}", e);
+                }
+                eprintln!("RUST ERROR: Component instantiation failed: {}", e);
+                eprintln!("RUST ERROR: Full error: {:?}", e);
+                WasmtimeError::Instance {
+                    message: format!("Failed to instantiate component: {}", e),
+                }
             })?;
+
+        {
+            use std::io::Write;
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+                let _ = writeln!(f, "DEBUG: Component instantiated successfully");
+            }
+        }
 
         let handle = ComponentInstanceHandle {
             store,
@@ -351,12 +385,13 @@ impl EnhancedComponentEngine {
                 message: format!("Function '{}' not found in component exports", function_name),
             })?;
 
-        // Allocate a reasonable-sized result vector
-        // The function will error if the size doesn't match, so we'll retry with correct size
-        let mut results: Vec<Val> = Vec::with_capacity(16);  // Start with capacity for up to 16 results
+        // Pre-allocate results vector with correct size
+        // Wasmtime requires the results vec to be pre-sized, not just have capacity
+        let result_count = func.results(&instance_info.store).len();
+        let mut results: Vec<Val> = vec![Val::Bool(false); result_count];  // Initialize with dummy values
 
-        // Try calling the function - if it fails due to wrong result arity, we'll need to
-        // determine the correct size another way
+        eprintln!("DEBUG: Calling function with {} params, expecting {} results", params.len(), result_count);
+
         let call_result = func.call(&mut instance_info.store, params, &mut results);
 
         match call_result {
@@ -369,6 +404,11 @@ impl EnhancedComponentEngine {
                     })?;
             }
             Err(e) => {
+                eprintln!("COMPONENT CALL ERROR: Function '{}' failed with error: {:?}", function_name, e);
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+                    use std::io::Write;
+                    let _ = writeln!(f, "COMPONENT CALL ERROR: Function '{}' failed: {:?}", function_name, e);
+                }
                 return Err(WasmtimeError::Runtime {
                     message: format!("Failed to call component function '{}': {}", function_name, e),
                     backtrace: None,
@@ -431,16 +471,31 @@ impl EnhancedComponentEngine {
         function_name: &str,
         params: &[wasmtime::component::Val],
     ) -> WasmtimeResult<Vec<wasmtime::component::Val>> {
+        eprintln!("DEBUG: invoke_component_function called: instance_id={}, function_name={}, params.len()={}",
+                  instance_id, function_name, params.len());
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+            use std::io::Write;
+            let _ = writeln!(f, "DEBUG: invoke_component_function: instance_id={}, function_name={}, params.len()={}",
+                           instance_id, function_name, params.len());
+        }
+
         let mut instances = self.instances.write()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire instances write lock".to_string(),
+            .map_err(|e| {
+                eprintln!("ERROR: Failed to acquire instances write lock: {:?}", e);
+                WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                }
             })?;
 
         let handle = instances.get_mut(&instance_id)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
-                message: format!("Instance {} not found", instance_id),
+            .ok_or_else(|| {
+                eprintln!("ERROR: Instance {} not found", instance_id);
+                WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                }
             })?;
 
+        eprintln!("DEBUG: About to call call_component_function");
         self.call_component_function(handle, function_name, params)
     }
 

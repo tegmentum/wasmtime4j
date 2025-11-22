@@ -37,8 +37,7 @@ class JniBacktraceTest {
   void shouldHaveBacktraceCaptureMethodsDefined() throws NoSuchMethodException {
     // Verify methods exist via reflection (can't call them without native library loaded)
     assertNotNull(
-        JniStore.class.getMethod("captureBacktrace"),
-        "captureBacktrace method should exist");
+        JniStore.class.getMethod("captureBacktrace"), "captureBacktrace method should exist");
     assertNotNull(
         JniStore.class.getMethod("forceCaptureBacktrace"),
         "forceCaptureBacktrace method should exist");
@@ -49,8 +48,7 @@ class JniBacktraceTest {
   void shouldCreateWasmBacktraceWithFrames() {
     final FrameInfo frame =
         new FrameInfo(0, null, "test_function", 100, 50, Collections.emptyList());
-    final WasmBacktrace backtrace =
-        new WasmBacktrace(Collections.singletonList(frame), false);
+    final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
     assertNotNull(backtrace, "Backtrace should not be null");
     assertFalse(backtrace.isForceCapture(), "Should not be force capture");
@@ -136,8 +134,7 @@ class JniBacktraceTest {
   @DisplayName("Should verify WasmBacktrace toString format")
   void shouldVerifyBacktraceToStringFormat() {
     final FrameInfo frame = new FrameInfo(0, null, "test", 100, 50, Collections.emptyList());
-    final WasmBacktrace backtrace =
-        new WasmBacktrace(Collections.singletonList(frame), false);
+    final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
     final String str = backtrace.toString();
     assertNotNull(str, "toString should not be null");
@@ -220,8 +217,7 @@ class JniBacktraceTest {
   @DisplayName("Should handle WasmBacktrace with immutable frames list")
   void shouldHandleBacktraceWithImmutableFramesList() {
     final FrameInfo frame = new FrameInfo(0, null, "test", 100, 50, Collections.emptyList());
-    final WasmBacktrace backtrace =
-        new WasmBacktrace(Collections.singletonList(frame), false);
+    final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
     // Verify list is immutable
     assertNotNull(backtrace.getFrames(), "Frames list should not be null");

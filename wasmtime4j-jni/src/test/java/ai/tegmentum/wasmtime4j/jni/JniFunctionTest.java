@@ -30,7 +30,8 @@ class JniFunctionTest {
 
   @Test
   void testConstructorWithValidParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
     assertThat(function.getNativeHandle()).isEqualTo(VALID_HANDLE);
     assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
@@ -43,7 +44,8 @@ class JniFunctionTest {
   void testConstructorWithInvalidHandle() {
     final JniValidationException exception =
         assertThrows(
-            JniValidationException.class, () -> new JniFunction(0L, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE));
+            JniValidationException.class,
+            () -> new JniFunction(0L, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -53,7 +55,8 @@ class JniFunctionTest {
   void testConstructorWithNullName() {
     final JniValidationException exception =
         assertThrows(
-            JniValidationException.class, () -> new JniFunction(VALID_HANDLE, null, VALID_MODULE_HANDLE, MOCK_STORE));
+            JniValidationException.class,
+            () -> new JniFunction(VALID_HANDLE, null, VALID_MODULE_HANDLE, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -72,25 +75,29 @@ class JniFunctionTest {
 
   @Test
   void testGetName() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
   }
 
   @Test
   void testGetResourceType() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
   }
 
   @Test
   void testGetCallCount() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertThat(function.getCallCount()).isEqualTo(0);
   }
 
   @Test
   void testCallWithNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
@@ -101,7 +108,8 @@ class JniFunctionTest {
 
   @Test
   void testCallWithObjectNullParameters() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
     final JniValidationException exception =
         assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
@@ -112,7 +120,8 @@ class JniFunctionTest {
 
   @Test
   void testClearCache() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
     // Should not throw any exception
     assertDoesNotThrow(function::clearCache);
@@ -120,7 +129,8 @@ class JniFunctionTest {
 
   @Test
   void testGetCacheHitRatio() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
     // Should return initial cache hit ratio (0.0)
     assertThat(function.getCacheHitRatio()).isEqualTo(0.0);
@@ -128,7 +138,8 @@ class JniFunctionTest {
 
   @Test
   void testResourceManagement() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertFalse(function.isClosed());
 
     // Test that resource starts in open state
@@ -142,7 +153,8 @@ class JniFunctionTest {
     // Since close() requires native methods, this is covered in integration tests
     // This unit test verifies parameter validation only
 
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertFalse(function.isClosed());
 
     // Test that operations work on open function (would call native methods in real implementation)
@@ -151,7 +163,8 @@ class JniFunctionTest {
 
   @Test
   void testToString() {
-    final JniFunction function = new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
+    final JniFunction function =
+        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     final String toString = function.toString();
 
     assertThat(toString).contains("Function[" + FUNCTION_NAME + "]");

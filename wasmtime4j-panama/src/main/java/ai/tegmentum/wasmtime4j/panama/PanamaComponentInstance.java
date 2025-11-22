@@ -105,7 +105,7 @@ final class PanamaComponentInstance implements ComponentInstance {
         }
 
         // Allocate WitValueFFI array
-        final int ffiStructSize = 12; // sizeof(WitValueFFI): i32 + i32 + ptr
+        final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
         paramsPtr = arena.allocate(ffiStructSize * marshalledParams.size());
 
         // Fill WitValueFFI structures
@@ -115,8 +115,7 @@ final class PanamaComponentInstance implements ComponentInstance {
 
           // WitValueFFI { type_discriminator: i32, data_length: i32, data_ptr: *const u8 }
           paramsPtr.set(ValueLayout.JAVA_INT, offset, marshalled.getTypeDiscriminator());
-          paramsPtr.set(
-              ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
+          paramsPtr.set(ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
 
           // Allocate and copy data
           final MemorySegment dataSegment =
@@ -134,6 +133,14 @@ final class PanamaComponentInstance implements ComponentInstance {
       final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
       final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
 
+      System.err.println(
+          "JAVA: About to call enhancedComponentInvoke: function="
+              + functionName
+              + ", instanceId="
+              + instanceId
+              + ", paramsCount="
+              + paramsCount);
+
       // Call enhanced component invoke with instance ID
       final int errorCode =
           NATIVE_BINDINGS.enhancedComponentInvoke(
@@ -145,7 +152,10 @@ final class PanamaComponentInstance implements ComponentInstance {
               resultsOut,
               resultsCountOut);
 
+      System.err.println("JAVA: enhancedComponentInvoke returned errorCode=" + errorCode);
+
       if (errorCode != 0) {
+        System.err.println("JAVA: Error invoking function, throwing exception");
         throw new WasmException(
             "Failed to invoke component function '"
                 + functionName
@@ -168,19 +178,24 @@ final class PanamaComponentInstance implements ComponentInstance {
       }
 
       // Read WitValueFFI results
-      final int ffiStructSize = 12;
+      final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
+      final MemorySegment resultsArrayWithSize =
+          resultsArrayPtr.reinterpret(ffiStructSize * resultCount);
       final List<Object> results = new ArrayList<>(resultCount);
 
       for (int i = 0; i < resultCount; i++) {
         final long offset = (long) i * ffiStructSize;
 
-        final int typeDiscriminator = resultsArrayPtr.get(ValueLayout.JAVA_INT, offset);
-        final int dataLength = resultsArrayPtr.get(ValueLayout.JAVA_INT, offset + 4);
-        final MemorySegment dataPtr = resultsArrayPtr.get(ValueLayout.ADDRESS, offset + 8);
+        final int typeDiscriminator = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset);
+        final int dataLength = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset + 4);
+        final MemorySegment dataPtr = resultsArrayWithSize.get(ValueLayout.ADDRESS, offset + 8);
+
+        // Reinterpret pointer with correct size
+        final MemorySegment dataPtrWithSize = dataPtr.reinterpret(dataLength);
 
         // Copy data from native memory
         final byte[] data = new byte[dataLength];
-        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
+        MemorySegment.copy(dataPtrWithSize, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
 
         // Unmarshal using PanamaWitValueMarshaller
         final WitValue witValue =
@@ -241,6 +256,18 @@ final class PanamaComponentInstance implements ComponentInstance {
       return WitString.of((String) obj);
     }
 
+    if (obj instanceof java.util.Map) {
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+      final ai.tegmentum.wasmtime4j.wit.WitRecord.Builder builder =
+          ai.tegmentum.wasmtime4j.wit.WitRecord.builder();
+      for (final java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+        final ai.tegmentum.wasmtime4j.wit.WitValue fieldValue = convertToWitValue(entry.getValue());
+        builder.field(entry.getKey(), fieldValue);
+      }
+      return builder.build();
+    }
+
     throw new WitValueException(
         "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
         WitValueException.ErrorCode.TYPE_MISMATCH);
@@ -264,8 +291,7 @@ final class PanamaComponentInstance implements ComponentInstance {
 
     try (var arena = java.lang.foreign.Arena.ofConfined()) {
       // Allocate output parameters
-      final MemorySegment functionsOut =
-          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      final MemorySegment functionsOut = arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
       final MemorySegment countOut = arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
 
       // Call enhanced component get exports with instance ID
@@ -286,8 +312,7 @@ final class PanamaComponentInstance implements ComponentInstance {
       }
 
       // Read the array of string pointers
-      final MemorySegment stringsPtr =
-          functionsOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+      final MemorySegment stringsPtr = functionsOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
 
       if (stringsPtr == null || stringsPtr.equals(MemorySegment.NULL)) {
         return Set.of();

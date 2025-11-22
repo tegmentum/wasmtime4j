@@ -72,8 +72,8 @@ public final class WitChar extends WitPrimitiveValue {
   }
 
   @Override
-  public Integer toJava() {
-    return codepoint;
+  public Character toJava() {
+    return Character.valueOf((char) codepoint);
   }
 
   @Override

@@ -1,0 +1,12 @@
+package wasmtime4j:test@0.1.0;
+
+world basic-types {
+    export test-bool: func(input: bool) -> bool;
+    export test-s32: func(input: s32) -> s32;
+    export test-s64: func(input: s64) -> s64;
+    export test-float64: func(input: f64) -> f64;
+    export test-char: func(input: char) -> char;
+    export test-string: func(input: string) -> string;
+    export test-multi-params: func(a: s32, b: s32) -> s32;
+    export test-multi-returns: func(input: s32) -> tuple<s32, s32>;
+}

@@ -125,7 +125,7 @@ pub unsafe extern "C" fn wasmtime4j_wasi_fd_read(
     if context.is_null() || iovs_ptr.is_null() || nread_out.is_null() {
         return 28; // EINVAL
     }
-    
+
     // Implementation calling Wasmtime APIs
     // Convert pointers to Rust types
     // Call actual WASI operations
@@ -156,9 +156,9 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public final class WasiPreview1Operations {
-    
+
     private static final Linker NATIVE_LINKER = Linker.nativeLinker();
-    
+
     // Function descriptors for all native methods
     private static final FunctionDescriptor FD_READ_DESC =
         FunctionDescriptor.of(
@@ -168,31 +168,31 @@ public final class WasiPreview1Operations {
             ValueLayout.ADDRESS,      // iovs
             ValueLayout.JAVA_INT,     // iovs_len
             ValueLayout.ADDRESS);     // nread_out
-    
+
     private final WasiContext wasiContext;
     private final MethodHandle fdRead;
-    
+
     public WasiPreview1Operations(final WasiContext wasiContext) {
         this.wasiContext = wasiContext;
-        
+
         // Load native library
         SymbolLookup lookup = SymbolLookup.loaderLookup();
-        
+
         // Create MethodHandles
         this.fdRead = NATIVE_LINKER.downcallHandle(
             lookup.find("wasmtime4j_wasi_fd_read").orElseThrow(),
             FD_READ_DESC
         );
     }
-    
+
     public int fdRead(final int fd, final List<ByteBuffer> iovs) {
         try (Arena arena = Arena.ofConfined()) {
             // Allocate output parameter
             MemorySegment nreadOut = arena.allocate(ValueLayout.JAVA_LONG);
-            
+
             // Convert iovs to native structure
             // ... (implementation details)
-            
+
             // Call native function
             int result = (int) fdRead.invokeExact(
                 wasiContext.getNativeHandle(),
@@ -201,14 +201,14 @@ public final class WasiPreview1Operations {
                 iovs.size(),
                 nreadOut
             );
-            
+
             if (result != 0) {
                 throw new WasiException(
                     "fd_read failed",
                     WasiErrorCode.fromErrno(result)
                 );
             }
-            
+
             return (int) nreadOut.get(ValueLayout.JAVA_LONG, 0);
         } catch (Throwable e) {
             throw new WasiException("fd_read error", e);

@@ -59,9 +59,7 @@ class EngineConfigTest {
     assertTrue(config.isGuestDebug(), "guestDebug should be enabled");
     assertTrue(config.isDebugInfo(), "debugInfo should be enabled");
     assertEquals(
-        OptimizationLevel.NONE,
-        config.getOptimizationLevel(),
-        "optimization level should be NONE");
+        OptimizationLevel.NONE, config.getOptimizationLevel(), "optimization level should be NONE");
   }
 
   @Test
@@ -94,8 +92,7 @@ class EngineConfigTest {
         OptimizationLevel.SIZE,
         sizeConfig.getOptimizationLevel(),
         "forSize() should use SIZE optimization");
-    assertTrue(
-        sizeConfig.isParallelCompilation(), "forSize() should enable parallel compilation");
+    assertTrue(sizeConfig.isParallelCompilation(), "forSize() should enable parallel compilation");
   }
 
   @Test
@@ -111,7 +108,6 @@ class EngineConfigTest {
     final EngineConfig config = new EngineConfig();
     // Verify the getter method exists and returns a boolean
     assertNotNull(
-        Boolean.valueOf(config.isWasmMemory64()),
-        "isWasmMemory64() should return a boolean value");
+        Boolean.valueOf(config.isWasmMemory64()), "isWasmMemory64() should return a boolean value");
   }
 }

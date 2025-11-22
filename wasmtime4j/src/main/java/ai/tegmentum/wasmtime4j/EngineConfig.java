@@ -197,8 +197,8 @@ public final class EngineConfig {
    * <p>When enabled, allows creation of async host functions and async execution of WebAssembly
    * code using Tokio runtime. This is required for non-blocking I/O operations and async WASI.
    *
-   * <p>Note: Enabling async support requires the native Tokio runtime and may increase memory
-   * usage due to async stack allocation.
+   * <p>Note: Enabling async support requires the native Tokio runtime and may increase memory usage
+   * due to async stack allocation.
    *
    * @param asyncSupport true to enable async execution support
    * @return this configuration for method chaining

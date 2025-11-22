@@ -7,7 +7,7 @@
 
 **Implementation**:
 - `PanamaStore.createHostFunction()` - Creates host functions with Panama upcall stubs
-- `ArenaResourceManager` integration - Manages native resource lifecycles  
+- `ArenaResourceManager` integration - Manages native resource lifecycles
 - `PanamaErrorHandler` - Instantiable for host function error handling
 - Full callback infrastructure via `PanamaHostFunction` (776 lines, pre-existing)
 

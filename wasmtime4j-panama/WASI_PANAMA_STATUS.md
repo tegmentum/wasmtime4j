@@ -14,7 +14,7 @@ The Panama FFI WASI implementation is functionally complete. All required infras
 
 **Phase 1 - Configuration (COMPLETE):**
 - PanamaWasiConfig.java
-- PanamaWasiConfigBuilder.java  
+- PanamaWasiConfigBuilder.java
 - PanamaWasiLinker.java
 
 **Phase 2 - Infrastructure (COMPLETE):**
@@ -32,7 +32,7 @@ The Panama FFI WASI implementation is functionally complete. All required infras
 
 Panama WASI uses a different but equivalent architecture vs JNI:
 
-**JNI:** Façade classes (WasiPreview1Operations, WasiPreview2Operations)  
+**JNI:** Façade classes (WasiPreview1Operations, WasiPreview2Operations)
 **Panama:** Direct integration (WasiContext + operational helpers)
 
 This design leverages Panama's MethodHandle pattern and is cleaner than JNI's approach.

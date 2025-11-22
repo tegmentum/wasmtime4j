@@ -43,8 +43,6 @@ import java.util.Objects;
  */
 public final class WitRecord extends WitValue {
 
-  private static final WitType RECORD_TYPE = WitType.createRecord();
-
   private final Map<String, WitValue> fields;
 
   /**
@@ -53,13 +51,28 @@ public final class WitRecord extends WitValue {
    * @param fields the record fields (must not be null or empty)
    */
   private WitRecord(final Map<String, WitValue> fields) {
-    super(RECORD_TYPE);
+    super(createRecordType(fields));
     if (fields == null || fields.isEmpty()) {
       throw new IllegalArgumentException("Record fields cannot be null or empty");
     }
     // Defensive copy and validate all fields
     this.fields = new LinkedHashMap<>(fields);
     validate();
+  }
+
+  /**
+   * Creates a WIT type for this record based on its fields.
+   *
+   * @param fields the record fields
+   * @return a WIT type representing this record
+   */
+  private static WitType createRecordType(final Map<String, WitValue> fields) {
+    // Build field types map
+    final Map<String, WitType> fieldTypes = new LinkedHashMap<>();
+    for (final Map.Entry<String, WitValue> entry : fields.entrySet()) {
+      fieldTypes.put(entry.getKey(), entry.getValue().getType());
+    }
+    return WitType.record("record", fieldTypes);
   }
 
   /**
@@ -130,17 +143,15 @@ public final class WitRecord extends WitValue {
   }
 
   @Override
-  protected void validate() throws WitValueException {
+  protected void validate() {
     // Validate that all fields are non-null
     for (final Map.Entry<String, WitValue> entry : fields.entrySet()) {
       if (entry.getKey() == null || entry.getKey().isEmpty()) {
-        throw new WitValueException(
-            "Record field name cannot be null or empty", WitValueException.ErrorCode.NULL_VALUE);
+        throw new IllegalArgumentException("Record field name cannot be null or empty");
       }
       if (entry.getValue() == null) {
-        throw new WitValueException(
-            "Record field value cannot be null for field: " + entry.getKey(),
-            WitValueException.ErrorCode.NULL_VALUE);
+        throw new IllegalArgumentException(
+            "Record field value cannot be null for field: " + entry.getKey());
       }
     }
   }

@@ -309,8 +309,7 @@ public final class NativeFunctionBindings {
    */
   public void moduleFreeSerializedData(final MemorySegment dataPtr, final long len) {
     if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL)) {
-      callNativeFunction(
-          "wasmtime4j_panama_module_free_serialized_data", Void.class, dataPtr, len);
+      callNativeFunction("wasmtime4j_panama_module_free_serialized_data", Void.class, dataPtr, len);
     }
   }
 
@@ -4551,6 +4550,48 @@ public final class NativeFunctionBindings {
         "wasmtime4j_panama_enhanced_component_engine_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine handle
 
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_load_from_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // wasm bytes
+            ValueLayout.JAVA_LONG, // wasm size
+            ValueLayout.ADDRESS)); // component out (pointer to pointer)
+
+    // WIT value marshalling functions
+    addFunctionBinding(
+        "wasmtime4j_wit_value_serialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.JAVA_INT, // type_discriminator
+            ValueLayout.ADDRESS, // value_ptr
+            ValueLayout.JAVA_LONG, // value_len
+            ValueLayout.ADDRESS, // out_data
+            ValueLayout.ADDRESS)); // out_len
+
+    addFunctionBinding(
+        "wasmtime4j_wit_value_free_buffer",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // buffer_ptr
+            ValueLayout.JAVA_LONG)); // buffer_len
+
+    addFunctionBinding(
+        "wasmtime4j_wit_value_validate_discriminator",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 1 if valid, 0 if invalid
+            ValueLayout.JAVA_INT)); // type_discriminator
+
+    addFunctionBinding(
+        "wasmtime4j_wit_value_deserialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.JAVA_INT, // type_discriminator
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG, // data_len
+            ValueLayout.ADDRESS, // out_value
+            ValueLayout.ADDRESS)); // out_len
+
     // WASI context functions
     addFunctionBinding(
         "wasmtime4j_wasi_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -5123,13 +5164,8 @@ public final class NativeFunctionBindings {
     }
 
     private void initializeMethodHandle() {
-      Optional<MethodHandle> handle =
-          methodHandleCache.getOrCreate(functionName, MemorySegment.NULL, descriptor);
-
-      if (handle.isEmpty()) {
-        // Try direct lookup from library loader
-        handle = libraryLoader.lookupFunction(functionName, descriptor);
-      }
+      // Use library loader to lookup function (which handles symbol lookup and caching)
+      Optional<MethodHandle> handle = libraryLoader.lookupFunction(functionName, descriptor);
 
       if (handle.isPresent()) {
         this.methodHandle = handle.get();
@@ -6300,6 +6336,32 @@ public final class NativeFunctionBindings {
   public MemorySegment enhancedComponentEngineCreate() {
     return callNativeFunction(
         "wasmtime4j_panama_enhanced_component_engine_create", MemorySegment.class);
+  }
+
+  /**
+   * Loads (compiles) a component from WebAssembly bytes.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param wasmBytes the WebAssembly component bytes
+   * @param wasmSize the size of the WebAssembly bytes
+   * @param componentOut output parameter for the component handle
+   * @return error code (0 for success)
+   */
+  public int enhancedComponentLoadFromBytes(
+      final MemorySegment engineHandle,
+      final MemorySegment wasmBytes,
+      final long wasmSize,
+      final MemorySegment componentOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(wasmBytes, "wasmBytes");
+    validatePointer(componentOut, "componentOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_load_from_bytes",
+        Integer.class,
+        engineHandle,
+        wasmBytes,
+        wasmSize,
+        componentOut);
   }
 
   /**

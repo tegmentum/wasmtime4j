@@ -448,11 +448,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final int result =
             (int)
                 structGet.invokeExact(
-                    nativeHandle,
-                    panamaStruct.getObjectId(),
-                    fieldIndex,
-                    resultValue,
-                    resultType);
+                    nativeHandle, panamaStruct.getObjectId(), fieldIndex, resultValue, resultType);
 
         if (result != 0) {
           throw new GcException("Failed to get struct field");
@@ -546,11 +542,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final int result =
             (int)
                 arrayGet.invokeExact(
-                    nativeHandle,
-                    panamaArray.getObjectId(),
-                    elementIndex,
-                    resultValue,
-                    resultType);
+                    nativeHandle, panamaArray.getObjectId(), elementIndex, resultValue, resultType);
 
         if (result != 0) {
           throw new GcException("Failed to get array element");

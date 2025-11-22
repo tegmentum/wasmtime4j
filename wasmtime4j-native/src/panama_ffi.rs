@@ -1226,6 +1226,35 @@ pub mod component_enhanced {
         }
     }
 
+    /// Load component from bytes using enhanced engine
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_enhanced_component_load_from_bytes(
+        engine_ptr: *mut c_void,
+        wasm_bytes: *const u8,
+        wasm_size: usize,
+        component_out: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+            let wasm_data = unsafe {
+                if wasm_bytes.is_null() || wasm_size == 0 {
+                    return Err(crate::error::WasmtimeError::InvalidParameter {
+                        message: "Invalid WASM bytes or size".to_string(),
+                    });
+                }
+                std::slice::from_raw_parts(wasm_bytes, wasm_size)
+            };
+
+            let component = engine.load_component_from_bytes(wasm_data)?;
+
+            unsafe {
+                *component_out = Box::into_raw(Box::new(component)) as *mut c_void;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Instantiate a component and return instance ID
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
@@ -1233,9 +1262,27 @@ pub mod component_enhanced {
         component_ptr: *mut c_void,
         instance_id_out: *mut c_ulong,
     ) -> c_int {
-        ffi_utils::ffi_try_code(|| {
-            let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
-            let component = unsafe { ffi_utils::deref_ptr::<Component>(component_ptr, "component")? };
+        use std::fs::OpenOptions;
+        use std::io::Write;
+
+        let _ = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_debug.log")
+            .and_then(|mut log| {
+                writeln!(log, "\n===== RUST FFI ENTRY POINT =====")?;
+                writeln!(log, "RUST: Function called with engine_ptr={:?}", engine_ptr)?;
+                writeln!(log, "RUST: component_ptr={:?}", component_ptr)
+            });
+
+        let result = ffi_utils::ffi_try_code(|| {
+            let engine = unsafe {
+                ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")?
+            };
+
+            let component = unsafe {
+                ffi_utils::deref_ptr::<Component>(component_ptr, "component")?
+            };
 
             let instance_id = engine.instantiate_component(component)?;
 
@@ -1244,7 +1291,17 @@ pub mod component_enhanced {
             }
 
             Ok(())
-        })
+        });
+
+        let _ = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_debug.log")
+            .and_then(|mut log| {
+                writeln!(log, "RUST: Result = {:?}", result)
+            });
+
+        result
     }
 
     /// Invoke a component function using instance ID
@@ -1259,22 +1316,30 @@ pub mod component_enhanced {
         results_count_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
+            eprintln!("PANAMA FFI: enhanced_component_invoke called");
             let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
             let func_name = unsafe {
                 std::ffi::CStr::from_ptr(function_name)
                     .to_str()
-                    .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
-                        message: format!("Invalid function name: {}", e),
+                    .map_err(|e| {
+                        eprintln!("ERROR: Invalid function name: {}", e);
+                        crate::error::WasmtimeError::InvalidParameter {
+                            message: format!("Invalid function name: {}", e),
+                        }
                     })?
             };
+
+            eprintln!("PANAMA FFI: Function name: {}, params_count: {}", func_name, params_count);
 
             // Parse parameters from FFI format to Vec<Val>
             let mut params: Vec<Val> = Vec::with_capacity(params_count as usize);
             if !params_ptr.is_null() && params_count > 0 {
                 unsafe {
                     let params_slice = std::slice::from_raw_parts(params_ptr, params_count as usize);
-                    for param_ffi in params_slice {
+                    for (i, param_ffi) in params_slice.iter().enumerate() {
+                        eprintln!("PANAMA FFI: Deserializing param {}: type={}, length={}",
+                                 i, param_ffi.type_discriminator, param_ffi.data_length);
                         let data = std::slice::from_raw_parts(
                             param_ffi.data_ptr,
                             param_ffi.data_length as usize,
@@ -1282,20 +1347,43 @@ pub mod component_enhanced {
                         let val = wit_value_marshal::deserialize_to_val(
                             param_ffi.type_discriminator,
                             data,
-                        )?;
+                        ).map_err(|e| {
+                            eprintln!("ERROR: Failed to deserialize param {}: {:?}", i, e);
+                            e
+                        })?;
+                        eprintln!("PANAMA FFI: Param {} deserialized successfully", i);
                         params.push(val);
                     }
                 }
             }
 
+            eprintln!("PANAMA FFI: About to invoke component function");
             // Invoke the function using EnhancedComponentEngine
-            let results = engine.invoke_component_function(instance_id, func_name, &params)?;
+            let results = engine.invoke_component_function(instance_id, func_name, &params).map_err(|e| {
+                eprintln!("ERROR: invoke_component_function failed: {:?}", e);
+                e
+            })?;
+            eprintln!("PANAMA FFI: Function invoked successfully, results.len()={}", results.len());
 
             // Serialize results to FFI format
-            if !results.is_empty() {
-                let mut results_ffi: Vec<WitValueFFI> = Vec::with_capacity(results.len());
+            // First, flatten any tuples into their constituent elements
+            let mut flattened_results: Vec<&Val> = Vec::new();
+            for val in &results {
+                match val {
+                    Val::Tuple(elements) => {
+                        // Unwrap tuple into individual elements
+                        flattened_results.extend(elements.iter());
+                    }
+                    _ => {
+                        flattened_results.push(val);
+                    }
+                }
+            }
 
-                for val in &results {
+            if !flattened_results.is_empty() {
+                let mut results_ffi: Vec<WitValueFFI> = Vec::with_capacity(flattened_results.len());
+
+                for val in flattened_results {
                     let (type_discriminator, data) = wit_value_marshal::serialize_from_val(val)?;
 
                     // Allocate data on heap
@@ -1310,9 +1398,10 @@ pub mod component_enhanced {
                     });
                 }
 
+                let results_count = results_ffi.len();
                 unsafe {
                     *results_out = Box::into_raw(results_ffi.into_boxed_slice()) as *mut WitValueFFI;
-                    *results_count_out = results.len() as c_int;
+                    *results_count_out = results_count as c_int;
                 }
             } else {
                 unsafe {
@@ -1605,13 +1694,6 @@ pub mod component_enhanced {
             }
         }
     }
-    
-    /// Create an enhanced component engine (Panama FFI version)
-    #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_create() -> *mut c_void {
-        use crate::error::ffi_utils;
-        ffi_utils::ffi_try_ptr(|| crate::component_core::core::create_enhanced_component_engine())
-    }
 
     /// Create a WIT interface manager (Panama FFI version)
     #[no_mangle]
@@ -1708,34 +1790,6 @@ pub mod component_enhanced {
             */
             // Placeholder implementation until distributed_components is available
             Ok(Box::new(()))
-        })
-    }
-
-    /// Load component using enhanced engine (Panama FFI version)
-    #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_enhanced_component_load_from_bytes(
-        enhanced_engine_ptr: *mut c_void,
-        wasm_bytes: *const u8,
-        wasm_size: usize,
-        component_ptr: *mut *mut c_void,
-    ) -> c_int {
-        use crate::error::ffi_utils;
-
-        ffi_utils::ffi_try_code(|| {
-            let engine = unsafe {
-                crate::component_core::core::get_enhanced_component_engine_ref(enhanced_engine_ptr as *const c_void)?
-            };
-            let wasm_data = unsafe {
-                ffi_utils::slice_from_raw_parts(wasm_bytes, wasm_size, "component_bytes")?
-            };
-
-            let component = crate::component_core::core::load_component_from_bytes_enhanced(engine, wasm_data)?;
-
-            unsafe {
-                *component_ptr = Box::into_raw(component) as *mut c_void;
-            }
-
-            Ok(())
         })
     }
 
