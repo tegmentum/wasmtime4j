@@ -1,0 +1,18 @@
+package wasmtime4j:records@0.1.0;
+
+world with-records {
+    record person {
+        name: string,
+        age: u32,
+        email: string,
+    }
+
+    record point {
+        x: f64,
+        y: f64,
+    }
+
+    export echo-person: func(p: person) -> person;
+    export echo-point: func(p: point) -> point;
+    export create-person: func(name: string, age: u32, email: string) -> person;
+}
