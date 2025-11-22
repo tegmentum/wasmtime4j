@@ -649,24 +649,84 @@ impl ComponentEngine {
         let mut exports = Vec::new();
 
         // Extract imports - Wasmtime 37.0.2 requires engine parameter
-        for (name, _import_ty) in component_ty.imports(&self.engine) {
+        for (name, import_ty) in component_ty.imports(&self.engine) {
+            let mut functions = Vec::new();
+
+            use wasmtime::component::types::ComponentItem;
+            match import_ty {
+                ComponentItem::ComponentInstance(instance_ty) => {
+                    // It's an instance import - enumerate its functions
+                    for (func_name, func_ty) in instance_ty.exports(&self.engine) {
+                        if matches!(func_ty, ComponentItem::ComponentFunc(_)) {
+                            functions.push(FunctionDefinition {
+                                name: func_name.to_string(),
+                                parameters: Vec::new(),
+                                results: Vec::new(),
+                            });
+                        }
+                    }
+                }
+                ComponentItem::ComponentFunc(_func_ty) => {
+                    // It's a direct function import
+                    functions.push(FunctionDefinition {
+                        name: name.to_string(),
+                        parameters: Vec::new(),
+                        results: Vec::new(),
+                    });
+                }
+                _ => {
+                    // Other import types (modules, types, etc.) - skip for now
+                }
+            }
+
             imports.push(InterfaceDefinition {
                 name: name.to_string(),
                 namespace: None, // Will be enhanced with actual namespace parsing
                 version: None,   // Will be enhanced with actual version parsing
-                functions: Vec::new(), // Will be enhanced with actual function extraction
+                functions,
                 types: Vec::new(),     // Will be enhanced with actual type extraction
                 resources: Vec::new(), // Will be enhanced with actual resource extraction
             });
         }
 
         // Extract exports - Wasmtime 37.0.2 requires engine parameter
-        for (name, _export_ty) in component_ty.exports(&self.engine) {
+        for (name, export_ty) in component_ty.exports(&self.engine) {
+            let mut functions = Vec::new();
+
+            // Try to extract functions from the export type
+            // The export might be a ComponentItem which could be a function or instance
+            use wasmtime::component::types::ComponentItem;
+            match export_ty {
+                ComponentItem::ComponentInstance(instance_ty) => {
+                    // It's an instance export - enumerate its functions
+                    for (func_name, func_ty) in instance_ty.exports(&self.engine) {
+                        if matches!(func_ty, ComponentItem::ComponentFunc(_)) {
+                            functions.push(FunctionDefinition {
+                                name: func_name.to_string(),
+                                parameters: Vec::new(), // Function signature details
+                                results: Vec::new(),
+                            });
+                        }
+                    }
+                }
+                ComponentItem::ComponentFunc(_func_ty) => {
+                    // It's a direct function export
+                    functions.push(FunctionDefinition {
+                        name: name.to_string(),
+                        parameters: Vec::new(),
+                        results: Vec::new(),
+                    });
+                }
+                _ => {
+                    // Other export types (modules, types, etc.) - skip for now
+                }
+            }
+
             exports.push(InterfaceDefinition {
                 name: name.to_string(),
                 namespace: None, // Will be enhanced with actual namespace parsing
                 version: None,   // Will be enhanced with actual version parsing
-                functions: Vec::new(), // Will be enhanced with actual function extraction
+                functions,
                 types: Vec::new(),     // Will be enhanced with actual type extraction
                 resources: Vec::new(), // Will be enhanced with actual resource extraction
             });
@@ -1404,7 +1464,7 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_destroy(instance_ptr: *mu
     }
 }
 
-/// Get the number of exports from a component
+/// Get the total number of exported functions from a component
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const c_void) -> usize {
     if component_ptr.is_null() {
@@ -1412,7 +1472,11 @@ pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const
     }
 
     let component = &*(component_ptr as *const Component);
-    component.metadata.exports.len()
+
+    // Count total functions across all exported interfaces
+    component.metadata.exports.iter()
+        .map(|export| export.functions.len())
+        .sum()
 }
 
 /// Get the number of imports required by a component
@@ -1625,7 +1689,7 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_interface(
     }
 }
 
-/// Get export interface name by index
+/// Get exported function name by index
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
     component_ptr: *const c_void,
@@ -1638,18 +1702,26 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
 
     let component = &*(component_ptr as *const Component);
 
-    if index >= component.metadata.exports.len() {
+    // Flatten all function names from all exported interfaces
+    let mut all_functions: Vec<&str> = Vec::new();
+    for export in &component.metadata.exports {
+        for function in &export.functions {
+            all_functions.push(&function.name);
+        }
+    }
+
+    if index >= all_functions.len() {
         return FFI_ERROR;
     }
 
-    let export_name = &component.metadata.exports[index].name;
+    let function_name = all_functions[index];
 
-    match CString::new(export_name.as_str()) {
+    match CString::new(function_name) {
         Ok(c_string) => {
             *name_out = c_string.into_raw();
             FFI_SUCCESS
         }
-        Err(_) => FFI_ERROR,
+        Err(_) => FFI_ERROR
     }
 }
 

@@ -102,7 +102,9 @@ final class PanamaComponentSimple implements ComponentSimple {
         final MemorySegment namePtr = nameOut.get(ValueLayout.ADDRESS, 0);
         if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
           try {
-            final String exportName = namePtr.getString(0);
+            // Reinterpret as unbounded segment to read C string
+            final MemorySegment unboundedPtr = namePtr.reinterpret(Long.MAX_VALUE);
+            final String exportName = unboundedPtr.getString(0);
             exports.add(exportName);
           } finally {
             NATIVE_BINDINGS.componentFreeString(namePtr);
@@ -132,7 +134,9 @@ final class PanamaComponentSimple implements ComponentSimple {
         final MemorySegment namePtr = nameOut.get(ValueLayout.ADDRESS, 0);
         if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
           try {
-            final String importName = namePtr.getString(0);
+            // Reinterpret as unbounded segment to read C string
+            final MemorySegment unboundedPtr = namePtr.reinterpret(Long.MAX_VALUE);
+            final String importName = unboundedPtr.getString(0);
             imports.add(importName);
           } finally {
             NATIVE_BINDINGS.componentFreeString(namePtr);

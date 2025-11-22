@@ -1,0 +1,16 @@
+[package]
+name = "with-imports"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.34"
+
+[package.metadata.component]
+package = "wasmtime4j:imports"
+
+[package.metadata.component.target]
+path = "wit"

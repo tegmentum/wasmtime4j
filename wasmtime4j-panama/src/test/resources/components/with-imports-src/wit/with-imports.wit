@@ -1,0 +1,11 @@
+package wasmtime4j:imports@0.1.0;
+
+interface logger {
+    log: func(message: string);
+    log-level: func(level: u32, message: string);
+}
+
+world importer {
+    import logger;
+    export process: func(input: string) -> string;
+}

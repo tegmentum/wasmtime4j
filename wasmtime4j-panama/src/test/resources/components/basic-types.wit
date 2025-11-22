@@ -1,0 +1,18 @@
+// WIT interface for testing basic types
+package wasmtime4j:test@0.1.0;
+
+world basic-types {
+    // Export functions for testing basic type marshalling
+    export test-bool: func(input: bool) -> bool;
+    export test-s32: func(input: s32) -> s32;
+    export test-s64: func(input: s64) -> s64;
+    export test-float64: func(input: float64) -> float64;
+    export test-char: func(input: char) -> char;
+    export test-string: func(input: string) -> string;
+
+    // Test multi-parameter function
+    export test-multi-params: func(a: s32, b: s32) -> s32;
+
+    // Test multi-return function
+    export test-multi-returns: func(input: s32) -> tuple<s32, s32>;
+}
