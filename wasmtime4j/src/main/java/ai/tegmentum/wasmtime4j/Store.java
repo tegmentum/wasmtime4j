@@ -372,4 +372,29 @@ public interface Store extends Closeable {
     }
     return WasmRuntimeFactory.create().createStore(engine, limits);
   }
+
+  /**
+   * Creates a new builder for configuring a Store.
+   *
+   * <p>The builder provides a fluent API for configuring store options including user data, fuel
+   * limits, and epoch deadlines.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Store store = Store.builder(engine)
+   *     .withData(myUserData)
+   *     .withFuel(10000)
+   *     .build();
+   * }</pre>
+   *
+   * @param <T> the type of user data to associate with the store
+   * @param engine the engine to create the store for
+   * @return a new StoreBuilder for configuring the store
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  static <T> StoreBuilder<T> builder(final Engine engine) {
+    return new StoreBuilder<>(engine);
+  }
 }

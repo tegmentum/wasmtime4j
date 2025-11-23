@@ -210,4 +210,28 @@ public interface Engine extends Closeable {
   static Engine create(final EngineConfig config) throws WasmException {
     return WasmRuntimeFactory.create().createEngine(config);
   }
+
+  /**
+   * Creates a new builder for configuring an Engine.
+   *
+   * <p>The builder provides a fluent API for configuring engine options. Call {@link
+   * EngineConfig#consumeFuel(boolean)}, {@link EngineConfig#setEpochInterruption(boolean)}, and
+   * other configuration methods, then create the engine with {@link #create(EngineConfig)}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Engine engine = Engine.create(
+   *     Engine.builder()
+   *         .consumeFuel(true)
+   *         .setEpochInterruption(true)
+   * );
+   * }</pre>
+   *
+   * @return a new EngineConfig for configuring the engine
+   * @since 1.0.0
+   */
+  static EngineConfig builder() {
+    return new EngineConfig();
+  }
 }

@@ -635,4 +635,46 @@ public final class EngineConfig {
   }
 
   // Note: Experimental features methods moved to advanced package
+
+  /**
+   * Builds an Engine with this configuration.
+   *
+   * <p>This is a convenience method that creates an Engine using this EngineConfig. It is equivalent
+   * to calling {@link Engine#create(EngineConfig)} with this configuration.
+   *
+   * @return a new Engine instance with this configuration
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if engine creation fails
+   * @since 1.0.0
+   */
+  public Engine build() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    return Engine.create(this);
+  }
+
+  /**
+   * Convenience method for enabling fuel consumption.
+   *
+   * <p>This is an alias for {@link #consumeFuel(boolean)} with {@code true} parameter, providing a
+   * more fluent API for the builder pattern.
+   *
+   * @param enabled true to enable fuel consumption
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig withFuelEnabled(final boolean enabled) {
+    return consumeFuel(enabled);
+  }
+
+  /**
+   * Convenience method for enabling epoch interruption.
+   *
+   * <p>This is an alias for {@link #setEpochInterruption(boolean)}, providing a more fluent API for
+   * the builder pattern.
+   *
+   * @param enabled true to enable epoch interruption
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig withEpochInterruption(final boolean enabled) {
+    return setEpochInterruption(enabled);
+  }
 }
