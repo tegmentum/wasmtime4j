@@ -116,6 +116,8 @@ pub mod jni_wit_value_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
+pub mod panama_wasi_io_ffi;
+#[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_hot_reload_ffi;
