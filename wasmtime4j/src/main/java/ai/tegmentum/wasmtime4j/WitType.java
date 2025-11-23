@@ -74,14 +74,49 @@ public final class WitType {
     return primitive(WitPrimitiveType.BOOL);
   }
 
+  /** Creates a signed 8-bit integer WIT type. */
+  public static WitType createS8() {
+    return primitive(WitPrimitiveType.S8);
+  }
+
+  /** Creates an unsigned 8-bit integer WIT type. */
+  public static WitType createU8() {
+    return primitive(WitPrimitiveType.U8);
+  }
+
+  /** Creates a signed 16-bit integer WIT type. */
+  public static WitType createS16() {
+    return primitive(WitPrimitiveType.S16);
+  }
+
+  /** Creates an unsigned 16-bit integer WIT type. */
+  public static WitType createU16() {
+    return primitive(WitPrimitiveType.U16);
+  }
+
   /** Creates a signed 32-bit integer WIT type. */
   public static WitType createS32() {
     return primitive(WitPrimitiveType.S32);
   }
 
+  /** Creates an unsigned 32-bit integer WIT type. */
+  public static WitType createU32() {
+    return primitive(WitPrimitiveType.U32);
+  }
+
   /** Creates a signed 64-bit integer WIT type. */
   public static WitType createS64() {
     return primitive(WitPrimitiveType.S64);
+  }
+
+  /** Creates an unsigned 64-bit integer WIT type. */
+  public static WitType createU64() {
+    return primitive(WitPrimitiveType.U64);
+  }
+
+  /** Creates a 32-bit floating-point WIT type. */
+  public static WitType createFloat32() {
+    return primitive(WitPrimitiveType.FLOAT32);
   }
 
   /** Creates a 64-bit floating-point WIT type. */

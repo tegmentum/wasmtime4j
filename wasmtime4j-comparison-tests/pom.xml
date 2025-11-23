@@ -272,7 +272,7 @@
         </profile>
 
         <profile>
-            <id>macos-x86_64</id>
+            <id>darwin-x86_64</id>
             <activation>
                 <os>
                     <family>mac</family>
@@ -280,12 +280,12 @@
                 </os>
             </activation>
             <properties>
-                <native.platform>macos-x86_64</native.platform>
+                <native.platform>darwin-x86_64</native.platform>
             </properties>
         </profile>
 
         <profile>
-            <id>macos-aarch64</id>
+            <id>darwin-aarch64</id>
             <activation>
                 <os>
                     <family>mac</family>
@@ -293,7 +293,7 @@
                 </os>
             </activation>
             <properties>
-                <native.platform>macos-aarch64</native.platform>
+                <native.platform>darwin-aarch64</native.platform>
             </properties>
         </profile>
 

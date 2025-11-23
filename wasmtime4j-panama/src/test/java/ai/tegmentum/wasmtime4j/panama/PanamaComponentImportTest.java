@@ -64,8 +64,7 @@ final class PanamaComponentImportTest {
   @Test
   @DisplayName("Component with imports should enumerate imported interfaces")
   void testComponentWithImports() throws IOException, WasmException {
-    final Path componentPath =
-        Path.of("src/test/resources/components/with-imports.wasm");
+    final Path componentPath = Path.of("src/test/resources/components/with-imports.wasm");
     final byte[] componentBytes = Files.readAllBytes(componentPath);
 
     final ComponentSimple component = componentEngine.compileComponent(componentBytes);
@@ -76,16 +75,13 @@ final class PanamaComponentImportTest {
     assertFalse(imports.isEmpty(), "Component should have imports");
 
     // Verify our custom logger interface is imported
-    boolean hasLogger = imports.stream()
-        .anyMatch(name -> name.contains("logger"));
+    boolean hasLogger = imports.stream().anyMatch(name -> name.contains("logger"));
     assertTrue(hasLogger, "Should import logger interface");
 
     // Verify WASI interfaces are imported
-    boolean hasWasi = imports.stream()
-        .anyMatch(name -> name.contains("wasi:"));
+    boolean hasWasi = imports.stream().anyMatch(name -> name.contains("wasi:"));
     assertTrue(hasWasi, "Should import WASI interfaces");
 
     component.close();
   }
-
 }

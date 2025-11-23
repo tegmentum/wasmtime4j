@@ -38,6 +38,8 @@ public final class WitValueDeserializer {
   private static final int S64_SIZE = 8;
   private static final int FLOAT64_SIZE = 8;
   private static final int CHAR_SIZE = 4;
+  private static final int U32_SIZE = 4;
+  private static final int U64_SIZE = 8;
   private static final int STRING_LENGTH_SIZE = 4;
 
   /** Private constructor to prevent instantiation. */
@@ -73,6 +75,10 @@ public final class WitValueDeserializer {
         return deserializeString(data);
       case 7:
         return deserializeRecord(data);
+      case 9:
+        return deserializeU32(data);
+      case 10:
+        return deserializeU64(data);
       default:
         throw new WitValueException(
             "Invalid type discriminator: " + typeDiscriminator,
@@ -125,6 +131,38 @@ public final class WitValueDeserializer {
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS64.of(buffer.getLong());
+  }
+
+  /**
+   * Deserializes an unsigned 32-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the unsigned integer value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitU32 deserializeU32(final byte[] data) throws WitValueException {
+    if (data.length != U32_SIZE) {
+      throw new WitValueException(
+          "Invalid u32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    return WitU32.of(buffer.getInt());
+  }
+
+  /**
+   * Deserializes an unsigned 64-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the unsigned long value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitU64 deserializeU64(final byte[] data) throws WitValueException {
+    if (data.length != U64_SIZE) {
+      throw new WitValueException(
+          "Invalid u64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    return WitU64.of(buffer.getLong());
   }
 
   /**
@@ -230,7 +268,29 @@ public final class WitValueDeserializer {
     final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>(fieldCount);
 
     for (int i = 0; i < fieldCount; i++) {
-      if (buffer.remaining() < 8) { // Need at least discriminator + length
+      if (buffer.remaining() < 4) { // Need at least field name length
+        throw new WitValueException(
+            "Record data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      // Read field name
+      final int nameLength = buffer.getInt();
+      if (nameLength < 0) {
+        throw new WitValueException(
+            "Invalid field name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < nameLength) {
+        throw new WitValueException(
+            "Field name data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] nameBytes = new byte[nameLength];
+      buffer.get(nameBytes);
+      final String fieldName = new String(nameBytes, StandardCharsets.UTF_8);
+
+      // Read field value
+      if (buffer.remaining() < 8) { // Need discriminator + length
         throw new WitValueException(
             "Record data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
       }
@@ -252,8 +312,7 @@ public final class WitValueDeserializer {
       buffer.get(fieldData);
 
       final WitValue fieldValue = deserialize(discriminator, fieldData);
-      // Field names are not preserved in serialization, use index as name
-      fields.put("field" + i, fieldValue);
+      fields.put(fieldName, fieldValue);
     }
 
     return WitRecord.of(fields);

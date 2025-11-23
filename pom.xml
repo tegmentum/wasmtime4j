@@ -939,20 +939,20 @@
         </profile>
 
         <profile>
-            <id>macos-x86_64</id>
+            <id>darwin-x86_64</id>
             <properties>
                 <native.target>${target.macos.x86_64}</native.target>
-                <native.platform>macos-x86_64</native.platform>
+                <native.platform>darwin-x86_64</native.platform>
                 <native.library.extension>dylib</native.library.extension>
                 <native.library.prefix>lib</native.library.prefix>
             </properties>
         </profile>
 
         <profile>
-            <id>macos-aarch64</id>
+            <id>darwin-aarch64</id>
             <properties>
                 <native.target>${target.macos.aarch64}</native.target>
-                <native.platform>macos-aarch64</native.platform>
+                <native.platform>darwin-aarch64</native.platform>
                 <native.library.extension>dylib</native.library.extension>
                 <native.library.prefix>lib</native.library.prefix>
             </properties>
@@ -1004,7 +1004,7 @@
         </profile>
 
         <profile>
-            <id>native-macos-x86_64</id>
+            <id>native-darwin-x86_64</id>
             <activation>
                 <os>
                     <family>mac</family>
@@ -1013,12 +1013,12 @@
             </activation>
             <properties>
                 <native.host.target>${target.macos.x86_64}</native.host.target>
-                <native.host.platform>macos-x86_64</native.host.platform>
+                <native.host.platform>darwin-x86_64</native.host.platform>
             </properties>
         </profile>
 
         <profile>
-            <id>native-macos-aarch64</id>
+            <id>native-darwin-aarch64</id>
             <activation>
                 <os>
                     <family>mac</family>
@@ -1027,7 +1027,7 @@
             </activation>
             <properties>
                 <native.host.target>${target.macos.aarch64}</native.host.target>
-                <native.host.platform>macos-aarch64</native.host.platform>
+                <native.host.platform>darwin-aarch64</native.host.platform>
             </properties>
         </profile>
 

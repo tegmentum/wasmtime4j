@@ -37,8 +37,8 @@ import java.nio.charset.StandardCharsets;
  *   <li>float64 → 8 bytes (little-endian IEEE 754)
  *   <li>char → 4 bytes (little-endian Unicode codepoint)
  *   <li>string → 4 bytes length + UTF-8 bytes
- *   <li>record → 4 bytes field count + (name length + name UTF-8 + discriminator + length +
- *       data) for each field
+ *   <li>record → 4 bytes field count + (name length + name UTF-8 + discriminator + length + data)
+ *       for each field
  * </ul>
  *
  * @since 1.0.0
@@ -88,6 +88,10 @@ public final class WitValueSerializer {
       return serializeS32((WitS32) primitive);
     } else if (primitive instanceof WitS64) {
       return serializeS64((WitS64) primitive);
+    } else if (primitive instanceof WitU32) {
+      return serializeU32((WitU32) primitive);
+    } else if (primitive instanceof WitU64) {
+      return serializeU64((WitU64) primitive);
     } else if (primitive instanceof WitFloat64) {
       return serializeFloat64((WitFloat64) primitive);
     } else if (primitive instanceof WitChar) {
@@ -132,6 +136,30 @@ public final class WitValueSerializer {
    * @return serialized bytes
    */
   private static byte[] serializeS64(final WitS64 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(S64_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(value.getValue());
+    return buffer.array();
+  }
+
+  /**
+   * Serializes an unsigned 32-bit integer value.
+   *
+   * @param value the u32 value
+   * @return serialized bytes
+   */
+  private static byte[] serializeU32(final WitU32 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(S32_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(value.getValue());
+    return buffer.array();
+  }
+
+  /**
+   * Serializes an unsigned 64-bit integer value.
+   *
+   * @param value the u64 value
+   * @return serialized bytes
+   */
+  private static byte[] serializeU64(final WitU64 value) {
     final ByteBuffer buffer = ByteBuffer.allocate(S64_SIZE).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(value.getValue());
     return buffer.array();
@@ -244,6 +272,9 @@ public final class WitValueSerializer {
    *   <li>5 = char
    *   <li>6 = string
    *   <li>7 = record
+   *   <li>8 = tuple (reserved)
+   *   <li>9 = u32
+   *   <li>10 = u64
    * </ul>
    *
    * @param value the WIT value
@@ -270,6 +301,10 @@ public final class WitValueSerializer {
       return 6;
     } else if (value instanceof WitRecord) {
       return 7;
+    } else if (value instanceof WitU32) {
+      return 9;
+    } else if (value instanceof WitU64) {
+      return 10;
     } else {
       throw new WitValueException(
           "Unsupported value type: " + value.getClass().getName(),

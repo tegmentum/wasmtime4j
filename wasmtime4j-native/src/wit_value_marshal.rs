@@ -29,12 +29,16 @@
 //! - 6 = string
 //! - 7 = record
 //! - 8 = tuple
+//! - 9 = u32
+//! - 10 = u64
 //!
 //! # Binary Format (little-endian)
 //!
 //! - bool → 1 byte (0 or 1)
 //! - s32 → 4 bytes (i32)
 //! - s64 → 8 bytes (i64)
+//! - u32 → 4 bytes (u32)
+//! - u64 → 8 bytes (u64)
 //! - float64 → 8 bytes (f64 IEEE 754)
 //! - char → 4 bytes (Unicode codepoint as u32)
 //! - string → 4 bytes length + UTF-8 bytes
@@ -71,6 +75,8 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         6 => deserialize_string(data),
         7 => deserialize_record(data),
         8 => deserialize_tuple(data),
+        9 => deserialize_u32(data),
+        10 => deserialize_u64(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -100,6 +106,8 @@ pub fn serialize_from_val(val: &Val) -> Result<(i32, Vec<u8>), WasmtimeError> {
         Val::String(s) => Ok((6, serialize_string(s))),
         Val::Record(fields) => Ok((7, serialize_record(fields)?)),
         Val::Tuple(elements) => Ok((8, serialize_tuple(elements)?)),
+        Val::U32(u) => Ok((9, serialize_u32(*u))),
+        Val::U64(u) => Ok((10, serialize_u64(*u))),
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported Val type for serialization: {:?}", val),
             backtrace: None,
@@ -138,6 +146,28 @@ fn deserialize_s64(data: &[u8]) -> Result<Val, WasmtimeError> {
         data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
     ]);
     Ok(Val::S64(value))
+}
+
+fn deserialize_u32(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid u32 data length: expected 4, got {}", data.len()),
+        });
+    }
+    let value = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    Ok(Val::U32(value))
+}
+
+fn deserialize_u64(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 8 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid u64 data length: expected 8, got {}", data.len()),
+        });
+    }
+    let value = u64::from_le_bytes([
+        data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+    ]);
+    Ok(Val::U64(value))
 }
 
 fn deserialize_float64(data: &[u8]) -> Result<Val, WasmtimeError> {
@@ -204,6 +234,14 @@ fn serialize_s32(value: i32) -> Vec<u8> {
 }
 
 fn serialize_s64(value: i64) -> Vec<u8> {
+    value.to_le_bytes().to_vec()
+}
+
+fn serialize_u32(value: u32) -> Vec<u8> {
+    value.to_le_bytes().to_vec()
+}
+
+fn serialize_u64(value: u64) -> Vec<u8> {
     value.to_le_bytes().to_vec()
 }
 
@@ -322,23 +360,39 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_deserialize(
     out_value: *mut *mut u8,
     out_len: *mut usize,
 ) -> c_int {
+    eprintln!("DEBUG: wasmtime4j_wit_value_deserialize - discriminator={}, len={}", type_discriminator, data_len);
+
     if data_ptr.is_null() || out_value.is_null() || out_len.is_null() {
+        eprintln!("DEBUG: Null pointer check failed");
         return FFI_ERROR;
     }
 
     // Convert raw bytes to slice
     let data = std::slice::from_raw_parts(data_ptr, data_len);
+    eprintln!("DEBUG: Data first 16 bytes: {:?}", &data[..data.len().min(16)]);
 
     // Deserialize to Val
     let val = match deserialize_to_val(type_discriminator, data) {
-        Ok(v) => v,
-        Err(_) => return FFI_ERROR,
+        Ok(v) => {
+            eprintln!("DEBUG: deserialize_to_val succeeded");
+            v
+        },
+        Err(e) => {
+            eprintln!("DEBUG: deserialize_to_val failed: {:?}", e);
+            return FFI_ERROR;
+        },
     };
 
     // Serialize to output format
     let (_, serialized) = match serialize_from_val(&val) {
-        Ok(s) => s,
-        Err(_) => return FFI_ERROR,
+        Ok((disc, data)) => {
+            eprintln!("DEBUG: serialize_from_val succeeded, disc={}, len={}", disc, data.len());
+            (disc, data)
+        },
+        Err(e) => {
+            eprintln!("DEBUG: serialize_from_val failed: {:?}", e);
+            return FFI_ERROR;
+        },
     };
 
     // Allocate output buffer and copy data
@@ -347,6 +401,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_deserialize(
     *out_value = output_buf;
     *out_len = len;
 
+    eprintln!("DEBUG: Returning FFI_SUCCESS");
     FFI_SUCCESS
 }
 
@@ -364,7 +419,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
     type_discriminator: c_int,
 ) -> c_int {
     match type_discriminator {
-        1..=8 => 1,
+        1..=10 => 1,
         _ => 0,
     }
 }
@@ -522,7 +577,13 @@ fn serialize_record(fields: &[(String, Val)]) -> Result<Vec<u8>, WasmtimeError> 
     result.extend_from_slice(&(fields.len() as u32).to_le_bytes());
 
     // Serialize each field
-    for (_, field_val) in fields {
+    for (field_name, field_val) in fields {
+        // Serialize field name
+        let name_bytes = field_name.as_bytes();
+        result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+        result.extend_from_slice(name_bytes);
+
+        // Serialize field value
         let (discriminator, field_data) = serialize_from_val(field_val)?;
         result.extend_from_slice(&discriminator.to_le_bytes());
         result.extend_from_slice(&(field_data.len() as u32).to_le_bytes());
