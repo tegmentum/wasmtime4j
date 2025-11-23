@@ -163,9 +163,7 @@ public final class WitVariant extends WitValue {
         throw new IllegalArgumentException(
             String.format(
                 "Case '%s' payload has type %s but expected %s",
-                caseName,
-                payload.get().getType().getName(),
-                expectedPayloadType.get().getName()));
+                caseName, payload.get().getType().getName(), expectedPayloadType.get().getName()));
       }
     } else {
       // Case does not expect a payload

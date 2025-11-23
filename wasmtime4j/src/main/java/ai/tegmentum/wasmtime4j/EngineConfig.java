@@ -639,8 +639,8 @@ public final class EngineConfig {
   /**
    * Builds an Engine with this configuration.
    *
-   * <p>This is a convenience method that creates an Engine using this EngineConfig. It is equivalent
-   * to calling {@link Engine#create(EngineConfig)} with this configuration.
+   * <p>This is a convenience method that creates an Engine using this EngineConfig. It is
+   * equivalent to calling {@link Engine#create(EngineConfig)} with this configuration.
    *
    * @return a new Engine instance with this configuration
    * @throws ai.tegmentum.wasmtime4j.exception.WasmException if engine creation fails

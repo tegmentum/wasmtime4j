@@ -404,7 +404,8 @@ public interface HostFunction {
      * calling instance context during execution.
      *
      * @return the current caller context
-     * @throws UnsupportedOperationException if no provider is available or caller context is not set
+     * @throws UnsupportedOperationException if no provider is available or caller context is not
+     *     set
      */
     @SuppressWarnings("unchecked")
     private Caller<T> getCurrentCaller() {
@@ -419,7 +420,8 @@ public interface HostFunction {
       }
 
       throw new UnsupportedOperationException(
-          "No CallerContextProvider found - ensure the runtime module (jni/panama) is on the classpath");
+          "No CallerContextProvider found - ensure the runtime module (jni/panama) is on the"
+              + " classpath");
     }
 
     /**

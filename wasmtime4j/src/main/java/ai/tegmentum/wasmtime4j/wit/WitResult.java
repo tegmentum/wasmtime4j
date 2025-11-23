@@ -180,8 +180,7 @@ public final class WitResult extends WitValue {
 
       if (expectedType == null) {
         throw new IllegalArgumentException(
-            String.format(
-                "Result %s variant does not accept a payload", isOk ? "ok" : "err"));
+            String.format("Result %s variant does not accept a payload", isOk ? "ok" : "err"));
       }
 
       if (!v.getType().equals(expectedType)) {
