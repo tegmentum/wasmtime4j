@@ -71,6 +71,18 @@ public final class WitValueSerializer {
     // Handle composite types first
     if (value instanceof WitRecord) {
       return serializeRecord((WitRecord) value);
+    } else if (value instanceof WitList) {
+      return serializeList((WitList) value);
+    } else if (value instanceof WitVariant) {
+      return serializeVariant((WitVariant) value);
+    } else if (value instanceof WitEnum) {
+      return serializeEnum((WitEnum) value);
+    } else if (value instanceof WitOption) {
+      return serializeOption((WitOption) value);
+    } else if (value instanceof WitResult) {
+      return serializeResult((WitResult) value);
+    } else if (value instanceof WitFlags) {
+      return serializeFlags((WitFlags) value);
     }
 
     // Handle primitive types
@@ -260,6 +272,227 @@ public final class WitValueSerializer {
   }
 
   /**
+   * Serializes a list value.
+   *
+   * <p>Format: [count: u32][for each: discriminator: i32, length: u32, data]
+   *
+   * @param list the list value
+   * @return serialized bytes
+   * @throws WitValueException if serialization fails
+   */
+  private static byte[] serializeList(final WitList list) throws WitValueException {
+    final java.util.List<WitValue> elements = list.getElements();
+
+    // Calculate total size
+    int totalSize = 4; // element count
+    final java.util.List<byte[]> elementData = new java.util.ArrayList<>(elements.size());
+
+    for (final WitValue element : elements) {
+      final byte[] data = serialize(element);
+      totalSize += 4; // discriminator
+      totalSize += 4; // length
+      totalSize += data.length; // element data
+      elementData.add(data);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write element count
+    buffer.putInt(elements.size());
+
+    // Write each element
+    for (int i = 0; i < elements.size(); i++) {
+      final WitValue element = elements.get(i);
+      final byte[] data = elementData.get(i);
+
+      buffer.putInt(getTypeDiscriminator(element));
+      buffer.putInt(data.length);
+      buffer.put(data);
+    }
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a variant value.
+   *
+   * <p>Format: [name_length: u32][name: UTF-8][has_payload: u8][if yes: discriminator, length,
+   * data]
+   *
+   * @param variant the variant value
+   * @return serialized bytes
+   * @throws WitValueException if serialization fails
+   */
+  private static byte[] serializeVariant(final WitVariant variant) throws WitValueException {
+    final byte[] nameBytes = variant.getCaseName().getBytes(StandardCharsets.UTF_8);
+    final java.util.Optional<WitValue> payload = variant.getPayload();
+
+    int totalSize = 4 + nameBytes.length + 1; // name length + name + has_payload flag
+
+    byte[] payloadData = null;
+    int payloadDiscriminator = 0;
+
+    if (payload.isPresent()) {
+      payloadData = serialize(payload.get());
+      payloadDiscriminator = getTypeDiscriminator(payload.get());
+      totalSize += 4 + 4 + payloadData.length; // discriminator + length + data
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write case name
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+
+    // Write payload flag and data
+    if (payload.isPresent()) {
+      buffer.put((byte) 1);
+      buffer.putInt(payloadDiscriminator);
+      buffer.putInt(payloadData.length);
+      buffer.put(payloadData);
+    } else {
+      buffer.put((byte) 0);
+    }
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes an enum value.
+   *
+   * <p>Format: [name_length: u32][name: UTF-8]
+   *
+   * @param enumValue the enum value
+   * @return serialized bytes
+   */
+  private static byte[] serializeEnum(final WitEnum enumValue) {
+    final byte[] nameBytes = enumValue.getDiscriminant().getBytes(StandardCharsets.UTF_8);
+
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + nameBytes.length).order(ByteOrder.LITTLE_ENDIAN);
+
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes an option value.
+   *
+   * <p>Format: [is_some: u8][if yes: discriminator, length, data]
+   *
+   * @param option the option value
+   * @return serialized bytes
+   * @throws WitValueException if serialization fails
+   */
+  private static byte[] serializeOption(final WitOption option) throws WitValueException {
+    final java.util.Optional<WitValue> value = option.getValue();
+
+    int totalSize = 1; // is_some flag
+
+    byte[] valueData = null;
+    int valueDiscriminator = 0;
+
+    if (value.isPresent()) {
+      valueData = serialize(value.get());
+      valueDiscriminator = getTypeDiscriminator(value.get());
+      totalSize += 4 + 4 + valueData.length; // discriminator + length + data
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write is_some flag and data
+    if (value.isPresent()) {
+      buffer.put((byte) 1);
+      buffer.putInt(valueDiscriminator);
+      buffer.putInt(valueData.length);
+      buffer.put(valueData);
+    } else {
+      buffer.put((byte) 0);
+    }
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a result value.
+   *
+   * <p>Format: [is_ok: u8][has_value: u8][if yes: discriminator, length, data]
+   *
+   * @param result the result value
+   * @return serialized bytes
+   * @throws WitValueException if serialization fails
+   */
+  private static byte[] serializeResult(final WitResult result) throws WitValueException {
+    final boolean isOk = result.isOk();
+    final java.util.Optional<WitValue> value = result.getValue();
+
+    int totalSize = 2; // is_ok flag + has_value flag
+
+    byte[] valueData = null;
+    int valueDiscriminator = 0;
+
+    if (value.isPresent()) {
+      valueData = serialize(value.get());
+      valueDiscriminator = getTypeDiscriminator(value.get());
+      totalSize += 4 + 4 + valueData.length; // discriminator + length + data
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write is_ok flag
+    buffer.put((byte) (isOk ? 1 : 0));
+
+    // Write has_value flag and data
+    if (value.isPresent()) {
+      buffer.put((byte) 1);
+      buffer.putInt(valueDiscriminator);
+      buffer.putInt(valueData.length);
+      buffer.put(valueData);
+    } else {
+      buffer.put((byte) 0);
+    }
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a flags value.
+   *
+   * <p>Format: [count: u32][for each: name_length: u32, name: UTF-8]
+   *
+   * @param flags the flags value
+   * @return serialized bytes
+   */
+  private static byte[] serializeFlags(final WitFlags flags) {
+    final java.util.Set<String> setFlags = flags.getSetFlags();
+
+    // Calculate total size
+    int totalSize = 4; // flag count
+    final java.util.List<byte[]> flagNames = new java.util.ArrayList<>(setFlags.size());
+
+    for (final String flagName : setFlags) {
+      final byte[] nameBytes = flagName.getBytes(StandardCharsets.UTF_8);
+      totalSize += 4 + nameBytes.length; // name length + name
+      flagNames.add(nameBytes);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write flag count
+    buffer.putInt(setFlags.size());
+
+    // Write each flag name
+    for (final byte[] nameBytes : flagNames) {
+      buffer.putInt(nameBytes.length);
+      buffer.put(nameBytes);
+    }
+
+    return buffer.array();
+  }
+
+  /**
    * Gets the type discriminator for a WIT value.
    *
    * <p>Type discriminators are used by the native layer to identify the value type:
@@ -275,6 +508,12 @@ public final class WitValueSerializer {
    *   <li>8 = tuple (reserved)
    *   <li>9 = u32
    *   <li>10 = u64
+   *   <li>11 = list
+   *   <li>12 = variant
+   *   <li>13 = enum
+   *   <li>14 = option
+   *   <li>15 = result
+   *   <li>16 = flags
    * </ul>
    *
    * @param value the WIT value
@@ -305,6 +544,18 @@ public final class WitValueSerializer {
       return 9;
     } else if (value instanceof WitU64) {
       return 10;
+    } else if (value instanceof WitList) {
+      return 11;
+    } else if (value instanceof WitVariant) {
+      return 12;
+    } else if (value instanceof WitEnum) {
+      return 13;
+    } else if (value instanceof WitOption) {
+      return 14;
+    } else if (value instanceof WitResult) {
+      return 15;
+    } else if (value instanceof WitFlags) {
+      return 16;
     } else {
       throw new WitValueException(
           "Unsupported value type: " + value.getClass().getName(),

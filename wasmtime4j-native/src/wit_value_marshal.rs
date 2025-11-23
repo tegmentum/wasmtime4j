@@ -77,6 +77,12 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         8 => deserialize_tuple(data),
         9 => deserialize_u32(data),
         10 => deserialize_u64(data),
+        11 => deserialize_list(data),
+        12 => deserialize_variant(data),
+        13 => deserialize_enum(data),
+        14 => deserialize_option(data),
+        15 => deserialize_result(data),
+        16 => deserialize_flags(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -108,6 +114,12 @@ pub fn serialize_from_val(val: &Val) -> Result<(i32, Vec<u8>), WasmtimeError> {
         Val::Tuple(elements) => Ok((8, serialize_tuple(elements)?)),
         Val::U32(u) => Ok((9, serialize_u32(*u))),
         Val::U64(u) => Ok((10, serialize_u64(*u))),
+        Val::List(elements) => Ok((11, serialize_list(elements)?)),
+        Val::Variant(case_name, payload) => Ok((12, serialize_variant(case_name, payload)?)),
+        Val::Enum(discriminant) => Ok((13, serialize_enum(discriminant)?)),
+        Val::Option(value) => Ok((14, serialize_option(value)?)),
+        Val::Result(result) => Ok((15, serialize_result(result)?)),
+        Val::Flags(flags) => Ok((16, serialize_flags(flags)?)),
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported Val type for serialization: {:?}", val),
             backtrace: None,
@@ -402,7 +414,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
     type_discriminator: c_int,
 ) -> c_int {
     match type_discriminator {
-        1..=10 => 1,
+        1..=16 => 1,
         _ => 0,
     }
 }
@@ -552,6 +564,298 @@ fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::Tuple(elements.into()))
 }
 
+fn deserialize_list(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "List data too short for element count".to_string(),
+        });
+    }
+
+    let element_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let mut offset = 4;
+    let mut elements = Vec::with_capacity(element_count);
+
+    for _ in 0..element_count {
+        if offset >= data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "List data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "List element data truncated".to_string(),
+            });
+        }
+
+        let element_data = &data[offset..offset + length];
+        let element_val = deserialize_to_val(discriminator, element_data)?;
+        elements.push(element_val);
+        offset += length;
+    }
+
+    Ok(Val::List(elements.into()))
+}
+
+fn deserialize_variant(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Variant data too short for case name length".to_string(),
+        });
+    }
+
+    let mut offset = 0;
+
+    // Read case name
+    let name_length = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    offset += 4;
+
+    if offset + name_length > data.len() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Variant case name data truncated".to_string(),
+        });
+    }
+
+    let case_name = String::from_utf8(data[offset..offset + name_length].to_vec())
+        .map_err(|_| WasmtimeError::InvalidParameter {
+            message: "Invalid UTF-8 in variant case name".to_string(),
+        })?;
+    offset += name_length;
+
+    // Read has_payload flag
+    if offset >= data.len() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Variant data truncated at payload flag".to_string(),
+        });
+    }
+
+    let has_payload = data[offset] != 0;
+    offset += 1;
+
+    let payload = if has_payload {
+        if offset + 8 > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Variant payload data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Variant payload value truncated".to_string(),
+            });
+        }
+
+        let payload_data = &data[offset..offset + length];
+        let payload_val = deserialize_to_val(discriminator, payload_data)?;
+        Some(Box::new(payload_val))
+    } else {
+        None
+    };
+
+    Ok(Val::Variant(case_name, payload))
+}
+
+fn deserialize_enum(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Enum data too short for discriminant length".to_string(),
+        });
+    }
+
+    let name_length = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+    if 4 + name_length > data.len() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Enum discriminant data truncated".to_string(),
+        });
+    }
+
+    let discriminant = String::from_utf8(data[4..4 + name_length].to_vec())
+        .map_err(|_| WasmtimeError::InvalidParameter {
+            message: "Invalid UTF-8 in enum discriminant".to_string(),
+        })?;
+
+    Ok(Val::Enum(discriminant))
+}
+
+fn deserialize_option(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.is_empty() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Option data too short for is_some flag".to_string(),
+        });
+    }
+
+    let is_some = data[0] != 0;
+    let mut offset = 1;
+
+    let value = if is_some {
+        if offset + 8 > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Option value data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Option value truncated".to_string(),
+            });
+        }
+
+        let val_data = &data[offset..offset + length];
+        let val = deserialize_to_val(discriminator, val_data)?;
+        Some(Box::new(val))
+    } else {
+        None
+    };
+
+    Ok(Val::Option(value))
+}
+
+fn deserialize_result(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 2 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Result data too short for flags".to_string(),
+        });
+    }
+
+    let is_ok = data[0] != 0;
+    let has_value = data[1] != 0;
+    let mut offset = 2;
+
+    let value = if has_value {
+        if offset + 8 > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Result value data truncated".to_string(),
+            });
+        }
+
+        let discriminator = i32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        offset += 4;
+
+        let length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Result value truncated".to_string(),
+            });
+        }
+
+        let val_data = &data[offset..offset + length];
+        let val = deserialize_to_val(discriminator, val_data)?;
+        Some(Box::new(val))
+    } else {
+        None
+    };
+
+    if is_ok {
+        Ok(Val::Result(Ok(value)))
+    } else {
+        Ok(Val::Result(Err(value)))
+    }
+}
+
+fn deserialize_flags(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() < 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Flags data too short for flag count".to_string(),
+        });
+    }
+
+    let flag_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let mut offset = 4;
+    let mut flags = Vec::with_capacity(flag_count);
+
+    for _ in 0..flag_count {
+        if offset + 4 > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Flags data truncated at flag name length".to_string(),
+            });
+        }
+
+        let name_length = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]) as usize;
+        offset += 4;
+
+        if offset + name_length > data.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Flags name data truncated".to_string(),
+            });
+        }
+
+        let flag_name = String::from_utf8(data[offset..offset + name_length].to_vec())
+            .map_err(|_| WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in flag name".to_string(),
+            })?;
+        flags.push(flag_name);
+        offset += name_length;
+    }
+
+    Ok(Val::Flags(flags))
+}
+
 // Record serialization
 fn serialize_record(fields: &[(String, Val)]) -> Result<Vec<u8>, WasmtimeError> {
     let mut result = Vec::new();
@@ -589,6 +893,123 @@ fn serialize_tuple(elements: &[Val]) -> Result<Vec<u8>, WasmtimeError> {
         result.extend_from_slice(&discriminator.to_le_bytes());
         result.extend_from_slice(&(element_data.len() as u32).to_le_bytes());
         result.extend_from_slice(&element_data);
+    }
+
+    Ok(result)
+}
+
+fn serialize_list(elements: &[Val]) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Element count
+    result.extend_from_slice(&(elements.len() as u32).to_le_bytes());
+
+    // Serialize each element
+    for element in elements {
+        let (discriminator, element_data) = serialize_from_val(element)?;
+        result.extend_from_slice(&discriminator.to_le_bytes());
+        result.extend_from_slice(&(element_data.len() as u32).to_le_bytes());
+        result.extend_from_slice(&element_data);
+    }
+
+    Ok(result)
+}
+
+fn serialize_variant(case_name: &str, payload: &Option<Box<Val>>) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Serialize case name
+    let name_bytes = case_name.as_bytes();
+    result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+    result.extend_from_slice(name_bytes);
+
+    // Serialize has_payload flag and payload
+    if let Some(payload_val) = payload {
+        result.push(1); // has_payload = true
+        let (discriminator, payload_data) = serialize_from_val(payload_val)?;
+        result.extend_from_slice(&discriminator.to_le_bytes());
+        result.extend_from_slice(&(payload_data.len() as u32).to_le_bytes());
+        result.extend_from_slice(&payload_data);
+    } else {
+        result.push(0); // has_payload = false
+    }
+
+    Ok(result)
+}
+
+fn serialize_enum(discriminant: &str) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Serialize discriminant name
+    let name_bytes = discriminant.as_bytes();
+    result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+    result.extend_from_slice(name_bytes);
+
+    Ok(result)
+}
+
+fn serialize_option(value: &Option<Box<Val>>) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Serialize is_some flag and value
+    if let Some(val) = value {
+        result.push(1); // is_some = true
+        let (discriminator, val_data) = serialize_from_val(val)?;
+        result.extend_from_slice(&discriminator.to_le_bytes());
+        result.extend_from_slice(&(val_data.len() as u32).to_le_bytes());
+        result.extend_from_slice(&val_data);
+    } else {
+        result.push(0); // is_some = false
+    }
+
+    Ok(result)
+}
+
+fn serialize_result(result_val: &Result<Option<Box<Val>>, Option<Box<Val>>>) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Serialize is_ok flag and value
+    match result_val {
+        Ok(ok_val) => {
+            result.push(1); // is_ok = true
+            if let Some(val) = ok_val {
+                result.push(1); // has_value = true
+                let (discriminator, val_data) = serialize_from_val(val)?;
+                result.extend_from_slice(&discriminator.to_le_bytes());
+                result.extend_from_slice(&(val_data.len() as u32).to_le_bytes());
+                result.extend_from_slice(&val_data);
+            } else {
+                result.push(0); // has_value = false
+            }
+        }
+        Err(err_val) => {
+            result.push(0); // is_ok = false
+            if let Some(val) = err_val {
+                result.push(1); // has_value = true
+                let (discriminator, val_data) = serialize_from_val(val)?;
+                result.extend_from_slice(&discriminator.to_le_bytes());
+                result.extend_from_slice(&(val_data.len() as u32).to_le_bytes());
+                result.extend_from_slice(&val_data);
+            } else {
+                result.push(0); // has_value = false
+            }
+        }
+    }
+
+    Ok(result)
+}
+
+fn serialize_flags(flags: &[String]) -> Result<Vec<u8>, WasmtimeError> {
+    let mut result = Vec::new();
+
+    // Flag count
+    result.extend_from_slice(&(flags.len() as u32).to_le_bytes());
+
+    // Serialize each flag name
+    for flag_name in flags {
+        let name_bytes = flag_name.as_bytes();
+        result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+        result.extend_from_slice(name_bytes);
     }
 
     Ok(result)

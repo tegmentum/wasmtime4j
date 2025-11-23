@@ -48,7 +48,7 @@ public final class WitValueDeserializer {
   /**
    * Deserializes a WIT value from binary format.
    *
-   * @param typeDiscriminator the type discriminator (1-7)
+   * @param typeDiscriminator the type discriminator (1-16)
    * @param data the serialized byte array
    * @return the deserialized WIT value
    * @throws WitValueException if deserialization fails
@@ -79,6 +79,18 @@ public final class WitValueDeserializer {
         return deserializeU32(data);
       case 10:
         return deserializeU64(data);
+      case 11:
+        return deserializeList(data);
+      case 12:
+        return deserializeVariant(data);
+      case 13:
+        return deserializeEnum(data);
+      case 14:
+        return deserializeOption(data);
+      case 15:
+        return deserializeResult(data);
+      case 16:
+        return deserializeFlags(data);
       default:
         throw new WitValueException(
             "Invalid type discriminator: " + typeDiscriminator,
@@ -316,5 +328,346 @@ public final class WitValueDeserializer {
     }
 
     return WitRecord.of(fields);
+  }
+
+  /**
+   * Deserializes a list value.
+   *
+   * <p>Format: [count: u32][for each: discriminator: i32, length: u32, data]
+   *
+   * @param data the serialized bytes
+   * @return the list value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitList deserializeList(final byte[] data) throws WitValueException {
+    if (data.length < 4) {
+      throw new WitValueException(
+          "List data too short for element count", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final int elementCount = buffer.getInt();
+
+    if (elementCount < 0) {
+      throw new WitValueException(
+          "Invalid element count: " + elementCount, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    if (elementCount == 0) {
+      throw new WitValueException(
+          "Cannot infer list element type from empty list",
+          WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final java.util.List<WitValue> elements = new java.util.ArrayList<>(elementCount);
+
+    for (int i = 0; i < elementCount; i++) {
+      if (buffer.remaining() < 8) { // Need discriminator + length
+        throw new WitValueException(
+            "List data truncated at element " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new WitValueException(
+            "Invalid element data length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new WitValueException(
+            "Element data truncated at element " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] elementData = new byte[length];
+      buffer.get(elementData);
+
+      final WitValue element = deserialize(discriminator, elementData);
+      elements.add(element);
+    }
+
+    return WitList.of(elements);
+  }
+
+  /**
+   * Deserializes a variant value.
+   *
+   * <p>Format: [name_length: u32][name: UTF-8][has_payload: u8][if yes: discriminator, length,
+   * data]
+   *
+   * <p>Note: This method cannot fully deserialize a variant without its WitType definition. It
+   * returns a minimal variant that may need type information for proper validation.
+   *
+   * @param data the serialized bytes
+   * @return the variant value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitVariant deserializeVariant(final byte[] data) throws WitValueException {
+    if (data.length < 5) { // name_length + has_payload
+      throw new WitValueException(
+          "Variant data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Read case name
+    final int nameLength = buffer.getInt();
+    if (nameLength < 0) {
+      throw new WitValueException(
+          "Invalid case name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    if (buffer.remaining() < nameLength + 1) {
+      throw new WitValueException(
+          "Variant case name truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final byte[] nameBytes = new byte[nameLength];
+    buffer.get(nameBytes);
+    final String caseName = new String(nameBytes, StandardCharsets.UTF_8);
+
+    // Read payload flag
+    final byte hasPayload = buffer.get();
+
+    if (hasPayload == 0) {
+      // Create a placeholder variant type - full implementation would need actual WitType
+      return WitVariant.of(ai.tegmentum.wasmtime4j.WitType.createString(), caseName);
+    } else {
+      // Read payload
+      if (buffer.remaining() < 8) {
+        throw new WitValueException(
+            "Variant payload truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new WitValueException(
+            "Invalid payload length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new WitValueException(
+            "Variant payload data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] payloadData = new byte[length];
+      buffer.get(payloadData);
+
+      final WitValue payload = deserialize(discriminator, payloadData);
+
+      // Create a placeholder variant type - full implementation would need actual WitType
+      return WitVariant.of(ai.tegmentum.wasmtime4j.WitType.createString(), caseName, payload);
+    }
+  }
+
+  /**
+   * Deserializes an enum value.
+   *
+   * <p>Format: [name_length: u32][name: UTF-8]
+   *
+   * <p>Note: This method cannot fully deserialize an enum without its WitType definition. It
+   * returns a minimal enum that may need type information for proper validation.
+   *
+   * @param data the serialized bytes
+   * @return the enum value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitEnum deserializeEnum(final byte[] data) throws WitValueException {
+    if (data.length < 4) {
+      throw new WitValueException(
+          "Enum data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    final int nameLength = buffer.getInt();
+    if (nameLength < 0) {
+      throw new WitValueException(
+          "Invalid discriminant name length: " + nameLength,
+          WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    if (buffer.remaining() < nameLength) {
+      throw new WitValueException(
+          "Enum discriminant name truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final byte[] nameBytes = new byte[nameLength];
+    buffer.get(nameBytes);
+    final String discriminant = new String(nameBytes, StandardCharsets.UTF_8);
+
+    // Create a placeholder enum type - full implementation would need actual WitType
+    return WitEnum.of(ai.tegmentum.wasmtime4j.WitType.createString(), discriminant);
+  }
+
+  /**
+   * Deserializes an option value.
+   *
+   * <p>Format: [is_some: u8][if yes: discriminator, length, data]
+   *
+   * <p>Note: This method cannot fully deserialize an option without its WitType definition. It
+   * returns a minimal option that may need type information for proper validation.
+   *
+   * @param data the serialized bytes
+   * @return the option value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitOption deserializeOption(final byte[] data) throws WitValueException {
+    if (data.length < 1) {
+      throw new WitValueException(
+          "Option data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    final byte isSome = buffer.get();
+
+    if (isSome == 0) {
+      // Create a placeholder option type - full implementation would need actual WitType
+      return WitOption.none(ai.tegmentum.wasmtime4j.WitType.option(null));
+    } else {
+      if (buffer.remaining() < 8) {
+        throw new WitValueException(
+            "Option value truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new WitValueException(
+            "Invalid value length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new WitValueException(
+            "Option value data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] valueData = new byte[length];
+      buffer.get(valueData);
+
+      final WitValue value = deserialize(discriminator, valueData);
+
+      // Create a placeholder option type - full implementation would need actual WitType
+      return WitOption.some(ai.tegmentum.wasmtime4j.WitType.option(null), value);
+    }
+  }
+
+  /**
+   * Deserializes a result value.
+   *
+   * <p>Format: [is_ok: u8][has_value: u8][if yes: discriminator, length, data]
+   *
+   * <p>Note: This method cannot fully deserialize a result without its WitType definition. It
+   * returns a minimal result that may need type information for proper validation.
+   *
+   * @param data the serialized bytes
+   * @return the result value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitResult deserializeResult(final byte[] data) throws WitValueException {
+    if (data.length < 2) {
+      throw new WitValueException(
+          "Result data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    final byte isOk = buffer.get();
+    final byte hasValue = buffer.get();
+
+    // Create a placeholder result type - full implementation would need actual WitType
+    final ai.tegmentum.wasmtime4j.WitType resultType =
+        ai.tegmentum.wasmtime4j.WitType.result(null, null);
+
+    if (hasValue == 0) {
+      return isOk != 0 ? WitResult.ok(resultType) : WitResult.err(resultType);
+    } else {
+      if (buffer.remaining() < 8) {
+        throw new WitValueException(
+            "Result value truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new WitValueException(
+            "Invalid value length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new WitValueException(
+            "Result value data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] valueData = new byte[length];
+      buffer.get(valueData);
+
+      final WitValue value = deserialize(discriminator, valueData);
+
+      return isOk != 0 ? WitResult.ok(resultType, value) : WitResult.err(resultType, value);
+    }
+  }
+
+  /**
+   * Deserializes a flags value.
+   *
+   * <p>Format: [count: u32][for each: name_length: u32, name: UTF-8]
+   *
+   * <p>Note: This method cannot fully deserialize flags without its WitType definition. It returns
+   * a minimal flags value that may need type information for proper validation.
+   *
+   * @param data the serialized bytes
+   * @return the flags value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitFlags deserializeFlags(final byte[] data) throws WitValueException {
+    if (data.length < 4) {
+      throw new WitValueException(
+          "Flags data too short for flag count", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final int flagCount = buffer.getInt();
+
+    if (flagCount < 0) {
+      throw new WitValueException(
+          "Invalid flag count: " + flagCount, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final java.util.Set<String> flagNames = new java.util.HashSet<>(flagCount);
+
+    for (int i = 0; i < flagCount; i++) {
+      if (buffer.remaining() < 4) {
+        throw new WitValueException(
+            "Flags data truncated at flag " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final int nameLength = buffer.getInt();
+      if (nameLength < 0) {
+        throw new WitValueException(
+            "Invalid flag name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      if (buffer.remaining() < nameLength) {
+        throw new WitValueException(
+            "Flag name data truncated at flag " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+      }
+
+      final byte[] nameBytes = new byte[nameLength];
+      buffer.get(nameBytes);
+      final String flagName = new String(nameBytes, StandardCharsets.UTF_8);
+
+      flagNames.add(flagName);
+    }
+
+    // Create a placeholder flags type - full implementation would need actual WitType
+    return WitFlags.of(
+        ai.tegmentum.wasmtime4j.WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
   }
 }
