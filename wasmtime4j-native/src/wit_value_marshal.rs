@@ -31,14 +31,30 @@
 //! - 8 = tuple
 //! - 9 = u32
 //! - 10 = u64
+//! - 11 = list
+//! - 12 = variant
+//! - 13 = enum
+//! - 14 = option
+//! - 15 = result
+//! - 16 = flags
+//! - 17 = s8
+//! - 18 = s16
+//! - 19 = u8
+//! - 20 = u16
+//! - 21 = float32
 //!
 //! # Binary Format (little-endian)
 //!
 //! - bool → 1 byte (0 or 1)
+//! - s8 → 1 byte (i8)
+//! - s16 → 2 bytes (i16)
 //! - s32 → 4 bytes (i32)
 //! - s64 → 8 bytes (i64)
+//! - u8 → 1 byte (u8)
+//! - u16 → 2 bytes (u16)
 //! - u32 → 4 bytes (u32)
 //! - u64 → 8 bytes (u64)
+//! - float32 → 4 bytes (f32 IEEE 754)
 //! - float64 → 8 bytes (f64 IEEE 754)
 //! - char → 4 bytes (Unicode codepoint as u32)
 //! - string → 4 bytes length + UTF-8 bytes
@@ -83,6 +99,11 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         14 => deserialize_option(data),
         15 => deserialize_result(data),
         16 => deserialize_flags(data),
+        17 => deserialize_s8(data),
+        18 => deserialize_s16(data),
+        19 => deserialize_u8(data),
+        20 => deserialize_u16(data),
+        21 => deserialize_float32(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -120,6 +141,11 @@ pub fn serialize_from_val(val: &Val) -> Result<(i32, Vec<u8>), WasmtimeError> {
         Val::Option(value) => Ok((14, serialize_option(value)?)),
         Val::Result(result) => Ok((15, serialize_result(result)?)),
         Val::Flags(flags) => Ok((16, serialize_flags(flags)?)),
+        Val::S8(i) => Ok((17, serialize_s8(*i))),
+        Val::S16(i) => Ok((18, serialize_s16(*i))),
+        Val::U8(u) => Ok((19, serialize_u8(*u))),
+        Val::U16(u) => Ok((20, serialize_u16(*u))),
+        Val::Float32(f) => Ok((21, serialize_float32(*f))),
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported Val type for serialization: {:?}", val),
             backtrace: None,
@@ -235,6 +261,54 @@ fn deserialize_string(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::String(s.into()))
 }
 
+fn deserialize_s8(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 1 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid s8 data length: expected 1, got {}", data.len()),
+        });
+    }
+    Ok(Val::S8(data[0] as i8))
+}
+
+fn deserialize_s16(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 2 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid s16 data length: expected 2, got {}", data.len()),
+        });
+    }
+    let value = i16::from_le_bytes([data[0], data[1]]);
+    Ok(Val::S16(value))
+}
+
+fn deserialize_u8(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 1 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid u8 data length: expected 1, got {}", data.len()),
+        });
+    }
+    Ok(Val::U8(data[0]))
+}
+
+fn deserialize_u16(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 2 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid u16 data length: expected 2, got {}", data.len()),
+        });
+    }
+    let value = u16::from_le_bytes([data[0], data[1]]);
+    Ok(Val::U16(value))
+}
+
+fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 4 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid float32 data length: expected 4, got {}", data.len()),
+        });
+    }
+    let value = f32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    Ok(Val::Float32(value))
+}
+
 // Serialization functions
 
 fn serialize_bool(value: bool) -> Vec<u8> {
@@ -273,6 +347,26 @@ fn serialize_string(value: &str) -> Vec<u8> {
     data.extend_from_slice(&length.to_le_bytes());
     data.extend_from_slice(utf8_bytes);
     data
+}
+
+fn serialize_s8(value: i8) -> Vec<u8> {
+    vec![value as u8]
+}
+
+fn serialize_s16(value: i16) -> Vec<u8> {
+    value.to_le_bytes().to_vec()
+}
+
+fn serialize_u8(value: u8) -> Vec<u8> {
+    vec![value]
+}
+
+fn serialize_u16(value: u16) -> Vec<u8> {
+    value.to_le_bytes().to_vec()
+}
+
+fn serialize_float32(value: f32) -> Vec<u8> {
+    value.to_le_bytes().to_vec()
 }
 
 // C-ABI exports for Java FFI
