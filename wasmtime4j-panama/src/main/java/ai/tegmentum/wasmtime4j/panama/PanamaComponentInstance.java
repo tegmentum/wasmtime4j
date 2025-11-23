@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitRecord;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import ai.tegmentum.wasmtime4j.wit.WitS64;
 import ai.tegmentum.wasmtime4j.wit.WitString;
@@ -259,10 +260,9 @@ final class PanamaComponentInstance implements ComponentInstance {
     if (obj instanceof java.util.Map) {
       @SuppressWarnings("unchecked")
       final java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
-      final ai.tegmentum.wasmtime4j.wit.WitRecord.Builder builder =
-          ai.tegmentum.wasmtime4j.wit.WitRecord.builder();
+      final WitRecord.Builder builder = WitRecord.builder();
       for (final java.util.Map.Entry<String, Object> entry : map.entrySet()) {
-        final ai.tegmentum.wasmtime4j.wit.WitValue fieldValue = convertToWitValue(entry.getValue());
+        final WitValue fieldValue = convertToWitValue(entry.getValue());
         builder.field(entry.getKey(), fieldValue);
       }
       return builder.build();

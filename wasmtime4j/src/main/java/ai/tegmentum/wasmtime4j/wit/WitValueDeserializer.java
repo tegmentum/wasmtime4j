@@ -227,8 +227,7 @@ public final class WitValueDeserializer {
           "Invalid field count: " + fieldCount, WitValueException.ErrorCode.INVALID_FORMAT);
     }
 
-    final java.util.Map<String, WitValue> fields =
-        new java.util.LinkedHashMap<>(fieldCount);
+    final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>(fieldCount);
 
     for (int i = 0; i < fieldCount; i++) {
       if (buffer.remaining() < 8) { // Need at least discriminator + length

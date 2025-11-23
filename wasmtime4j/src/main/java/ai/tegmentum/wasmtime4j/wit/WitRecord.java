@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import ai.tegmentum.wasmtime4j.WitType;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
