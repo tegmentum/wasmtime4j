@@ -236,9 +236,10 @@ public final class PanamaStore implements Store {
     // Create error handler for this host function
     final PanamaErrorHandler errorHandler = new PanamaErrorHandler();
 
-    // Create the Panama host function
+    // Create the Panama host function with implementation and store reference for caller context
     final PanamaHostFunction hostFunction =
-        new PanamaHostFunction(name, functionType, callback, resourceManager, errorHandler);
+        new PanamaHostFunction(
+            name, functionType, callback, implementation, this, resourceManager, errorHandler);
 
     LOGGER.fine("Created host function '" + name + "' in store");
     return hostFunction;

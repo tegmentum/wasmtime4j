@@ -16,7 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Caller;
 import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -28,6 +30,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,10 +57,15 @@ public final class PanamaHostFunction implements WasmFunction {
       new ConcurrentHashMap<>();
   private static final AtomicLong nextHostFunctionId = new AtomicLong(1L);
 
+  // Thread-local storage for caller context
+  private static final ThreadLocal<PanamaCaller<?>> CALLER_CONTEXT = new ThreadLocal<>();
+
   private final long hostFunctionId;
   private final String functionName;
   private final FunctionType functionType;
   private final HostFunctionCallback callback;
+  private final ai.tegmentum.wasmtime4j.HostFunction implementation;
+  private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
   private final PanamaErrorHandler errorHandler;
 
@@ -89,6 +97,8 @@ public final class PanamaHostFunction implements WasmFunction {
    * @param functionName the name of the function (for debugging/logging)
    * @param functionType the WebAssembly function type signature
    * @param callback the Java implementation of the function
+   * @param implementation the original HostFunction implementation (may be null for direct callbacks)
+   * @param store the store this host function belongs to (may be null for direct callbacks)
    * @param arenaManager the arena resource manager for memory lifecycle
    * @param errorHandler the error handler for exception mapping
    * @throws WasmException if host function creation fails
@@ -98,6 +108,8 @@ public final class PanamaHostFunction implements WasmFunction {
       final String functionName,
       final FunctionType functionType,
       final HostFunctionCallback callback,
+      final ai.tegmentum.wasmtime4j.HostFunction implementation,
+      final PanamaStore store,
       final ArenaResourceManager arenaManager,
       final PanamaErrorHandler errorHandler)
       throws WasmException {
@@ -105,6 +117,8 @@ public final class PanamaHostFunction implements WasmFunction {
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
     this.callback = Objects.requireNonNull(callback, "Callback cannot be null");
+    this.implementation = implementation; // May be null
+    this.storeRef = store != null ? new WeakReference<>(store) : null;
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
     this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
 
@@ -372,7 +386,23 @@ public final class PanamaHostFunction implements WasmFunction {
       final WasmValue[] wasmParams = hostFunction.marshalParameters(nativeParams);
 
       // Invoke the Java callback
-      final WasmValue[] wasmResults = hostFunction.callback.execute(wasmParams);
+      final WasmValue[] wasmResults;
+
+      // Check if this is a caller-aware host function
+      if (hostFunction.implementation instanceof HostFunction.CallerAwareHostFunction) {
+        // Create caller context if available
+        // TODO: Caller handle not yet available in Panama implementation
+        // For now, execute without caller context
+        if (hostFunction.storeRef != null && hostFunction.storeRef.get() != null) {
+          logger.warning(
+              "Caller context requested but not yet implemented for Panama: "
+                  + hostFunction.functionName);
+        }
+        wasmResults = hostFunction.callback.execute(wasmParams);
+      } else {
+        // Regular host function without caller context
+        wasmResults = hostFunction.callback.execute(wasmParams);
+      }
 
       // Convert WasmValue results back to native format
       return hostFunction.marshalResults(wasmResults);
@@ -760,6 +790,26 @@ public final class PanamaHostFunction implements WasmFunction {
     if (closed) {
       throw new IllegalStateException("Host function '" + functionName + "' has been closed");
     }
+  }
+
+  /**
+   * Gets the current caller context for the executing host function.
+   *
+   * <p>This method is called by PanamaCallerContextProvider (via CallerAwareHostFunction) to access
+   * the caller during execution.
+   *
+   * @param <T> the type of user data
+   * @return the current caller context
+   * @throws UnsupportedOperationException if no caller context is available
+   */
+  @SuppressWarnings("unchecked")
+  static <T> Caller<T> getCurrentCaller() {
+    final PanamaCaller<?> caller = CALLER_CONTEXT.get();
+    if (caller == null) {
+      throw new UnsupportedOperationException(
+          "Caller context not available - this should be provided by the runtime");
+    }
+    return (PanamaCaller<T>) caller;
   }
 
   @Override
