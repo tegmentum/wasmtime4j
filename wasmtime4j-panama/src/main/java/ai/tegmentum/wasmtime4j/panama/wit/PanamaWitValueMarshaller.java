@@ -109,7 +109,7 @@ public final class PanamaWitValueMarshaller {
   /**
    * Unmarshals a WIT value from binary format.
    *
-   * @param typeDiscriminator the type discriminator (1-6)
+   * @param typeDiscriminator the type discriminator (1-8)
    * @param data the serialized byte array
    * @param arena the memory arena for allocation
    * @return the unmarshalled WIT value

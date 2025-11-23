@@ -79,6 +79,29 @@
 
     <build>
         <plugins>
+            <!-- Unpack native libraries from dependency JAR to test classpath -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-native-libraries</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeGroupIds>ai.tegmentum</includeGroupIds>
+                            <includeArtifactIds>wasmtime4j-native</includeArtifactIds>
+                            <includes>natives/**</includes>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Compiler plugin with Java 23+ and preview features -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

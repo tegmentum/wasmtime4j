@@ -37,7 +37,8 @@ import java.nio.charset.StandardCharsets;
  *   <li>float64 → 8 bytes (little-endian IEEE 754)
  *   <li>char → 4 bytes (little-endian Unicode codepoint)
  *   <li>string → 4 bytes length + UTF-8 bytes
- *   <li>record → 4 bytes field count + (discriminator + length + data) for each field
+ *   <li>record → 4 bytes field count + (name length + name UTF-8 + discriminator + length +
+ *       data) for each field
  * </ul>
  *
  * @since 1.0.0
@@ -188,16 +189,22 @@ public final class WitValueSerializer {
     // Calculate total size: 4 bytes for count + all field data
     int totalSize = 4; // field count
     final java.util.List<byte[]> fieldData = new java.util.ArrayList<>(fields.size());
+    final java.util.List<byte[]> fieldNames = new java.util.ArrayList<>(fields.size());
 
     for (final java.util.Map.Entry<String, WitValue> entry : fields.entrySet()) {
+      final String fieldName = entry.getKey();
       final WitValue fieldValue = entry.getValue();
       final int discriminator = getTypeDiscriminator(fieldValue);
       final byte[] data = serialize(fieldValue);
+      final byte[] nameBytes = fieldName.getBytes(StandardCharsets.UTF_8);
 
+      totalSize += 4; // name length
+      totalSize += nameBytes.length; // name UTF-8 bytes
       totalSize += 4; // discriminator
       totalSize += 4; // length
       totalSize += data.length; // field data
 
+      fieldNames.add(nameBytes);
       fieldData.add(data);
     }
 
@@ -210,8 +217,12 @@ public final class WitValueSerializer {
     int fieldIndex = 0;
     for (final java.util.Map.Entry<String, WitValue> entry : fields.entrySet()) {
       final WitValue fieldValue = entry.getValue();
-      final byte[] data = fieldData.get(fieldIndex++);
+      final byte[] nameBytes = fieldNames.get(fieldIndex);
+      final byte[] data = fieldData.get(fieldIndex);
+      fieldIndex++;
 
+      buffer.putInt(nameBytes.length);
+      buffer.put(nameBytes);
       buffer.putInt(getTypeDiscriminator(fieldValue));
       buffer.putInt(data.length);
       buffer.put(data);

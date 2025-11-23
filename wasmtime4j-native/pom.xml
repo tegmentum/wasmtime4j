@@ -30,9 +30,9 @@
         <!-- Default to building for host platform -->
         <native.target>${native.host.target}</native.target>
         <native.platform>${native.host.platform}</native.platform>
-        
+
         <!-- Cargo build configuration -->
-        <cargo.build.mode>debug</cargo.build.mode>
+        <cargo.build.mode>release</cargo.build.mode>
         <cargo.features>default</cargo.features>
     </properties>
 
@@ -266,6 +266,7 @@
                             <executable>cargo</executable>
                             <arguments>
                                 <argument>build</argument>
+                                <argument>--release</argument>
                                 <argument>--target</argument>
                                 <argument>${native.target}</argument>
                                 <argument>--features</argument>
