@@ -282,6 +282,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * native code.
    *
    * @param hostFunctionId the ID of the host function to invoke
+   * @param callerHandle the native caller context handle (0 if not available)
    * @param paramsData the serialized parameter data from WebAssembly
    * @param resultsBuffer buffer to write results to
    * @return 0 on success, error code on failure
@@ -291,7 +292,10 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       value = "UPM_UNCALLED_PRIVATE_METHOD",
       justification = "Called by native code through JNI")
   private static int hostFunctionCallback(
-      final long hostFunctionId, final byte[] paramsData, final byte[] resultsBuffer) {
+      final long hostFunctionId,
+      final long callerHandle,
+      final byte[] paramsData,
+      final byte[] resultsBuffer) {
     final JniHostFunction hostFunction = HOST_FUNCTION_REGISTRY.get(hostFunctionId);
     if (hostFunction == null) {
       LOGGER.severe("Host function not found in registry: " + hostFunctionId);
@@ -310,7 +314,32 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
               paramsData, hostFunction.functionType.getParamTypes());
 
       // Invoke the Java callback
-      final WasmValue[] wasmResults = hostFunction.implementation.execute(wasmParams);
+      final WasmValue[] wasmResults;
+
+      // Check if this is a caller-aware host function
+      if (hostFunction.implementation instanceof HostFunction.CallerAwareHostFunction) {
+        // Create caller context if available
+        if (callerHandle != 0 && hostFunction.storeRef.get() != null) {
+          final JniCaller<?> caller = new JniCaller<>(callerHandle, hostFunction.storeRef.get());
+
+          // Set the caller in a thread-local for CallerAwareHostFunction to access
+          CALLER_CONTEXT.set(caller);
+          try {
+            wasmResults = hostFunction.implementation.execute(wasmParams);
+          } finally {
+            CALLER_CONTEXT.remove();
+          }
+        } else {
+          // Caller context not available, execute without it
+          LOGGER.warning(
+              "Caller context requested but not available for function: "
+                  + hostFunction.functionName);
+          wasmResults = hostFunction.implementation.execute(wasmParams);
+        }
+      } else {
+        // Regular host function without caller context
+        wasmResults = hostFunction.implementation.execute(wasmParams);
+      }
 
       // Validate result types match function signature
       if (wasmResults.length != hostFunction.functionType.getReturnTypes().length) {
@@ -332,6 +361,28 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       LOGGER.log(Level.SEVERE, "Error in host function callback: " + hostFunction.functionName, e);
       return -4;
     }
+  }
+
+  // Thread-local storage for caller context
+  private static final ThreadLocal<JniCaller<?>> CALLER_CONTEXT = new ThreadLocal<>();
+
+  /**
+   * Gets the current caller context for the executing host function.
+   *
+   * <p>This method is called by CallerAwareHostFunction to access the caller during execution.
+   *
+   * @param <T> the type of user data
+   * @return the current caller context
+   * @throws UnsupportedOperationException if no caller context is available
+   */
+  @SuppressWarnings("unchecked")
+  static <T> JniCaller<T> getCurrentCaller() {
+    final JniCaller<?> caller = CALLER_CONTEXT.get();
+    if (caller == null) {
+      throw new UnsupportedOperationException(
+          "Caller context not available - this should be provided by the runtime");
+    }
+    return (JniCaller<T>) caller;
   }
 
   /**
