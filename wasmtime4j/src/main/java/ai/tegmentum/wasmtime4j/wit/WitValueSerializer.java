@@ -46,8 +46,15 @@ import java.nio.charset.StandardCharsets;
 public final class WitValueSerializer {
 
   private static final int BOOL_SIZE = 1;
+  private static final int S8_SIZE = 1;
+  private static final int S16_SIZE = 2;
   private static final int S32_SIZE = 4;
   private static final int S64_SIZE = 8;
+  private static final int U8_SIZE = 1;
+  private static final int U16_SIZE = 2;
+  private static final int U32_SIZE = 4;
+  private static final int U64_SIZE = 8;
+  private static final int FLOAT32_SIZE = 4;
   private static final int FLOAT64_SIZE = 8;
   private static final int CHAR_SIZE = 4;
   private static final int STRING_LENGTH_SIZE = 4;
@@ -96,14 +103,24 @@ public final class WitValueSerializer {
 
     if (primitive instanceof WitBool) {
       return serializeBool((WitBool) primitive);
+    } else if (primitive instanceof WitS8) {
+      return serializeS8((WitS8) primitive);
+    } else if (primitive instanceof WitS16) {
+      return serializeS16((WitS16) primitive);
     } else if (primitive instanceof WitS32) {
       return serializeS32((WitS32) primitive);
     } else if (primitive instanceof WitS64) {
       return serializeS64((WitS64) primitive);
+    } else if (primitive instanceof WitU8) {
+      return serializeU8((WitU8) primitive);
+    } else if (primitive instanceof WitU16) {
+      return serializeU16((WitU16) primitive);
     } else if (primitive instanceof WitU32) {
       return serializeU32((WitU32) primitive);
     } else if (primitive instanceof WitU64) {
       return serializeU64((WitU64) primitive);
+    } else if (primitive instanceof WitFloat32) {
+      return serializeFloat32((WitFloat32) primitive);
     } else if (primitive instanceof WitFloat64) {
       return serializeFloat64((WitFloat64) primitive);
     } else if (primitive instanceof WitChar) {
@@ -126,6 +143,30 @@ public final class WitValueSerializer {
   private static byte[] serializeBool(final WitBool value) {
     final ByteBuffer buffer = ByteBuffer.allocate(BOOL_SIZE);
     buffer.put((byte) (value.getValue() ? 1 : 0));
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a signed 8-bit integer value.
+   *
+   * @param value the byte value
+   * @return serialized bytes
+   */
+  private static byte[] serializeS8(final WitS8 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(S8_SIZE);
+    buffer.put(value.getValue());
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a signed 16-bit integer value.
+   *
+   * @param value the short value
+   * @return serialized bytes
+   */
+  private static byte[] serializeS16(final WitS16 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(S16_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putShort(value.getValue());
     return buffer.array();
   }
 
@@ -154,13 +195,37 @@ public final class WitValueSerializer {
   }
 
   /**
+   * Serializes an unsigned 8-bit integer value.
+   *
+   * @param value the u8 value
+   * @return serialized bytes
+   */
+  private static byte[] serializeU8(final WitU8 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(U8_SIZE);
+    buffer.put(value.getValue());
+    return buffer.array();
+  }
+
+  /**
+   * Serializes an unsigned 16-bit integer value.
+   *
+   * @param value the u16 value
+   * @return serialized bytes
+   */
+  private static byte[] serializeU16(final WitU16 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(U16_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putShort(value.getValue());
+    return buffer.array();
+  }
+
+  /**
    * Serializes an unsigned 32-bit integer value.
    *
    * @param value the u32 value
    * @return serialized bytes
    */
   private static byte[] serializeU32(final WitU32 value) {
-    final ByteBuffer buffer = ByteBuffer.allocate(S32_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(U32_SIZE).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(value.getValue());
     return buffer.array();
   }
@@ -172,8 +237,20 @@ public final class WitValueSerializer {
    * @return serialized bytes
    */
   private static byte[] serializeU64(final WitU64 value) {
-    final ByteBuffer buffer = ByteBuffer.allocate(S64_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(U64_SIZE).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(value.getValue());
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a 32-bit floating-point value.
+   *
+   * @param value the float value
+   * @return serialized bytes
+   */
+  private static byte[] serializeFloat32(final WitFloat32 value) {
+    final ByteBuffer buffer = ByteBuffer.allocate(FLOAT32_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putFloat(value.getValue());
     return buffer.array();
   }
 

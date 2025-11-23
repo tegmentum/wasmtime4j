@@ -34,12 +34,17 @@ import java.nio.charset.StandardCharsets;
 public final class WitValueDeserializer {
 
   private static final int BOOL_SIZE = 1;
+  private static final int S8_SIZE = 1;
+  private static final int S16_SIZE = 2;
   private static final int S32_SIZE = 4;
   private static final int S64_SIZE = 8;
-  private static final int FLOAT64_SIZE = 8;
-  private static final int CHAR_SIZE = 4;
+  private static final int U8_SIZE = 1;
+  private static final int U16_SIZE = 2;
   private static final int U32_SIZE = 4;
   private static final int U64_SIZE = 8;
+  private static final int FLOAT32_SIZE = 4;
+  private static final int FLOAT64_SIZE = 8;
+  private static final int CHAR_SIZE = 4;
   private static final int STRING_LENGTH_SIZE = 4;
 
   /** Private constructor to prevent instantiation. */
@@ -91,6 +96,16 @@ public final class WitValueDeserializer {
         return deserializeResult(data);
       case 16:
         return deserializeFlags(data);
+      case 17:
+        return deserializeS8(data);
+      case 18:
+        return deserializeS16(data);
+      case 19:
+        return deserializeU8(data);
+      case 20:
+        return deserializeU16(data);
+      case 21:
+        return deserializeFloat32(data);
       default:
         throw new WitValueException(
             "Invalid type discriminator: " + typeDiscriminator,
@@ -111,6 +126,37 @@ public final class WitValueDeserializer {
           "Invalid bool data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
     }
     return WitBool.of(data[0] != 0);
+  }
+
+  /**
+   * Deserializes a signed 8-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the byte value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitS8 deserializeS8(final byte[] data) throws WitValueException {
+    if (data.length != S8_SIZE) {
+      throw new WitValueException(
+          "Invalid s8 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    return WitS8.of(data[0]);
+  }
+
+  /**
+   * Deserializes a signed 16-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the short value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitS16 deserializeS16(final byte[] data) throws WitValueException {
+    if (data.length != S16_SIZE) {
+      throw new WitValueException(
+          "Invalid s16 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    return WitS16.of(buffer.getShort());
   }
 
   /**
@@ -146,6 +192,37 @@ public final class WitValueDeserializer {
   }
 
   /**
+   * Deserializes an unsigned 8-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the unsigned byte value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitU8 deserializeU8(final byte[] data) throws WitValueException {
+    if (data.length != U8_SIZE) {
+      throw new WitValueException(
+          "Invalid u8 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    return WitU8.of(data[0]);
+  }
+
+  /**
+   * Deserializes an unsigned 16-bit integer value.
+   *
+   * @param data the serialized bytes
+   * @return the unsigned short value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitU16 deserializeU16(final byte[] data) throws WitValueException {
+    if (data.length != U16_SIZE) {
+      throw new WitValueException(
+          "Invalid u16 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    return WitU16.of(buffer.getShort());
+  }
+
+  /**
    * Deserializes an unsigned 32-bit integer value.
    *
    * @param data the serialized bytes
@@ -175,6 +252,22 @@ public final class WitValueDeserializer {
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitU64.of(buffer.getLong());
+  }
+
+  /**
+   * Deserializes a 32-bit floating-point value.
+   *
+   * @param data the serialized bytes
+   * @return the float value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitFloat32 deserializeFloat32(final byte[] data) throws WitValueException {
+    if (data.length != FLOAT32_SIZE) {
+      throw new WitValueException(
+          "Invalid float32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    return WitFloat32.of(buffer.getFloat());
   }
 
   /**
