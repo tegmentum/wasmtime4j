@@ -360,39 +360,23 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_deserialize(
     out_value: *mut *mut u8,
     out_len: *mut usize,
 ) -> c_int {
-    eprintln!("DEBUG: wasmtime4j_wit_value_deserialize - discriminator={}, len={}", type_discriminator, data_len);
-
     if data_ptr.is_null() || out_value.is_null() || out_len.is_null() {
-        eprintln!("DEBUG: Null pointer check failed");
         return FFI_ERROR;
     }
 
     // Convert raw bytes to slice
     let data = std::slice::from_raw_parts(data_ptr, data_len);
-    eprintln!("DEBUG: Data first 16 bytes: {:?}", &data[..data.len().min(16)]);
 
     // Deserialize to Val
     let val = match deserialize_to_val(type_discriminator, data) {
-        Ok(v) => {
-            eprintln!("DEBUG: deserialize_to_val succeeded");
-            v
-        },
-        Err(e) => {
-            eprintln!("DEBUG: deserialize_to_val failed: {:?}", e);
-            return FFI_ERROR;
-        },
+        Ok(v) => v,
+        Err(_) => return FFI_ERROR,
     };
 
     // Serialize to output format
     let (_, serialized) = match serialize_from_val(&val) {
-        Ok((disc, data)) => {
-            eprintln!("DEBUG: serialize_from_val succeeded, disc={}, len={}", disc, data.len());
-            (disc, data)
-        },
-        Err(e) => {
-            eprintln!("DEBUG: serialize_from_val failed: {:?}", e);
-            return FFI_ERROR;
-        },
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
     };
 
     // Allocate output buffer and copy data
@@ -401,7 +385,6 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_deserialize(
     *out_value = output_buf;
     *out_len = len;
 
-    eprintln!("DEBUG: Returning FFI_SUCCESS");
     FFI_SUCCESS
 }
 
