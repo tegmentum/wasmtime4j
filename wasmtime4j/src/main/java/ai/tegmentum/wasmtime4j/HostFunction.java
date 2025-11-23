@@ -400,16 +400,26 @@ public interface HostFunction {
     /**
      * Gets the current caller context.
      *
-     * <p>This method is implemented by the runtime to provide access to the actual calling instance
-     * context during execution.
+     * <p>This method delegates to the runtime-provided CallerContextProvider to access the actual
+     * calling instance context during execution.
      *
      * @return the current caller context
+     * @throws UnsupportedOperationException if no provider is available or caller context is not set
      */
     @SuppressWarnings("unchecked")
     private Caller<T> getCurrentCaller() {
-      // This will be implemented by the runtime to provide the actual caller
+      // Use ServiceLoader to find the CallerContextProvider implementation
+      java.util.ServiceLoader<ai.tegmentum.wasmtime4j.spi.CallerContextProvider> loader =
+          java.util.ServiceLoader.load(ai.tegmentum.wasmtime4j.spi.CallerContextProvider.class);
+
+      java.util.Iterator<ai.tegmentum.wasmtime4j.spi.CallerContextProvider> iterator =
+          loader.iterator();
+      if (iterator.hasNext()) {
+        return iterator.next().getCurrentCaller();
+      }
+
       throw new UnsupportedOperationException(
-          "Caller context not available - this should be provided by the runtime");
+          "No CallerContextProvider found - ensure the runtime module (jni/panama) is on the classpath");
     }
 
     /**

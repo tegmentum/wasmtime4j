@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Caller;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -369,14 +370,15 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   /**
    * Gets the current caller context for the executing host function.
    *
-   * <p>This method is called by CallerAwareHostFunction to access the caller during execution.
+   * <p>This method is called by JniCallerContextProvider (via CallerAwareHostFunction) to access
+   * the caller during execution.
    *
    * @param <T> the type of user data
    * @return the current caller context
    * @throws UnsupportedOperationException if no caller context is available
    */
   @SuppressWarnings("unchecked")
-  static <T> JniCaller<T> getCurrentCaller() {
+  static <T> Caller<T> getCurrentCaller() {
     final JniCaller<?> caller = CALLER_CONTEXT.get();
     if (caller == null) {
       throw new UnsupportedOperationException(
