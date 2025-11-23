@@ -448,4 +448,49 @@ final class WitValueSerializerTest {
         exception.getCode(),
         "Error code should be NULL_VALUE");
   }
+
+  @Test
+  @DisplayName("Serialize and deserialize WitList with integers")
+  void testSerializeDeserializeListIntegers() throws WitValueException {
+    final WitList list =
+        WitList.of(WitS32.of(1), WitS32.of(2), WitS32.of(3), WitS32.of(4), WitS32.of(5));
+    final byte[] serialized = WitValueSerializer.serialize(list);
+
+    assertNotNull(serialized, "Serialized result should not be null");
+    assertTrue(serialized.length > 4, "List should serialize to more than just count");
+
+    final WitList deserialized = (WitList) WitValueDeserializer.deserialize(11, serialized);
+
+    assertNotNull(deserialized, "Deserialized list should not be null");
+    assertEquals(5, deserialized.size(), "List should have 5 elements");
+    assertEquals(WitS32.of(1), deserialized.get(0), "First element should match");
+    assertEquals(WitS32.of(3), deserialized.get(2), "Third element should match");
+    assertEquals(WitS32.of(5), deserialized.get(4), "Fifth element should match");
+  }
+
+  @Test
+  @DisplayName("Serialize and deserialize WitList with strings")
+  void testSerializeDeserializeListStrings() throws WitValueException {
+    final WitList list =
+        WitList.of(WitString.of("hello"), WitString.of("world"), WitString.of("test"));
+    final byte[] serialized = WitValueSerializer.serialize(list);
+
+    assertNotNull(serialized, "Serialized result should not be null");
+
+    final WitList deserialized = (WitList) WitValueDeserializer.deserialize(11, serialized);
+
+    assertNotNull(deserialized, "Deserialized list should not be null");
+    assertEquals(3, deserialized.size(), "List should have 3 elements");
+    assertEquals(WitString.of("hello"), deserialized.get(0), "First element should match");
+    assertEquals(WitString.of("world"), deserialized.get(1), "Second element should match");
+    assertEquals(WitString.of("test"), deserialized.get(2), "Third element should match");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for list")
+  void testGetTypeDiscriminatorList() throws WitValueException {
+    final WitList value = WitList.of(WitS32.of(1), WitS32.of(2));
+    assertEquals(
+        11, WitValueSerializer.getTypeDiscriminator(value), "List discriminator should be 11");
+  }
 }
