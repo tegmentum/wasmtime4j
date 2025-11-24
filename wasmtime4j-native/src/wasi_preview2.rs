@@ -42,6 +42,12 @@ pub struct WasiPreview2Context {
     config: WasiPreview2Config,
     /// Operation counter
     next_operation_id: std::sync::atomic::AtomicU64,
+    /// Environment variables (shadow copy for queries)
+    pub environment: Arc<RwLock<HashMap<String, String>>>,
+    /// Command-line arguments (shadow copy for queries)
+    pub arguments: Arc<RwLock<Vec<String>>>,
+    /// Initial working directory (shadow copy for queries)
+    pub initial_cwd: Arc<RwLock<Option<String>>>,
 }
 
 /// Store data for WASI Preview 2 operations
@@ -275,6 +281,9 @@ impl WasiPreview2Context {
             async_operations: Arc::new(RwLock::new(HashMap::new())),
             config,
             next_operation_id: std::sync::atomic::AtomicU64::new(1),
+            environment: Arc::new(RwLock::new(HashMap::new())),
+            arguments: Arc::new(RwLock::new(Vec::new())),
+            initial_cwd: Arc::new(RwLock::new(None)),
         })
     }
 

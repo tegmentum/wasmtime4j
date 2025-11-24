@@ -27,7 +27,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -36,12 +36,70 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 environment get_all
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_all not yet implemented",
-    );
-    JObject::null().into_raw()
+    // Get environment variables from context
+    let env_map = match context.environment.read() {
+        Ok(env_map) => env_map,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read environment variables: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Convert to array of "key=value" strings
+    let env_strings: Vec<String> = env_map
+        .iter()
+        .map(|(k, v)| format!("{}={}", k, v))
+        .collect();
+
+    // Create Java String array
+    let string_class = match env.find_class("java/lang/String") {
+        Ok(cls) => cls,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to find String class: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    let array = match env.new_object_array(env_strings.len() as i32, string_class, JObject::null()) {
+        Ok(arr) => arr,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create array: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Populate array
+    for (i, env_str) in env_strings.iter().enumerate() {
+        let java_str = match env.new_string(env_str) {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to create string: {}", e),
+                );
+                return JObject::null().into_raw();
+            }
+        };
+
+        if let Err(e) = env.set_object_array_element(&array, i as i32, java_str) {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to set array element: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    }
+
+    array.into_raw()
 }
 
 /// Get single environment variable
@@ -62,7 +120,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -72,7 +130,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     };
 
     // Get name string
-    let _name_str: String = match env.get_string(&name) {
+    let name_str: String = match env.get_string(&name) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -83,12 +141,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 environment get
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get not yet implemented",
-    );
-    JObject::null().into_raw()
+    // Get environment variables from context
+    let env_map = match context.environment.read() {
+        Ok(env_map) => env_map,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read environment variables: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Look up the variable
+    match env_map.get(&name_str) {
+        Some(value) => {
+            match env.new_string(value) {
+                Ok(java_str) => java_str.into_raw(),
+                Err(e) => {
+                    let _ = env.throw_new(
+                        "java/lang/RuntimeException",
+                        format!("Failed to create string: {}", e),
+                    );
+                    JObject::null().into_raw()
+                }
+            }
+        }
+        None => JObject::null().into_raw(),
+    }
 }
 
 /// Get command-line arguments
@@ -108,7 +188,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -117,12 +197,64 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 environment get_arguments
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_arguments not yet implemented",
-    );
-    JObject::null().into_raw()
+    // Get arguments from context
+    let args = match context.arguments.read() {
+        Ok(args) => args,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read arguments: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Create Java String array
+    let string_class = match env.find_class("java/lang/String") {
+        Ok(cls) => cls,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to find String class: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    let array = match env.new_object_array(args.len() as i32, string_class, JObject::null()) {
+        Ok(arr) => arr,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create array: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Populate array
+    for (i, arg) in args.iter().enumerate() {
+        let java_str = match env.new_string(arg) {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to create string: {}", e),
+                );
+                return JObject::null().into_raw();
+            }
+        };
+
+        if let Err(e) = env.set_object_array_element(&array, i as i32, java_str) {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to set array element: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    }
+
+    array.into_raw()
 }
 
 /// Get initial working directory
@@ -142,7 +274,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -151,12 +283,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 environment get_initial_cwd
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_initial_cwd not yet implemented",
-    );
-    JObject::null().into_raw()
+    // Get initial_cwd from context
+    let cwd = match context.initial_cwd.read() {
+        Ok(cwd) => cwd,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read initial_cwd: {}", e),
+            );
+            return JObject::null().into_raw();
+        }
+    };
+
+    // Return the cwd if set, or null
+    match cwd.as_ref() {
+        Some(path) => {
+            match env.new_string(path) {
+                Ok(java_str) => java_str.into_raw(),
+                Err(e) => {
+                    let _ = env.throw_new(
+                        "java/lang/RuntimeException",
+                        format!("Failed to create string: {}", e),
+                    );
+                    JObject::null().into_raw()
+                }
+            }
+        }
+        None => JObject::null().into_raw(),
+    }
 }
 
 /// Get stdin stream
