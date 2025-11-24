@@ -177,6 +177,9 @@ pub mod async_ops;
 // Enhanced WASI Preview 2 implementation
 pub mod wasi_preview2;
 
+// Shared helper functions for WASI I/O operations (used by both JNI and Panama FFI)
+pub mod wasi_io_helpers;
+
 // Real networking operations
 pub mod networking;
 

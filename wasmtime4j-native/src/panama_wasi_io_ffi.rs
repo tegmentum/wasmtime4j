@@ -8,11 +8,14 @@
 use std::os::raw::{c_long, c_void};
 use std::slice;
 
+use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi_io_helpers;
+
 /// Read data from a WASI input stream (non-blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the input stream
+/// - `stream_handle`: Pointer to the input stream (stream_id as pointer)
 /// - `length`: Maximum number of bytes to read
 /// - `out_buffer`: Pointer to buffer where data will be written
 /// - `out_length`: Pointer to write the actual number of bytes read
@@ -27,23 +30,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
     out_buffer: *mut u8,
     out_length: *mut c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 input stream read
-    // For now, return stub implementation
-    unsafe {
-        *out_length = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::read_from_stream(context, stream_id, length as usize, false) {
+        Ok(data) => {
+            let copy_len = data.len().min(length as usize);
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
+                *out_length = copy_len as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Read data from a WASI input stream (blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the input stream
+/// - `stream_handle`: Pointer to the input stream (stream_id as pointer)
 /// - `length`: Maximum number of bytes to read
 /// - `out_buffer`: Pointer to buffer where data will be written
 /// - `out_length`: Pointer to write the actual number of bytes read
@@ -58,22 +76,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
     out_buffer: *mut u8,
     out_length: *mut c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 blocking input stream read
-    unsafe {
-        *out_length = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::read_from_stream(context, stream_id, length as usize, true) {
+        Ok(data) => {
+            let copy_len = data.len().min(length as usize);
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
+                *out_length = copy_len as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Skip bytes in a WASI input stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the input stream
+/// - `stream_handle`: Pointer to the input stream (stream_id as pointer)
 /// - `length`: Number of bytes to skip
 /// - `out_skipped`: Pointer to write the actual number of bytes skipped
 ///
@@ -86,22 +120,36 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_skip(
     length: c_long,
     out_skipped: *mut c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() || out_skipped.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || out_skipped.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 input stream skip
-    unsafe {
-        *out_skipped = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::skip_in_stream(context, stream_id, length as u64, false) {
+        Ok(skipped) => {
+            unsafe {
+                *out_skipped = skipped as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Create a pollable for a WASI input stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the input stream
+/// - `stream_handle`: Pointer to the input stream (stream_id as pointer)
 ///
 /// # Returns
 /// Pointer to the pollable on success, null on error
@@ -114,15 +162,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_subscribe(
         return std::ptr::null_mut();
     }
 
-    // TODO: Implement actual WASI Preview 2 input stream subscribe
-    std::ptr::null_mut()
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::create_output_stream_pollable(context, stream_id) {
+        Ok(pollable_id) => pollable_id as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 /// Close a WASI input stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the input stream
+/// - `stream_handle`: Pointer to the input stream (stream_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -135,15 +195,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_close(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 input stream close
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::close_stream(context, stream_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Check how many bytes can be written to a WASI output stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 /// - `out_capacity`: Pointer to write the available capacity
 ///
 /// # Returns
@@ -158,18 +230,32 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_check_write(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream check write
-    unsafe {
-        *out_capacity = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::check_write_capacity(context, stream_id) {
+        Ok(capacity) => {
+            unsafe {
+                *out_capacity = capacity as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Write data to a WASI output stream (non-blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 /// - `buffer`: Pointer to the data to write
 /// - `length`: Number of bytes to write
 ///
@@ -182,19 +268,32 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write(
     buffer: *const u8,
     length: c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream write
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+    let data = unsafe { slice::from_raw_parts(buffer, length as usize) };
+
+    match wasi_io_helpers::write_to_stream(context, stream_id, data, false) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Write data and flush a WASI output stream (blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 /// - `buffer`: Pointer to the data to write
 /// - `length`: Number of bytes to write
 ///
@@ -207,19 +306,35 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_and_flush(
     buffer: *const u8,
     length: c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 blocking output stream write and flush
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+    let data = unsafe { slice::from_raw_parts(buffer, length as usize) };
+
+    match wasi_io_helpers::write_to_stream(context, stream_id, data, true) {
+        Ok(()) => match wasi_io_helpers::flush_stream(context, stream_id, true) {
+            Ok(()) => 0,
+            Err(_) => -1,
+        },
+        Err(_) => -1,
+    }
 }
 
 /// Flush a WASI output stream (non-blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -232,15 +347,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_flush(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream flush
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::flush_stream(context, stream_id, false) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Flush a WASI output stream (blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -253,15 +380,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_flush(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 blocking output stream flush
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::flush_stream(context, stream_id, true) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Write zero bytes to a WASI output stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 /// - `length`: Number of zero bytes to write
 ///
 /// # Returns
@@ -272,19 +411,31 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write_zeroes(
     stream_handle: *mut c_void,
     length: c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream write zeroes
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::write_zeroes_to_stream(context, stream_id, length as u64, false) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Write zero bytes and flush a WASI output stream (blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 /// - `length`: Number of zero bytes to write
 ///
 /// # Returns
@@ -295,20 +446,35 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_zeroes_and
     stream_handle: *mut c_void,
     length: c_long,
 ) -> i32 {
-    if context_handle.is_null() || stream_handle.is_null() {
+    if context_handle.is_null() || stream_handle.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 blocking output stream write zeroes and flush
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::write_zeroes_to_stream(context, stream_id, length as u64, true) {
+        Ok(()) => match wasi_io_helpers::flush_stream(context, stream_id, true) {
+            Ok(()) => 0,
+            Err(_) => -1,
+        },
+        Err(_) => -1,
+    }
 }
 
 /// Splice data from input stream to output stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `output_stream_handle`: Pointer to the output stream
-/// - `input_stream_handle`: Pointer to the input stream
+/// - `output_stream_handle`: Pointer to the output stream (stream_id as pointer)
+/// - `input_stream_handle`: Pointer to the input stream (stream_id as pointer)
 /// - `length`: Maximum number of bytes to splice
 /// - `out_spliced`: Pointer to write the actual number of bytes spliced
 ///
@@ -322,23 +488,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
     length: c_long,
     out_spliced: *mut c_long,
 ) -> i32 {
-    if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() {
+    if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream splice
-    unsafe {
-        *out_spliced = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let dest_stream_id = output_stream_handle as u64;
+    let source_stream_id = input_stream_handle as u64;
+
+    match wasi_io_helpers::splice_streams(context, dest_stream_id, source_stream_id, length as u64, false) {
+        Ok(spliced) => {
+            unsafe {
+                *out_spliced = spliced as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Splice data from input stream to output stream (blocking)
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `output_stream_handle`: Pointer to the output stream
-/// - `input_stream_handle`: Pointer to the input stream
+/// - `output_stream_handle`: Pointer to the output stream (stream_id as pointer)
+/// - `input_stream_handle`: Pointer to the input stream (stream_id as pointer)
 /// - `length`: Maximum number of bytes to splice
 /// - `out_spliced`: Pointer to write the actual number of bytes spliced
 ///
@@ -352,22 +533,37 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
     length: c_long,
     out_spliced: *mut c_long,
 ) -> i32 {
-    if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() {
+    if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() || length < 0 {
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 blocking output stream splice
-    unsafe {
-        *out_spliced = 0;
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let dest_stream_id = output_stream_handle as u64;
+    let source_stream_id = input_stream_handle as u64;
+
+    match wasi_io_helpers::splice_streams(context, dest_stream_id, source_stream_id, length as u64, true) {
+        Ok(spliced) => {
+            unsafe {
+                *out_spliced = spliced as c_long;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Create a pollable for a WASI output stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 ///
 /// # Returns
 /// Pointer to the pollable on success, null on error
@@ -380,15 +576,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_subscribe(
         return std::ptr::null_mut();
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream subscribe
-    std::ptr::null_mut()
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::create_output_stream_pollable(context, stream_id) {
+        Ok(pollable_id) => pollable_id as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 /// Close a WASI output stream
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `stream_handle`: Pointer to the output stream
+/// - `stream_handle`: Pointer to the output stream (stream_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -401,15 +609,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_close(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 output stream close
-    0
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    let stream_id = stream_handle as u64;
+
+    match wasi_io_helpers::close_stream(context, stream_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Block until a WASI pollable is ready
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `pollable_handle`: Pointer to the pollable
+/// - `pollable_handle`: Pointer to the pollable (pollable_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -422,7 +642,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_block(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 pollable block
+    // For MVP, pollables are always ready immediately
     0
 }
 
@@ -430,7 +650,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_block(
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `pollable_handle`: Pointer to the pollable
+/// - `pollable_handle`: Pointer to the pollable (pollable_id as pointer)
 /// - `out_ready`: Pointer to write readiness status (1 = ready, 0 = not ready)
 ///
 /// # Returns
@@ -445,9 +665,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_ready(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 pollable ready check
+    // For MVP, pollables are always ready
     unsafe {
-        *out_ready = 0;
+        *out_ready = 1;
     }
     0
 }
@@ -456,7 +676,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_ready(
 ///
 /// # Parameters
 /// - `context_handle`: Pointer to the WASI context
-/// - `pollable_handle`: Pointer to the pollable
+/// - `pollable_handle`: Pointer to the pollable (pollable_id as pointer)
 ///
 /// # Returns
 /// 0 on success, -1 on error
@@ -469,6 +689,6 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_close(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 pollable close
+    // For MVP, no cleanup needed for pollables
     0
 }
