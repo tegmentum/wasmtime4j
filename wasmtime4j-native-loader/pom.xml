@@ -181,6 +181,16 @@
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
 
+            <!-- PMD for code analysis -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <!-- Use Java 9 for PMD analysis since this module has module-info.java -->
+                    <targetJdk>9</targetJdk>
+                </configuration>
+            </plugin>
+
             <!-- GPG plugin for signing artifacts -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
