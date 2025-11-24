@@ -276,47 +276,93 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 // Helper functions
 
 fn create_input_stream(
-    _context: &WasiPreview2Context,
+    context: &WasiPreview2Context,
     _descriptor_id: u64,
     _offset: u64,
 ) -> WasmtimeResult<u64> {
-    // TODO: Implement actual stream creation using wasi_preview2 context
-    // This is a placeholder that will be connected to the actual WASI implementation
-    Err(WasmtimeError::Wasi {
-        message: "Input stream creation not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::{WasiStream, WasiStreamType, WasiStreamStatus};
+
+    let stream_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+
+    let stream = WasiStream {
+        id: stream_id,
+        stream_type: WasiStreamType::InputStream,
+        buffer: Vec::new(),
+        status: WasiStreamStatus::Ready,
+        resource_id: Some(_descriptor_id),
+    };
+
+    let mut streams = context.streams.write().unwrap();
+    streams.insert(stream_id, stream);
+
+    Ok(stream_id as u64)
 }
 
 fn read_from_stream(
-    _context: &WasiPreview2Context,
-    _stream_id: u64,
-    _length: usize,
+    context: &WasiPreview2Context,
+    stream_id: u64,
+    length: usize,
     _blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
-    // TODO: Implement actual stream reading
-    // This will use the WasiPreview2Context to read from the stream
-    Err(WasmtimeError::Wasi {
-        message: "Stream reading not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // Read from buffer (MVP: just return what's in the buffer)
+    let read_len = length.min(stream.buffer.len());
+    let data = stream.buffer.drain(..read_len).collect();
+    Ok(data)
 }
 
 fn skip_in_stream(
-    _context: &WasiPreview2Context,
-    _stream_id: u64,
-    _length: u64,
+    context: &WasiPreview2Context,
+    stream_id: u64,
+    length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
-    // TODO: Implement actual stream skipping
-    Err(WasmtimeError::Wasi {
-        message: "Stream skipping not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // Skip bytes in buffer
+    let skip_len = (length as usize).min(stream.buffer.len());
+    stream.buffer.drain(..skip_len);
+    Ok(skip_len as u64)
 }
 
-fn close_stream(_context: &WasiPreview2Context, _stream_id: u64) -> WasmtimeResult<()> {
-    // TODO: Implement actual stream closure
-    Err(WasmtimeError::Wasi {
-        message: "Stream closure not yet implemented".to_string(),
-    })
+fn close_stream(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<()> {
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+    if let Some(stream) = streams.get_mut(&(stream_id as u32)) {
+        stream.status = WasiStreamStatus::Closed;
+        stream.buffer.clear();
+    }
+    Ok(())
 }
 
 /// Check write capacity for WASI output stream (non-blocking)
@@ -797,66 +843,158 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
 // Helper functions for output stream operations
 
-fn check_write_capacity(_context: &WasiPreview2Context, _stream_id: u64) -> WasmtimeResult<u64> {
-    // TODO: Implement actual write capacity check
-    Err(WasmtimeError::Wasi {
-        message: "Check write capacity not yet implemented".to_string(),
-    })
+fn check_write_capacity(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<u64> {
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let streams = context.streams.read().unwrap();
+    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // MVP: return a fixed capacity (e.g., 64KB)
+    Ok(65536)
 }
 
 fn write_to_stream(
-    _context: &WasiPreview2Context,
-    _stream_id: u64,
-    _data: &[u8],
+    context: &WasiPreview2Context,
+    stream_id: u64,
+    data: &[u8],
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    // TODO: Implement actual stream writing
-    Err(WasmtimeError::Wasi {
-        message: "Stream writing not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // Write to buffer (MVP: just append to buffer)
+    stream.buffer.extend_from_slice(data);
+    Ok(())
 }
 
 fn flush_stream(
-    _context: &WasiPreview2Context,
-    _stream_id: u64,
+    context: &WasiPreview2Context,
+    stream_id: u64,
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    // TODO: Implement actual stream flushing
-    Err(WasmtimeError::Wasi {
-        message: "Stream flushing not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let streams = context.streams.read().unwrap();
+    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // MVP: flushing is a no-op since we're using in-memory buffers
+    Ok(())
 }
 
 fn write_zeroes_to_stream(
-    _context: &WasiPreview2Context,
-    _stream_id: u64,
-    _length: u64,
+    context: &WasiPreview2Context,
+    stream_id: u64,
+    length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    // TODO: Implement actual zero writing
-    Err(WasmtimeError::Wasi {
-        message: "Write zeroes not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Stream {} not found", stream_id),
+        }
+    })?;
+
+    // Check if stream is closed
+    if matches!(stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Stream is closed".to_string(),
+        });
+    }
+
+    // Write zeroes to buffer
+    stream.buffer.resize(stream.buffer.len() + length as usize, 0);
+    Ok(())
 }
 
 fn splice_streams(
-    _context: &WasiPreview2Context,
-    _dest_stream_id: u64,
-    _source_stream_id: u64,
-    _length: u64,
+    context: &WasiPreview2Context,
+    dest_stream_id: u64,
+    source_stream_id: u64,
+    length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
-    // TODO: Implement actual stream splicing
-    Err(WasmtimeError::Wasi {
-        message: "Stream splicing not yet implemented".to_string(),
-    })
+    use crate::wasi_preview2::WasiStreamStatus;
+
+    let mut streams = context.streams.write().unwrap();
+
+    // Get source stream data
+    let source_stream = streams.get_mut(&(source_stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Source stream {} not found", source_stream_id),
+        }
+    })?;
+
+    // Check if source stream is closed
+    if matches!(source_stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Source stream is closed".to_string(),
+        });
+    }
+
+    // Read from source buffer
+    let read_len = (length as usize).min(source_stream.buffer.len());
+    let data: Vec<u8> = source_stream.buffer.drain(..read_len).collect();
+
+    // Get destination stream
+    let dest_stream = streams.get_mut(&(dest_stream_id as u32)).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Destination stream {} not found", dest_stream_id),
+        }
+    })?;
+
+    // Check if destination stream is closed
+    if matches!(dest_stream.status, WasiStreamStatus::Closed) {
+        return Err(WasmtimeError::Wasi {
+            message: "Destination stream is closed".to_string(),
+        });
+    }
+
+    // Write to destination buffer
+    dest_stream.buffer.extend_from_slice(&data);
+    Ok(data.len() as u64)
 }
 
 fn create_output_stream_pollable(_context: &WasiPreview2Context, _stream_id: u64) -> WasmtimeResult<u64> {
-    // TODO: Implement pollable creation for output stream
-    Err(WasmtimeError::Wasi {
-        message: "Output stream pollable creation not yet implemented".to_string(),
-    })
+    // MVP: return a dummy pollable ID
+    // In a full implementation, this would create a proper pollable resource
+    Ok(1)
 }
 
 /// Block until pollable is ready

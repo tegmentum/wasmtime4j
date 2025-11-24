@@ -41,7 +41,7 @@ pub struct WasiPreview2Context {
     /// Configuration
     config: WasiPreview2Config,
     /// Operation counter
-    next_operation_id: std::sync::atomic::AtomicU64,
+    pub next_operation_id: std::sync::atomic::AtomicU64,
     /// Environment variables (shadow copy for queries)
     pub environment: Arc<RwLock<HashMap<String, String>>>,
     /// Command-line arguments (shadow copy for queries)
@@ -56,6 +56,8 @@ pub struct WasiPreview2Context {
     pub stderr_handle: Arc<RwLock<Option<u64>>>,
     /// Exit code (if process has exited)
     pub exit_code: Arc<RwLock<Option<i32>>>,
+    /// Global stream registry (for JNI/Panama access without instance_id)
+    pub streams: Arc<RwLock<HashMap<u32, WasiStream>>>,
 }
 
 /// Store data for WASI Preview 2 operations
@@ -110,15 +112,15 @@ pub struct WasiPreview2Config {
 /// WASI stream for async I/O
 pub struct WasiStream {
     /// Stream ID
-    id: u32,
+    pub id: u32,
     /// Stream type
-    stream_type: WasiStreamType,
+    pub stream_type: WasiStreamType,
     /// Buffer for buffered operations
-    buffer: Vec<u8>,
+    pub buffer: Vec<u8>,
     /// Stream status
-    status: WasiStreamStatus,
+    pub status: WasiStreamStatus,
     /// Associated file descriptor or resource
-    resource_id: Option<u64>,
+    pub resource_id: Option<u64>,
 }
 
 /// WASI stream types
@@ -296,6 +298,7 @@ impl WasiPreview2Context {
             stdout_handle: Arc::new(RwLock::new(None)),
             stderr_handle: Arc::new(RwLock::new(None)),
             exit_code: Arc::new(RwLock::new(None)),
+            streams: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
