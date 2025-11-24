@@ -180,7 +180,8 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
 
   @Override
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant.now(); // Creation time tracking not yet implemented for WASI I/O streams
+    return java.time.Instant
+        .now(); // Creation time tracking not yet implemented for WASI I/O streams
   }
 
   @Override

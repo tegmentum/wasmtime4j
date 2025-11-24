@@ -109,7 +109,8 @@ final class JniCallerContextTest {
         new FunctionType(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
 
     // Act: Create the host function in the store
-    final WasmFunction wasmFunc = intStore.createHostFunction("get_data", funcType, callerAwareFunc);
+    final WasmFunction wasmFunc =
+        intStore.createHostFunction("get_data", funcType, callerAwareFunc);
 
     // Assert
     assertNotNull(wasmFunc, "Host function should be created successfully");
@@ -138,7 +139,8 @@ final class JniCallerContextTest {
         new FunctionType(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
 
     // Act: Create the host function in the store
-    final WasmFunction wasmFunc = nullStore.createHostFunction("check_null", funcType, callerAwareFunc);
+    final WasmFunction wasmFunc =
+        nullStore.createHostFunction("check_null", funcType, callerAwareFunc);
 
     // Assert
     assertNotNull(wasmFunc, "Host function should be created successfully");

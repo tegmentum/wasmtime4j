@@ -85,7 +85,13 @@ class PanamaHostFunctionTest {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Assert
       assertNotNull(hostFunction);
@@ -101,7 +107,13 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  null, testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler));
+                  null,
+                  testFunctionType,
+                  testCallback,
+                  null,
+                  null,
+                  mockArenaManager,
+                  mockErrorHandler));
     }
 
     @Test
@@ -110,7 +122,13 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  "test_function", null, testCallback, null, null, mockArenaManager, mockErrorHandler));
+                  "test_function",
+                  null,
+                  testCallback,
+                  null,
+                  null,
+                  mockArenaManager,
+                  mockErrorHandler));
     }
 
     @Test
@@ -119,7 +137,13 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  "test_function", testFunctionType, null, null, null, mockArenaManager, mockErrorHandler));
+                  "test_function",
+                  testFunctionType,
+                  null,
+                  null,
+                  null,
+                  mockArenaManager,
+                  mockErrorHandler));
     }
 
     @Test
@@ -128,7 +152,13 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  "test_function", testFunctionType, testCallback, null, null, null, mockErrorHandler));
+                  "test_function",
+                  testFunctionType,
+                  testCallback,
+                  null,
+                  null,
+                  null,
+                  mockErrorHandler));
     }
 
     @Test
@@ -137,7 +167,13 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  "test_function", testFunctionType, testCallback, null, null, mockArenaManager, null));
+                  "test_function",
+                  testFunctionType,
+                  testCallback,
+                  null,
+                  null,
+                  mockArenaManager,
+                  null));
     }
   }
 
@@ -150,7 +186,13 @@ class PanamaHostFunctionTest {
     void setUp() throws Exception {
       hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
     }
 
     @Test
@@ -179,7 +221,13 @@ class PanamaHostFunctionTest {
     void setUp() throws Exception {
       hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
     }
 
     @Test
@@ -220,7 +268,13 @@ class PanamaHostFunctionTest {
 
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "callback_test", testFunctionType, mockCallback, null, null, mockArenaManager, mockErrorHandler);
+              "callback_test",
+              testFunctionType,
+              mockCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Act - simulate callback execution through native interface
       // Note: This tests the callback mechanism indirectly
@@ -260,7 +314,13 @@ class PanamaHostFunctionTest {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "void_callback", voidType, voidCallback, null, null, mockArenaManager, mockErrorHandler);
+              "void_callback",
+              voidType,
+              voidCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Assert
       assertNotNull(hostFunction.getUpcallStub());
@@ -304,7 +364,13 @@ class PanamaHostFunctionTest {
     void setUp() throws Exception {
       hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
     }
 
     @Test
@@ -402,7 +468,13 @@ class PanamaHostFunctionTest {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "complex_function", complexType, complexCallback, null, null, mockArenaManager, mockErrorHandler);
+              "complex_function",
+              complexType,
+              complexCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Assert
       assertNotNull(hostFunction.getUpcallStub());
@@ -418,7 +490,13 @@ class PanamaHostFunctionTest {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Act
       final String stringRepr = hostFunction.toString();
@@ -434,7 +512,13 @@ class PanamaHostFunctionTest {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
       hostFunction.close();
 
       // Act
@@ -474,7 +558,13 @@ class PanamaHostFunctionTest {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       doThrow(new RuntimeException("Unregister failed"))
           .when(mockArenaManager)
@@ -493,7 +583,13 @@ class PanamaHostFunctionTest {
       // Act
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Assert
       verify(mockArenaManager)
@@ -506,7 +602,13 @@ class PanamaHostFunctionTest {
       // Arrange
       final PanamaHostFunction hostFunction =
           new PanamaHostFunction(
-              "test_function", testFunctionType, testCallback, null, null, mockArenaManager, mockErrorHandler);
+              "test_function",
+              testFunctionType,
+              testCallback,
+              null,
+              null,
+              mockArenaManager,
+              mockErrorHandler);
 
       // Act
       hostFunction.close();

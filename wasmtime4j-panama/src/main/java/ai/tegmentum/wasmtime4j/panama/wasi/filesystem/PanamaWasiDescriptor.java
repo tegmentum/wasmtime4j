@@ -46,8 +46,8 @@ import java.util.logging.Logger;
  * Panama FFI implementation of the WasiDescriptor interface.
  *
  * <p>This class provides access to WASI Preview 2 filesystem operations through Panama Foreign
- * Function API calls to the native Wasmtime library. Descriptors represent filesystem objects
- * like files and directories.
+ * Function API calls to the native Wasmtime library. Descriptors represent filesystem objects like
+ * files and directories.
  *
  * <p>This implementation ensures defensive programming to prevent native resource leaks and JVM
  * crashes.
@@ -117,9 +117,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
       APPEND_VIA_STREAM_HANDLE =
           linker.downcallHandle(
-              nativeLib
-                  .find("wasmtime4j_panama_wasi_descriptor_append_via_stream")
-                  .orElseThrow(),
+              nativeLib.find("wasmtime4j_panama_wasi_descriptor_append_via_stream").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_INT,
                   ValueLayout.ADDRESS,
@@ -226,9 +224,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
       REMOVE_DIRECTORY_AT_HANDLE =
           linker.downcallHandle(
-              nativeLib
-                  .find("wasmtime4j_panama_wasi_descriptor_remove_directory_at")
-                  .orElseThrow(),
+              nativeLib.find("wasmtime4j_panama_wasi_descriptor_remove_directory_at").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_INT,
                   ValueLayout.ADDRESS,
@@ -294,7 +290,8 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
                   ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     } catch (final Throwable e) {
-      LOGGER.severe("Failed to initialize Panama FFI handles for WasiDescriptor: " + e.getMessage());
+      LOGGER.severe(
+          "Failed to initialize Panama FFI handles for WasiDescriptor: " + e.getMessage());
       throw new ExceptionInInitializerError(e);
     }
   }
@@ -647,8 +644,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
       final int result =
           (int)
-              READ_DIRECTORY_HANDLE.invoke(
-                  contextHandle, nativeHandle, outEntries, outEntriesLen);
+              READ_DIRECTORY_HANDLE.invoke(contextHandle, nativeHandle, outEntries, outEntriesLen);
 
       if (result != 0) {
         throw new WasmException("Failed to read directory");
@@ -665,7 +661,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
       final List<String> entries = new ArrayList<>();
       int offset = 0;
       while (offset < entriesLen) {
-        final String entry = entriesPtr.getUtf8String(offset);
+        final String entry = entriesPtr.getString(offset, StandardCharsets.UTF_8);
         if (entry.isEmpty()) {
           break;
         }
@@ -720,7 +716,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
         throw new WasmException("Failed to read symbolic link (null target returned)");
       }
 
-      return targetPtr.getUtf8String(0);
+      return targetPtr.getString(0, StandardCharsets.UTF_8);
 
     } catch (final WasmException e) {
       throw e;
@@ -825,12 +821,10 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
     try (final Arena arena = Arena.ofConfined()) {
       final byte[] oldPathBytes = oldPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment oldPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, oldPathBytes);
+      final MemorySegment oldPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, oldPathBytes);
 
       final byte[] newPathBytes = newPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment newPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, newPathBytes);
+      final MemorySegment newPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPathBytes);
 
       final int result =
           (int)
@@ -870,12 +864,10 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
     try (final Arena arena = Arena.ofConfined()) {
       final byte[] oldPathBytes = oldPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment oldPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, oldPathBytes);
+      final MemorySegment oldPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, oldPathBytes);
 
       final byte[] newPathBytes = newPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment newPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, newPathBytes);
+      final MemorySegment newPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPathBytes);
 
       final int result =
           (int)
@@ -888,7 +880,8 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
                   newPathBytes.length);
 
       if (result != 0) {
-        throw new WasmException("Failed to create symbolic link from " + oldPath + " to " + newPath);
+        throw new WasmException(
+            "Failed to create symbolic link from " + oldPath + " to " + newPath);
       }
 
     } catch (final WasmException e) {
@@ -936,12 +929,10 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
     try (final Arena arena = Arena.ofConfined()) {
       final byte[] oldPathBytes = oldPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment oldPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, oldPathBytes);
+      final MemorySegment oldPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, oldPathBytes);
 
       final byte[] newPathBytes = newPath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment newPathSegment =
-          arena.allocateArray(ValueLayout.JAVA_BYTE, newPathBytes);
+      final MemorySegment newPathSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPathBytes);
 
       final int oldPathFlagsValue = encodePathFlags(oldPathFlags);
 
@@ -1084,8 +1075,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
   @Override
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util
-        .Optional
+    return java.util.Optional
         .empty(); // Access tracking not yet implemented for WASI filesystem descriptors
   }
 

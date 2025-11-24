@@ -234,7 +234,8 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant.now(); // Creation time tracking not yet implemented for WASI I/O streams
+    return java.time.Instant
+        .now(); // Creation time tracking not yet implemented for WASI I/O streams
   }
 
   @Override

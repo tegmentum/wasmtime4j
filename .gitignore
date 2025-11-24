@@ -57,4 +57,4 @@ jacoco.xml
 
 # Temporary files
 *.tmp
-*.temp
+*.tempwasmtime4j-native/jni-headers/

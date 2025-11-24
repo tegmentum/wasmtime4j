@@ -30,8 +30,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the Caller interface for accessing WebAssembly instance context.
  *
- * <p>This class provides access to the calling WebAssembly instance's exports, memory, globals,
- * and execution state through JNI bindings to the native Wasmtime caller context.
+ * <p>This class provides access to the calling WebAssembly instance's exports, memory, globals, and
+ * execution state through JNI bindings to the native Wasmtime caller context.
  *
  * @param <T> the type of user data associated with the store
  * @since 1.0.0

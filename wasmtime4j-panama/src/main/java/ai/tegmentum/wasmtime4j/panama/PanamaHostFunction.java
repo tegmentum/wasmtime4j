@@ -97,7 +97,8 @@ public final class PanamaHostFunction implements WasmFunction {
    * @param functionName the name of the function (for debugging/logging)
    * @param functionType the WebAssembly function type signature
    * @param callback the Java implementation of the function
-   * @param implementation the original HostFunction implementation (may be null for direct callbacks)
+   * @param implementation the original HostFunction implementation (may be null for direct
+   *     callbacks)
    * @param store the store this host function belongs to (may be null for direct callbacks)
    * @param arenaManager the arena resource manager for memory lifecycle
    * @param errorHandler the error handler for exception mapping
