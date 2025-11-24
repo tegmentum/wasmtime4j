@@ -690,7 +690,7 @@ pub mod jni_bindings {
     }
 }
 
-#[cfg(feature = "panama")]
+#[cfg(feature = "panama-ffi")]
 pub mod panama_bindings {
     use super::*;
 

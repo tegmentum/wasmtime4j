@@ -979,7 +979,7 @@ pub mod jni_debug_exports {
 }
 
 /// Panama FFI exports for debug functionality
-#[cfg(feature = "panama")]
+#[cfg(feature = "panama-ffi")]
 pub mod panama_debug_exports {
     use super::*;
     use crate::panama_ffi::*;
