@@ -707,6 +707,9 @@ pub mod panama_bindings {
             enable_exception_unwinding: enable_unwinding,
             max_unwind_depth: max_depth,
             validate_exception_types: validate_types,
+            enable_stack_traces: false,
+            enable_exception_propagation: false,
+            enable_gc_integration: false,
         };
 
         match ExceptionHandler::new(config) {
