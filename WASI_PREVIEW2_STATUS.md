@@ -261,6 +261,55 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
   - Proper exception handling (wraps PanamaResourceException in WasmException)
   - Helper methods for flag encoding/decoding
 
+### 7. wasi:cli Panama FFI Bindings (✅ Complete)
+
+**Location:** `wasmtime4j-native/src/panama_wasi_cli_ffi.rs`
+**Status:** Fully implemented with 8 C-compatible FFI functions
+**Commit:** f61c7d25
+
+- ✅ Environment operations (4 functions)
+  - `wasmtime4j_panama_wasi_environment_get_all`
+  - `wasmtime4j_panama_wasi_environment_get`
+  - `wasmtime4j_panama_wasi_environment_get_arguments`
+  - `wasmtime4j_panama_wasi_environment_get_initial_cwd`
+
+- ✅ Stdio operations (3 functions)
+  - `wasmtime4j_panama_wasi_stdio_get_stdin`
+  - `wasmtime4j_panama_wasi_stdio_get_stdout`
+  - `wasmtime4j_panama_wasi_stdio_get_stderr`
+
+- ✅ Exit operation (1 function)
+  - `wasmtime4j_panama_wasi_exit`
+
+### 8. wasi:cli Panama Implementation Classes (✅ Complete)
+
+**Location:** `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/cli/`
+**Status:** All classes implemented and compiling
+**Commit:** b1a44427
+
+- ✅ `PanamaWasiEnvironment` (278 lines)
+  - Implements all WasiEnvironment methods
+  - getEnvironmentVariables() with key=value parsing
+  - getVariable(name) for single variable lookup
+  - getArguments() with null-terminated string parsing
+  - getInitialCwd() for working directory retrieval
+  - UTF-8 string encoding/decoding
+  - Arena-based memory management
+
+- ✅ `PanamaWasiStdio` (158 lines)
+  - Implements all WasiStdio methods
+  - getStdin() returns PanamaWasiInputStream
+  - getStdout() returns PanamaWasiOutputStream
+  - getStderr() returns PanamaWasiOutputStream
+  - Defensive null handle validation
+  - Proper error handling
+
+- ✅ `PanamaWasiExit` (95 lines)
+  - Implements WasiExit interface
+  - exit(statusCode) for program termination
+  - Result code validation
+  - Comprehensive error handling
+
 ## Pending Work
 
 ### 1. wasi:filesystem Implementation (Partially Complete)
@@ -275,17 +324,17 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 - Panama FFI bindings: ✅ Complete
 - Panama Implementation: ✅ Complete
 
-### 3. wasi:cli Implementation (Not Started)
+### 3. wasi:cli Implementation (Partially Complete)
 
-**JNI Implementation**
+**JNI Implementation** (Not Started)
 - Location: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/wasi/cli/`
 - Classes needed:
   - `JniWasiEnvironment`, `JniWasiStdio`, `JniWasiExit`
 
-**Panama Implementation**
-- Location: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/cli/`
-- Classes needed:
-  - `PanamaWasiEnvironment`, `PanamaWasiStdio`, `PanamaWasiExit`
+**Native Bindings** (Not Started)
+- JNI bindings for CLI operations in `jni_wasi_cli_bindings.rs`
+- Panama FFI bindings: ✅ Complete
+- Panama Implementation: ✅ Complete
 
 ### 4. Integration Tests (Not Started)
 
@@ -309,7 +358,7 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 ┌─────────────────────────────────────────────────────────────┐
 │ Implementation Layer                                        │
 │ - wasmtime4j-jni (wasi:io ✅ | filesystem ❌ | cli ❌)    │
-│ - wasmtime4j-panama (wasi:io ✅ | filesystem ✅ | cli ❌) │
+│ - wasmtime4j-panama (wasi:io ✅ | filesystem ✅ | cli ✅) │
 └─────────────────────────────────────────────────────────────┘
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -317,7 +366,8 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 │ - jni_wasi_io_bindings.rs (✅ Complete)                    │
 │ - panama_wasi_io_ffi.rs (✅ Complete)                      │
 │ - panama_wasi_filesystem_ffi.rs (✅ Complete)              │
-│ - filesystem JNI/cli bindings (PENDING)                    │
+│ - panama_wasi_cli_ffi.rs (✅ Complete)                     │
+│ - filesystem JNI/cli JNI bindings (PENDING)                │
 └─────────────────────────────────────────────────────────────┘
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -351,10 +401,10 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 4. ✅ ~~Create Panama implementation classes for wasi:io in wasmtime4j-panama~~ (COMPLETED)
 5. ✅ ~~Implement Panama FFI bindings for wasi:filesystem operations~~ (COMPLETED)
 6. ✅ ~~Create Panama implementation class for wasi:filesystem~~ (COMPLETED)
-7. **Implement JNI bindings** for wasi:filesystem
-8. **Implement JNI class** for wasi:filesystem
-9. **Implement Panama FFI bindings** for wasi:cli
-10. **Create Panama implementation classes** for wasi:cli
+7. ✅ ~~Implement Panama FFI bindings for wasi:cli operations~~ (COMPLETED)
+8. ✅ ~~Create Panama implementation classes for wasi:cli~~ (COMPLETED)
+9. **Implement JNI bindings** for wasi:filesystem
+10. **Implement JNI class** for wasi:filesystem
 11. **Implement JNI bindings** for wasi:cli
 12. **Create JNI implementation classes** for wasi:cli
 13. **Add integration tests** for wasi:io (both JNI and Panama)
@@ -372,20 +422,22 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 - **Panama Implementation:**
   - wasi:io: 3 files, 1,036 lines
   - wasi:filesystem: 1 file, 1,039 lines
-  - wasi:cli: ❌ Not started
+  - wasi:cli: 3 files, 531 lines
 - **Native Bindings:**
   - wasi:io JNI: 1 file (jni_wasi_io_bindings.rs), 19 functions
   - wasi:io Panama FFI: 1 file (panama_wasi_io_ffi.rs), 19 functions
   - wasi:filesystem Panama FFI: 1 file (panama_wasi_filesystem_ffi.rs), 20 functions
+  - wasi:cli Panama FFI: 1 file (panama_wasi_cli_ffi.rs), 8 functions
   - wasi:filesystem JNI: ❌ Not started
-  - wasi:cli JNI/Panama: ❌ Not started
+  - wasi:cli JNI: ❌ Not started
 - **Packages:** 3 (wasi.io, wasi.filesystem, wasi.cli)
 - **Test Coverage:** 0% (awaiting integration tests)
-- **Specification Compliance:** 100% (Java API, wasi:io JNI and Panama, wasi:filesystem Panama)
+- **Specification Compliance:** 100% (Java API, wasi:io JNI and Panama, wasi:filesystem Panama, wasi:cli Panama)
 - **Production Ready:**
   - Java API: ✅ Complete
   - wasi:io JNI: ✅ Complete (untested)
   - wasi:io Panama: ✅ Complete (untested)
   - wasi:filesystem JNI: ❌ Not started
   - wasi:filesystem Panama: ✅ Complete (untested)
-  - wasi:cli: ❌ Not started
+  - wasi:cli JNI: ❌ Not started
+  - wasi:cli Panama: ✅ Complete (untested)
