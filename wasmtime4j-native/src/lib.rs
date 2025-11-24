@@ -98,6 +98,8 @@ pub mod jni_wasi_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_io_bindings;
 #[cfg(feature = "jni-bindings")]
+pub mod jni_wasi_filesystem_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_snapshot_bindings;
