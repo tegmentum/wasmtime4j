@@ -511,16 +511,16 @@ Complete Java interface definitions for all core WASI Preview 2 APIs.
 - ✅ **Test Planning (100%)** - Comprehensive test strategy documented
 
 ### What's Pending
-- 🟡 **Native Rust Implementation (29.9%)** - 26 of 87 functions implemented, 61 remain with TODO markers
-  - ✅ **Completed (26 functions):**
+- 🟡 **Native Rust Implementation (51.7%)** - 45 of 87 functions implemented, 42 remain with TODO markers
+  - ✅ **Completed (45 functions):**
     - `jni_wasi_cli_bindings.rs` (8 functions) - Environment (4), Stdio (3), Exit (1)
     - `panama_wasi_cli_ffi.rs` (8 functions) - Panama FFI equivalents for CLI operations
-    - `jni_wasi_io_bindings.rs` (10 helper functions) - Stream I/O operations with global registry
+    - `wasi_io_helpers.rs` (10 helper functions) - Shared stream I/O operations used by both JNI and Panama
+    - `panama_wasi_io_ffi.rs` (19 functions) - Panama FFI equivalents for I/O streams
     - Added shadow copy fields to `WasiPreview2Context`: environment, arguments, initial_cwd, stdio handles, exit_code, streams
     - Added global stream registry with WasiStream structure for MVP implementation
-  - 🔴 **Remaining (61 functions):**
+  - 🔴 **Remaining (42 functions):**
     - `jni_wasi_filesystem_bindings.rs` (19 TODOs) - File/directory operations
-    - `panama_wasi_io_ffi.rs` (19 TODOs) - Panama equivalent for I/O
     - `panama_wasi_filesystem_ffi.rs` (19 TODOs) - Panama equivalent for filesystem
     - `async_runtime.rs` (2 TODOs) - Async runtime integration (12 JNI functions reference async operations)
     - `wasi.rs` (1 TODO) - Core WASI integration
