@@ -120,6 +120,8 @@ pub mod panama_wasi_io_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_filesystem_ffi;
 #[cfg(feature = "panama-ffi")]
+pub mod panama_wasi_cli_ffi;
+#[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_hot_reload_ffi;
