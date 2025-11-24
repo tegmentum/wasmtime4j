@@ -330,7 +330,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -339,12 +339,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 stdio get_stdin
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_stdin not yet implemented",
-    );
-    0
+    // Get or create stdin handle
+    let stdin_handle = match context.stdin_handle.read() {
+        Ok(handle_opt) => {
+            match *handle_opt {
+                Some(handle) => handle as i64,
+                None => {
+                    // For now, use a fixed handle ID for stdin
+                    // In a full implementation, this would be a resource from the component model
+                    1i64
+                }
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read stdin handle: {}", e),
+            );
+            return 0;
+        }
+    };
+
+    stdin_handle
 }
 
 /// Get stdout stream
@@ -364,7 +380,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -373,12 +389,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 stdio get_stdout
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_stdout not yet implemented",
-    );
-    0
+    // Get or create stdout handle
+    let stdout_handle = match context.stdout_handle.read() {
+        Ok(handle_opt) => {
+            match *handle_opt {
+                Some(handle) => handle as i64,
+                None => {
+                    // For now, use a fixed handle ID for stdout
+                    // In a full implementation, this would be a resource from the component model
+                    2i64
+                }
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read stdout handle: {}", e),
+            );
+            return 0;
+        }
+    };
+
+    stdout_handle
 }
 
 /// Get stderr stream
@@ -398,7 +430,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -407,12 +439,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 stdio get_stderr
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_stderr not yet implemented",
-    );
-    0
+    // Get or create stderr handle
+    let stderr_handle = match context.stderr_handle.read() {
+        Ok(handle_opt) => {
+            match *handle_opt {
+                Some(handle) => handle as i64,
+                None => {
+                    // For now, use a fixed handle ID for stderr
+                    // In a full implementation, this would be a resource from the component model
+                    3i64
+                }
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to read stderr handle: {}", e),
+            );
+            return 0;
+        }
+    };
+
+    stderr_handle
 }
 
 /// Exit with status code
@@ -433,7 +481,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiExit_nat
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -442,10 +490,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiExit_nat
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 exit
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "exit not yet implemented",
-    );
-    -1
+    // Store the exit code in the context
+    match context.exit_code.write() {
+        Ok(mut exit_code_opt) => {
+            *exit_code_opt = Some(status_code);
+            status_code
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to write exit code: {}", e),
+            );
+            -1
+        }
+    }
 }

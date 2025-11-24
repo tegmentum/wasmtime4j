@@ -48,6 +48,14 @@ pub struct WasiPreview2Context {
     pub arguments: Arc<RwLock<Vec<String>>>,
     /// Initial working directory (shadow copy for queries)
     pub initial_cwd: Arc<RwLock<Option<String>>>,
+    /// Stdin stream handle (for queries)
+    pub stdin_handle: Arc<RwLock<Option<u64>>>,
+    /// Stdout stream handle (for queries)
+    pub stdout_handle: Arc<RwLock<Option<u64>>>,
+    /// Stderr stream handle (for queries)
+    pub stderr_handle: Arc<RwLock<Option<u64>>>,
+    /// Exit code (if process has exited)
+    pub exit_code: Arc<RwLock<Option<i32>>>,
 }
 
 /// Store data for WASI Preview 2 operations
@@ -284,6 +292,10 @@ impl WasiPreview2Context {
             environment: Arc::new(RwLock::new(HashMap::new())),
             arguments: Arc::new(RwLock::new(Vec::new())),
             initial_cwd: Arc::new(RwLock::new(None)),
+            stdin_handle: Arc::new(RwLock::new(None)),
+            stdout_handle: Arc::new(RwLock::new(None)),
+            stderr_handle: Arc::new(RwLock::new(None)),
+            exit_code: Arc::new(RwLock::new(None)),
         })
     }
 
