@@ -125,19 +125,18 @@ The wasmtime4j project has **excellent coverage** of core WASI Preview 2 APIs wi
   - Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/sockets/PanamaWasiUdpSocket.java`
 
 ### 2. wasi:filesystem/types
-- **Status**: Mostly implemented with 1 MVP stub
+- **Status**: Fully implemented
 - **Implemented Methods**: 20+ filesystem operations including:
   - Stream operations: `readViaStream()`, `writeViaStream()`, `appendViaStream()`
   - File operations: `advise()`, `syncData()`, `getFlags()`, `getType()`, `setSize()`, `setTimes()`, `read()`, `write()`, `seek()`, `tell()`, `sync()`
-  - Directory operations: `openAt()`, `unlinkFileAt()`, `isSameObject()`, `metadataHash()`, `metadataHashAt()`
-- **Missing Method** (1):
-  - ❌ `readDirectory()` - Returns empty list (MVP stub)
-  - **Root Cause**: Native Rust layer has MVP stub implementation
-  - Location: `wasmtime4j-native/src/wasi_filesystem_helpers.rs:263`
-  - Helper function `read_directory()` returns empty Vec
-  - Java layer correctly calls native binding but gets no results
-- **Impact**: Cannot list directory contents, but all other filesystem operations work
-- **Implementations**: JNI ⚠️ | Panama ⚠️
+  - Directory operations: `openAt()`, `unlinkFileAt()`, `isSameObject()`, `metadataHash()`, `metadataHashAt()`, `readDirectory()`
+- **Recent Updates**:
+  - ✓ `readDirectory()` - **Implemented** (commit 5a2c97bf)
+  - Native Rust helper implemented using `std::fs::read_dir()`
+  - Returns file names with entry types (0=unknown, 1=file, 2=directory)
+  - Complete implementation across all layers: Rust → JNI/Panama → Java
+- **Impact**: Full filesystem API coverage
+- **Implementations**: JNI ✓ | Panama ✓
 
 ---
 
@@ -242,7 +241,7 @@ Several WasiLinker configuration methods throw `UnsupportedOperationException`:
 | wasi:io/streams | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | wasi:io/poll | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | wasi:cli/* | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| wasi:filesystem | ✓ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ✓ |
+| wasi:filesystem | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | wasi:http | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 **Legend**:
@@ -258,14 +257,10 @@ Several WasiLinker configuration methods throw `UnsupportedOperationException`:
 1. **UDP Datagram Operations**: Implement native Rust helper for `udp_socket_receive()` and `udp_socket_send()`
    - See `UDP_IMPLEMENTATION_ROADMAP.md` for detailed plan
    - Blocked by MVP stub in `wasmtime4j-native/src/wasi_sockets_helpers.rs:385-401`
-2. **Filesystem readDirectory()**: Implement native Rust helper for `read_directory()`
-   - Blocked by MVP stub in `wasmtime4j-native/src/wasi_filesystem_helpers.rs:263`
-   - Native bindings and Java layer already correctly structured
-   - Only needs actual directory reading implementation in Rust helper
 
 ### Short-term Goals
-3. **WasiLinker Configuration**: Implement missing configuration methods
-4. **Integration Tests**: Add comprehensive tests for all implemented interfaces
+2. **WasiLinker Configuration**: Implement missing configuration methods
+3. **Integration Tests**: Add comprehensive tests for all implemented interfaces
 
 ### Long-term Goals
 5. **HTTP Client**: Implement `wasi:http` for web service communication
@@ -279,17 +274,16 @@ Several WasiLinker configuration methods throw `UnsupportedOperationException`:
 The wasmtime4j project has **excellent WASI Preview 2 coverage** for production use:
 
 **Strengths**:
-- 7 core interfaces fully implemented with both JNI and Panama
+- 8 core interfaces fully implemented with both JNI and Panama (including filesystem)
 - Consistent architecture across all implementations
 - Comprehensive API documentation
 - Good test coverage
 
-**Minor Gaps** (both blocked by native Rust layer):
-- UDP datagram operations: `receive()` and `send()` (2/14 methods)
-- Filesystem directory listing: `readDirectory()` (1/20+ methods)
+**Minor Gaps**:
+- UDP datagram operations: `receive()` and `send()` (2/14 methods) - blocked by native Rust MVP stubs
 - Some WasiLinker configuration methods
 
-**Root Cause**: Both gaps are due to MVP stub implementations in native Rust helper functions. The Java layer and native bindings are correctly structured and ready for actual implementations.
+**Root Cause**: UDP gaps are due to MVP stub implementations in native Rust helper functions. The Java layer and native bindings are correctly structured and ready for actual implementations.
 
 **Not Critical**:
 - Advanced resource management features (invoke, createHandle, transferOwnership)
