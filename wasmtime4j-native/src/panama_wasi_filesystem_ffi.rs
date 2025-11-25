@@ -8,6 +8,10 @@
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::ptr;
 use std::slice;
+use std::ffi::CStr;
+
+use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi_filesystem_helpers;
 
 /// Read via stream from a descriptor at the specified offset
 ///
@@ -30,11 +34,20 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_via_stream(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_via_stream
-    unsafe {
-        *out_stream_handle = ptr::null_mut();
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::read_via_stream(context, descriptor_id, offset as u64) {
+        Ok(stream_id) => {
+            unsafe {
+                *out_stream_handle = stream_id as *mut c_void;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Write via stream to a descriptor at the specified offset
@@ -58,11 +71,20 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_write_via_stream(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor write_via_stream
-    unsafe {
-        *out_stream_handle = ptr::null_mut();
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::write_via_stream(context, descriptor_id, offset as u64) {
+        Ok(stream_id) => {
+            unsafe {
+                *out_stream_handle = stream_id as *mut c_void;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Append via stream to a descriptor
@@ -84,11 +106,20 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_append_via_stream(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor append_via_stream
-    unsafe {
-        *out_stream_handle = ptr::null_mut();
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::append_via_stream(context, descriptor_id) {
+        Ok(stream_id) => {
+            unsafe {
+                *out_stream_handle = stream_id as *mut c_void;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Get the type of a descriptor
@@ -110,11 +141,20 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_get_type(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor get_type
-    unsafe {
-        *out_type = 0; // UNKNOWN
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::get_type(context, descriptor_id) {
+        Ok(type_code) => {
+            unsafe {
+                *out_type = type_code as c_int;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Get the flags of a descriptor
@@ -136,11 +176,20 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_get_flags(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor get_flags
-    unsafe {
-        *out_flags = 0;
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::get_flags(context, descriptor_id) {
+        Ok(flags) => {
+            unsafe {
+                *out_flags = flags as c_int;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Set the size of a file
@@ -162,8 +211,15 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_set_size(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor set_size
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::set_size(context, descriptor_id, size as u64) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Synchronize file data to storage
@@ -183,8 +239,15 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_sync_data(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor sync_data
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::sync_data(context, descriptor_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Synchronize file data and metadata to storage
@@ -204,8 +267,15 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_sync(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor sync
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::sync(context, descriptor_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Open a filesystem object at a path
@@ -237,11 +307,30 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_open_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor open_at
-    unsafe {
-        *out_descriptor_handle = ptr::null_mut();
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C string to Rust string
+    let path_str = unsafe {
+        CStr::from_ptr(path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Combine flags
+    let combined_flags = (path_flags as u32) | (open_flags as u32) | (descriptor_flags as u32);
+
+    // Call helper function
+    match wasi_filesystem_helpers::open_at(context, descriptor_id, path_str, combined_flags, 0) {
+        Ok(new_descriptor_id) => {
+            unsafe {
+                *out_descriptor_handle = new_descriptor_id as *mut c_void;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Create a directory at a path
@@ -265,8 +354,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_create_directory_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor create_directory_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C string to Rust string
+    let path_str = unsafe {
+        CStr::from_ptr(path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function
+    match wasi_filesystem_helpers::create_directory_at(context, descriptor_id, path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Read directory entries
@@ -290,12 +393,21 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_directory(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_directory
-    unsafe {
-        *out_entries = ptr::null_mut();
-        *out_entries_len = 0;
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function (MVP returns empty Vec)
+    match wasi_filesystem_helpers::read_directory(context, descriptor_id) {
+        Ok(_entries) => {
+            unsafe {
+                *out_entries = ptr::null_mut();
+                *out_entries_len = 0;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Read the target of a symbolic link
@@ -323,12 +435,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_link_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_link_at
-    unsafe {
-        *out_target = ptr::null_mut();
-        *out_target_len = 0;
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C string to Rust string
+    let path_str = unsafe {
+        CStr::from_ptr(path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function (MVP returns empty string)
+    match wasi_filesystem_helpers::read_link_at(context, descriptor_id, path_str) {
+        Ok(_target) => {
+            unsafe {
+                *out_target = ptr::null_mut();
+                *out_target_len = 0;
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Remove a file at a path
@@ -352,8 +480,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_unlink_file_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor unlink_file_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C string to Rust string
+    let path_str = unsafe {
+        CStr::from_ptr(path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function
+    match wasi_filesystem_helpers::unlink_file_at(context, descriptor_id, path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Remove a directory at a path
@@ -377,8 +519,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_remove_directory_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor remove_directory_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C string to Rust string
+    let path_str = unsafe {
+        CStr::from_ptr(path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function
+    match wasi_filesystem_helpers::remove_directory_at(context, descriptor_id, path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Rename a filesystem object
@@ -409,8 +565,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_rename_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor rename_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let old_descriptor_id = old_descriptor_handle as u64;
+    let new_descriptor_id = new_descriptor_handle as u64;
+
+    // Convert C strings to Rust strings
+    let old_path_str = unsafe {
+        CStr::from_ptr(old_path)
+            .to_str()
+            .unwrap_or("")
+    };
+    let new_path_str = unsafe {
+        CStr::from_ptr(new_path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function
+    match wasi_filesystem_helpers::rename_at(context, old_descriptor_id, old_path_str, new_descriptor_id, new_path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Create a symbolic link
@@ -438,8 +614,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_symlink_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor symlink_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Convert C strings to Rust strings
+    let old_path_str = unsafe {
+        CStr::from_ptr(old_path)
+            .to_str()
+            .unwrap_or("")
+    };
+    let new_path_str = unsafe {
+        CStr::from_ptr(new_path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Call helper function
+    match wasi_filesystem_helpers::symlink_at(context, descriptor_id, old_path_str, new_path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Create a hard link
@@ -472,8 +667,31 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_link_at(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor link_at
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let old_descriptor_id = old_descriptor_handle as u64;
+    let new_descriptor_id = new_descriptor_handle as u64;
+
+    // Convert C strings to Rust strings
+    let old_path_str = unsafe {
+        CStr::from_ptr(old_path)
+            .to_str()
+            .unwrap_or("")
+    };
+    let new_path_str = unsafe {
+        CStr::from_ptr(new_path)
+            .to_str()
+            .unwrap_or("")
+    };
+
+    // Note: old_path_flags parameter is ignored in MVP implementation
+    let _ = old_path_flags;
+
+    // Call helper function
+    match wasi_filesystem_helpers::link_at(context, old_descriptor_id, old_path_str, new_descriptor_id, new_path_str) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Check if two descriptors refer to the same filesystem object
@@ -521,6 +739,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_close(
         return -1;
     }
 
-    // TODO: Implement actual WASI Preview 2 descriptor close
-    0
+    // Get context and convert handles
+    let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
+    let descriptor_id = descriptor_handle as u64;
+
+    // Call helper function
+    match wasi_filesystem_helpers::close_descriptor(context, descriptor_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }

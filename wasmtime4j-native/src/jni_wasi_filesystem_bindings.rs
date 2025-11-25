@@ -9,6 +9,7 @@ use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi_filesystem_helpers;
 
 /// Read from descriptor via stream
 ///
@@ -37,7 +38,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -46,12 +47,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_via_stream
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "read_via_stream not yet implemented",
-    );
-    0
+    // Call helper function
+    match wasi_filesystem_helpers::read_via_stream(context, descriptor_handle as u64, offset as u64) {
+        Ok(stream_id) => stream_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Write to descriptor via stream
@@ -81,7 +84,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -90,12 +93,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor write_via_stream
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "write_via_stream not yet implemented",
-    );
-    0
+    // Call helper function
+    match wasi_filesystem_helpers::write_via_stream(context, descriptor_handle as u64, offset as u64) {
+        Ok(stream_id) => stream_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Append to descriptor via stream
@@ -116,7 +121,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -125,12 +130,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor append_via_stream
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "append_via_stream not yet implemented",
-    );
-    0
+    // Call helper function
+    match wasi_filesystem_helpers::append_via_stream(context, descriptor_handle as u64) {
+        Ok(stream_id) => stream_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Get descriptor type
@@ -151,7 +158,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -160,12 +167,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor get_type
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_type not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::get_type(context, descriptor_handle as u64) {
+        Ok(type_code) => type_code as jint,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Get descriptor flags
@@ -186,7 +195,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -195,12 +204,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor get_flags
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "get_flags not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::get_flags(context, descriptor_handle as u64) {
+        Ok(flags) => flags as jint,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Set descriptor size
@@ -230,7 +241,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -239,12 +250,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor set_size
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "set_size not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::set_size(context, descriptor_handle as u64, size as u64) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Sync descriptor data
@@ -265,7 +278,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -274,12 +287,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor sync_data
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "sync_data not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::sync_data(context, descriptor_handle as u64) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Sync descriptor
@@ -300,7 +315,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -309,12 +324,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor sync
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "sync not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::sync(context, descriptor_handle as u64) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Open file at path
@@ -339,7 +356,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -349,7 +366,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get path string
-    let _path_str: String = match env.get_string(&path) {
+    let path_str: String = match env.get_string(&path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -360,12 +377,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor open_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "open_at not yet implemented",
-    );
-    0
+    // Combine flags for helper function
+    let combined_flags = (path_flags as u32) | (open_flags as u32) | (descriptor_flags as u32);
+
+    // Call helper function
+    match wasi_filesystem_helpers::open_at(context, descriptor_handle as u64, &path_str, combined_flags, 0) {
+        Ok(new_descriptor_id) => new_descriptor_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Create directory at path
@@ -387,7 +409,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -397,7 +419,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get path string
-    let _path_str: String = match env.get_string(&path) {
+    let path_str: String = match env.get_string(&path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -408,12 +430,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor create_directory_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "create_directory_at not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::create_directory_at(context, descriptor_handle as u64, &path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Read directory entries
@@ -434,7 +458,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -443,12 +467,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_directory
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "read_directory not yet implemented",
-    );
-    0
+    // Call helper function
+    // Note: read_directory returns Vec<(String, u32)>, but for MVP returns empty vec
+    // The JNI binding returns 0 (no stream) for MVP implementation
+    match wasi_filesystem_helpers::read_directory(context, descriptor_handle as u64) {
+        Ok(_entries) => 0, // MVP: return 0 (no stream)
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Read symbolic link at path
@@ -470,7 +498,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -480,7 +508,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get path string
-    let _path_str: String = match env.get_string(&path) {
+    let path_str: String = match env.get_string(&path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -491,12 +519,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor read_link_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "read_link_at not yet implemented",
-    );
-    JObject::null().into_raw()
+    // Call helper function
+    match wasi_filesystem_helpers::read_link_at(context, descriptor_handle as u64, &path_str) {
+        Ok(target) => match env.new_string(&target) {
+            Ok(jstr) => jstr.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to create string: {}", e));
+                JObject::null().into_raw()
+            }
+        },
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            JObject::null().into_raw()
+        }
+    }
 }
 
 /// Unlink file at path
@@ -518,7 +554,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -528,7 +564,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get path string
-    let _path_str: String = match env.get_string(&path) {
+    let path_str: String = match env.get_string(&path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -539,12 +575,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor unlink_file_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "unlink_file_at not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::unlink_file_at(context, descriptor_handle as u64, &path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Remove directory at path
@@ -566,7 +604,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -576,7 +614,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get path string
-    let _path_str: String = match env.get_string(&path) {
+    let path_str: String = match env.get_string(&path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -587,12 +625,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor remove_directory_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "remove_directory_at not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::remove_directory_at(context, descriptor_handle as u64, &path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Rename file or directory
@@ -616,7 +656,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -626,7 +666,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get old path string
-    let _old_path_str: String = match env.get_string(&old_path) {
+    let old_path_str: String = match env.get_string(&old_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -638,7 +678,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get new path string
-    let _new_path_str: String = match env.get_string(&new_path) {
+    let new_path_str: String = match env.get_string(&new_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -649,12 +689,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor rename_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "rename_at not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::rename_at(context, descriptor_handle as u64, &old_path_str, new_descriptor_handle as u64, &new_path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Create symbolic link
@@ -677,7 +719,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -687,7 +729,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get old path string
-    let _old_path_str: String = match env.get_string(&old_path) {
+    let old_path_str: String = match env.get_string(&old_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -699,7 +741,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get new path string
-    let _new_path_str: String = match env.get_string(&new_path) {
+    let new_path_str: String = match env.get_string(&new_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -710,12 +752,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor symlink_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "symlink_at not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::symlink_at(context, descriptor_handle as u64, &old_path_str, &new_path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Create hard link
@@ -740,7 +784,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -750,7 +794,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get old path string
-    let _old_path_str: String = match env.get_string(&old_path) {
+    let old_path_str: String = match env.get_string(&old_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -762,7 +806,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Get new path string
-    let _new_path_str: String = match env.get_string(&new_path) {
+    let new_path_str: String = match env.get_string(&new_path) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -773,12 +817,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         }
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor link_at
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "link_at not yet implemented",
-    );
-    -1
+    // Call helper function (note: flags parameter is ignored in MVP)
+    let _ = old_path_flags; // Acknowledge flags parameter but don't use it in MVP
+    match wasi_filesystem_helpers::link_at(context, descriptor_handle as u64, &old_path_str, new_descriptor_handle as u64, &new_path_str) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }
 
 /// Check if two descriptors refer to the same object
@@ -800,7 +847,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -809,12 +856,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor is_same_object
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "is_same_object not yet implemented",
-    );
-    0
+    // Call helper function
+    match wasi_filesystem_helpers::is_same_object(context, descriptor_handle as u64, other_descriptor_handle as u64) {
+        Ok(same) => if same { 1 } else { 0 },
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            0
+        }
+    }
 }
 
 /// Close descriptor
@@ -835,7 +884,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     }
 
     // Get context from handle
-    let _context = unsafe {
+    let context = unsafe {
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
@@ -844,10 +893,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         &*ptr
     };
 
-    // TODO: Implement actual WASI Preview 2 descriptor close
-    let _ = env.throw_new(
-        "java/lang/UnsupportedOperationException",
-        "close not yet implemented",
-    );
-    -1
+    // Call helper function
+    match wasi_filesystem_helpers::close_descriptor(context, descriptor_handle as u64) {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
+            -1
+        }
+    }
 }

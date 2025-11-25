@@ -58,6 +58,8 @@ pub struct WasiPreview2Context {
     pub exit_code: Arc<RwLock<Option<i32>>>,
     /// Global stream registry (for JNI/Panama access without instance_id)
     pub streams: Arc<RwLock<HashMap<u32, WasiStream>>>,
+    /// Global filesystem descriptor registry (for JNI/Panama access without instance_id)
+    pub descriptors: Arc<RwLock<HashMap<u32, WasiDescriptor>>>,
 }
 
 /// Store data for WASI Preview 2 operations
@@ -143,6 +145,66 @@ pub enum WasiStreamStatus {
     Closed,
     /// Stream has an error
     Error(String),
+}
+
+/// WASI filesystem descriptor
+pub struct WasiDescriptor {
+    /// Descriptor ID
+    pub id: u32,
+    /// Descriptor type
+    pub descriptor_type: DescriptorType,
+    /// Path (if known)
+    pub path: Option<String>,
+    /// Flags for this descriptor
+    pub flags: u32,
+    /// File metadata
+    pub metadata: Option<DescriptorMetadata>,
+    /// Descriptor status
+    pub status: DescriptorStatus,
+}
+
+/// WASI descriptor types
+#[derive(Debug, Clone, PartialEq)]
+pub enum DescriptorType {
+    /// Unknown type
+    Unknown,
+    /// Regular file
+    File,
+    /// Directory
+    Directory,
+    /// Symbolic link
+    SymbolicLink,
+    /// Block device
+    BlockDevice,
+    /// Character device
+    CharacterDevice,
+    /// FIFO/pipe
+    Fifo,
+    /// Socket
+    Socket,
+}
+
+/// WASI descriptor status
+#[derive(Debug, Clone, PartialEq)]
+pub enum DescriptorStatus {
+    /// Descriptor is open and ready
+    Open,
+    /// Descriptor is closed
+    Closed,
+    /// Descriptor has an error
+    Error(String),
+}
+
+/// Filesystem metadata for descriptors
+pub struct DescriptorMetadata {
+    /// File size in bytes
+    pub size: u64,
+    /// Last modification time (nanoseconds since epoch)
+    pub modified: u64,
+    /// Last access time (nanoseconds since epoch)
+    pub accessed: u64,
+    /// Creation time (nanoseconds since epoch)
+    pub created: u64,
 }
 
 /// WASI future for async operations
@@ -299,6 +361,7 @@ impl WasiPreview2Context {
             stderr_handle: Arc::new(RwLock::new(None)),
             exit_code: Arc::new(RwLock::new(None)),
             streams: Arc::new(RwLock::new(HashMap::new())),
+            descriptors: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 

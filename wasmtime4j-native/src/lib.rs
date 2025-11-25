@@ -180,6 +180,9 @@ pub mod wasi_preview2;
 // Shared helper functions for WASI I/O operations (used by both JNI and Panama FFI)
 pub mod wasi_io_helpers;
 
+// Shared helper functions for WASI filesystem operations (used by both JNI and Panama FFI)
+pub mod wasi_filesystem_helpers;
+
 // Real networking operations
 pub mod networking;
 
