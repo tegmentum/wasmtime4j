@@ -277,8 +277,50 @@ pub fn read_directory(
         });
     }
 
-    // For MVP, return empty list
-    Ok(Vec::new())
+    // Get directory path
+    let dir_path = descriptor.path.as_ref().ok_or_else(|| {
+        WasmtimeError::Wasi {
+            message: "Directory path not available".to_string(),
+        }
+    })?;
+
+    // Read directory entries using std::fs
+    let mut entries = Vec::new();
+    match std::fs::read_dir(dir_path) {
+        Ok(read_dir) => {
+            for entry_result in read_dir {
+                match entry_result {
+                    Ok(entry) => {
+                        if let Ok(file_name) = entry.file_name().into_string() {
+                            // Determine entry type: 0 = unknown, 1 = file, 2 = directory
+                            let entry_type = if let Ok(metadata) = entry.metadata() {
+                                if metadata.is_dir() {
+                                    2
+                                } else if metadata.is_file() {
+                                    1
+                                } else {
+                                    0
+                                }
+                            } else {
+                                0
+                            };
+                            entries.push((file_name, entry_type));
+                        }
+                    }
+                    Err(e) => {
+                        // Log error but continue reading other entries
+                        eprintln!("Error reading directory entry: {}", e);
+                    }
+                }
+            }
+            Ok(entries)
+        }
+        Err(e) => {
+            Err(WasmtimeError::Wasi {
+                message: format!("Failed to read directory: {}", e),
+            })
+        }
+    }
 }
 
 /// Read symbolic link target

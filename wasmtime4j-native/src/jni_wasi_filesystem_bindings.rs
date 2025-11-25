@@ -4,7 +4,7 @@
 //! descriptor-based file operations, directory management, and metadata access.
 
 use jni::objects::{JByteArray, JClass, JObject, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jlong, jstring};
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -450,11 +450,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     _class: JClass,
     context_handle: jlong,
     descriptor_handle: jlong,
-) -> jlong {
+) -> jobjectArray {
     // Validate parameters
     if context_handle == 0 || descriptor_handle == 0 {
         let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
+        return JObject::null().into_raw();
     }
 
     // Get context from handle
@@ -462,19 +462,52 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         let ptr = context_handle as *const WasiPreview2Context;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
+            return JObject::null().into_raw();
         }
         &*ptr
     };
 
-    // Call helper function
-    // Note: read_directory returns Vec<(String, u32)>, but for MVP returns empty vec
-    // The JNI binding returns 0 (no stream) for MVP implementation
+    // Call helper function to get directory entries
     match wasi_filesystem_helpers::read_directory(context, descriptor_handle as u64) {
-        Ok(_entries) => 0, // MVP: return 0 (no stream)
+        Ok(entries) => {
+            // Create Java String array
+            let string_class = match env.find_class("java/lang/String") {
+                Ok(cls) => cls,
+                Err(e) => {
+                    let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to find String class: {:?}", e));
+                    return JObject::null().into_raw();
+                }
+            };
+
+            let result = match env.new_object_array(entries.len() as i32, &string_class, JObject::null()) {
+                Ok(arr) => arr,
+                Err(e) => {
+                    let _ = env.throw_new("java/lang/OutOfMemoryError", &format!("Failed to create array: {:?}", e));
+                    return JObject::null().into_raw();
+                }
+            };
+
+            // Populate array with file names (ignoring entry types for now)
+            for (i, (name, _entry_type)) in entries.iter().enumerate() {
+                let jstring = match env.new_string(name) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to create string: {:?}", e));
+                        return JObject::null().into_raw();
+                    }
+                };
+
+                if let Err(e) = env.set_object_array_element(&result, i as i32, jstring) {
+                    let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to set array element: {:?}", e));
+                    return JObject::null().into_raw();
+                }
+            }
+
+            result.into_raw()
+        }
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
-            0
+            JObject::null().into_raw()
         }
     }
 }

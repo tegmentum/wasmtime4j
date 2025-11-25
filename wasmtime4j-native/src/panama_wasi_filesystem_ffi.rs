@@ -397,12 +397,70 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_directory(
     let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
     let descriptor_id = descriptor_handle as u64;
 
-    // Call helper function (MVP returns empty Vec)
+    // Call helper function to get directory entries
     match wasi_filesystem_helpers::read_directory(context, descriptor_id) {
-        Ok(_entries) => {
+        Ok(entries) => {
+            // Allocate memory for the entries array
+            // Each entry consists of: [name_length (4 bytes), name (variable), entry_type (4 bytes)]
+            let mut total_size = 0;
+            for (name, _) in &entries {
+                total_size += 4 + name.len() + 4; // length + name + type
+            }
+
+            if total_size == 0 {
+                unsafe {
+                    *out_entries = ptr::null_mut();
+                    *out_entries_len = 0;
+                }
+                return 0;
+            }
+
+            // Allocate buffer
+            let layout = match std::alloc::Layout::from_size_align(total_size, 1) {
+                Ok(l) => l,
+                Err(_) => return -1,
+            };
+            let buffer = unsafe { std::alloc::alloc(layout) };
+            if buffer.is_null() {
+                return -1;
+            }
+
+            // Write entries to buffer
+            let mut offset = 0;
+            for (name, entry_type) in entries {
+                let name_bytes = name.as_bytes();
+                let name_len = name_bytes.len() as i32;
+
+                // Write name length
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        &name_len as *const i32 as *const u8,
+                        buffer.add(offset),
+                        4,
+                    );
+                }
+                offset += 4;
+
+                // Write name bytes
+                unsafe {
+                    ptr::copy_nonoverlapping(name_bytes.as_ptr(), buffer.add(offset), name_bytes.len());
+                }
+                offset += name_bytes.len();
+
+                // Write entry type
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        &entry_type as *const u32 as *const u8,
+                        buffer.add(offset),
+                        4,
+                    );
+                }
+                offset += 4;
+            }
+
             unsafe {
-                *out_entries = ptr::null_mut();
-                *out_entries_len = 0;
+                *out_entries = buffer as *mut c_char;
+                *out_entries_len = total_size as c_int;
             }
             0
         }

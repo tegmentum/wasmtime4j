@@ -657,16 +657,29 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
         return new ArrayList<>();
       }
 
-      // Parse null-terminated entry names from the buffer
+      // Parse directory entries from the buffer
+      // Format: [name_length (4 bytes), name (variable), entry_type (4 bytes)]
       final List<String> entries = new ArrayList<>();
       int offset = 0;
       while (offset < entriesLen) {
-        final String entry = entriesPtr.getString(offset, StandardCharsets.UTF_8);
-        if (entry.isEmpty()) {
-          break;
+        // Read name length (4 bytes, little-endian int32)
+        final int nameLength = entriesPtr.get(ValueLayout.JAVA_INT, offset);
+        offset += 4;
+
+        // Read name bytes
+        final byte[] nameBytes = new byte[nameLength];
+        for (int i = 0; i < nameLength; i++) {
+          nameBytes[i] = entriesPtr.get(ValueLayout.JAVA_BYTE, offset + i);
         }
+        offset += nameLength;
+
+        // Read entry type (4 bytes) - currently ignored
+        // final int entryType = entriesPtr.get(ValueLayout.JAVA_INT, offset);
+        offset += 4;
+
+        // Convert bytes to string
+        final String entry = new String(nameBytes, StandardCharsets.UTF_8);
         entries.add(entry);
-        offset += entry.getBytes(StandardCharsets.UTF_8).length + 1; // +1 for null terminator
       }
 
       return entries;

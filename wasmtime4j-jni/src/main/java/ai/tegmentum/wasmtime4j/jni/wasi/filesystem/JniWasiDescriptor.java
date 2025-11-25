@@ -222,15 +222,12 @@ public final class JniWasiDescriptor extends JniResource implements WasiDescript
   public List<String> readDirectory() throws WasmException {
     ensureNotClosed();
 
-    // TODO: This is a stub implementation returning empty list
-    // The actual implementation would need to call nativeReadDirectory
-    // and parse the returned directory stream handle
-    final long streamHandle = nativeReadDirectory(contextHandle, nativeHandle);
-    if (streamHandle == 0) {
+    final String[] entries = nativeReadDirectory(contextHandle, nativeHandle);
+    if (entries == null) {
       throw new WasmException("Failed to read directory");
     }
-    // For now, return empty list until directory stream iterator is implemented
-    return new ArrayList<>();
+
+    return java.util.Arrays.asList(entries);
   }
 
   @Override
@@ -553,7 +550,7 @@ public final class JniWasiDescriptor extends JniResource implements WasiDescript
   private static native int nativeCreateDirectoryAt(
       long contextHandle, long descriptorHandle, String path);
 
-  private static native long nativeReadDirectory(long contextHandle, long descriptorHandle);
+  private static native String[] nativeReadDirectory(long contextHandle, long descriptorHandle);
 
   private static native String nativeReadLinkAt(
       long contextHandle, long descriptorHandle, String path);
