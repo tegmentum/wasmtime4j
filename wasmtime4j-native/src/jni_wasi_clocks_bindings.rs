@@ -301,6 +301,99 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
     array.into_raw()
 }
 
+/// Get timezone display information for a specific datetime
+///
+/// Returns a TimezoneDisplay object containing UTC offset, name, and DST status.
+///
+/// # Safety
+/// This function is called from Java via JNI and must handle all edge cases safely.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimezone_nativeDisplay<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    context_handle: jlong,
+    seconds: jlong,
+    nanoseconds: jint,
+) -> JObject<'local> {
+    // Validate context handle
+    if context_handle == 0 {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        return JObject::null();
+    }
+
+    // Get context from handle
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
+            return JObject::null();
+        }
+        &*ptr
+    };
+
+    // Create DateTime
+    let datetime = wasi_clocks_helpers::DateTime {
+        seconds: seconds as u64,
+        nanoseconds: nanoseconds as u32,
+    };
+
+    // Call helper function
+    let display = match wasi_clocks_helpers::timezone_display(context, datetime) {
+        Ok(d) => d,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to get timezone display: {}", e),
+            );
+            return JObject::null();
+        }
+    };
+
+    // Create TimezoneDisplay Java object
+    let class = match env.find_class("ai/tegmentum/wasmtime4j/wasi/clocks/TimezoneDisplay") {
+        Ok(c) => c,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to find TimezoneDisplay class: {}", e),
+            );
+            return JObject::null();
+        }
+    };
+
+    let name_jstring = match env.new_string(&display.name) {
+        Ok(s) => s,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create timezone name string: {}", e),
+            );
+            return JObject::null();
+        }
+    };
+
+    let result = match env.new_object(
+        &class,
+        "(ILjava/lang/String;Z)V",
+        &[
+            jni::objects::JValue::from(display.utc_offset_seconds),
+            jni::objects::JValue::from(&name_jstring),
+            jni::objects::JValue::from(if display.in_daylight_saving_time { 1u8 } else { 0u8 }),
+        ],
+    ) {
+        Ok(obj) => obj,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create TimezoneDisplay object: {}", e),
+            );
+            return JObject::null();
+        }
+    };
+
+    result
+}
+
 /// Get timezone UTC offset in seconds for a specific datetime
 ///
 /// # Safety

@@ -5,7 +5,8 @@
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
 
-use std::os::raw::{c_int, c_longlong, c_void};
+use std::ffi::CString;
+use std::os::raw::{c_char, c_int, c_longlong, c_void};
 
 use crate::wasi_clocks_helpers;
 use crate::wasi_preview2::WasiPreview2Context;
@@ -293,5 +294,103 @@ pub extern "C" fn wasmtime4j_panama_wasi_timezone_utc_offset(
             0
         }
         Err(_) => -1,
+    }
+}
+
+/// Get timezone display information for a specific datetime
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `seconds`: Seconds since Unix epoch
+/// - `nanoseconds`: Nanoseconds component
+/// - `out_utc_offset`: Pointer to write UTC offset in seconds
+/// - `out_name`: Pointer to write timezone name buffer pointer (must be freed by caller)
+/// - `out_name_len`: Pointer to write timezone name length
+/// - `out_in_dst`: Pointer to write DST status (1 = true, 0 = false)
+///
+/// # Returns
+/// 0 on success, -1 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_timezone_display(
+    context_handle: *mut c_void,
+    seconds: c_longlong,
+    nanoseconds: c_int,
+    out_utc_offset: *mut c_int,
+    out_name: *mut *mut c_char,
+    out_name_len: *mut c_longlong,
+    out_in_dst: *mut c_char,
+) -> c_int {
+    if context_handle.is_null()
+        || out_utc_offset.is_null()
+        || out_name.is_null()
+        || out_name_len.is_null()
+        || out_in_dst.is_null()
+    {
+        return -1;
+    }
+
+    // Get context from handle
+    let context = unsafe {
+        let ptr = context_handle as *const WasiPreview2Context;
+        if ptr.is_null() {
+            return -1;
+        }
+        &*ptr
+    };
+
+    // Create DateTime
+    let datetime = wasi_clocks_helpers::DateTime {
+        seconds: seconds as u64,
+        nanoseconds: nanoseconds as u32,
+    };
+
+    // Call helper function
+    match wasi_clocks_helpers::timezone_display(context, datetime) {
+        Ok(display) => {
+            // Convert name to C string
+            let name_cstring = match CString::new(display.name) {
+                Ok(s) => s,
+                Err(_) => return -1,
+            };
+            let name_bytes = name_cstring.into_bytes_with_nul();
+            let name_len = name_bytes.len() as c_longlong;
+
+            // Allocate buffer for name
+            let name_ptr = unsafe {
+                let ptr = libc::malloc(name_len as usize) as *mut c_char;
+                if ptr.is_null() {
+                    return -1;
+                }
+                std::ptr::copy_nonoverlapping(
+                    name_bytes.as_ptr() as *const c_char,
+                    ptr,
+                    name_len as usize,
+                );
+                ptr
+            };
+
+            // Set output parameters
+            unsafe {
+                *out_utc_offset = display.utc_offset_seconds;
+                *out_name = name_ptr;
+                *out_name_len = name_len;
+                *out_in_dst = if display.in_daylight_saving_time { 1 } else { 0 };
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Free a timezone name buffer allocated by wasmtime4j_panama_wasi_timezone_display
+///
+/// # Parameters
+/// - `name_ptr`: Pointer to the timezone name buffer to free
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_timezone_free_name(name_ptr: *mut c_char) {
+    if !name_ptr.is_null() {
+        unsafe {
+            libc::free(name_ptr as *mut c_void);
+        }
     }
 }
