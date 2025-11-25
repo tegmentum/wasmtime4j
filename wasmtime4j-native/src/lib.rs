@@ -102,6 +102,12 @@ pub mod jni_wasi_filesystem_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_cli_bindings;
 #[cfg(feature = "jni-bindings")]
+pub mod jni_wasi_clocks_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wasi_random_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wasi_sockets_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_snapshot_bindings;
@@ -125,6 +131,12 @@ pub mod panama_wasi_io_ffi;
 pub mod panama_wasi_filesystem_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_cli_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_wasi_clocks_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_wasi_random_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_wasi_sockets_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
 #[cfg(feature = "panama-ffi")]
@@ -182,6 +194,15 @@ pub mod wasi_io_helpers;
 
 // Shared helper functions for WASI filesystem operations (used by both JNI and Panama FFI)
 pub mod wasi_filesystem_helpers;
+
+// Shared helper functions for WASI clocks operations (used by both JNI and Panama FFI)
+pub mod wasi_clocks_helpers;
+
+// Shared helper functions for WASI random operations (used by both JNI and Panama FFI)
+pub mod wasi_random_helpers;
+
+// Shared helper functions for WASI sockets operations (used by both JNI and Panama FFI)
+pub mod wasi_sockets_helpers;
 
 // Real networking operations
 pub mod networking;
