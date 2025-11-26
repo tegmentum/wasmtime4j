@@ -1,8 +1,20 @@
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi_preview2::WasiPreview2Context;
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use lazy_static::lazy_static;
+
+// Global socket state management
+// TODO: Replace with actual Wasmtime WASI socket integration
+// For now, using Rust stdlib sockets as MVP implementation (similar to random API)
+lazy_static! {
+    static ref UDP_SOCKETS: Arc<Mutex<HashMap<u64, Arc<Mutex<UdpSocket>>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+    static ref TCP_SOCKETS: Arc<Mutex<HashMap<u64, Arc<Mutex<TcpStream>>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+}
 
 /// IP address variants
 #[derive(Debug, Clone)]
@@ -278,8 +290,31 @@ pub fn tcp_socket_close(
 // UDP Socket Functions
 
 pub fn udp_socket_create(_context: &WasiPreview2Context, is_ipv6: bool) -> WasmtimeResult<u64> {
-    // MVP: Create socket handle
-    Ok(if is_ipv6 { 4 } else { 3 })
+    // MVP: Create UDP socket using Rust stdlib
+    // TODO: Replace with actual Wasmtime WASI socket integration
+
+    // Create an unbound socket (will bind later with start_bind/finish_bind)
+    let bind_addr = if is_ipv6 {
+        ":::0"  // IPv6 any address
+    } else {
+        "0.0.0.0:0"  // IPv4 any address
+    };
+
+    let socket = UdpSocket::bind(bind_addr).map_err(|e| {
+        WasmtimeError::Io {
+            source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create UDP socket: {}", e)),
+        }
+    })?;
+
+    // Generate a unique handle ID
+    static NEXT_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1000);
+    let handle = NEXT_HANDLE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+
+    // Store the socket
+    let mut sockets = UDP_SOCKETS.lock().unwrap();
+    sockets.insert(handle, Arc::new(Mutex::new(socket)));
+
+    Ok(handle)
 }
 
 pub fn udp_socket_start_bind(
@@ -384,26 +419,127 @@ pub fn udp_socket_subscribe(
 
 pub fn udp_socket_receive(
     _context: &WasiPreview2Context,
-    _socket_handle: u64,
-    _max_results: u64,
+    socket_handle: u64,
+    max_results: u64,
 ) -> WasmtimeResult<Vec<(Vec<u8>, IpSocketAddress)>> {
-    // MVP: Return empty datagram list
-    Ok(Vec::new())
+    // MVP: Use Rust stdlib UDP socket from global registry
+    // TODO: Replace with actual Wasmtime WASI socket integration
+
+    // Get the socket from the registry
+    let sockets = UDP_SOCKETS.lock().unwrap();
+    let socket_arc = sockets.get(&socket_handle).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Invalid UDP socket handle: {}", socket_handle),
+        }
+    })?;
+    let socket = socket_arc.lock().unwrap();
+
+    // Set non-blocking mode for receive
+    socket.set_nonblocking(true).map_err(|e| {
+        WasmtimeError::Io {
+            source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to set non-blocking mode: {}", e)),
+        }
+    })?;
+
+    let mut datagrams = Vec::new();
+    let mut buffer = vec![0u8; 65536]; // Maximum UDP datagram size
+
+    // Try to receive up to max_results datagrams
+    for _ in 0..max_results {
+        match socket.recv_from(&mut buffer) {
+            Ok((len, addr)) => {
+                let data = buffer[..len].to_vec();
+                let ip_addr = IpSocketAddress::from_socket_addr(addr);
+                datagrams.push((data, ip_addr));
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                // No more data available - this is normal for non-blocking I/O
+                break;
+            }
+            Err(e) => {
+                return Err(WasmtimeError::Io {
+                    source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to receive datagram: {}", e)),
+                });
+            }
+        }
+    }
+
+    Ok(datagrams)
 }
 
 pub fn udp_socket_send(
     _context: &WasiPreview2Context,
-    _socket_handle: u64,
-    _datagrams: &[(Vec<u8>, Option<IpSocketAddress>)],
+    socket_handle: u64,
+    datagrams: &[(Vec<u8>, Option<IpSocketAddress>)],
 ) -> WasmtimeResult<u64> {
-    // MVP: Return count of datagrams "sent"
-    Ok(_datagrams.len() as u64)
+    // MVP: Use Rust stdlib UDP socket from global registry
+    // TODO: Replace with actual Wasmtime WASI socket integration
+
+    // Get the socket from the registry
+    let sockets = UDP_SOCKETS.lock().unwrap();
+    let socket_arc = sockets.get(&socket_handle).ok_or_else(|| {
+        WasmtimeError::InvalidParameter {
+            message: format!("Invalid UDP socket handle: {}", socket_handle),
+        }
+    })?;
+    let socket = socket_arc.lock().unwrap();
+
+    // Set non-blocking mode for send
+    socket.set_nonblocking(true).map_err(|e| {
+        WasmtimeError::Io {
+            source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to set non-blocking mode: {}", e)),
+        }
+    })?;
+
+    let mut sent_count = 0u64;
+
+    // Send each datagram
+    for (data, addr_opt) in datagrams {
+        // Determine destination address
+        let dest_addr = if let Some(addr) = addr_opt {
+            addr.to_socket_addr()
+        } else {
+            // If no address provided, the socket must have been connected via stream()
+            // For MVP, we'll return an error
+            return Err(WasmtimeError::InvalidState {
+                message: "Cannot send without address on unconnected UDP socket".to_string(),
+            });
+        };
+
+        // Send the datagram
+        match socket.send_to(data, dest_addr) {
+            Ok(_) => {
+                sent_count += 1;
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                // Socket buffer is full, stop sending
+                break;
+            }
+            Err(e) => {
+                // Return the count of successfully sent datagrams before the error
+                // This matches WASI semantics of partial success
+                if sent_count > 0 {
+                    return Ok(sent_count);
+                }
+                return Err(WasmtimeError::Io {
+                    source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to send datagram: {}", e)),
+                });
+            }
+        }
+    }
+
+    Ok(sent_count)
 }
 
 pub fn udp_socket_close(
     _context: &WasiPreview2Context,
-    _socket_handle: u64,
+    socket_handle: u64,
 ) -> WasmtimeResult<()> {
+    // MVP: Remove socket from global registry
+    // TODO: Replace with actual Wasmtime WASI socket integration
+
+    let mut sockets = UDP_SOCKETS.lock().unwrap();
+    sockets.remove(&socket_handle);
     Ok(())
 }
 
