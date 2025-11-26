@@ -510,6 +510,73 @@ pub mod jni_wasi {
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdin(
         _env: JNIEnv, _class: JClass, _context_handle: jlong, _path: JString) -> jint { 0 }
 
+    /// Set stdin from binary byte array data (supports binary data with null bytes)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdinBytes(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+        data: jbyteArray,
+    ) -> jint {
+        jni_utils::jni_try_default(&mut env, -1, || {
+            if context_handle == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "WASI context handle cannot be null".to_string(),
+                });
+            }
+
+            // Handle null or empty array
+            if data.is_null() {
+                let result = unsafe {
+                    wasi::wasmtime4j_wasi_context_set_stdin_bytes(
+                        context_handle as *mut c_void,
+                        std::ptr::null(),
+                        0,
+                    )
+                };
+                return Ok(result);
+            }
+
+            // Get byte array data
+            let data_ref = unsafe { JByteArray::from_raw(data) };
+            let data_len = env.get_array_length(&data_ref).map_err(|e| {
+                crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get byte array length: {}", e),
+                }
+            })? as usize;
+
+            if data_len == 0 {
+                let result = unsafe {
+                    wasi::wasmtime4j_wasi_context_set_stdin_bytes(
+                        context_handle as *mut c_void,
+                        std::ptr::null(),
+                        0,
+                    )
+                };
+                return Ok(result);
+            }
+
+            // Copy byte array to Rust Vec
+            let mut bytes = vec![0i8; data_len];
+            env.get_byte_array_region(&data_ref, 0, &mut bytes).map_err(|e| {
+                crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to copy byte array: {}", e),
+                }
+            })?;
+
+            // Convert i8 to u8 and call native function
+            let bytes_u8: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
+            let result = unsafe {
+                wasi::wasmtime4j_wasi_context_set_stdin_bytes(
+                    context_handle as *mut c_void,
+                    bytes_u8.as_ptr(),
+                    bytes_u8.len(),
+                )
+            };
+            Ok(result)
+        })
+    }
+
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdout(
         _env: JNIEnv, _class: JClass, _context_handle: jlong, _path: JString) -> jint { 0 }

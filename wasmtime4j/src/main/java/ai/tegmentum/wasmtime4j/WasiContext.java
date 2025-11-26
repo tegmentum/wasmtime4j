@@ -88,6 +88,20 @@ public interface WasiContext {
   WasiContext setStdin(Path path);
 
   /**
+   * Sets stdin to read from the provided byte array data.
+   *
+   * <p>This allows providing stdin content programmatically rather than from a file. The entire
+   * byte array will be available as stdin input to the WebAssembly module. This method supports
+   * binary data, including data containing null bytes.
+   *
+   * @param data the byte array to use as stdin input
+   * @return this WasiContext for method chaining
+   * @throws IllegalArgumentException if data is null
+   * @since 1.0.0
+   */
+  WasiContext setStdinBytes(byte[] data);
+
+  /**
    * Redirects stdout to write to the specified file.
    *
    * @param path the file to write stdout to

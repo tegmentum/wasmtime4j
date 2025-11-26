@@ -49,6 +49,14 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeSetStdinBytes
+ * Signature: (J[B)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdinBytes
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
  * Method:    nativeSetStdout
  * Signature: (JLjava/lang/String;)I
  */

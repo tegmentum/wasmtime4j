@@ -4622,6 +4622,11 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
+        "wasmtime4j_wasi_context_set_stdin_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
         "wasmtime4j_wasi_context_set_stdout",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
@@ -6635,6 +6640,26 @@ public final class NativeFunctionBindings {
     validatePointer(path, "path");
     return callNativeFunction(
         "wasmtime4j_wasi_context_set_stdin", Integer.class, contextHandle, path);
+  }
+
+  /**
+   * Sets stdin from binary data buffer (supports binary data with null bytes).
+   *
+   * @param contextHandle the WASI context handle
+   * @param dataPtr pointer to the binary data
+   * @param dataLen length of the data in bytes
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStdinBytes(
+      final MemorySegment contextHandle, final MemorySegment dataPtr, final long dataLen) {
+    validatePointer(contextHandle, "contextHandle");
+    // dataPtr can be NULL for empty input
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stdin_bytes",
+        Integer.class,
+        contextHandle,
+        dataPtr == null ? MemorySegment.NULL : dataPtr,
+        dataLen);
   }
 
   /**

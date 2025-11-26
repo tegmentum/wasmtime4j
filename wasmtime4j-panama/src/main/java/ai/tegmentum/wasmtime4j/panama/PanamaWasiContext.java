@@ -151,6 +151,35 @@ public final class PanamaWasiContext implements WasiContext {
   }
 
   @Override
+  public WasiContext setStdinBytes(final byte[] data) {
+    if (data == null) {
+      throw new IllegalArgumentException("Stdin data cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment dataSegment;
+      final long dataLen;
+
+      if (data.length == 0) {
+        dataSegment = MemorySegment.NULL;
+        dataLen = 0;
+      } else {
+        dataSegment = arena.allocate(data.length);
+        dataSegment.copyFrom(MemorySegment.ofArray(data));
+        dataLen = data.length;
+      }
+
+      final int result =
+          NATIVE_BINDINGS.wasiContextSetStdinBytes(contextHandle, dataSegment, dataLen);
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stdin bytes");
+      }
+    }
+    return this;
+  }
+
+  @Override
   public WasiContext setStdout(final Path path) {
     if (path == null) {
       throw new IllegalArgumentException("Stdout path cannot be null");

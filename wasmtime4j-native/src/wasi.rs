@@ -960,6 +960,41 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdin(
     )
 }
 
+/// Set stdin from binary data buffer (supports binary data with null bytes)
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+/// * `data_ptr` - Pointer to the binary data (can contain null bytes)
+/// * `data_len` - Length of the data in bytes
+///
+/// # Returns
+/// 0 on success, non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdin_bytes(
+    ctx_ptr: *mut c_void,
+    data_ptr: *const u8,
+    data_len: usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+
+        // Handle null or empty data
+        let stdin_data = if data_ptr.is_null() || data_len == 0 {
+            Vec::new()
+        } else {
+            std::slice::from_raw_parts(data_ptr, data_len).to_vec()
+        };
+
+        // Configure stdin as Buffer with the binary data, keep stdout/stderr unchanged
+        ctx.configure_stdio_streams(
+            StdioSource::Buffer(stdin_data),
+            ctx.stdio_config.stdout.clone(),
+            ctx.stdio_config.stderr.clone(),
+        )?;
+        Ok(())
+    })
+}
+
 /// Set stdout to write to file (Panama FFI version)
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdout(

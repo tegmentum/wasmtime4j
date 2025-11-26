@@ -226,7 +226,9 @@ All WasiLinker configuration methods are now fully implemented:
 - JNI: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/wasi/JniWasiLinker.java`
 - Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/PanamaWasiLinker.java`
 
-**Note**: Java InputStream/OutputStream configurations log a warning as they require native stream bridging not yet implemented.
+**Stream Bridging Support**:
+- **InputStream (stdin)**: ✓ Fully supported - reads all bytes from InputStream and passes to native stdin buffer
+- **OutputStream (stdout/stderr)**: ⚠️ Limited - streaming capture requires post-execution buffer retrieval (use FILE redirection as alternative)
 
 ---
 
@@ -256,7 +258,7 @@ All WasiLinker configuration methods are now fully implemented:
 
 ### Short-term Goals
 1. **Integration Tests**: Expand test coverage for WasiLinker configuration methods
-2. **Java Stream Bridging**: Implement native support for InputStream/OutputStream stdio configurations
+2. **OutputStream Capture**: Add post-execution buffer retrieval API for stdout/stderr capture to OutputStream
 
 ### Long-term Goals
 3. **HTTP Client**: Implement `wasi:http` for web service communication
@@ -278,7 +280,7 @@ The wasmtime4j project has **complete WASI Preview 2 coverage** for production u
 - Comprehensive test coverage across all interfaces
 
 **Minor Gaps**:
-- Java InputStream/OutputStream stdio bridging (file-based alternatives available)
+- Java OutputStream stdio capture (InputStream stdin is fully supported; file-based alternatives available for OutputStream)
 
 **Not Critical**:
 - Advanced resource management features (invoke, createHandle, transferOwnership)

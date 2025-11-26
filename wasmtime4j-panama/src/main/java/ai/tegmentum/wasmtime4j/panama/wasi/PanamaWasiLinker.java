@@ -33,6 +33,8 @@ import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
 import ai.tegmentum.wasmtime4j.wasi.WasiPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -382,9 +384,15 @@ public final class PanamaWasiLinker implements WasiLinker {
         // This is the default if not inherited
         break;
       case INPUT_STREAM:
-        // Java InputStream requires special handling at native level
-        // For now, log a warning
-        LOGGER.warning("InputStream stdin configuration requires native stream bridging");
+        // Read all bytes from InputStream and pass to native stdin buffer
+        try {
+          final InputStream inputStream = config.getInputStream();
+          final byte[] data = inputStream.readAllBytes();
+          context.setStdinBytes(data);
+          LOGGER.fine("Set stdin from InputStream with " + data.length + " bytes");
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to read stdin from InputStream", e);
+        }
         break;
       default:
         break;

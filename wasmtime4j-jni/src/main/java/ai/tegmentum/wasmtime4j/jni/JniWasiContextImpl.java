@@ -155,6 +155,27 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   }
 
   @Override
+  public WasiContext setStdinBytes(byte[] data) {
+    if (data == null) {
+      throw new IllegalArgumentException("Stdin data cannot be null");
+    }
+    ensureNotClosed();
+
+    try {
+      final int result = nativeSetStdinBytes(nativeHandle, data);
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stdin bytes");
+      }
+      return this;
+    } catch (Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new RuntimeException("Failed to set stdin bytes", e);
+    }
+  }
+
+  @Override
   public WasiContext setStdout(Path path) {
     if (path == null) {
       throw new IllegalArgumentException("Stdout path cannot be null");
@@ -480,6 +501,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   private static native int nativeInheritStdio(long contextHandle);
 
   private static native int nativeSetStdin(long contextHandle, String path);
+
+  private static native int nativeSetStdinBytes(long contextHandle, byte[] data);
 
   private static native int nativeSetStdout(long contextHandle, String path);
 

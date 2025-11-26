@@ -30,6 +30,9 @@ import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
 import ai.tegmentum.wasmtime4j.wasi.WasiPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -365,9 +368,15 @@ public final class JniWasiLinker implements WasiLinker {
         // This is the default if not inherited
         break;
       case INPUT_STREAM:
-        // Java InputStream requires special handling at native level
-        // For now, log a warning
-        LOGGER.warning("InputStream stdin configuration requires native stream bridging");
+        // Read all bytes from InputStream and pass to native stdin buffer
+        try {
+          final InputStream inputStream = config.getInputStream();
+          final byte[] data = readAllBytesFromStream(inputStream);
+          context.setStdinBytes(data);
+          LOGGER.fine("Set stdin from InputStream with " + data.length + " bytes");
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to read stdin from InputStream", e);
+        }
         break;
       default:
         break;
@@ -462,6 +471,23 @@ public final class JniWasiLinker implements WasiLinker {
     if (closed) {
       throw new IllegalStateException("WASI linker has been closed");
     }
+  }
+
+  /**
+   * Reads all bytes from an InputStream (Java 8 compatible implementation).
+   *
+   * @param inputStream the input stream to read from
+   * @return all bytes from the stream
+   * @throws IOException if an I/O error occurs
+   */
+  private static byte[] readAllBytesFromStream(final InputStream inputStream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    final byte[] data = new byte[8192];
+    int bytesRead;
+    while ((bytesRead = inputStream.read(data, 0, data.length)) != -1) {
+      buffer.write(data, 0, bytesRead);
+    }
+    return buffer.toByteArray();
   }
 
   /** Internal class to hold directory mapping configuration. */
