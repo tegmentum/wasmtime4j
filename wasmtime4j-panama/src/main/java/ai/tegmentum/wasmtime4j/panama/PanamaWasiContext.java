@@ -356,7 +356,7 @@ public final class PanamaWasiContext implements WasiContext {
    *
    * @return the native context handle
    */
-  MemorySegment getNativeHandle() {
+  public MemorySegment getNativeHandle() {
     return contextHandle;
   }
 

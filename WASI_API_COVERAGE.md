@@ -201,27 +201,32 @@ The following WASI Preview 2 interfaces have **no public API definitions** in th
 
 ---
 
-## Configuration Gaps
+## WasiLinker Configuration - COMPLETE ✅
 
-### WasiLinker Configuration Methods
+All WasiLinker configuration methods are now fully implemented:
 
-Several WasiLinker configuration methods throw `UnsupportedOperationException`:
+**Implemented Methods**:
+- `allowDirectoryAccess(Path hostPath, String guestPath, WasiPermissions)` - Directory access with permissions
+- `allowDirectoryAccess(Path hostPath, String guestPath)` - Directory access with default permissions (0755)
+- `setEnvironmentVariable(String name, String value)` - Set individual environment variable
+- `setEnvironmentVariables(Map<String, String>)` - Set multiple environment variables
+- `inheritEnvironment()` - Inherit all host environment variables
+- `inheritEnvironmentVariables(List<String>)` - Inherit specific host environment variables
+- `setArguments(List<String>)` - Set command line arguments
+- `configureStdin(WasiStdioConfig)` - Configure standard input (INHERIT, FILE, NULL)
+- `configureStdout(WasiStdioConfig)` - Configure standard output (INHERIT, FILE, NULL)
+- `configureStderr(WasiStdioConfig)` - Configure standard error (INHERIT, FILE, NULL)
+- `enableNetworkAccess()` / `disableNetworkAccess()` - Network capability control
+- `setMaxOpenFiles(Integer)` - Set open file descriptor limit
+- `setMaxFileSize(Long)` - Set file size limit (warning: not enforced at WASI level)
 
-**Not Implemented**:
-- `allowDirectoryAccess(String path)` - Directory access control
-- `inheritEnvironment()` - Inherit host environment variables
-- `configureStdin(InputStream)` - Configure standard input
-- `configureStdout(OutputStream)` - Configure standard output
-- `configureStderr(OutputStream)` - Configure standard error
-- `enableNetworkAccess()` - Enable network capabilities
-- `setMaxFileSize(long bytes)` - Set file size limits
-- `setMaxOpenFiles(int count)` - Set open file limits
-
-**Alternative**: Use `WasiConfig.builder()` for environment variable configuration.
+**Implementation Pattern**: Configuration is accumulated through method calls and applied when `instantiate(Store, Module)` is called. The linker builds a `WasiContext` from the accumulated configuration.
 
 **Location**:
-- JNI: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/linker/JniWasiLinker.java`
-- Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/linker/PanamaWasiLinker.java`
+- JNI: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/wasi/JniWasiLinker.java`
+- Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/PanamaWasiLinker.java`
+
+**Note**: Java InputStream/OutputStream configurations log a warning as they require native stream bridging not yet implemented.
 
 ---
 
@@ -250,8 +255,8 @@ Several WasiLinker configuration methods throw `UnsupportedOperationException`:
 ## Recommendations
 
 ### Short-term Goals
-1. **WasiLinker Configuration**: Implement missing configuration methods
-2. **Integration Tests**: Expand test coverage across all implemented interfaces
+1. **Integration Tests**: Expand test coverage for WasiLinker configuration methods
+2. **Java Stream Bridging**: Implement native support for InputStream/OutputStream stdio configurations
 
 ### Long-term Goals
 3. **HTTP Client**: Implement `wasi:http` for web service communication
@@ -267,12 +272,13 @@ The wasmtime4j project has **complete WASI Preview 2 coverage** for production u
 **Strengths**:
 - 9 core interfaces fully implemented with both JNI and Panama
 - UDP datagram operations 100% complete with 81 unit tests
+- WasiLinker configuration methods fully implemented
 - Consistent architecture across all implementations
 - Comprehensive API documentation
 - Comprehensive test coverage across all interfaces
 
 **Minor Gaps**:
-- Some WasiLinker configuration methods (alternatives available via WasiConfig.builder())
+- Java InputStream/OutputStream stdio bridging (file-based alternatives available)
 
 **Not Critical**:
 - Advanced resource management features (invoke, createHandle, transferOwnership)

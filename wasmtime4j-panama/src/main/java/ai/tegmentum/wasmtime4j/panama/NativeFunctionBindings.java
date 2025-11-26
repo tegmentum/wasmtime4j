@@ -6740,6 +6740,23 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Adds a WASI context to a Store.
+   *
+   * <p>This must be called before instantiating WASI-enabled modules. The context will be used by
+   * WASI imports when they are called.
+   *
+   * @param contextHandle the WASI context handle
+   * @param storeHandle the Store handle
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiCtxAddToStore(final MemorySegment contextHandle, final MemorySegment storeHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(storeHandle, "storeHandle");
+    return callNativeFunction(
+        "wasi_ctx_add_to_store", Integer.class, contextHandle, storeHandle);
+  }
+
+  /**
    * Adds WASI Preview 1 imports to a linker.
    *
    * <p>Configures the linker to extract WASI context from store data when instantiating modules.
