@@ -372,6 +372,288 @@ Similar pattern for send operation with proper memory marshalling.
 
 ---
 
+## Panama FFI Implementation Challenges
+
+### Technical Complexity Analysis
+
+The Panama FFI Java layer implementation (Phase 4) presents significant memory marshalling challenges that require careful design to avoid memory leaks, buffer overflows, and segmentation faults.
+
+#### Challenge 1: receive() - Dynamic Memory Allocation
+
+**Function Signature**:
+```c
+int wasmtime4j_panama_wasi_udp_socket_receive(
+    void* context_handle,
+    long socket_handle,
+    long max_results,
+    long* out_count,                   // Single output
+    unsigned char** out_datagrams_data, // Array of pointers (each needs allocation)
+    long* out_datagrams_len,           // Array of lengths
+    int* out_is_ipv4,                  // Array of flags
+    unsigned char* out_ipv4_octets,    // Flat array (max_results * 4 bytes)
+    unsigned short* out_ipv6_segments, // Flat array (max_results * 16 bytes)
+    unsigned short* out_ports,         // Array
+    unsigned int* out_flow_info,       // Array
+    unsigned int* out_scope_id         // Array
+)
+```
+
+**Memory Management Issues**:
+1. **Pre-allocation Sizing**: Must allocate buffers for `max_results` datagrams before calling FFI
+   - Each datagram can be up to 65507 bytes (maximum UDP payload)
+   - Total allocation: `max_results * 65507` bytes minimum for data buffers
+   - Risk: Over-allocation wastes memory, under-allocation causes buffer overflow
+
+2. **Pointer Array Complexity**: `out_datagrams_data` is a **pointer to array of pointers**
+   - Each element points to a separate data buffer
+   - Requires `max_results` separate MemorySegment allocations
+   - Must track all allocations for cleanup
+   - Complex lifetime management with Panama Arena
+
+3. **Actual vs Maximum Results**: Native code writes `*out_count` datagrams, may be less than `max_results`
+   - Must parse only `count` datagrams from pre-allocated arrays
+   - Unused allocations need cleanup
+   - Risk: Memory leak if not properly freed
+
+4. **Address Marshalling**: Each datagram has either IPv4 (4 bytes) or IPv6 (16 bytes) address
+   - Array offsets must be calculated correctly: `out_ipv4_octets.add(i * 4)`
+   - IPv6 segments stored as shorts, requires endianness handling
+   - Flow info and scope ID only valid for IPv6
+
+**Java Implementation Complexity**:
+```java
+public IncomingDatagram[] receive(long maxResults) throws WasmException {
+    try (Arena arena = Arena.ofConfined()) {
+        // 1. Allocate output count
+        MemorySegment outCount = arena.allocate(ValueLayout.JAVA_LONG);
+
+        // 2. Allocate pointer array for datagram data
+        MemorySegment datagramDataPtrs = arena.allocate(
+            ValueLayout.ADDRESS, maxResults);
+
+        // 3. Allocate individual data buffers (COMPLEX)
+        MemorySegment[] dataBuffers = new MemorySegment[(int)maxResults];
+        for (int i = 0; i < maxResults; i++) {
+            dataBuffers[i] = arena.allocate(65507); // Max UDP size
+            datagramDataPtrs.setAtIndex(ValueLayout.ADDRESS, i, dataBuffers[i]);
+        }
+
+        // 4. Allocate arrays for lengths and address components
+        MemorySegment lengths = arena.allocate(ValueLayout.JAVA_LONG, maxResults);
+        MemorySegment isIpv4 = arena.allocate(ValueLayout.JAVA_INT, maxResults);
+        MemorySegment ipv4Octets = arena.allocate(ValueLayout.JAVA_BYTE, maxResults * 4);
+        MemorySegment ipv6Segments = arena.allocate(ValueLayout.JAVA_SHORT, maxResults * 8);
+        MemorySegment ports = arena.allocate(ValueLayout.JAVA_SHORT, maxResults);
+        MemorySegment flowInfo = arena.allocate(ValueLayout.JAVA_INT, maxResults);
+        MemorySegment scopeId = arena.allocate(ValueLayout.JAVA_INT, maxResults);
+
+        // 5. Call native function
+        int result = (int) RECEIVE_HANDLE.invoke(
+            contextHandle, socketHandle, maxResults,
+            outCount, datagramDataPtrs, lengths,
+            isIpv4, ipv4Octets, ipv6Segments, ports, flowInfo, scopeId);
+
+        if (result != 0) {
+            throw new WasmException("Failed to receive datagrams");
+        }
+
+        // 6. Parse results (COMPLEX)
+        long count = outCount.get(ValueLayout.JAVA_LONG, 0);
+        IncomingDatagram[] datagrams = new IncomingDatagram[(int)count];
+
+        for (int i = 0; i < count; i++) {
+            // Extract data length
+            long dataLen = lengths.getAtIndex(ValueLayout.JAVA_LONG, i);
+
+            // Copy data from buffer
+            byte[] data = new byte[(int)dataLen];
+            MemorySegment.copy(dataBuffers[i], 0,
+                MemorySegment.ofArray(data), 0, dataLen);
+
+            // Decode address
+            boolean ipv4 = isIpv4.getAtIndex(ValueLayout.JAVA_INT, i) != 0;
+            IpSocketAddress addr;
+
+            if (ipv4) {
+                byte[] octets = new byte[4];
+                for (int j = 0; j < 4; j++) {
+                    octets[j] = ipv4Octets.get(ValueLayout.JAVA_BYTE, i * 4 + j);
+                }
+                int port = ports.getAtIndex(ValueLayout.JAVA_SHORT, i) & 0xFFFF;
+                addr = IpSocketAddress.ipv4(
+                    new Ipv4SocketAddress(port, new Ipv4Address(octets)));
+            } else {
+                short[] segments = new short[8];
+                for (int j = 0; j < 8; j++) {
+                    segments[j] = ipv6Segments.getAtIndex(ValueLayout.JAVA_SHORT, i * 8 + j);
+                }
+                int port = ports.getAtIndex(ValueLayout.JAVA_SHORT, i) & 0xFFFF;
+                int flow = flowInfo.getAtIndex(ValueLayout.JAVA_INT, i);
+                int scope = scopeId.getAtIndex(ValueLayout.JAVA_INT, i);
+                addr = IpSocketAddress.ipv6(
+                    new Ipv6SocketAddress(port, flow, new Ipv6Address(segments), scope));
+            }
+
+            datagrams[i] = new IncomingDatagram(data, addr);
+        }
+
+        return datagrams;
+    }
+}
+```
+
+**Risks**:
+- Memory leak if Arena cleanup fails
+- Buffer overflow if `dataLen` exceeds 65507
+- Segmentation fault if pointer arithmetic wrong
+- Endianness issues on big-endian systems
+
+#### Challenge 2: send() - Parallel Array Marshalling
+
+**Function Signature**:
+```c
+int wasmtime4j_panama_wasi_udp_socket_send(
+    void* context_handle,
+    long socket_handle,
+    long datagram_count,
+    const unsigned char** datagram_data,     // Pointer to array of pointers
+    const long* datagram_lengths,            // Parallel array
+    const int* has_remote_address,           // Parallel array
+    const int* is_ipv4,                      // Parallel array
+    const unsigned char* ipv4_octets,        // Flat array (count * 4)
+    const unsigned short* ipv6_segments,     // Flat array (count * 16)
+    const unsigned short* ports,             // Parallel array
+    const unsigned int* flow_info,           // Parallel array
+    const unsigned int* scope_id,            // Parallel array
+    long* out_sent_count                     // Single output
+)
+```
+
+**Marshalling Challenges**:
+1. **OutgoingDatagram[] to C Arrays**: Must decompose Java objects into parallel C arrays
+   - Extract `byte[] data` from each datagram
+   - Allocate MemorySegment for each data buffer
+   - Build pointer array pointing to data buffers
+   - Extract optional remote address (null check required)
+
+2. **Optional Address Handling**: `remoteAddress` can be null in OutgoingDatagram
+   - Must set `has_remote_address[i]` flag correctly
+   - Only write address components if address present
+   - Risk: Uninitialized memory if flags wrong
+
+3. **Data Lifetime**: Data buffers must remain valid during FFI call
+   - Cannot use stack-allocated buffers (would be freed)
+   - Must use Arena with proper scope
+   - All MemorySegments must outlive the native call
+
+**Java Implementation Complexity**:
+```java
+public long send(OutgoingDatagram[] datagrams) throws WasmException {
+    if (datagrams == null || datagrams.length == 0) {
+        return 0;
+    }
+
+    try (Arena arena = Arena.ofConfined()) {
+        int count = datagrams.length;
+
+        // 1. Allocate pointer array for datagram data
+        MemorySegment datagramDataPtrs = arena.allocate(ValueLayout.ADDRESS, count);
+
+        // 2. Allocate individual data buffers and populate pointer array
+        MemorySegment[] dataBuffers = new MemorySegment[count];
+        MemorySegment lengths = arena.allocate(ValueLayout.JAVA_LONG, count);
+
+        for (int i = 0; i < count; i++) {
+            byte[] data = datagrams[i].getData();
+            dataBuffers[i] = arena.allocate(data.length);
+            MemorySegment.copy(MemorySegment.ofArray(data), 0,
+                dataBuffers[i], 0, data.length);
+            datagramDataPtrs.setAtIndex(ValueLayout.ADDRESS, i, dataBuffers[i]);
+            lengths.setAtIndex(ValueLayout.JAVA_LONG, i, data.length);
+        }
+
+        // 3. Allocate address arrays
+        MemorySegment hasAddress = arena.allocate(ValueLayout.JAVA_INT, count);
+        MemorySegment isIpv4 = arena.allocate(ValueLayout.JAVA_INT, count);
+        MemorySegment ipv4Octets = arena.allocate(ValueLayout.JAVA_BYTE, count * 4);
+        MemorySegment ipv6Segments = arena.allocate(ValueLayout.JAVA_SHORT, count * 8);
+        MemorySegment ports = arena.allocate(ValueLayout.JAVA_SHORT, count);
+        MemorySegment flowInfo = arena.allocate(ValueLayout.JAVA_INT, count);
+        MemorySegment scopeId = arena.allocate(ValueLayout.JAVA_INT, count);
+
+        // 4. Populate address arrays (COMPLEX)
+        for (int i = 0; i < count; i++) {
+            IpSocketAddress addr = datagrams[i].getRemoteAddress();
+
+            if (addr == null) {
+                hasAddress.setAtIndex(ValueLayout.JAVA_INT, i, 0);
+                // Leave other fields uninitialized (native code won't read them)
+            } else {
+                hasAddress.setAtIndex(ValueLayout.JAVA_INT, i, 1);
+
+                if (addr.isIpv4()) {
+                    Ipv4SocketAddress ipv4 = addr.getIpv4();
+                    isIpv4.setAtIndex(ValueLayout.JAVA_INT, i, 1);
+
+                    byte[] octets = ipv4.getAddress().getOctets();
+                    for (int j = 0; j < 4; j++) {
+                        ipv4Octets.set(ValueLayout.JAVA_BYTE, i * 4 + j, octets[j]);
+                    }
+
+                    ports.setAtIndex(ValueLayout.JAVA_SHORT, i, (short)ipv4.getPort());
+                } else {
+                    Ipv6SocketAddress ipv6 = addr.getIpv6();
+                    isIpv4.setAtIndex(ValueLayout.JAVA_INT, i, 0);
+
+                    short[] segments = ipv6.getAddress().getSegments();
+                    for (int j = 0; j < 8; j++) {
+                        ipv6Segments.setAtIndex(ValueLayout.JAVA_SHORT, i * 8 + j, segments[j]);
+                    }
+
+                    ports.setAtIndex(ValueLayout.JAVA_SHORT, i, (short)ipv6.getPort());
+                    flowInfo.setAtIndex(ValueLayout.JAVA_INT, i, ipv6.getFlowInfo());
+                    scopeId.setAtIndex(ValueLayout.JAVA_INT, i, ipv6.getScopeId());
+                }
+            }
+        }
+
+        // 5. Allocate output
+        MemorySegment outSentCount = arena.allocate(ValueLayout.JAVA_LONG);
+
+        // 6. Call native function
+        int result = (int) SEND_HANDLE.invoke(
+            contextHandle, socketHandle, count,
+            datagramDataPtrs, lengths, hasAddress,
+            isIpv4, ipv4Octets, ipv6Segments, ports, flowInfo, scopeId,
+            outSentCount);
+
+        if (result != 0) {
+            throw new WasmException("Failed to send datagrams");
+        }
+
+        return outSentCount.get(ValueLayout.JAVA_LONG, 0);
+    }
+}
+```
+
+**Risks**:
+- Array index out of bounds if count calculation wrong
+- Null pointer dereference if address components not initialized
+- Type mismatch between Java int and C short (port numbers)
+- Partial send success not properly handled
+
+### Recommended Approach
+
+Given the complexity and error-prone nature of this implementation:
+
+1. **Prototype First**: Create minimal working version with fixed `maxResults=1` for testing
+2. **Incremental Testing**: Add one feature at a time (IPv4 only, then IPv6, then multiple datagrams)
+3. **Defensive Validation**: Add extensive parameter validation and bounds checking
+4. **Memory Profiling**: Use valgrind or similar to detect leaks during development
+5. **Reference Implementation**: Study existing Panama FFI array marshalling patterns in codebase
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests
