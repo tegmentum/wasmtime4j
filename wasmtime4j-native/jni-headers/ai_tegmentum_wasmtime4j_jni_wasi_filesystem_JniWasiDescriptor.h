@@ -90,9 +90,9 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor
  * Method:    nativeReadDirectory
- * Signature: (JJ)J
+ * Signature: (JJ)[Ljava/lang/String;
  */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor_nativeReadDirectory
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor_nativeReadDirectory
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
