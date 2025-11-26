@@ -416,8 +416,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should create link-local IPv6 address with scope ID")
     void shouldCreateLinkLocalWithScopeId() {
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {(short) 0xfe80, 0, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {(short) 0xfe80, 0, 0, 0, 0, 0, 0, 1});
       final Ipv6SocketAddress socketAddr = new Ipv6SocketAddress(8080, 0, addr, 1);
 
       assertEquals(1, socketAddr.getScopeId());
@@ -632,7 +631,8 @@ public class WasiUdpDataTypesTest {
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
 
       final IllegalArgumentException exception =
-          assertThrows(IllegalArgumentException.class, () -> new IncomingDatagram(null, remoteAddr));
+          assertThrows(
+              IllegalArgumentException.class, () -> new IncomingDatagram(null, remoteAddr));
 
       assertTrue(exception.getMessage().contains("data"));
       LOGGER.info("Correctly rejected null data");
@@ -736,7 +736,8 @@ public class WasiUdpDataTypesTest {
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
 
       final IllegalArgumentException exception =
-          assertThrows(IllegalArgumentException.class, () -> new OutgoingDatagram(null, remoteAddr));
+          assertThrows(
+              IllegalArgumentException.class, () -> new OutgoingDatagram(null, remoteAddr));
 
       assertTrue(exception.getMessage().contains("data"));
       LOGGER.info("Correctly rejected null data");

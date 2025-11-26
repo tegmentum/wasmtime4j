@@ -8,64 +8,64 @@ import java.util.Objects;
  * <p>WASI Preview 2 specification: wasi:sockets/network@0.2.0
  */
 public final class Ipv4SocketAddress {
-    private final int port;
-    private final Ipv4Address address;
+  private final int port;
+  private final Ipv4Address address;
 
-    /**
-     * Creates an IPv4 socket address.
-     *
-     * @param port port number (0-65535)
-     * @param address IPv4 address
-     * @throws IllegalArgumentException if port is out of range or address is null
-     */
-    public Ipv4SocketAddress(final int port, final Ipv4Address address) {
-        if (port < 0 || port > 65535) {
-            throw new IllegalArgumentException("Port must be in range [0, 65535], got: " + port);
-        }
-        if (address == null) {
-            throw new IllegalArgumentException("address cannot be null");
-        }
-        this.port = port;
-        this.address = address;
+  /**
+   * Creates an IPv4 socket address.
+   *
+   * @param port port number (0-65535)
+   * @param address IPv4 address
+   * @throws IllegalArgumentException if port is out of range or address is null
+   */
+  public Ipv4SocketAddress(final int port, final Ipv4Address address) {
+    if (port < 0 || port > 65535) {
+      throw new IllegalArgumentException("Port must be in range [0, 65535], got: " + port);
     }
+    if (address == null) {
+      throw new IllegalArgumentException("address cannot be null");
+    }
+    this.port = port;
+    this.address = address;
+  }
 
-    /**
-     * Gets the port number.
-     *
-     * @return port number (0-65535)
-     */
-    public int getPort() {
-        return port;
-    }
+  /**
+   * Gets the port number.
+   *
+   * @return port number (0-65535)
+   */
+  public int getPort() {
+    return port;
+  }
 
-    /**
-     * Gets the IPv4 address.
-     *
-     * @return the IPv4 address
-     */
-    public Ipv4Address getAddress() {
-        return address;
-    }
+  /**
+   * Gets the IPv4 address.
+   *
+   * @return the IPv4 address
+   */
+  public Ipv4Address getAddress() {
+    return address;
+  }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Ipv4SocketAddress that = (Ipv4SocketAddress) o;
-        return port == that.port && Objects.equals(address, that.address);
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Ipv4SocketAddress that = (Ipv4SocketAddress) o;
+    return port == that.port && Objects.equals(address, that.address);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(port, address);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(port, address);
+  }
 
-    @Override
-    public String toString() {
-        return address.toString() + ":" + port;
-    }
+  @Override
+  public String toString() {
+    return address.toString() + ":" + port;
+  }
 }
