@@ -380,6 +380,95 @@ public final class PanamaWasiContext implements WasiContext {
     return this;
   }
 
+  // ===== Output Capture Methods =====
+
+  @Override
+  public WasiContext enableOutputCapture() throws WasmException {
+    ensureNotClosed();
+
+    final int result = NATIVE_BINDINGS.wasiContextEnableOutputCapture(contextHandle);
+    if (result != 0) {
+      throw new WasmException("Failed to enable output capture");
+    }
+    return this;
+  }
+
+  @Override
+  public byte[] getStdoutCapture() {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      // Allocate space for the length output parameter (size_t = long on 64-bit)
+      final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final MemorySegment dataPtr =
+          NATIVE_BINDINGS.wasiContextGetStdoutCapture(contextHandle, lengthOut);
+
+      if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+
+      final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
+      if (length == 0) {
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        return new byte[0];
+      }
+
+      // Reinterpret the segment to have the correct size
+      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+      final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native buffer
+      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+      return data;
+    }
+  }
+
+  @Override
+  public byte[] getStderrCapture() {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      // Allocate space for the length output parameter (size_t = long on 64-bit)
+      final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final MemorySegment dataPtr =
+          NATIVE_BINDINGS.wasiContextGetStderrCapture(contextHandle, lengthOut);
+
+      if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+
+      final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
+      if (length == 0) {
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        return new byte[0];
+      }
+
+      // Reinterpret the segment to have the correct size
+      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+      final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native buffer
+      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+      return data;
+    }
+  }
+
+  @Override
+  public boolean hasStdoutCapture() {
+    ensureNotClosed();
+    return NATIVE_BINDINGS.wasiContextHasStdoutCapture(contextHandle) == 1;
+  }
+
+  @Override
+  public boolean hasStderrCapture() {
+    ensureNotClosed();
+    return NATIVE_BINDINGS.wasiContextHasStderrCapture(contextHandle) == 1;
+  }
+
   /**
    * Gets the native context handle.
    *

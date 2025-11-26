@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, DirPerms, FilePerms};
 use wasmtime_wasi::p1::WasiP1Ctx;
+use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
 use wasmtime::Linker;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
@@ -32,6 +33,10 @@ pub struct WasiContext {
     arguments: Vec<String>,
     /// Standard stream configurations
     stdio_config: StdioConfig,
+    /// Captured stdout pipe (when using Buffer mode)
+    stdout_pipe: Option<MemoryOutputPipe>,
+    /// Captured stderr pipe (when using Buffer mode)
+    stderr_pipe: Option<MemoryOutputPipe>,
 }
 
 impl Clone for WasiContext {
@@ -43,6 +48,8 @@ impl Clone for WasiContext {
             environment: self.environment.clone(),
             arguments: self.arguments.clone(),
             stdio_config: self.stdio_config.clone(),
+            stdout_pipe: self.stdout_pipe.clone(),
+            stderr_pipe: self.stderr_pipe.clone(),
         }
     }
 }
@@ -55,6 +62,8 @@ impl std::fmt::Debug for WasiContext {
             .field("environment", &self.environment)
             .field("arguments", &self.arguments)
             .field("stdio_config", &self.stdio_config)
+            .field("stdout_pipe", &self.stdout_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
+            .field("stderr_pipe", &self.stderr_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
             .field("inner", &"<WasiCtx>")
             .finish()
     }
@@ -265,6 +274,8 @@ impl WasiContext {
             environment: HashMap::new(),
             arguments: vec!["wasmtime4j".to_string()], // Default program name
             stdio_config: StdioConfig::default(),
+            stdout_pipe: None,
+            stderr_pipe: None,
         })
     }
 
@@ -492,16 +503,128 @@ impl WasiContext {
     }
 
     /// Configure standard I/O streams in the builder
-    fn configure_stdio(&self, builder: &mut WasiCtxBuilder) -> WasmtimeResult<()> {
-        // For now, use the simple stdio inheritance
-        // The stdio configuration will be more limited in this version
-        // TODO: Implement proper stdio redirection when the API supports it
-        builder
-            .inherit_stdin()
-            .inherit_stdout()
-            .inherit_stderr();
-        
+    fn configure_stdio(&mut self, builder: &mut WasiCtxBuilder) -> WasmtimeResult<()> {
+        use wasmtime_wasi::p2::pipe::MemoryInputPipe;
+
+        // Configure stdin based on stdio_config
+        match &self.stdio_config.stdin {
+            StdioSource::Inherit => {
+                builder.inherit_stdin();
+            }
+            StdioSource::Buffer(data) => {
+                let pipe = MemoryInputPipe::new(data.clone());
+                builder.stdin(pipe);
+            }
+            StdioSource::File(_path) => {
+                // File-based stdin requires async file operations
+                // For now, fall back to inherit
+                builder.inherit_stdin();
+            }
+            StdioSource::Null => {
+                // Empty input - use empty buffer
+                let empty: Vec<u8> = Vec::new();
+                let pipe = MemoryInputPipe::new(empty);
+                builder.stdin(pipe);
+            }
+        }
+
+        // Configure stdout based on stdio_config
+        // Default buffer capacity of 64KB
+        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
+
+        match &self.stdio_config.stdout {
+            StdioSink::Inherit => {
+                builder.inherit_stdout();
+                self.stdout_pipe = None;
+            }
+            StdioSink::Buffer => {
+                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                builder.stdout(pipe.clone());
+                self.stdout_pipe = Some(pipe);
+            }
+            StdioSink::File(_path) => {
+                // File-based stdout requires async file operations
+                // For now, fall back to inherit
+                builder.inherit_stdout();
+                self.stdout_pipe = None;
+            }
+            StdioSink::Null => {
+                // Discard output - use a buffer but don't store reference
+                let pipe = MemoryOutputPipe::new(0);
+                builder.stdout(pipe);
+                self.stdout_pipe = None;
+            }
+        }
+
+        // Configure stderr based on stdio_config
+        match &self.stdio_config.stderr {
+            StdioSink::Inherit => {
+                builder.inherit_stderr();
+                self.stderr_pipe = None;
+            }
+            StdioSink::Buffer => {
+                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                builder.stderr(pipe.clone());
+                self.stderr_pipe = Some(pipe);
+            }
+            StdioSink::File(_path) => {
+                // File-based stderr requires async file operations
+                // For now, fall back to inherit
+                builder.inherit_stderr();
+                self.stderr_pipe = None;
+            }
+            StdioSink::Null => {
+                // Discard output - use a buffer but don't store reference
+                let pipe = MemoryOutputPipe::new(0);
+                builder.stderr(pipe);
+                self.stderr_pipe = None;
+            }
+        }
+
         Ok(())
+    }
+
+    /// Get captured stdout data
+    /// Returns None if stdout was not configured for buffer capture
+    pub fn get_stdout_capture(&self) -> Option<Vec<u8>> {
+        self.stdout_pipe.as_ref().map(|pipe| pipe.contents().to_vec())
+    }
+
+    /// Get captured stderr data
+    /// Returns None if stderr was not configured for buffer capture
+    pub fn get_stderr_capture(&self) -> Option<Vec<u8>> {
+        self.stderr_pipe.as_ref().map(|pipe| pipe.contents().to_vec())
+    }
+
+    /// Check if stdout is configured for buffer capture
+    pub fn has_stdout_capture(&self) -> bool {
+        self.stdout_pipe.is_some()
+    }
+
+    /// Check if stderr is configured for buffer capture
+    pub fn has_stderr_capture(&self) -> bool {
+        self.stderr_pipe.is_some()
+    }
+
+    /// Configure stdout for buffer capture
+    /// This will take effect on the next rebuild_context call
+    pub fn enable_stdout_capture(&mut self) -> WasmtimeResult<()> {
+        self.stdio_config.stdout = StdioSink::Buffer;
+        self.rebuild_context()
+    }
+
+    /// Configure stderr for buffer capture
+    /// This will take effect on the next rebuild_context call
+    pub fn enable_stderr_capture(&mut self) -> WasmtimeResult<()> {
+        self.stdio_config.stderr = StdioSink::Buffer;
+        self.rebuild_context()
+    }
+
+    /// Configure both stdout and stderr for buffer capture
+    pub fn enable_output_capture(&mut self) -> WasmtimeResult<()> {
+        self.stdio_config.stdout = StdioSink::Buffer;
+        self.stdio_config.stderr = StdioSink::Buffer;
+        self.rebuild_context()
     }
 }
 
@@ -522,6 +645,8 @@ impl Default for WasiContext {
                     environment: HashMap::new(),
                     arguments: vec!["wasmtime4j".to_string()],
                     stdio_config: StdioConfig::default(),
+                    stdout_pipe: None,
+                    stderr_pipe: None,
                 }
             }
         }
@@ -1027,6 +1152,186 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr(
         2,  // stderr: File
         path,
     )
+}
+
+/// Enable output capture for stdout and stderr
+///
+/// This configures the WASI context to capture stdout and stderr to internal buffers
+/// instead of inheriting from the host process.
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+///
+/// # Returns
+/// 0 on success, non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_enable_output_capture(
+    ctx_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        ctx.enable_output_capture()?;
+        Ok(())
+    })
+}
+
+/// Get captured stdout data
+///
+/// Returns the captured stdout data. The caller is responsible for freeing the
+/// returned buffer using `wasmtime4j_wasi_free_capture_buffer`.
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+/// * `data_len_out` - Output parameter for the length of the captured data
+///
+/// # Returns
+/// Pointer to the captured data, or null if no capture is available.
+/// The caller must free this memory using `wasmtime4j_wasi_free_capture_buffer`.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_get_stdout_capture(
+    ctx_ptr: *const c_void,
+    data_len_out: *mut usize,
+) -> *mut u8 {
+    if ctx_ptr.is_null() || data_len_out.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
+        Ok(ctx) => {
+            if let Some(data) = ctx.get_stdout_capture() {
+                let len = data.len();
+                if len == 0 {
+                    *data_len_out = 0;
+                    return std::ptr::null_mut();
+                }
+
+                // Allocate memory for the data
+                let ptr = libc::malloc(len) as *mut u8;
+                if ptr.is_null() {
+                    *data_len_out = 0;
+                    return std::ptr::null_mut();
+                }
+
+                // Copy data to the allocated buffer
+                std::ptr::copy_nonoverlapping(data.as_ptr(), ptr, len);
+                *data_len_out = len;
+                ptr
+            } else {
+                *data_len_out = 0;
+                std::ptr::null_mut()
+            }
+        }
+        Err(_) => {
+            *data_len_out = 0;
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get captured stderr data
+///
+/// Returns the captured stderr data. The caller is responsible for freeing the
+/// returned buffer using `wasmtime4j_wasi_free_capture_buffer`.
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+/// * `data_len_out` - Output parameter for the length of the captured data
+///
+/// # Returns
+/// Pointer to the captured data, or null if no capture is available.
+/// The caller must free this memory using `wasmtime4j_wasi_free_capture_buffer`.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_get_stderr_capture(
+    ctx_ptr: *const c_void,
+    data_len_out: *mut usize,
+) -> *mut u8 {
+    if ctx_ptr.is_null() || data_len_out.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
+        Ok(ctx) => {
+            if let Some(data) = ctx.get_stderr_capture() {
+                let len = data.len();
+                if len == 0 {
+                    *data_len_out = 0;
+                    return std::ptr::null_mut();
+                }
+
+                // Allocate memory for the data
+                let ptr = libc::malloc(len) as *mut u8;
+                if ptr.is_null() {
+                    *data_len_out = 0;
+                    return std::ptr::null_mut();
+                }
+
+                // Copy data to the allocated buffer
+                std::ptr::copy_nonoverlapping(data.as_ptr(), ptr, len);
+                *data_len_out = len;
+                ptr
+            } else {
+                *data_len_out = 0;
+                std::ptr::null_mut()
+            }
+        }
+        Err(_) => {
+            *data_len_out = 0;
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Free a capture buffer allocated by get_stdout_capture or get_stderr_capture
+///
+/// # Arguments
+/// * `buffer` - Pointer to the buffer to free (can be null)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_free_capture_buffer(buffer: *mut u8) {
+    if !buffer.is_null() {
+        libc::free(buffer as *mut c_void);
+    }
+}
+
+/// Check if stdout capture is enabled
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+///
+/// # Returns
+/// 1 if capture is enabled, 0 if not, -1 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_has_stdout_capture(
+    ctx_ptr: *const c_void,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
+        Ok(ctx) => if ctx.has_stdout_capture() { 1 } else { 0 },
+        Err(_) => -1,
+    }
+}
+
+/// Check if stderr capture is enabled
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+///
+/// # Returns
+/// 1 if capture is enabled, 0 if not, -1 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_has_stderr_capture(
+    ctx_ptr: *const c_void,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
+        Ok(ctx) => if ctx.has_stderr_capture() { 1 } else { 0 },
+        Err(_) => -1,
+    }
 }
 
 /// Add a pre-opened directory with full permissions (Panama FFI version)

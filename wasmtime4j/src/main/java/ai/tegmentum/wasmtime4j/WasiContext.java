@@ -277,6 +277,58 @@ public interface WasiContext {
       Path hostPath, String guestPath, WasiDirectoryPermissions permissions) throws WasmException;
 
   /**
+   * Enables output capture for stdout and stderr.
+   *
+   * <p>When output capture is enabled, stdout and stderr output from the WebAssembly module is
+   * captured to internal buffers instead of being written to the host process's streams. The
+   * captured output can be retrieved after execution using {@link #getStdoutCapture()} and {@link
+   * #getStderrCapture()}.
+   *
+   * @return this WasiContext for method chaining
+   * @throws WasmException if capture cannot be enabled
+   * @since 1.0.0
+   */
+  WasiContext enableOutputCapture() throws WasmException;
+
+  /**
+   * Gets the captured stdout output.
+   *
+   * <p>Returns the bytes written to stdout by the WebAssembly module since output capture was
+   * enabled. This method can be called multiple times to retrieve the current capture state.
+   *
+   * @return the captured stdout bytes, or null if capture is not enabled
+   * @since 1.0.0
+   */
+  byte[] getStdoutCapture();
+
+  /**
+   * Gets the captured stderr output.
+   *
+   * <p>Returns the bytes written to stderr by the WebAssembly module since output capture was
+   * enabled. This method can be called multiple times to retrieve the current capture state.
+   *
+   * @return the captured stderr bytes, or null if capture is not enabled
+   * @since 1.0.0
+   */
+  byte[] getStderrCapture();
+
+  /**
+   * Checks if stdout capture is enabled.
+   *
+   * @return true if stdout capture is enabled, false otherwise
+   * @since 1.0.0
+   */
+  boolean hasStdoutCapture();
+
+  /**
+   * Checks if stderr capture is enabled.
+   *
+   * @return true if stderr capture is enabled, false otherwise
+   * @since 1.0.0
+   */
+  boolean hasStderrCapture();
+
+  /**
    * Creates a new WasiContext with default settings.
    *
    * <p>The default context has no environment variables, no command-line arguments, inherits stdio,

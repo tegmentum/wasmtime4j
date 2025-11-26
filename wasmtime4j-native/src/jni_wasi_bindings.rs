@@ -7,7 +7,9 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JObject, JObjectArray, JString};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jobjectArray};
+use jni::sys::{jlong, jint, jboolean, jobjectArray, jbyteArray};
+#[cfg(feature = "jni-bindings")]
+use jni::objects::JByteArray;
 
 /// JNI bindings for WASI operations
 #[cfg(feature = "jni-bindings")]
@@ -486,7 +488,7 @@ pub mod jni_wasi {
             Ok(result.try_into().unwrap())
         })
     }
-}
+
     // Simplified JniWasiContextImpl stub implementations
     // These are minimal stubs to prevent UnsatisfiedLinkError in tests
 
@@ -518,7 +520,7 @@ pub mod jni_wasi {
         context_handle: jlong,
         data: jbyteArray,
     ) -> jint {
-        jni_utils::jni_try_default(&mut env, -1, || {
+        match (|| -> crate::error::WasmtimeResult<i32> {
             if context_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -574,7 +576,14 @@ pub mod jni_wasi {
                 )
             };
             Ok(result)
-        })
+        })() {
+            Ok(result) => result,
+            Err(e) => {
+                // Log the error and return -1
+                eprintln!("Error in nativeSetStdinBytes: {:?}", e);
+                -1
+            }
+        }
     }
 
     #[no_mangle]
@@ -637,3 +646,141 @@ pub mod jni_wasi {
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeCleanup(
         _env: JNIEnv, _class: JClass, _context_handle: jlong) {}
+
+    // ===== Output Capture JNI methods =====
+
+    /// Enable output capture for stdout and stderr
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeEnableOutputCapture(
+        _env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+        unsafe {
+            wasi::wasmtime4j_wasi_context_enable_output_capture(context_handle as *mut c_void)
+        }
+    }
+
+    /// Get captured stdout data as byte array
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetStdoutCapture(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jbyteArray {
+        if context_handle == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let mut len: usize = 0;
+        let data_ptr = unsafe {
+            wasi::wasmtime4j_wasi_context_get_stdout_capture(
+                context_handle as *const c_void,
+                &mut len as *mut usize,
+            )
+        };
+
+        if data_ptr.is_null() || len == 0 {
+            return std::ptr::null_mut();
+        }
+
+        // Create Java byte array and copy data
+        match env.new_byte_array(len as i32) {
+            Ok(byte_array) => {
+                let data_slice = unsafe { std::slice::from_raw_parts(data_ptr, len) };
+                // Convert u8 to i8 for JNI
+                let data_i8: Vec<i8> = data_slice.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    // Free the native buffer
+                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    byte_array.into_raw()
+                } else {
+                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    std::ptr::null_mut()
+                }
+            }
+            Err(_) => {
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    /// Get captured stderr data as byte array
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetStderrCapture(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jbyteArray {
+        if context_handle == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let mut len: usize = 0;
+        let data_ptr = unsafe {
+            wasi::wasmtime4j_wasi_context_get_stderr_capture(
+                context_handle as *const c_void,
+                &mut len as *mut usize,
+            )
+        };
+
+        if data_ptr.is_null() || len == 0 {
+            return std::ptr::null_mut();
+        }
+
+        // Create Java byte array and copy data
+        match env.new_byte_array(len as i32) {
+            Ok(byte_array) => {
+                let data_slice = unsafe { std::slice::from_raw_parts(data_ptr, len) };
+                // Convert u8 to i8 for JNI
+                let data_i8: Vec<i8> = data_slice.iter().map(|&b| b as i8).collect();
+                if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
+                    // Free the native buffer
+                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    byte_array.into_raw()
+                } else {
+                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    std::ptr::null_mut()
+                }
+            }
+            Err(_) => {
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    /// Check if stdout capture is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeHasStdoutCapture(
+        _env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+        unsafe {
+            wasi::wasmtime4j_wasi_context_has_stdout_capture(context_handle as *const c_void)
+        }
+    }
+
+    /// Check if stderr capture is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeHasStderrCapture(
+        _env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+        unsafe {
+            wasi::wasmtime4j_wasi_context_has_stderr_capture(context_handle as *const c_void)
+        }
+    }
+}

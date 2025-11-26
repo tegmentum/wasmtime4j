@@ -175,6 +175,46 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeCleanup
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeEnableOutputCapture
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeEnableOutputCapture
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeGetStdoutCapture
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetStdoutCapture
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeGetStderrCapture
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetStderrCapture
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeHasStdoutCapture
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeHasStdoutCapture
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeHasStderrCapture
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeHasStderrCapture
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

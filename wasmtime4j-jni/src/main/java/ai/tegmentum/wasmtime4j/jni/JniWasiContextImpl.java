@@ -483,6 +483,52 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     }
   }
 
+  // ===== Output Capture methods =====
+
+  @Override
+  public WasiContext enableOutputCapture() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      final int result = nativeEnableOutputCapture(nativeHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to enable output capture");
+      }
+      return this;
+    } catch (Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to enable output capture", e);
+    }
+  }
+
+  @Override
+  public byte[] getStdoutCapture() {
+    ensureNotClosed();
+    return nativeGetStdoutCapture(nativeHandle);
+  }
+
+  @Override
+  public byte[] getStderrCapture() {
+    ensureNotClosed();
+    return nativeGetStderrCapture(nativeHandle);
+  }
+
+  @Override
+  public boolean hasStdoutCapture() {
+    ensureNotClosed();
+    final int result = nativeHasStdoutCapture(nativeHandle);
+    return result == 1;
+  }
+
+  @Override
+  public boolean hasStderrCapture() {
+    ensureNotClosed();
+    final int result = nativeHasStderrCapture(nativeHandle);
+    return result == 1;
+  }
+
   @Override
   protected void doClose() throws Exception {
     if (nativeHandle != 0) {
@@ -547,4 +593,16 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
       boolean canAccessMetadata);
 
   private static native void nativeCleanup(long contextHandle);
+
+  // Output capture native methods
+
+  private static native int nativeEnableOutputCapture(long contextHandle);
+
+  private static native byte[] nativeGetStdoutCapture(long contextHandle);
+
+  private static native byte[] nativeGetStderrCapture(long contextHandle);
+
+  private static native int nativeHasStdoutCapture(long contextHandle);
+
+  private static native int nativeHasStderrCapture(long contextHandle);
 }

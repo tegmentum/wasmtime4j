@@ -228,7 +228,7 @@ All WasiLinker configuration methods are now fully implemented:
 
 **Stream Bridging Support**:
 - **InputStream (stdin)**: ✓ Fully supported - reads all bytes from InputStream and passes to native stdin buffer
-- **OutputStream (stdout/stderr)**: ⚠️ Limited - streaming capture requires post-execution buffer retrieval (use FILE redirection as alternative)
+- **OutputStream (stdout/stderr)**: ✓ Fully supported - output capture enabled via `WasiContext.enableOutputCapture()`, retrieved via `getStdoutCapture()` and `getStderrCapture()` after execution
 
 ---
 
@@ -257,13 +257,12 @@ All WasiLinker configuration methods are now fully implemented:
 ## Recommendations
 
 ### Short-term Goals
-1. **Integration Tests**: Expand test coverage for WasiLinker configuration methods
-2. **OutputStream Capture**: Add post-execution buffer retrieval API for stdout/stderr capture to OutputStream
+1. **Integration Tests**: Expand test coverage for WasiLinker configuration methods and output capture functionality
 
 ### Long-term Goals
-3. **HTTP Client**: Implement `wasi:http` for web service communication
-4. **Key-Value Store**: Implement `wasi:keyvalue` for persistent storage
-5. **Advanced Interfaces**: Evaluate need for logging, blobstore, config, and runtime interfaces
+2. **HTTP Client**: Implement `wasi:http` for web service communication
+3. **Key-Value Store**: Implement `wasi:keyvalue` for persistent storage
+4. **Advanced Interfaces**: Evaluate need for logging, blobstore, config, and runtime interfaces
 
 ---
 
@@ -275,12 +274,10 @@ The wasmtime4j project has **complete WASI Preview 2 coverage** for production u
 - 9 core interfaces fully implemented with both JNI and Panama
 - UDP datagram operations 100% complete with 81 unit tests
 - WasiLinker configuration methods fully implemented
+- Complete Java stream bridging (InputStream stdin and OutputStream stdout/stderr capture)
 - Consistent architecture across all implementations
 - Comprehensive API documentation
 - Comprehensive test coverage across all interfaces
-
-**Minor Gaps**:
-- Java OutputStream stdio capture (InputStream stdin is fully supported; file-based alternatives available for OutputStream)
 
 **Not Critical**:
 - Advanced resource management features (invoke, createHandle, transferOwnership)

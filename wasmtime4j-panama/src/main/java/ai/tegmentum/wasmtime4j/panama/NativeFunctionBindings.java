@@ -6764,6 +6764,99 @@ public final class NativeFunctionBindings {
         canCreate);
   }
 
+  // ===== WASI Output Capture Methods =====
+
+  /**
+   * Enables output capture for stdout and stderr.
+   *
+   * <p>This configures the WASI context to capture stdout and stderr to internal buffers instead of
+   * inheriting from the host process.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextEnableOutputCapture(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_enable_output_capture", Integer.class, contextHandle);
+  }
+
+  /**
+   * Gets captured stdout data.
+   *
+   * <p>Returns a pointer to the captured stdout data and sets the length in the output parameter.
+   * The caller must free the returned buffer using wasiFreeCaptureBuffer.
+   *
+   * @param contextHandle the WASI context handle
+   * @param lengthOut output parameter for the data length
+   * @return pointer to captured data, or NULL if capture is not enabled or empty
+   */
+  public MemorySegment wasiContextGetStdoutCapture(
+      final MemorySegment contextHandle, final MemorySegment lengthOut) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(lengthOut, "lengthOut");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_get_stdout_capture",
+        MemorySegment.class,
+        contextHandle,
+        lengthOut);
+  }
+
+  /**
+   * Gets captured stderr data.
+   *
+   * <p>Returns a pointer to the captured stderr data and sets the length in the output parameter.
+   * The caller must free the returned buffer using wasiFreeCaptureBuffer.
+   *
+   * @param contextHandle the WASI context handle
+   * @param lengthOut output parameter for the data length
+   * @return pointer to captured data, or NULL if capture is not enabled or empty
+   */
+  public MemorySegment wasiContextGetStderrCapture(
+      final MemorySegment contextHandle, final MemorySegment lengthOut) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(lengthOut, "lengthOut");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_get_stderr_capture",
+        MemorySegment.class,
+        contextHandle,
+        lengthOut);
+  }
+
+  /**
+   * Frees a capture buffer allocated by getStdoutCapture or getStderrCapture.
+   *
+   * @param buffer pointer to the buffer to free (can be NULL)
+   */
+  public void wasiFreeCaptureBuffer(final MemorySegment buffer) {
+    // buffer can be NULL
+    callNativeFunction("wasmtime4j_wasi_free_capture_buffer", Void.class, buffer);
+  }
+
+  /**
+   * Checks if stdout capture is enabled.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 1 if capture is enabled, 0 if not, -1 on error
+   */
+  public int wasiContextHasStdoutCapture(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_has_stdout_capture", Integer.class, contextHandle);
+  }
+
+  /**
+   * Checks if stderr capture is enabled.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 1 if capture is enabled, 0 if not, -1 on error
+   */
+  public int wasiContextHasStderrCapture(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_has_stderr_capture", Integer.class, contextHandle);
+  }
+
   /**
    * Adds a WASI context to a Store.
    *
