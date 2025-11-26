@@ -4,7 +4,7 @@
 //! TCP sockets, UDP sockets, and network operations.
 
 use jni::objects::{JByteArray, JClass, JObject, JObjectArray};
-use jni::sys::{jboolean, jbyte, jint, jlong, jlongArray, jshort};
+use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jlongArray, jshort};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -1319,6 +1319,305 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
             "ai/tegmentum/wasmtime4j/exception/WasmException",
             format!("Failed to close socket: {}", e),
         );
+    }
+}
+
+/// Receive datagrams from UDP socket
+///
+/// Returns an encoded byte array:
+/// - First 4 bytes: count (big-endian int)
+/// - For each datagram:
+///   - 4 bytes: data length
+///   - N bytes: data
+///   - 1 byte: isIpv4 (1 or 0)
+///   - 2 bytes: port (big-endian)
+///   - For IPv4: 4 bytes octets
+///   - For IPv6: 4 bytes flowInfo + 4 bytes scopeId + 16 bytes (8 shorts)
+///
+/// # Safety
+/// This function is called from Java via JNI and must handle all edge cases safely.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket_nativeReceive(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    socket_handle: jlong,
+    max_results: jlong,
+) -> jbyteArray {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        return std::ptr::null_mut();
+    }
+
+    match wasi_sockets_helpers::udp_socket_receive(
+        context.unwrap(),
+        socket_handle as u64,
+        max_results as u64,
+    ) {
+        Ok(datagrams) => {
+            // Calculate total size needed
+            let count = datagrams.len();
+            let mut total_size = 4; // count
+            for (data, addr) in &datagrams {
+                total_size += 4; // data length
+                total_size += data.len(); // data
+                total_size += 1; // isIpv4
+                total_size += 2; // port
+                match &addr.ip {
+                    IpAddress::V4(_) => total_size += 4, // IPv4 octets
+                    IpAddress::V6(_) => total_size += 4 + 4 + 16, // flowInfo + scopeId + segments
+                }
+            }
+
+            // Create output buffer
+            let mut buffer = vec![0u8; total_size];
+            let mut offset = 0;
+
+            // Write count
+            buffer[offset] = ((count >> 24) & 0xFF) as u8;
+            buffer[offset + 1] = ((count >> 16) & 0xFF) as u8;
+            buffer[offset + 2] = ((count >> 8) & 0xFF) as u8;
+            buffer[offset + 3] = (count & 0xFF) as u8;
+            offset += 4;
+
+            // Write each datagram
+            for (data, addr) in &datagrams {
+                // Write data length
+                let data_len = data.len();
+                buffer[offset] = ((data_len >> 24) & 0xFF) as u8;
+                buffer[offset + 1] = ((data_len >> 16) & 0xFF) as u8;
+                buffer[offset + 2] = ((data_len >> 8) & 0xFF) as u8;
+                buffer[offset + 3] = (data_len & 0xFF) as u8;
+                offset += 4;
+
+                // Write data
+                buffer[offset..offset + data_len].copy_from_slice(data);
+                offset += data_len;
+
+                // Write address info
+                match &addr.ip {
+                    IpAddress::V4(octets) => {
+                        buffer[offset] = 1; // isIpv4
+                        offset += 1;
+                        buffer[offset] = ((addr.port >> 8) & 0xFF) as u8;
+                        buffer[offset + 1] = (addr.port & 0xFF) as u8;
+                        offset += 2;
+                        buffer[offset..offset + 4].copy_from_slice(octets);
+                        offset += 4;
+                    }
+                    IpAddress::V6(segments) => {
+                        buffer[offset] = 0; // isIpv4
+                        offset += 1;
+                        buffer[offset] = ((addr.port >> 8) & 0xFF) as u8;
+                        buffer[offset + 1] = (addr.port & 0xFF) as u8;
+                        offset += 2;
+                        // flowInfo
+                        buffer[offset] = ((addr.flow_info >> 24) & 0xFF) as u8;
+                        buffer[offset + 1] = ((addr.flow_info >> 16) & 0xFF) as u8;
+                        buffer[offset + 2] = ((addr.flow_info >> 8) & 0xFF) as u8;
+                        buffer[offset + 3] = (addr.flow_info & 0xFF) as u8;
+                        offset += 4;
+                        // scopeId
+                        buffer[offset] = ((addr.scope_id >> 24) & 0xFF) as u8;
+                        buffer[offset + 1] = ((addr.scope_id >> 16) & 0xFF) as u8;
+                        buffer[offset + 2] = ((addr.scope_id >> 8) & 0xFF) as u8;
+                        buffer[offset + 3] = (addr.scope_id & 0xFF) as u8;
+                        offset += 4;
+                        // segments
+                        for seg in segments {
+                            buffer[offset] = ((seg >> 8) & 0xFF) as u8;
+                            buffer[offset + 1] = (seg & 0xFF) as u8;
+                            offset += 2;
+                        }
+                    }
+                }
+            }
+
+            // Create Java byte array
+            match env.new_byte_array(buffer.len() as i32) {
+                Ok(arr) => {
+                    // Convert u8 to i8 for JNI
+                    let i8_buffer: Vec<i8> = buffer.into_iter().map(|b| b as i8).collect();
+                    let _ = env.set_byte_array_region(&arr, 0, &i8_buffer);
+                    arr.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to receive datagrams: {}", e),
+            );
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Send datagrams on UDP socket
+///
+/// Takes an encoded byte array:
+/// - First 4 bytes: count (big-endian int)
+/// - For each datagram:
+///   - 4 bytes: data length
+///   - N bytes: data
+///   - 1 byte: hasRemoteAddr
+///   - If hasRemoteAddr:
+///     - 1 byte: isIpv4
+///     - 2 bytes: port (big-endian)
+///     - For IPv4: 4 bytes octets
+///     - For IPv6: 4 bytes flowInfo + 4 bytes scopeId + 16 bytes (8 shorts)
+///
+/// # Safety
+/// This function is called from Java via JNI and must handle all edge cases safely.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket_nativeSend(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    socket_handle: jlong,
+    encoded_datagrams: jbyteArray,
+) -> jlong {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        return -1;
+    }
+
+    // Get byte array
+    let arr = unsafe { JByteArray::from_raw(encoded_datagrams) };
+    let len = match env.get_array_length(&arr) {
+        Ok(l) => l as usize,
+        Err(_) => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid byte array");
+            return -1;
+        }
+    };
+
+    let mut buffer = vec![0i8; len];
+    if env.get_byte_array_region(&arr, 0, &mut buffer).is_err() {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Failed to read byte array");
+        return -1;
+    }
+
+    let buffer: Vec<u8> = buffer.into_iter().map(|b| b as u8).collect();
+    let mut offset = 0;
+
+    // Read count
+    if buffer.len() < 4 {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer too small");
+        return -1;
+    }
+    let count = ((buffer[0] as u32) << 24)
+        | ((buffer[1] as u32) << 16)
+        | ((buffer[2] as u32) << 8)
+        | (buffer[3] as u32);
+    offset += 4;
+
+    // Parse datagrams
+    let mut datagrams = Vec::new();
+    for _ in 0..count {
+        if offset + 4 > buffer.len() {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+            return -1;
+        }
+
+        // Read data length
+        let data_len = ((buffer[offset] as u32) << 24)
+            | ((buffer[offset + 1] as u32) << 16)
+            | ((buffer[offset + 2] as u32) << 8)
+            | (buffer[offset + 3] as u32);
+        offset += 4;
+
+        if offset + data_len as usize > buffer.len() {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+            return -1;
+        }
+
+        // Read data
+        let data = buffer[offset..offset + data_len as usize].to_vec();
+        offset += data_len as usize;
+
+        // Read hasRemoteAddr
+        if offset >= buffer.len() {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+            return -1;
+        }
+        let has_remote_addr = buffer[offset] != 0;
+        offset += 1;
+
+        let addr = if has_remote_addr {
+            if offset >= buffer.len() {
+                let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+                return -1;
+            }
+            let is_ipv4 = buffer[offset] != 0;
+            offset += 1;
+
+            if offset + 2 > buffer.len() {
+                let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+                return -1;
+            }
+            let port = ((buffer[offset] as u16) << 8) | (buffer[offset + 1] as u16);
+            offset += 2;
+
+            if is_ipv4 {
+                if offset + 4 > buffer.len() {
+                    let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+                    return -1;
+                }
+                let octets: [u8; 4] = buffer[offset..offset + 4].try_into().unwrap();
+                offset += 4;
+                Some(IpSocketAddress {
+                    ip: IpAddress::V4(octets),
+                    port,
+                    flow_info: 0,
+                    scope_id: 0,
+                })
+            } else {
+                if offset + 4 + 4 + 16 > buffer.len() {
+                    let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
+                    return -1;
+                }
+                let flow_info = ((buffer[offset] as u32) << 24)
+                    | ((buffer[offset + 1] as u32) << 16)
+                    | ((buffer[offset + 2] as u32) << 8)
+                    | (buffer[offset + 3] as u32);
+                offset += 4;
+                let scope_id = ((buffer[offset] as u32) << 24)
+                    | ((buffer[offset + 1] as u32) << 16)
+                    | ((buffer[offset + 2] as u32) << 8)
+                    | (buffer[offset + 3] as u32);
+                offset += 4;
+                let mut segments = [0u16; 8];
+                for seg in &mut segments {
+                    *seg = ((buffer[offset] as u16) << 8) | (buffer[offset + 1] as u16);
+                    offset += 2;
+                }
+                Some(IpSocketAddress {
+                    ip: IpAddress::V6(segments),
+                    port,
+                    flow_info,
+                    scope_id,
+                })
+            }
+        } else {
+            None
+        };
+
+        datagrams.push((data, addr));
+    }
+
+    match wasi_sockets_helpers::udp_socket_send(context.unwrap(), socket_handle as u64, &datagrams) {
+        Ok(sent) => sent as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to send datagrams: {}", e),
+            );
+            -1
+        }
     }
 }
 

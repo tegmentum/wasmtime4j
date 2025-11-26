@@ -119,6 +119,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdp
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket_nativeClose
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket
+ * Method:    nativeReceive
+ * Signature: (JJJ)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket_nativeReceive
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket
+ * Method:    nativeSend
+ * Signature: (JJ[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpSocket_nativeSend
+  (JNIEnv *, jclass, jlong, jlong, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif

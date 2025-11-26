@@ -21,7 +21,9 @@ import ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpSocketAddress;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4SocketAddress;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6SocketAddress;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiNetwork;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiUdpSocket;
@@ -281,9 +283,83 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
     if (closed) {
       throw new WasmException("Socket is closed");
     }
+    if (maxResults <= 0) {
+      return new IncomingDatagram[0];
+    }
 
-    // TODO: Implement once native bindings are available
-    throw new UnsupportedOperationException("receive() not yet implemented");
+    final byte[] encoded = nativeReceive(contextHandle, socketHandle, maxResults);
+    if (encoded == null || encoded.length < 4) {
+      return new IncomingDatagram[0];
+    }
+
+    // Decode: first 4 bytes is count
+    final int count = ((encoded[0] & 0xFF) << 24) | ((encoded[1] & 0xFF) << 16)
+        | ((encoded[2] & 0xFF) << 8) | (encoded[3] & 0xFF);
+
+    if (count <= 0) {
+      return new IncomingDatagram[0];
+    }
+
+    final IncomingDatagram[] result = new IncomingDatagram[count];
+    int offset = 4;
+
+    for (int i = 0; i < count; i++) {
+      // Read data length (4 bytes)
+      final int dataLen = ((encoded[offset] & 0xFF) << 24)
+          | ((encoded[offset + 1] & 0xFF) << 16)
+          | ((encoded[offset + 2] & 0xFF) << 8)
+          | (encoded[offset + 3] & 0xFF);
+      offset += 4;
+
+      // Read data
+      final byte[] data = new byte[dataLen];
+      System.arraycopy(encoded, offset, data, 0, dataLen);
+      offset += dataLen;
+
+      // Read isIpv4 flag
+      final boolean isIpv4 = encoded[offset++] != 0;
+
+      // Read port (2 bytes big-endian)
+      final int port = ((encoded[offset] & 0xFF) << 8) | (encoded[offset + 1] & 0xFF);
+      offset += 2;
+
+      final IpSocketAddress remoteAddress;
+      if (isIpv4) {
+        // Read 4 bytes of IPv4 octets
+        final byte[] octets = new byte[4];
+        System.arraycopy(encoded, offset, octets, 0, 4);
+        offset += 4;
+        remoteAddress = IpSocketAddress.ipv4(new Ipv4SocketAddress(port, new Ipv4Address(octets)));
+      } else {
+        // Read flow info (4 bytes)
+        final int flowInfoVal = ((encoded[offset] & 0xFF) << 24)
+            | ((encoded[offset + 1] & 0xFF) << 16)
+            | ((encoded[offset + 2] & 0xFF) << 8)
+            | (encoded[offset + 3] & 0xFF);
+        offset += 4;
+
+        // Read scope ID (4 bytes)
+        final int scopeIdVal = ((encoded[offset] & 0xFF) << 24)
+            | ((encoded[offset + 1] & 0xFF) << 16)
+            | ((encoded[offset + 2] & 0xFF) << 8)
+            | (encoded[offset + 3] & 0xFF);
+        offset += 4;
+
+        // Read 16 bytes of IPv6 segments (8 shorts)
+        final short[] segments = new short[8];
+        for (int j = 0; j < 8; j++) {
+          segments[j] = (short) (((encoded[offset] & 0xFF) << 8) | (encoded[offset + 1] & 0xFF));
+          offset += 2;
+        }
+        remoteAddress = IpSocketAddress.ipv6(
+            new Ipv6SocketAddress(port, flowInfoVal, new Ipv6Address(segments), scopeIdVal));
+      }
+
+      result[i] = new IncomingDatagram(data, remoteAddress);
+    }
+
+    LOGGER.fine("Received " + count + " datagrams on UDP socket");
+    return result;
   }
 
   @Override
@@ -291,9 +367,101 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
     if (closed) {
       throw new WasmException("Socket is closed");
     }
+    if (datagrams == null || datagrams.length == 0) {
+      return 0;
+    }
 
-    // TODO: Implement once native bindings are available
-    throw new UnsupportedOperationException("send() not yet implemented");
+    // Calculate total encoded size
+    int totalSize = 4; // count
+    for (final OutgoingDatagram dg : datagrams) {
+      if (dg == null) {
+        throw new IllegalArgumentException("Datagram cannot be null");
+      }
+      totalSize += 4; // data length
+      totalSize += dg.getData().length; // data
+      totalSize += 1; // hasRemoteAddr
+      if (dg.hasRemoteAddress()) {
+        totalSize += 1; // isIpv4
+        totalSize += 2; // port
+        if (dg.getRemoteAddress().isIpv4()) {
+          totalSize += 4; // IPv4 octets
+        } else {
+          totalSize += 4 + 4 + 16; // flowInfo + scopeId + 8 shorts
+        }
+      }
+    }
+
+    // Encode datagrams
+    final byte[] encoded = new byte[totalSize];
+    int offset = 0;
+
+    // Write count
+    final int count = datagrams.length;
+    encoded[offset++] = (byte) ((count >> 24) & 0xFF);
+    encoded[offset++] = (byte) ((count >> 16) & 0xFF);
+    encoded[offset++] = (byte) ((count >> 8) & 0xFF);
+    encoded[offset++] = (byte) (count & 0xFF);
+
+    for (final OutgoingDatagram dg : datagrams) {
+      final byte[] data = dg.getData();
+
+      // Write data length
+      encoded[offset++] = (byte) ((data.length >> 24) & 0xFF);
+      encoded[offset++] = (byte) ((data.length >> 16) & 0xFF);
+      encoded[offset++] = (byte) ((data.length >> 8) & 0xFF);
+      encoded[offset++] = (byte) (data.length & 0xFF);
+
+      // Write data
+      System.arraycopy(data, 0, encoded, offset, data.length);
+      offset += data.length;
+
+      // Write hasRemoteAddr
+      encoded[offset++] = (byte) (dg.hasRemoteAddress() ? 1 : 0);
+
+      if (dg.hasRemoteAddress()) {
+        final IpSocketAddress addr = dg.getRemoteAddress();
+        final boolean isIpv4 = addr.isIpv4();
+        encoded[offset++] = (byte) (isIpv4 ? 1 : 0);
+
+        if (isIpv4) {
+          final Ipv4SocketAddress ipv4Addr = addr.getIpv4();
+          // Write port
+          encoded[offset++] = (byte) ((ipv4Addr.getPort() >> 8) & 0xFF);
+          encoded[offset++] = (byte) (ipv4Addr.getPort() & 0xFF);
+          // Write octets
+          final byte[] octets = ipv4Addr.getAddress().getOctets();
+          System.arraycopy(octets, 0, encoded, offset, 4);
+          offset += 4;
+        } else {
+          final Ipv6SocketAddress ipv6Addr = addr.getIpv6();
+          // Write port
+          encoded[offset++] = (byte) ((ipv6Addr.getPort() >> 8) & 0xFF);
+          encoded[offset++] = (byte) (ipv6Addr.getPort() & 0xFF);
+          // Write flow info
+          final int flowInfoVal = ipv6Addr.getFlowInfo();
+          encoded[offset++] = (byte) ((flowInfoVal >> 24) & 0xFF);
+          encoded[offset++] = (byte) ((flowInfoVal >> 16) & 0xFF);
+          encoded[offset++] = (byte) ((flowInfoVal >> 8) & 0xFF);
+          encoded[offset++] = (byte) (flowInfoVal & 0xFF);
+          // Write scope ID
+          final int scopeIdVal = ipv6Addr.getScopeId();
+          encoded[offset++] = (byte) ((scopeIdVal >> 24) & 0xFF);
+          encoded[offset++] = (byte) ((scopeIdVal >> 16) & 0xFF);
+          encoded[offset++] = (byte) ((scopeIdVal >> 8) & 0xFF);
+          encoded[offset++] = (byte) (scopeIdVal & 0xFF);
+          // Write segments
+          final short[] segments = ipv6Addr.getAddress().getSegments();
+          for (int j = 0; j < 8; j++) {
+            encoded[offset++] = (byte) ((segments[j] >> 8) & 0xFF);
+            encoded[offset++] = (byte) (segments[j] & 0xFF);
+          }
+        }
+      }
+    }
+
+    final long sentCount = nativeSend(contextHandle, socketHandle, encoded);
+    LOGGER.fine("Sent " + sentCount + " datagrams on UDP socket");
+    return sentCount;
   }
 
   @Override
@@ -445,4 +613,8 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
   private static native long nativeSubscribe(long contextHandle, long socketHandle);
 
   private static native void nativeClose(long contextHandle, long socketHandle);
+
+  private static native byte[] nativeReceive(long contextHandle, long socketHandle, long maxResults);
+
+  private static native long nativeSend(long contextHandle, long socketHandle, byte[] encodedDatagrams);
 }

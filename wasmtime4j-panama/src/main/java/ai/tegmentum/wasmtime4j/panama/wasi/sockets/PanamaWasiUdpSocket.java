@@ -23,7 +23,9 @@ import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpSocketAddress;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4SocketAddress;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6SocketAddress;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiNetwork;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiUdpSocket;
@@ -66,6 +68,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
   private static final MethodHandle SET_SEND_BUFFER_SIZE_HANDLE;
   private static final MethodHandle SUBSCRIBE_HANDLE;
   private static final MethodHandle CLOSE_HANDLE;
+  private static final MethodHandle RECEIVE_HANDLE;
+  private static final MethodHandle SEND_HANDLE;
 
   static {
     try {
@@ -241,6 +245,49 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
           linker.downcallHandle(
               nativeLib.find("wasmtime4j_panama_wasi_udp_socket_close").orElseThrow(),
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+      // int wasmtime4j_panama_wasi_udp_socket_receive(context_handle, socket_handle, max_results,
+      // out_count, out_datagrams_data, out_datagrams_len, out_is_ipv4, out_ipv4_octets,
+      // out_ipv6_segments, out_ports, out_flow_info, out_scope_id)
+      RECEIVE_HANDLE =
+          linker.downcallHandle(
+              nativeLib.find("wasmtime4j_panama_wasi_udp_socket_receive").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // context_handle
+                  ValueLayout.JAVA_LONG, // socket_handle
+                  ValueLayout.JAVA_LONG, // max_results
+                  ValueLayout.ADDRESS, // out_count
+                  ValueLayout.ADDRESS, // out_datagrams_data
+                  ValueLayout.ADDRESS, // out_datagrams_len
+                  ValueLayout.ADDRESS, // out_is_ipv4
+                  ValueLayout.ADDRESS, // out_ipv4_octets
+                  ValueLayout.ADDRESS, // out_ipv6_segments
+                  ValueLayout.ADDRESS, // out_ports
+                  ValueLayout.ADDRESS, // out_flow_info
+                  ValueLayout.ADDRESS)); // out_scope_id
+
+      // int wasmtime4j_panama_wasi_udp_socket_send(context_handle, socket_handle, datagram_count,
+      // datagram_data, datagram_lengths, has_remote_address, is_ipv4, ipv4_octets, ipv6_segments,
+      // ports, flow_info, scope_id, out_sent_count)
+      SEND_HANDLE =
+          linker.downcallHandle(
+              nativeLib.find("wasmtime4j_panama_wasi_udp_socket_send").orElseThrow(),
+              FunctionDescriptor.of(
+                  ValueLayout.JAVA_INT,
+                  ValueLayout.ADDRESS, // context_handle
+                  ValueLayout.JAVA_LONG, // socket_handle
+                  ValueLayout.JAVA_LONG, // datagram_count
+                  ValueLayout.ADDRESS, // datagram_data
+                  ValueLayout.ADDRESS, // datagram_lengths
+                  ValueLayout.ADDRESS, // has_remote_address
+                  ValueLayout.ADDRESS, // is_ipv4
+                  ValueLayout.ADDRESS, // ipv4_octets
+                  ValueLayout.ADDRESS, // ipv6_segments
+                  ValueLayout.ADDRESS, // ports
+                  ValueLayout.ADDRESS, // flow_info
+                  ValueLayout.ADDRESS, // scope_id
+                  ValueLayout.ADDRESS)); // out_sent_count
 
     } catch (final Throwable e) {
       LOGGER.severe(
@@ -671,9 +718,112 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     if (closed) {
       throw new WasmException("Socket is closed");
     }
+    if (maxResults <= 0) {
+      return new IncomingDatagram[0];
+    }
 
-    // TODO: Implement once native bindings are available
-    throw new UnsupportedOperationException("receive() not yet implemented");
+    // Maximum UDP datagram size (65535 - IP header - UDP header)
+    final int maxDatagramSize = 65507;
+    final int maxResultsInt = (int) Math.min(maxResults, 64);
+
+    try (final Arena arena = Arena.ofConfined()) {
+      // Allocate output buffers
+      final MemorySegment outCount = arena.allocate(ValueLayout.JAVA_LONG);
+
+      // Allocate arrays for datagram data pointers and lengths
+      final MemorySegment outDatagramsData =
+          arena.allocate(ValueLayout.ADDRESS, maxResultsInt);
+      final MemorySegment outDatagramsLen =
+          arena.allocate(ValueLayout.JAVA_LONG, maxResultsInt);
+
+      // Pre-allocate data buffers for each potential datagram
+      final MemorySegment[] dataBuffers = new MemorySegment[maxResultsInt];
+      for (int i = 0; i < maxResultsInt; i++) {
+        dataBuffers[i] = arena.allocate(maxDatagramSize);
+        outDatagramsData.setAtIndex(ValueLayout.ADDRESS, i, dataBuffers[i]);
+      }
+
+      // Allocate address information arrays
+      final MemorySegment outIsIpv4 = arena.allocate(ValueLayout.JAVA_INT, maxResultsInt);
+      final MemorySegment outIpv4Octets = arena.allocate(4L * maxResultsInt);
+      final MemorySegment outIpv6Segments =
+          arena.allocate(ValueLayout.JAVA_SHORT, 8L * maxResultsInt);
+      final MemorySegment outPorts = arena.allocate(ValueLayout.JAVA_SHORT, maxResultsInt);
+      final MemorySegment outFlowInfo = arena.allocate(ValueLayout.JAVA_INT, maxResultsInt);
+      final MemorySegment outScopeId = arena.allocate(ValueLayout.JAVA_INT, maxResultsInt);
+
+      // Call native function
+      final int result =
+          (int)
+              RECEIVE_HANDLE.invoke(
+                  contextHandle,
+                  socketHandle,
+                  (long) maxResultsInt,
+                  outCount,
+                  outDatagramsData,
+                  outDatagramsLen,
+                  outIsIpv4,
+                  outIpv4Octets,
+                  outIpv6Segments,
+                  outPorts,
+                  outFlowInfo,
+                  outScopeId);
+
+      if (result != 0) {
+        throw new WasmException("Failed to receive datagrams");
+      }
+
+      // Read the count of received datagrams
+      final int count = (int) outCount.get(ValueLayout.JAVA_LONG, 0);
+      if (count <= 0) {
+        return new IncomingDatagram[0];
+      }
+
+      // Build result array
+      final IncomingDatagram[] datagrams = new IncomingDatagram[count];
+      for (int i = 0; i < count; i++) {
+        // Read datagram data
+        final int dataLen = (int) outDatagramsLen.getAtIndex(ValueLayout.JAVA_LONG, i);
+        final byte[] data = new byte[dataLen];
+        MemorySegment.copy(dataBuffers[i], ValueLayout.JAVA_BYTE, 0, data, 0, dataLen);
+
+        // Read address information
+        final int isIpv4 = outIsIpv4.getAtIndex(ValueLayout.JAVA_INT, i);
+        final int port = outPorts.getAtIndex(ValueLayout.JAVA_SHORT, i) & 0xFFFF;
+
+        final IpSocketAddress remoteAddress;
+        if (isIpv4 != 0) {
+          // IPv4 address
+          final byte[] octets = new byte[4];
+          for (int j = 0; j < 4; j++) {
+            octets[j] = outIpv4Octets.get(ValueLayout.JAVA_BYTE, i * 4L + j);
+          }
+          remoteAddress =
+              IpSocketAddress.ipv4(new Ipv4SocketAddress(port, new Ipv4Address(octets)));
+        } else {
+          // IPv6 address
+          final short[] segments = new short[8];
+          for (int j = 0; j < 8; j++) {
+            segments[j] = outIpv6Segments.getAtIndex(ValueLayout.JAVA_SHORT, i * 8L + j);
+          }
+          final int flowInfo = outFlowInfo.getAtIndex(ValueLayout.JAVA_INT, i);
+          final int scopeId = outScopeId.getAtIndex(ValueLayout.JAVA_INT, i);
+          remoteAddress =
+              IpSocketAddress.ipv6(
+                  new Ipv6SocketAddress(port, flowInfo, new Ipv6Address(segments), scopeId));
+        }
+
+        datagrams[i] = new IncomingDatagram(data, remoteAddress);
+      }
+
+      LOGGER.fine("Received " + count + " datagrams on UDP socket");
+      return datagrams;
+
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new RuntimeException("Error receiving datagrams: " + e.getMessage(), e);
+    }
   }
 
   @Override
@@ -681,9 +831,103 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     if (closed) {
       throw new WasmException("Socket is closed");
     }
+    if (datagrams == null || datagrams.length == 0) {
+      return 0;
+    }
 
-    // TODO: Implement once native bindings are available
-    throw new UnsupportedOperationException("send() not yet implemented");
+    final int count = datagrams.length;
+
+    try (final Arena arena = Arena.ofConfined()) {
+      // Allocate arrays for datagram data
+      final MemorySegment datagramDataPtrs = arena.allocate(ValueLayout.ADDRESS, count);
+      final MemorySegment datagramLengths = arena.allocate(ValueLayout.JAVA_LONG, count);
+
+      // Allocate arrays for address information
+      final MemorySegment hasRemoteAddress = arena.allocate(ValueLayout.JAVA_INT, count);
+      final MemorySegment isIpv4 = arena.allocate(ValueLayout.JAVA_INT, count);
+      final MemorySegment ipv4Octets = arena.allocate(4L * count);
+      final MemorySegment ipv6Segments = arena.allocate(ValueLayout.JAVA_SHORT, 8L * count);
+      final MemorySegment ports = arena.allocate(ValueLayout.JAVA_SHORT, count);
+      final MemorySegment flowInfo = arena.allocate(ValueLayout.JAVA_INT, count);
+      final MemorySegment scopeId = arena.allocate(ValueLayout.JAVA_INT, count);
+
+      // Output parameter
+      final MemorySegment outSentCount = arena.allocate(ValueLayout.JAVA_LONG);
+
+      // Populate arrays from datagrams
+      for (int i = 0; i < count; i++) {
+        final OutgoingDatagram datagram = datagrams[i];
+        if (datagram == null) {
+          throw new IllegalArgumentException("Datagram at index " + i + " is null");
+        }
+
+        // Copy datagram data
+        final byte[] data = datagram.getData();
+        final MemorySegment dataSegment = arena.allocate(data.length);
+        MemorySegment.copy(data, 0, dataSegment, ValueLayout.JAVA_BYTE, 0, data.length);
+        datagramDataPtrs.setAtIndex(ValueLayout.ADDRESS, i, dataSegment);
+        datagramLengths.setAtIndex(ValueLayout.JAVA_LONG, i, data.length);
+
+        // Set address information
+        if (datagram.hasRemoteAddress()) {
+          hasRemoteAddress.setAtIndex(ValueLayout.JAVA_INT, i, 1);
+          final IpSocketAddress addr = datagram.getRemoteAddress();
+
+          if (addr.isIpv4()) {
+            isIpv4.setAtIndex(ValueLayout.JAVA_INT, i, 1);
+            final Ipv4SocketAddress ipv4Addr = addr.getIpv4();
+            final byte[] octets = ipv4Addr.getAddress().getOctets();
+            for (int j = 0; j < 4; j++) {
+              ipv4Octets.set(ValueLayout.JAVA_BYTE, i * 4L + j, octets[j]);
+            }
+            ports.setAtIndex(ValueLayout.JAVA_SHORT, i, (short) ipv4Addr.getPort());
+          } else {
+            isIpv4.setAtIndex(ValueLayout.JAVA_INT, i, 0);
+            final Ipv6SocketAddress ipv6Addr = addr.getIpv6();
+            final short[] segments = ipv6Addr.getAddress().getSegments();
+            for (int j = 0; j < 8; j++) {
+              ipv6Segments.setAtIndex(ValueLayout.JAVA_SHORT, i * 8L + j, segments[j]);
+            }
+            ports.setAtIndex(ValueLayout.JAVA_SHORT, i, (short) ipv6Addr.getPort());
+            flowInfo.setAtIndex(ValueLayout.JAVA_INT, i, ipv6Addr.getFlowInfo());
+            scopeId.setAtIndex(ValueLayout.JAVA_INT, i, ipv6Addr.getScopeId());
+          }
+        } else {
+          hasRemoteAddress.setAtIndex(ValueLayout.JAVA_INT, i, 0);
+        }
+      }
+
+      // Call native function
+      final int result =
+          (int)
+              SEND_HANDLE.invoke(
+                  contextHandle,
+                  socketHandle,
+                  (long) count,
+                  datagramDataPtrs,
+                  datagramLengths,
+                  hasRemoteAddress,
+                  isIpv4,
+                  ipv4Octets,
+                  ipv6Segments,
+                  ports,
+                  flowInfo,
+                  scopeId,
+                  outSentCount);
+
+      if (result != 0) {
+        throw new WasmException("Failed to send datagrams");
+      }
+
+      final long sentCount = outSentCount.get(ValueLayout.JAVA_LONG, 0);
+      LOGGER.fine("Sent " + sentCount + " datagrams on UDP socket");
+      return sentCount;
+
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new RuntimeException("Error sending datagrams: " + e.getMessage(), e);
+    }
   }
 
   @Override
