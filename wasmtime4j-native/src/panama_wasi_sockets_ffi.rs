@@ -1104,6 +1104,176 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_close(
     }
 }
 
+/// Receive UDP datagrams
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `socket_handle`: The UDP socket handle
+/// - `max_results`: Maximum number of datagrams to receive
+/// - `out_count`: Pointer to write the number of datagrams received
+/// - `out_datagrams_data`: Array of pointers to write datagram data (caller allocates)
+/// - `out_datagrams_len`: Array to write datagram data lengths
+/// - `out_is_ipv4`: Array to write address family flags (1=IPv4, 0=IPv6)
+/// - `out_ipv4_octets`: Array to write IPv4 octets (4 bytes per datagram)
+/// - `out_ipv6_segments`: Array to write IPv6 segments (16 bytes per datagram)
+/// - `out_ports`: Array to write port numbers
+/// - `out_flow_info`: Array to write flow info (IPv6 only)
+/// - `out_scope_id`: Array to write scope IDs (IPv6 only)
+///
+/// # Returns
+/// 0 on success, -1 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_receive(
+    context_handle: *mut c_void,
+    socket_handle: c_longlong,
+    max_results: c_longlong,
+    out_count: *mut c_longlong,
+    out_datagrams_data: *mut *mut c_uchar,
+    out_datagrams_len: *mut c_longlong,
+    out_is_ipv4: *mut c_int,
+    out_ipv4_octets: *mut c_uchar,
+    out_ipv6_segments: *mut c_ushort,
+    out_ports: *mut c_ushort,
+    out_flow_info: *mut c_uint,
+    out_scope_id: *mut c_uint,
+) -> c_int {
+    if out_count.is_null() || out_datagrams_data.is_null() || out_datagrams_len.is_null() {
+        return -1;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return -1;
+    }
+
+    match wasi_sockets_helpers::udp_socket_receive(
+        context.unwrap(),
+        socket_handle as u64,
+        max_results as u64,
+    ) {
+        Ok(datagrams) => {
+            let count = datagrams.len();
+            unsafe {
+                *out_count = count as c_longlong;
+
+                for (i, (data, addr)) in datagrams.iter().enumerate() {
+                    // Write datagram data length
+                    *out_datagrams_len.add(i) = data.len() as c_longlong;
+
+                    // Copy datagram data to caller-allocated buffer
+                    let data_ptr = *out_datagrams_data.add(i);
+                    if !data_ptr.is_null() {
+                        std::ptr::copy_nonoverlapping(data.as_ptr(), data_ptr, data.len());
+                    }
+
+                    // Encode address
+                    encode_ip_socket_address_to_c(
+                        addr,
+                        out_is_ipv4.add(i),
+                        out_ipv4_octets.add(i * 4),
+                        out_ipv6_segments.add(i * 8),
+                        out_ports.add(i),
+                        out_flow_info.add(i),
+                        out_scope_id.add(i),
+                    );
+                }
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Send UDP datagrams
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `socket_handle`: The UDP socket handle
+/// - `datagram_count`: Number of datagrams to send
+/// - `datagram_data`: Array of pointers to datagram data
+/// - `datagram_lengths`: Array of datagram data lengths
+/// - `has_remote_address`: Array of flags indicating if remote address is provided
+/// - `is_ipv4`: Array of address family flags (1=IPv4, 0=IPv6)
+/// - `ipv4_octets`: Array of IPv4 octets (4 bytes per datagram)
+/// - `ipv6_segments`: Array of IPv6 segments (16 bytes per datagram)
+/// - `ports`: Array of port numbers
+/// - `flow_info`: Array of flow info (IPv6 only)
+/// - `scope_id`: Array of scope IDs (IPv6 only)
+/// - `out_sent_count`: Pointer to write the number of datagrams sent
+///
+/// # Returns
+/// 0 on success, -1 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_send(
+    context_handle: *mut c_void,
+    socket_handle: c_longlong,
+    datagram_count: c_longlong,
+    datagram_data: *const *const c_uchar,
+    datagram_lengths: *const c_longlong,
+    has_remote_address: *const c_int,
+    is_ipv4: *const c_int,
+    ipv4_octets: *const c_uchar,
+    ipv6_segments: *const c_ushort,
+    ports: *const c_ushort,
+    flow_info: *const c_uint,
+    scope_id: *const c_uint,
+    out_sent_count: *mut c_longlong,
+) -> c_int {
+    if out_sent_count.is_null()
+        || datagram_data.is_null()
+        || datagram_lengths.is_null()
+        || has_remote_address.is_null()
+    {
+        return -1;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return -1;
+    }
+
+    // Build datagrams vector
+    let mut datagrams = Vec::new();
+    unsafe {
+        for i in 0..datagram_count as usize {
+            // Get data
+            let data_ptr = *datagram_data.add(i);
+            let data_len = *datagram_lengths.add(i) as usize;
+            if data_ptr.is_null() {
+                return -1;
+            }
+            let data = std::slice::from_raw_parts(data_ptr, data_len).to_vec();
+
+            // Get optional remote address
+            let addr = if *has_remote_address.add(i) != 0 {
+                build_ip_socket_address_from_c(
+                    *is_ipv4.add(i),
+                    ipv4_octets.add(i * 4),
+                    ipv6_segments.add(i * 8),
+                    *ports.add(i),
+                    *flow_info.add(i),
+                    *scope_id.add(i),
+                )
+            } else {
+                None
+            };
+
+            datagrams.push((data, addr));
+        }
+    }
+
+    match wasi_sockets_helpers::udp_socket_send(context.unwrap(), socket_handle as u64, &datagrams)
+    {
+        Ok(count) => {
+            unsafe {
+                *out_sent_count = count as c_longlong;
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
 // =============================================================================
 // Network Functions
 // =============================================================================
