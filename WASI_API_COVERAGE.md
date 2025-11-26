@@ -104,25 +104,33 @@ The wasmtime4j project has **excellent coverage** of core WASI Preview 2 APIs wi
 ## Partially Implemented Interfaces ⚠️
 
 ### 1. wasi:sockets/udp@0.2.0
-- **Status**: Partially implemented (12/14 methods)
+- **Status**: Native layer complete, Java bindings in progress (12/14 methods)
 - **Implemented Methods**:
   - Binding: `startBind()`, `finishBind()`, `stream()`
   - Address queries: `localAddress()`, `remoteAddress()`, `addressFamily()`
   - Socket options: `setUnicastHopLimit()`, `receiveBufferSize()`, `setReceiveBufferSize()`, `sendBufferSize()`, `setSendBufferSize()`
   - Control: `subscribe()`, `close()`
-- **Missing Methods** (2):
-  - ❌ `receive(long maxResults)` → `IncomingDatagram[]`
-  - ❌ `send(OutgoingDatagram[])` → `long`
-- **Root Cause**: Native Rust layer has MVP stub implementations
-  - Location: `wasmtime4j-native/src/wasi_sockets_helpers.rs:385-401`
-  - `udp_socket_receive()` returns empty Vec
-  - `udp_socket_send()` returns datagram count without actually sending
-- **Impact**: UDP sockets can be configured and bound, but cannot transmit datagrams
+- **In Progress Methods** (2):
+  - ⏳ `receive(long maxResults)` → `IncomingDatagram[]` - Native ✓ | JNI ❌ | Panama FFI ✓ | Panama Java ❌
+  - ⏳ `send(OutgoingDatagram[])` → `long` - Native ✓ | JNI ❌ | Panama FFI ✓ | Panama Java ❌
+- **Implementation Status** (as of 2025-11-25):
+  - ✅ **Native Rust Helpers** (commit c858adae): Full implementation in `wasi_sockets_helpers.rs:385-535`
+    - Non-blocking I/O with proper EWOULDBLOCK/EAGAIN handling
+    - Partial send semantics (returns count of successfully sent datagrams)
+    - Global socket registry with thread-safe access
+  - ✅ **Panama FFI Bindings** (commit b49a094f): C-compatible functions in `panama_wasi_sockets_ffi.rs`
+    - `wasmtime4j_panama_wasi_udp_socket_receive()` with array marshalling
+    - `wasmtime4j_panama_wasi_udp_socket_send()` with complex parameter handling
+  - ❌ **JNI Bindings**: BLOCKED - Requires advanced JNI object array creation patterns
+  - ⏳ **Panama Java Layer**: Method handles and implementations pending
+- **Impact**: Core UDP functionality implemented at native level; Java bindings require complex memory marshalling
 - **Implementations**: JNI ⚠️ | Panama ⚠️
 - **Location**:
   - API: `wasmtime4j/src/main/java/ai/tegmentum/wasmtime4j/wasi/sockets/WasiUdpSocket.java`
+  - Native Helpers: `wasmtime4j-native/src/wasi_sockets_helpers.rs:385-535`
+  - Panama FFI: `wasmtime4j-native/src/panama_wasi_sockets_ffi.rs:1107-1275`
   - JNI: `wasmtime4j-jni/src/main/java/ai/tegmentum/wasmtime4j/jni/wasi/sockets/JniWasiUdpSocket.java:280-297`
-  - Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/sockets/PanamaWasiUdpSocket.java`
+  - Panama: `wasmtime4j-panama/src/main/java/ai/tegmentum/wasmtime4j/panama/wasi/sockets/PanamaWasiUdpSocket.java:670-687`
 
 ### 2. wasi:filesystem/types
 - **Status**: Fully implemented
