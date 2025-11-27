@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
+import ai.tegmentum.wasmtime4j.WasiLinker;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -607,7 +608,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -659,7 +660,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -719,7 +720,7 @@ public class WasiTest {
     wasiCtx.setStdinBytes("Test input".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -796,7 +797,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 

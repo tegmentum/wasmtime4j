@@ -3296,6 +3296,15 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // engine_ptr
             ValueLayout.ADDRESS)); // wat_text (null-terminated string)
 
+    // Panama FFI module compile from WAT with output parameter
+    addFunctionBinding(
+        "wasmtime4j_panama_module_compile_wat",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // wat_text (null-terminated string)
+            ValueLayout.ADDRESS)); // module_ptr (output)
+
     // Module introspection functions
     addFunctionBinding(
         "wasmtime4j_module_imports_len",
@@ -4654,6 +4663,36 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT));
+
+    // WASI Output Capture Functions
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_enable_output_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_get_stdout_capture",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return buffer pointer
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS)); // data_len_out
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_get_stderr_capture",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return buffer pointer
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS)); // data_len_out
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_free_capture_buffer", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_has_stdout_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_has_stderr_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
     // WASI Linker Integration
     addFunctionBinding(
