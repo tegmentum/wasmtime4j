@@ -38,8 +38,9 @@ import org.junit.jupiter.api.TestInfo;
 /**
  * Validation tests for JniWasiUdpSocket parameter validation and state management.
  *
- * <p>These tests focus on defensive programming validation without requiring native library loading.
- * They verify that the Java layer correctly validates parameters before making native calls.
+ * <p>These tests focus on defensive programming validation without requiring native library
+ * loading. They verify that the Java layer correctly validates parameters before making native
+ * calls.
  *
  * <p>WASI Preview 2 specification: wasi:sockets/udp@0.2.0
  *
@@ -81,8 +82,7 @@ public class JniWasiUdpSocketValidationTest {
     @DisplayName("Should reject null address family")
     void shouldRejectNullAddressFamily() {
       final IllegalArgumentException exception =
-          assertThrows(
-              IllegalArgumentException.class, () -> JniWasiUdpSocket.create(1L, null));
+          assertThrows(IllegalArgumentException.class, () -> JniWasiUdpSocket.create(1L, null));
 
       assertTrue(exception.getMessage().contains("Address family"));
       LOGGER.info("Correctly rejected null address family: " + exception.getMessage());
@@ -147,8 +147,7 @@ public class JniWasiUdpSocketValidationTest {
     @DisplayName("Should create IPv6 datagram with all segments")
     void shouldCreateIpv6Datagram() {
       final byte[] data = "Test UDP payload IPv6".getBytes();
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
       final Ipv6SocketAddress socketAddr = new Ipv6SocketAddress(12345, 0, addr, 0);
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv6(socketAddr);
 
@@ -259,8 +258,7 @@ public class JniWasiUdpSocketValidationTest {
     @Test
     @DisplayName("Should handle link-local IPv6 address with scope ID")
     void shouldHandleLinkLocalIpv6WithScopeId() {
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {(short) 0xfe80, 0, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {(short) 0xfe80, 0, 0, 0, 0, 0, 0, 1});
       final Ipv6SocketAddress socketAddr = new Ipv6SocketAddress(8080, 0, addr, 2);
 
       assertEquals(2, socketAddr.getScopeId());
@@ -272,8 +270,7 @@ public class JniWasiUdpSocketValidationTest {
     @Test
     @DisplayName("Should handle IPv6 with flow info")
     void shouldHandleIpv6WithFlowInfo() {
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
       final Ipv6SocketAddress socketAddr = new Ipv6SocketAddress(8080, 123456, addr, 0);
 
       assertEquals(123456, socketAddr.getFlowInfo());
@@ -354,7 +351,8 @@ public class JniWasiUdpSocketValidationTest {
 
       assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(-1, addr));
       assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(-65535, addr));
-      assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(Integer.MIN_VALUE, addr));
+      assertThrows(
+          IllegalArgumentException.class, () -> new Ipv4SocketAddress(Integer.MIN_VALUE, addr));
 
       LOGGER.info("Correctly rejected negative ports");
     }
@@ -366,7 +364,8 @@ public class JniWasiUdpSocketValidationTest {
 
       assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(65536, addr));
       assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(100000, addr));
-      assertThrows(IllegalArgumentException.class, () -> new Ipv4SocketAddress(Integer.MAX_VALUE, addr));
+      assertThrows(
+          IllegalArgumentException.class, () -> new Ipv4SocketAddress(Integer.MAX_VALUE, addr));
 
       LOGGER.info("Correctly rejected ports above 65535");
     }
@@ -404,7 +403,8 @@ public class JniWasiUdpSocketValidationTest {
       final IncomingDatagram[] datagrams = new IncomingDatagram[5];
       for (int i = 0; i < 5; i++) {
         final byte[] data = ("Response " + i).getBytes();
-        final Ipv4Address addr = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, (byte) (100 + i)});
+        final Ipv4Address addr =
+            new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, (byte) (100 + i)});
         final Ipv4SocketAddress socketAddr = new Ipv4SocketAddress(10000 + i, addr);
         final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
         datagrams[i] = new IncomingDatagram(data, remoteAddr);

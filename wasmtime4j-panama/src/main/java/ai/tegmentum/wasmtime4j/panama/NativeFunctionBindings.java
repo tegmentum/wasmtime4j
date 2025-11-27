@@ -6870,8 +6870,7 @@ public final class NativeFunctionBindings {
   public int wasiCtxAddToStore(final MemorySegment contextHandle, final MemorySegment storeHandle) {
     validatePointer(contextHandle, "contextHandle");
     validatePointer(storeHandle, "storeHandle");
-    return callNativeFunction(
-        "wasi_ctx_add_to_store", Integer.class, contextHandle, storeHandle);
+    return callNativeFunction("wasi_ctx_add_to_store", Integer.class, contextHandle, storeHandle);
   }
 
   /**

@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
  * Unit tests for JniWasiLinker configuration methods.
  *
  * <p>Tests cover all configuration methods including directory access, environment variables,
- * arguments, stdio, network access, and resource limits. These tests focus on validation logic
- * and do not require native library loading.
+ * arguments, stdio, network access, and resource limits. These tests focus on validation logic and
+ * do not require native library loading.
  */
 @DisplayName("JniWasiLinker Configuration Tests")
 class JniWasiLinkerConfigurationTest {
@@ -452,8 +452,7 @@ class JniWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on allowDirectoryAccess after close")
     void testAllowDirectoryAccessAfterClose() {
-      assertThatThrownBy(
-              () -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"))
+      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("closed");
     }

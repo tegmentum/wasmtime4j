@@ -300,9 +300,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
       // out_size)
       RECEIVE_BUFFER_SIZE_HANDLE =
           linker.downcallHandle(
-              nativeLib
-                  .find("wasmtime4j_panama_wasi_tcp_socket_receive_buffer_size")
-                  .orElseThrow(),
+              nativeLib.find("wasmtime4j_panama_wasi_tcp_socket_receive_buffer_size").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_INT,
                   ValueLayout.ADDRESS,
@@ -375,8 +373,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
     } catch (final Throwable e) {
-      LOGGER.severe(
-          "Failed to initialize Panama FFI handles for WasiTcpSocket: " + e.getMessage());
+      LOGGER.severe("Failed to initialize Panama FFI handles for WasiTcpSocket: " + e.getMessage());
       throw new ExceptionInInitializerError(e);
     }
   }
@@ -400,8 +397,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
    * @throws WasmException if socket creation fails
    */
   public static PanamaWasiTcpSocket create(
-      final MemorySegment contextHandle, final IpAddressFamily addressFamily)
-      throws WasmException {
+      final MemorySegment contextHandle, final IpAddressFamily addressFamily) throws WasmException {
     PanamaValidation.requireNonNull(contextHandle, "contextHandle");
     if (addressFamily == null) {
       throw new IllegalArgumentException("Address family cannot be null");
@@ -784,7 +780,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_LISTEN_BACKLOG_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_LISTEN_BACKLOG_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set listen backlog size");
@@ -825,7 +822,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_KEEP_ALIVE_IDLE_TIME_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_KEEP_ALIVE_IDLE_TIME_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set keep alive idle time");
@@ -845,7 +843,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_KEEP_ALIVE_INTERVAL_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_KEEP_ALIVE_INTERVAL_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set keep alive interval");
@@ -865,7 +864,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_KEEP_ALIVE_COUNT_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_KEEP_ALIVE_COUNT_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set keep alive count");
@@ -907,7 +907,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outSize = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = (int) RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, outSize);
+      final int result =
+          (int) RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, outSize);
 
       if (result != 0) {
         throw new WasmException("Failed to get receive buffer size");
@@ -929,7 +930,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set receive buffer size");
@@ -973,7 +975,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try {
-      final int result = (int) SET_SEND_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_SEND_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set send buffer size");

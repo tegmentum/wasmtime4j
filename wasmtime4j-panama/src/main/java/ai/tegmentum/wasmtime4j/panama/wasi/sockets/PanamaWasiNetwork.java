@@ -67,8 +67,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
               FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
     } catch (final Throwable e) {
-      LOGGER.severe(
-          "Failed to initialize Panama FFI handles for WasiNetwork: " + e.getMessage());
+      LOGGER.severe("Failed to initialize Panama FFI handles for WasiNetwork: " + e.getMessage());
       throw new ExceptionInInitializerError(e);
     }
   }

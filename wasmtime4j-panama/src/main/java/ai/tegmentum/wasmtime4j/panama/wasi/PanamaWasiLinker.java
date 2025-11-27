@@ -270,7 +270,8 @@ public final class PanamaWasiLinker implements WasiLinker {
     final int addResult =
         NATIVE_BINDINGS.wasiCtxAddToStore(context.getNativeHandle(), panamaStore.getNativeStore());
     if (addResult != 0) {
-      throw new WasmException("Failed to add WASI context to store (error code: " + addResult + ")");
+      throw new WasmException(
+          "Failed to add WASI context to store (error code: " + addResult + ")");
     }
 
     // Enable WASI on the linker

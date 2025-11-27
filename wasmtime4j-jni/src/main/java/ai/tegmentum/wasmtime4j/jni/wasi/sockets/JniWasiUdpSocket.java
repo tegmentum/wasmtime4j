@@ -80,8 +80,7 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
       throw new IllegalArgumentException("Address family cannot be null");
     }
 
-    final long socketHandle =
-        nativeCreate(contextHandle, addressFamily == IpAddressFamily.IPV6);
+    final long socketHandle = nativeCreate(contextHandle, addressFamily == IpAddressFamily.IPV6);
     if (socketHandle <= 0) {
       throw new WasmException("Failed to create UDP socket");
     }
@@ -293,8 +292,11 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
     }
 
     // Decode: first 4 bytes is count
-    final int count = ((encoded[0] & 0xFF) << 24) | ((encoded[1] & 0xFF) << 16)
-        | ((encoded[2] & 0xFF) << 8) | (encoded[3] & 0xFF);
+    final int count =
+        ((encoded[0] & 0xFF) << 24)
+            | ((encoded[1] & 0xFF) << 16)
+            | ((encoded[2] & 0xFF) << 8)
+            | (encoded[3] & 0xFF);
 
     if (count <= 0) {
       return new IncomingDatagram[0];
@@ -305,10 +307,11 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
 
     for (int i = 0; i < count; i++) {
       // Read data length (4 bytes)
-      final int dataLen = ((encoded[offset] & 0xFF) << 24)
-          | ((encoded[offset + 1] & 0xFF) << 16)
-          | ((encoded[offset + 2] & 0xFF) << 8)
-          | (encoded[offset + 3] & 0xFF);
+      final int dataLen =
+          ((encoded[offset] & 0xFF) << 24)
+              | ((encoded[offset + 1] & 0xFF) << 16)
+              | ((encoded[offset + 2] & 0xFF) << 8)
+              | (encoded[offset + 3] & 0xFF);
       offset += 4;
 
       // Read data
@@ -332,17 +335,19 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
         remoteAddress = IpSocketAddress.ipv4(new Ipv4SocketAddress(port, new Ipv4Address(octets)));
       } else {
         // Read flow info (4 bytes)
-        final int flowInfoVal = ((encoded[offset] & 0xFF) << 24)
-            | ((encoded[offset + 1] & 0xFF) << 16)
-            | ((encoded[offset + 2] & 0xFF) << 8)
-            | (encoded[offset + 3] & 0xFF);
+        final int flowInfoVal =
+            ((encoded[offset] & 0xFF) << 24)
+                | ((encoded[offset + 1] & 0xFF) << 16)
+                | ((encoded[offset + 2] & 0xFF) << 8)
+                | (encoded[offset + 3] & 0xFF);
         offset += 4;
 
         // Read scope ID (4 bytes)
-        final int scopeIdVal = ((encoded[offset] & 0xFF) << 24)
-            | ((encoded[offset + 1] & 0xFF) << 16)
-            | ((encoded[offset + 2] & 0xFF) << 8)
-            | (encoded[offset + 3] & 0xFF);
+        final int scopeIdVal =
+            ((encoded[offset] & 0xFF) << 24)
+                | ((encoded[offset + 1] & 0xFF) << 16)
+                | ((encoded[offset + 2] & 0xFF) << 8)
+                | (encoded[offset + 3] & 0xFF);
         offset += 4;
 
         // Read 16 bytes of IPv6 segments (8 shorts)
@@ -351,8 +356,9 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
           segments[j] = (short) (((encoded[offset] & 0xFF) << 8) | (encoded[offset + 1] & 0xFF));
           offset += 2;
         }
-        remoteAddress = IpSocketAddress.ipv6(
-            new Ipv6SocketAddress(port, flowInfoVal, new Ipv6Address(segments), scopeIdVal));
+        remoteAddress =
+            IpSocketAddress.ipv6(
+                new Ipv6SocketAddress(port, flowInfoVal, new Ipv6Address(segments), scopeIdVal));
       }
 
       result[i] = new IncomingDatagram(data, remoteAddress);
@@ -539,9 +545,7 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
     if (isIpv4) {
       // IPv4: [is_ipv4=1, octet0, octet1, octet2, octet3, port, flow_info, scope_id]
       final byte[] octets =
-          new byte[] {
-            (byte) encoded[1], (byte) encoded[2], (byte) encoded[3], (byte) encoded[4]
-          };
+          new byte[] {(byte) encoded[1], (byte) encoded[2], (byte) encoded[3], (byte) encoded[4]};
       final int port = (int) encoded[5];
 
       final ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address ipv4Address =
@@ -614,7 +618,9 @@ public final class JniWasiUdpSocket implements WasiUdpSocket {
 
   private static native void nativeClose(long contextHandle, long socketHandle);
 
-  private static native byte[] nativeReceive(long contextHandle, long socketHandle, long maxResults);
+  private static native byte[] nativeReceive(
+      long contextHandle, long socketHandle, long maxResults);
 
-  private static native long nativeSend(long contextHandle, long socketHandle, byte[] encodedDatagrams);
+  private static native long nativeSend(
+      long contextHandle, long socketHandle, byte[] encodedDatagrams);
 }

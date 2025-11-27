@@ -455,8 +455,7 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on allowDirectoryAccess after close")
     void testAllowDirectoryAccessAfterClose() {
-      assertThatThrownBy(
-              () -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"))
+      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("closed");
     }

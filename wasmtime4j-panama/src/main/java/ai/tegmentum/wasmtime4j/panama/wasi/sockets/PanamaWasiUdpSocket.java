@@ -183,9 +183,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
       // out_size)
       RECEIVE_BUFFER_SIZE_HANDLE =
           linker.downcallHandle(
-              nativeLib
-                  .find("wasmtime4j_panama_wasi_udp_socket_receive_buffer_size")
-                  .orElseThrow(),
+              nativeLib.find("wasmtime4j_panama_wasi_udp_socket_receive_buffer_size").orElseThrow(),
               FunctionDescriptor.of(
                   ValueLayout.JAVA_INT,
                   ValueLayout.ADDRESS,
@@ -290,8 +288,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
                   ValueLayout.ADDRESS)); // out_sent_count
 
     } catch (final Throwable e) {
-      LOGGER.severe(
-          "Failed to initialize Panama FFI handles for WasiUdpSocket: " + e.getMessage());
+      LOGGER.severe("Failed to initialize Panama FFI handles for WasiUdpSocket: " + e.getMessage());
       throw new ExceptionInInitializerError(e);
     }
   }
@@ -315,8 +312,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
    * @throws WasmException if socket creation fails
    */
   public static PanamaWasiUdpSocket create(
-      final MemorySegment contextHandle, final IpAddressFamily addressFamily)
-      throws WasmException {
+      final MemorySegment contextHandle, final IpAddressFamily addressFamily) throws WasmException {
     PanamaValidation.requireNonNull(contextHandle, "contextHandle");
     if (addressFamily == null) {
       throw new IllegalArgumentException("Address family cannot be null");
@@ -582,7 +578,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
 
     try {
-      final int result = (int) SET_UNICAST_HOP_LIMIT_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_UNICAST_HOP_LIMIT_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set unicast hop limit");
@@ -604,7 +601,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outSize = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = (int) RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, outSize);
+      final int result =
+          (int) RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, outSize);
 
       if (result != 0) {
         throw new WasmException("Failed to get receive buffer size");
@@ -626,7 +624,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
 
     try {
-      final int result = (int) SET_RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_RECEIVE_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set receive buffer size");
@@ -670,7 +669,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
 
     try {
-      final int result = (int) SET_SEND_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
+      final int result =
+          (int) SET_SEND_BUFFER_SIZE_HANDLE.invoke(contextHandle, socketHandle, value);
 
       if (result != 0) {
         throw new WasmException("Failed to set send buffer size");
@@ -731,10 +731,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
       final MemorySegment outCount = arena.allocate(ValueLayout.JAVA_LONG);
 
       // Allocate arrays for datagram data pointers and lengths
-      final MemorySegment outDatagramsData =
-          arena.allocate(ValueLayout.ADDRESS, maxResultsInt);
-      final MemorySegment outDatagramsLen =
-          arena.allocate(ValueLayout.JAVA_LONG, maxResultsInt);
+      final MemorySegment outDatagramsData = arena.allocate(ValueLayout.ADDRESS, maxResultsInt);
+      final MemorySegment outDatagramsLen = arena.allocate(ValueLayout.JAVA_LONG, maxResultsInt);
 
       // Pre-allocate data buffers for each potential datagram
       final MemorySegment[] dataBuffers = new MemorySegment[maxResultsInt];

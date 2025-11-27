@@ -28,7 +28,6 @@ import ai.tegmentum.wasmtime4j.wasi.filesystem.PathFlags;
 import ai.tegmentum.wasmtime4j.wasi.filesystem.WasiDescriptor;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
