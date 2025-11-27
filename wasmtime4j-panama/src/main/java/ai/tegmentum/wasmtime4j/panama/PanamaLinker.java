@@ -52,6 +52,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private final java.util.Map<String, ai.tegmentum.wasmtime4j.ImportInfo> importRegistry =
       new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
+  private volatile PanamaWasiContext wasiContext = null;
 
   /**
    * Creates a new Panama linker.
@@ -433,6 +434,22 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final PanamaStore panamaStore = (PanamaStore) store;
     final PanamaModule panamaModule = (PanamaModule) module;
 
+    // If we have a WASI context, attach it to the store before instantiation
+    if (wasiContext != null) {
+      final int hasWasi = NATIVE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
+      if (hasWasi == 0) {
+        // Store doesn't have WASI context yet, attach it
+        final int result =
+            NATIVE_BINDINGS.storeSetWasiContext(
+                panamaStore.getNativeStore(), wasiContext.getNativeContext());
+        if (result != 0) {
+          throw new WasmException("Failed to attach WASI context to store (error code: " + result
+              + ")");
+        }
+        LOGGER.fine("Attached WASI context to store before instantiation");
+      }
+    }
+
     // Call native function to instantiate module using linker
     final MemorySegment instancePtr =
         NATIVE_BINDINGS.panamaLinkerInstantiate(
@@ -495,6 +512,26 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     LOGGER.fine("Enabled WASI for linker");
+  }
+
+  /**
+   * Sets the WASI context for this linker.
+   *
+   * <p>The WASI context will be automatically attached to the store during instantiation.
+   *
+   * @param wasiCtx the WASI context to use
+   */
+  public void setWasiContext(final PanamaWasiContext wasiCtx) {
+    this.wasiContext = wasiCtx;
+  }
+
+  /**
+   * Gets the WASI context set on this linker.
+   *
+   * @return the WASI context, or null if not set
+   */
+  public PanamaWasiContext getWasiContext() {
+    return this.wasiContext;
   }
 
   @Override
@@ -999,6 +1036,16 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             true, // All imports registered via define* methods are host-provided
             java.util.Optional.of("Host-provided import"));
     importRegistry.put(key, info);
+  }
+
+  /**
+   * Adds an import to the registry for tracking purposes.
+   *
+   * @param moduleName the module name
+   * @param name the import name
+   */
+  void addImport(final String moduleName, final String name) {
+    imports.add(moduleName + "::" + name);
   }
 
   /**

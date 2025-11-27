@@ -591,7 +591,7 @@ fn create_optimized_caller_context<T>(
     usage: CallerContextUsage,
 ) -> Result<(), anyhow::Error>
 where
-    T: Clone + Send + Sync + 'static,
+    T: Send + 'static,
 {
     // This function could create minimal caller context objects
     // based on what features are actually needed.

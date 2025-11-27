@@ -50,6 +50,16 @@ public final class PanamaWasiContext implements WasiContext {
     }
   }
 
+  /**
+   * Gets the native context handle.
+   *
+   * @return the native context memory segment
+   */
+  public MemorySegment getNativeContext() {
+    ensureNotClosed();
+    return this.contextHandle;
+  }
+
   @Override
   public WasiContext setArgv(final String[] argv) {
     if (argv == null) {

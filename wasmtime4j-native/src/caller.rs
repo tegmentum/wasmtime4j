@@ -68,7 +68,7 @@ impl CallerContext {
     /// Create caller context from Wasmtime caller
     pub fn from_wasmtime_caller<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Self>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         let exports = Vec::new();
 
@@ -93,7 +93,10 @@ impl CallerContext {
                     total_execution_time: std::time::Duration::from_secs(0),
                     fuel_consumed: 0,
                 },
-                wasi_context: None,
+                wasi_ctx: None,
+                wasi_stdout_pipe: None,
+                wasi_stderr_pipe: None,
+                wasi_fd_manager: None,
             }),
             exports,
             fuel_consumed,
@@ -268,7 +271,7 @@ pub mod core {
     /// Get fuel consumed by the caller if fuel metering is enabled
     pub fn caller_get_fuel<T>(_caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Option<u64>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Fuel consumed operations not available through caller in wasmtime 36.0.2
         // Return None to indicate fuel information is not available
@@ -278,7 +281,7 @@ pub mod core {
     /// Get fuel remaining in the caller if fuel metering is enabled
     pub fn caller_get_fuel_remaining<T>(_caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Option<u64>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Fuel remaining operations not available through caller in wasmtime 36.0.2
         // Return None to indicate fuel information is not available
@@ -288,7 +291,7 @@ pub mod core {
     /// Add fuel to the caller
     pub fn caller_add_fuel<T>(_caller: &mut WasmtimeCaller<'_, T>, _fuel: u64) -> WasmtimeResult<()>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Fuel add operations not available through caller in wasmtime 36.0.2
         Err(WasmtimeError::CallerContextError {
@@ -299,7 +302,7 @@ pub mod core {
     /// Set epoch deadline for the caller
     pub fn caller_set_epoch_deadline<T>(_caller: &mut WasmtimeCaller<'_, T>, _deadline: u64) -> WasmtimeResult<()>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Epoch deadline operations not available through caller in wasmtime 36.0.2
         Err(WasmtimeError::CallerContextError {
@@ -310,7 +313,7 @@ pub mod core {
     /// Check if the caller has an active epoch deadline
     pub fn caller_has_epoch_deadline<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<bool>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // This would require additional Wasmtime API to check epoch deadline status
         // For now, we return false as epoch deadline checking is limited in current Wasmtime API
@@ -320,7 +323,7 @@ pub mod core {
     /// Get export from caller by name
     pub fn caller_get_export<T>(_caller: &mut WasmtimeCaller<'_, T>, _name: &str) -> WasmtimeResult<Option<Extern>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Instance access through caller.instance() not available in wasmtime 36.0.2
         // Return None to indicate export not available through this method
@@ -330,7 +333,7 @@ pub mod core {
     /// Get memory export from caller by name
     pub fn caller_get_memory<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Memory>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Memory(memory)) => Ok(Some(memory)),
@@ -342,7 +345,7 @@ pub mod core {
     /// Get function export from caller by name
     pub fn caller_get_function<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Func>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Func(func)) => Ok(Some(func)),
@@ -354,7 +357,7 @@ pub mod core {
     /// Get global export from caller by name
     pub fn caller_get_global<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Global>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Global(global)) => Ok(Some(global)),
@@ -366,7 +369,7 @@ pub mod core {
     /// Get table export from caller by name
     pub fn caller_get_table<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Table>>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Table(table)) => Ok(Some(table)),
@@ -378,7 +381,7 @@ pub mod core {
     /// Check if caller has an export with the given name
     pub fn caller_has_export<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<bool>
     where
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         Ok(caller_get_export(caller, name)?.is_some())
     }
@@ -402,7 +405,7 @@ impl CallerContext {
     ) -> WasmtimeResult<Vec<Val>>
     where
         F: Fn(&mut Self, &[Val]) -> WasmtimeResult<Vec<Val>>,
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         // Validate that caller context is valid
         self.validate()?;
@@ -475,7 +478,7 @@ impl CallerContext {
     ) -> WasmtimeResult<Vec<Val>>
     where
         F: FnOnce(&mut Self, &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Vec<Val>>,
-        T: Clone + Send + Sync + 'static,
+        T: Send + 'static,
     {
         let initial_fuel = core::caller_get_fuel_remaining(caller)?;
 

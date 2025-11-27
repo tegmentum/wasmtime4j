@@ -27,6 +27,8 @@ pub struct Linker {
     metadata: LinkerMetadata,
     host_functions: HashMap<String, HostFunctionDefinition>,
     imports_registry: HashMap<String, ImportDefinition>,
+    /// WASI context configuration for building fresh contexts during instantiation
+    wasi_context: Option<crate::wasi::WasiContext>,
 }
 
 /// Linker metadata and statistics
@@ -317,6 +319,7 @@ impl Linker {
             metadata,
             host_functions: HashMap::new(),
             imports_registry: HashMap::new(),
+            wasi_context: None,
         };
 
         if config.enable_wasi {
@@ -500,24 +503,77 @@ impl Linker {
     /// # Errors
     /// Returns WasmtimeError if WASI cannot be enabled
     pub fn enable_wasi(&mut self) -> WasmtimeResult<()> {
+        // Write debug info to a file since stderr may not be captured
+        use std::io::Write;
+        let debug_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_debug.log");
+
+        macro_rules! debug_log {
+            ($($arg:tt)*) => {
+                if let Ok(mut f) = debug_file.as_ref() {
+                    let _ = writeln!(f, $($arg)*);
+                    let _ = f.flush();
+                }
+                eprintln!($($arg)*);
+            }
+        }
+
+        debug_log!("[DEBUG] enable_wasi: entering function");
+
         if self.metadata.disposed {
+            debug_log!("[DEBUG] enable_wasi: linker is disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
                 backtrace: None
             });
         }
 
-        let linker = self.inner.lock()
+        debug_log!("[DEBUG] enable_wasi: linker not disposed, acquiring lock");
+
+        let mut linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
             })?;
 
+        debug_log!("[DEBUG] enable_wasi: lock acquired");
+
         #[cfg(feature = "wasi")]
         {
-            // For now, just mark as enabled - WASI integration would be added later
+            // Verify the linker's engine is valid by checking if we can access it
+            debug_log!("[DEBUG] enable_wasi: verifying linker engine is accessible");
+            let engine = linker.engine();
+            debug_log!("[DEBUG] enable_wasi: engine accessed, address: {:p}", engine);
+
+            // Try to verify the engine is valid by accessing its weak reference count
+            // This might crash if the engine is invalid
+            debug_log!("[DEBUG] enable_wasi: verifying engine is usable");
+
+            // Try to create a simple FuncType to verify type registry works
+            use wasmtime::FuncType;
+            debug_log!("[DEBUG] enable_wasi: creating test FuncType to verify engine");
+            let test_func_type = FuncType::new(engine, [], []);
+            debug_log!("[DEBUG] enable_wasi: test FuncType created successfully, params: {:?}", test_func_type.params().len());
+
+            debug_log!("[DEBUG] enable_wasi: about to call add_to_linker_sync");
+
+            // Add WASI Preview 1 imports to the linker
+            // The closure extracts the WasiP1Ctx directly from StoreData
+            wasmtime_wasi::p1::add_to_linker_sync(&mut *linker, |data: &mut StoreData| {
+                data.wasi_ctx.as_mut().expect(
+                    "Store does not have a WASI context attached. \
+                     Call wasi_ctx_add_to_store before instantiating modules that require WASI."
+                )
+            })
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to add WASI to linker: {}", e),
+            })?;
+
             self.metadata.wasi_enabled = true;
-            log::debug!("WASI support enabled");
+            debug_log!("[DEBUG] enable_wasi: WASI added successfully");
+            log::debug!("WASI Preview 1 imports successfully added to linker");
         }
 
         #[cfg(not(feature = "wasi"))]
@@ -529,6 +585,20 @@ impl Linker {
         }
 
         Ok(())
+    }
+
+    /// Sets the WASI context to be attached to stores during instantiation
+    ///
+    /// # Arguments
+    /// * `wasi_ctx` - The WASI context with file descriptor manager
+    /// Sets the WASI context configuration for building fresh contexts during instantiation
+    pub fn set_wasi_context(&mut self, wasi_ctx: crate::wasi::WasiContext) {
+        self.wasi_context = Some(wasi_ctx);
+    }
+
+    /// Gets the WASI context configuration if set
+    pub fn get_wasi_context(&self) -> Option<&crate::wasi::WasiContext> {
+        self.wasi_context.as_ref()
     }
 
     /// Gets the metadata for this linker
@@ -983,10 +1053,32 @@ pub mod ffi_core {
         store: &mut Store,
         module: &Module,
     ) -> WasmtimeResult<LinkerInstantiationResult> {
-        // Note: Direct instantiate method not available in current Wasmtime version
-        // Return error until proper implementation is available
-        Err(WasmtimeError::Linker {
-            message: "Module instantiation not yet implemented for current Wasmtime version".to_string(),
+        let start = std::time::Instant::now();
+
+        // Get the wasmtime linker
+        let linker_guard = linker.inner.lock().map_err(|e| WasmtimeError::Linker {
+            message: format!("Failed to lock linker: {}", e),
+        })?;
+
+        // Get the wasmtime store and call instantiate
+        let mut store_guard = store.lock_store();
+        let wasmtime_instance = linker_guard
+            .instantiate(&mut *store_guard, module.inner())
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate module via linker: {}", e),
+            })?;
+        drop(store_guard);
+        drop(linker_guard);
+
+        // Wrap the wasmtime instance in our Instance type
+        let instance = Instance::from_wasmtime_instance(wasmtime_instance, store, module)?;
+
+        let instantiation_time = start.elapsed();
+
+        Ok(LinkerInstantiationResult {
+            instance,
+            resolved_imports: module.required_imports().len(),
+            instantiation_time,
         })
     }
 
@@ -1346,5 +1438,112 @@ pub unsafe extern "C" fn wasmtime4j_dependency_graph_destroy(graph_ptr: *mut c_v
 pub unsafe extern "C" fn wasmtime4j_validation_issues_destroy(issues_ptr: *mut c_void) {
     if !issues_ptr.is_null() {
         let _ = Box::from_raw(issues_ptr as *mut Vec<ImportValidationIssue>);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::raw::c_void;
+
+    #[test]
+    fn test_enable_wasi() {
+        // Create engine with default config
+        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+
+        // Create linker
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        // Enable WASI - this is where the crash happens in FFI
+        let result = linker.enable_wasi();
+        assert!(result.is_ok(), "enable_wasi failed: {:?}", result.err());
+        assert!(linker.metadata().wasi_enabled, "WASI should be enabled");
+    }
+
+    #[test]
+    fn test_linker_creation() {
+        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+        assert!(linker.is_valid());
+        assert!(!linker.metadata().wasi_enabled);
+    }
+
+    #[test]
+    fn test_enable_wasi_ffi_style() {
+        // Simulate FFI pattern: create via Box::into_raw, use via pointer
+        println!("Creating engine...");
+        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let engine_ptr = Box::into_raw(Box::new(engine)) as *mut c_void;
+
+        println!("Creating linker...");
+        let linker = unsafe {
+            let engine_ref = &*(engine_ptr as *const crate::engine::Engine);
+            Linker::new(engine_ref).expect("Failed to create linker")
+        };
+        let linker_ptr = Box::into_raw(Box::new(linker)) as *mut c_void;
+        println!("Linker ptr: {:p}", linker_ptr);
+
+        println!("Enabling WASI via pointer...");
+        unsafe {
+            let linker_ref = &mut *(linker_ptr as *mut Linker);
+            let result = linker_ref.enable_wasi();
+            assert!(result.is_ok(), "enable_wasi failed: {:?}", result.err());
+            assert!(linker_ref.metadata().wasi_enabled, "WASI should be enabled");
+        }
+
+        // Cleanup
+        println!("Cleaning up...");
+        unsafe {
+            let _ = Box::from_raw(linker_ptr as *mut Linker);
+            let _ = Box::from_raw(engine_ptr as *mut crate::engine::Engine);
+        }
+        println!("Done!");
+    }
+
+    #[test]
+    fn test_wasi_module_instantiation() {
+        // Test instantiating a WASI module using the linker
+        println!("Creating engine...");
+        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+
+        println!("Creating store...");
+        let mut store = crate::store::Store::new(&engine).expect("Failed to create store");
+
+        println!("Creating linker...");
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        println!("Enabling WASI...");
+        linker.enable_wasi().expect("Failed to enable WASI");
+
+        // Simple WASI module that imports proc_exit
+        let wat = r#"
+            (module
+              (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+              (memory (export "memory") 1)
+              (func (export "_start")
+                i32.const 0
+                call $proc_exit
+              )
+            )
+        "#;
+
+        println!("Compiling module...");
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile WAT module");
+
+        println!("Instantiating module with linker...");
+        let result = ffi_core::instantiate_module(&linker, &mut store, &module);
+
+        match result {
+            Ok(inst_result) => {
+                println!("Success! Instance created");
+                println!("Resolved imports: {}", inst_result.resolved_imports);
+                println!("Instantiation time: {:?}", inst_result.instantiation_time);
+            }
+            Err(e) => {
+                panic!("Failed to instantiate WASI module: {:?}", e);
+            }
+        }
+        println!("Done!");
     }
 }

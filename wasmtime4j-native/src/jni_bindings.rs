@@ -3141,6 +3141,15 @@ pub mod jni_linker {
             // Extract module from handle
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
+            // If linker has a WASI context, attach it to the store before instantiation
+            if let Some(wasi_ctx) = linker.get_wasi_context() {
+                // Create a new fd_manager for this store (it manages per-store file descriptors)
+                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                // Build a fresh WasiP1Ctx from the configuration and set on the store
+                store.set_wasi_context(wasi_ctx, fd_manager)?;
+                log::debug!("Attached WASI context to store before instantiation");
+            }
+
             // Instantiate the module using the linker
             // First, instantiate any registered host functions
             let mut store_lock = store.lock_store();
@@ -3194,6 +3203,15 @@ pub mod jni_linker {
 
             // Extract module from handle
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+            // If linker has a WASI context, attach it to the store before instantiation
+            if let Some(wasi_ctx) = linker.get_wasi_context() {
+                // Create a new fd_manager for this store (it manages per-store file descriptors)
+                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                // Build a fresh WasiP1Ctx from the configuration and set on the store
+                store.set_wasi_context(wasi_ctx, fd_manager)?;
+                log::debug!("Attached WASI context to store before named instantiation");
+            }
 
             // Instantiate the module using the linker with a name
             // First, instantiate any registered host functions
@@ -7946,20 +7964,24 @@ pub mod jni_runtime {
             log::debug!("Adding WASI 0x{:x} to Linker 0x{:x} for runtime 0x{:x}",
                         wasi_handle, linker_handle, runtime_handle);
 
-            // Get the linker reference
-            let linker = unsafe {
+            // Get the linker wrapper reference
+            let linker_wrapper = unsafe {
                 &mut *(linker_handle as *mut crate::linker::Linker)
             };
 
-            // Get the WASI context reference
-            let wasi_ctx = unsafe {
-                &mut *(wasi_handle as *mut (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager))
-            };
+            // Get the WASI context from the raw pointer
+            // The pointer points to a (WasiContext, WasiFileDescriptorManager) tuple
+            let wasi_ctx_ptr = wasi_handle as *const (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager);
+            let wasi_tuple = unsafe { &*wasi_ctx_ptr };
 
-            // Add WASI to the linker
-            // Linker WASI integration - stub for now
+            // Clone the WASI context configuration and store in linker
+            let wasi_context = wasi_tuple.0.clone();
+            linker_wrapper.set_wasi_context(wasi_context);
 
-            log::debug!("Successfully added WASI to Linker for runtime 0x{:x}", runtime_handle);
+            // Call enable_wasi() which adds WASI Preview 1 imports to the linker
+            linker_wrapper.enable_wasi()?;
+
+            log::debug!("WASI Preview 1 imports successfully added to Linker for runtime 0x{:x}", runtime_handle);
             Ok(0)
         })
     }

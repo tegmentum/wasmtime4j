@@ -398,7 +398,7 @@ mod tests {
         let _: extern "system" fn(JNIEnv, JClass, jlong) -> jint =
             Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetState;
 
-        let _: extern "system" fn(JNIEnv, JClass, jlong, jlong, JByteArray) -> jbyteArray =
+        let _: extern "system" fn(JNIEnv, JClass, jlong, jlong, jni::objects::JString, JByteArray) -> jbyteArray =
             Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction;
 
         let _: extern "system" fn(JNIEnv, JClass, jlong) =

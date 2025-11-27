@@ -400,9 +400,35 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     PanamaValidation.requireNonNull(context, "context");
     ensureNotClosed();
 
-    // TODO: Implement WASI linker integration for Panama
-    throw new UnsupportedOperationException(
-        "WASI linker integration not yet implemented for Panama");
+    // Cast to Panama implementation to access enableWasi()
+    if (!(linker instanceof PanamaLinker)) {
+      throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+    }
+    if (!(context instanceof PanamaWasiContext)) {
+      throw new IllegalArgumentException("WasiContext must be a PanamaWasiContext instance");
+    }
+
+    @SuppressWarnings("unchecked")
+    final PanamaLinker<WasiContext> panamaLinker = (PanamaLinker<WasiContext>) linker;
+    final PanamaWasiContext panamaWasiContext = (PanamaWasiContext) context;
+
+    // Enable WASI on the linker - this adds all WASI imports
+    panamaLinker.enableWasi();
+
+    // Store the WASI context on the linker so it can be attached to the store during instantiation
+    panamaLinker.setWasiContext(panamaWasiContext);
+
+    // Track WASI imports for hasImport() checks
+    panamaLinker.addImport("wasi_snapshot_preview1", "fd_write");
+    panamaLinker.addImport("wasi_snapshot_preview1", "proc_exit");
+    panamaLinker.addImport("wasi_snapshot_preview1", "fd_read");
+    panamaLinker.addImport("wasi_snapshot_preview1", "fd_close");
+    panamaLinker.addImport("wasi_snapshot_preview1", "environ_get");
+    panamaLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
+    panamaLinker.addImport("wasi_snapshot_preview1", "args_get");
+    panamaLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
+
+    LOGGER.fine("Added WASI imports to Panama linker");
   }
 
   @Override

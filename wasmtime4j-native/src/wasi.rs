@@ -21,8 +21,8 @@ use crate::linker::Linker as WasmtimeLinker;
 
 /// Thread-safe wrapper around WASI context with comprehensive configuration
 pub struct WasiContext {
-    /// The underlying Wasmtime WASI context
-    inner: Arc<Mutex<WasiCtx>>,
+    /// The underlying Wasmtime WASI Preview 1 context
+    inner: Arc<Mutex<WasiP1Ctx>>,
     /// Configuration metadata
     config: WasiConfig,
     /// Directory mappings for filesystem access
@@ -260,12 +260,12 @@ impl WasiContext {
     /// Create a new WASI context with specific configuration
     pub fn with_config(config: WasiConfig) -> WasmtimeResult<Self> {
         let mut builder = WasiCtxBuilder::new();
-        
+
         // Configure basic WASI settings
         builder.inherit_stdio();
-        
-        // Build the WASI context
-        let wasi_ctx = builder.build();
+
+        // Build the WASI Preview 1 context
+        let wasi_ctx = builder.build_p1();
         
         Ok(WasiContext {
             inner: Arc::new(Mutex::new(wasi_ctx)),
@@ -277,6 +277,15 @@ impl WasiContext {
             stdout_pipe: None,
             stderr_pipe: None,
         })
+    }
+
+    /// Get a reference to the inner WASI Preview 1 context for linker integration
+    ///
+    /// # Safety
+    /// This provides access to the underlying wasmtime-wasi context.
+    /// The caller must ensure proper synchronization when using the returned Arc.
+    pub fn inner(&self) -> &Arc<Mutex<WasiP1Ctx>> {
+        &self.inner
     }
 
     /// Add a directory mapping with specific permissions
@@ -332,7 +341,7 @@ impl WasiContext {
         self.configure_stdio(&mut builder)?;
 
         // Build and update context
-        let new_ctx = builder.build();
+        let new_ctx = builder.build_p1();
         
         let mut inner = self.inner.lock().map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire WASI context lock".to_string(),
@@ -408,8 +417,8 @@ impl WasiContext {
         Ok(())
     }
 
-    /// Get a reference to the underlying WASI context for store operations
-    pub fn get_wasi_ctx(&self) -> WasmtimeResult<Arc<Mutex<WasiCtx>>> {
+    /// Get a reference to the underlying WASI Preview 1 context for store operations
+    pub fn get_wasi_ctx(&self) -> WasmtimeResult<Arc<Mutex<WasiP1Ctx>>> {
         Ok(Arc::clone(&self.inner))
     }
 
@@ -492,7 +501,7 @@ impl WasiContext {
         self.configure_stdio(&mut builder)?;
         
         // Build new context
-        let new_ctx = builder.build();
+        let new_ctx = builder.build_p1();
         
         let mut inner = self.inner.lock().map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire WASI context lock".to_string(),
@@ -500,6 +509,98 @@ impl WasiContext {
         *inner = new_ctx;
         
         Ok(())
+    }
+
+    /// Build a fresh WasiP1Ctx from current configuration without modifying self
+    /// Returns the context along with any output pipes for stdout/stderr capture
+    pub fn build_fresh_p1_ctx(&self) -> WasmtimeResult<(WasiP1Ctx, Option<MemoryOutputPipe>, Option<MemoryOutputPipe>)> {
+        use wasmtime_wasi::p2::pipe::MemoryInputPipe;
+        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
+
+        let mut builder = WasiCtxBuilder::new();
+        let mut stdout_pipe = None;
+        let mut stderr_pipe = None;
+
+        // Add directory mappings
+        for (guest_path, mapping) in &self.directory_mappings {
+            builder.preopened_dir(
+                &mapping.host_path,
+                guest_path,
+                mapping.dir_perms.to_wasmtime_perms(),
+                mapping.file_perms.to_wasmtime_perms(),
+            ).map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to add directory mapping {}: {}", guest_path, e),
+            })?;
+        }
+
+        // Add environment variables
+        for (key, value) in &self.environment {
+            builder.env(key, value);
+        }
+
+        // Add command line arguments
+        builder.args(&self.arguments);
+
+        // Configure stdin
+        match &self.stdio_config.stdin {
+            StdioSource::Inherit => {
+                builder.inherit_stdin();
+            }
+            StdioSource::Buffer(data) => {
+                let pipe = MemoryInputPipe::new(data.clone());
+                builder.stdin(pipe);
+            }
+            StdioSource::File(_path) => {
+                builder.inherit_stdin();
+            }
+            StdioSource::Null => {
+                let empty: Vec<u8> = Vec::new();
+                let pipe = MemoryInputPipe::new(empty);
+                builder.stdin(pipe);
+            }
+        }
+
+        // Configure stdout
+        match &self.stdio_config.stdout {
+            StdioSink::Inherit => {
+                builder.inherit_stdout();
+            }
+            StdioSink::Buffer => {
+                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                builder.stdout(pipe.clone());
+                stdout_pipe = Some(pipe);
+            }
+            StdioSink::File(_path) => {
+                builder.inherit_stdout();
+            }
+            StdioSink::Null => {
+                let pipe = MemoryOutputPipe::new(0);
+                builder.stdout(pipe);
+            }
+        }
+
+        // Configure stderr
+        match &self.stdio_config.stderr {
+            StdioSink::Inherit => {
+                builder.inherit_stderr();
+            }
+            StdioSink::Buffer => {
+                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                builder.stderr(pipe.clone());
+                stderr_pipe = Some(pipe);
+            }
+            StdioSink::File(_path) => {
+                builder.inherit_stderr();
+            }
+            StdioSink::Null => {
+                let pipe = MemoryOutputPipe::new(0);
+                builder.stderr(pipe);
+            }
+        }
+
+        // Build and return the context with pipes
+        let ctx = builder.build_p1();
+        Ok((ctx, stdout_pipe, stderr_pipe))
     }
 
     /// Configure standard I/O streams in the builder
@@ -636,7 +737,7 @@ impl Default for WasiContext {
             Err(_) => {
                 // Fallback to minimal WASI context that should always work
                 let mut builder = WasiCtxBuilder::new();
-                let wasi_ctx = builder.build();
+                let wasi_ctx = builder.build_p1();
 
                 WasiContext {
                     inner: Arc::new(Mutex::new(wasi_ctx)),
@@ -916,11 +1017,8 @@ pub unsafe extern "C" fn wasi_ctx_add_to_store(
         // Create a new file descriptor manager for this store
         let fd_manager = WasiFileDescriptorManager::new();
 
-        // Clone the WasiContext (it uses Arc internally, so this is cheap)
-        let wasi_context_clone = wasi_ctx.clone();
-
-        // Add WASI context to store's data
-        store.set_wasi_context(wasi_context_clone, fd_manager)?;
+        // Add WASI context to store's data (builds a fresh WasiP1Ctx from configuration)
+        store.set_wasi_context(wasi_ctx, fd_manager)?;
 
         log::debug!("WASI context successfully added to Store");
         Ok(())
@@ -950,39 +1048,16 @@ pub unsafe extern "C" fn wasi_ctx_get_from_store(
         }
     };
 
-    // Get WASI context from store if available
-    match store.get_wasi_context() {
-        Ok(Some(wasi_arc)) => {
-            // Lock the Arc<Mutex<...>> to get access to the tuple
-            match wasi_arc.lock() {
-                Ok(wasi_guard) => {
-                    // Clone the WasiContext from the tuple
-                    let wasi_context = wasi_guard.0.clone();
-
-                    // Box and return as pointer
-                    log::debug!("Retrieved WASI context from Store");
-                    ffi_utils::clear_last_error();
-                    Box::into_raw(Box::new(wasi_context)) as *mut c_void
-                }
-                Err(e) => {
-                    ffi_utils::set_last_error(WasmtimeError::Concurrency {
-                        message: format!("Failed to lock WASI context: {}", e),
-                    });
-                    std::ptr::null_mut()
-                }
-            }
-        }
-        Ok(None) => {
-            // No WASI context attached to this store - this is valid, just return null
-            log::debug!("No WASI context attached to Store");
-            ffi_utils::clear_last_error();
-            std::ptr::null_mut()
-        }
-        Err(e) => {
-            ffi_utils::set_last_error(e);
-            std::ptr::null_mut()
-        }
+    // Note: WasiContext is not stored in the store anymore - WasiP1Ctx is stored directly.
+    // This function now just checks if WASI is enabled and returns null (can't retrieve the original config).
+    // Use has_wasi_context() to check if WASI is enabled, or get_wasi_stdout()/get_wasi_stderr() to get output.
+    if store.has_wasi_context() {
+        log::debug!("Store has WASI context, but original WasiContext config is not retrievable");
+    } else {
+        log::debug!("No WASI context attached to Store");
     }
+    ffi_utils::clear_last_error();
+    std::ptr::null_mut()
 }
 
 /// Check if a Store has a WASI context attached
@@ -1413,32 +1488,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_add_wasi(
     linker_ptr: *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        use crate::store::StoreData;
-        use wasmtime::Linker;
+        use crate::linker::Linker;
 
-        // Dereference linker pointer
-        let linker = ffi_utils::deref_ptr_mut::<Linker<StoreData>>(linker_ptr, "linker")?;
+        // Dereference linker pointer - Panama passes our Linker wrapper type
+        let linker = ffi_utils::deref_ptr_mut::<Linker>(linker_ptr, "linker")?;
 
-        // Add WASI to linker using wasmtime-wasi's built-in function
-        // The closure extracts the WasiP1Ctx from the store's data when a module is instantiated
-        wasmtime_wasi::p1::add_to_linker_sync(linker, |data: &mut StoreData| {
-            // Get the WASI context from store data
-            if let Some(wasi_arc) = &data.wasi_context {
-                let mut wasi_guard = wasi_arc.lock().unwrap();
-                // Access the inner WasiCtx
-                let inner_mutex = &wasi_guard.0.inner;
-                let wasi_ctx = &mut *inner_mutex.lock().unwrap();
-                // WasiP1Ctx is a newtype wrapper around WasiCtx, convert using unsafe transmute
-                // This is safe because WasiP1Ctx is repr(transparent) or has the same layout as WasiCtx
-                unsafe { std::mem::transmute::<&mut WasiCtx, &mut WasiP1Ctx>(wasi_ctx) }
-            } else {
-                // If no WASI context is attached, panic with a clear message
-                panic!("Store does not have a WASI context attached. Call wasi_ctx_add_to_store before instantiating modules that require WASI.");
-            }
-        })
-        .map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to add WASI to linker: {}", e),
-        })?;
+        // Use the Linker's enable_wasi method which handles mutex locking
+        linker.enable_wasi()?;
 
         log::debug!("WASI Preview 1 imports successfully added to linker via Panama FFI");
         Ok(())

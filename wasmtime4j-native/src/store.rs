@@ -7,6 +7,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut, FuncType, Func};
+use wasmtime_wasi::p1::WasiP1Ctx;
+use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
@@ -50,7 +52,6 @@ pub struct StoreMetadata {
 }
 
 /// Store-specific data for host function context
-#[derive(Debug)]
 pub struct StoreData {
     /// Optional user-defined data attached to the store
     pub user_data: Option<Box<dyn std::any::Any + Send + Sync>>,
@@ -58,8 +59,28 @@ pub struct StoreData {
     pub resource_limits: ResourceLimits,
     /// Current execution state and statistics
     pub execution_state: ExecutionState,
-    /// Optional WASI context for WASI-enabled WebAssembly modules
-    pub wasi_context: Option<Arc<Mutex<(crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)>>>,
+    /// Optional WASI Preview 1 context stored directly for linker access
+    pub wasi_ctx: Option<WasiP1Ctx>,
+    /// Optional captured stdout pipe
+    pub wasi_stdout_pipe: Option<MemoryOutputPipe>,
+    /// Optional captured stderr pipe
+    pub wasi_stderr_pipe: Option<MemoryOutputPipe>,
+    /// Optional WASI file descriptor manager
+    pub wasi_fd_manager: Option<crate::wasi::WasiFileDescriptorManager>,
+}
+
+impl std::fmt::Debug for StoreData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StoreData")
+            .field("user_data", &self.user_data.as_ref().map(|_| "<user_data>"))
+            .field("resource_limits", &self.resource_limits)
+            .field("execution_state", &self.execution_state)
+            .field("wasi_ctx", &self.wasi_ctx.as_ref().map(|_| "<WasiP1Ctx>"))
+            .field("wasi_stdout_pipe", &self.wasi_stdout_pipe.as_ref().map(|_| "<pipe>"))
+            .field("wasi_stderr_pipe", &self.wasi_stderr_pipe.as_ref().map(|_| "<pipe>"))
+            .field("wasi_fd_manager", &self.wasi_fd_manager.as_ref().map(|_| "<fd_manager>"))
+            .finish()
+    }
 }
 
 impl Clone for StoreData {
@@ -68,7 +89,10 @@ impl Clone for StoreData {
             user_data: None, // Can't clone arbitrary Any type, set to None
             resource_limits: self.resource_limits.clone(),
             execution_state: self.execution_state.clone(),
-            wasi_context: self.wasi_context.clone(), // Arc can be cloned
+            wasi_ctx: None, // WasiP1Ctx doesn't implement Clone, each store needs its own
+            wasi_stdout_pipe: self.wasi_stdout_pipe.clone(),
+            wasi_stderr_pipe: self.wasi_stderr_pipe.clone(),
+            wasi_fd_manager: None, // FD manager is store-specific
         }
     }
 }
@@ -323,57 +347,64 @@ impl Store {
         Ok(registry_id)
     }
 
-    /// Set WASI context for this store
+    /// Set WASI context for this store by building a fresh WasiP1Ctx from configuration
     pub fn set_wasi_context(
         &self,
-        wasi_context: crate::wasi::WasiContext,
+        wasi_context: &crate::wasi::WasiContext,
         fd_manager: crate::wasi::WasiFileDescriptorManager,
     ) -> WasmtimeResult<()> {
         let mut store = self.inner.lock();
 
-        let wasi_data = Arc::new(Mutex::new((wasi_context, fd_manager)));
-        store.data_mut().wasi_context = Some(wasi_data);
+        // Build a fresh WasiP1Ctx from the configuration
+        let (wasi_ctx, stdout_pipe, stderr_pipe) = wasi_context.build_fresh_p1_ctx()?;
+
+        // Store directly in StoreData
+        let data = store.data_mut();
+        data.wasi_ctx = Some(wasi_ctx);
+        data.wasi_stdout_pipe = stdout_pipe;
+        data.wasi_stderr_pipe = stderr_pipe;
+        data.wasi_fd_manager = Some(fd_manager);
 
         Ok(())
-    }
-
-    /// Get WASI context from this store
-    pub fn get_wasi_context(
-        &self,
-    ) -> WasmtimeResult<Option<Arc<Mutex<(crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)>>>> {
-        let store = self.inner.lock();
-
-        Ok(store.data().wasi_context.clone())
     }
 
     /// Check if this store has WASI context
     pub fn has_wasi_context(&self) -> bool {
         let store = self.inner.lock();
-        store.data().wasi_context.is_some()
+        store.data().wasi_ctx.is_some()
     }
 
-    /// Execute WASI operation with context
-    pub fn with_wasi_context<T, F>(&self, func: F) -> WasmtimeResult<T>
-    where
-        F: FnOnce(&mut (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager)) -> WasmtimeResult<T>,
-    {
-        let wasi_arc = self.get_wasi_context()?
-            .ok_or_else(|| WasmtimeError::Wasi {
-                message: "No WASI context available in this store".to_string(),
-            })?;
+    /// Get captured stdout data from WASI execution
+    pub fn get_wasi_stdout(&self) -> WasmtimeResult<Option<Vec<u8>>> {
+        let store = self.inner.lock();
+        if let Some(pipe) = &store.data().wasi_stdout_pipe {
+            let contents = pipe.contents();
+            Ok(Some(contents.to_vec()))
+        } else {
+            Ok(None)
+        }
+    }
 
-        let mut wasi_context = wasi_arc.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire WASI context lock: {}", e),
-        })?;
-
-        func(&mut *wasi_context)
+    /// Get captured stderr data from WASI execution
+    pub fn get_wasi_stderr(&self) -> WasmtimeResult<Option<Vec<u8>>> {
+        let store = self.inner.lock();
+        if let Some(pipe) = &store.data().wasi_stderr_pipe {
+            let contents = pipe.contents();
+            Ok(Some(contents.to_vec()))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Remove WASI context from this store
     pub fn remove_wasi_context(&self) -> WasmtimeResult<()> {
         let mut store = self.inner.lock();
 
-        store.data_mut().wasi_context = None;
+        let data = store.data_mut();
+        data.wasi_ctx = None;
+        data.wasi_stdout_pipe = None;
+        data.wasi_stderr_pipe = None;
+        data.wasi_fd_manager = None;
         Ok(())
     }
 }
@@ -454,7 +485,10 @@ impl StoreBuilder {
                 total_execution_time: Duration::new(0, 0),
                 fuel_consumed: 0,
             },
-            wasi_context: None, // No WASI context by default
+            wasi_ctx: None,
+            wasi_stdout_pipe: None,
+            wasi_stderr_pipe: None,
+            wasi_fd_manager: None,
         };
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
@@ -1369,5 +1403,76 @@ pub unsafe extern "C" fn wasmtime4j_store_total_execution_time_micros(store_ptr:
             Err(_) => 0,
         },
         Err(_) => 0,
+    }
+}
+
+/// Set WASI context on a store (Panama FFI)
+///
+/// This function attaches a WASI context to a store, which is required before
+/// instantiating modules that import WASI functions.
+///
+/// # Safety
+///
+/// - store_ptr must be a valid pointer from wasmtime4j_store_new
+/// - wasi_ctx_ptr must be a valid pointer from wasmtime4j_wasi_context_create
+///
+/// # Returns
+/// - 0 on success
+/// - non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_set_wasi_context(
+    store_ptr: *mut c_void,
+    wasi_ctx_ptr: *const c_void,
+) -> c_int {
+    if store_ptr.is_null() || wasi_ctx_ptr.is_null() {
+        return -1;
+    }
+
+    // Get the store from pointer
+    let store = match ffi_core::get_store_ref(store_ptr) {
+        Ok(s) => s,
+        Err(_) => {
+            return -2;
+        }
+    };
+
+    // The WASI context pointer points to a WasiContext
+    let wasi_ctx = &*(wasi_ctx_ptr as *const crate::wasi::WasiContext);
+
+    // Create a new fd_manager for this store
+    let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+
+    // Set WASI context on the store (builds a fresh WasiP1Ctx from configuration)
+    match store.set_wasi_context(wasi_ctx, fd_manager) {
+        Ok(()) => 0,
+        Err(_) => -3,
+    }
+}
+
+/// Check if store has WASI context attached (Panama FFI)
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+///
+/// # Returns
+/// - 1 if store has WASI context
+/// - 0 if store does not have WASI context
+/// - -1 on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_has_wasi_context(store_ptr: *const c_void) -> c_int {
+    if store_ptr.is_null() {
+        return -1;
+    }
+
+    match ffi_core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            if store.has_wasi_context() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => -1,
     }
 }

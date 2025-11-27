@@ -1043,6 +1043,34 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Sets WASI context on a WebAssembly store.
+   *
+   * <p>This function attaches a WASI context to a store, which is required before instantiating
+   * modules that import WASI functions.
+   *
+   * @param storePtr pointer to the store
+   * @param wasiCtxPtr pointer to the WASI context
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetWasiContext(final MemorySegment storePtr, final MemorySegment wasiCtxPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(wasiCtxPtr, "wasiCtxPtr");
+    return callNativeFunction(
+        "wasmtime4j_store_set_wasi_context", Integer.class, storePtr, wasiCtxPtr);
+  }
+
+  /**
+   * Checks if a store has WASI context attached.
+   *
+   * @param storePtr pointer to the store
+   * @return 1 if store has WASI context, 0 if not, negative on error
+   */
+  public int storeHasWasiContext(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_store_has_wasi_context", Integer.class, storePtr);
+  }
+
+  /**
    * Creates a new WebAssembly global variable.
    *
    * @param storePtr pointer to the store
@@ -3428,6 +3456,17 @@ public final class NativeFunctionBindings {
         "wasmtime4j_store_validate",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
+    addFunctionBinding(
+        "wasmtime4j_store_set_wasi_context",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // wasi_ctx_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_has_wasi_context",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
     // Instance functions - Panama FFI: return instance pointer directly
     addFunctionBinding(
         "wasmtime4j_instance_create",
@@ -4129,7 +4168,7 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // instance_ptr
 
     addFunctionBinding(
-        "wasmtime4j_panama_linker_instantiate",
+        "wasmtime4j_linker_instantiate",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return instance* or null
             ValueLayout.ADDRESS, // linker_ptr
@@ -5047,7 +5086,7 @@ public final class NativeFunctionBindings {
     validatePointer(modulePtr, "modulePtr");
 
     return callNativeFunction(
-        "wasmtime4j_panama_linker_instantiate",
+        "wasmtime4j_linker_instantiate",
         MemorySegment.class,
         linkerPtr,
         storePtr,
