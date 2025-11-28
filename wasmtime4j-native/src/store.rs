@@ -13,6 +13,7 @@ use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::interop::ReentrantLock;
+use crate::module::Module;
 use once_cell::sync::Lazy;
 
 /// Store ID counter for unique identification
@@ -140,6 +141,23 @@ impl Store {
     /// Create store with default configuration
     pub fn new(engine: &Engine) -> WasmtimeResult<Self> {
         StoreBuilder::new().build(engine)
+    }
+
+    /// Create store that is compatible with the given module
+    ///
+    /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
+    /// as the Module's internal wasmtime::Module. This is required because wasmtime's
+    /// Instance::new() uses Arc::ptr_eq() to verify engine compatibility.
+    ///
+    /// Use this method when creating a Store specifically for instantiating a Module.
+    ///
+    /// # Arguments
+    /// * `module` - The Module that this Store will be used with for instantiation
+    ///
+    /// # Returns
+    /// A new Store that is guaranteed to be compatible with the given Module
+    pub fn for_module(module: &Module) -> WasmtimeResult<Self> {
+        StoreBuilder::new().build_for_module(module)
     }
 
     /// Get the unique identifier for this store
@@ -517,6 +535,84 @@ impl StoreBuilder {
             metadata,
         })
     }
+
+    /// Build store using the wasmtime Engine from a Module
+    ///
+    /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
+    /// as the Module's internal wasmtime::Module. This is required because wasmtime's
+    /// Instance::new() uses Arc::ptr_eq() to verify engine compatibility.
+    ///
+    /// # Arguments
+    /// * `module` - The Module that this Store will be used with for instantiation
+    ///
+    /// # Returns
+    /// A new Store that is guaranteed to be compatible with the given Module
+    ///
+    /// # Why This Method Exists
+    ///
+    /// When you call:
+    /// - `Module::compile(engine, bytes)` - wasmtime internally clones the engine Arc
+    /// - `Store::new(engine)` - wasmtime internally clones the engine Arc again
+    ///
+    /// Even though both use the same wasmtime4j Engine, the internal Arc pointers differ.
+    /// This method uses `module.inner().engine()` to get the EXACT Arc that wasmtime
+    /// is using internally, ensuring Arc::ptr_eq() succeeds during instantiation.
+    pub fn build_for_module(self, module: &Module) -> WasmtimeResult<Store> {
+        // Generate unique store ID
+        let store_id = {
+            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to acquire store ID counter: {}", e),
+            })?;
+            let id = *counter;
+            *counter += 1;
+            id
+        };
+
+        let store_data = StoreData {
+            user_data: None,
+            resource_limits: self.resource_limits,
+            execution_state: ExecutionState {
+                execution_count: 0,
+                last_execution: None,
+                total_execution_time: Duration::new(0, 0),
+                fuel_consumed: 0,
+            },
+            wasi_ctx: None,
+            wasi_stdout_pipe: None,
+            wasi_stderr_pipe: None,
+            wasi_fd_manager: None,
+        };
+
+        // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
+        // This ensures the Store's internal Arc matches the Module's internal Arc
+        let wasmtime_engine = module.wasmtime_engine();
+        let mut wasmtime_store = WasmtimeStore::new(wasmtime_engine, store_data);
+
+        // Configure fuel if the engine has it enabled
+        // Check via the module's engine reference
+        if module.engine().fuel_enabled() {
+            let fuel = self.fuel_limit.unwrap_or(u64::MAX);
+            wasmtime_store.set_fuel(fuel).map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to set initial fuel: {}", e),
+            })?;
+        }
+
+        let metadata = StoreMetadata {
+            created_at: Instant::now(),
+            fuel_limit: self.fuel_limit,
+            memory_limit_bytes: self.memory_limit_bytes,
+            execution_timeout: self.execution_timeout,
+            instance_count: 0,
+            is_closed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        };
+
+        Ok(Store {
+            id: store_id,
+            inner: Arc::new(ReentrantLock::new(wasmtime_store)),
+            engine: module.engine().clone(),
+            metadata,
+        })
+    }
 }
 
 /// Memory usage statistics
@@ -625,7 +721,17 @@ pub mod core {
         
         builder.build(engine).map(Box::new)
     }
-    
+
+    /// Core function to create a store compatible with a specific module
+    ///
+    /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
+    /// as the Module's internal wasmtime::Module. This is required because wasmtime's
+    /// Instance::new() uses Arc::ptr_eq() to verify engine compatibility.
+    pub fn create_store_for_module(module: &Module) -> WasmtimeResult<Box<Store>> {
+        let store = Store::for_module(module)?;
+        Ok(Box::new(store))
+    }
+
     /// Core function to validate store pointer and get reference
     pub unsafe fn get_store_ref(store_ptr: *const c_void) -> WasmtimeResult<&'static Store> {
         validate_ptr_not_null!(store_ptr, "store");
@@ -1118,6 +1224,81 @@ mod tests {
             assert!(result < 50); // Basic sanity check
         }
     }
+
+    #[test]
+    fn test_store_for_module() {
+        use crate::module::Module;
+
+        let engine = Engine::new().expect("Failed to create engine");
+
+        // A simple WebAssembly module that exports an add function
+        let wasm_bytes = wat::parse_str(r#"
+            (module
+                (func $add (param $a i32) (param $b i32) (result i32)
+                    local.get $a
+                    local.get $b
+                    i32.add)
+                (export "add" (func $add))
+            )
+        "#).expect("Failed to parse WAT");
+
+        // Compile module
+        let module = Module::compile(&engine, &wasm_bytes)
+            .expect("Failed to compile module");
+
+        // Create store using for_module - this should ensure Arc compatibility
+        let mut store = Store::for_module(&module)
+            .expect("Failed to create store for module");
+
+        // Verify store is valid
+        assert!(store.validate().is_ok(), "Store should be valid");
+
+        // The key test: verify the store can actually instantiate the module
+        // This would fail with "cross-engine" error if Arc pointers don't match
+        use crate::instance::Instance;
+        let instance = Instance::new(&mut store, &module, &[])
+            .expect("Failed to instantiate module - this verifies Arc compatibility");
+
+        // Verify we can get the export
+        let exports = instance.exports(&mut store).expect("Failed to get exports");
+        assert!(exports.contains(&"add".to_string()), "Should have 'add' export");
+    }
+
+    #[test]
+    fn test_store_builder_for_module() {
+        use crate::module::Module;
+
+        let engine = Engine::new().expect("Failed to create engine");
+
+        // A simple WebAssembly module
+        let wasm_bytes = wat::parse_str(r#"
+            (module
+                (func $nop)
+                (export "nop" (func $nop))
+            )
+        "#).expect("Failed to parse WAT");
+
+        // Compile module
+        let module = Module::compile(&engine, &wasm_bytes)
+            .expect("Failed to compile module");
+
+        // Create store using builder with for_module
+        let mut store = Store::builder()
+            .memory_limit(1024 * 1024)
+            .build_for_module(&module)
+            .expect("Failed to build store for module");
+
+        // Verify store is valid
+        assert!(store.validate().is_ok(), "Store should be valid");
+
+        // Verify configuration was applied
+        assert_eq!(store.metadata().memory_limit_bytes, Some(1024 * 1024));
+
+        // Verify instantiation works
+        use crate::instance::Instance;
+        let _instance = Instance::new(&mut store, &module, &[])
+            .expect("Failed to instantiate module with configured store");
+    }
 }
 
 //
@@ -1263,6 +1444,29 @@ pub unsafe extern "C" fn wasmtime4j_store_new_with_config(
                 Err(_) => std::ptr::null_mut(),
             }
         },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Create a new store compatible with a specific module
+///
+/// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
+/// as the Module's internal wasmtime::Module. This is required because wasmtime's
+/// Instance::new() uses Arc::ptr_eq() to verify engine compatibility.
+///
+/// # Safety
+///
+/// module_ptr must be a valid pointer from wasmtime4j_module_new
+/// Returns pointer to store that must be freed with wasmtime4j_store_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_new_for_module(module_ptr: *const c_void) -> *mut c_void {
+    if module_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let module = &*(module_ptr as *const Module);
+    match core::create_store_for_module(module) {
+        Ok(store) => Box::into_raw(store) as *mut c_void,
         Err(_) => std::ptr::null_mut(),
     }
 }

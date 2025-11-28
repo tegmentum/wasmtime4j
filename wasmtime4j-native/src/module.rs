@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use wasmtime::{
+    Engine as WasmtimeEngine,
     Module as WasmtimeModule,
     FuncType,
     ValType,
@@ -307,6 +308,18 @@ impl Module {
     /// CRITICAL: This ensures Store uses the same Engine Arc for validation
     pub(crate) fn engine(&self) -> &Engine {
         &self.engine
+    }
+
+    /// Get the wasmtime Engine from the internal wasmtime::Module
+    ///
+    /// CRITICAL: This returns the exact Engine Arc that wasmtime uses internally.
+    /// When creating a Store that will be used with this Module, the Store MUST
+    /// be created using this Engine to ensure Arc pointer equality.
+    ///
+    /// This is necessary because wasmtime's Instance::new() uses Arc::ptr_eq()
+    /// to verify that the Module and Store were created with the same Engine.
+    pub(crate) fn wasmtime_engine(&self) -> &WasmtimeEngine {
+        self.inner.engine()
     }
 
     /// Get module metadata for introspection
