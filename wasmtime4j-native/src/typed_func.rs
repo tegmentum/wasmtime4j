@@ -185,8 +185,9 @@ impl TypedFuncRegistry {
             }
         })?;
 
-        let id = cache.len() as u64;
-        cache.entry(key).or_insert(id);
+        let next_id = cache.len() as u64;
+        // or_insert returns a reference to the value (existing or newly inserted)
+        let id = *cache.entry(key).or_insert(next_id);
         Ok(id)
     }
 
@@ -266,21 +267,26 @@ mod tests {
             .register_signature(&[ValType::I64], &[ValType::I64])
             .unwrap();
 
-        assert_eq!(registry.signature_count().unwrap(), 2);
+        assert_eq!(registry.signature_count().unwrap(), 2, "Expected 2 registered signatures");
 
         // Registering same signature again should return same ID
         let id3 = registry
             .register_signature(&[ValType::I32, ValType::I32], &[ValType::I32])
             .unwrap();
-        assert_eq!(id1, id3);
-        assert_eq!(registry.signature_count().unwrap(), 2);
+        assert_eq!(id1, id3, "Same signature should return same ID");
+        assert_eq!(registry.signature_count().unwrap(), 2, "Count should still be 2 after duplicate registration");
+
+        // Verify IDs are sequential for different signatures
+        assert_eq!(id1, 0, "First signature should have ID 0");
+        assert_eq!(id2, 1, "Second signature should have ID 1");
     }
 
     #[test]
     fn test_signature_key_generation() {
         let key1 =
             TypedFuncRegistry::signature_key(&[ValType::I32, ValType::I32], &[ValType::I32]);
-        assert_eq!(key1, "(I32,I32) -> (I32)");
+        // Wasmtime's ValType Debug format uses lowercase (i32, i64, etc.)
+        assert_eq!(key1, "(i32,i32) -> (i32)");
 
         let key2 = TypedFuncRegistry::signature_key(&[], &[]);
         assert_eq!(key2, "() -> ()");
@@ -289,6 +295,6 @@ mod tests {
             &[ValType::I32, ValType::I64, ValType::F32],
             &[ValType::I64, ValType::F64],
         );
-        assert_eq!(key3, "(I32,I64,F32) -> (I64,F64)");
+        assert_eq!(key3, "(i32,i64,f32) -> (i64,f64)");
     }
 }
