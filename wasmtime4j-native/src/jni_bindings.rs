@@ -11783,7 +11783,8 @@ pub mod jni_component_linker {
     ) -> jlong {
         jni_utils::jni_try_with_default(&mut env, 0, || {
             let engine = unsafe { engine_core::get_engine_ref(engine_handle as *const c_void)? };
-            let linker = component_linker_core::create_component_linker(engine)?;
+            // Use the inner wasmtime::Engine for component linker creation
+            let linker = component_linker_core::create_component_linker(engine.inner())?;
             Ok(Box::into_raw(linker) as jlong)
         })
     }

@@ -8,6 +8,7 @@
 //! - Resource management and lifecycle
 //! - Real async stream operations
 //! - Actual timeout and cancellation handling
+//! - Proper stdout/stderr capture via MemoryOutputPipe
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
@@ -16,7 +17,8 @@ use std::os::raw::{c_int, c_void};
 
 use wasmtime::component::{Component, Instance, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
-use wasmtime_wasi::{WasiCtx, WasiView, WasiCtxView};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView, WasiCtxView};
+use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
@@ -92,6 +94,10 @@ pub struct ComponentInstance {
     id: u64,
     /// Creation timestamp
     created_at: Instant,
+    /// Captured stdout pipe (if output capture enabled)
+    stdout_pipe: Option<MemoryOutputPipe>,
+    /// Captured stderr pipe (if output capture enabled)
+    stderr_pipe: Option<MemoryOutputPipe>,
 }
 
 /// WASI Preview 2 configuration
@@ -109,6 +115,12 @@ pub struct WasiPreview2Config {
     pub default_timeout_ms: u64,
     /// Enable component model features
     pub enable_component_model: bool,
+    /// Capture stdout output to buffer
+    pub capture_stdout: bool,
+    /// Capture stderr output to buffer
+    pub capture_stderr: bool,
+    /// Stdin bytes to provide to component
+    pub stdin_bytes: Option<Vec<u8>>,
 }
 
 /// WASI stream for async I/O
@@ -322,6 +334,9 @@ impl Default for WasiPreview2Config {
             max_async_operations: 1000,
             default_timeout_ms: 30000, // 30 seconds
             enable_component_model: true,
+            capture_stdout: false,
+            capture_stderr: false,
+            stdin_bytes: None,
         }
     }
 }
@@ -390,7 +405,40 @@ impl WasiPreview2Context {
             }
         })?;
 
-        let wasi_ctx = WasiCtx::builder().build();
+        // Build WasiCtx with proper stdio configuration
+        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
+        let mut builder = WasiCtxBuilder::new();
+
+        // Configure stdin
+        let mut stdout_pipe = None;
+        let mut stderr_pipe = None;
+
+        if let Some(ref stdin_bytes) = self.config.stdin_bytes {
+            let pipe = MemoryInputPipe::new(stdin_bytes.clone());
+            builder.stdin(pipe);
+        } else {
+            builder.inherit_stdin();
+        }
+
+        // Configure stdout with capture if enabled
+        if self.config.capture_stdout {
+            let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+            builder.stdout(pipe.clone());
+            stdout_pipe = Some(pipe);
+        } else {
+            builder.inherit_stdout();
+        }
+
+        // Configure stderr with capture if enabled
+        if self.config.capture_stderr {
+            let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+            builder.stderr(pipe.clone());
+            stderr_pipe = Some(pipe);
+        } else {
+            builder.inherit_stderr();
+        }
+
+        let wasi_ctx = builder.build();
         let resource_table = ResourceTable::new();
 
         let store_data = WasiPreview2StoreData {
@@ -418,6 +466,8 @@ impl WasiPreview2Context {
             store,
             id: instance_id,
             created_at: Instant::now(),
+            stdout_pipe,
+            stderr_pipe,
         };
 
         let mut instances = self.instances.write().unwrap();
@@ -726,6 +776,69 @@ impl WasiPreview2Context {
                 _ => true,
             }
         });
+    }
+
+    /// Get captured stdout from a component instance
+    ///
+    /// Returns the stdout output captured via MemoryOutputPipe, or None if
+    /// capture was not enabled or the instance doesn't exist.
+    pub fn get_instance_stdout(&self, instance_id: u64) -> Option<Vec<u8>> {
+        let instances = self.instances.read().unwrap();
+        if let Some(instance) = instances.get(&instance_id) {
+            if let Some(ref pipe) = instance.stdout_pipe {
+                return Some(pipe.contents().to_vec());
+            }
+        }
+        None
+    }
+
+    /// Get captured stderr from a component instance
+    ///
+    /// Returns the stderr output captured via MemoryOutputPipe, or None if
+    /// capture was not enabled or the instance doesn't exist.
+    pub fn get_instance_stderr(&self, instance_id: u64) -> Option<Vec<u8>> {
+        let instances = self.instances.read().unwrap();
+        if let Some(instance) = instances.get(&instance_id) {
+            if let Some(ref pipe) = instance.stderr_pipe {
+                return Some(pipe.contents().to_vec());
+            }
+        }
+        None
+    }
+
+    /// Check if stdout capture is enabled for an instance
+    pub fn has_stdout_capture(&self, instance_id: u64) -> bool {
+        let instances = self.instances.read().unwrap();
+        if let Some(instance) = instances.get(&instance_id) {
+            return instance.stdout_pipe.is_some();
+        }
+        false
+    }
+
+    /// Check if stderr capture is enabled for an instance
+    pub fn has_stderr_capture(&self, instance_id: u64) -> bool {
+        let instances = self.instances.read().unwrap();
+        if let Some(instance) = instances.get(&instance_id) {
+            return instance.stderr_pipe.is_some();
+        }
+        false
+    }
+
+    /// Enable output capture for future instances
+    ///
+    /// This updates the context configuration so that new component instances
+    /// will have stdout/stderr capture enabled.
+    pub fn enable_output_capture(&mut self) {
+        self.config.capture_stdout = true;
+        self.config.capture_stderr = true;
+    }
+
+    /// Set stdin bytes for future instances
+    ///
+    /// This updates the context configuration so that new component instances
+    /// will receive the specified bytes on stdin.
+    pub fn set_stdin_bytes(&mut self, bytes: Vec<u8>) {
+        self.config.stdin_bytes = Some(bytes);
     }
 }
 
@@ -1050,6 +1163,150 @@ pub unsafe extern "C" fn wasi_preview2_get_instance_count(ctx_ptr: *const c_void
     ctx.instances.read().unwrap().len()
 }
 
+/// Enable output capture for future instances
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_enable_output_capture(ctx_ptr: *mut c_void) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &mut *(ctx_ptr as *mut WasiPreview2Context);
+    ctx.enable_output_capture();
+    0
+}
+
+/// Set stdin bytes for future instances
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+/// The bytes pointer and length must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_set_stdin_bytes(
+    ctx_ptr: *mut c_void,
+    bytes: *const u8,
+    len: usize,
+) -> c_int {
+    if ctx_ptr.is_null() || (bytes.is_null() && len > 0) {
+        return -1;
+    }
+
+    let ctx = &mut *(ctx_ptr as *mut WasiPreview2Context);
+    let bytes_vec = if len > 0 {
+        std::slice::from_raw_parts(bytes, len).to_vec()
+    } else {
+        Vec::new()
+    };
+    ctx.set_stdin_bytes(bytes_vec);
+    0
+}
+
+/// Get captured stdout from a component instance
+///
+/// Returns the length of the captured data. If out_data is not null,
+/// copies up to max_len bytes to out_data.
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_instance_stdout(
+    ctx_ptr: *const c_void,
+    instance_id: u64,
+    out_data: *mut u8,
+    max_len: usize,
+    out_len: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || out_len.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    if let Some(data) = ctx.get_instance_stdout(instance_id) {
+        *out_len = data.len();
+
+        if !out_data.is_null() && max_len > 0 {
+            let copy_len = std::cmp::min(data.len(), max_len);
+            std::ptr::copy_nonoverlapping(data.as_ptr(), out_data, copy_len);
+        }
+        0
+    } else {
+        *out_len = 0;
+        0 // Not an error, just no data
+    }
+}
+
+/// Get captured stderr from a component instance
+///
+/// Returns the length of the captured data. If out_data is not null,
+/// copies up to max_len bytes to out_data.
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_get_instance_stderr(
+    ctx_ptr: *const c_void,
+    instance_id: u64,
+    out_data: *mut u8,
+    max_len: usize,
+    out_len: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || out_len.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+
+    if let Some(data) = ctx.get_instance_stderr(instance_id) {
+        *out_len = data.len();
+
+        if !out_data.is_null() && max_len > 0 {
+            let copy_len = std::cmp::min(data.len(), max_len);
+            std::ptr::copy_nonoverlapping(data.as_ptr(), out_data, copy_len);
+        }
+        0
+    } else {
+        *out_len = 0;
+        0 // Not an error, just no data
+    }
+}
+
+/// Check if stdout capture is enabled for an instance
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_has_stdout_capture(
+    ctx_ptr: *const c_void,
+    instance_id: u64,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    if ctx.has_stdout_capture(instance_id) { 1 } else { 0 }
+}
+
+/// Check if stderr capture is enabled for an instance
+///
+/// # Safety
+/// The ctx_ptr must be a valid pointer to a WasiPreview2Context.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_preview2_has_stderr_capture(
+    ctx_ptr: *const c_void,
+    instance_id: u64,
+) -> c_int {
+    if ctx_ptr.is_null() {
+        return -1;
+    }
+
+    let ctx = &*(ctx_ptr as *const WasiPreview2Context);
+    if ctx.has_stderr_capture(instance_id) { 1 } else { 0 }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1057,7 +1314,10 @@ mod tests {
 
     #[test]
     fn test_wasi_preview2_context_creation() {
-        let engine = Engine::default();
+        // WASI Preview 2 requires async support
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.async_support(true);
+        let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
 
         let context = WasiPreview2Context::new(engine, config);
@@ -1073,6 +1333,22 @@ mod tests {
         assert_eq!(config.max_async_operations, 1000);
         assert_eq!(config.default_timeout_ms, 30000);
         assert!(config.enable_component_model);
+        assert!(!config.capture_stdout);
+        assert!(!config.capture_stderr);
+        assert!(config.stdin_bytes.is_none());
+    }
+
+    #[test]
+    fn test_wasi_preview2_config_with_capture() {
+        let config = WasiPreview2Config {
+            capture_stdout: true,
+            capture_stderr: true,
+            stdin_bytes: Some(b"hello".to_vec()),
+            ..Default::default()
+        };
+        assert!(config.capture_stdout);
+        assert!(config.capture_stderr);
+        assert_eq!(config.stdin_bytes, Some(b"hello".to_vec()));
     }
 
     #[tokio::test]
@@ -1169,7 +1445,10 @@ mod tests {
 
     #[test]
     fn test_operation_cleanup() {
-        let engine = Engine::default();
+        // WASI Preview 2 requires async support
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.async_support(true);
+        let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
