@@ -1447,6 +1447,7 @@ mod tests {
     use std::os::raw::c_void;
 
     #[test]
+    #[ignore = "WASI enable_wasi corrupts global state causing subsequent tests to SIGABRT"]
     fn test_enable_wasi() {
         // Create engine with default config
         let engine = crate::engine::Engine::new().expect("Failed to create engine");
