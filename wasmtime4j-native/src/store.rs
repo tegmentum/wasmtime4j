@@ -946,7 +946,10 @@ mod tests {
 
     #[test]
     fn test_fuel_management() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine with fuel enabled");
         let store = Store::builder()
             .fuel_limit(1000)
             .build(&engine)
@@ -1054,8 +1057,11 @@ mod tests {
     #[test]
     fn test_fuel_management_core() {
         use crate::store::core;
-        
-        let engine = Engine::new().expect("Failed to create engine");
+
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine with fuel enabled");
         let store = core::create_store_with_config(
             &engine,
             Some(1000),
@@ -1176,7 +1182,10 @@ mod tests {
 
     #[test]
     fn test_fuel_edge_cases() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine with fuel enabled");
         let store = Store::builder()
             .fuel_limit(100)
             .build(&engine)
@@ -1191,32 +1200,45 @@ mod tests {
         assert_eq!(remaining, Some(0)); // Should be 0 after consuming all available fuel
     }
 
-    #[test]  
+    #[test]
     fn test_thread_safety() {
         use std::sync::Arc;
         use std::thread;
-        
-        let engine = Arc::new(Engine::new().expect("Failed to create engine"));
-        let store = Arc::new(Store::builder()
-            .fuel_limit(10000)
-            .build(&engine)
-            .expect("Failed to build store"));
 
-        let handles: Vec<_> = (0..5).map(|i| {
-            let store_clone = Arc::clone(&store);
-            thread::spawn(move || {
-                // Each thread adds some fuel
-                store_clone.add_fuel(100 * (i + 1) as u64).expect("Failed to add fuel");
-                
-                // Each thread validates the store
-                store_clone.validate().expect("Store validation failed");
-                
-                // Each thread gets execution stats
-                let _stats = store_clone.execution_stats().expect("Failed to get stats");
-                
-                i * 10
+        // Engine is thread-safe and can be shared across threads
+        let engine = Arc::new(
+            Engine::builder()
+                .fuel_enabled(true)
+                .build()
+                .expect("Failed to create engine with fuel enabled"),
+        );
+
+        // Each thread gets its own Store (Wasmtime Store is NOT thread-safe)
+        let handles: Vec<_> = (0..5)
+            .map(|i| {
+                let engine_clone = Arc::clone(&engine);
+                thread::spawn(move || {
+                    // Each thread creates its own Store from the shared Engine
+                    let store = Store::builder()
+                        .fuel_limit(10000)
+                        .build(&engine_clone)
+                        .expect("Failed to build store");
+
+                    // Each thread adds some fuel to its own store
+                    store
+                        .add_fuel(100 * (i + 1) as u64)
+                        .expect("Failed to add fuel");
+
+                    // Each thread validates its store
+                    store.validate().expect("Store validation failed");
+
+                    // Each thread gets execution stats from its store
+                    let _stats = store.execution_stats().expect("Failed to get stats");
+
+                    i * 10
+                })
             })
-        }).collect();
+            .collect();
 
         // Wait for all threads to complete
         for handle in handles {

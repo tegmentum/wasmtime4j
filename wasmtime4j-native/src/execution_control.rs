@@ -1008,15 +1008,16 @@ mod tests {
         let config = ExecutionContextConfig::default();
         let context = ExecutionContext::new("fuel_test".to_string(), config).unwrap();
 
-        // Allocate fuel
-        assert!(context.allocate_fuel(1000, FuelPriority::Normal).is_ok());
+        // Allocate fuel with Critical priority (1.0 multiplier) for predictable testing
+        // Normal priority applies 0.8 multiplier: 1000 * 0.8 = 800
+        assert!(context.allocate_fuel(1000, FuelPriority::Critical).is_ok());
 
         // Consume fuel
         let consumed = context.consume_fuel(500, Some("test_function"));
         assert!(consumed.is_ok());
         assert_eq!(consumed.unwrap(), 500);
 
-        // Check remaining fuel
+        // Check remaining fuel (1000 - 500 = 500)
         let fuel_manager = context.fuel_manager.read().unwrap();
         assert_eq!(fuel_manager.current_fuel, 500);
     }

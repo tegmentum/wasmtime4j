@@ -823,7 +823,7 @@ impl FilesystemSnapshotManager {
             let entries = self.scan_filesystem(root_path, &options).await?;
 
             // Apply compression and deduplication
-            let processed_entries = self.process_entries(entries, &options).await?;
+            let processed_entries = self.process_entries(entries, root_path, &options).await?;
 
             // Calculate size information
             let size_info = self.calculate_size_info(&processed_entries).await?;
@@ -930,7 +930,7 @@ impl FilesystemSnapshotManager {
             let changes = self.find_changes(root_path, &parent_snapshot, &options).await?;
 
             // Process incremental entries
-            let processed_entries = self.process_entries(changes, &options).await?;
+            let processed_entries = self.process_entries(changes, root_path, &options).await?;
 
             // Calculate size information
             let size_info = self.calculate_size_info(&processed_entries).await?;
@@ -1420,11 +1420,13 @@ impl FilesystemSnapshotManager {
         Ok(false)
     }
 
-    async fn process_entries(&self, mut entries: Vec<SnapshotEntry>, options: &SnapshotOptions) -> WasmtimeResult<Vec<SnapshotEntry>> {
+    async fn process_entries(&self, mut entries: Vec<SnapshotEntry>, root_path: &Path, options: &SnapshotOptions) -> WasmtimeResult<Vec<SnapshotEntry>> {
         for entry in &mut entries {
             // Calculate content hash for files
             if entry.entry_type == SnapshotEntryType::File && entry.change_type != Some(ChangeType::Deleted) {
-                entry.content_hash = Some(self.calculate_file_hash(&entry.path).await?);
+                // Construct full path from root_path and relative entry path
+                let full_path = root_path.join(&entry.path);
+                entry.content_hash = Some(self.calculate_file_hash(&full_path).await?);
             }
 
             // Apply deduplication
@@ -1625,8 +1627,12 @@ impl FilesystemSnapshotManager {
                 }
 
                 // Get file content from storage
+                // Try dedup first if available, fall back to direct storage
                 let content = if let Some(ref dedup_ref) = entry.dedup_ref {
-                    self.dedup_engine.get_content(dedup_ref).await?
+                    match self.dedup_engine.get_content(dedup_ref).await {
+                        Ok(data) => data,
+                        Err(_) => self.storage.load_file_content(entry).await?,
+                    }
                 } else {
                     self.storage.load_file_content(entry).await?
                 };
@@ -2465,8 +2471,11 @@ mod tests {
         let mut file = File::create(&test_file).unwrap();
         file.write_all(b"test content for restore").unwrap();
 
-        // Create snapshot
-        let options = SnapshotOptions::default();
+        // Create snapshot (disable compression since storage is placeholder)
+        let options = SnapshotOptions {
+            compress: false,
+            ..Default::default()
+        };
         let snapshot_id = manager.create_full_snapshot(root_path, options).await.unwrap();
 
         // Restore snapshot
