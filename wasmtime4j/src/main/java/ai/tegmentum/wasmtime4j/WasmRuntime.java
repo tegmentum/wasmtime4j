@@ -171,6 +171,23 @@ public interface WasmRuntime extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a new component linker for the given engine.
+   *
+   * <p>A component linker provides the mechanism to define host functions and bind imports before
+   * instantiating WebAssembly components. Unlike the core module {@link Linker}, ComponentLinker
+   * works with WIT (WebAssembly Interface Types) interface definitions and supports the full
+   * Component Model type system.
+   *
+   * @param <T> the type of user data associated with stores used with this linker
+   * @param engine the engine to create the component linker for
+   * @return a new ComponentLinker instance
+   * @throws WasmException if component linker creation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  <T> ComponentLinker<T> createComponentLinker(final Engine engine) throws WasmException;
+
+  /**
    * Creates an instance of a WebAssembly module.
    *
    * <p>This method instantiates a compiled module, making its exported functions and memory

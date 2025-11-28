@@ -2278,6 +2278,225 @@ public final class NativeFunctionBindings {
     callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
   }
 
+  // Component Linker Functions
+
+  /**
+   * Creates a new component linker from a component engine.
+   *
+   * @param enginePtr pointer to the component engine
+   * @return pointer to the new component linker, or null on failure
+   */
+  public MemorySegment componentLinkerCreate(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_component_linker_new", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Creates a new component linker from a Wasmtime engine.
+   *
+   * @param enginePtr pointer to the Wasmtime engine
+   * @return pointer to the new component linker, or null on failure
+   */
+  public MemorySegment componentLinkerCreateWithEngine(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_new_with_engine", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Destroys a component linker.
+   *
+   * @param linkerPtr pointer to the component linker to destroy
+   */
+  public void componentLinkerDestroy(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    callNativeFunction("wasmtime4j_component_linker_destroy", Void.class, linkerPtr);
+  }
+
+  /**
+   * Checks if a component linker is valid.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 1 if valid, 0 if invalid
+   */
+  public int componentLinkerIsValid(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction("wasmtime4j_component_linker_is_valid", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Disposes a component linker's resources.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerDispose(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction("wasmtime4j_component_linker_dispose", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Checks if an interface is defined in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param namespacePtr pointer to namespace string
+   * @param interfaceNamePtr pointer to interface name string
+   * @return 1 if present, 0 if not, -1 on error
+   */
+  public int componentLinkerHasInterface(
+      final MemorySegment linkerPtr,
+      final MemorySegment namespacePtr,
+      final MemorySegment interfaceNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(namespacePtr, "namespacePtr");
+    validatePointer(interfaceNamePtr, "interfaceNamePtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_has_interface",
+        Integer.class,
+        linkerPtr,
+        namespacePtr,
+        interfaceNamePtr);
+  }
+
+  /**
+   * Checks if a function is defined in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param namespacePtr pointer to namespace string
+   * @param interfaceNamePtr pointer to interface name string
+   * @param functionNamePtr pointer to function name string
+   * @return 1 if present, 0 if not, -1 on error
+   */
+  public int componentLinkerHasFunction(
+      final MemorySegment linkerPtr,
+      final MemorySegment namespacePtr,
+      final MemorySegment interfaceNamePtr,
+      final MemorySegment functionNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(namespacePtr, "namespacePtr");
+    validatePointer(interfaceNamePtr, "interfaceNamePtr");
+    validatePointer(functionNamePtr, "functionNamePtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_has_function",
+        Integer.class,
+        linkerPtr,
+        namespacePtr,
+        interfaceNamePtr,
+        functionNamePtr);
+  }
+
+  /**
+   * Gets the number of host functions defined in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return the number of host functions
+   */
+  public long componentLinkerHostFunctionCount(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_host_function_count", Long.class, linkerPtr);
+  }
+
+  /**
+   * Gets the number of interfaces defined in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return the number of interfaces
+   */
+  public long componentLinkerInterfaceCount(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction("wasmtime4j_component_linker_interface_count", Long.class, linkerPtr);
+  }
+
+  /**
+   * Checks if WASI Preview 2 is enabled in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 1 if enabled, 0 if not
+   */
+  public int componentLinkerWasiP2Enabled(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_wasi_p2_enabled", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Enables WASI Preview 2 in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerEnableWasiP2(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_enable_wasi_p2", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Instantiates a component using the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param componentPtr pointer to the component
+   * @param instanceOutPtr pointer to store the instance pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerInstantiate(
+      final MemorySegment linkerPtr,
+      final MemorySegment componentPtr,
+      final MemorySegment instanceOutPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(componentPtr, "componentPtr");
+    validatePointer(instanceOutPtr, "instanceOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_instantiate",
+        Integer.class,
+        linkerPtr,
+        componentPtr,
+        instanceOutPtr);
+  }
+
+  /**
+   * Gets all defined interface names from the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param jsonOutPtr pointer to store the JSON string pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerGetInterfaces(
+      final MemorySegment linkerPtr, final MemorySegment jsonOutPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(jsonOutPtr, "jsonOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_get_interfaces", Integer.class, linkerPtr, jsonOutPtr);
+  }
+
+  /**
+   * Gets all functions defined for a specific interface.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param namespacePtr pointer to namespace string
+   * @param interfaceNamePtr pointer to interface name string
+   * @param jsonOutPtr pointer to store the JSON string pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerGetFunctions(
+      final MemorySegment linkerPtr,
+      final MemorySegment namespacePtr,
+      final MemorySegment interfaceNamePtr,
+      final MemorySegment jsonOutPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(namespacePtr, "namespacePtr");
+    validatePointer(interfaceNamePtr, "interfaceNamePtr");
+    validatePointer(jsonOutPtr, "jsonOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_get_functions",
+        Integer.class,
+        linkerPtr,
+        namespacePtr,
+        interfaceNamePtr,
+        jsonOutPtr);
+  }
+
   // Global Functions
 
   /**
@@ -4640,6 +4859,100 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // out_value
             ValueLayout.ADDRESS)); // out_len
 
+    // Component Linker functions
+    addFunctionBinding(
+        "wasmtime4j_component_linker_new",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns linker pointer
+            ValueLayout.ADDRESS)); // engine pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_new_with_engine",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns linker pointer
+            ValueLayout.ADDRESS)); // wasmtime engine pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_is_valid",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 1 if valid, 0 if invalid
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_dispose",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_has_interface",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 1 if present, 0 if not, -1 on error
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // namespace string
+            ValueLayout.ADDRESS)); // interface name string
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_has_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 1 if present, 0 if not, -1 on error
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // namespace string
+            ValueLayout.ADDRESS, // interface name string
+            ValueLayout.ADDRESS)); // function name string
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_host_function_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // returns count
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_interface_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // returns count
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_wasi_p2_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 1 if enabled, 0 if not
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_enable_wasi_p2",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // component pointer
+            ValueLayout.ADDRESS)); // instance out pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_get_interfaces",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS)); // json out pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_get_functions",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // namespace string
+            ValueLayout.ADDRESS, // interface name string
+            ValueLayout.ADDRESS)); // json out pointer
+
     // WASI context functions
     addFunctionBinding(
         "wasmtime4j_wasi_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -5086,11 +5399,7 @@ public final class NativeFunctionBindings {
     validatePointer(modulePtr, "modulePtr");
 
     return callNativeFunction(
-        "wasmtime4j_linker_instantiate",
-        MemorySegment.class,
-        linkerPtr,
-        storePtr,
-        modulePtr);
+        "wasmtime4j_linker_instantiate", MemorySegment.class, linkerPtr, storePtr, modulePtr);
   }
 
   /**

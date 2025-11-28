@@ -250,6 +250,21 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
+  public <T> ai.tegmentum.wasmtime4j.ComponentLinker<T> createComponentLinker(final Engine engine)
+      throws WasmException {
+    PanamaValidation.requireNonNull(engine, "engine");
+    ensureNotClosed();
+
+    if (!(engine instanceof PanamaEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
+    }
+
+    LOGGER.fine("Creating component linker for engine");
+    return new PanamaComponentLinker<>((PanamaEngine) engine);
+  }
+
+  @Override
   public Instance instantiate(final Module module) throws WasmException {
     PanamaValidation.requireNonNull(module, "module");
     ensureNotClosed();

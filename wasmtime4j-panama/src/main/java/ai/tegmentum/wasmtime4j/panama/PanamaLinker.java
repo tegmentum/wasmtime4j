@@ -443,8 +443,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             NATIVE_BINDINGS.storeSetWasiContext(
                 panamaStore.getNativeStore(), wasiContext.getNativeContext());
         if (result != 0) {
-          throw new WasmException("Failed to attach WASI context to store (error code: " + result
-              + ")");
+          throw new WasmException(
+              "Failed to attach WASI context to store (error code: " + result + ")");
         }
         LOGGER.fine("Attached WASI context to store before instantiation");
       }

@@ -954,6 +954,26 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public <T> ai.tegmentum.wasmtime4j.ComponentLinker<T> createComponentLinker(final Engine engine)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    validateRuntimeState();
+    return concurrencyManager.executeWithWriteLock(
+        nativeHandle,
+        () -> {
+          final long engineHandle =
+              ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+          final long linkerHandle = nativeCreateComponentLinker(nativeHandle, engineHandle);
+          if (linkerHandle == 0) {
+            throw new RuntimeException("Failed to create component linker");
+          }
+          return new ai.tegmentum.wasmtime4j.jni.JniComponentLinker<>(linkerHandle, engine);
+        });
+  }
+
+  @Override
   public void addWasiToLinker(
       Linker<ai.tegmentum.wasmtime4j.WasiContext> linker,
       ai.tegmentum.wasmtime4j.WasiContext context)
@@ -1225,6 +1245,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   private static native long nativeCreateLinkerWithConfig(
       long runtimeHandle, long engineHandle, boolean allowShadowing);
+
+  private static native long nativeCreateComponentLinker(long runtimeHandle, long engineHandle);
 
   private static native int nativeAddWasiToLinker(
       long runtimeHandle, long linkerHandle, long contextHandle);

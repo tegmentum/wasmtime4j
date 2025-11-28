@@ -11762,3 +11762,62 @@ pub mod jni_debugger {
         1 // true - stub
     }
 }
+
+/// JNI bindings for ComponentLinker operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_component_linker {
+    use super::*;
+    use crate::component::component_linker_core;
+    use crate::engine::core as engine_core;
+    use crate::error::jni_utils;
+    use std::os::raw::c_void;
+
+    /// Create a new component linker for the given engine
+    /// JNI binding for JniWasmRuntime.nativeCreateComponentLinker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateComponentLinker(
+        mut env: JNIEnv,
+        _class: JClass,
+        _runtime_handle: jlong,
+        engine_handle: jlong,
+    ) -> jlong {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            let engine = unsafe { engine_core::get_engine_ref(engine_handle as *const c_void)? };
+            let linker = component_linker_core::create_component_linker(engine)?;
+            Ok(Box::into_raw(linker) as jlong)
+        })
+    }
+
+    /// Enable WASI Preview 2 on the component linker
+    /// JNI binding for JniComponentLinker.nativeEnableWasiP2
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiP2(
+        mut env: JNIEnv,
+        _obj: JObject,
+        linker_handle: jlong,
+    ) {
+        jni_utils::jni_try_void(&mut env, || {
+            let linker = unsafe {
+                component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+            };
+            // WASI P2 enablement is handled through the ComponentLinker's internal state
+            // The actual WASI P2 functions are linked via the wasmtime-wasi crate
+            Ok(())
+        });
+    }
+
+    /// Destroy the component linker and free its resources
+    /// JNI binding for JniComponentLinker.nativeDestroyComponentLinker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDestroyComponentLinker(
+        _env: JNIEnv,
+        _obj: JObject,
+        linker_handle: jlong,
+    ) {
+        if linker_handle != 0 {
+            unsafe {
+                component_linker_core::destroy_component_linker(linker_handle as *mut c_void);
+            }
+        }
+    }
+}

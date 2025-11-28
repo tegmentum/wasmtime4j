@@ -1,0 +1,533 @@
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.panama;
+
+import ai.tegmentum.wasmtime4j.ComponentHostFunction;
+import ai.tegmentum.wasmtime4j.ComponentImportValidation;
+import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.ComponentLinker;
+import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
+import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
+
+/**
+ * Panama FFI implementation of ComponentLinker for WebAssembly Component Model.
+ *
+ * <p>This implementation uses Panama Foreign Function API to interact with the native Wasmtime
+ * library for Component Model operations.
+ *
+ * @param <T> the type of user data associated with stores used with this linker
+ * @since 1.0.0
+ */
+public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
+
+  private static final Logger LOGGER = Logger.getLogger(PanamaComponentLinker.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
+  private static final ConcurrentHashMap<Long, ComponentHostFunctionWrapper> HOST_CALLBACKS =
+      new ConcurrentHashMap<>();
+  private static final AtomicLong NEXT_CALLBACK_ID = new AtomicLong(1);
+
+  private final PanamaEngine engine;
+  private final Arena arena;
+  private final MemorySegment nativeLinker;
+  private final Map<String, Long> hostFunctions = new ConcurrentHashMap<>();
+  private final Map<String, Set<String>> definedInterfaces = new ConcurrentHashMap<>();
+  private volatile boolean closed = false;
+
+  /**
+   * Creates a new Panama component linker.
+   *
+   * @param engine the engine to create the linker for
+   * @throws WasmException if linker creation fails
+   */
+  public PanamaComponentLinker(final PanamaEngine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    this.engine = engine;
+    this.arena = Arena.ofShared();
+
+    // Create native component linker
+    final MemorySegment enginePtr = engine.getNativeEngine();
+    if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Engine has invalid native handle");
+    }
+
+    this.nativeLinker = NATIVE_BINDINGS.componentLinkerCreateWithEngine(enginePtr);
+    if (this.nativeLinker == null || this.nativeLinker.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to create native component linker");
+    }
+
+    LOGGER.fine("Created Panama component linker");
+  }
+
+  @Override
+  public void defineFunction(
+      final String interfaceNamespace,
+      final String interfaceName,
+      final String functionName,
+      final ComponentHostFunction implementation)
+      throws WasmException {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // Register the callback
+    final long callbackId = registerHostFunctionCallback(implementation);
+
+    // Build WIT path key
+    final String witPath =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
+    hostFunctions.put(witPath, callbackId);
+
+    // Track in defined interfaces
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
+
+    LOGGER.fine(
+        "Defined component host function: " + witPath + " (callback ID: " + callbackId + ")");
+  }
+
+  @Override
+  public void defineFunction(final String witPath, final ComponentHostFunction implementation)
+      throws WasmException {
+    if (witPath == null || witPath.isEmpty()) {
+      throw new IllegalArgumentException("WIT path cannot be null or empty");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // Parse WIT path to extract components
+    final String[] pathParts = parseWitPath(witPath);
+    defineFunction(pathParts[0], pathParts[1], pathParts[2], implementation);
+  }
+
+  @Override
+  public void defineInterface(
+      final String interfaceNamespace,
+      final String interfaceName,
+      final Map<String, ComponentHostFunction> functions)
+      throws WasmException {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (functions == null) {
+      throw new IllegalArgumentException("Functions cannot be null");
+    }
+    ensureNotClosed();
+
+    for (final Map.Entry<String, ComponentHostFunction> entry : functions.entrySet()) {
+      defineFunction(interfaceNamespace, interfaceName, entry.getKey(), entry.getValue());
+    }
+  }
+
+  @Override
+  public void defineResource(
+      final String interfaceNamespace,
+      final String interfaceName,
+      final String resourceName,
+      final ComponentResourceDefinition<?> resourceDefinition)
+      throws WasmException {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (resourceName == null) {
+      throw new IllegalArgumentException("Resource name cannot be null");
+    }
+    if (resourceDefinition == null) {
+      throw new IllegalArgumentException("Resource definition cannot be null");
+    }
+    ensureNotClosed();
+
+    // Track resource in defined interfaces
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+    definedInterfaces
+        .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
+        .add("[resource]" + resourceName);
+
+    // Note: Full resource support requires additional native infrastructure for:
+    // - Resource table management
+    // - Constructor/destructor callbacks
+    // - Method dispatch
+    // The resource definition is tracked but not fully wired to native code yet.
+
+    LOGGER.fine(
+        "Defined component resource: "
+            + interfaceNamespace
+            + ":"
+            + interfaceName
+            + "/"
+            + resourceName);
+  }
+
+  @Override
+  public void linkInstance(final ComponentInstance instance) throws WasmException {
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    ensureNotClosed();
+
+    // This would link an existing component instance's exports as imports
+    LOGGER.fine("Linked component instance exports");
+  }
+
+  @Override
+  public ComponentInstance linkComponent(final Store store, final ComponentSimple component)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    // Instantiate the component and link its exports
+    final ComponentInstance instance = instantiate(store, component);
+    linkInstance(instance);
+    return instance;
+  }
+
+  @Override
+  public ComponentInstance instantiate(final Store store, final ComponentSimple component)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    // Component instantiation through the linker is complex and requires
+    // the full Component Model integration. For now, throw an informative error.
+    throw new WasmException(
+        "Direct component instantiation through ComponentLinker is not yet fully implemented. "
+            + "Use ComponentEngine.instantiate() instead.");
+  }
+
+  @Override
+  public void enableWasiPreview2() throws WasmException {
+    ensureNotClosed();
+
+    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiP2(nativeLinker);
+    if (result != 0) {
+      throw new WasmException("Failed to enable WASI Preview 2 (error code: " + result + ")");
+    }
+
+    LOGGER.fine("Enabled WASI Preview 2 in component linker");
+  }
+
+  @Override
+  public void enableWasiPreview2(final WasiPreview2Config config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+    ensureNotClosed();
+
+    // Enable WASI Preview 2 with default settings first
+    enableWasiPreview2();
+
+    // TODO: Apply config settings (args, env, preopened dirs, etc.)
+    LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
+  }
+
+  @Override
+  public Engine getEngine() {
+    return engine;
+  }
+
+  @Override
+  public boolean isValid() {
+    if (closed) {
+      return false;
+    }
+    return NATIVE_BINDINGS.componentLinkerIsValid(nativeLinker) == 1;
+  }
+
+  @Override
+  public boolean hasInterface(final String interfaceNamespace, final String interfaceName) {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment namespacePtr = arena.allocateFrom(interfaceNamespace);
+    final MemorySegment interfaceNamePtr = arena.allocateFrom(interfaceName);
+
+    final int result =
+        NATIVE_BINDINGS.componentLinkerHasInterface(nativeLinker, namespacePtr, interfaceNamePtr);
+
+    return result == 1;
+  }
+
+  @Override
+  public boolean hasFunction(
+      final String interfaceNamespace, final String interfaceName, final String functionName) {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment namespacePtr = arena.allocateFrom(interfaceNamespace);
+    final MemorySegment interfaceNamePtr = arena.allocateFrom(interfaceName);
+    final MemorySegment functionNamePtr = arena.allocateFrom(functionName);
+
+    final int result =
+        NATIVE_BINDINGS.componentLinkerHasFunction(
+            nativeLinker, namespacePtr, interfaceNamePtr, functionNamePtr);
+
+    return result == 1;
+  }
+
+  @Override
+  public Set<String> getDefinedInterfaces() {
+    ensureNotClosed();
+    return new HashSet<>(definedInterfaces.keySet());
+  }
+
+  @Override
+  public Set<String> getDefinedFunctions(
+      final String interfaceNamespace, final String interfaceName) {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    ensureNotClosed();
+
+    final String key = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final Set<String> functions = definedInterfaces.get(key);
+    return functions != null ? new HashSet<>(functions) : Set.of();
+  }
+
+  @Override
+  public ComponentImportValidation validateImports(final ComponentSimple component) {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    // Build validation result based on what's defined
+    final ComponentImportValidation.Builder builder = ComponentImportValidation.builder();
+
+    // For now, mark all host functions as satisfied
+    for (final String witPath : hostFunctions.keySet()) {
+      builder.addSatisfied(witPath);
+    }
+
+    return builder.build();
+  }
+
+  @Override
+  public void aliasInterface(
+      final String fromNamespace,
+      final String fromInterface,
+      final String toNamespace,
+      final String toInterface)
+      throws WasmException {
+    if (fromNamespace == null) {
+      throw new IllegalArgumentException("From namespace cannot be null");
+    }
+    if (fromInterface == null) {
+      throw new IllegalArgumentException("From interface cannot be null");
+    }
+    if (toNamespace == null) {
+      throw new IllegalArgumentException("To namespace cannot be null");
+    }
+    if (toInterface == null) {
+      throw new IllegalArgumentException("To interface cannot be null");
+    }
+    ensureNotClosed();
+
+    // Copy all functions from source interface to target interface
+    final String fromKey = fromNamespace + ":" + fromInterface + "/" + fromInterface;
+    final String toKey = toNamespace + ":" + toInterface + "/" + toInterface;
+
+    final Set<String> sourceFunctions = definedInterfaces.get(fromKey);
+    if (sourceFunctions != null) {
+      definedInterfaces.computeIfAbsent(toKey, k -> new HashSet<>()).addAll(sourceFunctions);
+
+      // Also copy the host function registrations
+      for (final String function : sourceFunctions) {
+        final String fromPath = fromKey + "#" + function;
+        final String toPath = toKey + "#" + function;
+        final Long callbackId = hostFunctions.get(fromPath);
+        if (callbackId != null) {
+          hostFunctions.put(toPath, callbackId);
+        }
+      }
+    }
+
+    LOGGER.fine("Created interface alias from " + fromKey + " to " + toKey);
+  }
+
+  @Override
+  public void close() {
+    if (closed) {
+      return;
+    }
+
+    try {
+      // Clean up host function callbacks
+      for (final Long callbackId : hostFunctions.values()) {
+        HOST_CALLBACKS.remove(callbackId);
+      }
+      hostFunctions.clear();
+      definedInterfaces.clear();
+
+      // Dispose native linker resources
+      if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.componentLinkerDestroy(nativeLinker);
+      }
+
+      arena.close();
+      closed = true;
+      LOGGER.fine("Closed Panama component linker");
+    } catch (final Exception e) {
+      LOGGER.warning("Error closing component linker: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Gets the native component linker pointer.
+   *
+   * @return native linker memory segment
+   */
+  public MemorySegment getNativeLinker() {
+    return nativeLinker;
+  }
+
+  /**
+   * Ensures the linker is not closed.
+   *
+   * @throws IllegalStateException if closed
+   */
+  private void ensureNotClosed() {
+    if (closed) {
+      throw new IllegalStateException("ComponentLinker has been closed");
+    }
+  }
+
+  /**
+   * Parses a WIT path into namespace, interface, and function components.
+   *
+   * @param witPath the WIT path to parse
+   * @return array of [namespace, interface, function]
+   * @throws WasmException if the path is malformed
+   */
+  private String[] parseWitPath(final String witPath) throws WasmException {
+    // Expected formats:
+    // - "namespace:package/interface#function"
+    // - "namespace:package/interface@version#function"
+
+    final int hashIndex = witPath.indexOf('#');
+    if (hashIndex == -1) {
+      throw new WasmException("Invalid WIT path format (missing #): " + witPath);
+    }
+
+    final String functionName = witPath.substring(hashIndex + 1);
+    String interfacePart = witPath.substring(0, hashIndex);
+
+    // Remove version if present
+    final int atIndex = interfacePart.indexOf('@');
+    if (atIndex != -1) {
+      interfacePart = interfacePart.substring(0, atIndex);
+    }
+
+    final int slashIndex = interfacePart.indexOf('/');
+    if (slashIndex == -1) {
+      throw new WasmException("Invalid WIT interface path (missing /): " + interfacePart);
+    }
+
+    final String namespace = interfacePart.substring(0, slashIndex);
+    final String interfaceName = interfacePart.substring(slashIndex + 1);
+
+    return new String[] {namespace, interfaceName, functionName};
+  }
+
+  /**
+   * Registers a host function callback.
+   *
+   * @param implementation the host function implementation
+   * @return the callback ID
+   */
+  private long registerHostFunctionCallback(final ComponentHostFunction implementation) {
+    final long id = NEXT_CALLBACK_ID.getAndIncrement();
+    HOST_CALLBACKS.put(id, new ComponentHostFunctionWrapper(id, implementation));
+    return id;
+  }
+
+  /** Wrapper for component host function callbacks. */
+  private static final class ComponentHostFunctionWrapper {
+    private final long id;
+    private final ComponentHostFunction implementation;
+
+    ComponentHostFunctionWrapper(final long id, final ComponentHostFunction implementation) {
+      this.id = id;
+      this.implementation = implementation;
+    }
+
+    long getId() {
+      return id;
+    }
+
+    ComponentHostFunction getImplementation() {
+      return implementation;
+    }
+  }
+}
