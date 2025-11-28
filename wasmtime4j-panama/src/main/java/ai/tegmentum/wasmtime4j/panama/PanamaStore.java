@@ -573,6 +573,8 @@ public final class PanamaStore implements Store {
     if (closed) {
       return;
     }
+    // Mark as closed immediately to prevent reuse during cleanup
+    closed = true;
 
     try {
       // Close resource manager first (cleans up host functions and managed resources)
@@ -585,7 +587,6 @@ public final class PanamaStore implements Store {
         NATIVE_BINDINGS.storeDestroy(nativeStore);
       }
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama store");
     } catch (final Exception e) {
       LOGGER.warning("Error closing store: " + e.getMessage());
