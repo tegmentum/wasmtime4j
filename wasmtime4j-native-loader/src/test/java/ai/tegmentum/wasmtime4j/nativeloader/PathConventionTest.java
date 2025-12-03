@@ -75,7 +75,7 @@ final class PathConventionTest {
         "WASMTIME4J convention should generate correct Windows x86_64 path");
 
     assertEquals(
-        "/native/macos-x86_64/libwasmtime4j.dylib",
+        "/native/darwin-x86_64/libwasmtime4j.dylib",
         PathConvention.WASMTIME4J.generatePath(libraryName, darwinX64Info),
         "WASMTIME4J convention should generate correct macOS x86_64 path");
 
@@ -100,7 +100,7 @@ final class PathConventionTest {
         "MAVEN_NATIVE convention should generate correct Windows x86_64 path");
 
     assertEquals(
-        "/natives/macos-x86_64/libtestlib.dylib",
+        "/natives/darwin-x86_64/libtestlib.dylib",
         PathConvention.MAVEN_NATIVE.generatePath(libraryName, darwinX64Info),
         "MAVEN_NATIVE convention should generate correct macOS x86_64 path");
   }
@@ -120,7 +120,7 @@ final class PathConventionTest {
         "JNA convention should generate correct Windows x86_64 path");
 
     assertEquals(
-        "/macos-x86_64/jnalib.dylib",
+        "/darwin-x86_64/jnalib.dylib",
         PathConvention.JNA.generatePath(libraryName, darwinX64Info),
         "JNA convention should generate correct macOS x86_64 path");
   }

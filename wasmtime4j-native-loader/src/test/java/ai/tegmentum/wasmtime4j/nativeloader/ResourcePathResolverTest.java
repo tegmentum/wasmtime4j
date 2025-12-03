@@ -150,7 +150,7 @@ final class ResourcePathResolverTest {
         "Windows path should be resolved correctly");
 
     assertEquals(
-        "/native/macos-x86_64/libmylib.dylib",
+        "/native/darwin-x86_64/libmylib.dylib",
         ResourcePathResolver.resolvePath(pattern, libraryName, darwinInfo),
         "macOS path should be resolved correctly");
   }

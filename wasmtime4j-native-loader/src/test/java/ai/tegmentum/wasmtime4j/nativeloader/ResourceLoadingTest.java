@@ -126,12 +126,12 @@ final class ResourceLoadingTest {
             "wasmtime4j",
             PlatformDetector.OperatingSystem.MACOS,
             PlatformDetector.Architecture.X86_64,
-            "/natives/macos-x86_64/libwasmtime4j.dylib"),
+            "/natives/darwin-x86_64/libwasmtime4j.dylib"),
         Arguments.of(
             "wasmtime4j",
             PlatformDetector.OperatingSystem.MACOS,
             PlatformDetector.Architecture.AARCH64,
-            "/natives/macos-aarch64/libwasmtime4j.dylib"),
+            "/natives/darwin-aarch64/libwasmtime4j.dylib"),
         Arguments.of(
             "testlib",
             PlatformDetector.OperatingSystem.LINUX,
