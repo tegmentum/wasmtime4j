@@ -3,6 +3,8 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * WebAssembly compilation engine interface.
@@ -65,6 +67,43 @@ public interface Engine extends Closeable {
    * @since 1.0.0
    */
   Module compileWat(final String wat) throws WasmException;
+
+  /**
+   * Precompiles WebAssembly bytecode into a serialized form for ahead-of-time (AOT) usage.
+   *
+   * <p>This method compiles the WebAssembly binary into a serialized form that can be later loaded
+   * via {@code Module.deserialize()} without needing to recompile. This is useful for caching
+   * compiled modules to disk or distributing pre-compiled modules.
+   *
+   * <p>The returned byte array can be stored and later loaded using the engine's deserialization
+   * methods, avoiding the compilation overhead during runtime.
+   *
+   * @param wasmBytes the WebAssembly bytecode to precompile
+   * @return the precompiled serialized module bytes
+   * @throws WasmException if precompilation fails due to invalid bytecode or engine issues
+   * @throws IllegalArgumentException if wasmBytes is null or empty
+   * @since 1.0.0
+   */
+  byte[] precompileModule(final byte[] wasmBytes) throws WasmException;
+
+  /**
+   * Compiles WebAssembly bytecode from an input stream into a module using this engine.
+   *
+   * <p>This method reads the entire stream contents and then compiles the WebAssembly bytecode. The
+   * compilation process includes parsing, validation, and optimization.
+   *
+   * <p>Note: Wasmtime requires the complete WebAssembly bytecode before compilation can begin, so
+   * the stream is fully read into memory before compilation starts. For very large modules,
+   * consider using memory-mapped files or chunked reading strategies.
+   *
+   * @param stream the input stream containing WebAssembly bytecode
+   * @return a compiled Module
+   * @throws WasmException if compilation fails due to invalid bytecode or engine issues
+   * @throws IOException if reading from the stream fails
+   * @throws IllegalArgumentException if stream is null
+   * @since 1.0.0
+   */
+  Module compileFromStream(final InputStream stream) throws WasmException, IOException;
 
   /**
    * Increments the epoch counter.
@@ -175,6 +214,30 @@ public interface Engine extends Closeable {
    * @since 1.0.0
    */
   long getReferenceCount();
+
+  /**
+   * Checks if coredump generation on trap is enabled for this engine.
+   *
+   * <p>When enabled, traps will generate a coredump that can be used for post-mortem debugging of
+   * WebAssembly execution failures.
+   *
+   * @return true if coredump generation is enabled, false otherwise
+   * @since 1.0.0
+   */
+  boolean isCoredumpOnTrapEnabled();
+
+  /**
+   * Captures current engine statistics.
+   *
+   * <p>Returns a snapshot of engine statistics including compilation metrics, memory usage, and
+   * cache performance. This method is implemented by the underlying runtime (JNI or Panama).
+   *
+   * @return engine statistics snapshot
+   * @since 1.0.0
+   */
+  default ai.tegmentum.wasmtime4j.performance.EngineStatistics captureStatistics() {
+    return ai.tegmentum.wasmtime4j.performance.EngineStatistics.capture(this);
+  }
 
   /**
    * Closes the engine and releases associated resources.

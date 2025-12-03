@@ -1,0 +1,40 @@
+package example:calculator@1.0.0;
+
+/// A simple calculator world
+world calculator {
+    /// Mathematical operation enum
+    enum operation {
+        add,
+        subtract,
+        multiply,
+        divide
+    }
+
+    /// Result of a calculation that may fail
+    variant calculation-result {
+        success(f64),
+        error(string),
+    }
+
+    /// A point in 2D space
+    record point {
+        x: f64,
+        y: f64
+    }
+
+    /// Permission flags
+    flags permissions {
+        read,
+        write,
+        execute
+    }
+
+    /// Perform a binary operation
+    export calculate: func(a: f64, b: f64, op: operation) -> calculation-result;
+
+    /// Calculate distance between two points
+    export distance: func(p1: point, p2: point) -> f64;
+
+    /// Import a logging function
+    import log: func(message: string);
+}

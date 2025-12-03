@@ -184,6 +184,15 @@ public abstract class WitTypeKind {
     return Map.of(); // Default implementation for non-record types
   }
 
+  /**
+   * Gets the variant cases (only for variant types).
+   *
+   * @return map of case names to optional payload types, or empty map for non-variant types
+   */
+  public Map<String, Optional<WitType>> getVariantCases() {
+    return Map.of(); // Default implementation for non-variant types
+  }
+
   /** Primitive type kind implementation. */
   private static final class PrimitiveTypeKind extends WitTypeKind {
     private final WitPrimitiveType primitive;
@@ -366,6 +375,11 @@ public abstract class WitTypeKind {
     @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.VARIANT;
+    }
+
+    @Override
+    public Map<String, Optional<WitType>> getVariantCases() {
+      return cases;
     }
 
     public Map<String, Optional<WitType>> getCases() {

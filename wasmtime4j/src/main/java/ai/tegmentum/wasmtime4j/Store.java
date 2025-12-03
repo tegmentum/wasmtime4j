@@ -196,6 +196,32 @@ public interface Store extends Closeable {
   WasmMemory createMemory(int initialPages, int maxPages) throws WasmException;
 
   /**
+   * Creates a new shared WebAssembly linear memory for thread communication.
+   *
+   * <p>Shared memory can be accessed atomically by multiple threads, enabling concurrent
+   * WebAssembly execution. This is essential for the WebAssembly threads proposal.
+   *
+   * <p>Shared memory provides:
+   *
+   * <ul>
+   *   <li>Atomic load/store operations for thread-safe access
+   *   <li>Compare-and-swap operations for lock-free synchronization
+   *   <li>Wait/notify primitives for thread coordination
+   * </ul>
+   *
+   * <p>Note: The engine must be configured with threads support enabled.
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages (required for shared memory)
+   * @return a new shared WasmMemory that can be accessed atomically
+   * @throws WasmException if shared memory creation fails
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @throws UnsupportedOperationException if threads support is not enabled
+   * @since 1.0.0
+   */
+  WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
+
+  /**
    * Creates a function reference from a host function.
    *
    * <p>Function references enable dynamic function dispatch and callbacks in WebAssembly programs.

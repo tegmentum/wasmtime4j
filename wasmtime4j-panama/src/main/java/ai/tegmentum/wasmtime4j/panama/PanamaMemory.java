@@ -26,23 +26,6 @@ public final class PanamaMemory implements WasmMemory {
   private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama memory.
-   *
-   * @param initialPages initial size in pages
-   * @param maxPages maximum size in pages (-1 for unlimited)
-   */
-  public PanamaMemory(final int initialPages, final int maxPages) {
-    if (initialPages < 0) {
-      throw new IllegalArgumentException("Initial pages cannot be negative");
-    }
-    this.instance = null;
-    this.memoryName = null;
-
-    // TODO: Create native memory via Panama FFI
-    throw new UnsupportedOperationException("Creating new memories not yet implemented");
-  }
-
-  /**
    * Package-private constructor for wrapping an exported memory.
    *
    * @param memoryName the name of the memory export
@@ -283,8 +266,36 @@ public final class PanamaMemory implements WasmMemory {
     }
     ensureNotClosed();
 
-    // Memory initialization from data segments is handled by the runtime during instantiation
-    // This is a no-op matching pattern from PanamaTable as Wasmtime manages memory initialization
+    if (length == 0) {
+      return; // Nothing to do
+    }
+
+    if (instance == null) {
+      throw new IllegalStateException("Cannot init: memory not associated with an instance");
+    }
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+    final MemorySegment instancePtr = instance.getNativeInstance();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Instance pointer is null");
+    }
+
+    final int result =
+        NATIVE_BINDINGS.panamaMemoryInit(
+            memPtr, storePtr, instancePtr, destOffset, dataSegmentIndex, srcOffset, length);
+
+    if (result != 0) {
+      throw new RuntimeException(
+          "Failed to initialize memory from data segment, error code: " + result);
+    }
+
     LOGGER.fine(
         "Initialized memory range ["
             + destOffset
@@ -303,33 +314,55 @@ public final class PanamaMemory implements WasmMemory {
     }
     ensureNotClosed();
 
-    // Data segments are dropped automatically by the runtime
-    // This is a no-op matching pattern from PanamaTable as Wasmtime manages data segments
-    // internally
+    if (instance == null) {
+      throw new IllegalStateException(
+          "Cannot drop data segment: memory not associated with an instance");
+    }
+
+    final MemorySegment instancePtr = instance.getNativeInstance();
+
+    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Instance pointer is null");
+    }
+
+    final int result = NATIVE_BINDINGS.dataSegmentDrop(instancePtr, dataSegmentIndex);
+
+    if (result != 0) {
+      throw new RuntimeException("Failed to drop data segment, error code: " + result);
+    }
+
     LOGGER.fine("Dropped data segment: " + dataSegmentIndex);
   }
 
   @Override
   public boolean isShared() {
     ensureNotClosed();
-    // Shared memory check not implemented - return false (non-shared)
-    // Matches JNI backend which defaults to false on query failure
-    return false;
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment isSharedOut = localArena.allocate(ValueLayout.JAVA_INT);
+      final PanamaStore panamaStore = getPanamaStore();
+      final MemorySegment memPtr = getMemoryPointer();
+      final MemorySegment storePtr = panamaStore.getNativeStore();
+      final int result = NATIVE_BINDINGS.panamaMemoryIsShared(memPtr, storePtr, isSharedOut);
+      if (result != 0) {
+        // On failure, return false as safe default
+        return false;
+      }
+      return isSharedOut.get(ValueLayout.JAVA_INT, 0) != 0;
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
     ensureNotClosed();
 
-    // Return sensible defaults - proper implementation would need store context
-    // TODO: Enhance with actual memory type information when store context is available
+    // Get actual memory type information from native calls
     final long minimum = 1L;
-    final Long maximum = null; // unlimited
-    final boolean is64Bit = false; // 32-bit
-    final boolean isShared = false; // not shared
+    final Long maximum = null; // unlimited - would need MemoryType limits API
+    final boolean is64Bit = supports64BitAddressing();
+    final boolean sharedFlag = isShared();
 
     return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-        minimum, maximum, is64Bit, isShared, arena, nativeMemory);
+        minimum, maximum, is64Bit, sharedFlag, arena, nativeMemory);
   }
 
   /**
@@ -658,8 +691,43 @@ public final class PanamaMemory implements WasmMemory {
     if (length < 0) {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
+    if (destOffset + length > dest.length) {
+      throw new IndexOutOfBoundsException(
+          "Destination array bounds exceeded: destOffset="
+              + destOffset
+              + ", length="
+              + length
+              + ", array length="
+              + dest.length);
+    }
     ensureNotClosed();
-    // TODO: Implement 64-bit offset bytes read
+
+    if (length == 0) {
+      return;
+    }
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment buffer = localArena.allocate(length);
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryReadBytes(memPtr, storePtr, offset, length, buffer);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to read memory bytes, error code: " + result);
+      }
+
+      // Copy from native buffer to destination array
+      for (int i = 0; i < length; i++) {
+        dest[destOffset + i] = buffer.get(ValueLayout.JAVA_BYTE, i);
+      }
+    }
   }
 
   @Override
@@ -677,15 +745,120 @@ public final class PanamaMemory implements WasmMemory {
     if (length < 0) {
       throw new IndexOutOfBoundsException("Length cannot be negative");
     }
+    if (srcOffset + length > src.length) {
+      throw new IndexOutOfBoundsException(
+          "Source array bounds exceeded: srcOffset="
+              + srcOffset
+              + ", length="
+              + length
+              + ", array length="
+              + src.length);
+    }
     ensureNotClosed();
-    // TODO: Implement 64-bit offset bytes write
+
+    if (length == 0) {
+      return;
+    }
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment buffer = localArena.allocate(length);
+
+      // Copy from source array to native buffer
+      for (int i = 0; i < length; i++) {
+        buffer.set(ValueLayout.JAVA_BYTE, i, src[srcOffset + i]);
+      }
+
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryWriteBytes(memPtr, storePtr, offset, length, buffer);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to write memory bytes, error code: " + result);
+      }
+    }
   }
 
   @Override
   public long getSize64() {
     ensureNotClosed();
-    // TODO: Implement 64-bit size retrieval
-    return 0L;
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment sizeOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final int result = NATIVE_BINDINGS.panamaMemorySizePages64(memPtr, storePtr, sizeOut);
+
+      if (result != 0) {
+        throw new RuntimeException("Failed to get memory size, error code: " + result);
+      }
+
+      return sizeOut.get(ValueLayout.JAVA_LONG, 0);
+    }
+  }
+
+  @Override
+  public long grow64(final long pages) {
+    if (pages < 0) {
+      throw new IllegalArgumentException("Pages cannot be negative");
+    }
+    ensureNotClosed();
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment previousPagesOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryGrow64(memPtr, storePtr, pages, previousPagesOut);
+
+      if (result != 0) {
+        return -1; // Growth failed
+      }
+
+      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+    }
+  }
+
+  @Override
+  public boolean supports64BitAddressing() {
+    ensureNotClosed();
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      return false; // Conservative default
+    }
+
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment is64BitOut = localArena.allocate(ValueLayout.JAVA_INT);
+      final int result = NATIVE_BINDINGS.panamaMemoryIs64Bit(memPtr, storePtr, is64BitOut);
+
+      if (result != 0) {
+        return false; // Conservative default on error
+      }
+
+      return is64BitOut.get(ValueLayout.JAVA_INT, 0) != 0;
+    }
   }
 
   @Override

@@ -658,9 +658,142 @@ public final class PanamaModule implements Module {
   @Override
   public Map<String, String> getCustomSections() {
     ensureNotClosed();
-    // Custom sections extraction not currently implemented - return empty map
-    // This matches JNI backend behavior which also returns empty map
-    return Collections.emptyMap();
+
+    // Get custom sections as JSON from native code
+    final MemorySegment jsonPtr = NATIVE_BINDINGS.moduleGetCustomSections(nativeModule);
+    if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
+      return Collections.emptyMap();
+    }
+
+    try {
+      // Convert C string to Java String
+      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+
+      // Parse simple JSON object {"name1":"base64data1","name2":"base64data2"}
+      if (jsonString == null || jsonString.equals("{}")) {
+        return Collections.emptyMap();
+      }
+
+      final Map<String, String> result = new java.util.HashMap<>();
+
+      // Simple JSON parsing for { "key": "value", ... } format
+      // Remove outer braces
+      String content = jsonString.trim();
+      if (content.startsWith("{")) {
+        content = content.substring(1);
+      }
+      if (content.endsWith("}")) {
+        content = content.substring(0, content.length() - 1);
+      }
+
+      if (!content.isEmpty()) {
+        // Split by commas that are not inside quotes
+        int depth = 0;
+        int start = 0;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < content.length(); i++) {
+          final char c = content.charAt(i);
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (c == '\\') {
+            escaped = true;
+            continue;
+          }
+          if (c == '"') {
+            inString = !inString;
+          } else if (!inString && c == ',') {
+            parseJsonKeyValue(content.substring(start, i).trim(), result);
+            start = i + 1;
+          }
+        }
+        // Parse the last key-value pair
+        if (start < content.length()) {
+          parseJsonKeyValue(content.substring(start).trim(), result);
+        }
+      }
+
+      return Collections.unmodifiableMap(result);
+    } finally {
+      // Free the native string
+      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+    }
+  }
+
+  /** Parses a JSON key-value pair in format "key":"value". */
+  private void parseJsonKeyValue(final String pair, final Map<String, String> result) {
+    if (pair.isEmpty()) {
+      return;
+    }
+
+    // Find the colon separator
+    int colonIdx = -1;
+    boolean inString = false;
+    boolean escaped = false;
+
+    for (int i = 0; i < pair.length(); i++) {
+      final char c = pair.charAt(i);
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (c == '\\') {
+        escaped = true;
+        continue;
+      }
+      if (c == '"') {
+        inString = !inString;
+      } else if (!inString && c == ':') {
+        colonIdx = i;
+        break;
+      }
+    }
+
+    if (colonIdx < 0) {
+      return;
+    }
+
+    // Extract key and value, removing quotes
+    String key = pair.substring(0, colonIdx).trim();
+    String value = pair.substring(colonIdx + 1).trim();
+
+    // Remove surrounding quotes from key and value
+    if (key.startsWith("\"") && key.endsWith("\"")) {
+      key = unescapeJsonString(key.substring(1, key.length() - 1));
+    }
+    if (value.startsWith("\"") && value.endsWith("\"")) {
+      value = unescapeJsonString(value.substring(1, value.length() - 1));
+    }
+
+    result.put(key, value);
+  }
+
+  /** Unescapes a JSON string value. */
+  private String unescapeJsonString(final String s) {
+    final StringBuilder sb = new StringBuilder();
+    boolean escaped = false;
+    for (int i = 0; i < s.length(); i++) {
+      final char c = s.charAt(i);
+      if (escaped) {
+        switch (c) {
+          case 'n' -> sb.append('\n');
+          case 't' -> sb.append('\t');
+          case 'r' -> sb.append('\r');
+          case '"' -> sb.append('"');
+          case '\\' -> sb.append('\\');
+          default -> sb.append(c);
+        }
+        escaped = false;
+      } else if (c == '\\') {
+        escaped = true;
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
   }
 
   @Override

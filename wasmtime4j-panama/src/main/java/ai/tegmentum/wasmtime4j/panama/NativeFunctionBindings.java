@@ -341,6 +341,44 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Initializes memory from a data segment.
+   *
+   * <p>This is equivalent to the WebAssembly memory.init instruction.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param instancePtr pointer to the instance
+   * @param destOffset destination offset in memory
+   * @param dataSegmentIndex data segment index
+   * @param srcOffset source offset within the data segment
+   * @param length number of bytes to copy
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaMemoryInit(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment instancePtr,
+      final int destOffset,
+      final int dataSegmentIndex,
+      final int srcOffset,
+      final int length) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_init",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        instancePtr,
+        destOffset,
+        dataSegmentIndex,
+        srcOffset,
+        length);
+  }
+
+  /**
    * Drops a data segment from memory.
    *
    * @param instancePtr pointer to the instance
@@ -879,6 +917,20 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets custom sections from a module as JSON.
+   *
+   * <p>Returns a JSON string mapping section names to Base64-encoded data.
+   *
+   * @param modulePtr pointer to the module
+   * @return MemorySegment pointing to JSON string, or NULL on error
+   */
+  public MemorySegment moduleGetCustomSections(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_custom_sections", MemorySegment.class, modulePtr);
+  }
+
+  /**
    * Frees a C string returned by module functions.
    *
    * @param strPtr pointer to the string to free
@@ -967,6 +1019,21 @@ public final class NativeFunctionBindings {
   public MemorySegment storeCreate(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     return callNativeFunction("wasmtime4j_store_create", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Creates a WebAssembly store that is compatible with a specific module.
+   *
+   * <p>CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Engine Arc as the
+   * Module's internal wasmtime::Module. This is required because wasmtime's Instance::new() uses
+   * Arc::ptr_eq() to verify engine compatibility.
+   *
+   * @param modulePtr pointer to the module
+   * @return memory segment pointer to the store, or null on failure
+   */
+  public MemorySegment storeCreateForModule(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction("wasmtime4j_store_new_for_module", MemorySegment.class, modulePtr);
   }
 
   /**
@@ -2042,6 +2109,58 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Initializes a table from an element segment.
+   *
+   * <p>This is equivalent to the WebAssembly table.init instruction.
+   *
+   * @param tablePtr pointer to the table
+   * @param storePtr pointer to the store
+   * @param instancePtr pointer to the instance
+   * @param destIndex destination index in the table
+   * @param srcIndex source index in the element segment
+   * @param count number of elements to copy
+   * @param segmentIndex element segment index
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaTableInit(
+      final MemorySegment tablePtr,
+      final MemorySegment storePtr,
+      final MemorySegment instancePtr,
+      final int destIndex,
+      final int srcIndex,
+      final int count,
+      final int segmentIndex) {
+    validatePointer(tablePtr, "tablePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_table_init",
+        Integer.class,
+        tablePtr,
+        storePtr,
+        instancePtr,
+        destIndex,
+        srcIndex,
+        count,
+        segmentIndex);
+  }
+
+  /**
+   * Drops an element segment.
+   *
+   * @param instancePtr pointer to the instance
+   * @param segmentIndex element segment index to drop
+   * @return 0 on success, non-zero on error
+   */
+  public int elemDrop(final MemorySegment instancePtr, final int segmentIndex) {
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_elem_drop", Integer.class, instancePtr, segmentIndex);
+  }
+
+  /**
    * Gets the method handle for Panama FFI global creation.
    *
    * @return the method handle, or null if not available
@@ -2982,6 +3101,93 @@ public final class NativeFunctionBindings {
         storePtr,
         additionalPages,
         previousPagesOutPtr);
+  }
+
+  /**
+   * Grows memory by additional pages using 64-bit addressing (Panama FFI version).
+   *
+   * <p>This supports Memory64 proposal for memories larger than 4GB.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param additionalPages number of pages to grow (64-bit)
+   * @param previousPagesOutPtr pointer to store the previous size in pages (64-bit)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGrow64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long additionalPages,
+      final MemorySegment previousPagesOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(previousPagesOutPtr, "previousPagesOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_grow64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        additionalPages,
+        previousPagesOutPtr);
+  }
+
+  /**
+   * Checks if memory uses 64-bit addressing (Memory64 proposal).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param is64BitOutPtr pointer to store the result (1 if 64-bit, 0 if 32-bit)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryIs64Bit(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment is64BitOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(is64BitOutPtr, "is64BitOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_is_64bit", Integer.class, memoryPtr, storePtr, is64BitOutPtr);
+  }
+
+  /**
+   * Checks if memory is shared between threads (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param isSharedOutPtr pointer to store the result (1 if shared, 0 if not shared)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryIsShared(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment isSharedOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(isSharedOutPtr, "isSharedOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_is_shared", Integer.class, memoryPtr, storePtr, isSharedOutPtr);
+  }
+
+  /**
+   * Gets memory size in pages using 64-bit return value (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param sizeOutPtr pointer to store the size in pages (64-bit)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemorySizePages64(
+      final MemorySegment memoryPtr, final MemorySegment storePtr, final MemorySegment sizeOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(sizeOutPtr, "sizeOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_size_pages64", Integer.class, memoryPtr, storePtr, sizeOutPtr);
   }
 
   /**
@@ -4398,6 +4604,49 @@ public final class NativeFunctionBindings {
         "wasmtime4j_panama_linker_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
 
+    // InstancePre operations
+    addFunctionBinding(
+        "wasmtime4j_linker_instantiate_pre",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return instance_pre* or null
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return instance* or null
+            ValueLayout.ADDRESS, // instance_pre_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_is_valid",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 1 if valid, 0 otherwise
+            ValueLayout.ADDRESS)); // instance_pre_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_instance_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return instance count
+            ValueLayout.ADDRESS)); // instance_pre_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_preparation_time_ns",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return preparation time in ns
+            ValueLayout.ADDRESS)); // instance_pre_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_avg_instantiation_time_ns",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return avg instantiation time in ns
+            ValueLayout.ADDRESS)); // instance_pre_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_pre_ptr
+
     // SIMD operations
     addFunctionBinding(
         "wasmtime4j_panama_simd_add",
@@ -5556,6 +5805,507 @@ public final class NativeFunctionBindings {
 
     // Memory Management Functions
     addFunctionBinding("wasmtime4j_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // ptr
+
+    // Performance Profiler Functions
+    addFunctionBinding(
+        "wasmtime4j_profiler_create", FunctionDescriptor.of(ValueLayout.ADDRESS)); // -> profiler*
+    addFunctionBinding(
+        "wasmtime4j_profiler_start",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_stop",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_modules_compiled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_total_compilation_time_nanos",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // nanos
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_average_compilation_time_nanos",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // nanos
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_bytes_compiled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // bytes
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_cache_hits",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // hits
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_cache_misses",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // misses
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_optimized_modules",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_current_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // bytes
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_peak_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // bytes
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_uptime_nanos",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // nanos
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_function_calls_per_second",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_DOUBLE, // calls_per_sec
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_total_function_calls",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_get_total_execution_time_nanos",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // nanos
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_record_compilation",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS, // profiler
+            ValueLayout.JAVA_LONG, // compilation_time_nanos
+            ValueLayout.JAVA_LONG, // bytecode_size
+            ValueLayout.JAVA_BOOLEAN, // cached
+            ValueLayout.JAVA_BOOLEAN)); // optimized
+    addFunctionBinding(
+        "wasmtime4j_profiler_record_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS, // profiler
+            ValueLayout.ADDRESS, // function_name (C string)
+            ValueLayout.JAVA_LONG)); // execution_time_nanos
+    addFunctionBinding(
+        "wasmtime4j_profiler_reset",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS)); // profiler
+    addFunctionBinding(
+        "wasmtime4j_profiler_is_profiling",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // is_profiling
+            ValueLayout.ADDRESS)); // profiler
+
+    // WASI HTTP Functions
+    addFunctionBinding("wasi_http_config_builder_new", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasi_http_config_builder_allow_host",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS)); // host (C string)
+
+    addFunctionBinding(
+        "wasi_http_config_builder_block_host",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS)); // host (C string)
+
+    addFunctionBinding(
+        "wasi_http_config_builder_allow_all_hosts",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // allow
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_connect_timeout",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_LONG)); // timeout_ms
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_read_timeout",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_LONG)); // timeout_ms
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_write_timeout",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_LONG)); // timeout_ms
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_max_connections",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_INT)); // max_connections
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_max_connections_per_host",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_INT)); // max_connections_per_host
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_max_request_body_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_LONG)); // max_size
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_max_response_body_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_LONG)); // max_size
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_https_required",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // required
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_certificate_validation",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // enabled
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_http2_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // enabled
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_connection_pooling",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // enabled
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_follow_redirects",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_BOOLEAN)); // follow
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_max_redirects",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_INT)); // max_redirects
+
+    addFunctionBinding(
+        "wasi_http_config_builder_set_user_agent",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS)); // user_agent (C string)
+
+    addFunctionBinding(
+        "wasi_http_config_builder_build",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // config_ptr
+            ValueLayout.ADDRESS)); // builder_ptr
+
+    addFunctionBinding(
+        "wasi_http_config_builder_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding("wasi_http_config_default", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding("wasi_http_config_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasi_http_ctx_new",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS)); // config_ptr
+
+    addFunctionBinding("wasi_http_ctx_new_default", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasi_http_ctx_get_id",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // id
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_is_valid",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // is_valid
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_is_host_allowed",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // is_allowed
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS)); // host (C string)
+
+    addFunctionBinding(
+        "wasi_http_ctx_reset_stats",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_total_requests",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_successful_requests",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_failed_requests",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_active_requests",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_bytes_sent",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // bytes
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_bytes_received",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // bytes
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_connection_timeouts",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_read_timeouts",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_blocked_requests",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_body_size_violations",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_active_connections",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_idle_connections",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // count
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_avg_duration_ms",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // duration_ms
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_min_duration_ms",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // duration_ms
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_ctx_stats_max_duration_ms",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // duration_ms
+            ValueLayout.ADDRESS)); // ctx_ptr
+
+    addFunctionBinding("wasi_http_ctx_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Pooling Allocator Functions
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_create_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return allocator*
+            ValueLayout.JAVA_LONG, // instance_pool_size (usize)
+            ValueLayout.JAVA_LONG, // max_memory_per_instance
+            ValueLayout.JAVA_INT, // stack_size
+            ValueLayout.JAVA_LONG, // max_stacks (usize)
+            ValueLayout.JAVA_INT, // max_tables_per_instance
+            ValueLayout.JAVA_LONG, // max_tables (usize)
+            ValueLayout.JAVA_BOOLEAN, // memory_decommit_enabled
+            ValueLayout.JAVA_BOOLEAN, // pool_warming_enabled
+            ValueLayout.JAVA_FLOAT)); // pool_warming_percentage
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_allocate_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // allocator*
+            ValueLayout.ADDRESS)); // instance_id_out
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_reuse_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // allocator*
+            ValueLayout.JAVA_LONG)); // instance_id
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_release_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // allocator*
+            ValueLayout.JAVA_LONG)); // instance_id
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_get_statistics",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS, // allocator*
+            ValueLayout.ADDRESS)); // stats_out
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_reset_statistics",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS)); // allocator*
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_warm_pools",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS)); // allocator*
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_perform_maintenance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // return success
+            ValueLayout.ADDRESS)); // allocator*
+
+    addFunctionBinding(
+        "wasmtime4j_pooling_allocator_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // allocator*
+
+    // Function Reference functions (Panama FFI)
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // param_types (int array)
+            ValueLayout.JAVA_INT, // param_count
+            ValueLayout.ADDRESS, // return_types (int array)
+            ValueLayout.JAVA_INT, // return_count
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG, // callback_id
+            ValueLayout.ADDRESS)); // result_out (u64 pointer)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_destroy",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.JAVA_LONG)); // registry_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_is_valid",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 1 if valid, 0 otherwise
+            ValueLayout.JAVA_LONG)); // registry_id
+
+    // Trap Introspection Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_parse_code",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // trap code
+            ValueLayout.ADDRESS)); // error_message (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_code_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // trap name (C string)
+            ValueLayout.JAVA_INT)); // trap_code
+
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_is_trap",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // 1 if trap, 0 otherwise
+            ValueLayout.ADDRESS)); // error_message (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_extract_function_name",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // bytes written, 0 on error
+            ValueLayout.ADDRESS, // backtrace_line (C string)
+            ValueLayout.ADDRESS, // out_buffer
+            ValueLayout.JAVA_LONG)); // buffer_size
+
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_extract_offset",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // instruction offset, -1 on error
+            ValueLayout.ADDRESS)); // error_message (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_trap_extract_info",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // 0 on success, non-zero on error
+            ValueLayout.ADDRESS, // error_message (C string)
+            ValueLayout.ADDRESS)); // out_info (TrapInfo struct)
   }
 
   // Panama Linker Functions
@@ -5798,6 +6548,161 @@ public final class NativeFunctionBindings {
   public void panamaLinkerDestroy(final MemorySegment linkerPtr) {
     validatePointer(linkerPtr, "linkerPtr");
     callNativeFunction("wasmtime4j_panama_linker_destroy", Void.class, linkerPtr);
+  }
+
+  // =====================================================
+  // InstancePre Operations
+  // =====================================================
+
+  /**
+   * Creates an InstancePre from a linker and module for fast repeated instantiation.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param modulePtr pointer to the module
+   * @return pointer to the InstancePre, or null on failure
+   */
+  public MemorySegment linkerInstantiatePre(
+      final MemorySegment linkerPtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_linker_instantiate_pre", MemorySegment.class, linkerPtr, modulePtr);
+  }
+
+  /**
+   * Instantiates from an InstancePre with a store.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @param storePtr pointer to the store
+   * @return pointer to the new instance, or null on failure
+   */
+  public MemorySegment instancePreInstantiate(
+      final MemorySegment instancePrePtr, final MemorySegment storePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_instantiate", MemorySegment.class, instancePrePtr, storePtr);
+  }
+
+  /**
+   * Checks if an InstancePre is valid.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return 1 if valid, 0 otherwise
+   */
+  public int instancePreIsValid(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction("wasmtime4j_instance_pre_is_valid", Integer.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the instance count for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the number of instances created from this InstancePre
+   */
+  public long instancePreGetInstanceCount(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction("wasmtime4j_instance_pre_instance_count", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the preparation time in nanoseconds for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the preparation time in nanoseconds
+   */
+  public long instancePreGetPreparationTimeNs(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_preparation_time_ns", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the average instantiation time in nanoseconds for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the average instantiation time in nanoseconds
+   */
+  public long instancePreGetAvgInstantiationTimeNs(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_avg_instantiation_time_ns", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Destroys an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre to destroy
+   */
+  public void instancePreDestroy(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    callNativeFunction("wasmtime4j_instance_pre_destroy", Void.class, instancePrePtr);
+  }
+
+  // Function Reference Functions (Panama FFI)
+
+  /**
+   * Creates a new function reference.
+   *
+   * @param storePtr pointer to the store
+   * @param paramTypes parameter types array
+   * @param paramCount number of parameters
+   * @param returnTypes return types array
+   * @param returnCount number of return values
+   * @param callbackFn callback function pointer
+   * @param callbackId callback ID for identifying the Java callback
+   * @param resultOut pointer to store the registry ID
+   * @return 0 on success, non-zero on error
+   */
+  public int functionReferenceCreate(
+      final MemorySegment storePtr,
+      final MemorySegment paramTypes,
+      final int paramCount,
+      final MemorySegment returnTypes,
+      final int returnCount,
+      final MemorySegment callbackFn,
+      final long callbackId,
+      final MemorySegment resultOut) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(paramTypes, "paramTypes");
+    validatePointer(returnTypes, "returnTypes");
+    validatePointer(callbackFn, "callbackFn");
+    validatePointer(resultOut, "resultOut");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_create",
+        Integer.class,
+        storePtr,
+        paramTypes,
+        paramCount,
+        returnTypes,
+        returnCount,
+        callbackFn,
+        callbackId,
+        resultOut);
+  }
+
+  /**
+   * Destroys a function reference by its registry ID.
+   *
+   * @param registryId the registry ID of the function reference
+   * @return 0 on success, non-zero on error
+   */
+  public int functionReferenceDestroy(final long registryId) {
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_destroy", Integer.class, registryId);
+  }
+
+  /**
+   * Checks if a function reference is valid.
+   *
+   * @param registryId the registry ID of the function reference
+   * @return 1 if valid, 0 otherwise
+   */
+  public int functionReferenceIsValid(final long registryId) {
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_is_valid", Integer.class, registryId);
   }
 
   /**
@@ -6064,6 +6969,19 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Checks if coredump generation on trap is enabled.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if coredump generation is enabled, false otherwise
+   */
+  public boolean engineCoredumpOnTrapEnabled(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_engine_is_coredump_on_trap_enabled", Integer.class, enginePtr);
+    return result == 1;
+  }
+
+  /**
    * Gets the maximum number of instances.
    *
    * @param enginePtr pointer to the engine
@@ -6094,6 +7012,68 @@ public final class NativeFunctionBindings {
   public void engineIncrementEpoch(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);
+  }
+
+  /**
+   * Precompiles WebAssembly bytecode into a serialized form for ahead-of-time (AOT) usage.
+   *
+   * <p>This method compiles the WebAssembly binary into a serialized form that can be later loaded
+   * via Module.deserialize() without needing to recompile.
+   *
+   * @param enginePtr pointer to the engine
+   * @param wasmBytes the WebAssembly bytecode to precompile
+   * @return the precompiled serialized module bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if precompilation fails
+   */
+  public byte[] enginePrecompileModule(final MemorySegment enginePtr, final byte[] wasmBytes)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(enginePtr, "enginePtr");
+    if (wasmBytes == null || wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be null or empty");
+    }
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Allocate and copy wasm bytes
+      final MemorySegment wasmBytesSegment =
+          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+
+      // Allocate output pointers
+      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_precompile_module",
+              Integer.class,
+              enginePtr,
+              wasmBytesSegment,
+              (long) wasmBytes.length,
+              outDataPtr,
+              outLenPtr);
+
+      if (result != 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to precompile module (error code: " + result + ")");
+      }
+
+      // Read output values
+      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
+      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Precompilation returned invalid data");
+      }
+
+      // Copy data to byte array
+      final MemorySegment dataSegment = dataPtr.reinterpret(dataLen);
+      final byte[] precompiledBytes = dataSegment.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native memory
+      serializerFreeBuffer(dataPtr, dataLen);
+
+      return precompiledBytes;
+    }
   }
 
   // ===== SIMD Operations =====
@@ -8734,6 +9714,1937 @@ public final class NativeFunctionBindings {
   public void free(final MemorySegment ptr) {
     if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_free", Void.class, ptr);
+    }
+  }
+
+  // WIT Parser Functions
+
+  /**
+   * Creates a new WIT parser.
+   *
+   * @return pointer to the WIT parser, or NULL on failure
+   */
+  public MemorySegment witParserNew() {
+    return callNativeFunction("wasmtime4j_wit_parser_new", MemorySegment.class);
+  }
+
+  /**
+   * Destroys a WIT parser.
+   *
+   * @param parserPtr pointer to the parser
+   */
+  public void witParserDestroy(final MemorySegment parserPtr) {
+    if (parserPtr != null && !parserPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_wit_parser_destroy", Void.class, parserPtr);
+    }
+  }
+
+  /**
+   * Parses a WIT interface definition.
+   *
+   * @param parserPtr pointer to the parser
+   * @param witText the WIT text to parse
+   * @param resultPtr output pointer for parsed interface JSON
+   * @return 0 on success, non-zero on failure
+   */
+  public int witParserParseInterface(
+      final MemorySegment parserPtr, final MemorySegment witText, final MemorySegment resultPtr) {
+    validatePointer(parserPtr, "parserPtr");
+    validatePointer(witText, "witText");
+    validatePointer(resultPtr, "resultPtr");
+    return callNativeFunction(
+        "wasmtime4j_wit_parser_parse_interface", Integer.class, parserPtr, witText, resultPtr);
+  }
+
+  /**
+   * Validates WIT syntax.
+   *
+   * @param parserPtr pointer to the parser
+   * @param witText the WIT text to validate
+   * @param validPtr output pointer for validation result (1 = valid, 0 = invalid)
+   * @return 0 on success, non-zero on failure
+   */
+  public int witParserValidateSyntax(
+      final MemorySegment parserPtr, final MemorySegment witText, final MemorySegment validPtr) {
+    validatePointer(parserPtr, "parserPtr");
+    validatePointer(witText, "witText");
+    validatePointer(validPtr, "validPtr");
+    return callNativeFunction(
+        "wasmtime4j_wit_parser_validate_syntax", Integer.class, parserPtr, witText, validPtr);
+  }
+
+  // ===== Performance Profiler Functions =====
+
+  /**
+   * Creates a new performance profiler with default configuration.
+   *
+   * @return pointer to the profiler, or NULL on failure
+   */
+  public MemorySegment profilerCreate() {
+    return callNativeFunction("wasmtime4j_profiler_create", MemorySegment.class);
+  }
+
+  /**
+   * Starts profiling.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return true on success, false on failure
+   */
+  public boolean profilerStart(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_start", Boolean.class, profilerHandle);
+  }
+
+  /**
+   * Stops profiling.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return true on success, false on failure
+   */
+  public boolean profilerStop(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_stop", Boolean.class, profilerHandle);
+  }
+
+  /**
+   * Destroys a performance profiler.
+   *
+   * @param profilerHandle pointer to the profiler
+   */
+  public void profilerDestroy(final MemorySegment profilerHandle) {
+    if (profilerHandle != null && !profilerHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_profiler_destroy", Void.class, profilerHandle);
+    }
+  }
+
+  /**
+   * Gets the number of modules compiled.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return number of modules compiled
+   */
+  public long profilerGetModulesCompiled(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_modules_compiled", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets total compilation time in nanoseconds.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return total compilation time in nanoseconds
+   */
+  public long profilerGetTotalCompilationTimeNanos(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_total_compilation_time_nanos", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets average compilation time in nanoseconds.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return average compilation time in nanoseconds
+   */
+  public long profilerGetAverageCompilationTimeNanos(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_average_compilation_time_nanos", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets total bytes of WASM bytecode compiled.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return total bytes compiled
+   */
+  public long profilerGetBytesCompiled(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_get_bytes_compiled", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets compilation cache hits.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return number of cache hits
+   */
+  public long profilerGetCacheHits(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_get_cache_hits", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets compilation cache misses.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return number of cache misses
+   */
+  public long profilerGetCacheMisses(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_get_cache_misses", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets number of optimized modules.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return number of optimized modules
+   */
+  public long profilerGetOptimizedModules(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_optimized_modules", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets current memory usage in bytes.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return current memory usage in bytes
+   */
+  public long profilerGetCurrentMemoryBytes(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_current_memory_bytes", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets peak memory usage in bytes.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return peak memory usage in bytes
+   */
+  public long profilerGetPeakMemoryBytes(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_peak_memory_bytes", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets profiler uptime in nanoseconds.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return uptime in nanoseconds
+   */
+  public long profilerGetUptimeNanos(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_get_uptime_nanos", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets function calls per second.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return function calls per second
+   */
+  public double profilerGetFunctionCallsPerSecond(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_function_calls_per_second", Double.class, profilerHandle);
+  }
+
+  /**
+   * Gets total function call count across all profiled functions.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return total function calls
+   */
+  public long profilerGetTotalFunctionCalls(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_total_function_calls", Long.class, profilerHandle);
+  }
+
+  /**
+   * Gets total execution time in nanoseconds across all profiled functions.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return total execution time in nanoseconds
+   */
+  public long profilerGetTotalExecutionTimeNanos(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_get_total_execution_time_nanos", Long.class, profilerHandle);
+  }
+
+  /**
+   * Records a module compilation.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @param compilationTimeNanos compilation time in nanoseconds
+   * @param bytecodeSize bytecode size in bytes
+   * @param cached whether the compilation was from cache
+   * @param optimized whether the module was optimized
+   * @return true on success, false on failure
+   */
+  public boolean profilerRecordCompilation(
+      final MemorySegment profilerHandle,
+      final long compilationTimeNanos,
+      final long bytecodeSize,
+      final boolean cached,
+      final boolean optimized) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction(
+        "wasmtime4j_profiler_record_compilation",
+        Boolean.class,
+        profilerHandle,
+        compilationTimeNanos,
+        bytecodeSize,
+        cached,
+        optimized);
+  }
+
+  /**
+   * Records a function execution.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @param functionName the function name
+   * @param executionTimeNanos execution time in nanoseconds
+   * @param memoryDelta memory delta in bytes (positive for allocation, negative for deallocation)
+   * @return true on success, false on failure
+   */
+  public boolean profilerRecordFunction(
+      final MemorySegment profilerHandle,
+      final MemorySegment functionName,
+      final long executionTimeNanos,
+      final long memoryDelta) {
+    validatePointer(profilerHandle, "profilerHandle");
+    validatePointer(functionName, "functionName");
+    return callNativeFunction(
+        "wasmtime4j_profiler_record_function",
+        Boolean.class,
+        profilerHandle,
+        functionName,
+        executionTimeNanos,
+        memoryDelta);
+  }
+
+  /**
+   * Resets all profiler statistics.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return true on success, false on failure
+   */
+  public boolean profilerReset(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_reset", Boolean.class, profilerHandle);
+  }
+
+  /**
+   * Checks if profiling is currently active.
+   *
+   * @param profilerHandle pointer to the profiler
+   * @return true if profiling is active
+   */
+  public boolean profilerIsProfiling(final MemorySegment profilerHandle) {
+    validatePointer(profilerHandle, "profilerHandle");
+    return callNativeFunction("wasmtime4j_profiler_is_profiling", Boolean.class, profilerHandle);
+  }
+
+  // ====================================================================================
+  // WASI HTTP Functions
+  // ====================================================================================
+
+  /**
+   * Creates a new WASI HTTP config builder.
+   *
+   * @return pointer to the config builder, or null on failure
+   */
+  public MemorySegment wasiHttpConfigBuilderNew() {
+    return callNativeFunction("wasi_http_config_builder_new", MemorySegment.class);
+  }
+
+  /**
+   * Adds an allowed host to the config builder.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param hostPtr pointer to the host string
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderAllowHost(
+      final MemorySegment builderPtr, final MemorySegment hostPtr) {
+    validatePointer(builderPtr, "builderPtr");
+    validatePointer(hostPtr, "hostPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_allow_host", Integer.class, builderPtr, hostPtr);
+  }
+
+  /**
+   * Adds a blocked host to the config builder.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param hostPtr pointer to the host string
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderBlockHost(
+      final MemorySegment builderPtr, final MemorySegment hostPtr) {
+    validatePointer(builderPtr, "builderPtr");
+    validatePointer(hostPtr, "hostPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_block_host", Integer.class, builderPtr, hostPtr);
+  }
+
+  /**
+   * Sets whether all hosts are allowed.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param allow true to allow all hosts
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderAllowAllHosts(
+      final MemorySegment builderPtr, final boolean allow) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_allow_all_hosts", Integer.class, builderPtr, allow);
+  }
+
+  /**
+   * Sets the connect timeout in milliseconds.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param timeoutMs timeout in milliseconds
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetConnectTimeout(
+      final MemorySegment builderPtr, final long timeoutMs) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_connect_timeout", Integer.class, builderPtr, timeoutMs);
+  }
+
+  /**
+   * Sets the read timeout in milliseconds.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param timeoutMs timeout in milliseconds
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetReadTimeout(
+      final MemorySegment builderPtr, final long timeoutMs) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_read_timeout", Integer.class, builderPtr, timeoutMs);
+  }
+
+  /**
+   * Sets the write timeout in milliseconds.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param timeoutMs timeout in milliseconds
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetWriteTimeout(
+      final MemorySegment builderPtr, final long timeoutMs) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_write_timeout", Integer.class, builderPtr, timeoutMs);
+  }
+
+  /**
+   * Sets the maximum number of connections.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param maxConnections maximum connections
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetMaxConnections(
+      final MemorySegment builderPtr, final int maxConnections) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_max_connections", Integer.class, builderPtr, maxConnections);
+  }
+
+  /**
+   * Sets the maximum connections per host.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param maxConnectionsPerHost maximum connections per host
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetMaxConnectionsPerHost(
+      final MemorySegment builderPtr, final int maxConnectionsPerHost) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_max_connections_per_host",
+        Integer.class,
+        builderPtr,
+        maxConnectionsPerHost);
+  }
+
+  /**
+   * Sets the maximum request body size.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param maxSize maximum size in bytes
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetMaxRequestBodySize(
+      final MemorySegment builderPtr, final long maxSize) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_max_request_body_size", Integer.class, builderPtr, maxSize);
+  }
+
+  /**
+   * Sets the maximum response body size.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param maxSize maximum size in bytes
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetMaxResponseBodySize(
+      final MemorySegment builderPtr, final long maxSize) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_max_response_body_size", Integer.class, builderPtr, maxSize);
+  }
+
+  /**
+   * Sets whether HTTPS is required.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param required true to require HTTPS
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetHttpsRequired(
+      final MemorySegment builderPtr, final boolean required) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_https_required", Integer.class, builderPtr, required);
+  }
+
+  /**
+   * Sets whether certificate validation is enabled.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param enabled true to enable certificate validation
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetCertificateValidation(
+      final MemorySegment builderPtr, final boolean enabled) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_certificate_validation", Integer.class, builderPtr, enabled);
+  }
+
+  /**
+   * Sets whether HTTP/2 is enabled.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param enabled true to enable HTTP/2
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetHttp2Enabled(
+      final MemorySegment builderPtr, final boolean enabled) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_http2_enabled", Integer.class, builderPtr, enabled);
+  }
+
+  /**
+   * Sets whether connection pooling is enabled.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param enabled true to enable connection pooling
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetConnectionPooling(
+      final MemorySegment builderPtr, final boolean enabled) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_connection_pooling", Integer.class, builderPtr, enabled);
+  }
+
+  /**
+   * Sets whether to follow redirects.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param follow true to follow redirects
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetFollowRedirects(
+      final MemorySegment builderPtr, final boolean follow) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_follow_redirects", Integer.class, builderPtr, follow);
+  }
+
+  /**
+   * Sets the maximum number of redirects to follow.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param maxRedirects maximum redirects
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetMaxRedirects(
+      final MemorySegment builderPtr, final int maxRedirects) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_max_redirects", Integer.class, builderPtr, maxRedirects);
+  }
+
+  /**
+   * Sets the user agent string.
+   *
+   * @param builderPtr pointer to the config builder
+   * @param userAgentPtr pointer to the user agent string
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpConfigBuilderSetUserAgent(
+      final MemorySegment builderPtr, final MemorySegment userAgentPtr) {
+    validatePointer(builderPtr, "builderPtr");
+    validatePointer(userAgentPtr, "userAgentPtr");
+    return callNativeFunction(
+        "wasi_http_config_builder_set_user_agent", Integer.class, builderPtr, userAgentPtr);
+  }
+
+  /**
+   * Builds a WASI HTTP config from the builder.
+   *
+   * @param builderPtr pointer to the config builder
+   * @return pointer to the config, or null on failure
+   */
+  public MemorySegment wasiHttpConfigBuilderBuild(final MemorySegment builderPtr) {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction("wasi_http_config_builder_build", MemorySegment.class, builderPtr);
+  }
+
+  /**
+   * Frees a WASI HTTP config builder.
+   *
+   * @param builderPtr pointer to the config builder
+   */
+  public void wasiHttpConfigBuilderFree(final MemorySegment builderPtr) {
+    if (builderPtr != null && !builderPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasi_http_config_builder_free", Void.class, builderPtr);
+    }
+  }
+
+  /**
+   * Creates a default WASI HTTP config.
+   *
+   * @return pointer to the config, or null on failure
+   */
+  public MemorySegment wasiHttpConfigDefault() {
+    return callNativeFunction("wasi_http_config_default", MemorySegment.class);
+  }
+
+  /**
+   * Frees a WASI HTTP config.
+   *
+   * @param configPtr pointer to the config
+   */
+  public void wasiHttpConfigFree(final MemorySegment configPtr) {
+    if (configPtr != null && !configPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasi_http_config_free", Void.class, configPtr);
+    }
+  }
+
+  /**
+   * Creates a new WASI HTTP context with the specified config.
+   *
+   * @param configPtr pointer to the config
+   * @return pointer to the context, or null on failure
+   */
+  public MemorySegment wasiHttpContextNew(final MemorySegment configPtr) {
+    validatePointer(configPtr, "configPtr");
+    return callNativeFunction("wasi_http_ctx_new", MemorySegment.class, configPtr);
+  }
+
+  /**
+   * Creates a new WASI HTTP context with default config.
+   *
+   * @return pointer to the context, or null on failure
+   */
+  public MemorySegment wasiHttpContextNewDefault() {
+    return callNativeFunction("wasi_http_ctx_new_default", MemorySegment.class);
+  }
+
+  /**
+   * Gets the ID of a WASI HTTP context.
+   *
+   * @param contextPtr pointer to the context
+   * @return the context ID
+   */
+  public long wasiHttpContextGetId(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_get_id", Long.class, contextPtr);
+  }
+
+  /**
+   * Checks if a WASI HTTP context is valid.
+   *
+   * @param contextPtr pointer to the context
+   * @return 1 if valid, 0 otherwise
+   */
+  public int wasiHttpContextIsValid(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_is_valid", Integer.class, contextPtr);
+  }
+
+  /**
+   * Checks if a host is allowed by the context.
+   *
+   * @param contextPtr pointer to the context
+   * @param hostPtr pointer to the host string
+   * @return 1 if allowed, 0 otherwise
+   */
+  public int wasiHttpContextIsHostAllowed(
+      final MemorySegment contextPtr, final MemorySegment hostPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    validatePointer(hostPtr, "hostPtr");
+    return callNativeFunction("wasi_http_ctx_is_host_allowed", Integer.class, contextPtr, hostPtr);
+  }
+
+  /**
+   * Resets the statistics for a WASI HTTP context.
+   *
+   * @param contextPtr pointer to the context
+   * @return 0 on success, negative error code on failure
+   */
+  public int wasiHttpContextResetStats(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_reset_stats", Integer.class, contextPtr);
+  }
+
+  /**
+   * Gets the total number of requests.
+   *
+   * @param contextPtr pointer to the context
+   * @return total request count
+   */
+  public long wasiHttpContextStatsTotalRequests(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_total_requests", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of successful requests.
+   *
+   * @param contextPtr pointer to the context
+   * @return successful request count
+   */
+  public long wasiHttpContextStatsSuccessfulRequests(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_successful_requests", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of failed requests.
+   *
+   * @param contextPtr pointer to the context
+   * @return failed request count
+   */
+  public long wasiHttpContextStatsFailedRequests(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_failed_requests", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of active requests.
+   *
+   * @param contextPtr pointer to the context
+   * @return active request count
+   */
+  public int wasiHttpContextStatsActiveRequests(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_active_requests", Integer.class, contextPtr);
+  }
+
+  /**
+   * Gets the total bytes sent.
+   *
+   * @param contextPtr pointer to the context
+   * @return total bytes sent
+   */
+  public long wasiHttpContextStatsBytesSent(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_bytes_sent", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the total bytes received.
+   *
+   * @param contextPtr pointer to the context
+   * @return total bytes received
+   */
+  public long wasiHttpContextStatsBytesReceived(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_bytes_received", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of connection timeouts.
+   *
+   * @param contextPtr pointer to the context
+   * @return connection timeout count
+   */
+  public long wasiHttpContextStatsConnectionTimeouts(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_connection_timeouts", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of read timeouts.
+   *
+   * @param contextPtr pointer to the context
+   * @return read timeout count
+   */
+  public long wasiHttpContextStatsReadTimeouts(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_read_timeouts", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of blocked requests.
+   *
+   * @param contextPtr pointer to the context
+   * @return blocked request count
+   */
+  public long wasiHttpContextStatsBlockedRequests(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_blocked_requests", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of body size violations.
+   *
+   * @param contextPtr pointer to the context
+   * @return body size violation count
+   */
+  public long wasiHttpContextStatsBodySizeViolations(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_body_size_violations", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of active connections.
+   *
+   * @param contextPtr pointer to the context
+   * @return active connection count
+   */
+  public int wasiHttpContextStatsActiveConnections(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_active_connections", Integer.class, contextPtr);
+  }
+
+  /**
+   * Gets the number of idle connections.
+   *
+   * @param contextPtr pointer to the context
+   * @return idle connection count
+   */
+  public int wasiHttpContextStatsIdleConnections(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_idle_connections", Integer.class, contextPtr);
+  }
+
+  /**
+   * Gets the average request duration in milliseconds.
+   *
+   * @param contextPtr pointer to the context
+   * @return average duration in milliseconds
+   */
+  public long wasiHttpContextStatsAvgDurationMs(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_avg_duration_ms", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the minimum request duration in milliseconds.
+   *
+   * @param contextPtr pointer to the context
+   * @return minimum duration in milliseconds
+   */
+  public long wasiHttpContextStatsMinDurationMs(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_min_duration_ms", Long.class, contextPtr);
+  }
+
+  /**
+   * Gets the maximum request duration in milliseconds.
+   *
+   * @param contextPtr pointer to the context
+   * @return maximum duration in milliseconds
+   */
+  public long wasiHttpContextStatsMaxDurationMs(final MemorySegment contextPtr) {
+    validatePointer(contextPtr, "contextPtr");
+    return callNativeFunction("wasi_http_ctx_stats_max_duration_ms", Long.class, contextPtr);
+  }
+
+  /**
+   * Frees a WASI HTTP context.
+   *
+   * @param contextPtr pointer to the context
+   */
+  public void wasiHttpContextFree(final MemorySegment contextPtr) {
+    if (contextPtr != null && !contextPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasi_http_ctx_free", Void.class, contextPtr);
+    }
+  }
+
+  // Pooling Allocator Functions
+
+  /**
+   * Creates a new pooling allocator with default configuration.
+   *
+   * @return pointer to the allocator, or null on failure
+   */
+  public MemorySegment poolingAllocatorCreate() {
+    return callNativeFunction("wasmtime4j_pooling_allocator_create", MemorySegment.class);
+  }
+
+  /**
+   * Creates a new pooling allocator with custom configuration.
+   *
+   * @param instancePoolSize the number of instances in the pool
+   * @param maxMemoryPerInstance maximum memory per instance in bytes
+   * @param stackSize stack size for WebAssembly execution
+   * @param maxStacks maximum number of stacks
+   * @param maxTablesPerInstance maximum tables per instance
+   * @param maxTables maximum total tables
+   * @param memoryDecommitEnabled whether memory decommit is enabled
+   * @param poolWarmingEnabled whether pool warming is enabled
+   * @param poolWarmingPercentage pool warming percentage (0.0 to 1.0)
+   * @return pointer to the allocator, or null on failure
+   */
+  public MemorySegment poolingAllocatorCreateWithConfig(
+      final int instancePoolSize,
+      final long maxMemoryPerInstance,
+      final int stackSize,
+      final int maxStacks,
+      final int maxTablesPerInstance,
+      final int maxTables,
+      final boolean memoryDecommitEnabled,
+      final boolean poolWarmingEnabled,
+      final float poolWarmingPercentage) {
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_create_with_config",
+        MemorySegment.class,
+        (long) instancePoolSize,
+        maxMemoryPerInstance,
+        stackSize,
+        (long) maxStacks,
+        maxTablesPerInstance,
+        (long) maxTables,
+        memoryDecommitEnabled,
+        poolWarmingEnabled,
+        poolWarmingPercentage);
+  }
+
+  /**
+   * Allocates an instance from the pool.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @param instanceIdOut pointer to store the instance ID
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorAllocateInstance(
+      final MemorySegment allocatorPtr, final MemorySegment instanceIdOut) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    validatePointer(instanceIdOut, "instanceIdOut");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_allocate_instance",
+        Boolean.class,
+        allocatorPtr,
+        instanceIdOut);
+  }
+
+  /**
+   * Reuses an existing instance from the pool.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @param instanceId the instance ID to reuse
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorReuseInstance(
+      final MemorySegment allocatorPtr, final long instanceId) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_reuse_instance", Boolean.class, allocatorPtr, instanceId);
+  }
+
+  /**
+   * Releases an instance back to the pool.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @param instanceId the instance ID to release
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorReleaseInstance(
+      final MemorySegment allocatorPtr, final long instanceId) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_release_instance", Boolean.class, allocatorPtr, instanceId);
+  }
+
+  /**
+   * Gets pool statistics.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @param statsOut pointer to store the statistics
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorGetStatistics(
+      final MemorySegment allocatorPtr, final MemorySegment statsOut) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    validatePointer(statsOut, "statsOut");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_get_statistics", Boolean.class, allocatorPtr, statsOut);
+  }
+
+  /**
+   * Resets pool statistics.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorResetStatistics(final MemorySegment allocatorPtr) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_reset_statistics", Boolean.class, allocatorPtr);
+  }
+
+  /**
+   * Warms up the pools by pre-allocating resources.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorWarmPools(final MemorySegment allocatorPtr) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_warm_pools", Boolean.class, allocatorPtr);
+  }
+
+  /**
+   * Performs maintenance operations on the pools.
+   *
+   * @param allocatorPtr pointer to the allocator
+   * @return true on success, false on failure
+   */
+  public boolean poolingAllocatorPerformMaintenance(final MemorySegment allocatorPtr) {
+    validatePointer(allocatorPtr, "allocatorPtr");
+    return callNativeFunction(
+        "wasmtime4j_pooling_allocator_perform_maintenance", Boolean.class, allocatorPtr);
+  }
+
+  /**
+   * Destroys a pooling allocator.
+   *
+   * @param allocatorPtr pointer to the allocator
+   */
+  public void poolingAllocatorDestroy(final MemorySegment allocatorPtr) {
+    if (allocatorPtr != null && !allocatorPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_pooling_allocator_destroy", Void.class, allocatorPtr);
+    }
+  }
+
+  // ===== Trap Introspection Functions =====
+
+  /** Trap code constants matching Java TrapException.TrapType enum ordinals. */
+  public static final class TrapCodes {
+    /** Stack overflow trap. */
+    public static final int STACK_OVERFLOW = 0;
+
+    /** Memory out of bounds trap. */
+    public static final int MEMORY_OUT_OF_BOUNDS = 1;
+
+    /** Heap misaligned trap. */
+    public static final int HEAP_MISALIGNED = 2;
+
+    /** Table out of bounds trap. */
+    public static final int TABLE_OUT_OF_BOUNDS = 3;
+
+    /** Indirect call to null trap. */
+    public static final int INDIRECT_CALL_TO_NULL = 4;
+
+    /** Bad signature trap. */
+    public static final int BAD_SIGNATURE = 5;
+
+    /** Integer overflow trap. */
+    public static final int INTEGER_OVERFLOW = 6;
+
+    /** Integer division by zero trap. */
+    public static final int INTEGER_DIVISION_BY_ZERO = 7;
+
+    /** Bad conversion to integer trap. */
+    public static final int BAD_CONVERSION_TO_INTEGER = 8;
+
+    /** Unreachable code reached trap. */
+    public static final int UNREACHABLE_CODE_REACHED = 9;
+
+    /** Interrupt trap. */
+    public static final int INTERRUPT = 10;
+
+    /** Out of fuel trap. */
+    public static final int OUT_OF_FUEL = 11;
+
+    /** Null reference trap. */
+    public static final int NULL_REFERENCE = 12;
+
+    /** Array out of bounds trap. */
+    public static final int ARRAY_OUT_OF_BOUNDS = 13;
+
+    /** Unknown trap type. */
+    public static final int UNKNOWN = 14;
+
+    private TrapCodes() {}
+  }
+
+  /**
+   * Parses trap code from an error message.
+   *
+   * @param errorMessage the error message to parse
+   * @return trap code matching TrapCodes constants
+   */
+  public int trapParseCode(final String errorMessage) {
+    if (errorMessage == null || errorMessage.isEmpty()) {
+      return TrapCodes.UNKNOWN;
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment messageSegment = arena.allocateFrom(errorMessage);
+      return callNativeFunction("wasmtime4j_panama_trap_parse_code", Integer.class, messageSegment);
+    }
+  }
+
+  /**
+   * Gets the name of a trap code.
+   *
+   * @param trapCode the trap code
+   * @return the trap code name
+   */
+  public String trapCodeName(final int trapCode) {
+    final MemorySegment namePtr =
+        callNativeFunction("wasmtime4j_panama_trap_code_name", MemorySegment.class, trapCode);
+    if (namePtr == null || namePtr.equals(MemorySegment.NULL)) {
+      return "unknown";
+    }
+    return namePtr.reinterpret(256).getString(0);
+  }
+
+  /**
+   * Checks if an error message indicates a trap.
+   *
+   * @param errorMessage the error message to check
+   * @return true if the message indicates a trap
+   */
+  public boolean trapIsTrap(final String errorMessage) {
+    if (errorMessage == null || errorMessage.isEmpty()) {
+      return false;
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment messageSegment = arena.allocateFrom(errorMessage);
+      final int result =
+          callNativeFunction("wasmtime4j_panama_trap_is_trap", Integer.class, messageSegment);
+      return result == 1;
+    }
+  }
+
+  /**
+   * Extracts function name from a backtrace line.
+   *
+   * @param backtraceLine the backtrace line to parse
+   * @return the function name, or null if not found
+   */
+  public String trapExtractFunctionName(final String backtraceLine) {
+    if (backtraceLine == null || backtraceLine.isEmpty()) {
+      return null;
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment lineSegment = arena.allocateFrom(backtraceLine);
+      final int bufferSize = 256;
+      final MemorySegment outBuffer = arena.allocate(bufferSize);
+      final int bytesWritten =
+          callNativeFunction(
+              "wasmtime4j_panama_trap_extract_function_name",
+              Integer.class,
+              lineSegment,
+              outBuffer,
+              (long) bufferSize);
+      if (bytesWritten <= 0) {
+        return null;
+      }
+      return outBuffer.getString(0);
+    }
+  }
+
+  /**
+   * Extracts instruction offset from an error message.
+   *
+   * @param errorMessage the error message to parse
+   * @return the instruction offset, or -1 if not found
+   */
+  public long trapExtractOffset(final String errorMessage) {
+    if (errorMessage == null || errorMessage.isEmpty()) {
+      return -1;
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment messageSegment = arena.allocateFrom(errorMessage);
+      return callNativeFunction(
+          "wasmtime4j_panama_trap_extract_offset", Long.class, messageSegment);
+    }
+  }
+
+  /** Comprehensive trap info structure returned by trapExtractInfo. */
+  public static final class TrapInfo {
+    private final int trapCode;
+    private final long instructionOffset;
+    private final boolean isTrap;
+
+    /**
+     * Creates a new TrapInfo.
+     *
+     * @param trapCode the trap code
+     * @param instructionOffset the instruction offset
+     * @param isTrap whether this is a trap
+     */
+    public TrapInfo(final int trapCode, final long instructionOffset, final boolean isTrap) {
+      this.trapCode = trapCode;
+      this.instructionOffset = instructionOffset;
+      this.isTrap = isTrap;
+    }
+
+    /**
+     * @return the trap code
+     */
+    public int getTrapCode() {
+      return trapCode;
+    }
+
+    /**
+     * @return the instruction offset, or -1 if not available
+     */
+    public long getInstructionOffset() {
+      return instructionOffset;
+    }
+
+    /**
+     * @return true if this is a trap
+     */
+    public boolean isTrap() {
+      return isTrap;
+    }
+
+    @Override
+    public String toString() {
+      return "TrapInfo{trapCode="
+          + trapCode
+          + ", instructionOffset="
+          + instructionOffset
+          + ", isTrap="
+          + isTrap
+          + '}';
+    }
+  }
+
+  /**
+   * Extracts comprehensive trap information from an error message.
+   *
+   * @param errorMessage the error message to parse
+   * @return TrapInfo containing trap code, offset, and whether it's a trap
+   */
+  public TrapInfo trapExtractInfo(final String errorMessage) {
+    if (errorMessage == null || errorMessage.isEmpty()) {
+      return new TrapInfo(TrapCodes.UNKNOWN, -1, false);
+    }
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment messageSegment = arena.allocateFrom(errorMessage);
+      // TrapInfo struct layout: int trap_code, long instruction_offset, int is_trap
+      // Padded: 4 bytes + 4 padding + 8 bytes + 4 bytes = 20 bytes, aligned to 8 = 24 bytes
+      final MemorySegment outInfo = arena.allocate(24, 8);
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_trap_extract_info", Integer.class, messageSegment, outInfo);
+      if (result != 0) {
+        return new TrapInfo(TrapCodes.UNKNOWN, -1, false);
+      }
+      final int trapCode = outInfo.get(ValueLayout.JAVA_INT, 0);
+      final long instructionOffset = outInfo.get(ValueLayout.JAVA_LONG, 8);
+      final int isTrap = outInfo.get(ValueLayout.JAVA_INT, 16);
+      return new TrapInfo(trapCode, instructionOffset, isTrap == 1);
+    }
+  }
+
+  // ==================== Module Cache Methods ====================
+
+  /**
+   * Creates a module cache with custom configuration.
+   *
+   * @param enginePtr pointer to the engine
+   * @param cacheDirPtr pointer to cache directory string
+   * @param maxCacheSize maximum cache size in bytes
+   * @param maxEntries maximum number of entries
+   * @param compressionEnabled whether compression is enabled
+   * @param compressionLevel compression level (1-22)
+   * @return pointer to the module cache, or null on failure
+   */
+  public MemorySegment moduleCacheCreateWithConfig(
+      final MemorySegment enginePtr,
+      final MemorySegment cacheDirPtr,
+      final long maxCacheSize,
+      final int maxEntries,
+      final boolean compressionEnabled,
+      final int compressionLevel) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_module_cache_create_with_config",
+        MemorySegment.class,
+        enginePtr,
+        cacheDirPtr,
+        maxCacheSize,
+        (long) maxEntries,
+        compressionEnabled ? 1 : 0,
+        compressionLevel);
+  }
+
+  /**
+   * Gets or compiles a module from the cache.
+   *
+   * @param cachePtr pointer to the module cache
+   * @param bytecodePtr pointer to the bytecode
+   * @param bytecodeLen length of the bytecode
+   * @param moduleOutPtr pointer to store the module pointer
+   * @return true on success, false on failure
+   */
+  public boolean moduleCacheGetOrCompile(
+      final MemorySegment cachePtr,
+      final MemorySegment bytecodePtr,
+      final long bytecodeLen,
+      final MemorySegment moduleOutPtr) {
+    validatePointer(cachePtr, "cachePtr");
+    validatePointer(bytecodePtr, "bytecodePtr");
+    validatePointer(moduleOutPtr, "moduleOutPtr");
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_module_cache_get_or_compile",
+            Integer.class,
+            cachePtr,
+            bytecodePtr,
+            bytecodeLen,
+            moduleOutPtr);
+    return result != 0;
+  }
+
+  /**
+   * Pre-compiles and caches a module.
+   *
+   * @param cachePtr pointer to the module cache
+   * @param bytecodePtr pointer to the bytecode
+   * @param bytecodeLen length of the bytecode
+   * @param hashOutPtr pointer to store the hash output
+   * @param hashOutLen length of the hash output buffer
+   * @return length of hash written, or negative on error
+   */
+  public int moduleCachePrecompile(
+      final MemorySegment cachePtr,
+      final MemorySegment bytecodePtr,
+      final long bytecodeLen,
+      final MemorySegment hashOutPtr,
+      final int hashOutLen) {
+    validatePointer(cachePtr, "cachePtr");
+    validatePointer(bytecodePtr, "bytecodePtr");
+    validatePointer(hashOutPtr, "hashOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_module_cache_precompile",
+        Integer.class,
+        cachePtr,
+        bytecodePtr,
+        bytecodeLen,
+        hashOutPtr,
+        (long) hashOutLen);
+  }
+
+  /**
+   * Clears all entries from the module cache.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return true on success, false on failure
+   */
+  public boolean moduleCacheClear(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    final int result = callNativeFunction("wasmtime4j_module_cache_clear", Integer.class, cachePtr);
+    return result != 0;
+  }
+
+  /**
+   * Performs cache maintenance.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return true on success, false on failure
+   */
+  public boolean moduleCachePerformMaintenance(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    final int result =
+        callNativeFunction("wasmtime4j_module_cache_perform_maintenance", Integer.class, cachePtr);
+    return result != 0;
+  }
+
+  /**
+   * Gets the number of entries in the cache.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return entry count, or negative on error
+   */
+  public long moduleCacheEntryCount(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    return callNativeFunction("wasmtime4j_module_cache_entry_count", Long.class, cachePtr);
+  }
+
+  /**
+   * Gets the cache hit count.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return hit count, or negative on error
+   */
+  public long moduleCacheHitCount(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    return callNativeFunction("wasmtime4j_module_cache_hit_count", Long.class, cachePtr);
+  }
+
+  /**
+   * Gets the cache miss count.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return miss count, or negative on error
+   */
+  public long moduleCacheMissCount(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    return callNativeFunction("wasmtime4j_module_cache_miss_count", Long.class, cachePtr);
+  }
+
+  /**
+   * Gets the storage bytes used by the cache.
+   *
+   * @param cachePtr pointer to the module cache
+   * @return storage bytes used, or negative on error
+   */
+  public long moduleCacheStorageBytes(final MemorySegment cachePtr) {
+    validatePointer(cachePtr, "cachePtr");
+    return callNativeFunction("wasmtime4j_module_cache_storage_bytes", Long.class, cachePtr);
+  }
+
+  /**
+   * Destroys a module cache.
+   *
+   * @param cachePtr pointer to the module cache
+   */
+  public void moduleCacheDestroy(final MemorySegment cachePtr) {
+    if (cachePtr != null && !cachePtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_module_cache_destroy", Void.class, cachePtr);
+    }
+  }
+
+  // ==================== Async Runtime Methods ====================
+
+  /**
+   * Initializes the async runtime.
+   *
+   * <p>This function initializes the global Tokio async runtime. It is safe to call multiple times.
+   *
+   * @return 0 on success, non-zero on error
+   */
+  public int asyncRuntimeInit() {
+    return callNativeFunction("wasmtime4j_async_runtime_init", Integer.class);
+  }
+
+  /**
+   * Gets async runtime information.
+   *
+   * <p>Returns information about the current async runtime state.
+   *
+   * @return pointer to runtime info string, or null on error
+   */
+  public MemorySegment asyncRuntimeInfo() {
+    return callNativeFunction("wasmtime4j_async_runtime_info", MemorySegment.class);
+  }
+
+  /**
+   * Shuts down the async runtime.
+   *
+   * <p>This function performs graceful shutdown of async operations.
+   *
+   * @return 0 on success, non-zero on error
+   */
+  public int asyncRuntimeShutdown() {
+    return callNativeFunction("wasmtime4j_async_runtime_shutdown", Integer.class);
+  }
+
+  /**
+   * Executes a WebAssembly function asynchronously.
+   *
+   * @param instancePtr pointer to the instance
+   * @param functionName pointer to function name string
+   * @param argsPtr pointer to arguments array
+   * @param argsLen number of arguments
+   * @param timeoutMs timeout in milliseconds
+   * @param callback completion callback function pointer
+   * @param userData user data for callback
+   * @return operation ID on success, negative value on error
+   */
+  public int funcCallAsync(
+      final MemorySegment instancePtr,
+      final MemorySegment functionName,
+      final MemorySegment argsPtr,
+      final int argsLen,
+      final long timeoutMs,
+      final MemorySegment callback,
+      final MemorySegment userData) {
+    return callNativeFunction(
+        "wasmtime4j_func_call_async",
+        Integer.class,
+        instancePtr,
+        functionName,
+        argsPtr,
+        argsLen,
+        timeoutMs,
+        callback,
+        userData);
+  }
+
+  /**
+   * Compiles a WebAssembly module asynchronously.
+   *
+   * @param moduleBytes pointer to module bytecode
+   * @param moduleLen length of module bytecode
+   * @param timeoutMs timeout in milliseconds
+   * @param callback completion callback function pointer
+   * @param progressCallback progress callback function pointer
+   * @param userData user data for callbacks
+   * @return operation ID on success, negative value on error
+   */
+  public int moduleCompileAsync(
+      final MemorySegment moduleBytes,
+      final int moduleLen,
+      final long timeoutMs,
+      final MemorySegment callback,
+      final MemorySegment progressCallback,
+      final MemorySegment userData) {
+    return callNativeFunction(
+        "wasmtime4j_module_compile_async",
+        Integer.class,
+        moduleBytes,
+        moduleLen,
+        timeoutMs,
+        callback,
+        progressCallback,
+        userData);
+  }
+
+  // =============================================================================
+  // WASI-NN Functions
+  // =============================================================================
+
+  /**
+   * Creates a new WASI-NN context.
+   *
+   * @return pointer to the WASI-NN context, or null on failure
+   */
+  public MemorySegment wasiNnContextCreate() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_context_create", MemorySegment.class);
+  }
+
+  /**
+   * Checks if WASI-NN is available in this build.
+   *
+   * @return 1 if available, 0 if not
+   */
+  public int wasiNnIsAvailable() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_is_available", Integer.class);
+  }
+
+  /**
+   * Gets the default execution target.
+   *
+   * @return the default target ordinal (0 = CPU)
+   */
+  public int wasiNnGetDefaultTarget() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_get_default_target", Integer.class);
+  }
+
+  /**
+   * Closes a WASI-NN context.
+   *
+   * @param contextHandle the WASI-NN context handle
+   */
+  public void wasiNnContextClose(final MemorySegment contextHandle) {
+    if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_context_close", Void.class, contextHandle);
+    }
+  }
+
+  /**
+   * Loads a graph from model data.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param dataPtr pointer to the model data
+   * @param dataLen length of the model data
+   * @param encodingOrdinal the graph encoding format ordinal
+   * @param targetOrdinal the execution target ordinal
+   * @return pointer to the graph, or null on error
+   */
+  public MemorySegment wasiNnLoadGraph(
+      final MemorySegment contextHandle,
+      final MemorySegment dataPtr,
+      final long dataLen,
+      final int encodingOrdinal,
+      final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_load_graph",
+        MemorySegment.class,
+        contextHandle,
+        dataPtr,
+        dataLen,
+        encodingOrdinal,
+        targetOrdinal);
+  }
+
+  /**
+   * Loads a graph by name.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param namePtr pointer to the null-terminated model name string
+   * @param targetOrdinal the execution target ordinal
+   * @return pointer to the graph, or null on error
+   */
+  public MemorySegment wasiNnLoadGraphByName(
+      final MemorySegment contextHandle, final MemorySegment namePtr, final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(namePtr, "namePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_load_graph_by_name",
+        MemorySegment.class,
+        contextHandle,
+        namePtr,
+        targetOrdinal);
+  }
+
+  /**
+   * Gets supported encodings.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param outEncodings pointer to array to receive encoding ordinals
+   * @param maxCount maximum number of encodings to return
+   * @return number of encodings written, or -1 on error
+   */
+  public int wasiNnGetSupportedEncodings(
+      final MemorySegment contextHandle, final MemorySegment outEncodings, final int maxCount) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_get_supported_encodings",
+        Integer.class,
+        contextHandle,
+        outEncodings,
+        maxCount);
+  }
+
+  /**
+   * Gets supported targets.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param outTargets pointer to array to receive target ordinals
+   * @param maxCount maximum number of targets to return
+   * @return number of targets written, or -1 on error
+   */
+  public int wasiNnGetSupportedTargets(
+      final MemorySegment contextHandle, final MemorySegment outTargets, final int maxCount) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_get_supported_targets",
+        Integer.class,
+        contextHandle,
+        outTargets,
+        maxCount);
+  }
+
+  /**
+   * Checks if an encoding is supported.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param encodingOrdinal the encoding ordinal to check
+   * @return 1 if supported, 0 if not
+   */
+  public int wasiNnIsEncodingSupported(
+      final MemorySegment contextHandle, final int encodingOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_is_encoding_supported",
+        Integer.class,
+        contextHandle,
+        encodingOrdinal);
+  }
+
+  /**
+   * Checks if a target is supported.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param targetOrdinal the target ordinal to check
+   * @return 1 if supported, 0 if not
+   */
+  public int wasiNnIsTargetSupported(final MemorySegment contextHandle, final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_is_target_supported",
+        Integer.class,
+        contextHandle,
+        targetOrdinal);
+  }
+
+  /**
+   * Creates an execution context from a graph.
+   *
+   * @param graphHandle the graph handle
+   * @return pointer to the execution context, or null on error
+   */
+  public MemorySegment wasiNnGraphCreateExecContext(final MemorySegment graphHandle) {
+    validatePointer(graphHandle, "graphHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_graph_create_exec_context", MemorySegment.class, graphHandle);
+  }
+
+  /**
+   * Closes a graph.
+   *
+   * @param graphHandle the graph handle
+   */
+  public void wasiNnGraphClose(final MemorySegment graphHandle) {
+    if (graphHandle != null && !graphHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_graph_close", Void.class, graphHandle);
+    }
+  }
+
+  /**
+   * Sets an input tensor by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the input index
+   * @param dimsPtr pointer to dimensions array
+   * @param dimsLen number of dimensions
+   * @param typeOrdinal the tensor type ordinal
+   * @param dataPtr pointer to tensor data
+   * @param dataLen length of tensor data
+   * @return 0 on success, -1 on error
+   */
+  public int wasiNnExecSetInput(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment dimsPtr,
+      final int dimsLen,
+      final int typeOrdinal,
+      final MemorySegment dataPtr,
+      final long dataLen) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_set_input",
+        Integer.class,
+        ctxHandle,
+        index,
+        dimsPtr,
+        dimsLen,
+        typeOrdinal,
+        dataPtr,
+        dataLen);
+  }
+
+  /**
+   * Runs inference.
+   *
+   * @param ctxHandle the execution context handle
+   * @return 0 on success, -1 on error
+   */
+  public int wasiNnExecCompute(final MemorySegment ctxHandle) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_compute", Integer.class, ctxHandle);
+  }
+
+  /**
+   * Gets output tensor data by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @param outData pointer to buffer to receive data
+   * @param maxLen maximum buffer length
+   * @return actual data length, or -1 on error
+   */
+  public long wasiNnExecGetOutput(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment outData,
+      final long maxLen) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output",
+        Long.class,
+        ctxHandle,
+        index,
+        outData,
+        maxLen);
+  }
+
+  /**
+   * Gets output tensor size by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @return the output size, or -1 on error
+   */
+  public long wasiNnExecGetOutputSize(final MemorySegment ctxHandle, final int index) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_size", Long.class, ctxHandle, index);
+  }
+
+  /**
+   * Gets output tensor dimensions by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @param outDims pointer to buffer to receive dimensions
+   * @param maxDims maximum number of dimensions
+   * @return number of dimensions, or -1 on error
+   */
+  public int wasiNnExecGetOutputDims(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment outDims,
+      final int maxDims) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_dims",
+        Integer.class,
+        ctxHandle,
+        index,
+        outDims,
+        maxDims);
+  }
+
+  /**
+   * Gets output tensor type by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @return the tensor type ordinal, or -1 on error
+   */
+  public int wasiNnExecGetOutputType(final MemorySegment ctxHandle, final int index) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_type", Integer.class, ctxHandle, index);
+  }
+
+  /**
+   * Closes an execution context.
+   *
+   * @param ctxHandle the execution context handle
+   */
+  public void wasiNnExecClose(final MemorySegment ctxHandle) {
+    if (ctxHandle != null && !ctxHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_exec_close", Void.class, ctxHandle);
+    }
+  }
+
+  // ============================================================================
+  // WASI-Threads Functions
+  // ============================================================================
+
+  /**
+   * Checks if WASI-Threads is supported in this build.
+   *
+   * @return true if WASI-Threads is supported, false otherwise
+   */
+  public boolean wasiThreadsIsSupported() {
+    try {
+      final int result =
+          callNativeFunction("wasmtime4j_panama_wasi_threads_is_supported", Integer.class);
+      return result != 0;
+    } catch (final Exception e) {
+      LOGGER.fine("WASI-Threads support check failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new WASI-Threads context.
+   *
+   * @param moduleHandle the module memory segment
+   * @param linkerHandle the linker memory segment
+   * @param storeHandle the store memory segment
+   * @param arena the arena for memory management
+   * @return the created context memory segment, or NULL on error
+   */
+  public MemorySegment wasiThreadsContextCreate(
+      final MemorySegment moduleHandle,
+      final MemorySegment linkerHandle,
+      final MemorySegment storeHandle,
+      final java.lang.foreign.Arena arena) {
+    validatePointer(moduleHandle, "moduleHandle");
+    validatePointer(linkerHandle, "linkerHandle");
+    validatePointer(storeHandle, "storeHandle");
+    if (arena == null) {
+      throw new IllegalArgumentException("Arena cannot be null");
+    }
+
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_threads_context_create",
+        MemorySegment.class,
+        moduleHandle,
+        linkerHandle,
+        storeHandle);
+  }
+
+  /**
+   * Closes and frees a WASI-Threads context.
+   *
+   * @param contextHandle the context memory segment
+   */
+  public void wasiThreadsContextClose(final MemorySegment contextHandle) {
+    if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction(
+          "wasmtime4j_panama_wasi_threads_context_close", Void.class, contextHandle);
+    }
+  }
+
+  /**
+   * Spawns a new thread using WASI-Threads.
+   *
+   * @param contextHandle the WASI-Threads context
+   * @param threadStartArg the argument to pass to the thread start function
+   * @return the thread ID (positive) on success, negative on error
+   */
+  public int wasiThreadsSpawn(final MemorySegment contextHandle, final int threadStartArg) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_threads_spawn", Integer.class, contextHandle, threadStartArg);
+  }
+
+  /**
+   * Adds the WASI-Threads thread-spawn function to a linker.
+   *
+   * @param linkerHandle the linker memory segment
+   * @param storeHandle the store memory segment
+   * @param moduleHandle the module memory segment
+   */
+  public void wasiThreadsAddToLinker(
+      final MemorySegment linkerHandle,
+      final MemorySegment storeHandle,
+      final MemorySegment moduleHandle) {
+    validatePointer(linkerHandle, "linkerHandle");
+    validatePointer(storeHandle, "storeHandle");
+    validatePointer(moduleHandle, "moduleHandle");
+
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_wasi_threads_add_to_linker",
+            Integer.class,
+            linkerHandle,
+            storeHandle,
+            moduleHandle);
+
+    if (result != 0) {
+      throw new RuntimeException("Failed to add WASI-Threads to linker, error code: " + result);
     }
   }
 }

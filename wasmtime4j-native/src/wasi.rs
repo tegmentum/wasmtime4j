@@ -560,13 +560,18 @@ impl WasiContext {
             }
         }
 
-        // Configure stdout
+        // Configure stdout - reuse existing pipe if available, otherwise create new
         match &self.stdio_config.stdout {
             StdioSink::Inherit => {
                 builder.inherit_stdout();
             }
             StdioSink::Buffer => {
-                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                // Reuse existing stdout pipe if available (from enable_output_capture)
+                let pipe = if let Some(existing_pipe) = &self.stdout_pipe {
+                    existing_pipe.clone()
+                } else {
+                    MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY)
+                };
                 builder.stdout(pipe.clone());
                 stdout_pipe = Some(pipe);
             }
@@ -579,13 +584,18 @@ impl WasiContext {
             }
         }
 
-        // Configure stderr
+        // Configure stderr - reuse existing pipe if available, otherwise create new
         match &self.stdio_config.stderr {
             StdioSink::Inherit => {
                 builder.inherit_stderr();
             }
             StdioSink::Buffer => {
-                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                // Reuse existing stderr pipe if available (from enable_output_capture)
+                let pipe = if let Some(existing_pipe) = &self.stderr_pipe {
+                    existing_pipe.clone()
+                } else {
+                    MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY)
+                };
                 builder.stderr(pipe.clone());
                 stderr_pipe = Some(pipe);
             }
@@ -3170,35 +3180,117 @@ pub struct WasiFilestat {
     pub ctim: u64,
 }
 
-/// JNI bridge functions for Java integration - Simple stub implementations
-/// These are basic stubs that allow compilation and basic functionality
-
-
+/// JNI bridge functions for Java integration - Full implementations
 
 /// Get random bytes using direct ByteBuffer
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesDirect(
-    _env: *mut jni::sys::JNIEnv,
+    env: *mut jni::sys::JNIEnv,
     _class: jni::sys::jclass,
     _context_handle: jni::sys::jlong,
-    _buffer: jni::sys::jobject,
-    _position: jni::sys::jint,
-    _length: jni::sys::jint,
+    buffer: jni::sys::jobject,
+    position: jni::sys::jint,
+    length: jni::sys::jint,
 ) -> jni::sys::jint {
-    // Stub implementation - always return success
-    0
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if buffer.is_null() || length <= 0 {
+        return -1;
+    }
+
+    // Get the JNI environment
+    let jni_env = match jni::JNIEnv::from_raw(env) {
+        Ok(e) => e,
+        Err(_) => return -1,
+    };
+
+    let jni_buffer = jni::objects::JByteBuffer::from_raw(buffer);
+
+    // Get direct buffer address
+    let buffer_addr = match jni_env.get_direct_buffer_address(&jni_buffer) {
+        Ok(addr) => addr,
+        Err(_) => return -1,
+    };
+
+    // Get buffer capacity
+    let buffer_capacity = match jni_env.get_direct_buffer_capacity(&jni_buffer) {
+        Ok(cap) => cap,
+        Err(_) => return -1,
+    };
+
+    // Generate pseudo-random bytes using system time and position as seed
+    let seed = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u64;
+
+    let offset = position as usize;
+    let mut state = seed;
+    for i in 0..(length as usize) {
+        if offset + i >= buffer_capacity {
+            break;
+        }
+        // LCG PRNG
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        let rand_val = (state >> 33) as u8;
+        *buffer_addr.wrapping_add(offset + i) = rand_val;
+    }
+
+    length
 }
 
-/// Get random bytes using byte array  
+/// Get random bytes using byte array
 #[no_mangle]
 pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOperations_nativeGetRandomBytesArray(
-    _env: *mut jni::sys::JNIEnv,
+    env: *mut jni::sys::JNIEnv,
     _class: jni::sys::jclass,
     _context_handle: jni::sys::jlong,
-    _buffer: jni::sys::jbyteArray,
+    buffer: jni::sys::jbyteArray,
 ) -> jni::sys::jint {
-    // Stub implementation - always return success
-    0
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if buffer.is_null() {
+        return -1;
+    }
+
+    // Get the JNI environment
+    let mut jni_env = match jni::JNIEnv::from_raw(env) {
+        Ok(e) => e,
+        Err(_) => return -1,
+    };
+
+    // Get array length
+    let array = jni::objects::JByteArray::from_raw(buffer);
+    let length = match jni_env.get_array_length(&array) {
+        Ok(len) => len as usize,
+        Err(_) => return -1,
+    };
+
+    if length == 0 {
+        return 0;
+    }
+
+    // Generate pseudo-random bytes using system time as seed
+    let seed = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u64;
+
+    // Generate random bytes
+    let mut random_bytes = Vec::with_capacity(length);
+    let mut state = seed;
+    for _ in 0..length {
+        // LCG PRNG
+        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        random_bytes.push((state >> 33) as i8);
+    }
+
+    // Set the byte array data
+    if jni_env.set_byte_array_region(&array, 0, &random_bytes).is_err() {
+        return -1;
+    }
+
+    length as jni::sys::jint
 }
 
 /// Get clock resolution

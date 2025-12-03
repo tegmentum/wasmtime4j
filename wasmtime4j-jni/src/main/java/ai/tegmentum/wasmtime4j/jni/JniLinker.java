@@ -924,6 +924,42 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.InstancePre instantiatePre(final Module module)
+      throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
+    }
+
+    final JniModule jniModule = (JniModule) module;
+
+    // DEFENSIVE: Check if handle looks valid before calling native code
+    if (!isNativeHandleReasonable()) {
+      throw new WasmException("Cannot create InstancePre with fake/test handle");
+    }
+
+    try {
+      final long instancePreHandle =
+          nativeInstantiatePre(nativeHandle, jniModule.getNativeHandle());
+
+      if (instancePreHandle == 0) {
+        throw new WasmException("Failed to create InstancePre for module");
+      }
+
+      return new JniInstancePre(instancePreHandle, module, engine);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error creating InstancePre", e);
+    }
+  }
+
+  @Override
   public void close() {
     if (!closed) {
       closed = true;
@@ -1211,6 +1247,15 @@ public class JniLinker<T> implements Linker<T> {
    */
   private native long nativeInstantiateNamed(
       long linkerHandle, long storeHandle, String moduleName, long moduleHandle);
+
+  /**
+   * Creates an InstancePre for fast repeated instantiation.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleHandle the module handle
+   * @return instancePre handle or 0 on failure
+   */
+  private native long nativeInstantiatePre(long linkerHandle, long moduleHandle);
 
   /**
    * Creates an alias for an export.

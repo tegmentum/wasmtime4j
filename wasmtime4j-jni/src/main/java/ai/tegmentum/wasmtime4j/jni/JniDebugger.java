@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.debug.Breakpoint;
 import ai.tegmentum.wasmtime4j.debug.DebugCapabilities;
 import ai.tegmentum.wasmtime4j.debug.DebugConfig;
 import ai.tegmentum.wasmtime4j.debug.DebugEventListener;
@@ -12,6 +11,11 @@ import ai.tegmentum.wasmtime4j.debug.DebugOptions;
 import ai.tegmentum.wasmtime4j.debug.DebugSession;
 import ai.tegmentum.wasmtime4j.debug.Debugger;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.debug.JniDebugCapabilities;
+import ai.tegmentum.wasmtime4j.jni.debug.JniDebugSession;
+import ai.tegmentum.wasmtime4j.jni.debug.JniStackFrame;
+import ai.tegmentum.wasmtime4j.jni.debug.JniVariable;
+import ai.tegmentum.wasmtime4j.jni.debug.JniVariableValue;
 import ai.tegmentum.wasmtime4j.jni.exception.JniExceptionHandler;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -96,14 +100,20 @@ public final class JniDebugger implements Debugger {
     throw new UnsupportedOperationException("Config-based session creation not yet implemented");
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a debug session for an instance.
+   *
+   * @param instance the instance to debug
+   * @return the debug session
+   * @throws WasmException if session creation fails
+   */
   public JniDebugSession createSession(final Instance instance) throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
     validateNotClosed();
 
     try {
       final long instanceHandle = extractInstanceHandle(instance);
-      final JniDebugSession session = new JniDebugSession(this, nativeHandle, instanceHandle);
+      final JniDebugSession session = new JniDebugSession(nativeHandle, instanceHandle);
       activeSessions.add(session);
 
       LOGGER.log(Level.FINE, "Created debug session: {0}", session.getSessionId());
@@ -113,7 +123,13 @@ public final class JniDebugger implements Debugger {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a debug session for multiple instances.
+   *
+   * @param instances the instances to debug
+   * @return the debug session
+   * @throws WasmException if session creation fails
+   */
   public JniDebugSession createSession(final List<Instance> instances) throws WasmException {
     Objects.requireNonNull(instances, "instances cannot be null");
     if (instances.isEmpty()) {
@@ -125,7 +141,7 @@ public final class JniDebugger implements Debugger {
       final long[] instanceHandles =
           instances.stream().mapToLong(this::extractInstanceHandle).toArray();
 
-      final JniDebugSession session = new JniDebugSession(this, nativeHandle, instanceHandles);
+      final JniDebugSession session = new JniDebugSession(nativeHandle, instanceHandles);
       activeSessions.add(session);
 
       LOGGER.log(Level.FINE, "Created multi-instance debug session: {0}", session.getSessionId());
@@ -135,7 +151,14 @@ public final class JniDebugger implements Debugger {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a debug session for an instance with configuration.
+   *
+   * @param instance the instance to debug
+   * @param config the debug configuration
+   * @return the debug session
+   * @throws WasmException if session creation fails
+   */
   public JniDebugSession createSession(final Instance instance, final DebugConfig config)
       throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
@@ -144,8 +167,7 @@ public final class JniDebugger implements Debugger {
 
     try {
       final long instanceHandle = extractInstanceHandle(instance);
-      final JniDebugSession session =
-          new JniDebugSession(this, nativeHandle, instanceHandle, config);
+      final JniDebugSession session = new JniDebugSession(nativeHandle, instanceHandle, config);
       activeSessions.add(session);
 
       LOGGER.log(Level.FINE, "Created configured debug session: {0}", session.getSessionId());
@@ -238,16 +260,24 @@ public final class JniDebugger implements Debugger {
     return closedCount;
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Gets the debugging capabilities.
+   *
+   * @return the debug capabilities
+   */
   public DebugCapabilities getCapabilities() {
     validateNotClosed();
 
     try {
-      return nativeGetCapabilities(nativeHandle);
+      final DebugCapabilities nativeCapabilities = nativeGetCapabilities(nativeHandle);
+      if (nativeCapabilities != null) {
+        return nativeCapabilities;
+      }
+      // Return default capabilities if native call fails
+      return JniDebugCapabilities.getDefault();
     } catch (final Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to get debug capabilities", e);
-      // Return null on failure - TODO: create minimal capabilities object
-      return null;
+      LOGGER.log(Level.WARNING, "Failed to get debug capabilities, returning defaults", e);
+      return JniDebugCapabilities.getDefault();
     }
   }
 
@@ -259,7 +289,13 @@ public final class JniDebugger implements Debugger {
     throw new UnsupportedOperationException("Instance ID-based attachment not yet implemented");
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Attaches to an instance for debugging.
+   *
+   * @param instance the instance to attach to
+   * @return the debug session
+   * @throws WasmException if attachment fails
+   */
   public JniDebugSession attach(final Instance instance) throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
     validateNotClosed();
@@ -272,7 +308,7 @@ public final class JniDebugger implements Debugger {
         throw new WasmException("Failed to attach to instance");
       }
 
-      final JniDebugSession session = new JniDebugSession(this, sessionHandle);
+      final JniDebugSession session = new JniDebugSession(sessionHandle);
       activeSessions.add(session);
 
       LOGGER.log(Level.FINE, "Attached to instance, created session: {0}", session.getSessionId());
@@ -629,7 +665,7 @@ public final class JniDebugger implements Debugger {
    * @return list of stack frames
    * @throws WasmException if call stack cannot be retrieved
    */
-  public List<StackFrame> getCallStack(final Instance instance) throws WasmException {
+  public List<JniStackFrame> getCallStack(final Instance instance) throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
     validateNotClosed();
 
@@ -649,7 +685,7 @@ public final class JniDebugger implements Debugger {
    * @return list of local variables
    * @throws WasmException if variables cannot be retrieved
    */
-  public List<Variable> getLocalVariables(final Instance instance, final int frameIndex)
+  public List<JniVariable> getLocalVariables(final Instance instance, final int frameIndex)
       throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
     validateNotClosed();
@@ -670,7 +706,7 @@ public final class JniDebugger implements Debugger {
    * @return evaluation result
    * @throws WasmException if evaluation fails
    */
-  public VariableValue evaluateExpression(final Instance instance, final String expression)
+  public JniVariableValue evaluateExpression(final Instance instance, final String expression)
       throws WasmException {
     Objects.requireNonNull(instance, "instance cannot be null");
     Objects.requireNonNull(expression, "expression cannot be null");
@@ -919,13 +955,13 @@ public final class JniDebugger implements Debugger {
 
   private static native boolean nativeRemoveBreakpoint(long debuggerHandle, long breakpointId);
 
-  private static native List<StackFrame> nativeGetCallStack(
+  private static native List<JniStackFrame> nativeGetCallStack(
       long debuggerHandle, long instanceHandle);
 
-  private static native List<Variable> nativeGetLocalVariables(
+  private static native List<JniVariable> nativeGetLocalVariables(
       long debuggerHandle, long instanceHandle, int frameIndex);
 
-  private static native VariableValue nativeEvaluateExpression(
+  private static native JniVariableValue nativeEvaluateExpression(
       long debuggerHandle, long instanceHandle, String expression);
 
   private static native MemoryInfo nativeInspectMemory(
@@ -943,181 +979,82 @@ public final class JniDebugger implements Debugger {
 
   private static native boolean nativeIsDwarfEnabled(long debuggerHandle);
 
-  // Stub inner classes for debugging support
-
-  /** Stub debug session implementation. */
-  private static final class JniDebugSession implements DebugSession {
-    private final JniDebugger debugger;
-    private final long nativeHandle;
-    private final String sessionId;
-    private volatile boolean active;
-
-    /** Javadoc placeholder. */
-    public JniDebugSession(
-        final JniDebugger debugger, final long debuggerHandle, final long instanceHandle) {
-      this.debugger = debugger;
-      this.nativeHandle = debuggerHandle;
-      this.sessionId = "session-" + System.nanoTime();
-      this.active = true;
-    }
-
-    /** Javadoc placeholder. */
-    public JniDebugSession(
-        final JniDebugger debugger, final long debuggerHandle, final long[] instanceHandles) {
-      this.debugger = debugger;
-      this.nativeHandle = debuggerHandle;
-      this.sessionId = "session-" + System.nanoTime();
-      this.active = true;
-    }
-
-    /** Javadoc placeholder. */
-    public JniDebugSession(
-        final JniDebugger debugger,
-        final long debuggerHandle,
-        final long instanceHandle,
-        final DebugConfig config) {
-      this.debugger = debugger;
-      this.nativeHandle = debuggerHandle;
-      this.sessionId = "session-" + System.nanoTime();
-      this.active = true;
-    }
-
-    /** Javadoc placeholder. */
-    public JniDebugSession(final JniDebugger debugger, final long sessionHandle) {
-      this.debugger = debugger;
-      this.nativeHandle = sessionHandle;
-      this.sessionId = "session-" + System.nanoTime();
-      this.active = true;
-    }
-
-    /** Javadoc placeholder. */
-    public String getSessionId() {
-      return sessionId;
-    }
-
-    /** Javadoc placeholder. */
-    public boolean isActive() {
-      return active;
-    }
-
-    /** Javadoc placeholder. */
-    public void close() {
-      active = false;
-    }
-
-    @Override
-    public void start() {
-      // TODO: Implement session start
-      active = true;
-    }
-
-    @Override
-    public void stop() {
-      active = false;
-    }
-
-    @Override
-    public void step(final StepType stepType) {
-      // TODO: Implement step execution
-      throw new UnsupportedOperationException("Step execution not yet implemented");
-    }
-
-    @Override
-    public void continueExecution() {
-      // TODO: Implement continue execution
-      throw new UnsupportedOperationException("Continue execution not yet implemented");
-    }
-
-    @Override
-    public void addBreakpoint(final Breakpoint breakpoint) {
-      // TODO: Implement add breakpoint
-      throw new UnsupportedOperationException("Add breakpoint not yet implemented");
-    }
-
-    @Override
-    public void removeBreakpoint(final Breakpoint breakpoint) {
-      // TODO: Implement remove breakpoint
-      throw new UnsupportedOperationException("Remove breakpoint not yet implemented");
-    }
-  }
+  // Stub inner classes for debugging support (keeping only those not yet migrated)
 
   /** Stub DWARF debug info implementation. */
-  private static final class DwarfDebugInfo {
+  static final class DwarfDebugInfo {
     // TODO: Implement DWARF debug info support
   }
 
   /** Stub source map integration implementation. */
-  private static final class SourceMapIntegration {
+  static final class SourceMapIntegration {
     // TODO: Implement source map integration support
   }
 
   /** Stub profiling data implementation. */
-  private static final class ProfilingData {
+  static final class ProfilingData {
     // TODO: Implement profiling data support
   }
 
-  /** Stub stack frame implementation. */
-  private static final class StackFrame {
-    // TODO: Implement stack frame support
-  }
-
-  /** Stub variable implementation. */
-  private static final class Variable {
-    // TODO: Implement variable support
-  }
-
-  /** Stub variable value implementation. */
-  private static final class VariableValue {
-    // TODO: Implement variable value support
-  }
-
   /** Stub memory info implementation. */
-  private static final class MemoryInfo {
+  static final class MemoryInfo {
     // TODO: Implement memory info support
   }
 
   /** Stub execution result implementation. */
-  private static final class ExecutionResult {
+  static final class ExecutionResult {
     // TODO: Implement execution result support
   }
 
-  // Static initialization
   /** Simple execution tracer implementation. */
-  private static final class JniExecutionTracer {
+  static final class JniExecutionTracer {
     private final long nativeHandle;
     private final Instance instance;
     private volatile boolean started;
 
-    /** Javadoc placeholder. */
-    public JniExecutionTracer(final long nativeHandle, final Instance instance) {
+    /**
+     * Creates an execution tracer.
+     *
+     * @param nativeHandle the native tracer handle
+     * @param instance the instance being traced
+     */
+    JniExecutionTracer(final long nativeHandle, final Instance instance) {
       this.nativeHandle = nativeHandle;
       this.instance = instance;
       this.started = false;
     }
 
-    /** Javadoc placeholder. */
-    public void start() {
+    /** Starts tracing. */
+    void start() {
       started = true;
     }
 
-    /** Javadoc placeholder. */
-    public void stop() {
+    /** Stops tracing. */
+    void stop() {
       started = false;
     }
 
-    /** Javadoc placeholder. */
-    public boolean isStarted() {
+    /**
+     * Checks if tracing is active.
+     *
+     * @return true if started
+     */
+    boolean isStarted() {
       return started;
     }
 
-    /** Javadoc placeholder. */
-    public List<String> getEvents() {
+    /**
+     * Gets trace events.
+     *
+     * @return list of trace events
+     */
+    List<String> getEvents() {
       // TODO: Return actual trace events
       return new ArrayList<>();
     }
 
-    /** Javadoc placeholder. */
-    public void clearEvents() {
+    /** Clears trace events. */
+    void clearEvents() {
       // Implementation would clear native trace buffer
     }
   }

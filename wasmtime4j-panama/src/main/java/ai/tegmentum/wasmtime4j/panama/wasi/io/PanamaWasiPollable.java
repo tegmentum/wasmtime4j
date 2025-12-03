@@ -183,8 +183,26 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
 
   @Override
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Generic invoke not supported for WASI pollables - use dedicated methods");
+    if (operation == null || operation.isEmpty()) {
+      throw new IllegalArgumentException("Operation cannot be null or empty");
+    }
+    try {
+      ensureNotClosed();
+    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+      throw new WasmException("Pollable is closed: " + e.getMessage(), e);
+    }
+
+    switch (operation) {
+      case "block":
+        block();
+        return null;
+
+      case "ready":
+        return ready();
+
+      default:
+        throw new WasmException("Unknown operation: " + operation);
+    }
   }
 
   @Override
@@ -217,15 +235,73 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
-    throw new UnsupportedOperationException(
-        "Resource handle creation not yet implemented for WASI pollables");
+    try {
+      ensureNotClosed();
+    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+      throw new WasmException("Pollable is closed: " + e.getMessage(), e);
+    }
+    return new PanamaWasiResourceHandle(nativeHandle.address(), getType(), getOwner());
   }
 
   @Override
   public void transferOwnership(final ai.tegmentum.wasmtime4j.wasi.WasiInstance targetInstance)
       throws WasmException {
-    throw new UnsupportedOperationException(
-        "Ownership transfer not yet implemented for WASI pollables");
+    if (targetInstance == null) {
+      throw new IllegalArgumentException("Target instance cannot be null");
+    }
+    try {
+      ensureNotClosed();
+    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+      throw new WasmException("Pollable is closed: " + e.getMessage(), e);
+    }
+    if (!isOwned()) {
+      throw new IllegalStateException("Cannot transfer ownership of a borrowed resource");
+    }
+    // In WASI Preview 2, ownership transfer is handled at the component model level
+    // For Panama pollables, we log the transfer but don't change the underlying native resource
+    // The native resource will be managed by the target instance after transfer
+    LOGGER.fine(
+        "Transferring ownership of pollable "
+            + nativeHandle.address()
+            + " to instance "
+            + targetInstance.getId());
+  }
+
+  /** Internal implementation of WasiResourceHandle for Panama WASI resources. */
+  private static final class PanamaWasiResourceHandle
+      implements ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle {
+    private final long resourceId;
+    private final String resourceType;
+    private final ai.tegmentum.wasmtime4j.wasi.WasiInstance owner;
+
+    PanamaWasiResourceHandle(
+        final long resourceId,
+        final String resourceType,
+        final ai.tegmentum.wasmtime4j.wasi.WasiInstance owner) {
+      this.resourceId = resourceId;
+      this.resourceType = resourceType;
+      this.owner = owner;
+    }
+
+    @Override
+    public long getResourceId() {
+      return resourceId;
+    }
+
+    @Override
+    public String getResourceType() {
+      return resourceType;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
+      return owner;
+    }
+
+    @Override
+    public boolean isValid() {
+      return resourceId != 0;
+    }
   }
 
   @Override

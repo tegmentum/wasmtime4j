@@ -609,6 +609,59 @@ pub extern "C" fn wasmtime4j_pooling_allocator_get_statistics(
     }
 }
 
+/// Releases an instance back to the pool
+#[no_mangle]
+pub extern "C" fn wasmtime4j_pooling_allocator_release_instance(
+    allocator: *mut PoolingAllocator,
+    instance_id: u64,
+) -> bool {
+    if allocator.is_null() {
+        return false;
+    }
+
+    let allocator = unsafe { &*allocator };
+    allocator.release_instance(instance_id).is_ok()
+}
+
+/// Resets pool statistics
+#[no_mangle]
+pub extern "C" fn wasmtime4j_pooling_allocator_reset_statistics(
+    allocator: *mut PoolingAllocator,
+) -> bool {
+    if allocator.is_null() {
+        return false;
+    }
+
+    let allocator = unsafe { &*allocator };
+    allocator.reset_statistics().is_ok()
+}
+
+/// Warms up the pools by pre-allocating resources
+#[no_mangle]
+pub extern "C" fn wasmtime4j_pooling_allocator_warm_pools(
+    allocator: *mut PoolingAllocator,
+) -> bool {
+    if allocator.is_null() {
+        return false;
+    }
+
+    let allocator = unsafe { &*allocator };
+    allocator.warm_pools().is_ok()
+}
+
+/// Performs maintenance operations on the pools
+#[no_mangle]
+pub extern "C" fn wasmtime4j_pooling_allocator_perform_maintenance(
+    allocator: *mut PoolingAllocator,
+) -> bool {
+    if allocator.is_null() {
+        return false;
+    }
+
+    let allocator = unsafe { &*allocator };
+    allocator.perform_maintenance().is_ok()
+}
+
 /// Destroys a pooling allocator
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_destroy(allocator: *mut PoolingAllocator) {

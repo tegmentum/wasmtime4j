@@ -16,6 +16,10 @@ crate-type = ["cdylib", "staticlib"]
 # Wasmtime WebAssembly runtime
 wasmtime = { version = "38.0.4", features = ["component-model", "component-model-async", "async"] }
 wasmtime-wasi = { version = "38.0.4", optional = true }
+wasmtime-wasi-http = { version = "38.0.4", optional = true }
+wasmtime-wasi-nn = { version = "38.0.4", optional = true }
+wasmtime-wasi-threads = { version = "38.0.2", optional = true }
+wasi-common = { version = "38.0.2", optional = true }
 wasmtime-wast = { version = "38.0.4", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
@@ -123,7 +127,7 @@ tonic-build = "0.10"
 tempfile = "3.8"
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "advanced-networking"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "advanced-networking"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
@@ -133,6 +137,15 @@ panama-ffi = []
 
 # WASI support (using wasmtime-wasi crate)
 wasi = ["wasmtime-wasi"]
+
+# WASI HTTP support (using wasmtime-wasi-http crate)
+wasi-http = ["wasmtime-wasi-http", "wasi"]
+
+# WASI-NN support (neural network inference - Tier 3 experimental)
+wasi-nn = ["wasmtime-wasi-nn", "wasi"]
+
+# WASI-Threads support (thread spawning - experimental)
+wasi-threads = ["wasmtime-wasi-threads", "wasi-common", "wasi"]
 
 # Component model support (WASI2)
 component-model = [

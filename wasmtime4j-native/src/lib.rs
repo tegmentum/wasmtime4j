@@ -123,6 +123,8 @@ pub mod jni_experimental_bindings;
 pub mod jni_wast_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wit_value_bindings;
+#[cfg(all(feature = "jni-bindings", feature = "wasi-nn"))]
+pub mod jni_wasi_nn_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
@@ -145,10 +147,22 @@ pub mod panama_hot_reload_ffi;
 pub mod panama_experimental_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_simd_ffi;
+#[cfg(all(feature = "panama-ffi", feature = "wasi-nn"))]
+pub mod panama_wasi_nn_ffi;
+#[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
+pub mod panama_wasi_threads_ffi;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
 pub mod wasi;
+
+// WASI HTTP support
+#[cfg(feature = "wasi-http")]
+pub mod wasi_http;
+
+// WASI-NN support (neural network inference - Tier 3 experimental)
+#[cfg(feature = "wasi-nn")]
+pub mod wasi_nn;
 
 // Advanced configuration modules for comprehensive optimization control
 // pub mod config_cranelift;
@@ -334,6 +348,14 @@ pub use wasi::{
     WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
     WasiExecutionResult, WasiCapabilitiesSummary, WasiFileDescriptorManager,
     WasiFileDescriptor, WasiDirectoryDescriptor, WasiDirectoryEntry, WasiFilestat
+};
+
+// Re-export WASI-NN functionality (Tier 3 experimental)
+#[cfg(feature = "wasi-nn")]
+pub use wasi_nn::{
+    WasiNnContext, WasiNnConfig, WasiNnConfigBuilder, WasiNnStats, WasiNnStatsSnapshot,
+    NnGraph, NnExecutionContext, NnTensor, NnImplementationInfo,
+    NnGraphEncoding, NnExecutionTarget, NnTensorType, NnErrorCode
 };
 
 // Re-export async runtime functionality

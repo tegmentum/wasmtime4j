@@ -81,6 +81,8 @@ pub struct EngineConfigSummary {
     pub max_instances: Option<u32>,
     /// Whether async execution support is enabled
     pub async_support: bool,
+    /// Whether coredump generation on trap is enabled
+    pub coredump_on_trap: bool,
 }
 
 /// Builder for creating configured engines
@@ -120,6 +122,7 @@ pub struct EngineBuilder {
     wasm_component_model_error_context: bool,
     wasm_component_model_gc: bool,
     async_support: bool,
+    coredump_on_trap: bool,
 }
 
 impl Engine {
@@ -149,8 +152,21 @@ impl Engine {
     }
 
     /// Get reference to inner Wasmtime engine (internal use)
+    ///
+    /// This explicitly dereferences the Arc to get a reference to the WasmtimeEngine.
     pub(crate) fn inner(&self) -> &WasmtimeEngine {
-        &self.inner
+        // Explicitly dereference Arc to get &WasmtimeEngine
+        // This is equivalent to &*self.inner due to Deref coercion,
+        // but being explicit prevents any potential optimization issues
+        std::ops::Deref::deref(&self.inner)
+    }
+
+    /// Get a clone of the inner Arc (for ownership transfer to component linkers)
+    ///
+    /// This clones the Arc, incrementing the reference count, which ensures
+    /// the WasmtimeEngine stays alive even if the original Engine is dropped.
+    pub(crate) fn inner_arc(&self) -> Arc<WasmtimeEngine> {
+        Arc::clone(&self.inner)
     }
 
     /// Get configuration summary
@@ -224,6 +240,11 @@ impl Engine {
         self.config_summary.max_instances
     }
 
+    /// Check if coredump generation on trap is enabled
+    pub fn coredump_on_trap(&self) -> bool {
+        self.config_summary.coredump_on_trap
+    }
+
     /// Check if async execution support is enabled
     pub fn async_support_enabled(&self) -> bool {
         self.config_summary.async_support
@@ -261,8 +282,9 @@ pub mod core {
     use crate::validate_ptr_not_null;
     
     /// Core function to create a new engine with default configuration
+    /// Uses EngineBuilder to ensure proper defaults including component model support
     pub fn create_engine() -> WasmtimeResult<Box<Engine>> {
-        Engine::new().map(Box::new)
+        EngineBuilder::new().build().map(Box::new)
     }
     
     /// Core function to create an engine with custom configuration
@@ -370,6 +392,11 @@ pub mod core {
         engine.epoch_interruption_enabled()
     }
 
+    /// Core function to check if coredump on trap is enabled
+    pub fn is_coredump_on_trap_enabled(engine: &Engine) -> bool {
+        engine.coredump_on_trap()
+    }
+
     /// Core function to get maximum instances limit
     pub fn get_max_instances(engine: &Engine) -> Option<u32> {
         engine.max_instances()
@@ -378,6 +405,39 @@ pub mod core {
     /// Core function to get engine reference count
     pub fn get_reference_count(engine: &Engine) -> usize {
         engine.reference_count()
+    }
+
+    /// Core function to precompile a WebAssembly module for AOT (ahead-of-time) usage
+    ///
+    /// This compiles the WebAssembly binary into a serialized form that can be
+    /// later loaded via `Module::deserialize` without needing to recompile.
+    /// This is useful for caching compiled modules to disk.
+    pub fn precompile_module(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Vec<u8>> {
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::ValidationError {
+                message: "WASM bytes cannot be empty".to_string(),
+            });
+        }
+        engine.inner.precompile_module(wasm_bytes).map_err(|e| {
+            WasmtimeError::CompilationError {
+                message: format!("Failed to precompile module: {}", e),
+            }
+        })
+    }
+
+    /// Core function to precompile a WebAssembly component for AOT usage
+    #[cfg(feature = "component-model")]
+    pub fn precompile_component(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Vec<u8>> {
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::ValidationError {
+                message: "WASM bytes cannot be empty".to_string(),
+            });
+        }
+        engine.inner.precompile_component(wasm_bytes).map_err(|e| {
+            WasmtimeError::CompilationError {
+                message: format!("Failed to precompile component: {}", e),
+            }
+        })
     }
 }
 
@@ -395,6 +455,9 @@ impl EngineBuilder {
         config.wasm_bulk_memory(true);
         config.wasm_multi_value(true);
         config.wasm_simd(true);
+
+        // Enable Component Model support (Tier 1 feature)
+        config.wasm_component_model(true);
 
         // Configure stack size - increase from default 512 KiB to 2 MiB for JNI safety
         config.max_wasm_stack(2 * 1024 * 1024);
@@ -448,6 +511,7 @@ impl EngineBuilder {
             wasm_component_model_error_context: false,  // Component model extension - off by default
             wasm_component_model_gc: false,  // Component model extension - off by default
             async_support: false,  // Async execution support - off by default
+            coredump_on_trap: false,  // Coredump on trap - off by default
         }
     }
 
@@ -681,6 +745,16 @@ impl EngineBuilder {
         self
     }
 
+    /// Enable or disable coredump generation on trap
+    ///
+    /// When enabled, traps will generate a coredump that can be used for
+    /// post-mortem debugging of WebAssembly execution failures.
+    pub fn coredump_on_trap(mut self, enable: bool) -> Self {
+        self.config.coredump_on_trap(enable);
+        self.coredump_on_trap = enable;
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);
@@ -734,6 +808,7 @@ impl EngineConfigSummary {
             epoch_interruption: false,         // Default assumption
             max_instances: None,               // No limit by default
             async_support: false,              // Off by default
+            coredump_on_trap: false,           // Off by default
         }
     }
 
@@ -779,6 +854,7 @@ impl EngineConfigSummary {
             epoch_interruption: builder.epoch_interruption,
             max_instances: builder.max_instances,
             async_support: builder.async_support,
+            coredump_on_trap: builder.coredump_on_trap,
         }
     }
 }
@@ -880,6 +956,7 @@ impl Default for Engine {
                             epoch_interruption: false,
                             max_instances: None,
                             async_support: false,
+                            coredump_on_trap: false,
                         },
                     },
                     Err(_) => {
@@ -922,6 +999,7 @@ impl Default for Engine {
                                 epoch_interruption: false,
                                 max_instances: None,
                                 async_support: false,
+                                coredump_on_trap: false,
                             },
                         }
                     }
@@ -1332,5 +1410,62 @@ pub unsafe extern "C" fn wasmtime4j_engine_reference_count(engine_ptr: *const c_
     match core::get_engine_ref(engine_ptr) {
         Ok(engine) => core::get_reference_count(engine),
         Err(_) => 0,
+    }
+}
+
+/// Check if coredump generation on trap is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_coredump_on_trap_enabled(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => if core::is_coredump_on_trap_enabled(engine) { 1 } else { 0 },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Precompile a WebAssembly module for AOT (ahead-of-time) usage
+///
+/// Takes raw WebAssembly bytes and compiles them to a serialized form that can
+/// be loaded later via Module::deserialize without needing to recompile.
+///
+/// # Safety
+///
+/// - engine_ptr must be a valid pointer from wasmtime4j_engine_new
+/// - wasm_bytes must be a valid pointer to a byte array of length wasm_len
+/// - out_data must be a valid pointer to receive the output byte array pointer
+/// - out_len must be a valid pointer to receive the output byte array length
+///
+/// Returns 0 on success, non-zero on failure.
+/// The caller is responsible for freeing the output data with wasmtime4j_free_bytes.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_precompile_module(
+    engine_ptr: *const c_void,
+    wasm_bytes: *const u8,
+    wasm_len: usize,
+    out_data: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if engine_ptr.is_null() || wasm_bytes.is_null() || out_data.is_null() || out_len.is_null() {
+        return FFI_ERROR;
+    }
+
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            let bytes = std::slice::from_raw_parts(wasm_bytes, wasm_len);
+            match core::precompile_module(engine, bytes) {
+                Ok(precompiled) => {
+                    let len = precompiled.len();
+                    let data = Box::into_raw(precompiled.into_boxed_slice()) as *mut u8;
+                    *out_data = data;
+                    *out_len = len;
+                    0  // Success
+                }
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Err(_) => FFI_ERROR,
     }
 }

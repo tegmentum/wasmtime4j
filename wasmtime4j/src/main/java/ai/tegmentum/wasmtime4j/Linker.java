@@ -159,6 +159,25 @@ public interface Linker<T> extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a pre-instantiated module optimized for fast repeated instantiation.
+   *
+   * <p>Pre-instantiation performs most of the expensive setup work once, allowing subsequent
+   * instantiations to be significantly faster. This is particularly useful for serverless
+   * functions, request handlers, or any scenario where the same module needs to be instantiated
+   * multiple times.
+   *
+   * <p>The returned InstancePre contains a reference to the module and can create new instances
+   * very quickly since import resolution and validation have been completed upfront.
+   *
+   * @param module the compiled module to pre-instantiate
+   * @return an InstancePre that can be used to quickly create instances
+   * @throws WasmException if pre-instantiation fails or imports cannot be resolved
+   * @throws IllegalArgumentException if module is null
+   * @since 1.0.0
+   */
+  InstancePre instantiatePre(final Module module) throws WasmException;
+
+  /**
    * Enables WASI (WebAssembly System Interface) support for modules instantiated through this
    * linker.
    *

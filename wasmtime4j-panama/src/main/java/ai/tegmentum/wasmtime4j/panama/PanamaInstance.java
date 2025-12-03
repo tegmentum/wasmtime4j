@@ -565,11 +565,11 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Package-private accessor for native instance pointer.
+   * Gets the native instance pointer.
    *
    * @return the native instance pointer
    */
-  MemorySegment getNativeInstance() {
+  public MemorySegment getNativeInstance() {
     return nativeInstance;
   }
 

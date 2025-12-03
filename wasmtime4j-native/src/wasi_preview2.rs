@@ -62,6 +62,8 @@ pub struct WasiPreview2Context {
     pub streams: Arc<RwLock<HashMap<u32, WasiStream>>>,
     /// Global filesystem descriptor registry (for JNI/Panama access without instance_id)
     pub descriptors: Arc<RwLock<HashMap<u32, WasiDescriptor>>>,
+    /// Global pollable registry (for JNI/Panama access without instance_id)
+    pub pollables: Arc<RwLock<HashMap<u32, WasiPollable>>>,
 }
 
 /// Store data for WASI Preview 2 operations
@@ -255,14 +257,86 @@ pub enum WasiFutureStatus {
     Error(String),
 }
 
+/// Type of pollable resource
+#[derive(Debug, Clone, PartialEq)]
+pub enum PollableType {
+    /// Pollable for a stream resource
+    Stream,
+    /// Pollable for a timer (becomes ready at target instant)
+    Timer {
+        /// Target time as nanoseconds from monotonic clock epoch
+        target_nanos: u64,
+    },
+}
+
 /// WASI pollable resource
 pub struct WasiPollable {
     /// Pollable ID
-    id: u32,
-    /// Associated resource
-    resource_id: u64,
-    /// Ready state
-    ready: bool,
+    pub id: u32,
+    /// Associated resource (e.g., stream ID for Stream type, unused for Timer)
+    pub resource_id: u64,
+    /// Ready state - true when the underlying resource is ready for I/O
+    pub ready: bool,
+    /// Type of pollable
+    pub pollable_type: PollableType,
+    /// Creation time (for timer calculations)
+    pub created_at: Instant,
+}
+
+impl WasiPollable {
+    /// Create a new pollable for a stream resource
+    pub fn new(id: u32, resource_id: u64) -> Self {
+        Self {
+            id,
+            resource_id,
+            ready: false,
+            pollable_type: PollableType::Stream,
+            created_at: Instant::now(),
+        }
+    }
+
+    /// Create a new timer pollable that becomes ready at a specific instant
+    pub fn new_timer_instant(id: u32, target_nanos: u64) -> Self {
+        Self {
+            id,
+            resource_id: 0,
+            ready: false,
+            pollable_type: PollableType::Timer { target_nanos },
+            created_at: Instant::now(),
+        }
+    }
+
+    /// Create a new timer pollable that becomes ready after a duration
+    pub fn new_timer_duration(id: u32, duration_nanos: u64) -> Self {
+        let now = Instant::now();
+        // Calculate target based on current instant plus duration
+        let target_nanos = duration_nanos;
+        Self {
+            id,
+            resource_id: 0,
+            ready: false,
+            pollable_type: PollableType::Timer { target_nanos },
+            created_at: now,
+        }
+    }
+
+    /// Check if the pollable is ready
+    pub fn is_ready(&self) -> bool {
+        if self.ready {
+            return true;
+        }
+        // Check timer-based readiness
+        if let PollableType::Timer { target_nanos } = self.pollable_type {
+            let elapsed = self.created_at.elapsed();
+            return elapsed.as_nanos() as u64 >= target_nanos;
+        }
+        false
+    }
+
+    /// Mark the pollable as ready
+    pub fn set_ready(&mut self, ready: bool) {
+        self.ready = ready;
+    }
 }
 
 /// Async WASI operation tracking
@@ -377,6 +451,7 @@ impl WasiPreview2Context {
             exit_code: Arc::new(RwLock::new(None)),
             streams: Arc::new(RwLock::new(HashMap::new())),
             descriptors: Arc::new(RwLock::new(HashMap::new())),
+            pollables: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 

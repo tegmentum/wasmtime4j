@@ -31,6 +31,7 @@ public final class EngineConfig {
   private boolean asyncSupport = false;
   private boolean generateDebugInfo = false;
   private boolean epochInterruption = false;
+  private boolean coredumpOnTrap = false;
 
   // Committee-stage experimental features (disabled by default)
   private boolean wasmStackSwitching = false;
@@ -47,6 +48,14 @@ public final class EngineConfig {
 
   private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
   private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
+
+  // Instance allocation strategy
+  private InstanceAllocationStrategy allocationStrategy = InstanceAllocationStrategy.ON_DEMAND;
+
+  // Pooling allocator configuration
+  private boolean poolingAllocatorEnabled = false;
+  private int instancePoolSize = 1000;
+  private long maxMemoryPerInstance = 1024L * 1024L * 1024L; // 1GB
 
   // Experimental features configuration
   // Note: ExperimentalFeatureConfig moved to advanced package
@@ -390,6 +399,36 @@ public final class EngineConfig {
     return this;
   }
 
+  /**
+   * Enables or disables coredump generation on trap.
+   *
+   * <p>When enabled, the engine will generate a WebAssembly coredump when a trap occurs. This
+   * coredump contains diagnostic information including stack frames, globals, and memory state that
+   * can be used for post-mortem debugging.
+   *
+   * @param enabled true to enable coredump generation on trap
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig setCoredumpOnTrap(final boolean enabled) {
+    this.coredumpOnTrap = enabled;
+    return this;
+  }
+
+  /**
+   * Convenience method for enabling coredump generation on trap.
+   *
+   * <p>This is an alias for {@link #setCoredumpOnTrap(boolean)}, providing a more fluent API for
+   * the builder pattern.
+   *
+   * @param enabled true to enable coredump generation on trap
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig coredumpOnTrap(final boolean enabled) {
+    return setCoredumpOnTrap(enabled);
+  }
+
   // Getters
 
   public boolean isDebugInfo() {
@@ -474,6 +513,16 @@ public final class EngineConfig {
 
   public boolean isEpochInterruption() {
     return epochInterruption;
+  }
+
+  /**
+   * Returns whether coredump generation on trap is enabled.
+   *
+   * @return true if coredump generation on trap is enabled
+   * @since 1.0.0
+   */
+  public boolean isCoredumpOnTrap() {
+    return coredumpOnTrap;
   }
 
   public java.util.Map<String, String> getCraneliftSettings() {
@@ -627,6 +676,7 @@ public final class EngineConfig {
         .setGenerateDebugInfo(this.generateDebugInfo)
         .setFuelConsumption(this.consumeFuel)
         .setEpochInterruption(this.epochInterruption)
+        .setCoredumpOnTrap(this.coredumpOnTrap)
         .setMaxWasmStack(this.maxWasmStack)
         .setAsyncStackSize(this.asyncStackSize)
         .asyncSupport(this.asyncSupport)
@@ -676,5 +726,162 @@ public final class EngineConfig {
    */
   public EngineConfig withEpochInterruption(final boolean enabled) {
     return setEpochInterruption(enabled);
+  }
+
+  // Pooling allocator configuration methods
+
+  /**
+   * Enables or disables the pooling allocator.
+   *
+   * <p>When enabled, the engine will use pooling allocation strategy for improved performance in
+   * scenarios where many instances are created and destroyed frequently.
+   *
+   * @param enabled true to enable pooling allocator
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig setPoolingAllocatorEnabled(final boolean enabled) {
+    this.poolingAllocatorEnabled = enabled;
+    return this;
+  }
+
+  /**
+   * Sets the instance pool size for the pooling allocator.
+   *
+   * @param size the number of instances in the pool
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if size is not positive
+   * @since 1.0.0
+   */
+  public EngineConfig setInstancePoolSize(final int size) {
+    if (size <= 0) {
+      throw new IllegalArgumentException("Instance pool size must be positive");
+    }
+    this.instancePoolSize = size;
+    return this;
+  }
+
+  /**
+   * Sets the maximum memory per instance in bytes for the pooling allocator.
+   *
+   * @param bytes maximum memory per instance in bytes
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is not positive
+   * @since 1.0.0
+   */
+  public EngineConfig setMaxMemoryPerInstance(final long bytes) {
+    if (bytes <= 0) {
+      throw new IllegalArgumentException("Maximum memory per instance must be positive");
+    }
+    this.maxMemoryPerInstance = bytes;
+    return this;
+  }
+
+  /**
+   * Returns whether the pooling allocator is enabled.
+   *
+   * @return true if pooling allocator is enabled
+   * @since 1.0.0
+   */
+  public boolean isPoolingAllocatorEnabled() {
+    return poolingAllocatorEnabled;
+  }
+
+  /**
+   * Returns the instance pool size.
+   *
+   * @return the instance pool size
+   * @since 1.0.0
+   */
+  public int getInstancePoolSize() {
+    return instancePoolSize;
+  }
+
+  /**
+   * Returns the maximum memory per instance in bytes.
+   *
+   * @return maximum memory per instance in bytes
+   * @since 1.0.0
+   */
+  public long getMaxMemoryPerInstance() {
+    return maxMemoryPerInstance;
+  }
+
+  // Instance allocation strategy methods
+
+  /**
+   * Sets the instance allocation strategy.
+   *
+   * <p>The allocation strategy determines how WebAssembly instances are allocated and managed.
+   * Different strategies are optimized for different use cases:
+   *
+   * <ul>
+   *   <li>{@link InstanceAllocationStrategy#ON_DEMAND} - Default, allocates instances individually
+   *   <li>{@link InstanceAllocationStrategy#POOLING} - Pre-allocates a pool for faster
+   *       instantiation
+   * </ul>
+   *
+   * <p>When using {@link InstanceAllocationStrategy#POOLING}, this automatically enables the
+   * pooling allocator. Configure pool settings via {@link #setInstancePoolSize(int)} and {@link
+   * #setMaxMemoryPerInstance(long)}, or use the dedicated {@link
+   * ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig} for advanced configuration.
+   *
+   * @param strategy the allocation strategy to use
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if strategy is null
+   * @since 1.0.0
+   */
+  public EngineConfig setAllocationStrategy(final InstanceAllocationStrategy strategy) {
+    if (strategy == null) {
+      throw new IllegalArgumentException("Allocation strategy cannot be null");
+    }
+    this.allocationStrategy = strategy;
+    // Automatically enable/disable pooling based on strategy
+    if (strategy == InstanceAllocationStrategy.POOLING) {
+      this.poolingAllocatorEnabled = true;
+    }
+    return this;
+  }
+
+  /**
+   * Returns the instance allocation strategy.
+   *
+   * @return the allocation strategy
+   * @since 1.0.0
+   */
+  public InstanceAllocationStrategy getAllocationStrategy() {
+    return allocationStrategy;
+  }
+
+  /**
+   * Convenience method to configure pooling allocation with default settings.
+   *
+   * <p>This sets the allocation strategy to {@link InstanceAllocationStrategy#POOLING} with default
+   * pool settings. For custom pool configuration, use {@link
+   * #setAllocationStrategy(InstanceAllocationStrategy)} followed by pool-specific methods, or use
+   * the dedicated {@link ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig}.
+   *
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig withPoolingAllocation() {
+    return setAllocationStrategy(InstanceAllocationStrategy.POOLING);
+  }
+
+  /**
+   * Convenience method to configure pooling allocation with custom settings.
+   *
+   * @param instancePoolSize the number of instances in the pool
+   * @param maxMemoryPerInstance maximum memory per instance in bytes
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if instancePoolSize is not positive or maxMemoryPerInstance is
+   *     not positive
+   * @since 1.0.0
+   */
+  public EngineConfig withPoolingAllocation(
+      final int instancePoolSize, final long maxMemoryPerInstance) {
+    return setAllocationStrategy(InstanceAllocationStrategy.POOLING)
+        .setInstancePoolSize(instancePoolSize)
+        .setMaxMemoryPerInstance(maxMemoryPerInstance);
   }
 }

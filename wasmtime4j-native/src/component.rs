@@ -24,10 +24,11 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Instant;
 use wasmtime::{
-    Engine,
+    Engine as WasmtimeEngine,
     Store,
     component::{Component as WasmtimeComponent, Linker, Instance as ComponentInstance, ResourceTable}
 };
+use crate::engine::Engine as EngineWrapper;
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Engine for managing WebAssembly component instances
@@ -37,7 +38,7 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 /// It maintains internal state for resource tracking and automatic cleanup.
 pub struct ComponentEngine {
     /// Wasmtime engine for component compilation and execution
-    engine: Engine,
+    engine: WasmtimeEngine,
     /// Component linker for resolving imports and exports
     linker: Linker<ComponentStoreData>,
     /// Active component instances for resource tracking
@@ -328,7 +329,7 @@ impl ComponentEngine {
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created
     /// due to system resource constraints or configuration issues.
     pub fn new() -> WasmtimeResult<Self> {
-        let engine = Engine::default();
+        let engine = WasmtimeEngine::default();
         let linker = Linker::new(&engine);
         
         Ok(ComponentEngine {
@@ -353,7 +354,7 @@ impl ComponentEngine {
     ///
     /// Returns `WasmtimeError::EngineConfig` if the linker cannot be created
     /// with the provided engine.
-    pub fn with_engine(engine: Engine) -> WasmtimeResult<Self> {
+    pub fn with_engine(engine: WasmtimeEngine) -> WasmtimeResult<Self> {
         let linker = Linker::new(&engine);
         
         Ok(ComponentEngine {
@@ -1265,7 +1266,7 @@ pub mod core {
     }
     
     /// Core function to create a component engine with a custom Wasmtime engine
-    pub fn create_component_engine_with_engine(engine: Engine) -> WasmtimeResult<Box<ComponentEngine>> {
+    pub fn create_component_engine_with_engine(engine: WasmtimeEngine) -> WasmtimeResult<Box<ComponentEngine>> {
         ComponentEngine::with_engine(engine).map(Box::new)
     }
     
@@ -1901,7 +1902,7 @@ impl std::fmt::Debug for ComponentHostFunctionEntry {
 /// Component Model linker for defining host functions and instantiating components
 pub struct ComponentLinker {
     /// Wasmtime engine for component compilation
-    engine: Engine,
+    engine: WasmtimeEngine,
     /// Component linker from Wasmtime
     linker: Linker<ComponentStoreData>,
     /// Registered host functions by WIT path
@@ -1916,11 +1917,34 @@ pub struct ComponentLinker {
 
 impl ComponentLinker {
     /// Create a new component linker for the given engine
-    pub fn new(engine: &Engine) -> WasmtimeResult<Self> {
+    pub fn new(engine: &WasmtimeEngine) -> WasmtimeResult<Self> {
         let linker = Linker::new(engine);
 
         Ok(ComponentLinker {
             engine: engine.clone(),
+            linker,
+            host_functions: HashMap::new(),
+            defined_interfaces: HashMap::new(),
+            wasi_p2_enabled: false,
+            disposed: false,
+        })
+    }
+
+    /// Create a new component linker with an owned engine Arc
+    ///
+    /// This takes ownership of an Arc<WasmtimeEngine> rather than a reference,
+    /// which ensures the engine stays valid for the lifetime of the linker.
+    /// This is useful for FFI contexts where reference lifetimes are tricky.
+    pub fn new_with_owned_engine(engine_arc: Arc<WasmtimeEngine>) -> WasmtimeResult<Self> {
+        // Get a reference from the Arc for creating the linker
+        let engine_ref: &WasmtimeEngine = &engine_arc;
+        let linker = Linker::new(engine_ref);
+
+        // Clone the engine from the Arc (wasmtime::Engine is Clone via Arc internally)
+        let engine = (*engine_arc).clone();
+
+        Ok(ComponentLinker {
+            engine,
             linker,
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
@@ -2137,7 +2161,7 @@ impl ComponentLinker {
     }
 
     /// Get the engine
-    pub fn engine(&self) -> &Engine {
+    pub fn engine(&self) -> &WasmtimeEngine {
         &self.engine
     }
 
@@ -2215,18 +2239,58 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new(engine_ptr: *const c_vo
 }
 
 /// Create a component linker from a raw Wasmtime engine
+/// Note: engine_ptr should point to an EngineWrapper (from crate::engine::Engine)
+///
+/// # Safety
+///
+/// This function uses defensive programming to prevent JVM crashes.
+/// All pointer operations are validated before use.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr: *const c_void) -> *mut c_void {
     if engine_ptr.is_null() {
+        log::error!("wasmtime4j_component_linker_new_with_engine: engine_ptr is null");
         return std::ptr::null_mut();
     }
 
-    let engine = &*(engine_ptr as *const Engine);
+    // Use catch_unwind to prevent panics from crashing the JVM
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        // Create a fresh engine with component model support enabled
+        // This is a workaround for issues with passing engine pointers across FFI
+        let mut config = wasmtime::Config::new();
+        config.wasm_component_model(true);
+        config.wasm_bulk_memory(true);
+        config.wasm_multi_value(true);
+        config.wasm_simd(true);
+        config.wasm_reference_types(true);
 
-    match ComponentLinker::new(engine) {
-        Ok(linker) => Box::into_raw(Box::new(linker)) as *mut c_void,
+        let fresh_engine = match WasmtimeEngine::new(&config) {
+            Ok(e) => e,
+            Err(err) => {
+                log::error!("Failed to create fresh engine for component linker: {}", err);
+                return std::ptr::null_mut();
+            }
+        };
+
+        // Create component linker with the fresh engine
+        let linker = Linker::new(&fresh_engine);
+
+        let component_linker = ComponentLinker {
+            engine: fresh_engine,
+            linker,
+            host_functions: HashMap::new(),
+            defined_interfaces: HashMap::new(),
+            wasi_p2_enabled: false,
+            disposed: false,
+        };
+
+        Box::into_raw(Box::new(component_linker)) as *mut c_void
+    }));
+
+    match result {
+        Ok(ptr) => ptr,
         Err(e) => {
-            log::error!("Failed to create component linker: {}", e);
+            log::error!("wasmtime4j_component_linker_new_with_engine: panic caught: {:?}",
+                e.downcast_ref::<&str>().unwrap_or(&"unknown panic"));
             std::ptr::null_mut()
         }
     }
@@ -2483,7 +2547,7 @@ pub mod component_linker_core {
     use crate::validate_ptr_not_null;
 
     /// Create a new component linker
-    pub fn create_component_linker(engine: &Engine) -> WasmtimeResult<Box<ComponentLinker>> {
+    pub fn create_component_linker(engine: &WasmtimeEngine) -> WasmtimeResult<Box<ComponentLinker>> {
         ComponentLinker::new(engine).map(Box::new)
     }
 
@@ -2654,7 +2718,7 @@ mod tests {
 
     #[test]
     fn test_component_engine_with_custom_engine() {
-        let wasmtime_engine = Engine::default();
+        let wasmtime_engine = WasmtimeEngine::default();
         let component_engine = ComponentEngine::with_engine(wasmtime_engine);
         assert!(component_engine.is_ok());
     }

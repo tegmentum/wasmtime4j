@@ -39,8 +39,17 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
   private final Map<String, String> environment = new HashMap<>();
   private final List<String> arguments = new ArrayList<>();
   private final Map<String, Path> preopenDirectories = new HashMap<>();
+  private final Map<String, WasiImportResolver> importResolvers = new HashMap<>();
   private String workingDirectory;
   private boolean inheritEnvironment;
+  private Duration executionTimeout;
+  private WasiSecurityPolicy securityPolicy;
+  private boolean validationEnabled;
+  private boolean strictModeEnabled;
+  private WasiVersion wasiVersion = WasiVersion.PREVIEW_1;
+  private boolean asyncOperations;
+  private Integer maxAsyncOperations;
+  private Duration asyncOperationTimeout;
 
   /** Creates a new WASI configuration builder. */
   public PanamaWasiConfigBuilder() {}
@@ -184,12 +193,14 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (timeout == null || timeout.isNegative()) {
       throw new IllegalArgumentException("Timeout must be non-null and non-negative");
     }
-    throw new UnsupportedOperationException("Execution timeout not yet implemented");
+    this.executionTimeout = timeout;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withoutExecutionTimeout() {
-    throw new UnsupportedOperationException("Execution timeout not yet implemented");
+    this.executionTimeout = null;
+    return this;
   }
 
   @Override
@@ -212,12 +223,14 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (policy == null) {
       throw new IllegalArgumentException("Security policy cannot be null");
     }
-    throw new UnsupportedOperationException("Security policies not yet implemented");
+    this.securityPolicy = policy;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withoutSecurityPolicy() {
-    throw new UnsupportedOperationException("Security policies not yet implemented");
+    this.securityPolicy = null;
+    return this;
   }
 
   @Override
@@ -229,7 +242,8 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (resolver == null) {
       throw new IllegalArgumentException("Resolver cannot be null");
     }
-    throw new UnsupportedOperationException("Import resolvers not yet implemented");
+    this.importResolvers.put(interfaceName, resolver);
+    return this;
   }
 
   @Override
@@ -237,7 +251,8 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (resolvers == null) {
       throw new IllegalArgumentException("Resolvers map cannot be null");
     }
-    throw new UnsupportedOperationException("Import resolvers not yet implemented");
+    this.importResolvers.putAll(resolvers);
+    return this;
   }
 
   @Override
@@ -245,22 +260,26 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (interfaceName == null || interfaceName.isEmpty()) {
       throw new IllegalArgumentException("Interface name cannot be null or empty");
     }
-    throw new UnsupportedOperationException("Import resolvers not yet implemented");
+    this.importResolvers.remove(interfaceName);
+    return this;
   }
 
   @Override
   public WasiConfigBuilder clearImportResolvers() {
-    throw new UnsupportedOperationException("Import resolvers not yet implemented");
+    this.importResolvers.clear();
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withValidation(final boolean validate) {
-    throw new UnsupportedOperationException("Validation configuration not yet implemented");
+    this.validationEnabled = validate;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withStrictMode(final boolean strict) {
-    throw new UnsupportedOperationException("Strict mode not yet implemented");
+    this.strictModeEnabled = strict;
+    return this;
   }
 
   @Override
@@ -268,12 +287,14 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (version == null) {
       throw new IllegalArgumentException("WASI version cannot be null");
     }
-    throw new UnsupportedOperationException("WASI version configuration not yet implemented");
+    this.wasiVersion = version;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withAsyncOperations(final boolean asyncOperations) {
-    throw new UnsupportedOperationException("Async operations not yet implemented");
+    this.asyncOperations = asyncOperations;
+    return this;
   }
 
   @Override
@@ -281,12 +302,14 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (maxOperations <= 0) {
       throw new IllegalArgumentException("Max async operations must be positive");
     }
-    throw new UnsupportedOperationException("Async operations not yet implemented");
+    this.maxAsyncOperations = maxOperations;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withoutMaxAsyncOperations() {
-    throw new UnsupportedOperationException("Async operations not yet implemented");
+    this.maxAsyncOperations = null;
+    return this;
   }
 
   @Override
@@ -294,12 +317,14 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
     if (timeout == null || timeout.isNegative()) {
       throw new IllegalArgumentException("Timeout must be non-null and non-negative");
     }
-    throw new UnsupportedOperationException("Async operations not yet implemented");
+    this.asyncOperationTimeout = timeout;
+    return this;
   }
 
   @Override
   public WasiConfigBuilder withoutAsyncOperationTimeout() {
-    throw new UnsupportedOperationException("Async operations not yet implemented");
+    this.asyncOperationTimeout = null;
+    return this;
   }
 
   @Override
@@ -312,6 +337,19 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
   public WasiConfig build() {
     validate();
     return new PanamaWasiConfig(
-        environment, arguments, preopenDirectories, workingDirectory, inheritEnvironment);
+        environment,
+        arguments,
+        preopenDirectories,
+        importResolvers,
+        workingDirectory,
+        inheritEnvironment,
+        executionTimeout,
+        securityPolicy,
+        validationEnabled,
+        strictModeEnabled,
+        wasiVersion,
+        asyncOperations,
+        maxAsyncOperations,
+        asyncOperationTimeout);
   }
 }

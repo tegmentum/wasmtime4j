@@ -66,6 +66,27 @@ final class PanamaComponentInstance implements ComponentInstance {
     this.store = store;
   }
 
+  /**
+   * Creates a new Panama component instance from a linker-based instantiation.
+   *
+   * <p>This constructor is used when instantiating through a ComponentLinker, which creates its own
+   * internal store. The instance ID is derived from the native instance pointer address.
+   *
+   * @param nativeInstancePtr the native instance pointer returned from linker instantiation
+   * @param component the parent component
+   * @param store the store (may be null for linker-based instantiation)
+   */
+  PanamaComponentInstance(
+      final MemorySegment nativeInstancePtr,
+      final PanamaComponentSimple component,
+      final PanamaStore store) {
+    // Use the native instance pointer address as the instance ID
+    this.enhancedEngineHandle = nativeInstancePtr;
+    this.instanceId = nativeInstancePtr.address();
+    this.component = component;
+    this.store = store;
+  }
+
   @Override
   public String getId() {
     return component.getComponentId();

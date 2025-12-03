@@ -23,6 +23,10 @@ import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.adapter.WasmFunctionToFunctionAdapter;
+import ai.tegmentum.wasmtime4j.jni.adapter.WasmGlobalToGlobalAdapter;
+import ai.tegmentum.wasmtime4j.jni.adapter.WasmMemoryToMemoryAdapter;
+import ai.tegmentum.wasmtime4j.jni.adapter.WasmTableToTableAdapter;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -112,8 +116,18 @@ final class JniCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Function name cannot be null");
     }
 
-    // TODO: Implement function export retrieval
-    return Optional.empty();
+    try {
+      final long funcHandle = nativeGetFunction(callerHandle, name);
+      if (funcHandle == 0) {
+        return Optional.empty();
+      }
+      // Module handle is 0 since we're getting the function from a caller context
+      final JniFunction jniFunc = new JniFunction(funcHandle, name, 0L, store);
+      return Optional.of(new WasmFunctionToFunctionAdapter<>(jniFunc));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get function: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -122,9 +136,17 @@ final class JniCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
 
-    // TODO: Implement caller memory access
-    // Native bindings currently return 0 (not yet implemented)
-    return Optional.empty();
+    try {
+      final long memHandle = nativeGetMemory(callerHandle, name);
+      if (memHandle == 0) {
+        return Optional.empty();
+      }
+      final JniMemory jniMemory = new JniMemory(memHandle, store);
+      return Optional.of(new WasmMemoryToMemoryAdapter(jniMemory));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get memory: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -133,8 +155,17 @@ final class JniCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Table name cannot be null");
     }
 
-    // TODO: Implement table export retrieval
-    return Optional.empty();
+    try {
+      final long tableHandle = nativeGetTable(callerHandle, name);
+      if (tableHandle == 0) {
+        return Optional.empty();
+      }
+      final JniTable jniTable = new JniTable(tableHandle, store);
+      return Optional.of(new WasmTableToTableAdapter(jniTable));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get table: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -143,9 +174,17 @@ final class JniCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Global name cannot be null");
     }
 
-    // TODO: Implement caller global access
-    // Native bindings currently return 0 (not yet implemented)
-    return Optional.empty();
+    try {
+      final long globalHandle = nativeGetGlobal(callerHandle, name);
+      if (globalHandle == 0) {
+        return Optional.empty();
+      }
+      final JniGlobal jniGlobal = new JniGlobal(globalHandle, store);
+      return Optional.of(new WasmGlobalToGlobalAdapter(jniGlobal));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get global: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -278,6 +317,24 @@ final class JniCaller<T> implements Caller<T> {
    * @return native global handle, or 0 if not found
    */
   private static native long nativeGetGlobal(long callerHandle, String name);
+
+  /**
+   * Gets a function export by name.
+   *
+   * @param callerHandle the native caller handle
+   * @param name the function name
+   * @return native function handle, or 0 if not found
+   */
+  private static native long nativeGetFunction(long callerHandle, String name);
+
+  /**
+   * Gets a table export by name.
+   *
+   * @param callerHandle the native caller handle
+   * @param name the table name
+   * @return native table handle, or 0 if not found
+   */
+  private static native long nativeGetTable(long callerHandle, String name);
 
   /**
    * Checks if an export exists.

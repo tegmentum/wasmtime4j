@@ -165,6 +165,12 @@ impl Store {
         self.id
     }
 
+    /// Get a reference to the engine used by this store
+    ///
+    /// This is needed for creating FuncTypes in FFI bindings
+    pub(crate) fn engine(&self) -> &Engine {
+        &self.engine
+    }
 
     /// Create store builder for custom configuration
     pub fn builder() -> StoreBuilder {

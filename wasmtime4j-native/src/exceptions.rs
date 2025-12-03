@@ -523,7 +523,7 @@ pub mod jni_bindings {
 
     /// Creates a native exception handler
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_createNativeHandler(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_createNativeHandler(
         mut env: JNIEnv,
         _class: JClass,
         config: JObject,
@@ -541,7 +541,7 @@ pub mod jni_bindings {
 
     /// Creates a native exception tag
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_createNativeExceptionTag(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_createNativeExceptionTag(
         mut env: JNIEnv,
         _class: JClass,
         handler_handle: jlong,
@@ -568,7 +568,7 @@ pub mod jni_bindings {
 
     /// Registers a native exception handler
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_registerNativeExceptionHandler(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_registerNativeExceptionHandler(
         env: JNIEnv,
         _class: JClass,
         handler_handle: jlong,
@@ -581,7 +581,7 @@ pub mod jni_bindings {
 
     /// Captures stack trace for an exception
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_captureStackTrace(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_captureNativeStackTrace(
         mut env: JNIEnv,
         _class: JClass,
         handler_handle: jlong,
@@ -600,7 +600,7 @@ pub mod jni_bindings {
 
     /// Performs native unwinding
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_performNativeUnwinding(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_performNativeUnwinding(
         _env: JNIEnv,
         _class: JClass,
         handler_handle: jlong,
@@ -617,7 +617,7 @@ pub mod jni_bindings {
 
     /// Closes a native exception handler
     #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_experimental_ExceptionHandler_closeNativeHandler(
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_closeNativeHandler(
         _env: JNIEnv,
         _class: JClass,
         handle: jlong,

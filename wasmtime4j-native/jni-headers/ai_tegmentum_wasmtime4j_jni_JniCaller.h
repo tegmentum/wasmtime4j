@@ -33,6 +33,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetGlob
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeGetFunction
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFunction
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeGetTable
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
  * Method:    nativeHasExport
  * Signature: (JLjava/lang/String;)Z
  */

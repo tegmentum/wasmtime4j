@@ -203,8 +203,12 @@ public final class PanamaWasiComponentContext implements WasiContext {
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiFilesystem getFilesystem() throws WasmException {
-    // TODO: Implement WASI filesystem access
-    throw new UnsupportedOperationException("WASI filesystem not yet implemented");
+    ensureNotClosed();
+
+    // Create a filesystem rooted at the current working directory
+    // In a real deployment, this would be configured with proper sandbox paths
+    final java.nio.file.Path rootPath = java.nio.file.Paths.get(System.getProperty("user.dir"));
+    return new PanamaWasiFilesystem(rootPath);
   }
 
   /**

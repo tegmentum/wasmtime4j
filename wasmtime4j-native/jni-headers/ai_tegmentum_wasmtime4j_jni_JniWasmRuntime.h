@@ -479,6 +479,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCr
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateSerializerWithConfig
   (JNIEnv *, jclass, jlong, jboolean, jint);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeCreateNnContext
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateNnContext
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeIsNnAvailable
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsNnAvailable
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

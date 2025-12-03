@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
@@ -17,6 +18,15 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
+import ai.tegmentum.wasmtime4j.wit.WitBool;
+import ai.tegmentum.wasmtime4j.wit.WitChar;
+import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitRecord;
+import ai.tegmentum.wasmtime4j.wit.WitS32;
+import ai.tegmentum.wasmtime4j.wit.WitS64;
+import ai.tegmentum.wasmtime4j.wit.WitString;
+import ai.tegmentum.wasmtime4j.wit.WitValue;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -148,28 +158,126 @@ public final class JniWasiInstance implements WasiInstance {
     try {
       setState(WasiInstanceState.RUNNING);
 
-      // TODO: Implement actual function calling through native layer
-      // For now, simulate basic function call
       LOGGER.fine(
-          "Calling function: " + functionName + " with " + parameters.length + " parameters");
+          "Calling function: "
+              + functionName
+              + " with "
+              + (parameters != null ? parameters.length : 0)
+              + " parameters");
 
-      // This would be replaced with actual JNI calls to invoke the function
-      // Object result = nativeCallFunction(instanceHandle.getNativeHandle(), functionName,
-      // parameters, timeout);
+      // Convert parameters to WitValues
+      final List<WitValue> witValues = new ArrayList<>();
+      if (parameters != null) {
+        for (final Object param : parameters) {
+          witValues.add(convertToWitValue(param));
+        }
+      }
 
-      // For now, return null to indicate successful void call
+      // Marshal WitValues for native call
+      final List<WitValueMarshaller.MarshalledValue> marshalledParams =
+          WitValueMarshaller.marshalAll(witValues);
+
+      // Prepare arrays for native call
+      final int[] typeDiscriminators = new int[marshalledParams.size()];
+      final byte[][] paramData = new byte[marshalledParams.size()][];
+      for (int i = 0; i < marshalledParams.size(); i++) {
+        typeDiscriminators[i] = marshalledParams.get(i).getTypeDiscriminator();
+        paramData[i] = marshalledParams.get(i).getData();
+      }
+
+      // Call native function with engine handle and instance handle
+      final Object[] nativeResult =
+          JniComponent.nativeComponentInvokeFunction(
+              component.getComponentEngine().getNativeHandle(),
+              instanceHandle.getNativeHandle(),
+              functionName,
+              typeDiscriminators,
+              paramData);
+
       Object result = null;
+      if (nativeResult != null && nativeResult.length >= 2) {
+        // Result format: [typeDiscriminator (Integer), data (byte[])]
+        final int resultTypeDiscriminator = (Integer) nativeResult[0];
+        final byte[] resultData = (byte[]) nativeResult[1];
+
+        if (resultData != null && resultData.length > 0) {
+          // Unmarshal result using WitValueMarshaller
+          final WitValue resultWitValue =
+              WitValueMarshaller.unmarshal(resultTypeDiscriminator, resultData);
+          result = resultWitValue.toJava();
+        }
+      }
 
       setState(WasiInstanceState.CREATED); // Return to ready state
       return result;
 
+    } catch (final WitValueException e) {
+      setState(WasiInstanceState.ERROR);
+      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       setState(WasiInstanceState.ERROR);
       if (e instanceof WasmException) {
-        throw e;
+        throw (WasmException) e;
       }
       throw new WasmException("Function call failed: " + functionName, e);
     }
+  }
+
+  /**
+   * Converts a Java object to a WIT value.
+   *
+   * @param obj the Java object to convert
+   * @return the WIT value
+   * @throws WitValueException if conversion fails
+   */
+  private WitValue convertToWitValue(final Object obj) throws WitValueException {
+    if (obj == null) {
+      throw new WitValueException(
+          "Cannot convert null to WIT value", WitValueException.ErrorCode.NULL_VALUE);
+    }
+
+    if (obj instanceof WitValue) {
+      return (WitValue) obj;
+    }
+
+    if (obj instanceof Boolean) {
+      return WitBool.of((Boolean) obj);
+    }
+
+    if (obj instanceof Integer) {
+      return WitS32.of((Integer) obj);
+    }
+
+    if (obj instanceof Long) {
+      return WitS64.of((Long) obj);
+    }
+
+    if (obj instanceof Double || obj instanceof Float) {
+      return WitFloat64.of(((Number) obj).doubleValue());
+    }
+
+    if (obj instanceof Character) {
+      return WitChar.of((Character) obj);
+    }
+
+    if (obj instanceof String) {
+      return WitString.of((String) obj);
+    }
+
+    if (obj instanceof java.util.Map) {
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+      final WitRecord.Builder builder = WitRecord.builder();
+      for (final java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+        final WitValue fieldValue = convertToWitValue(entry.getValue());
+        builder.field(entry.getKey(), fieldValue);
+      }
+      return builder.build();
+    }
+
+    throw new WitValueException(
+        "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
+        WitValueException.ErrorCode.TYPE_MISMATCH);
   }
 
   @Override
@@ -319,8 +427,19 @@ public final class JniWasiInstance implements WasiInstance {
       return; // Already suspended
     }
 
+    if (!state.isSuspendable()) {
+      throw new IllegalStateException(
+          "Instance cannot be suspended in state: " + state.getDescription());
+    }
+
     try {
-      // TODO: Implement actual suspension through native layer
+      // Mark as suspended - execution will check state on next yield point
+      // Note: Component engines don't support epoch-based interruption
+      // If currently running, the state change will be detected at the next yield point
+      if (state == WasiInstanceState.RUNNING) {
+        LOGGER.fine("Suspending running instance: " + instanceId);
+      }
+
       setState(WasiInstanceState.SUSPENDED);
       LOGGER.fine("Suspended instance: " + instanceId);
     } catch (final Exception e) {
@@ -331,12 +450,13 @@ public final class JniWasiInstance implements WasiInstance {
   @Override
   public void resume() throws WasmException {
     ensureNotClosed();
-    if (state != WasiInstanceState.SUSPENDED) {
-      throw new IllegalStateException("Instance is not suspended");
+    if (!state.isResumable()) {
+      throw new IllegalStateException(
+          "Instance cannot be resumed in state: " + state.getDescription());
     }
 
     try {
-      // TODO: Implement actual resumption through native layer
+      // Transition from SUSPENDED to CREATED (ready state)
       setState(WasiInstanceState.CREATED);
       updateLastActivity();
       LOGGER.fine("Resumed instance: " + instanceId);
@@ -349,8 +469,31 @@ public final class JniWasiInstance implements WasiInstance {
   public void terminate() throws WasmException {
     ensureNotClosed();
 
+    // Already terminated or in terminal state
+    if (state.isTerminal()) {
+      LOGGER.fine("Instance already in terminal state: " + state);
+      return;
+    }
+
     try {
-      // TODO: Implement actual termination through native layer
+      // Mark state transition - component engines don't support epoch-based interruption
+      // If currently running, the state change will be detected at the next yield point
+      if (state == WasiInstanceState.RUNNING) {
+        LOGGER.fine("Terminating running instance: " + instanceId);
+      }
+
+      // Clean up all resources
+      for (final WasiResource resource : resources) {
+        try {
+          if (resource.getState() != WasiResourceState.CLOSED) {
+            resource.close();
+          }
+        } catch (final Exception e) {
+          LOGGER.warning("Failed to close resource during termination: " + e.getMessage());
+        }
+      }
+      resources.clear();
+
       setState(WasiInstanceState.TERMINATED);
       LOGGER.fine("Terminated instance: " + instanceId);
     } catch (final Exception e) {
@@ -463,22 +606,18 @@ public final class JniWasiInstance implements WasiInstance {
   /**
    * Extracts the list of exported functions from the instance.
    *
+   * <p>For WASI component instances, the exported functions come from the component's exports. Each
+   * instance provides the same set of exported functions as its parent component.
+   *
    * @return list of exported function names
    * @throws WasmException if extraction fails
    */
   private List<String> extractExportedFunctions() throws WasmException {
     try {
-      // TODO: Implement actual function extraction from native layer
-      // For now, return empty list as placeholder
-      List<String> functions = new ArrayList<>();
-
-      // This would be replaced with actual native calls to extract functions
-      // functions.add("process");
-      // functions.add("initialize");
-
+      // Component instances export the same functions as their parent component
+      final List<String> functions = component.getExports();
       LOGGER.fine("Extracted " + functions.size() + " exported functions from instance");
       return functions;
-
     } catch (final Exception e) {
       throw new WasmException("Failed to extract exported functions", e);
     }

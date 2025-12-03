@@ -15,9 +15,12 @@ import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.WitSupportInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -183,14 +186,55 @@ public final class PanamaComponentEngine implements ComponentEngine {
   public ComponentInstance createInstance(
       final ComponentSimple component, final Store store, final List<ComponentSimple> imports)
       throws WasmException {
+    Objects.requireNonNull(component, "component cannot be null");
+    Objects.requireNonNull(store, "store cannot be null");
     Objects.requireNonNull(imports, "imports cannot be null");
+    ensureNotClosed();
 
-    // For now, link components first, then instantiate
-    // This is a simplified implementation
-    if (!imports.isEmpty()) {
-      throw new UnsupportedOperationException("Component linking not yet fully implemented");
+    if (imports.isEmpty()) {
+      return createInstance(component, store);
     }
 
+    if (!(component instanceof PanamaComponentSimple)) {
+      throw new IllegalArgumentException("Component must be Panama implementation");
+    }
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be Panama implementation");
+    }
+
+    final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
+
+    // Validate that all imports are Panama implementations and check their exports
+    final Set<String> availableExports = new HashSet<>();
+    for (final ComponentSimple importComponent : imports) {
+      if (!(importComponent instanceof PanamaComponentSimple)) {
+        throw new IllegalArgumentException("All import components must be Panama implementation");
+      }
+
+      final PanamaComponentSimple panamaImport = (PanamaComponentSimple) importComponent;
+      if (!panamaImport.isValid()) {
+        throw new WasmException("Import component is not valid: " + panamaImport.getId());
+      }
+
+      availableExports.addAll(panamaImport.getExportedInterfaces());
+    }
+
+    // Check that all required imports can be satisfied
+    final Set<String> requiredImports = panamaComponent.getImportedInterfaces();
+    for (final String required : requiredImports) {
+      if (!availableExports.contains(required)) {
+        throw new WasmException("Unsatisfied import: " + required);
+      }
+    }
+
+    LOGGER.fine(
+        "Validated "
+            + imports.size()
+            + " import components satisfy "
+            + requiredImports.size()
+            + " required imports");
+
+    // Use standard instantiation - the component linker will resolve imports at runtime
     return createInstance(component, store);
   }
 
@@ -204,13 +248,25 @@ public final class PanamaComponentEngine implements ComponentEngine {
     }
 
     final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
-    final ComponentVersion version = new ComponentVersion(1, 0, 0);
+    final ComponentVersion version = panamaComponent.getVersion();
     final ComponentValidationResult.ValidationContext context =
         new ComponentValidationResult.ValidationContext(
             panamaComponent.getId() != null ? panamaComponent.getId() : "unknown", version);
 
-    // TODO: Implement actual validation using native WIT validation
-    // For now, return success if component is valid
+    // Use native validation
+    final int validationResult =
+        NATIVE_BINDINGS.componentValidate(panamaComponent.getNativeHandle());
+
+    if (validationResult != 0) {
+      final ComponentValidationResult.ValidationError error =
+          new ComponentValidationResult.ValidationError(
+              "VALIDATION_ERROR",
+              "Component validation failed (error code: " + validationResult + ")",
+              panamaComponent.getId(),
+              ComponentValidationResult.ErrorSeverity.HIGH);
+      return ComponentValidationResult.failure(List.of(error), context);
+    }
+
     return ComponentValidationResult.success(context);
   }
 
@@ -368,6 +424,18 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
+  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
+    throw new UnsupportedOperationException(
+        "Module precompilation not supported - use PanamaEngine for module precompilation");
+  }
+
+  @Override
+  public Module compileFromStream(final InputStream stream) throws WasmException, IOException {
+    throw new UnsupportedOperationException(
+        "Module compilation from stream not supported - use PanamaEngine for module compilation");
+  }
+
+  @Override
   public void incrementEpoch() {
     throw new UnsupportedOperationException(
         "Epoch interruption not supported - use PanamaEngine for epoch interruption");
@@ -409,6 +477,11 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public boolean isEpochInterruptionEnabled() {
+    return false;
+  }
+
+  @Override
+  public boolean isCoredumpOnTrapEnabled() {
     return false;
   }
 

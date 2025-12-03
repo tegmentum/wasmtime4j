@@ -18,9 +18,13 @@ package ai.tegmentum.wasmtime4j.panama.util;
 
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.RuntimeException;
+import ai.tegmentum.wasmtime4j.exception.TrapException;
+import ai.tegmentum.wasmtime4j.exception.TrapException.TrapType;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
 import java.lang.foreign.MemorySegment;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -90,6 +94,12 @@ public final class PanamaExceptionMapper {
 
     // Map based on message content patterns
     if (message != null) {
+      // Try to detect and map trap exceptions using native introspection
+      final WasmException trapException = tryMapTrapException(message, exception);
+      if (trapException != null) {
+        return trapException;
+      }
+
       final String lowerMessage = message.toLowerCase();
 
       if (lowerMessage.contains("compilation") || lowerMessage.contains("compile")) {
@@ -100,9 +110,7 @@ public final class PanamaExceptionMapper {
         return new ValidationException("Validation error: " + message, exception);
       }
 
-      if (lowerMessage.contains("runtime")
-          || lowerMessage.contains("execution")
-          || lowerMessage.contains("trap")) {
+      if (lowerMessage.contains("runtime") || lowerMessage.contains("execution")) {
         return new RuntimeException("Runtime error: " + message, exception);
       }
 
@@ -117,6 +125,103 @@ public final class PanamaExceptionMapper {
 
     // Default mapping
     return new WasmException("Native runtime error: " + message, exception);
+  }
+
+  /**
+   * Attempts to map an exception to a TrapException using native trap introspection.
+   *
+   * <p>This method uses the native trap introspection APIs to detect if the error message indicates
+   * a WebAssembly trap and extract detailed trap information including trap type, function name,
+   * and instruction offset.
+   *
+   * @param message the error message to analyze
+   * @param cause the underlying exception
+   * @return a TrapException if the message indicates a trap, null otherwise
+   */
+  private static WasmException tryMapTrapException(final String message, final Throwable cause) {
+    if (message == null || message.isEmpty()) {
+      return null;
+    }
+
+    try {
+      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+
+      // Check if this is a trap message
+      if (!bindings.trapIsTrap(message)) {
+        return null;
+      }
+
+      // Extract trap information using native introspection
+      final NativeFunctionBindings.TrapInfo trapInfo = bindings.trapExtractInfo(message);
+      if (trapInfo == null) {
+        return null;
+      }
+
+      // Map native trap code to TrapType enum
+      final TrapType trapType = mapTrapCodeToTrapType(trapInfo.getTrapCode());
+
+      // Extract instruction offset (convert -1 to null)
+      final Integer instructionOffset =
+          trapInfo.getInstructionOffset() >= 0 ? (int) trapInfo.getInstructionOffset() : null;
+
+      // Try to extract function name from backtrace (if present in message)
+      final String functionName = extractFunctionNameFromMessage(message, bindings);
+
+      // Create TrapException with full details
+      return new TrapException(
+          trapType,
+          message,
+          null, // wasmBacktrace - could extract full backtrace if needed
+          functionName,
+          instructionOffset,
+          cause);
+    } catch (Exception e) {
+      logger.log(Level.FINE, "Failed to perform trap introspection: " + e.getMessage(), e);
+      return null;
+    }
+  }
+
+  /**
+   * Maps a native trap code to the corresponding TrapType enum value.
+   *
+   * <p>The native trap codes are designed to match the ordinal values of the TrapType enum.
+   *
+   * @param trapCode the native trap code
+   * @return the corresponding TrapType
+   */
+  private static TrapType mapTrapCodeToTrapType(final int trapCode) {
+    final TrapType[] values = TrapType.values();
+    if (trapCode >= 0 && trapCode < values.length) {
+      return values[trapCode];
+    }
+    return TrapType.UNKNOWN;
+  }
+
+  /**
+   * Attempts to extract a function name from the error message.
+   *
+   * <p>This method looks for backtrace lines in the message and uses native introspection to
+   * extract function names.
+   *
+   * @param message the error message
+   * @param bindings the native function bindings
+   * @return the function name if found, null otherwise
+   */
+  private static String extractFunctionNameFromMessage(
+      final String message, final NativeFunctionBindings bindings) {
+    // Look for backtrace lines containing function information
+    // Format: "   0: 0x... - <module>!<function>"
+    final String[] lines = message.split("\n");
+    for (final String line : lines) {
+      final String trimmed = line.trim();
+      if (trimmed.matches("^\\d+:.*")) {
+        final String funcName = bindings.trapExtractFunctionName(trimmed);
+        if (funcName != null && !funcName.isEmpty()) {
+          return funcName;
+        }
+      }
+    }
+    return null;
   }
 
   /**

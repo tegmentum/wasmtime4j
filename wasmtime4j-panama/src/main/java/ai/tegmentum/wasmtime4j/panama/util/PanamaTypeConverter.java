@@ -16,10 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.panama.util;
 
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.MemoryLayouts;
+import ai.tegmentum.wasmtime4j.panama.PanamaFunctionReference;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -136,13 +138,11 @@ public final class PanamaTypeConverter {
         break;
 
       case EXTERNREF:
-        // For now, externref is stored as NULL - full implementation would handle object references
-        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+        marshalExternref(wasmValue, valueSlot);
         break;
 
       case FUNCREF:
-        // For now, funcref is stored as NULL - full implementation would handle function references
-        MemoryLayouts.WASM_VAL_REF.set(valueSlot, MemorySegment.NULL);
+        marshalFuncref(wasmValue, valueSlot);
         break;
 
       default:
@@ -188,10 +188,8 @@ public final class PanamaTypeConverter {
         validateV128Size(v128Bytes);
         yield WasmValue.v128(v128Bytes);
       }
-      case EXTERNREF -> WasmValue.externref(
-          null); // Simplified - full implementation would handle references
-      case FUNCREF -> WasmValue.funcref(
-          null); // Simplified - full implementation would handle references
+      case EXTERNREF -> unmarshalExternref(valueSlot);
+      case FUNCREF -> unmarshalFuncref(valueSlot);
       default -> throw new PanamaException("Unsupported type for unmarshalling: " + expectedType);
     };
   }
@@ -377,18 +375,161 @@ public final class PanamaTypeConverter {
 
       switch (value.getType()) {
         case FUNCREF:
-          // TODO: Implement proper funcref validation when function references are fully supported
-          LOGGER.fine("Funcref validation (simplified implementation)");
+          validateFuncref(value, i);
           break;
         case EXTERNREF:
-          // TODO: Implement proper externref validation when external references are fully
-          // supported
-          LOGGER.fine("Externref validation (simplified implementation)");
+          validateExternref(value, i);
           break;
         default:
           // Non-reference types don't need special validation here
           break;
       }
+    }
+  }
+
+  /**
+   * Marshals a funcref value to native memory.
+   *
+   * @param wasmValue the WebAssembly funcref value
+   * @param valueSlot the memory segment to write to
+   * @throws PanamaException if marshalling fails
+   */
+  private static void marshalFuncref(final WasmValue wasmValue, final MemorySegment valueSlot)
+      throws PanamaException {
+    final Object funcrefValue = wasmValue.asFuncref();
+
+    if (funcrefValue == null) {
+      // Null funcref - set ref field to 0
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L);
+      LOGGER.fine("Marshalled null funcref");
+    } else if (funcrefValue instanceof FunctionReference) {
+      // FunctionReference interface provides getId()
+      final FunctionReference funcRef = (FunctionReference) funcrefValue;
+      final long funcRefId = funcRef.getId();
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, funcRefId);
+      LOGGER.fine("Marshalled funcref with ID: " + funcRefId);
+    } else {
+      throw new PanamaException(
+          "Unsupported funcref type: "
+              + funcrefValue.getClass().getName()
+              + ". Expected FunctionReference or null.");
+    }
+  }
+
+  /**
+   * Marshals an externref value to native memory.
+   *
+   * @param wasmValue the WebAssembly externref value
+   * @param valueSlot the memory segment to write to
+   * @throws PanamaException if marshalling fails
+   */
+  private static void marshalExternref(final WasmValue wasmValue, final MemorySegment valueSlot)
+      throws PanamaException {
+    final Object externrefValue = wasmValue.asExternref();
+
+    if (externrefValue == null) {
+      // Null externref - set ref field to 0
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L);
+      LOGGER.fine("Marshalled null externref");
+    } else if (externrefValue instanceof Number) {
+      // If it's already a number (ID), use it directly
+      final long refId = ((Number) externrefValue).longValue();
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, refId);
+      LOGGER.fine("Marshalled externref with numeric ID: " + refId);
+    } else {
+      // For arbitrary objects, use the identity hash code as a reference ID
+      // The actual object needs to be tracked separately to prevent GC
+      final long refId = System.identityHashCode(externrefValue);
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, refId);
+      LOGGER.fine("Marshalled externref object with identity hash: " + refId);
+    }
+  }
+
+  /**
+   * Unmarshals a funcref value from native memory.
+   *
+   * @param valueSlot the memory segment containing the value
+   * @return the unmarshalled WasmValue
+   * @throws PanamaException if unmarshalling fails
+   */
+  private static WasmValue unmarshalFuncref(final MemorySegment valueSlot) throws PanamaException {
+    final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+
+    if (refId == 0) {
+      // Null funcref
+      LOGGER.fine("Unmarshalled null funcref");
+      return WasmValue.funcref(null);
+    }
+
+    // Try to look up the function reference in the registry
+    final FunctionReference funcRef = PanamaFunctionReference.getFunctionReferenceById(refId);
+    if (funcRef != null) {
+      LOGGER.fine("Unmarshalled funcref with ID: " + refId);
+      return WasmValue.funcref(funcRef);
+    }
+
+    // If not found in registry, return the raw ID wrapped in a funcref
+    LOGGER.fine("Unmarshalled funcref with unknown ID: " + refId + " (returning raw ID)");
+    return WasmValue.funcref(refId);
+  }
+
+  /**
+   * Unmarshals an externref value from native memory.
+   *
+   * @param valueSlot the memory segment containing the value
+   * @return the unmarshalled WasmValue
+   * @throws PanamaException if unmarshalling fails
+   */
+  private static WasmValue unmarshalExternref(final MemorySegment valueSlot)
+      throws PanamaException {
+    final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+
+    if (refId == 0) {
+      // Null externref
+      LOGGER.fine("Unmarshalled null externref");
+      return WasmValue.externref(null);
+    }
+
+    // Return the ref ID as the externref value
+    // The actual object lookup would need to be done by the caller if needed
+    LOGGER.fine("Unmarshalled externref with ID: " + refId);
+    return WasmValue.externref(refId);
+  }
+
+  /**
+   * Validates a funcref value at the given index.
+   *
+   * @param value the WasmValue to validate
+   * @param index the index in the array
+   * @throws PanamaException if validation fails
+   */
+  private static void validateFuncref(final WasmValue value, final int index)
+      throws PanamaException {
+    final Object funcrefValue = value.asFuncref();
+    if (funcrefValue != null && !(funcrefValue instanceof FunctionReference)) {
+      // Allow null or FunctionReference instances
+      LOGGER.warning(
+          "Funcref at index "
+              + index
+              + " is not a FunctionReference: "
+              + funcrefValue.getClass().getName());
+    }
+  }
+
+  /**
+   * Validates an externref value at the given index.
+   *
+   * @param value the WasmValue to validate
+   * @param index the index in the array
+   * @throws PanamaException if validation fails
+   */
+  private static void validateExternref(final WasmValue value, final int index)
+      throws PanamaException {
+    // Externref can hold any object reference, so minimal validation
+    // Just log for debugging purposes
+    final Object externrefValue = value.asExternref();
+    if (externrefValue != null) {
+      LOGGER.fine("Externref at index " + index + " holds: " + externrefValue.getClass().getName());
     }
   }
 }

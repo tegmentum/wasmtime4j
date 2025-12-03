@@ -26,31 +26,6 @@ public final class PanamaTable implements WasmTable {
   private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama table.
-   *
-   * @param elementType the type of elements this table holds
-   * @param initialSize initial number of elements
-   * @param maxSize maximum number of elements (-1 for unlimited)
-   */
-  public PanamaTable(final WasmValueType elementType, final int initialSize, final int maxSize) {
-    if (elementType == null) {
-      throw new IllegalArgumentException("Element type cannot be null");
-    }
-    if (initialSize < 0) {
-      throw new IllegalArgumentException("Initial size cannot be negative");
-    }
-    this.elementType = elementType;
-    this.arena = Arena.ofShared();
-    this.instance = null;
-    this.store = null;
-
-    // TODO: Create native table via Panama FFI
-    this.nativeTable = MemorySegment.NULL;
-
-    LOGGER.fine("Created Panama table");
-  }
-
-  /**
    * Package-private constructor for wrapping an existing native table pointer.
    *
    * @param nativeTable the native table pointer from Wasmtime
@@ -495,8 +470,39 @@ public final class PanamaTable implements WasmTable {
     }
     ensureNotClosed();
 
-    // Table initialization from element segments is handled by the runtime during instantiation
-    // This is a no-op matching JNI implementation as Wasmtime manages table initialization
+    if (count == 0) {
+      return; // Nothing to do
+    }
+
+    if (instance == null) {
+      throw new IllegalStateException("Cannot init: table not associated with an instance");
+    }
+
+    final PanamaStore actualStore = getActualStore();
+    if (actualStore == null) {
+      throw new IllegalStateException("Store is not available");
+    }
+
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment instancePtr = instance.getNativeInstance();
+
+    if (nativeTable == null || nativeTable.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Table pointer is null");
+    }
+
+    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Instance pointer is null");
+    }
+
+    final int result =
+        NATIVE_BINDINGS.panamaTableInit(
+            nativeTable, storePtr, instancePtr, destIndex, srcIndex, count, elementSegmentIndex);
+
+    if (result != 0) {
+      throw new RuntimeException(
+          "Failed to initialize table from element segment, error code: " + result);
+    }
+
     LOGGER.fine(
         "Initialized table range ["
             + destIndex
@@ -515,9 +521,39 @@ public final class PanamaTable implements WasmTable {
     }
     ensureNotClosed();
 
-    // Element segments are dropped automatically by the runtime
-    // This is a no-op matching JNI implementation as Wasmtime manages element segments internally
+    if (instance == null) {
+      throw new IllegalStateException(
+          "Cannot drop element segment: table not associated with an instance");
+    }
+
+    final MemorySegment instancePtr = instance.getNativeInstance();
+
+    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Instance pointer is null");
+    }
+
+    final int result = NATIVE_BINDINGS.elemDrop(instancePtr, elementSegmentIndex);
+
+    if (result != 0) {
+      throw new RuntimeException("Failed to drop element segment, error code: " + result);
+    }
+
     LOGGER.fine("Dropped element segment: " + elementSegmentIndex);
+  }
+
+  /**
+   * Helper method to get the actual store from either store or instance.
+   *
+   * @return PanamaStore instance
+   */
+  private PanamaStore getActualStore() {
+    if (store != null) {
+      return store;
+    }
+    if (instance != null && instance.getStore() instanceof PanamaStore) {
+      return (PanamaStore) instance.getStore();
+    }
+    return null;
   }
 
   /** Closes the table and releases resources. */

@@ -118,7 +118,7 @@ public class WasiTest {
     wasiCtx.setEnv("ANOTHER_VAR", "another_value");
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -159,7 +159,7 @@ public class WasiTest {
     wasiCtx.setArgv(new String[] {"program", "arg1", "arg2", "arg3"});
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -199,7 +199,7 @@ public class WasiTest {
     wasiCtx.preopenedDir(tempDir, "/testdir");
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -240,7 +240,7 @@ public class WasiTest {
     wasiCtx.preopenedDirReadOnly(readOnlyDir, "/readonly");
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -273,8 +273,9 @@ public class WasiTest {
 
     final Module module = engine.compileWat(wat);
 
+    final WasiContext wasiCtx = WasiContext.create();
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -312,8 +313,9 @@ public class WasiTest {
 
     final Module module = engine.compileWat(wat);
 
+    final WasiContext wasiCtx = WasiContext.create();
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -357,7 +359,7 @@ public class WasiTest {
     wasiCtx.inheritEnv(); // Inherit all host environment variables
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -400,7 +402,7 @@ public class WasiTest {
     wasiCtx.setEnv(envVars);
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -436,7 +438,7 @@ public class WasiTest {
     wasiCtx.setWorkingDirectory("/app");
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
     assertNotNull(instance);
@@ -468,7 +470,7 @@ public class WasiTest {
     wasiCtx.setMaxOpenFiles(10);
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -504,7 +506,7 @@ public class WasiTest {
     wasiCtx.setNetworkEnabled(false);
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     // This might fail during instantiation or during call
     // depending on implementation
@@ -542,7 +544,7 @@ public class WasiTest {
     wasiCtx.inheritStdio();
 
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -572,8 +574,9 @@ public class WasiTest {
 
     final Module module = engine.compileWat(wat);
 
+    final WasiContext wasiCtx = WasiContext.create();
     final Linker linker = Linker.create(engine);
-    linker.enableWasi();
+    WasiLinker.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -595,8 +598,8 @@ public class WasiTest {
             (func $fd_write (param i32 i32 i32 i32) (result i32)))
           (memory (export "memory") 1)
 
-          ;; iov structure at offset 0: ptr=100, len=13
-          (data (i32.const 0) "\\64\\00\\00\\00\\0d\\00\\00\\00")
+          ;; iov structure at offset 0: ptr=100, len=12
+          (data (i32.const 0) "\\64\\00\\00\\00\\0c\\00\\00\\00")
           ;; Message at offset 100
           (data (i32.const 100) "Hello, WASI!")
 
@@ -647,8 +650,8 @@ public class WasiTest {
             (func $fd_write (param i32 i32 i32 i32) (result i32)))
           (memory (export "memory") 1)
 
-          ;; iov structure at offset 0: ptr=100, len=12
-          (data (i32.const 0) "\\64\\00\\00\\00\\0c\\00\\00\\00")
+          ;; iov structure at offset 0: ptr=100, len=11
+          (data (i32.const 0) "\\64\\00\\00\\00\\0b\\00\\00\\00")
           ;; Error message at offset 100
           (data (i32.const 100) "Error: test")
 

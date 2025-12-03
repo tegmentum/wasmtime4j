@@ -157,6 +157,21 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
+  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support module precompilation - use JniEngine instead");
+  }
+
+  @Override
+  public Module compileFromStream(final java.io.InputStream stream)
+      throws WasmException, java.io.IOException {
+    ensureNotClosed();
+    throw new UnsupportedOperationException(
+        "ComponentEngine does not support streaming Module compilation - use JniEngine instead");
+  }
+
+  @Override
   public boolean supportsFeature(final WasmFeature feature) {
     JniValidation.requireNonNull(feature, "feature");
     // Delegate to native engine if available
@@ -202,6 +217,11 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public boolean isEpochInterruptionEnabled() {
+    return false;
+  }
+
+  @Override
+  public boolean isCoredumpOnTrapEnabled() {
     return false;
   }
 

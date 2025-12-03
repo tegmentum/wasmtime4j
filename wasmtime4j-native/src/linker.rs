@@ -503,34 +503,12 @@ impl Linker {
     /// # Errors
     /// Returns WasmtimeError if WASI cannot be enabled
     pub fn enable_wasi(&mut self) -> WasmtimeResult<()> {
-        // Write debug info to a file since stderr may not be captured
-        use std::io::Write;
-        let debug_file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("/tmp/wasmtime4j_debug.log");
-
-        macro_rules! debug_log {
-            ($($arg:tt)*) => {
-                if let Ok(mut f) = debug_file.as_ref() {
-                    let _ = writeln!(f, $($arg)*);
-                    let _ = f.flush();
-                }
-                eprintln!($($arg)*);
-            }
-        }
-
-        debug_log!("[DEBUG] enable_wasi: entering function");
-
         if self.metadata.disposed {
-            debug_log!("[DEBUG] enable_wasi: linker is disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
                 backtrace: None
             });
         }
-
-        debug_log!("[DEBUG] enable_wasi: linker not disposed, acquiring lock");
 
         let mut linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
@@ -538,27 +516,8 @@ impl Linker {
                 backtrace: None
             })?;
 
-        debug_log!("[DEBUG] enable_wasi: lock acquired");
-
         #[cfg(feature = "wasi")]
         {
-            // Verify the linker's engine is valid by checking if we can access it
-            debug_log!("[DEBUG] enable_wasi: verifying linker engine is accessible");
-            let engine = linker.engine();
-            debug_log!("[DEBUG] enable_wasi: engine accessed, address: {:p}", engine);
-
-            // Try to verify the engine is valid by accessing its weak reference count
-            // This might crash if the engine is invalid
-            debug_log!("[DEBUG] enable_wasi: verifying engine is usable");
-
-            // Try to create a simple FuncType to verify type registry works
-            use wasmtime::FuncType;
-            debug_log!("[DEBUG] enable_wasi: creating test FuncType to verify engine");
-            let test_func_type = FuncType::new(engine, [], []);
-            debug_log!("[DEBUG] enable_wasi: test FuncType created successfully, params: {:?}", test_func_type.params().len());
-
-            debug_log!("[DEBUG] enable_wasi: about to call add_to_linker_sync");
-
             // Add WASI Preview 1 imports to the linker
             // The closure extracts the WasiP1Ctx directly from StoreData
             wasmtime_wasi::p1::add_to_linker_sync(&mut *linker, |data: &mut StoreData| {
@@ -572,7 +531,6 @@ impl Linker {
             })?;
 
             self.metadata.wasi_enabled = true;
-            debug_log!("[DEBUG] enable_wasi: WASI added successfully");
             log::debug!("WASI Preview 1 imports successfully added to linker");
         }
 
@@ -1438,6 +1396,270 @@ pub unsafe extern "C" fn wasmtime4j_dependency_graph_destroy(graph_ptr: *mut c_v
 pub unsafe extern "C" fn wasmtime4j_validation_issues_destroy(issues_ptr: *mut c_void) {
     if !issues_ptr.is_null() {
         let _ = Box::from_raw(issues_ptr as *mut Vec<ImportValidationIssue>);
+    }
+}
+
+// ============================================================================
+// InstancePre - Pre-instantiated module for fast repeated instantiation
+// ============================================================================
+
+use std::sync::atomic::{AtomicU64, Ordering};
+use wasmtime::InstancePre as WasmtimeInstancePre;
+
+/// Pre-instantiated module wrapper with statistics
+pub struct InstancePreWrapper {
+    /// The wasmtime InstancePre handle
+    inner: WasmtimeInstancePre<StoreData>,
+    /// Reference to the original module
+    module: crate::module::Module,
+    /// Creation timestamp
+    created_at: Instant,
+    /// Preparation time in nanoseconds
+    preparation_time_ns: u64,
+    /// Number of instances created from this InstancePre
+    instance_count: AtomicU64,
+    /// Total instantiation time in nanoseconds
+    total_instantiation_time_ns: AtomicU64,
+}
+
+impl InstancePreWrapper {
+    /// Creates a new InstancePreWrapper
+    pub fn new(
+        inner: WasmtimeInstancePre<StoreData>,
+        module: crate::module::Module,
+        preparation_time_ns: u64,
+    ) -> Self {
+        Self {
+            inner,
+            module,
+            created_at: Instant::now(),
+            preparation_time_ns,
+            instance_count: AtomicU64::new(0),
+            total_instantiation_time_ns: AtomicU64::new(0),
+        }
+    }
+
+    /// Instantiate with the given store
+    pub fn instantiate(&self, store: &mut crate::store::Store) -> WasmtimeResult<Instance> {
+        let start = Instant::now();
+
+        // Get the wasmtime store and call instantiate
+        let mut store_guard = store.lock_store();
+        let result = self.inner.instantiate(&mut *store_guard);
+        drop(store_guard);
+
+        let duration = start.elapsed().as_nanos() as u64;
+
+        self.instance_count.fetch_add(1, Ordering::Relaxed);
+        self.total_instantiation_time_ns.fetch_add(duration, Ordering::Relaxed);
+
+        match result {
+            Ok(wasmtime_instance) => {
+                // Wrap the wasmtime instance in our Instance type
+                Instance::from_wasmtime_instance(wasmtime_instance, store, &self.module)
+            }
+            Err(e) => Err(WasmtimeError::Instance {
+                message: format!("Failed to instantiate from InstancePre: {}", e),
+            }),
+        }
+    }
+
+    /// Get the module reference
+    pub fn module(&self) -> &crate::module::Module {
+        &self.module
+    }
+
+    /// Check if valid
+    pub fn is_valid(&self) -> bool {
+        true // InstancePre is always valid once created
+    }
+
+    /// Get instance count
+    pub fn instance_count(&self) -> u64 {
+        self.instance_count.load(Ordering::Relaxed)
+    }
+
+    /// Get preparation time in nanoseconds
+    pub fn preparation_time_ns(&self) -> u64 {
+        self.preparation_time_ns
+    }
+
+    /// Get average instantiation time in nanoseconds
+    pub fn average_instantiation_time_ns(&self) -> u64 {
+        let count = self.instance_count.load(Ordering::Relaxed);
+        if count == 0 {
+            0
+        } else {
+            self.total_instantiation_time_ns.load(Ordering::Relaxed) / count
+        }
+    }
+
+    /// Get creation time elapsed in microseconds
+    pub fn created_at_micros(&self) -> u64 {
+        self.created_at.elapsed().as_micros() as u64
+    }
+}
+
+/// Create an InstancePre from a linker and module
+///
+/// # Safety
+///
+/// linker_ptr and module_ptr must be valid pointers
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_linker_instantiate_pre(
+    linker_ptr: *const c_void,
+    module_ptr: *const c_void,
+) -> *mut c_void {
+    if linker_ptr.is_null() || module_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let start = Instant::now();
+
+    match ffi_core::get_linker_ref(linker_ptr) {
+        Ok(linker) => {
+            match crate::module::ffi_core::get_module_ref(module_ptr) {
+                Ok(module) => {
+                    // Get the inner wasmtime linker and module
+                    let inner_linker = linker.inner.lock().unwrap();
+                    let wasmtime_module = module.inner();
+
+                    match inner_linker.instantiate_pre(wasmtime_module) {
+                        Ok(instance_pre) => {
+                            let preparation_time = start.elapsed().as_nanos() as u64;
+                            let wrapper = InstancePreWrapper::new(
+                                instance_pre,
+                                module.clone(),
+                                preparation_time,
+                            );
+                            Box::into_raw(Box::new(wrapper)) as *mut c_void
+                        }
+                        Err(_) => std::ptr::null_mut(),
+                    }
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Instantiate from an InstancePre
+///
+/// # Safety
+///
+/// instance_pre_ptr and store_ptr must be valid pointers
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_instantiate(
+    instance_pre_ptr: *const c_void,
+    store_ptr: *mut c_void,
+) -> *mut c_void {
+    if instance_pre_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    match crate::store::ffi_core::get_store_mut(store_ptr) {
+        Ok(store) => {
+            match wrapper.instantiate(store) {
+                Ok(instance) => Box::into_raw(Box::new(instance)) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Check if InstancePre is valid
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_is_valid(
+    instance_pre_ptr: *const c_void,
+) -> c_int {
+    if instance_pre_ptr.is_null() {
+        return 0;
+    }
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    if wrapper.is_valid() { 1 } else { 0 }
+}
+
+/// Get instance count from InstancePre
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_instance_count(
+    instance_pre_ptr: *const c_void,
+) -> u64 {
+    if instance_pre_ptr.is_null() {
+        return 0;
+    }
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    wrapper.instance_count()
+}
+
+/// Get preparation time in nanoseconds
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_preparation_time_ns(
+    instance_pre_ptr: *const c_void,
+) -> u64 {
+    if instance_pre_ptr.is_null() {
+        return 0;
+    }
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    wrapper.preparation_time_ns()
+}
+
+/// Get average instantiation time in nanoseconds
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_avg_instantiation_time_ns(
+    instance_pre_ptr: *const c_void,
+) -> u64 {
+    if instance_pre_ptr.is_null() {
+        return 0;
+    }
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    wrapper.average_instantiation_time_ns()
+}
+
+/// Get module handle from InstancePre
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+/// Returns a cloned module pointer that must be freed
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_get_module(
+    instance_pre_ptr: *const c_void,
+) -> *mut c_void {
+    if instance_pre_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    Box::into_raw(Box::new(wrapper.module().clone())) as *mut c_void
+}
+
+/// Destroy an InstancePre
+///
+/// # Safety
+///
+/// instance_pre_ptr must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_destroy(instance_pre_ptr: *mut c_void) {
+    if !instance_pre_ptr.is_null() {
+        let _ = Box::from_raw(instance_pre_ptr as *mut InstancePreWrapper);
     }
 }
 

@@ -2,6 +2,8 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents a WebAssembly function instance.
@@ -81,6 +83,58 @@ public interface Function<T> {
    * @return the return value count
    */
   int getReturnCount();
+
+  /**
+   * Calls this function asynchronously with the provided arguments.
+   *
+   * <p>This method returns immediately and executes the function on a background thread. The
+   * returned CompletableFuture will be completed when the function execution finishes.
+   *
+   * @param args the arguments to pass to the function
+   * @return a CompletableFuture that completes with the function results
+   */
+  CompletableFuture<Object[]> callAsync(final Object... args);
+
+  /**
+   * Calls this function asynchronously with a timeout.
+   *
+   * <p>This method returns immediately and executes the function on a background thread. If the
+   * function does not complete within the specified timeout, the CompletableFuture will complete
+   * exceptionally with a TimeoutException.
+   *
+   * @param timeout the maximum time to wait for the function to complete
+   * @param unit the time unit of the timeout argument
+   * @param args the arguments to pass to the function
+   * @return a CompletableFuture that completes with the function results or times out
+   */
+  CompletableFuture<Object[]> callAsync(
+      final long timeout, final TimeUnit unit, final Object... args);
+
+  /**
+   * Calls this function asynchronously and returns a single result.
+   *
+   * <p>This method returns immediately and executes the function on a background thread. The
+   * returned CompletableFuture will be completed with the single return value from the function.
+   *
+   * @param args the arguments to pass to the function
+   * @return a CompletableFuture that completes with the single function result
+   */
+  CompletableFuture<Object> callSingleAsync(final Object... args);
+
+  /**
+   * Calls this function asynchronously with a timeout and returns a single result.
+   *
+   * <p>This method returns immediately and executes the function on a background thread. If the
+   * function does not complete within the specified timeout, the CompletableFuture will complete
+   * exceptionally with a TimeoutException.
+   *
+   * @param timeout the maximum time to wait for the function to complete
+   * @param unit the time unit of the timeout argument
+   * @param args the arguments to pass to the function
+   * @return a CompletableFuture that completes with the single function result or times out
+   */
+  CompletableFuture<Object> callSingleAsync(
+      final long timeout, final TimeUnit unit, final Object... args);
 
   /** Represents the signature of a WebAssembly function. */
   interface FunctionSignature {

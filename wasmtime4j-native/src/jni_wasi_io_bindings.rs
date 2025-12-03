@@ -1109,27 +1109,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     }
 }
 
-// Helper functions for pollable operations
+// Helper functions for pollable operations - delegate to shared wasi_io_helpers
 
-fn block_on_pollable(_context: &WasiPreview2Context, _pollable_id: u64) -> WasmtimeResult<()> {
-    // TODO: Implement actual blocking on pollable
-    Err(WasmtimeError::Wasi {
-        message: "Block on pollable not yet implemented".to_string(),
-    })
+fn block_on_pollable(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<()> {
+    crate::wasi_io_helpers::block_on_pollable(context, pollable_id, None)
 }
 
-fn check_pollable_ready(_context: &WasiPreview2Context, _pollable_id: u64) -> WasmtimeResult<bool> {
-    // TODO: Implement actual pollable ready check
-    Err(WasmtimeError::Wasi {
-        message: "Pollable ready check not yet implemented".to_string(),
-    })
+fn check_pollable_ready(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<bool> {
+    crate::wasi_io_helpers::check_pollable_ready(context, pollable_id)
 }
 
-fn close_pollable(_context: &WasiPreview2Context, _pollable_id: u64) -> WasmtimeResult<()> {
-    // TODO: Implement actual pollable closure
-    Err(WasmtimeError::Wasi {
-        message: "Pollable closure not yet implemented".to_string(),
-    })
+fn close_pollable(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<()> {
+    crate::wasi_io_helpers::close_pollable(context, pollable_id)
 }
 
 #[cfg(test)]

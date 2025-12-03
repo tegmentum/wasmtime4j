@@ -244,6 +244,12 @@ class JniModuleTest {
           public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
             return null;
           }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
+              int initialPages, int maxPages) {
+            return null;
+          }
         };
 
     final IllegalArgumentException exception =

@@ -44,8 +44,17 @@ public final class JniWasiConfig implements WasiConfig {
   private final Map<String, String> environment;
   private final List<String> arguments;
   private final Map<String, Path> preopenDirectories;
+  private final Map<String, WasiImportResolver> importResolvers;
   private final String workingDirectory;
   private final boolean inheritEnvironment;
+  private final Duration executionTimeout;
+  private final WasiSecurityPolicy securityPolicy;
+  private final boolean validationEnabled;
+  private final boolean strictModeEnabled;
+  private final WasiVersion wasiVersion;
+  private final boolean asyncOperations;
+  private final Integer maxAsyncOperations;
+  private final Duration asyncOperationTimeout;
 
   /**
    * Creates a new WASI configuration.
@@ -53,20 +62,47 @@ public final class JniWasiConfig implements WasiConfig {
    * @param environment environment variables
    * @param arguments command line arguments
    * @param preopenDirectories pre-opened directories
+   * @param importResolvers import resolvers for component dependencies
    * @param workingDirectory working directory
    * @param inheritEnvironment whether to inherit host environment
+   * @param executionTimeout execution timeout
+   * @param securityPolicy security policy
+   * @param validationEnabled whether validation is enabled
+   * @param strictModeEnabled whether strict mode is enabled
+   * @param wasiVersion WASI version
+   * @param asyncOperations whether async operations are enabled
+   * @param maxAsyncOperations maximum concurrent async operations
+   * @param asyncOperationTimeout timeout for async operations
    */
   JniWasiConfig(
       final Map<String, String> environment,
       final List<String> arguments,
       final Map<String, Path> preopenDirectories,
+      final Map<String, WasiImportResolver> importResolvers,
       final String workingDirectory,
-      final boolean inheritEnvironment) {
+      final boolean inheritEnvironment,
+      final Duration executionTimeout,
+      final WasiSecurityPolicy securityPolicy,
+      final boolean validationEnabled,
+      final boolean strictModeEnabled,
+      final WasiVersion wasiVersion,
+      final boolean asyncOperations,
+      final Integer maxAsyncOperations,
+      final Duration asyncOperationTimeout) {
     this.environment = Collections.unmodifiableMap(new HashMap<>(environment));
     this.arguments = Collections.unmodifiableList(new ArrayList<>(arguments));
     this.preopenDirectories = Collections.unmodifiableMap(new HashMap<>(preopenDirectories));
+    this.importResolvers = Collections.unmodifiableMap(new HashMap<>(importResolvers));
     this.workingDirectory = workingDirectory;
     this.inheritEnvironment = inheritEnvironment;
+    this.executionTimeout = executionTimeout;
+    this.securityPolicy = securityPolicy;
+    this.validationEnabled = validationEnabled;
+    this.strictModeEnabled = strictModeEnabled;
+    this.wasiVersion = wasiVersion != null ? wasiVersion : WasiVersion.PREVIEW_1;
+    this.asyncOperations = asyncOperations;
+    this.maxAsyncOperations = maxAsyncOperations;
+    this.asyncOperationTimeout = asyncOperationTimeout;
   }
 
   @Override
@@ -96,7 +132,7 @@ public final class JniWasiConfig implements WasiConfig {
 
   @Override
   public Optional<Duration> getExecutionTimeout() {
-    return Optional.empty();
+    return Optional.ofNullable(executionTimeout);
   }
 
   @Override
@@ -106,22 +142,22 @@ public final class JniWasiConfig implements WasiConfig {
 
   @Override
   public Optional<WasiSecurityPolicy> getSecurityPolicy() {
-    return Optional.empty();
+    return Optional.ofNullable(securityPolicy);
   }
 
   @Override
   public Map<String, WasiImportResolver> getImportResolvers() {
-    return Collections.emptyMap();
+    return importResolvers;
   }
 
   @Override
   public boolean isValidationEnabled() {
-    return false;
+    return validationEnabled;
   }
 
   @Override
   public boolean isStrictModeEnabled() {
-    return false;
+    return strictModeEnabled;
   }
 
   @Override
@@ -130,18 +166,62 @@ public final class JniWasiConfig implements WasiConfig {
     builder.withEnvironment(environment);
     builder.withArguments(arguments);
     builder.withPreopenDirectories(preopenDirectories);
+    builder.withImportResolvers(importResolvers);
     if (workingDirectory != null) {
       builder.withWorkingDirectory(workingDirectory);
     }
     if (inheritEnvironment) {
       builder.inheritEnvironment();
     }
+    if (executionTimeout != null) {
+      builder.withExecutionTimeout(executionTimeout);
+    }
+    if (securityPolicy != null) {
+      builder.withSecurityPolicy(securityPolicy);
+    }
+    builder.withValidation(validationEnabled);
+    builder.withStrictMode(strictModeEnabled);
+    builder.withWasiVersion(wasiVersion);
+    builder.withAsyncOperations(asyncOperations);
+    if (maxAsyncOperations != null) {
+      builder.withMaxAsyncOperations(maxAsyncOperations);
+    }
+    if (asyncOperationTimeout != null) {
+      builder.withAsyncOperationTimeout(asyncOperationTimeout);
+    }
     return builder;
   }
 
   @Override
   public WasiVersion getWasiVersion() {
-    return WasiVersion.PREVIEW_1;
+    return wasiVersion;
+  }
+
+  /**
+   * Returns whether async operations are enabled.
+   *
+   * @return true if async operations are enabled
+   */
+  public boolean isAsyncOperationsEnabled() {
+    return asyncOperations;
+  }
+
+  /**
+   * Returns the maximum number of concurrent async operations.
+   *
+   * @return the max async operations, or empty if not set
+   */
+  public Optional<Integer> getMaxAsyncOperations() {
+    return Optional.ofNullable(maxAsyncOperations);
+  }
+
+  /**
+   * Returns the timeout for async operations.
+   *
+   * @return the async operation timeout, or empty if not set
+   */
+  public Optional<Duration> getAsyncOperationTimeout() {
+    return Optional.ofNullable(asyncOperationTimeout);
   }
 
   /**

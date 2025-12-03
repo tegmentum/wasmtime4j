@@ -203,14 +203,25 @@ public final class PanamaComponentImpl implements Component {
     ensureValid();
 
     try {
-      // Create a basic WIT interface definition based on component metadata
-      // In a full implementation, this would parse actual WIT definitions from the component
+      // Build WIT text from exports and imports
+      final StringBuilder witBuilder = new StringBuilder();
+      witBuilder.append("interface component-interface-").append(componentId).append(" {\n");
+
+      for (final String export : getExportedInterfaces()) {
+        witBuilder.append("  export ").append(export).append(";\n");
+      }
+
+      for (final String imp : getImportedInterfaces()) {
+        witBuilder.append("  import ").append(imp).append(";\n");
+      }
+
+      witBuilder.append("}\n");
+
       return new PanamaWitInterfaceDefinition(
           "component-interface-" + componentId,
           "1.0.0",
           "ai.tegmentum.wasmtime4j",
-          getExportedInterfaces(),
-          getImportedInterfaces());
+          witBuilder.toString());
     } catch (final Exception e) {
       throw new WasmException("Failed to get WIT interface", e);
     }

@@ -194,7 +194,7 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGet
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniDebugger
  * Method:    nativeEvaluateExpression
- * Signature: (JJLjava/lang/String;)Lai/tegmentum/wasmtime4j/jni/JniDebugger/VariableValue;
+ * Signature: (JJLjava/lang/String;)Lai/tegmentum/wasmtime4j/jni/debug/JniVariableValue;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression
   (JNIEnv *, jclass, jlong, jlong, jstring);

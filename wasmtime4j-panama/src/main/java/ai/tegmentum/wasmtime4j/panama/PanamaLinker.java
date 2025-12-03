@@ -501,6 +501,33 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.InstancePre instantiatePre(final Module module)
+      throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
+    }
+
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    // Call native function to create InstancePre
+    final MemorySegment instancePrePtr =
+        NATIVE_BINDINGS.linkerInstantiatePre(nativeLinker, panamaModule.getNativeModule());
+
+    if (instancePrePtr == null || instancePrePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to create InstancePre for module");
+    }
+
+    LOGGER.fine("Created InstancePre for module");
+
+    return new PanamaInstancePre(instancePrePtr, module, engine);
+  }
+
+  @Override
   public void enableWasi() throws WasmException {
     ensureNotClosed();
 

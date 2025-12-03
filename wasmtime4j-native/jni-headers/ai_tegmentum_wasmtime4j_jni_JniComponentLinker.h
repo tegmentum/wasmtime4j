@@ -23,6 +23,30 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDestroyComponentLinker
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeDefineHostFunction
+ * Signature: (JLjava/lang/String;J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineHostFunction
+  (JNIEnv *, jobject, jlong, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeDefineResource
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineResource
+  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeInstantiateWithLinker
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeInstantiateWithLinker
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

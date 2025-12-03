@@ -42,6 +42,7 @@
 //! - 19 = u8
 //! - 20 = u16
 //! - 21 = float32
+//! - 22 = resource (own or borrow handle)
 //!
 //! # Binary Format (little-endian)
 //!
@@ -62,7 +63,62 @@
 //! - tuple → 4 bytes element count + (discriminator + data) for each element
 
 use crate::error::WasmtimeError;
-use wasmtime::component::Val;
+use std::collections::HashMap;
+use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
+use wasmtime::component::{ResourceAny, Val};
+
+/// Global resource registry for FFI marshalling.
+///
+/// Since ResourceAny is an opaque handle that cannot be serialized,
+/// we store resources in this registry and pass handle IDs across FFI boundaries.
+static RESOURCE_REGISTRY: Mutex<Option<ResourceRegistry>> = Mutex::new(None);
+static RESOURCE_HANDLE_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+/// Registry to map handle IDs to ResourceAny values.
+struct ResourceRegistry {
+    resources: HashMap<u64, ResourceAny>,
+}
+
+impl ResourceRegistry {
+    fn new() -> Self {
+        Self {
+            resources: HashMap::new(),
+        }
+    }
+
+    fn store(&mut self, resource: ResourceAny) -> u64 {
+        let handle_id = RESOURCE_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst);
+        self.resources.insert(handle_id, resource);
+        handle_id
+    }
+
+    fn get(&self, handle_id: u64) -> Option<&ResourceAny> {
+        self.resources.get(&handle_id)
+    }
+
+    fn remove(&mut self, handle_id: u64) -> Option<ResourceAny> {
+        self.resources.remove(&handle_id)
+    }
+}
+
+/// Store a ResourceAny in the registry and return a handle ID.
+pub fn store_resource(resource: ResourceAny) -> u64 {
+    let mut guard = RESOURCE_REGISTRY.lock().unwrap();
+    let registry = guard.get_or_insert_with(ResourceRegistry::new);
+    registry.store(resource)
+}
+
+/// Retrieve a ResourceAny from the registry by handle ID (does not remove it).
+pub fn get_resource(handle_id: u64) -> Option<ResourceAny> {
+    let guard = RESOURCE_REGISTRY.lock().unwrap();
+    guard.as_ref().and_then(|r| r.get(handle_id).cloned())
+}
+
+/// Remove and return a ResourceAny from the registry by handle ID.
+pub fn take_resource(handle_id: u64) -> Option<ResourceAny> {
+    let mut guard = RESOURCE_REGISTRY.lock().unwrap();
+    guard.as_mut().and_then(|r| r.remove(handle_id))
+}
 
 /// Deserializes a byte array to a Wasmtime component Val.
 ///
@@ -104,6 +160,7 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         19 => deserialize_u8(data),
         20 => deserialize_u16(data),
         21 => deserialize_float32(data),
+        22 => deserialize_resource(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -146,6 +203,7 @@ pub fn serialize_from_val(val: &Val) -> Result<(i32, Vec<u8>), WasmtimeError> {
         Val::U8(u) => Ok((19, serialize_u8(*u))),
         Val::U16(u) => Ok((20, serialize_u16(*u))),
         Val::Float32(f) => Ok((21, serialize_float32(*f))),
+        Val::Resource(resource) => Ok((22, serialize_resource(resource)?)),
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported Val type for serialization: {:?}", val),
             backtrace: None,
@@ -309,6 +367,30 @@ fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::Float32(value))
 }
 
+/// Deserialize a resource handle from binary format.
+///
+/// # Format
+/// - 8 bytes: handle ID (u64, little-endian)
+///
+/// The handle ID is used to look up the actual ResourceAny in the registry.
+fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
+    if data.len() != 8 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid resource data length: expected 8, got {}", data.len()),
+        });
+    }
+    let handle_id = u64::from_le_bytes([
+        data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+    ]);
+
+    // Retrieve the resource from the registry
+    let resource = take_resource(handle_id).ok_or_else(|| WasmtimeError::InvalidParameter {
+        message: format!("Resource handle {} not found in registry", handle_id),
+    })?;
+
+    Ok(Val::Resource(resource))
+}
+
 // Serialization functions
 
 fn serialize_bool(value: bool) -> Vec<u8> {
@@ -367,6 +449,30 @@ fn serialize_u16(value: u16) -> Vec<u8> {
 
 fn serialize_float32(value: f32) -> Vec<u8> {
     value.to_le_bytes().to_vec()
+}
+
+/// Serialize a resource to binary format.
+///
+/// # Format
+/// - 8 bytes: handle ID (u64, little-endian)
+///
+/// The ResourceAny is stored in the registry and the handle ID is returned.
+fn serialize_resource(resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError> {
+    // ResourceAny doesn't implement Clone, so we need to handle ownership carefully.
+    // For serialization, we cannot consume the resource since we only have a reference.
+    // Instead, we need a different approach - store the resource's representation.
+    //
+    // However, ResourceAny is opaque and doesn't provide a way to extract its internal state.
+    // The only safe approach is to use the handle-based pattern where we clone if possible.
+    //
+    // Since wasmtime's ResourceAny doesn't implement Clone in a straightforward way,
+    // we'll need to work with the resource handle system differently.
+    //
+    // For now, return an error indicating that resources must be passed by handle ID directly.
+    Err(WasmtimeError::Runtime {
+        message: "Cannot serialize ResourceAny directly - use store_resource() to get a handle ID and pass that instead".to_string(),
+        backtrace: None,
+    })
 }
 
 // C-ABI exports for Java FFI
@@ -508,7 +614,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
     type_discriminator: c_int,
 ) -> c_int {
     match type_discriminator {
-        1..=16 => 1,
+        1..=22 => 1,
         _ => 0,
     }
 }

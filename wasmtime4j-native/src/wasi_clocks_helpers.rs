@@ -49,12 +49,21 @@ pub fn monotonic_resolution(_context: &WasiPreview2Context) -> WasmtimeResult<u6
 /// Returns a pollable ID that can be used with the poll interface.
 pub fn monotonic_subscribe_instant(
     context: &WasiPreview2Context,
-    _when: u64,
+    when: u64,
 ) -> WasmtimeResult<u64> {
-    // MVP: Create a dummy pollable
-    // TODO: Replace with actual Wasmtime timer subscription
-    let pollable_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u64;
-    Ok(pollable_id)
+    // Generate a unique pollable ID
+    let pollable_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+
+    // Create a timer pollable that becomes ready at the target instant
+    let pollable = crate::wasi_preview2::WasiPollable::new_timer_instant(pollable_id, when);
+
+    // Register the pollable
+    let mut pollables = context.pollables.write().unwrap();
+    pollables.insert(pollable_id, pollable);
+
+    Ok(pollable_id as u64)
 }
 
 /// Subscribe to monotonic clock for a duration
@@ -63,12 +72,21 @@ pub fn monotonic_subscribe_instant(
 /// Returns a pollable ID that can be used with the poll interface.
 pub fn monotonic_subscribe_duration(
     context: &WasiPreview2Context,
-    _duration: u64,
+    duration: u64,
 ) -> WasmtimeResult<u64> {
-    // MVP: Create a dummy pollable
-    // TODO: Replace with actual Wasmtime timer subscription
-    let pollable_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u64;
-    Ok(pollable_id)
+    // Generate a unique pollable ID
+    let pollable_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+
+    // Create a timer pollable that becomes ready after the duration
+    let pollable = crate::wasi_preview2::WasiPollable::new_timer_duration(pollable_id, duration);
+
+    // Register the pollable
+    let mut pollables = context.pollables.write().unwrap();
+    pollables.insert(pollable_id, pollable);
+
+    Ok(pollable_id as u64)
 }
 
 /// Get the current wall clock time

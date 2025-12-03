@@ -17,6 +17,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
@@ -33,6 +35,18 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiTypeMetadata;
+import ai.tegmentum.wasmtime4j.wit.WitBool;
+import ai.tegmentum.wasmtime4j.wit.WitChar;
+import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitRecord;
+import ai.tegmentum.wasmtime4j.wit.WitS32;
+import ai.tegmentum.wasmtime4j.wit.WitS64;
+import ai.tegmentum.wasmtime4j.wit.WitString;
+import ai.tegmentum.wasmtime4j.wit.WitValue;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,6 +87,8 @@ import java.util.logging.Logger;
 public final class PanamaWasiInstance implements WasiInstance {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiInstance.class.getName());
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
   private static final AtomicLong NEXT_INSTANCE_ID = new AtomicLong(1);
 
@@ -168,32 +184,191 @@ public final class PanamaWasiInstance implements WasiInstance {
 
     updateLastActivity();
 
-    try {
+    try (Arena arena = Arena.ofConfined()) {
       setState(WasiInstanceState.RUNNING);
 
-      // TODO: Implement actual function calling through Panama FFI layer
-      // For now, simulate basic function call
       LOGGER.fine(
           "Calling function: " + functionName + " with " + parameters.length + " parameters");
 
-      // This would be replaced with actual Panama FFI calls to invoke the function
-      // using arena-based memory management for parameter marshaling
-      // Object result = nativeCallFunctionViaFFI(instanceHandle.getResource(), functionName,
-      // parameters, timeout);
+      // Allocate C string for function name
+      final MemorySegment funcNameSegment = arena.allocateFrom(functionName);
 
-      // For now, return null to indicate successful void call
-      Object result = null;
+      // Marshal parameters
+      final MemorySegment paramsPtr;
+      final int paramsCount;
 
-      setState(WasiInstanceState.CREATED); // Return to ready state
-      return result;
+      if (parameters != null && parameters.length > 0) {
+        // Convert arguments to WIT values and marshal
+        final List<MarshalledValue> marshalledParams = new ArrayList<>(parameters.length);
 
+        for (final Object param : parameters) {
+          final WitValue witValue = convertToWitValue(param);
+          final MarshalledValue marshalled = PanamaWitValueMarshaller.marshal(witValue, arena);
+          marshalledParams.add(marshalled);
+        }
+
+        // Allocate WitValueFFI array
+        final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
+        paramsPtr = arena.allocate(ffiStructSize * marshalledParams.size());
+
+        // Fill WitValueFFI structures
+        for (int i = 0; i < marshalledParams.size(); i++) {
+          final MarshalledValue marshalled = marshalledParams.get(i);
+          final long offset = (long) i * ffiStructSize;
+
+          // WitValueFFI { type_discriminator: i32, data_length: i32, data_ptr: *const u8 }
+          paramsPtr.set(ValueLayout.JAVA_INT, offset, marshalled.getTypeDiscriminator());
+          paramsPtr.set(ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
+
+          // Allocate and copy data
+          final MemorySegment dataSegment =
+              arena.allocateFrom(ValueLayout.JAVA_BYTE, marshalled.getData());
+          paramsPtr.set(ValueLayout.ADDRESS, offset + 8, dataSegment);
+        }
+
+        paramsCount = marshalledParams.size();
+      } else {
+        paramsPtr = MemorySegment.NULL;
+        paramsCount = 0;
+      }
+
+      // Allocate output parameters
+      final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
+
+      // Call native component invoke
+      final int errorCode =
+          NATIVE_BINDINGS.componentInvoke(
+              instanceHandle.getResource(),
+              funcNameSegment,
+              paramsPtr,
+              paramsCount,
+              resultsOut,
+              resultsCountOut);
+
+      if (errorCode != 0) {
+        setState(WasiInstanceState.ERROR);
+        throw new WasmException(
+            "Failed to invoke function '" + functionName + "' (error code: " + errorCode + ")");
+      }
+
+      // Unmarshal results
+      final int resultCount = resultsCountOut.get(ValueLayout.JAVA_INT, 0);
+
+      if (resultCount == 0) {
+        setState(WasiInstanceState.CREATED);
+        return null;
+      }
+
+      final MemorySegment resultsArrayPtr = resultsOut.get(ValueLayout.ADDRESS, 0);
+
+      if (resultsArrayPtr == null || resultsArrayPtr.equals(MemorySegment.NULL)) {
+        setState(WasiInstanceState.CREATED);
+        return null;
+      }
+
+      // Read WitValueFFI results
+      final int ffiStructSize = 16;
+      final MemorySegment resultsArrayWithSize =
+          resultsArrayPtr.reinterpret(ffiStructSize * resultCount);
+      final List<Object> results = new ArrayList<>(resultCount);
+
+      for (int i = 0; i < resultCount; i++) {
+        final long offset = (long) i * ffiStructSize;
+
+        final int typeDiscriminator = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset);
+        final int dataLength = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset + 4);
+        final MemorySegment dataPtr = resultsArrayWithSize.get(ValueLayout.ADDRESS, offset + 8);
+
+        // Reinterpret pointer with correct size
+        final MemorySegment dataPtrWithSize = dataPtr.reinterpret(dataLength);
+
+        // Copy data from native memory
+        final byte[] data = new byte[dataLength];
+        MemorySegment.copy(dataPtrWithSize, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
+
+        // Unmarshal using PanamaWitValueMarshaller
+        final WitValue witValue =
+            PanamaWitValueMarshaller.unmarshal(typeDiscriminator, data, arena);
+        results.add(witValue.toJava());
+      }
+
+      setState(WasiInstanceState.CREATED);
+
+      // Return single result or list based on count
+      if (resultCount == 1) {
+        return results.get(0);
+      } else {
+        return results;
+      }
+
+    } catch (final WitValueException e) {
+      setState(WasiInstanceState.ERROR);
+      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       setState(WasiInstanceState.ERROR);
       if (e instanceof WasmException) {
-        throw e;
+        throw (WasmException) e;
       }
       throw new WasmException("Function call failed: " + functionName, e);
     }
+  }
+
+  /**
+   * Converts a Java object to a WIT value.
+   *
+   * @param obj the Java object to convert
+   * @return the WIT value
+   * @throws WitValueException if conversion fails
+   */
+  private static WitValue convertToWitValue(final Object obj) throws WitValueException {
+    if (obj == null) {
+      throw new WitValueException(
+          "Cannot convert null to WIT value", WitValueException.ErrorCode.NULL_VALUE);
+    }
+
+    if (obj instanceof WitValue) {
+      return (WitValue) obj;
+    }
+
+    if (obj instanceof Boolean) {
+      return WitBool.of((Boolean) obj);
+    }
+
+    if (obj instanceof Integer) {
+      return WitS32.of((Integer) obj);
+    }
+
+    if (obj instanceof Long) {
+      return WitS64.of((Long) obj);
+    }
+
+    if (obj instanceof Double || obj instanceof Float) {
+      return WitFloat64.of(((Number) obj).doubleValue());
+    }
+
+    if (obj instanceof Character) {
+      return WitChar.of((Character) obj);
+    }
+
+    if (obj instanceof String) {
+      return WitString.of((String) obj);
+    }
+
+    if (obj instanceof java.util.Map) {
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+      final WitRecord.Builder builder = WitRecord.builder();
+      for (final java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+        final WitValue fieldValue = convertToWitValue(entry.getValue());
+        builder.field(entry.getKey(), fieldValue);
+      }
+      return builder.build();
+    }
+
+    throw new WitValueException(
+        "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
+        WitValueException.ErrorCode.TYPE_MISMATCH);
   }
 
   @Override
@@ -500,14 +675,50 @@ public final class PanamaWasiInstance implements WasiInstance {
    * @throws WasmException if extraction fails
    */
   private List<String> extractExportedFunctions() throws WasmException {
-    try {
-      // TODO: Implement actual function extraction from Panama FFI layer
-      // For now, return empty list as placeholder
-      List<String> functions = new ArrayList<>();
+    try (Arena arena = Arena.ofConfined()) {
+      // Allocate output parameters
+      final MemorySegment functionsOut = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment countOut = arena.allocate(ValueLayout.JAVA_INT);
 
-      // This would be replaced with actual Panama FFI calls to extract functions
-      // functions.add("process");
-      // functions.add("initialize");
+      // Call native function to get exported functions
+      final int errorCode =
+          NATIVE_BINDINGS.componentGetExportedFunctions(
+              instanceHandle.getResource(), functionsOut, countOut);
+
+      if (errorCode != 0) {
+        LOGGER.warning("Failed to get exported functions (error code: " + errorCode + ")");
+        return new ArrayList<>();
+      }
+
+      // Read the count
+      final int count = countOut.get(ValueLayout.JAVA_INT, 0);
+
+      if (count == 0) {
+        return new ArrayList<>();
+      }
+
+      // Read the array of string pointers
+      final MemorySegment stringsPtr = functionsOut.get(ValueLayout.ADDRESS, 0);
+
+      if (stringsPtr == null || stringsPtr.equals(MemorySegment.NULL)) {
+        return new ArrayList<>();
+      }
+
+      // Reinterpret with proper size for array of pointers
+      final MemorySegment stringsPtrWithSize =
+          stringsPtr.reinterpret(ValueLayout.ADDRESS.byteSize() * count);
+
+      // Extract function names
+      final List<String> functions = new ArrayList<>(count);
+      for (int i = 0; i < count; i++) {
+        final MemorySegment strPtr = stringsPtrWithSize.getAtIndex(ValueLayout.ADDRESS, i);
+        if (strPtr != null && !strPtr.equals(MemorySegment.NULL)) {
+          functions.add(strPtr.reinterpret(Long.MAX_VALUE).getString(0));
+        }
+      }
+
+      // Free the string array
+      NATIVE_BINDINGS.componentFreeStringArray(stringsPtr, count);
 
       LOGGER.fine("Extracted " + functions.size() + " exported functions from instance");
       return functions;

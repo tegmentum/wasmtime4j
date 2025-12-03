@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.wit;
 
 import ai.tegmentum.wasmtime4j.WitType;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -180,19 +179,21 @@ public final class WitVariant extends WitValue {
    * @param variantType the variant type
    * @return a map of case names to optional payload types
    */
-  @SuppressWarnings("unchecked")
   private static Map<String, Optional<WitType>> extractCases(final WitType variantType) {
-    // Get cases from variant type kind
-    // This is a simplified extraction - in a full implementation,
-    // WitType would provide a getCases() method
-    if (variantType.getKind() == null || !"VARIANT".equals(variantType.getKind().toString())) {
+    if (variantType.getKind() == null) {
       throw new IllegalArgumentException("Type must be a variant type");
     }
 
-    // For now, return an empty map as a placeholder
-    // In the full implementation, this would extract from WitType.getKind().getCases()
-    // This will be enhanced when WitTypeKind is fully implemented
-    return new LinkedHashMap<>();
+    // Get variant cases from the type kind
+    final Map<String, Optional<WitType>> cases = variantType.getKind().getVariantCases();
+
+    // If cases is empty and this is supposedly a variant type, verify it's actually a variant
+    if (cases.isEmpty()
+        && variantType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.VARIANT) {
+      throw new IllegalArgumentException("Type must be a variant type");
+    }
+
+    return cases;
   }
 
   @Override

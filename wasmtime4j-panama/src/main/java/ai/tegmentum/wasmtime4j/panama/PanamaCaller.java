@@ -23,6 +23,11 @@ import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.adapter.WasmGlobalToGlobalAdapter;
+import ai.tegmentum.wasmtime4j.panama.adapter.WasmMemoryToMemoryAdapter;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,7 +46,9 @@ final class PanamaCaller<T> implements Caller<T> {
   private static final Logger LOGGER = Logger.getLogger(PanamaCaller.class.getName());
 
   private final long callerHandle;
+  private final MemorySegment callerPtr;
   private final PanamaStore store;
+  private final NativeFunctionBindings bindings;
 
   /**
    * Creates a Panama caller context wrapper.
@@ -58,7 +65,9 @@ final class PanamaCaller<T> implements Caller<T> {
     }
 
     this.callerHandle = callerHandle;
+    this.callerPtr = MemorySegment.ofAddress(callerHandle);
     this.store = store;
+    this.bindings = NativeFunctionBindings.getInstance();
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine("Created PanamaCaller with handle: 0x" + Long.toHexString(callerHandle));
@@ -99,9 +108,23 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
 
-    // TODO: Implement caller memory access
-    // Native bindings currently return 0 (not yet implemented)
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment memoryOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result = bindings.callerGetMemory(callerPtr, nameSegment, memoryOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment memoryHandle = memoryOut.get(ValueLayout.ADDRESS, 0);
+      if (memoryHandle.equals(MemorySegment.NULL) || memoryHandle.address() == 0) {
+        return Optional.empty();
+      }
+      final PanamaMemory panamaMemory = new PanamaMemory(memoryHandle, store);
+      return Optional.of(new WasmMemoryToMemoryAdapter(panamaMemory));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get memory: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -110,8 +133,24 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Table name cannot be null");
     }
 
-    // TODO: Implement table export retrieval
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment tableOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result = bindings.callerGetTable(callerPtr, nameSegment, tableOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment tableHandle = tableOut.get(ValueLayout.ADDRESS, 0);
+      if (tableHandle.equals(MemorySegment.NULL) || tableHandle.address() == 0) {
+        return Optional.empty();
+      }
+      // PanamaTable requires element type which we don't have - return empty for now
+      // A full implementation would need to query the table type from the native layer
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get table: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -120,9 +159,23 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Global name cannot be null");
     }
 
-    // TODO: Implement caller global access
-    // Native bindings currently return 0 (not yet implemented)
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment globalOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result = bindings.callerGetGlobal(callerPtr, nameSegment, globalOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment globalHandle = globalOut.get(ValueLayout.ADDRESS, 0);
+      if (globalHandle.equals(MemorySegment.NULL) || globalHandle.address() == 0) {
+        return Optional.empty();
+      }
+      final PanamaGlobal panamaGlobal = new PanamaGlobal(globalHandle, store);
+      return Optional.of(new WasmGlobalToGlobalAdapter(panamaGlobal));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get global: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -131,20 +184,46 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Export name cannot be null");
     }
 
-    // TODO: Implement export checking
-    return false;
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final int result = bindings.callerHasExport(callerPtr, nameSegment);
+      return result == 1;
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to check export: " + name, e);
+      return false;
+    }
   }
 
   @Override
   public Optional<Long> fuelConsumed() {
-    // TODO: Implement fuel consumption tracking
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment fuelOut = arena.allocate(ValueLayout.JAVA_LONG);
+      final int result = bindings.callerGetFuel(callerPtr, fuelOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final long fuel = fuelOut.get(ValueLayout.JAVA_LONG, 0);
+      return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.FINE, "Fuel consumption not available", e);
+      return Optional.empty();
+    }
   }
 
   @Override
   public Optional<Long> fuelRemaining() {
-    // TODO: Implement fuel remaining tracking
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment fuelOut = arena.allocate(ValueLayout.JAVA_LONG);
+      final int result = bindings.callerGetFuelRemaining(callerPtr, fuelOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final long fuel = fuelOut.get(ValueLayout.JAVA_LONG, 0);
+      return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.FINE, "Fuel remaining not available", e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -153,26 +232,49 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Fuel amount cannot be negative");
     }
 
-    // TODO: Implement fuel addition
-    throw new WasmException("Fuel operations not yet implemented for Panama");
+    try {
+      final int result = bindings.callerAddFuel(callerPtr, fuel);
+      if (result != 0) {
+        throw new WasmException("Failed to add fuel (error code: " + result + ")");
+      }
+    } catch (WasmException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new WasmException("Failed to add fuel: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public boolean hasEpochDeadline() {
-    // TODO: Implement epoch deadline checking
-    return false;
+    try {
+      final int result = bindings.callerHasEpochDeadline(callerPtr);
+      return result == 1;
+    } catch (Exception e) {
+      LOGGER.log(Level.FINE, "Failed to check epoch deadline", e);
+      return false;
+    }
   }
 
   @Override
   public Optional<Long> epochDeadline() {
-    // TODO: Implement epoch deadline retrieval
+    // Note: Native bindings don't have a separate get epoch deadline function
+    // The hasEpochDeadline check is available but not the actual value
+    // Returning empty until the native layer supports this
     return Optional.empty();
   }
 
   @Override
   public void setEpochDeadline(final long deadline) throws WasmException {
-    // TODO: Implement epoch deadline setting
-    throw new WasmException("Epoch operations not yet implemented for Panama");
+    try {
+      final int result = bindings.callerSetEpochDeadline(callerPtr, deadline);
+      if (result != 0) {
+        throw new WasmException("Failed to set epoch deadline (error code: " + result + ")");
+      }
+    } catch (WasmException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
+    }
   }
 
   /**

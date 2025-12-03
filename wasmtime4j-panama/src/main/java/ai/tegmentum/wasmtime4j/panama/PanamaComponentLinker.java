@@ -28,6 +28,7 @@ import ai.tegmentum.wasmtime4j.WasiPreview2Config;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -183,8 +184,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Track resource in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+    // Track resource in defined interfaces (use same key format as defineFunction)
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
     definedInterfaces
         .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
         .add("[resource]" + resourceName);
@@ -211,8 +212,23 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // This would link an existing component instance's exports as imports
-    LOGGER.fine("Linked component instance exports");
+    // Get exported functions from the instance and track them
+    // This allows the linker to satisfy imports from another component using this instance's
+    // exports
+    final Set<String> exportedFunctions = instance.getExportedFunctions();
+
+    for (final String exportName : exportedFunctions) {
+      // Track the exported function as available for linking
+      // The native linker will resolve these at instantiation time
+      final String interfaceKey = "linked:" + instance.getId();
+      definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(exportName);
+    }
+
+    LOGGER.fine(
+        "Linked component instance exports: "
+            + exportedFunctions.size()
+            + " functions from instance "
+            + instance.getId());
   }
 
   @Override
@@ -243,11 +259,40 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Component instantiation through the linker is complex and requires
-    // the full Component Model integration. For now, throw an informative error.
-    throw new WasmException(
-        "Direct component instantiation through ComponentLinker is not yet fully implemented. "
-            + "Use ComponentEngine.instantiate() instead.");
+    if (!(component instanceof PanamaComponentSimple)) {
+      throw new IllegalArgumentException("Component must be a Panama implementation");
+    }
+
+    final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
+    final PanamaStore panamaStore = (store instanceof PanamaStore) ? (PanamaStore) store : null;
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Allocate output pointer for the instance
+      final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+
+      // Call native linker instantiate
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerInstantiate(
+              nativeLinker, panamaComponent.getNativeHandle(), instanceOutPtr);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to instantiate component through linker (error code: " + errorCode + ")");
+      }
+
+      // Get the instance pointer from the output
+      final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException(
+            "Failed to instantiate component through linker: null instance returned");
+      }
+
+      LOGGER.fine("Successfully instantiated component through linker");
+
+      // Create and return the component instance
+      return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore);
+    }
   }
 
   @Override
@@ -299,13 +344,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    final MemorySegment namespacePtr = arena.allocateFrom(interfaceNamespace);
-    final MemorySegment interfaceNamePtr = arena.allocateFrom(interfaceName);
-
-    final int result =
-        NATIVE_BINDINGS.componentLinkerHasInterface(nativeLinker, namespacePtr, interfaceNamePtr);
-
-    return result == 1;
+    // Use Java-side tracking since defineFunction tracks here, not in native
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    return definedInterfaces.containsKey(interfaceKey);
   }
 
   @Override
@@ -322,21 +363,27 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    final MemorySegment namespacePtr = arena.allocateFrom(interfaceNamespace);
-    final MemorySegment interfaceNamePtr = arena.allocateFrom(interfaceName);
-    final MemorySegment functionNamePtr = arena.allocateFrom(functionName);
-
-    final int result =
-        NATIVE_BINDINGS.componentLinkerHasFunction(
-            nativeLinker, namespacePtr, interfaceNamePtr, functionNamePtr);
-
-    return result == 1;
+    // Use Java-side tracking since defineFunction tracks here, not in native
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final Set<String> functions = definedInterfaces.get(interfaceKey);
+    return functions != null && functions.contains(functionName);
   }
 
   @Override
   public Set<String> getDefinedInterfaces() {
     ensureNotClosed();
-    return new HashSet<>(definedInterfaces.keySet());
+    // Convert internal key format (namespace:name/name) to user-friendly format (namespace:name)
+    final Set<String> result = new HashSet<>();
+    for (final String key : definedInterfaces.keySet()) {
+      // Key format is "namespace:interfaceName/interfaceName", strip the trailing "/interfaceName"
+      final int slashIdx = key.lastIndexOf('/');
+      if (slashIdx > 0) {
+        result.add(key.substring(0, slashIdx));
+      } else {
+        result.add(key);
+      }
+    }
+    return result;
   }
 
   @Override

@@ -9,14 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Panama FFI implementation of WIT interface definition.
- *
- * <p>This class provides a concrete implementation of the WitInterfaceDefinition interface for use
- * with Panama FFI-based component operations.
+ * Panama implementation of WIT interface definition.
  *
  * @since 1.0.0
  */
-public final class PanamaWitInterfaceDefinition implements WitInterfaceDefinition {
+final class PanamaWitInterfaceDefinition implements WitInterfaceDefinition {
 
   private final String name;
   private final String version;
@@ -24,44 +21,85 @@ public final class PanamaWitInterfaceDefinition implements WitInterfaceDefinitio
   private final List<String> functionNames;
   private final List<String> typeNames;
   private final Set<String> dependencies;
+  private final String witText;
   private final List<String> importNames;
   private final List<String> exportNames;
 
   /**
-   * Creates a new Panama WIT interface definition.
+   * Creates a new PanamaWitInterfaceDefinition.
    *
    * @param name the interface name
    * @param version the interface version
    * @param packageName the package name
-   * @param exportNames the list of export names
-   * @param importNames the list of import names
+   * @param witText the raw WIT definition text
    */
-  public PanamaWitInterfaceDefinition(
-      final String name,
-      final String version,
-      final String packageName,
-      final Set<String> exportNames,
-      final Set<String> importNames) {
-    this.name = name != null ? name : "unknown";
-    this.version = version != null ? version : "1.0.0";
-    this.packageName = packageName != null ? packageName : "unknown";
-    this.exportNames = new ArrayList<>(exportNames != null ? exportNames : Collections.emptySet());
-    this.importNames = new ArrayList<>(importNames != null ? importNames : Collections.emptySet());
-
-    // Generate basic function and type names from exports/imports
+  PanamaWitInterfaceDefinition(
+      final String name, final String version, final String packageName, final String witText) {
+    this.name = name != null ? name : "";
+    this.version = version != null ? version : "0.0.0";
+    this.packageName = packageName != null ? packageName : "";
+    this.witText = witText != null ? witText : "";
     this.functionNames = new ArrayList<>();
     this.typeNames = new ArrayList<>();
     this.dependencies = new HashSet<>();
+    this.importNames = new ArrayList<>();
+    this.exportNames = new ArrayList<>();
 
-    // Add placeholder functions based on exports
-    for (final String export : this.exportNames) {
-      this.functionNames.add(export + "-func");
-      this.typeNames.add(export + "-type");
+    if (witText != null && !witText.isEmpty()) {
+      parseWitText(witText);
     }
+  }
 
-    // Add dependencies based on imports
-    for (final String import_ : this.importNames) {
-      this.dependencies.add(import_);
+  private void parseWitText(final String text) {
+    for (final String line : text.split("\n")) {
+      final String trimmed = line.trim();
+
+      if (trimmed.contains(": func(") || trimmed.matches("^[a-z][a-z0-9-]*\\s*:\\s*func.*")) {
+        final int colonIdx = trimmed.indexOf(':');
+        if (colonIdx > 0) {
+          functionNames.add(trimmed.substring(0, colonIdx).trim());
+        }
+      }
+
+      if (trimmed.startsWith("type ")) {
+        final String[] parts = trimmed.split("\\s+");
+        if (parts.length >= 2) {
+          typeNames.add(parts[1]);
+        }
+      }
+
+      if (trimmed.startsWith("record ")) {
+        final String[] parts = trimmed.split("\\s+");
+        if (parts.length >= 2) {
+          typeNames.add(parts[1].replace("{", "").trim());
+        }
+      }
+
+      if (trimmed.startsWith("enum ")) {
+        final String[] parts = trimmed.split("\\s+");
+        if (parts.length >= 2) {
+          typeNames.add(parts[1].replace("{", "").trim());
+        }
+      }
+
+      if (trimmed.startsWith("variant ")) {
+        final String[] parts = trimmed.split("\\s+");
+        if (parts.length >= 2) {
+          typeNames.add(parts[1].replace("{", "").trim());
+        }
+      }
+
+      if (trimmed.startsWith("use ")) {
+        dependencies.add(trimmed.substring(4).replace(";", "").trim());
+      }
+
+      if (trimmed.startsWith("import ")) {
+        importNames.add(trimmed.substring(7).replace(";", "").trim());
+      }
+
+      if (trimmed.startsWith("export ")) {
+        exportNames.add(trimmed.substring(7).replace(";", "").trim());
+      }
     }
   }
 
@@ -101,39 +139,60 @@ public final class PanamaWitInterfaceDefinition implements WitInterfaceDefinitio
       return WitCompatibilityResult.incompatible("Other interface is null", Set.of());
     }
 
-    // Basic compatibility check - same package and compatible version
-    final boolean samePackage = this.packageName.equals(other.getPackageName());
-    final boolean compatibleVersion = this.version.equals(other.getVersion());
-
-    if (samePackage && compatibleVersion) {
-      return WitCompatibilityResult.compatible("Interfaces are compatible", this.dependencies);
-    } else {
-      final Set<String> unsatisfied = new HashSet<>();
-      if (!samePackage) {
-        unsatisfied.add("package-mismatch");
-      }
-      if (!compatibleVersion) {
-        unsatisfied.add("version-mismatch");
-      }
-      return WitCompatibilityResult.incompatible("Interfaces are not compatible", unsatisfied);
+    if (!name.equals(other.getName())) {
+      return WitCompatibilityResult.incompatible(
+          "Interface names do not match: " + name + " vs " + other.getName(), Set.of());
     }
+
+    final String[] thisVersionParts = version.split("\\.");
+    final String[] otherVersionParts = other.getVersion().split("\\.");
+
+    if (thisVersionParts.length >= 1 && otherVersionParts.length >= 1) {
+      try {
+        final int thisMajor = Integer.parseInt(thisVersionParts[0]);
+        final int otherMajor = Integer.parseInt(otherVersionParts[0]);
+        if (thisMajor != otherMajor) {
+          return WitCompatibilityResult.incompatible(
+              "Major version mismatch: " + version + " vs " + other.getVersion(), Set.of());
+        }
+      } catch (final NumberFormatException e) {
+        // Non-numeric version
+      }
+    }
+
+    final Set<String> missingFunctions = new HashSet<>();
+    for (final String func : functionNames) {
+      if (!other.getFunctionNames().contains(func)) {
+        missingFunctions.add("function:" + func);
+      }
+    }
+
+    final Set<String> missingTypes = new HashSet<>();
+    for (final String type : typeNames) {
+      if (!other.getTypeNames().contains(type)) {
+        missingTypes.add("type:" + type);
+      }
+    }
+
+    if (!missingFunctions.isEmpty() || !missingTypes.isEmpty()) {
+      final Set<String> allMissing = new HashSet<>();
+      allMissing.addAll(missingFunctions);
+      allMissing.addAll(missingTypes);
+      return WitCompatibilityResult.incompatible(
+          "Missing elements in target interface", allMissing);
+    }
+
+    // Collect satisfied imports
+    final Set<String> satisfied = new HashSet<>();
+    satisfied.addAll(functionNames);
+    satisfied.addAll(typeNames);
+
+    return WitCompatibilityResult.compatible("Interfaces are compatible", satisfied);
   }
 
   @Override
   public String getWitText() {
-    final StringBuilder wit = new StringBuilder();
-    wit.append("interface ").append(name).append(" {\n");
-
-    for (final String func : functionNames) {
-      wit.append("  ").append(func).append("() -> ();\n");
-    }
-
-    for (final String type : typeNames) {
-      wit.append("  type ").append(type).append(" = string;\n");
-    }
-
-    wit.append("}\n");
-    return wit.toString();
+    return witText;
   }
 
   @Override
@@ -146,24 +205,21 @@ public final class PanamaWitInterfaceDefinition implements WitInterfaceDefinitio
     return Collections.unmodifiableList(exportNames);
   }
 
-  @Override
-  public String toString() {
-    return "PanamaWitInterfaceDefinition{"
-        + "name='"
-        + name
-        + '\''
-        + ", version='"
-        + version
-        + '\''
-        + ", packageName='"
-        + packageName
-        + '\''
-        + ", functionCount="
-        + functionNames.size()
-        + ", typeCount="
-        + typeNames.size()
-        + ", dependencyCount="
-        + dependencies.size()
-        + '}';
+  void addFunction(final String functionName) {
+    if (functionName != null && !functionName.isEmpty()) {
+      functionNames.add(functionName);
+    }
+  }
+
+  void addType(final String typeName) {
+    if (typeName != null && !typeName.isEmpty()) {
+      typeNames.add(typeName);
+    }
+  }
+
+  void addDependency(final String dependency) {
+    if (dependency != null && !dependency.isEmpty()) {
+      dependencies.add(dependency);
+    }
   }
 }

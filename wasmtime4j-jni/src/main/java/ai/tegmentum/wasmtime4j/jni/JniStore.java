@@ -112,6 +112,55 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
+   * Creates a new store that is compatible with the given module.
+   *
+   * <p><b>CRITICAL:</b> This method creates a Store that shares the exact same Engine Arc as the
+   * module. This is required because Wasmtime's Instance::new() uses Arc::ptr_eq() to verify that
+   * the Store and Module were created from the same Engine. Using {@link JniEngine#createStore()}
+   * will create a Store with a different Arc clone, causing "cross-Engine instantiation is not
+   * currently supported" errors.
+   *
+   * <p>Usage Example:
+   *
+   * <pre>{@code
+   * try (JniEngine engine = JniEngine.create()) {
+   *   JniModule module = (JniModule) engine.compileModule(wasmBytes);
+   *
+   *   // CORRECT: Use forModule to create a compatible store
+   *   try (JniStore store = JniStore.forModule(module)) {
+   *     JniInstance instance = (JniInstance) module.instantiate(store);
+   *     // Instance created successfully
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param module the module to create a compatible store for
+   * @return a new store that shares the same Engine Arc as the module
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if module is null or not a JniModule
+   */
+  public static JniStore forModule(final Module module) throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("module cannot be null");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("module must be a JniModule instance");
+    }
+
+    final JniModule jniModule = (JniModule) module;
+    if (!jniModule.isValid()) {
+      throw new IllegalStateException("Module is not valid");
+    }
+
+    final long storeHandle = nativeCreateStoreForModule(jniModule.getNativeHandle());
+    if (storeHandle == 0) {
+      throw new WasmException("Failed to create store for module");
+    }
+
+    return new JniStore(storeHandle, jniModule.getEngine());
+  }
+
+  /**
    * Gets runtime information about this store.
    *
    * <p>This method provides diagnostic information about the store's current state, including
@@ -623,6 +672,46 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
+      final int initialPages, final int maxPages) throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final long memoryHandle = nativeCreateSharedMemory(getNativeHandle(), initialPages, maxPages);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native shared memory creation returned null handle");
+      }
+
+      final JniMemory memory = new JniMemory(memoryHandle, this);
+      LOGGER.fine(
+          "Created shared memory with initial="
+              + initialPages
+              + " pages, max="
+              + maxPages
+              + " pages, handle=0x"
+              + Long.toHexString(memoryHandle));
+      return memory;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create shared memory", e);
+    }
+  }
+
+  @Override
   public FunctionReference createFunctionReference(
       final HostFunction implementation, final FunctionType functionType) throws WasmException {
     Objects.requireNonNull(implementation, "Host function implementation cannot be null");
@@ -1039,6 +1128,18 @@ public final class JniStore extends JniResource implements Store {
       int maxFunctions);
 
   /**
+   * Creates a new store that is compatible with a specific module.
+   *
+   * <p>CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Engine Arc as the
+   * Module's internal wasmtime::Module. This is required because wasmtime's Instance::new() uses
+   * Arc::ptr_eq() to verify engine compatibility.
+   *
+   * @param moduleHandle the native module handle
+   * @return the native store handle, or 0 on failure
+   */
+  private static native long nativeCreateStoreForModule(long moduleHandle);
+
+  /**
    * Adds fuel to a store.
    *
    * @param storeHandle the native store handle
@@ -1228,6 +1329,9 @@ public final class JniStore extends JniResource implements Store {
    * @return the native memory handle, or 0 on failure
    */
   private static native long nativeCreateMemory(long storeHandle, int initialPages, int maxPages);
+
+  private static native long nativeCreateSharedMemory(
+      long storeHandle, int initialPages, int maxPages);
 
   /**
    * Destroys a native store and releases all associated resources.

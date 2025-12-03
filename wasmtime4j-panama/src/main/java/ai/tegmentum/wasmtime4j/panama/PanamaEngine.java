@@ -9,9 +9,17 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.performance.EngineStatistics;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -26,7 +34,9 @@ public final class PanamaEngine implements Engine {
 
   private final Arena arena;
   private final MemorySegment nativeEngine;
+  private final MemorySegment profilerHandle;
   private final EngineConfig config;
+  private final Instant createdAt;
   private volatile boolean closed = false;
 
   /**
@@ -57,6 +67,15 @@ public final class PanamaEngine implements Engine {
     if (this.nativeEngine == null || this.nativeEngine.equals(MemorySegment.NULL)) {
       arena.close();
       throw new WasmException("Failed to create native engine");
+    }
+
+    // Create performance profiler
+    this.profilerHandle = NATIVE_BINDINGS.profilerCreate();
+    this.createdAt = Instant.now();
+
+    // Start profiling
+    if (this.profilerHandle != null && !this.profilerHandle.equals(MemorySegment.NULL)) {
+      NATIVE_BINDINGS.profilerStart(this.profilerHandle);
     }
 
     LOGGER.fine("Created Panama engine");
@@ -118,6 +137,54 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be empty");
+    }
+    ensureNotClosed();
+
+    return NATIVE_BINDINGS.enginePrecompileModule(nativeEngine, wasmBytes);
+  }
+
+  @Override
+  public Module compileFromStream(final InputStream stream) throws WasmException, IOException {
+    if (stream == null) {
+      throw new IllegalArgumentException("stream cannot be null");
+    }
+    ensureNotClosed();
+
+    // Read entire stream into byte array
+    // Wasmtime requires complete bytecode before compilation
+    final byte[] wasmBytes = readAllBytes(stream);
+
+    if (wasmBytes.length == 0) {
+      throw new WasmException("Stream contained no data");
+    }
+
+    return compileModule(wasmBytes);
+  }
+
+  /**
+   * Reads all bytes from an input stream.
+   *
+   * @param stream the input stream to read
+   * @return all bytes from the stream
+   * @throws IOException if reading fails
+   */
+  private byte[] readAllBytes(final InputStream stream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    final byte[] data = new byte[8192];
+    int bytesRead;
+    while ((bytesRead = stream.read(data, 0, data.length)) != -1) {
+      buffer.write(data, 0, bytesRead);
+    }
+    return buffer.toByteArray();
+  }
+
+  @Override
   public EngineConfig getConfig() {
     return config;
   }
@@ -163,6 +230,12 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public boolean isCoredumpOnTrapEnabled() {
+    ensureNotClosed();
+    return NATIVE_BINDINGS.engineCoredumpOnTrapEnabled(nativeEngine);
+  }
+
+  @Override
   public int getMaxInstances() {
     // Max instances tracking not implemented - return unlimited
     // Matches JNI backend which returns Integer.MAX_VALUE
@@ -183,12 +256,203 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public EngineStatistics captureStatistics() {
+    ensureNotClosed();
+    final MemorySegment profiler = this.profilerHandle;
+    final Instant created = this.createdAt;
+    final Instant captureTime = Instant.now();
+
+    return new EngineStatistics() {
+      @Override
+      public long getModulesCompiled() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetModulesCompiled(profiler);
+      }
+
+      @Override
+      public Duration getTotalCompilationTime() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return Duration.ZERO;
+        }
+        final long nanos = NATIVE_BINDINGS.profilerGetTotalCompilationTimeNanos(profiler);
+        return Duration.ofNanos(nanos);
+      }
+
+      @Override
+      public Duration getAverageCompilationTime() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return Duration.ZERO;
+        }
+        final long nanos = NATIVE_BINDINGS.profilerGetAverageCompilationTimeNanos(profiler);
+        return Duration.ofNanos(nanos);
+      }
+
+      @Override
+      public long getBytesCompiled() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetBytesCompiled(profiler);
+      }
+
+      @Override
+      public double getCompilationThroughput() {
+        final Duration totalTime = getTotalCompilationTime();
+        if (totalTime.isZero()) {
+          return 0.0;
+        }
+        return (double) getBytesCompiled() / totalTime.toSeconds();
+      }
+
+      @Override
+      public long getFunctionsExecuted() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetTotalFunctionCalls(profiler);
+      }
+
+      @Override
+      public Duration getTotalExecutionTime() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return Duration.ZERO;
+        }
+        final long nanos = NATIVE_BINDINGS.profilerGetTotalExecutionTimeNanos(profiler);
+        return Duration.ofNanos(nanos);
+      }
+
+      @Override
+      public long getInstructionsExecuted() {
+        // Not tracked at instruction level - return function calls as proxy
+        return getFunctionsExecuted();
+      }
+
+      @Override
+      public double getExecutionThroughput() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0.0;
+        }
+        return NATIVE_BINDINGS.profilerGetFunctionCallsPerSecond(profiler);
+      }
+
+      @Override
+      public long getPeakMemoryUsage() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetPeakMemoryBytes(profiler);
+      }
+
+      @Override
+      public long getCurrentMemoryUsage() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetCurrentMemoryBytes(profiler);
+      }
+
+      @Override
+      public long getTotalAllocations() {
+        // Not tracked separately - return 0
+        return 0;
+      }
+
+      @Override
+      public long getTotalDeallocations() {
+        // Not tracked separately - return 0
+        return 0;
+      }
+
+      @Override
+      public long getCacheHits() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetCacheHits(profiler);
+      }
+
+      @Override
+      public long getCacheMisses() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetCacheMisses(profiler);
+      }
+
+      @Override
+      public double getCacheHitRatio() {
+        final long hits = getCacheHits();
+        final long misses = getCacheMisses();
+        final long total = hits + misses;
+        if (total == 0) {
+          return 0.0;
+        }
+        return (double) hits / total;
+      }
+
+      @Override
+      public long getJitCompilations() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return 0;
+        }
+        return NATIVE_BINDINGS.profilerGetOptimizedModules(profiler);
+      }
+
+      @Override
+      public Duration getJitCompilationTime() {
+        // JIT time not tracked separately - return total compilation time
+        return getTotalCompilationTime();
+      }
+
+      @Override
+      public long getJitCodeSize() {
+        // JIT code size not tracked separately - return bytes compiled
+        return getBytesCompiled();
+      }
+
+      @Override
+      public Instant getCaptureTime() {
+        return captureTime;
+      }
+
+      @Override
+      public Duration getUptime() {
+        if (profiler == null || profiler.equals(MemorySegment.NULL)) {
+          return Duration.between(created, captureTime);
+        }
+        final long nanos = NATIVE_BINDINGS.profilerGetUptimeNanos(profiler);
+        return Duration.ofNanos(nanos);
+      }
+
+      @Override
+      public void reset() {
+        if (profiler != null && !profiler.equals(MemorySegment.NULL)) {
+          NATIVE_BINDINGS.profilerReset(profiler);
+        }
+      }
+
+      @Override
+      public Map<String, Object> getExtendedStatistics() {
+        return Collections.emptyMap();
+      }
+    };
+  }
+
+  @Override
   public void close() {
     if (closed) {
       return;
     }
 
     try {
+      // Stop and destroy profiler
+      if (profilerHandle != null && !profilerHandle.equals(MemorySegment.NULL)) {
+        NATIVE_BINDINGS.profilerStop(profilerHandle);
+        NATIVE_BINDINGS.profilerDestroy(profilerHandle);
+      }
+
       // Destroy native engine
       if (nativeEngine != null && !nativeEngine.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.engineDestroy(nativeEngine);
@@ -239,6 +503,34 @@ public final class PanamaEngine implements Engine {
    */
   public MemorySegment getEnginePointer() {
     return nativeEngine;
+  }
+
+  /**
+   * Gets the profiler handle for recording statistics.
+   *
+   * @return profiler memory segment, or null if not available
+   */
+  public MemorySegment getProfilerHandle() {
+    return profilerHandle;
+  }
+
+  /**
+   * Records a module compilation event.
+   *
+   * @param bytesCompiled the number of bytes compiled
+   * @param compilationTimeNanos the compilation time in nanoseconds
+   * @param cached whether this was a cached compilation
+   * @param optimized whether optimization was applied
+   */
+  public void recordCompilation(
+      final long bytesCompiled,
+      final long compilationTimeNanos,
+      final boolean cached,
+      final boolean optimized) {
+    if (profilerHandle != null && !profilerHandle.equals(MemorySegment.NULL)) {
+      NATIVE_BINDINGS.profilerRecordCompilation(
+          profilerHandle, compilationTimeNanos, bytesCompiled, cached, optimized);
+    }
   }
 
   /**

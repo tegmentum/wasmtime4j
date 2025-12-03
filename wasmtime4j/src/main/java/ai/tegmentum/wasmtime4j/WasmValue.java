@@ -139,6 +139,43 @@ public final class WasmValue {
   }
 
   /**
+   * Gets this value as a type-safe ExternRef wrapper.
+   *
+   * @return the ExternRef wrapping the external reference value
+   * @throws ClassCastException if this value is not an externref
+   */
+  public ExternRef<Object> asExternRef() {
+    if (type != WasmValueType.EXTERNREF) {
+      throw new ClassCastException("Value is not an externref, but " + type);
+    }
+    return ExternRef.fromRaw(value);
+  }
+
+  /**
+   * Gets this value as a type-safe ExternRef with the specified type.
+   *
+   * @param targetType the expected type of the wrapped value
+   * @param <T> the type of the wrapped value
+   * @return the ExternRef wrapping the external reference value
+   * @throws ClassCastException if this value is not an externref or the wrapped value is not of the
+   *     expected type
+   */
+  public <T> ExternRef<T> asExternRef(final Class<T> targetType) {
+    if (type != WasmValueType.EXTERNREF) {
+      throw new ClassCastException("Value is not an externref, but " + type);
+    }
+    final Object rawValue = value;
+    if (rawValue != null && !targetType.isInstance(rawValue)) {
+      throw new ClassCastException(
+          "ExternRef value is not of type "
+              + targetType.getName()
+              + ", but "
+              + rawValue.getClass().getName());
+    }
+    return ExternRef.ofNullable(targetType.cast(rawValue), targetType);
+  }
+
+  /**
    * Gets this value as a 32-bit integer (alias for asInt()).
    *
    * @return the integer value
@@ -353,6 +390,17 @@ public final class WasmValue {
    */
   public static WasmValue externref(final Object value) {
     return new WasmValue(WasmValueType.EXTERNREF, value);
+  }
+
+  /**
+   * Creates an external reference value from a type-safe ExternRef wrapper.
+   *
+   * @param externRef the type-safe externref wrapper
+   * @param <T> the type of the wrapped value
+   * @return a new WasmValue
+   */
+  public static <T> WasmValue externref(final ExternRef<T> externRef) {
+    return new WasmValue(WasmValueType.EXTERNREF, externRef);
   }
 
   /**

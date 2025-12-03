@@ -642,8 +642,14 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_block(
         return -1;
     }
 
-    // For MVP, pollables are always ready immediately
-    0
+    let context = unsafe { &*(context_handle as *const crate::wasi_preview2::WasiPreview2Context) };
+    let pollable_id = pollable_handle as u64;
+
+    // Block on the pollable with no timeout
+    match crate::wasi_io_helpers::block_on_pollable(context, pollable_id, None) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }
 
 /// Check if a WASI pollable is ready (non-blocking)
@@ -665,11 +671,18 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_ready(
         return -1;
     }
 
-    // For MVP, pollables are always ready
-    unsafe {
-        *out_ready = 1;
+    let context = unsafe { &*(context_handle as *const crate::wasi_preview2::WasiPreview2Context) };
+    let pollable_id = pollable_handle as u64;
+
+    match crate::wasi_io_helpers::check_pollable_ready(context, pollable_id) {
+        Ok(ready) => {
+            unsafe {
+                *out_ready = if ready { 1 } else { 0 };
+            }
+            0
+        }
+        Err(_) => -1,
     }
-    0
 }
 
 /// Close a WASI pollable
@@ -689,6 +702,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_close(
         return -1;
     }
 
-    // For MVP, no cleanup needed for pollables
-    0
+    let context = unsafe { &*(context_handle as *const crate::wasi_preview2::WasiPreview2Context) };
+    let pollable_id = pollable_handle as u64;
+
+    match crate::wasi_io_helpers::close_pollable(context, pollable_id) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
 }

@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -28,6 +29,8 @@ public final class PanamaStore implements Store {
   private final MemorySegment nativeStore;
   private final AtomicReference<Object> userData = new AtomicReference<>();
   private final ArenaResourceManager resourceManager;
+  private final PanamaErrorHandler errorHandler;
+  private final PanamaCallbackRegistry callbackRegistry;
   private volatile boolean closed = false;
 
   /**
@@ -58,7 +61,154 @@ public final class PanamaStore implements Store {
     // Create resource manager for host functions and other managed resources
     this.resourceManager = new ArenaResourceManager(arena, true);
 
+    // Create error handler and callback registry
+    this.errorHandler = new PanamaErrorHandler();
+    this.callbackRegistry = new PanamaCallbackRegistry(this, resourceManager, errorHandler);
+
     LOGGER.fine("Created Panama store");
+  }
+
+  /**
+   * Creates a new Panama store with resource limits.
+   *
+   * @param engine the engine that owns this store
+   * @param limits the resource limits to apply
+   * @throws WasmException if store creation fails
+   */
+  public PanamaStore(final PanamaEngine engine, final ai.tegmentum.wasmtime4j.StoreLimits limits)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (limits == null) {
+      throw new IllegalArgumentException("Limits cannot be null");
+    }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
+
+    this.engine = engine;
+    this.arena = Arena.ofConfined();
+
+    // Create native store via Panama FFI with limits
+    final MemorySegment storePtr = arena.allocate(ValueLayout.ADDRESS);
+    final int result =
+        NATIVE_BINDINGS.storeCreateWithConfig(
+            engine.getNativeEngine(),
+            storePtr,
+            0, // fuel limit - 0 means no limit, can be set later with setFuel
+            limits.getMemorySize(),
+            0, // execution timeout - 0 means no timeout
+            (int) limits.getInstances(),
+            (int) limits.getTableElements(),
+            0); // max functions - 0 means no limit
+
+    if (result != 0) {
+      arena.close();
+      throw new WasmException("Failed to create native store with limits: error code " + result);
+    }
+
+    this.nativeStore = storePtr.get(ValueLayout.ADDRESS, 0);
+
+    if (this.nativeStore == null || this.nativeStore.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to create native store with limits");
+    }
+
+    // Create resource manager for host functions and other managed resources
+    this.resourceManager = new ArenaResourceManager(arena, true);
+
+    // Create error handler and callback registry
+    this.errorHandler = new PanamaErrorHandler();
+    this.callbackRegistry = new PanamaCallbackRegistry(this, resourceManager, errorHandler);
+
+    LOGGER.fine("Created Panama store with limits: " + limits);
+  }
+
+  /**
+   * Private constructor for creating a store with a pre-created native store handle.
+   *
+   * @param engine the engine that owns this store
+   * @param nativeStoreHandle the pre-created native store handle
+   * @throws WasmException if store initialization fails
+   */
+  private PanamaStore(final PanamaEngine engine, final MemorySegment nativeStoreHandle)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (nativeStoreHandle == null || nativeStoreHandle.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native store handle cannot be null");
+    }
+
+    this.engine = engine;
+    this.arena = Arena.ofConfined();
+    this.nativeStore = nativeStoreHandle;
+
+    // Create resource manager for host functions and other managed resources
+    this.resourceManager = new ArenaResourceManager(arena, true);
+
+    // Create error handler and callback registry
+    this.errorHandler = new PanamaErrorHandler();
+    this.callbackRegistry = new PanamaCallbackRegistry(this, resourceManager, errorHandler);
+
+    LOGGER.fine("Created Panama store from pre-created native handle");
+  }
+
+  /**
+   * Creates a new store that is compatible with the given module.
+   *
+   * <p><b>CRITICAL:</b> This method creates a Store that shares the exact same Engine Arc as the
+   * module. This is required because Wasmtime's Instance::new() uses Arc::ptr_eq() to verify that
+   * the Store and Module were created from the same Engine. Using {@link
+   * PanamaEngine#createStore()} will create a Store with a different Arc clone, causing
+   * "cross-Engine instantiation is not currently supported" errors.
+   *
+   * <p>Usage Example:
+   *
+   * <pre>{@code
+   * try (PanamaEngine engine = new PanamaEngine()) {
+   *   PanamaModule module = (PanamaModule) engine.compileModule(wasmBytes);
+   *
+   *   // CORRECT: Use forModule to create a compatible store
+   *   try (PanamaStore store = PanamaStore.forModule(module)) {
+   *     PanamaInstance instance = (PanamaInstance) module.instantiate(store);
+   *     // Instance created successfully
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param module the module to create a compatible store for
+   * @return a new store that shares the same Engine Arc as the module
+   * @throws WasmException if store creation fails
+   * @throws IllegalArgumentException if module is null or not a PanamaModule
+   */
+  public static PanamaStore forModule(final ai.tegmentum.wasmtime4j.Module module)
+      throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("module cannot be null");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("module must be a PanamaModule instance");
+    }
+
+    final PanamaModule panamaModule = (PanamaModule) module;
+    if (!panamaModule.isValid()) {
+      throw new IllegalStateException("Module is not valid");
+    }
+
+    final MemorySegment storeHandle =
+        NATIVE_BINDINGS.storeCreateForModule(panamaModule.getNativeModule());
+    if (storeHandle == null || storeHandle.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to create store for module");
+    }
+
+    final ai.tegmentum.wasmtime4j.Engine moduleEngine = panamaModule.getEngine();
+    if (!(moduleEngine instanceof PanamaEngine)) {
+      throw new WasmException("Module engine is not a PanamaEngine");
+    }
+
+    return new PanamaStore((PanamaEngine) moduleEngine, storeHandle);
   }
 
   @Override
@@ -459,32 +609,86 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
+      final int initialPages, final int maxPages) throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative");
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaMemoryCreateWithConfig();
+      if (createHandle == null) {
+        throw new WasmException("Panama memory creation function not available");
+      }
+
+      final int isShared = 1; // Shared memory
+      final int memoryIndex = 0; // Not used for direct creation
+
+      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  initialPages,
+                  maxPages,
+                  isShared,
+                  memoryIndex,
+                  MemorySegment.NULL, // name = null
+                  memoryPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create shared memory");
+      }
+
+      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created shared memory pointer is null");
+      }
+
+      return new PanamaMemory(nativeMemoryPtr, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating shared memory: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.HostFunction implementation,
       final ai.tegmentum.wasmtime4j.FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
-    // TODO: Implement function reference creation from host function
-    throw new UnsupportedOperationException(
-        "Function reference from host function not yet implemented - requires callback"
-            + " infrastructure");
+    PanamaValidation.requireNonNull(implementation, "implementation");
+    PanamaValidation.requireNonNull(functionType, "functionType");
+
+    return new PanamaFunctionReference(
+        implementation, functionType, this, resourceManager, errorHandler);
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.WasmFunction function) throws WasmException {
     ensureNotClosed();
-    // TODO: Implement function reference creation from WASM function
-    throw new UnsupportedOperationException(
-        "Function reference from WASM function not yet implemented - requires callback"
-            + " infrastructure");
+    PanamaValidation.requireNonNull(function, "function");
+
+    // Create a host function wrapper that delegates to the wasm function
+    final ai.tegmentum.wasmtime4j.HostFunction wrapper = function::call;
+
+    return new PanamaFunctionReference(
+        wrapper, function.getFunctionType(), this, resourceManager, errorHandler);
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.CallbackRegistry getCallbackRegistry() {
-    // TODO: Implement callback registry - requires arena manager and error handler infrastructure
-    throw new UnsupportedOperationException(
-        "Callback registry not yet implemented - requires callback infrastructure");
+    ensureNotClosed();
+    return callbackRegistry;
   }
 
   @Override
@@ -577,7 +781,16 @@ public final class PanamaStore implements Store {
     closed = true;
 
     try {
-      // Close resource manager first (cleans up host functions and managed resources)
+      // Close callback registry first (cleans up function references)
+      if (callbackRegistry != null) {
+        try {
+          callbackRegistry.close();
+        } catch (final Exception e) {
+          LOGGER.warning("Error closing callback registry: " + e.getMessage());
+        }
+      }
+
+      // Close resource manager (cleans up host functions and managed resources)
       if (resourceManager != null) {
         resourceManager.close();
       }

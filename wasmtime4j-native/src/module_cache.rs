@@ -778,3 +778,151 @@ pub extern "C" fn wasmtime4j_module_cache_destroy(cache: *mut ModuleCache) {
         unsafe { drop(Box::from_raw(cache)) };
     }
 }
+
+/// Clears all entries from the cache
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_clear(cache: *mut ModuleCache) -> bool {
+    if cache.is_null() {
+        return false;
+    }
+
+    let cache = unsafe { &*cache };
+    cache.clear().is_ok()
+}
+
+/// Pre-compiles and caches a module, returns the cache key hash
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_precompile(
+    cache: *mut ModuleCache,
+    bytecode: *const u8,
+    bytecode_len: usize,
+    hash_out: *mut u8,
+    hash_out_len: usize,
+) -> i32 {
+    if cache.is_null() || bytecode.is_null() || hash_out.is_null() {
+        return -1;
+    }
+
+    let cache = unsafe { &*cache };
+    let bytecode_slice = unsafe { std::slice::from_raw_parts(bytecode, bytecode_len) };
+
+    match cache.cache_module(bytecode_slice) {
+        Ok(hash) => {
+            let hash_bytes = hash.as_bytes();
+            let copy_len = hash_bytes.len().min(hash_out_len);
+            unsafe {
+                std::ptr::copy_nonoverlapping(hash_bytes.as_ptr(), hash_out, copy_len);
+            }
+            copy_len as i32
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Creates a module cache with custom configuration
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_create_with_config(
+    engine: *mut wasmtime::Engine,
+    cache_dir: *const std::os::raw::c_char,
+    max_cache_size: u64,
+    max_entries: usize,
+    compression_enabled: bool,
+    compression_level: u32,
+) -> *mut ModuleCache {
+    if engine.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let engine = unsafe { &*engine };
+
+    let cache_dir_path = if cache_dir.is_null() {
+        PathBuf::from("wasmtime4j_cache")
+    } else {
+        let c_str = unsafe { std::ffi::CStr::from_ptr(cache_dir) };
+        match c_str.to_str() {
+            Ok(s) => PathBuf::from(s),
+            Err(_) => PathBuf::from("wasmtime4j_cache"),
+        }
+    };
+
+    let config = ModuleCacheConfig {
+        cache_dir: cache_dir_path,
+        max_cache_size,
+        max_entries,
+        compression_enabled,
+        compression_level,
+        ..ModuleCacheConfig::default()
+    };
+
+    match ModuleCache::new(engine.clone(), config) {
+        Ok(cache) => Box::into_raw(Box::new(cache)),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Gets the number of entries in the cache
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_entry_count(cache: *mut ModuleCache) -> i64 {
+    if cache.is_null() {
+        return -1;
+    }
+
+    let cache = unsafe { &*cache };
+    match cache.get_statistics() {
+        Ok(stats) => stats.entries_count as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Gets cache hit count
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_hit_count(cache: *mut ModuleCache) -> i64 {
+    if cache.is_null() {
+        return -1;
+    }
+
+    let cache = unsafe { &*cache };
+    match cache.get_statistics() {
+        Ok(stats) => stats.cache_hits as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Gets cache miss count
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_miss_count(cache: *mut ModuleCache) -> i64 {
+    if cache.is_null() {
+        return -1;
+    }
+
+    let cache = unsafe { &*cache };
+    match cache.get_statistics() {
+        Ok(stats) => stats.cache_misses as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Gets storage bytes used
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_storage_bytes(cache: *mut ModuleCache) -> i64 {
+    if cache.is_null() {
+        return -1;
+    }
+
+    let cache = unsafe { &*cache };
+    match cache.get_statistics() {
+        Ok(stats) => stats.storage_bytes_used as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Performs cache maintenance (eviction, cleanup)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_module_cache_perform_maintenance(cache: *mut ModuleCache) -> bool {
+    if cache.is_null() {
+        return false;
+    }
+
+    let cache = unsafe { &*cache };
+    cache.perform_maintenance().is_ok()
+}

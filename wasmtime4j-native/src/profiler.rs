@@ -961,6 +961,248 @@ pub extern "C" fn wasmtime4j_profiler_destroy(profiler: *mut PerformanceProfiler
     }
 }
 
+/// Stops profiling
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_stop(profiler: *mut PerformanceProfiler) -> bool {
+    if profiler.is_null() {
+        return false;
+    }
+
+    let profiler = unsafe { &mut *profiler };
+    profiler.stop_profiling().is_ok()
+}
+
+/// Gets the number of modules compiled
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_modules_compiled(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.module_compilations
+    } else {
+        0
+    }
+}
+
+/// Gets total compilation time in nanoseconds
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_total_compilation_time_nanos(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.total_compilation_time.as_nanos() as u64
+    } else {
+        0
+    }
+}
+
+/// Gets average compilation time in nanoseconds
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_average_compilation_time_nanos(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.average_compilation_time.as_nanos() as u64
+    } else {
+        0
+    }
+}
+
+/// Gets total bytes of WASM bytecode compiled
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_bytes_compiled(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.bytecode_size_compiled
+    } else {
+        0
+    }
+}
+
+/// Gets compilation cache hits
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_cache_hits(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.compilation_cache_hits
+    } else {
+        0
+    }
+}
+
+/// Gets compilation cache misses
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_cache_misses(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.compilation_cache_misses
+    } else {
+        0
+    }
+}
+
+/// Gets number of optimized modules
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_optimized_modules(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.compilation_metrics.read() {
+        metrics.optimized_modules
+    } else {
+        0
+    }
+}
+
+/// Gets current memory usage in bytes
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_current_memory_bytes(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.real_time_metrics.read() {
+        metrics.memory_usage_bytes
+    } else {
+        0
+    }
+}
+
+/// Gets peak memory usage in bytes
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_peak_memory_bytes(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.real_time_metrics.read() {
+        metrics.memory_peak_bytes
+    } else {
+        0
+    }
+}
+
+/// Gets profiler uptime in nanoseconds
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_uptime_nanos(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    profiler.start_time.elapsed().as_nanos() as u64
+}
+
+/// Gets function calls per second
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_function_calls_per_second(profiler: *const PerformanceProfiler) -> f64 {
+    if profiler.is_null() {
+        return 0.0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(metrics) = profiler.real_time_metrics.read() {
+        metrics.function_calls_per_second
+    } else {
+        0.0
+    }
+}
+
+/// Gets total function call count across all profiled functions
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_total_function_calls(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(profiles) = profiler.function_profiles.read() {
+        profiles.values().map(|p| p.call_count).sum()
+    } else {
+        0
+    }
+}
+
+/// Gets total execution time in nanoseconds across all profiled functions
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_get_total_execution_time_nanos(profiler: *const PerformanceProfiler) -> u64 {
+    if profiler.is_null() {
+        return 0;
+    }
+
+    let profiler = unsafe { &*profiler };
+    if let Ok(profiles) = profiler.function_profiles.read() {
+        profiles.values().map(|p| p.total_execution_time.as_nanos() as u64).sum()
+    } else {
+        0
+    }
+}
+
+/// Records a module compilation
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_record_compilation(
+    profiler: *mut PerformanceProfiler,
+    compilation_time_nanos: u64,
+    bytecode_size: u64,
+    cached: bool,
+    optimized: bool,
+) -> bool {
+    if profiler.is_null() {
+        return false;
+    }
+
+    let profiler = unsafe { &*profiler };
+    let compilation_time = Duration::from_nanos(compilation_time_nanos);
+    profiler.record_compilation(compilation_time, bytecode_size, cached, optimized).is_ok()
+}
+
+/// Resets all profiler statistics
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_reset(profiler: *mut PerformanceProfiler) -> bool {
+    if profiler.is_null() {
+        return false;
+    }
+
+    let profiler = unsafe { &*profiler };
+    profiler.reset().is_ok()
+}
+
+/// Checks if profiling is currently active
+#[no_mangle]
+pub extern "C" fn wasmtime4j_profiler_is_profiling(profiler: *const PerformanceProfiler) -> bool {
+    if profiler.is_null() {
+        return false;
+    }
+
+    let profiler = unsafe { &*profiler };
+    profiler.is_profiling().unwrap_or(false)
+}
+
 // ============================================================================
 // Flame Graph Data Collection Extensions
 // ============================================================================

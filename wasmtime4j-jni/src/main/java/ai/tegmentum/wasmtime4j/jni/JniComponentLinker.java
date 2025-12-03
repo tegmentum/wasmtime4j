@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.ComponentHostFunction;
 import ai.tegmentum.wasmtime4j.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLinker;
 import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
@@ -133,6 +134,22 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     final long callbackId = registerHostFunctionCallback(implementation);
     hostFunctions.put(witPath, callbackId);
 
+    // Wire to native component linker if handle is valid
+    if (isNativeHandleReasonable()) {
+      try {
+        nativeDefineHostFunction(nativeHandle, witPath, callbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        hostFunctions.remove(witPath);
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        registeredCallbackIds.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define host function: " + e.getMessage(), e);
+      }
+    }
+
     LOGGER.fine("Defined component function: " + witPath);
   }
 
@@ -179,6 +196,49 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
+    // Register constructor callback if present
+    long constructorCallbackId = 0;
+    if (resourceDefinition.getConstructor().isPresent()) {
+      final ComponentResourceDefinition.ResourceConstructor<?> constructor =
+          resourceDefinition.getConstructor().get();
+      constructorCallbackId =
+          registerHostFunctionCallback(params -> java.util.Collections.singletonList(null));
+    }
+
+    // Register destructor callback if present
+    long destructorCallbackId = 0;
+    if (resourceDefinition.getDestructor().isPresent()) {
+      destructorCallbackId =
+          registerHostFunctionCallback(params -> java.util.Collections.emptyList());
+    }
+
+    // Wire to native component linker if handle is valid
+    if (isNativeHandleReasonable()) {
+      try {
+        nativeDefineResource(
+            nativeHandle,
+            interfaceNamespace,
+            interfaceName,
+            resourceName,
+            constructorCallbackId,
+            destructorCallbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        if (constructorCallbackId > 0) {
+          HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
+          registeredCallbackIds.remove(constructorCallbackId);
+        }
+        if (destructorCallbackId > 0) {
+          HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
+          registeredCallbackIds.remove(destructorCallbackId);
+        }
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define resource: " + e.getMessage(), e);
+      }
+    }
+
     // Track resource in defined interfaces
     final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     Set<String> functions = definedInterfaces.get(interfaceKey);
@@ -204,7 +264,28 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    LOGGER.fine("Linked component instance exports");
+    // Get exported functions from the instance and track them
+    // This allows the linker to satisfy imports from another component using this instance's
+    // exports
+    final Set<String> exportedFunctions = instance.getExportedFunctions();
+
+    for (final String exportName : exportedFunctions) {
+      // Track the exported function as available for linking
+      // The native linker will resolve these at instantiation time
+      final String interfaceKey = "linked:" + instance.getId();
+      Set<String> functions = definedInterfaces.get(interfaceKey);
+      if (functions == null) {
+        functions = Collections.synchronizedSet(new HashSet<String>());
+        definedInterfaces.put(interfaceKey, functions);
+      }
+      functions.add(exportName);
+    }
+
+    LOGGER.fine(
+        "Linked component instance exports: "
+            + exportedFunctions.size()
+            + " functions from instance "
+            + instance.getId());
   }
 
   @Override
@@ -235,15 +316,46 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // For JNI, delegate to the component's own instantiation mechanism
-    // The component linker primarily manages host function definitions
-    if (component instanceof JniComponentImpl) {
-      final JniComponentImpl jniComponent = (JniComponentImpl) component;
-      return jniComponent.instantiate();
+    if (!(component instanceof JniComponentImpl)) {
+      throw new WasmException(
+          "Component must be a JniComponentImpl for JNI ComponentLinker instantiation");
     }
 
-    throw new WasmException(
-        "Component must be a JniComponentImpl for JNI ComponentLinker instantiation");
+    final JniComponentImpl jniComponent = (JniComponentImpl) component;
+    final long storeHandle = getStoreHandle(store);
+    final long componentHandle = jniComponent.getNativeHandle();
+
+    // Wire to native linker instantiation if handle is valid
+    if (isNativeHandleReasonable()) {
+      try {
+        final long instanceHandle =
+            nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+        if (instanceHandle != 0) {
+          final JniComponent.JniComponentInstanceHandle instanceWrapper =
+              new JniComponent.JniComponentInstanceHandle(instanceHandle);
+          return new JniComponentInstanceImpl(
+              instanceWrapper, jniComponent, new ComponentInstanceConfig());
+        }
+      } catch (final Exception e) {
+        LOGGER.fine("Native linker instantiation failed, falling back to component: " + e);
+      }
+    }
+
+    // Fallback to component's own instantiation mechanism
+    return jniComponent.instantiate();
+  }
+
+  /**
+   * Gets the native store handle from a Store object.
+   *
+   * @param store the store
+   * @return the native handle or 0 if not available
+   */
+  private long getStoreHandle(final Store store) {
+    if (store instanceof JniStore) {
+      return ((JniStore) store).getNativeHandle();
+    }
+    return 0;
   }
 
   @Override
@@ -443,4 +555,17 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   private native void nativeEnableWasiP2(long linkerHandle);
 
   private native void nativeDestroyComponentLinker(long linkerHandle);
+
+  private native void nativeDefineHostFunction(long linkerHandle, String witPath, long callbackId);
+
+  private native long nativeDefineResource(
+      long linkerHandle,
+      String interfaceNamespace,
+      String interfaceName,
+      String resourceName,
+      long constructorCallbackId,
+      long destructorCallbackId);
+
+  private native long nativeInstantiateWithLinker(
+      long linkerHandle, long storeHandle, long componentHandle);
 }

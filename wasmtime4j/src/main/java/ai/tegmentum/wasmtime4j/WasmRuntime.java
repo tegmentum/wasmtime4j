@@ -456,6 +456,47 @@ public interface WasmRuntime extends Closeable {
   ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException;
 
   /**
+   * Creates a new WASI-NN context for neural network inference operations.
+   *
+   * <p>The WASI-NN context provides access to machine learning inference capabilities, allowing
+   * WebAssembly modules to load ML models and run inference. This is an experimental feature
+   * (Tier 3 in Wasmtime) and may not be available in all builds.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * try (NnContext nn = runtime.createNnContext()) {
+   *     if (nn.isEncodingSupported(NnGraphEncoding.ONNX)) {
+   *         try (NnGraph graph = nn.loadGraph(modelBytes, NnGraphEncoding.ONNX, NnExecutionTarget.CPU)) {
+   *             try (NnGraphExecutionContext exec = graph.createExecutionContext()) {
+   *                 List<NnTensor> outputs = exec.computeByIndex(inputTensor);
+   *             }
+   *         }
+   *     }
+   * }
+   * }</pre>
+   *
+   * @return a new NnContext instance
+   * @throws ai.tegmentum.wasmtime4j.wasi.nn.NnException if WASI-NN is not available or context
+   *     creation fails
+   * @since 1.0.0
+   */
+  ai.tegmentum.wasmtime4j.wasi.nn.NnContext createNnContext()
+      throws ai.tegmentum.wasmtime4j.wasi.nn.NnException;
+
+  /**
+   * Checks if WASI-NN (neural network inference) is available in this runtime.
+   *
+   * <p>WASI-NN is an experimental feature that requires specific Wasmtime build flags and backend
+   * support (OpenVINO, ONNX Runtime, etc.). Use this method to check availability before
+   * attempting to create an NnContext.
+   *
+   * @return true if WASI-NN is supported and available
+   * @since 1.0.0
+   */
+  boolean isNnAvailable();
+
+  /**
    * Deserializes a module from a file containing serialized module data.
    *
    * @param engine the engine to use for deserialization

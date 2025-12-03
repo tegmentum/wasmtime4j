@@ -5,6 +5,9 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * JNI implementation of the Engine interface.
@@ -80,6 +83,14 @@ public class JniEngine implements Engine {
       return false;
     }
     return nativeIsEpochInterruptionEnabled(nativeHandle);
+  }
+
+  @Override
+  public boolean isCoredumpOnTrapEnabled() {
+    if (closed || nativeHandle == 0) {
+      return false;
+    }
+    return nativeIsCoredumpOnTrapEnabled(nativeHandle);
   }
 
   @Override
@@ -171,9 +182,73 @@ public class JniEngine implements Engine {
     return new JniModule(moduleHandle, this);
   }
 
+  @Override
+  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be empty");
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Engine has invalid native handle");
+    }
+
+    final byte[] precompiled = nativePrecompileModule(nativeHandle, wasmBytes);
+    if (precompiled == null || precompiled.length == 0) {
+      throw new WasmException("Failed to precompile module");
+    }
+    return precompiled;
+  }
+
+  @Override
+  public Module compileFromStream(final InputStream stream) throws WasmException, IOException {
+    if (stream == null) {
+      throw new IllegalArgumentException("stream cannot be null");
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+    if (nativeHandle == 0) {
+      throw new IllegalStateException("Engine has invalid native handle");
+    }
+
+    // Read entire stream into byte array
+    // Wasmtime requires complete bytecode before compilation
+    final byte[] wasmBytes = readAllBytes(stream);
+
+    if (wasmBytes.length == 0) {
+      throw new WasmException("Stream contained no data");
+    }
+
+    return compileModule(wasmBytes);
+  }
+
+  /**
+   * Reads all bytes from an input stream.
+   *
+   * @param stream the input stream to read
+   * @return all bytes from the stream
+   * @throws IOException if reading fails
+   */
+  private byte[] readAllBytes(final InputStream stream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    final byte[] data = new byte[8192];
+    int bytesRead;
+    while ((bytesRead = stream.read(data, 0, data.length)) != -1) {
+      buffer.write(data, 0, bytesRead);
+    }
+    return buffer.toByteArray();
+  }
+
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
 
   private native long nativeCompileWat(long engineHandle, String wat);
+
+  private native byte[] nativePrecompileModule(long engineHandle, byte[] wasmBytes);
 
   @Override
   public EngineConfig getConfig() {
@@ -206,6 +281,8 @@ public class JniEngine implements Engine {
   private native void nativeDestroyEngine(long handle);
 
   private native boolean nativeIsEpochInterruptionEnabled(long engineHandle);
+
+  private native boolean nativeIsCoredumpOnTrapEnabled(long engineHandle);
 
   private native boolean nativeIsFuelEnabled(long engineHandle);
 

@@ -7,7 +7,7 @@
 
     <parent>
         <groupId>ai.tegmentum</groupId>
-        <artifactId>wasmtime4j</artifactId>
+        <artifactId>wasmtime4j-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -25,13 +25,6 @@
     </properties>
 
     <dependencies>
-        <!-- Wasmtime4j Core API -->
-        <dependency>
-            <groupId>ai.tegmentum</groupId>
-            <artifactId>wasmtime4j</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Maven Plugin Dependencies -->
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -63,8 +56,16 @@
 
         <!-- Test Dependencies -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -82,7 +83,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.6.4</version>
+                <version>3.13.1</version>
                 <configuration>
                     <goalPrefix>wasmtime4j</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
@@ -166,7 +167,7 @@
                         <plugin>
                             <groupId>org.apache.maven.plugins</groupId>
                             <artifactId>maven-plugin-plugin</artifactId>
-                            <version>3.6.4</version>
+                            <version>3.13.1</version>
                         </plugin>
                     </reportPlugins>
                 </configuration>

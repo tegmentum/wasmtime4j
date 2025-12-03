@@ -1,59 +1,210 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.ref.WeakReference;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Panama implementation of function reference.
+ * Panama FFI implementation for WebAssembly function references.
  *
- * <p>TODO: Implement full function reference functionality.
+ * <p>Function references enable dynamic function dispatch and callback mechanisms in WebAssembly
+ * programs. They can be passed as parameters, stored in tables, and called indirectly through
+ * call_indirect instructions.
+ *
+ * <p>This implementation provides thread-safe management of function references with comprehensive
+ * defensive programming practices to prevent JVM crashes and resource leaks.
+ *
+ * <p>Key Features:
+ *
+ * <ul>
+ *   <li>Thread-safe function reference creation and management
+ *   <li>Support for both host functions and WebAssembly functions
+ *   <li>Automatic resource cleanup and lifecycle management
+ *   <li>Parameter and return value marshalling via Panama FFI
+ *   <li>Error handling and exception propagation
+ * </ul>
  *
  * @since 1.0.0
  */
 public final class PanamaFunctionReference implements FunctionReference {
+  private static final Logger LOGGER = Logger.getLogger(PanamaFunctionReference.class.getName());
 
-  private final long id;
-  private final HostFunction hostFunction;
+  // Global registry for function references to prevent GC
+  private static final ConcurrentHashMap<Long, PanamaFunctionReference>
+      FUNCTION_REFERENCE_REGISTRY = new ConcurrentHashMap<>();
+  private static final AtomicLong NEXT_FUNCTION_REFERENCE_ID = new AtomicLong(1L);
+
+  private final long functionReferenceId;
+  private final String functionName;
   private final FunctionType functionType;
-  private final PanamaStore store;
+  private final HostFunction hostFunction; // Null for WebAssembly functions
+  private final WasmFunction wasmFunction; // Null for host functions
+  private final WeakReference<PanamaStore> storeRef;
+  private final ArenaResourceManager arenaManager;
+  private final PanamaErrorHandler errorHandler;
 
-  /** Creates a new Panama function reference. */
-  public PanamaFunctionReference() {
-    this.id = 0L;
-    this.hostFunction = null;
-    this.functionType = null;
-    this.store = null;
-    // TODO: Implement
-  }
+  private MemorySegment upcallStub;
+  private volatile boolean closed = false;
 
   /**
-   * Creates a new Panama function reference with full parameters.
+   * Creates a new function reference from a host function.
    *
-   * @param callback the host function callback
-   * @param functionType the function type
-   * @param store the store
-   * @param arenaManager the arena resource manager
-   * @param errorHandler the error handler
+   * @param hostFunction the host function implementation
+   * @param functionType the WebAssembly function type signature
+   * @param store the store this function reference belongs to
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param errorHandler the error handler for exception mapping
+   * @throws WasmException if function reference creation fails
+   * @throws IllegalArgumentException if any required parameter is null
    */
   public PanamaFunctionReference(
-      final HostFunction callback,
+      final HostFunction hostFunction,
       final FunctionType functionType,
       final PanamaStore store,
       final ArenaResourceManager arenaManager,
-      final PanamaErrorHandler errorHandler) {
-    this.id = System.nanoTime(); // Use nano time as unique ID
-    this.hostFunction = callback;
+      final PanamaErrorHandler errorHandler)
+      throws WasmException {
+    if (hostFunction == null) {
+      throw new WasmException("Failed to create function reference: Host function cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException("Failed to create function reference: Function type cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create function reference: Store cannot be null");
+    }
+    if (arenaManager == null) {
+      throw new WasmException("Failed to create function reference: Arena manager cannot be null");
+    }
+    if (errorHandler == null) {
+      throw new WasmException("Failed to create function reference: Error handler cannot be null");
+    }
+
+    this.functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
+    this.functionName = "host_function_" + functionReferenceId;
     this.functionType = functionType;
-    this.store = store;
-    // TODO: Use arenaManager and errorHandler
+    this.hostFunction = hostFunction;
+    this.wasmFunction = null;
+    this.storeRef = new WeakReference<>(store);
+    this.arenaManager = arenaManager;
+    this.errorHandler = errorHandler;
+
+    try {
+      // Register this function reference to prevent GC
+      FUNCTION_REFERENCE_REGISTRY.put(functionReferenceId, this);
+
+      // Create the upcall stub for native-to-Java callback
+      createUpcallStub();
+
+      // Register for automatic resource cleanup
+      arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
+
+      if (LOGGER.isLoggable(Level.FINE)) {
+        LOGGER.fine(
+            "Created host function reference '"
+                + functionName
+                + "' with ID: "
+                + functionReferenceId);
+      }
+    } catch (Exception e) {
+      FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+      throw new WasmException("Failed to create function reference: " + functionName, e);
+    }
   }
 
-  @Override
-  public WasmValue[] call(final WasmValue... args) throws WasmException {
-    throw new UnsupportedOperationException("Not yet implemented");
+  /**
+   * Creates a new function reference from a WebAssembly function.
+   *
+   * @param wasmFunction the WebAssembly function
+   * @param store the store this function reference belongs to
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param errorHandler the error handler for exception mapping
+   * @throws WasmException if function reference creation fails
+   * @throws IllegalArgumentException if any required parameter is null
+   */
+  public PanamaFunctionReference(
+      final WasmFunction wasmFunction,
+      final PanamaStore store,
+      final ArenaResourceManager arenaManager,
+      final PanamaErrorHandler errorHandler)
+      throws WasmException {
+    if (wasmFunction == null) {
+      throw new WasmException(
+          "Failed to create function reference: WebAssembly function cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create function reference: Store cannot be null");
+    }
+    if (arenaManager == null) {
+      throw new WasmException("Failed to create function reference: Arena manager cannot be null");
+    }
+    if (errorHandler == null) {
+      throw new WasmException("Failed to create function reference: Error handler cannot be null");
+    }
+
+    this.functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
+    this.functionName =
+        wasmFunction.getName() != null
+            ? wasmFunction.getName()
+            : "wasm_function_" + functionReferenceId;
+    this.functionType = wasmFunction.getFunctionType();
+    this.hostFunction = null;
+    this.wasmFunction = wasmFunction;
+    this.storeRef = new WeakReference<>(store);
+    this.arenaManager = arenaManager;
+    this.errorHandler = errorHandler;
+
+    try {
+      // Register this function reference to prevent GC
+      FUNCTION_REFERENCE_REGISTRY.put(functionReferenceId, this);
+
+      // WebAssembly functions don't need upcall stubs
+      this.upcallStub = null;
+
+      if (LOGGER.isLoggable(Level.FINE)) {
+        LOGGER.fine(
+            "Created WebAssembly function reference '"
+                + functionName
+                + "' with ID: "
+                + functionReferenceId);
+      }
+    } catch (Exception e) {
+      FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+      throw new WasmException("Failed to create function reference: " + functionName, e);
+    }
   }
 
   @Override
@@ -62,22 +213,638 @@ public final class PanamaFunctionReference implements FunctionReference {
   }
 
   @Override
-  public long getId() {
-    return id;
-  }
+  public WasmValue[] call(final WasmValue... params) throws WasmException {
+    ensureNotClosed();
+    Objects.requireNonNull(params, "Parameters cannot be null");
 
-  @Override
-  public boolean isValid() {
-    return true;
+    if (hostFunction != null) {
+      // Direct call to host function
+      return hostFunction.execute(params);
+    } else if (wasmFunction != null) {
+      // Delegate to WebAssembly function
+      return wasmFunction.call(params);
+    } else {
+      throw new WasmException("Function reference has no associated function");
+    }
   }
 
   @Override
   public String getName() {
-    return "function_" + id;
+    return functionName;
   }
 
-  /** Closes the function reference and releases resources. */
-  public void close() {
-    // TODO: Implement resource cleanup
+  @Override
+  public boolean isValid() {
+    return !closed && (hostFunction != null || wasmFunction != null);
+  }
+
+  @Override
+  public long getId() {
+    return functionReferenceId;
+  }
+
+  /**
+   * Checks if this function reference is a host function.
+   *
+   * @return true if this is a host function reference
+   */
+  public boolean isHostFunction() {
+    return hostFunction != null;
+  }
+
+  /**
+   * Checks if this function reference is a WebAssembly function.
+   *
+   * @return true if this is a WebAssembly function reference
+   */
+  public boolean isWasmFunction() {
+    return wasmFunction != null;
+  }
+
+  /**
+   * Gets the upcall stub for this function reference.
+   *
+   * <p>This is used when passing the function reference to native code.
+   *
+   * @return the upcall stub memory segment, or null for WebAssembly functions
+   */
+  public MemorySegment getUpcallStub() {
+    return upcallStub;
+  }
+
+  /**
+   * Returns the registry ID as a long value for storage in globals or tables.
+   *
+   * @return the registry ID
+   */
+  public long longValue() {
+    return functionReferenceId;
+  }
+
+  /**
+   * Closes this function reference and releases its resources.
+   *
+   * @throws WasmException if closing fails
+   */
+  public void close() throws WasmException {
+    if (closed) {
+      return;
+    }
+
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+
+      try {
+        // Remove from global registry
+        FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+
+        // Unregister from arena manager - this will call closeNative()
+        if (arenaManager != null && upcallStub != null) {
+          arenaManager.unregisterManagedResource(this);
+        }
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+          LOGGER.fine(
+              "Closed function reference '" + functionName + "' with ID: " + functionReferenceId);
+        }
+      } catch (Exception e) {
+        LOGGER.log(Level.WARNING, "Error closing function reference: " + functionName, e);
+        throw new WasmException("Failed to close function reference: " + functionName, e);
+      } finally {
+        closed = true;
+      }
+    }
+  }
+
+  /**
+   * Creates the Panama upcall stub for this function reference.
+   *
+   * <p>The upcall stub provides a native function pointer that can be called from WebAssembly code,
+   * which will then invoke the Java callback implementation.
+   *
+   * @throws WasmException if upcall stub creation fails
+   */
+  private void createUpcallStub() throws WasmException {
+    if (hostFunction == null) {
+      // WebAssembly functions don't need upcall stubs
+      return;
+    }
+
+    try {
+      // Create method handle for the callback wrapper
+      final MethodHandle callbackHandle = createCallbackMethodHandle();
+
+      // Create function descriptor based on WebAssembly function type
+      final FunctionDescriptor descriptor = createFunctionDescriptor();
+
+      // Create the upcall stub using Panama's Linker
+      final Linker linker = Linker.nativeLinker();
+      this.upcallStub = linker.upcallStub(callbackHandle, descriptor, arenaManager.getArena());
+
+      if (LOGGER.isLoggable(Level.FINE)) {
+        LOGGER.fine("Created upcall stub for function reference: " + functionName);
+      }
+    } catch (Exception e) {
+      throw new WasmException(
+          "Failed to create upcall stub for function reference: " + functionName, e);
+    }
+  }
+
+  /**
+   * Creates a method handle for the callback wrapper method.
+   *
+   * @return the method handle for invoking the function reference
+   * @throws NoSuchMethodException if the callback method cannot be found
+   * @throws IllegalAccessException if the callback method cannot be accessed
+   */
+  private MethodHandle createCallbackMethodHandle()
+      throws NoSuchMethodException, IllegalAccessException {
+    final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+    // Get the parameter types for the native callback
+    final WasmValueType[] paramTypes = functionType.getParamTypes();
+    final WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+    // Build method type for native callback
+    final Class<?>[] nativeParams = new Class<?>[paramTypes.length];
+    for (int i = 0; i < paramTypes.length; i++) {
+      nativeParams[i] = getNativeType(paramTypes[i]);
+    }
+
+    final Class<?> nativeReturn =
+        returnTypes.length == 0
+            ? void.class
+            : (returnTypes.length == 1 ? getNativeType(returnTypes[0]) : MemorySegment.class);
+
+    final MethodType methodType = MethodType.methodType(nativeReturn, nativeParams);
+
+    // Create adapter that matches the function descriptor exactly
+    return createGenericAdapter(methodType, functionReferenceId);
+  }
+
+  /**
+   * Creates a function descriptor for the native callback signature.
+   *
+   * @return the function descriptor for Panama FFI
+   */
+  private FunctionDescriptor createFunctionDescriptor() {
+    final WasmValueType[] paramTypes = functionType.getParamTypes();
+    final WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+    // Build parameter layouts
+    final ValueLayout[] paramLayouts = new ValueLayout[paramTypes.length];
+    for (int i = 0; i < paramTypes.length; i++) {
+      paramLayouts[i] = getNativeLayout(paramTypes[i]);
+    }
+
+    // Build return layout
+    if (returnTypes.length == 0) {
+      return FunctionDescriptor.ofVoid(paramLayouts);
+    } else if (returnTypes.length == 1) {
+      final ValueLayout returnLayout = getNativeLayout(returnTypes[0]);
+      return FunctionDescriptor.of(returnLayout, paramLayouts);
+    } else {
+      // Multiple return values - use memory segment for struct return
+      return FunctionDescriptor.of(ValueLayout.ADDRESS, paramLayouts);
+    }
+  }
+
+  /**
+   * Gets the native Java type for a WebAssembly value type.
+   *
+   * @param valueType the WebAssembly value type
+   * @return the corresponding native Java type
+   */
+  private Class<?> getNativeType(final WasmValueType valueType) {
+    return switch (valueType) {
+      case I32 -> int.class;
+      case I64 -> long.class;
+      case F32 -> float.class;
+      case F64 -> double.class;
+      case V128 -> MemorySegment.class;
+      case FUNCREF, EXTERNREF -> MemorySegment.class;
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
+    };
+  }
+
+  /**
+   * Gets the native memory layout for a WebAssembly value type.
+   *
+   * @param valueType the WebAssembly value type
+   * @return the corresponding Panama value layout
+   */
+  private ValueLayout getNativeLayout(final WasmValueType valueType) {
+    return switch (valueType) {
+      case I32 -> ValueLayout.JAVA_INT;
+      case I64 -> ValueLayout.JAVA_LONG;
+      case F32 -> ValueLayout.JAVA_FLOAT;
+      case F64 -> ValueLayout.JAVA_DOUBLE;
+      case V128 -> ValueLayout.ADDRESS;
+      case FUNCREF, EXTERNREF -> ValueLayout.ADDRESS;
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
+    };
+  }
+
+  /**
+   * Static callback method invoked by native code through upcall stub.
+   *
+   * @param functionReferenceId the ID of the function reference to invoke
+   * @param nativeParams variable arguments representing the native parameters
+   * @return the native return value
+   */
+  @SuppressWarnings("unused") // Called via method handle
+  private static Object nativeCallback(
+      final long functionReferenceId, final Object... nativeParams) {
+    final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    if (funcRef == null) {
+      LOGGER.severe("Function reference not found in registry: " + functionReferenceId);
+      return null;
+    }
+
+    try {
+      if (funcRef.closed) {
+        LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
+        return null;
+      }
+
+      if (funcRef.hostFunction == null) {
+        LOGGER.severe(
+            "Function reference callback called on non-host function: " + funcRef.functionName);
+        return null;
+      }
+
+      // Convert native parameters to WasmValue array
+      final WasmValue[] wasmParams = funcRef.marshalParameters(nativeParams);
+
+      // Invoke the host function
+      final WasmValue[] wasmResults = funcRef.hostFunction.execute(wasmParams);
+
+      // Convert WasmValue results back to native format
+      return funcRef.marshalResults(wasmResults);
+    } catch (Exception e) {
+      LOGGER.log(Level.SEVERE, "Error in function reference callback: " + funcRef.functionName, e);
+      // Return appropriate error value based on return type
+      final WasmValueType[] returnTypes = funcRef.functionType.getReturnTypes();
+      if (returnTypes.length == 0) {
+        return null;
+      } else if (returnTypes.length == 1) {
+        return getDefaultValue(returnTypes[0]);
+      } else {
+        return MemorySegment.NULL;
+      }
+    }
+  }
+
+  /**
+   * Generic adapter method that can handle any function signature by using method handle
+   * transformation.
+   */
+  private static MethodHandle createGenericAdapter(
+      final MethodType targetType, final long functionReferenceId) {
+    try {
+      return createDynamicWrapper(targetType, functionReferenceId);
+    } catch (Exception e) {
+      LOGGER.log(Level.SEVERE, "Failed to create generic adapter for type: " + targetType, e);
+      throw new RuntimeException("Failed to create method handle adapter", e);
+    }
+  }
+
+  /** Creates a dynamic wrapper using MethodHandle combinators. */
+  private static MethodHandle createDynamicWrapper(
+      final MethodType targetType, final long functionReferenceId)
+      throws NoSuchMethodException, IllegalAccessException {
+
+    final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+    // Get the base generic callback
+    final MethodHandle genericCallback =
+        lookup.findStatic(
+            PanamaFunctionReference.class,
+            "nativeCallback",
+            MethodType.methodType(Object.class, long.class, Object[].class));
+
+    // Create parameter gathering wrapper that matches target signature exactly
+    final int paramCount = targetType.parameterCount();
+
+    // Create a MethodHandle that gathers parameters into Object array
+    MethodHandle wrapper;
+
+    if (paramCount == 0) {
+      // () -> ReturnType - no parameters
+      wrapper =
+          MethodHandles.insertArguments(genericCallback, 0, functionReferenceId, new Object[0]);
+    } else {
+      // Multi-parameter case: create parameter-gathering logic
+      wrapper = createParameterGatheringWrapper(targetType, genericCallback, functionReferenceId);
+    }
+
+    // Handle return type conversion
+    final Class<?> returnType = targetType.returnType();
+    if (returnType.isPrimitive() && returnType != void.class) {
+      final MethodHandle converter = createReturnTypeConverter(returnType);
+      wrapper = MethodHandles.filterReturnValue(wrapper, converter);
+    } else if (returnType == void.class) {
+      // For void return, we need to drop the Object return value
+      wrapper =
+          MethodHandles.filterReturnValue(
+              wrapper, MethodHandles.empty(MethodType.methodType(void.class)));
+    } else {
+      // For non-primitive return types, ensure proper type conversion
+      wrapper = wrapper.asType(targetType);
+    }
+
+    return wrapper;
+  }
+
+  /** Creates a parameter-gathering wrapper for multi-parameter functions. */
+  private static MethodHandle createParameterGatheringWrapper(
+      final MethodType targetType,
+      final MethodHandle genericCallback,
+      final long functionReferenceId) {
+
+    final int paramCount = targetType.parameterCount();
+
+    // Create a wrapper that has exact target signature but converts parameters to Object array
+    final MethodHandle boundCallback =
+        MethodHandles.insertArguments(genericCallback, 0, functionReferenceId);
+
+    // Create a collector that gathers all parameters into Object array
+    MethodHandle collector = boundCallback.asCollector(Object[].class, paramCount);
+
+    // Convert the collector to match the exact target parameter types
+    collector = collector.asType(targetType.changeReturnType(Object.class));
+
+    return collector;
+  }
+
+  /** Creates a method handle converter for primitive return types. */
+  private static MethodHandle createReturnTypeConverter(final Class<?> returnType)
+      throws NoSuchMethodException, IllegalAccessException {
+    final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+    return switch (returnType.getName()) {
+      case "float" -> lookup.findStatic(
+          PanamaFunctionReference.class,
+          "convertToFloat",
+          MethodType.methodType(float.class, Object.class));
+      case "int" -> lookup.findStatic(
+          PanamaFunctionReference.class,
+          "convertToInt",
+          MethodType.methodType(int.class, Object.class));
+      case "double" -> lookup.findStatic(
+          PanamaFunctionReference.class,
+          "convertToDouble",
+          MethodType.methodType(double.class, Object.class));
+      case "long" -> lookup.findStatic(
+          PanamaFunctionReference.class,
+          "convertToLong",
+          MethodType.methodType(long.class, Object.class));
+      default -> throw new IllegalArgumentException("Unsupported return type: " + returnType);
+    };
+  }
+
+  // Helper methods for return type conversion
+  private static float convertToFloat(final Object value) {
+    if (value instanceof Number number) {
+      return number.floatValue();
+    }
+    throw new ClassCastException("Cannot convert " + value + " to float");
+  }
+
+  private static int convertToInt(final Object value) {
+    if (value instanceof Number number) {
+      return number.intValue();
+    }
+    throw new ClassCastException("Cannot convert " + value + " to int");
+  }
+
+  private static double convertToDouble(final Object value) {
+    if (value instanceof Number number) {
+      return number.doubleValue();
+    }
+    throw new ClassCastException("Cannot convert " + value + " to double");
+  }
+
+  private static long convertToLong(final Object value) {
+    if (value instanceof Number number) {
+      return number.longValue();
+    }
+    throw new ClassCastException("Cannot convert " + value + " to long");
+  }
+
+  /**
+   * Marshals native parameters to WasmValue array.
+   *
+   * @param nativeParams the native parameter values
+   * @return the corresponding WasmValue array
+   */
+  private WasmValue[] marshalParameters(final Object[] nativeParams) {
+    final WasmValueType[] paramTypes = functionType.getParamTypes();
+    final WasmValue[] wasmParams = new WasmValue[paramTypes.length];
+
+    for (int i = 0; i < paramTypes.length; i++) {
+      final Object nativeParam = nativeParams[i];
+      wasmParams[i] = createWasmValue(paramTypes[i], nativeParam);
+    }
+
+    return wasmParams;
+  }
+
+  /**
+   * Marshals WasmValue results back to native format.
+   *
+   * @param wasmResults the WasmValue results from the callback
+   * @return the native return value
+   */
+  private Object marshalResults(final WasmValue[] wasmResults) {
+    final WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+    if (returnTypes.length == 0) {
+      return null;
+    } else if (returnTypes.length == 1) {
+      return extractNativeValue(wasmResults[0]);
+    } else {
+      // Multiple return values - return as an array
+      final Object[] results = new Object[wasmResults.length];
+      for (int i = 0; i < wasmResults.length; i++) {
+        results[i] = extractNativeValue(wasmResults[i]);
+      }
+      return results;
+    }
+  }
+
+  /**
+   * Creates a WasmValue from a native parameter value.
+   *
+   * @param valueType the expected WebAssembly value type
+   * @param nativeValue the native parameter value
+   * @return the corresponding WasmValue
+   */
+  private WasmValue createWasmValue(final WasmValueType valueType, final Object nativeValue) {
+    return switch (valueType) {
+      case I32 -> WasmValue.i32((Integer) nativeValue);
+      case I64 -> WasmValue.i64((Long) nativeValue);
+      case F32 -> WasmValue.f32((Float) nativeValue);
+      case F64 -> WasmValue.f64((Double) nativeValue);
+      case V128 -> WasmValue.v128((byte[]) nativeValue);
+      case FUNCREF, EXTERNREF -> WasmValue.externref(nativeValue);
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
+    };
+  }
+
+  /**
+   * Extracts the native value from a WasmValue.
+   *
+   * @param wasmValue the WasmValue to extract from
+   * @return the native value
+   */
+  private Object extractNativeValue(final WasmValue wasmValue) {
+    return switch (wasmValue.getType()) {
+      case I32 -> wasmValue.asI32();
+      case I64 -> wasmValue.asI64();
+      case F32 -> wasmValue.asF32();
+      case F64 -> wasmValue.asF64();
+      case V128 -> wasmValue.asV128();
+      case FUNCREF, EXTERNREF -> wasmValue.asExternref();
+      default -> throw new IllegalArgumentException(
+          "Unsupported value type: " + wasmValue.getType());
+    };
+  }
+
+  /**
+   * Gets a default value for a WebAssembly value type (used for error cases).
+   *
+   * @param valueType the WebAssembly value type
+   * @return the default value
+   */
+  private static Object getDefaultValue(final WasmValueType valueType) {
+    return switch (valueType) {
+      case I32 -> 0;
+      case I64 -> 0L;
+      case F32 -> 0.0f;
+      case F64 -> 0.0;
+      case V128 -> new byte[16];
+      case FUNCREF, EXTERNREF -> 0L;
+      default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
+    };
+  }
+
+  /** Native cleanup method called by the arena manager. */
+  private void closeNative() {
+    try {
+      if (upcallStub != null && !upcallStub.equals(MemorySegment.NULL)) {
+        // The upcall stub will be automatically cleaned up when the arena is closed
+        if (LOGGER.isLoggable(Level.FINE)) {
+          LOGGER.fine("Released function reference upcall stub: " + functionName);
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.WARNING, "Failed to release function reference resources: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Ensures the function reference is not closed.
+   *
+   * @throws WasmException if the function reference has been closed
+   */
+  private void ensureNotClosed() throws WasmException {
+    if (closed) {
+      throw new WasmException("Function reference '" + functionName + "' has been closed");
+    }
+  }
+
+  /**
+   * Gets the current registry statistics for debugging.
+   *
+   * @return array containing [count, nextId]
+   */
+  static long[] getRegistryStats() {
+    return new long[] {FUNCTION_REFERENCE_REGISTRY.size(), NEXT_FUNCTION_REFERENCE_ID.get()};
+  }
+
+  /**
+   * Retrieves a function reference from the registry by ID (package-private).
+   *
+   * @param functionReferenceId the function reference ID
+   * @return the function reference, or null if not found
+   */
+  static PanamaFunctionReference getFromRegistry(final long functionReferenceId) {
+    return FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+  }
+
+  /**
+   * Retrieves a function reference from the registry by ID.
+   *
+   * <p>This is the public accessor for looking up function references during value unmarshalling.
+   *
+   * @param functionReferenceId the function reference ID
+   * @return the function reference, or null if not found
+   */
+  public static FunctionReference getFunctionReferenceById(final long functionReferenceId) {
+    return FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+  }
+
+  /**
+   * Invokes a function reference callback from native code.
+   *
+   * <p>This method is called by the Rust Panama FFI layer when a FunctionReference created from a
+   * host function is invoked.
+   *
+   * @param functionReferenceId the function reference ID
+   * @param params array of parameter values
+   * @return array of return values
+   * @throws WasmException if the callback fails
+   */
+  @SuppressWarnings("unused") // Called by native code
+  static WasmValue[] invokeFunctionReferenceCallback(
+      final long functionReferenceId, final WasmValue[] params) throws WasmException {
+    final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    if (funcRef == null) {
+      LOGGER.severe("Function reference not found in registry: " + functionReferenceId);
+      throw new WasmException("Function reference not found: " + functionReferenceId);
+    }
+
+    if (funcRef.closed) {
+      LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
+      throw new WasmException("Function reference has been closed: " + funcRef.functionName);
+    }
+
+    if (funcRef.hostFunction == null) {
+      LOGGER.severe(
+          "Function reference callback called on non-host function: " + funcRef.functionName);
+      throw new WasmException("Function reference is not a host function: " + funcRef.functionName);
+    }
+
+    try {
+      if (LOGGER.isLoggable(Level.FINE)) {
+        LOGGER.fine(
+            "Executing function reference callback: "
+                + funcRef.functionName
+                + " (ID: "
+                + functionReferenceId
+                + ")");
+      }
+      return funcRef.hostFunction.execute(params);
+    } catch (final Exception e) {
+      LOGGER.severe(
+          "Function reference execution failed: " + funcRef.functionName + " - " + e.getMessage());
+      throw new WasmException("Function reference execution failed: " + funcRef.functionName, e);
+    }
+  }
+
+  @Override
+  public String toString() {
+    if (closed) {
+      return "PanamaFunctionReference{name='" + functionName + "', closed=true}";
+    }
+
+    final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "unknown");
+    return String.format(
+        "PanamaFunctionReference{name='%s', type=%s, functionType=%s, id=%d}",
+        functionName, type, functionType, functionReferenceId);
   }
 }
