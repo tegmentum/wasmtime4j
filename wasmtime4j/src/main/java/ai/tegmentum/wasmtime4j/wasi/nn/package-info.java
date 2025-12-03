@@ -22,8 +22,8 @@
  *
  * <h2>Overview</h2>
  *
- * <p>WASI-NN follows a "graph loader" design where pre-trained models are loaded as opaque
- * "graphs" that can be used for inference. The main components are:
+ * <p>WASI-NN follows a "graph loader" design where pre-trained models are loaded as opaque "graphs"
+ * that can be used for inference. The main components are:
  *
  * <ul>
  *   <li>{@link ai.tegmentum.wasmtime4j.wasi.nn.NnContext} - Main entry point for WASI-NN operations
@@ -81,8 +81,8 @@
  *
  * <h2>Stability Note</h2>
  *
- * <p>WASI-NN is a Tier 3 (experimental) feature in Wasmtime. The API may change in future
- * versions and may not be available in all Wasmtime builds.
+ * <p>WASI-NN is a Tier 3 (experimental) feature in Wasmtime. The API may change in future versions
+ * and may not be available in all Wasmtime builds.
  *
  * @since 1.0.0
  */

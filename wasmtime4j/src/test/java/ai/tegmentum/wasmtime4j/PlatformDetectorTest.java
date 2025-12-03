@@ -193,7 +193,7 @@ final class PlatformDetectorTest {
     // Verify expected names for each OS
     assertEquals("linux", PlatformDetector.OperatingSystem.LINUX.getName());
     assertEquals("windows", PlatformDetector.OperatingSystem.WINDOWS.getName());
-    assertEquals("macos", PlatformDetector.OperatingSystem.MACOS.getName());
+    assertEquals("darwin", PlatformDetector.OperatingSystem.MACOS.getName());
   }
 
   @Test

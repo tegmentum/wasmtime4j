@@ -459,8 +459,8 @@ public interface WasmRuntime extends Closeable {
    * Creates a new WASI-NN context for neural network inference operations.
    *
    * <p>The WASI-NN context provides access to machine learning inference capabilities, allowing
-   * WebAssembly modules to load ML models and run inference. This is an experimental feature
-   * (Tier 3 in Wasmtime) and may not be available in all builds.
+   * WebAssembly modules to load ML models and run inference. This is an experimental feature (Tier
+   * 3 in Wasmtime) and may not be available in all builds.
    *
    * <p>Example usage:
    *
@@ -488,8 +488,8 @@ public interface WasmRuntime extends Closeable {
    * Checks if WASI-NN (neural network inference) is available in this runtime.
    *
    * <p>WASI-NN is an experimental feature that requires specific Wasmtime build flags and backend
-   * support (OpenVINO, ONNX Runtime, etc.). Use this method to check availability before
-   * attempting to create an NnContext.
+   * support (OpenVINO, ONNX Runtime, etc.). Use this method to check availability before attempting
+   * to create an NnContext.
    *
    * @return true if WASI-NN is supported and available
    * @since 1.0.0

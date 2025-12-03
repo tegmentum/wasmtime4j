@@ -25,8 +25,8 @@ import java.util.Objects;
 /**
  * Represents a tensor for WASI-NN inference operations.
  *
- * <p>A tensor contains multi-dimensional numerical data with a specific data type. Tensors are
- * used as inputs and outputs for neural network inference operations.
+ * <p>A tensor contains multi-dimensional numerical data with a specific data type. Tensors are used
+ * as inputs and outputs for neural network inference operations.
  *
  * <p>Data is stored in row-major order (C-style) as per the WASI-NN specification.
  *
@@ -136,8 +136,7 @@ public final class NnTensor {
           "Data size mismatch: expected " + expectedElements + " elements, got " + data.length);
     }
 
-    final ByteBuffer buffer =
-        ByteBuffer.allocate(data.length * 4).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.asFloatBuffer().put(data);
 
     return new NnTensor(name, dimensions, NnTensorType.FP32, buffer.array());
@@ -204,8 +203,7 @@ public final class NnTensor {
    * @throws NullPointerException if dimensions or data is null
    * @throws IllegalArgumentException if dimensions are invalid or data size doesn't match
    */
-  public static NnTensor fromIntArray(
-      final String name, final int[] dimensions, final int[] data) {
+  public static NnTensor fromIntArray(final String name, final int[] dimensions, final int[] data) {
     Objects.requireNonNull(dimensions, "dimensions cannot be null");
     Objects.requireNonNull(data, "data cannot be null");
 
@@ -216,8 +214,7 @@ public final class NnTensor {
           "Data size mismatch: expected " + expectedElements + " elements, got " + data.length);
     }
 
-    final ByteBuffer buffer =
-        ByteBuffer.allocate(data.length * 4).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.asIntBuffer().put(data);
 
     return new NnTensor(name, dimensions, NnTensorType.I32, buffer.array());
@@ -258,8 +255,7 @@ public final class NnTensor {
           "Data size mismatch: expected " + expectedElements + " elements, got " + data.length);
     }
 
-    final ByteBuffer buffer =
-        ByteBuffer.allocate(data.length * 8).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.asLongBuffer().put(data);
 
     return new NnTensor(name, dimensions, NnTensorType.I64, buffer.array());
@@ -339,8 +335,7 @@ public final class NnTensor {
       throw new IllegalStateException("Cannot convert " + type + " tensor to float array");
     }
 
-    final FloatBuffer buffer =
-        ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer();
+    final FloatBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer();
     final float[] result = new float[buffer.remaining()];
     buffer.get(result);
     return result;

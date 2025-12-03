@@ -20,8 +20,8 @@ package ai.tegmentum.wasmtime4j.wasi.nn;
  * Factory interface for creating WASI-NN contexts.
  *
  * <p>This interface is implemented by runtime providers to create {@link NnContext} instances.
- * Users typically do not interact with this interface directly, instead using the factory method
- * on {@link ai.tegmentum.wasmtime4j.WasmRuntime}.
+ * Users typically do not interact with this interface directly, instead using the factory method on
+ * {@link ai.tegmentum.wasmtime4j.WasmRuntime}.
  *
  * @since 1.0.0
  */

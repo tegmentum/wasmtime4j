@@ -309,7 +309,7 @@ final class WitValueMarshallerTest {
     assertEquals(
         Double.valueOf(3.14), WitValueMarshaller.toJava(WitFloat64.of(3.14)), "Float64 to Double");
     assertEquals(
-        Integer.valueOf((int) 'A'), WitValueMarshaller.toJava(WitChar.of('A')), "Char to Integer");
+        Character.valueOf('A'), WitValueMarshaller.toJava(WitChar.of('A')), "Char to Character");
     assertEquals("hello", WitValueMarshaller.toJava(WitString.of("hello")), "String to String");
   }
 

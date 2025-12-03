@@ -22,8 +22,8 @@ import java.util.Map;
 /**
  * Execution context for running inference on a loaded WASI-NN graph.
  *
- * <p>An execution context maintains the state needed to run inference operations on a loaded
- * model. It holds input and output tensor buffers and manages the inference lifecycle.
+ * <p>An execution context maintains the state needed to run inference operations on a loaded model.
+ * It holds input and output tensor buffers and manages the inference lifecycle.
  *
  * <p>Execution contexts are created from {@link NnGraph} instances and must be closed when no
  * longer needed.

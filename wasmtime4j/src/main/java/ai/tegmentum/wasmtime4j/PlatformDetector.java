@@ -41,7 +41,7 @@ public final class PlatformDetector {
   public enum OperatingSystem {
     LINUX("linux", "lib", ".so"),
     WINDOWS("windows", "", ".dll"),
-    MACOS("macos", "lib", ".dylib");
+    MACOS("darwin", "lib", ".dylib");
 
     private final String name;
     private final String libraryPrefix;

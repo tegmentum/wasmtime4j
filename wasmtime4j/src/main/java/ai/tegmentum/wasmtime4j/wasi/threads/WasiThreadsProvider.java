@@ -27,37 +27,37 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  * <p>This interface is used by the {@link WasiThreadsFactory} to discover and instantiate
  * WASI-Threads implementations using the Java ServiceLoader mechanism.
  *
- * <p>Implementations should be registered in
- * {@code META-INF/services/ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsProvider}.
+ * <p>Implementations should be registered in {@code
+ * META-INF/services/ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsProvider}.
  *
  * @since 1.0.0
  */
 public interface WasiThreadsProvider {
 
-    /**
-     * Checks if this provider is available for use.
-     *
-     * <p>This method should return true only if the native library and all required dependencies
-     * are available and properly initialized.
-     *
-     * @return true if the provider is available, false otherwise
-     */
-    boolean isAvailable();
+  /**
+   * Checks if this provider is available for use.
+   *
+   * <p>This method should return true only if the native library and all required dependencies are
+   * available and properly initialized.
+   *
+   * @return true if the provider is available, false otherwise
+   */
+  boolean isAvailable();
 
-    /**
-     * Creates a new builder for configuring a WASI-Threads context.
-     *
-     * @return a new WasiThreadsContextBuilder
-     */
-    WasiThreadsContextBuilder createBuilder();
+  /**
+   * Creates a new builder for configuring a WASI-Threads context.
+   *
+   * @return a new WasiThreadsContextBuilder
+   */
+  WasiThreadsContextBuilder createBuilder();
 
-    /**
-     * Adds the WASI-Threads {@code thread-spawn} function to a linker.
-     *
-     * @param linker the linker to add the function to
-     * @param store the store for the context
-     * @param module the module that will use the thread-spawn function
-     * @throws WasmException if adding to linker fails
-     */
-    void addToLinker(Linker<?> linker, Store store, Module module) throws WasmException;
+  /**
+   * Adds the WASI-Threads {@code thread-spawn} function to a linker.
+   *
+   * @param linker the linker to add the function to
+   * @param store the store for the context
+   * @param module the module that will use the thread-spawn function
+   * @throws WasmException if adding to linker fails
+   */
+  void addToLinker(Linker<?> linker, Store store, Module module) throws WasmException;
 }

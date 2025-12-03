@@ -24,9 +24,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 /**
  * Builder interface for creating {@link WasiThreadsContext} instances.
  *
- * <p>This builder allows configuring the WASI-Threads context with the required module, linker,
- * and store. The module must export a {@code wasi_thread_start} function with the signature
- * {@code (i32, i32) -> ()}.
+ * <p>This builder allows configuring the WASI-Threads context with the required module, linker, and
+ * store. The module must export a {@code wasi_thread_start} function with the signature {@code
+ * (i32, i32) -> ()}.
  *
  * <p>Example usage:
  *
@@ -42,51 +42,51 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  */
 public interface WasiThreadsContextBuilder {
 
-    /**
-     * Sets the WebAssembly module that will be used for thread spawning.
-     *
-     * <p>The module must contain a {@code wasi_thread_start} export with the signature
-     * {@code (i32, i32) -> ()}.
-     *
-     * @param module the WebAssembly module
-     * @return this builder for chaining
-     * @throws IllegalArgumentException if module is null
-     */
-    WasiThreadsContextBuilder withModule(Module module);
+  /**
+   * Sets the WebAssembly module that will be used for thread spawning.
+   *
+   * <p>The module must contain a {@code wasi_thread_start} export with the signature {@code (i32,
+   * i32) -> ()}.
+   *
+   * @param module the WebAssembly module
+   * @return this builder for chaining
+   * @throws IllegalArgumentException if module is null
+   */
+  WasiThreadsContextBuilder withModule(Module module);
 
-    /**
-     * Sets the linker that contains the WASI imports.
-     *
-     * <p>The linker should have WASI imports already configured. The WASI-Threads implementation
-     * will add the {@code wasi::thread-spawn} function to this linker.
-     *
-     * @param linker the linker with WASI imports
-     * @return this builder for chaining
-     * @throws IllegalArgumentException if linker is null
-     */
-    WasiThreadsContextBuilder withLinker(Linker<?> linker);
+  /**
+   * Sets the linker that contains the WASI imports.
+   *
+   * <p>The linker should have WASI imports already configured. The WASI-Threads implementation will
+   * add the {@code wasi::thread-spawn} function to this linker.
+   *
+   * @param linker the linker with WASI imports
+   * @return this builder for chaining
+   * @throws IllegalArgumentException if linker is null
+   */
+  WasiThreadsContextBuilder withLinker(Linker<?> linker);
 
-    /**
-     * Sets the store that will be used for the main thread.
-     *
-     * <p>Each spawned thread will create its own store instance, but this store is used as the
-     * template for configuration.
-     *
-     * @param store the store for the main thread
-     * @return this builder for chaining
-     * @throws IllegalArgumentException if store is null
-     */
-    WasiThreadsContextBuilder withStore(Store store);
+  /**
+   * Sets the store that will be used for the main thread.
+   *
+   * <p>Each spawned thread will create its own store instance, but this store is used as the
+   * template for configuration.
+   *
+   * @param store the store for the main thread
+   * @return this builder for chaining
+   * @throws IllegalArgumentException if store is null
+   */
+  WasiThreadsContextBuilder withStore(Store store);
 
-    /**
-     * Builds the {@link WasiThreadsContext} with the configured settings.
-     *
-     * <p>This method validates that all required components (module, linker, store) have been
-     * provided and creates the WASI-Threads context.
-     *
-     * @return the configured WasiThreadsContext
-     * @throws WasmException if context creation fails
-     * @throws IllegalStateException if required components are not set
-     */
-    WasiThreadsContext build() throws WasmException;
+  /**
+   * Builds the {@link WasiThreadsContext} with the configured settings.
+   *
+   * <p>This method validates that all required components (module, linker, store) have been
+   * provided and creates the WASI-Threads context.
+   *
+   * @return the configured WasiThreadsContext
+   * @throws WasmException if context creation fails
+   * @throws IllegalStateException if required components are not set
+   */
+  WasiThreadsContext build() throws WasmException;
 }
