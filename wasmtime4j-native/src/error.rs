@@ -1945,6 +1945,48 @@ pub mod jni_utils {
     pub fn error_to_code(error: &WasmtimeError) -> i32 {
         error.to_error_code() as i32
     }
+
+    #[cfg(feature = "jni-bindings")]
+    /// Get bytes from a JNI byte array
+    ///
+    /// Converts a Java byte array (JByteArray) to a Rust Vec<u8>.
+    /// Returns an error if the array cannot be read.
+    pub fn get_byte_array_bytes(
+        env: &jni::JNIEnv,
+        array: &jni::objects::JByteArray,
+    ) -> Result<Vec<u8>, WasmtimeError> {
+        // Get the length of the array
+        let len = env.get_array_length(array).map_err(|e| {
+            log::error!("Failed to get byte array length: {}", e);
+            WasmtimeError::InvalidParameter {
+                message: format!("Failed to get byte array length: {}", e),
+            }
+        })?;
+
+        if len < 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Byte array has negative length".to_string(),
+            });
+        }
+
+        let len = len as usize;
+
+        // Create a buffer to hold the bytes
+        let mut buffer: Vec<i8> = vec![0i8; len];
+
+        // Copy the bytes from Java to Rust
+        env.get_byte_array_region(array, 0, &mut buffer).map_err(|e| {
+            log::error!("Failed to get byte array region: {}", e);
+            WasmtimeError::InvalidParameter {
+                message: format!("Failed to get byte array region: {}", e),
+            }
+        })?;
+
+        // Convert i8 to u8
+        let result: Vec<u8> = buffer.into_iter().map(|b| b as u8).collect();
+
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
