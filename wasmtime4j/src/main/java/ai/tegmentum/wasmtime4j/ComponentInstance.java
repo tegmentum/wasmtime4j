@@ -82,9 +82,9 @@ public interface ComponentInstance extends AutoCloseable {
   /**
    * Gets a component function by name.
    *
-   * <p>This method returns a first-class function object that can be invoked multiple times
-   * without the overhead of name lookup on each call. The returned {@link ComponentFunction}
-   * remains valid as long as this component instance is valid.
+   * <p>This method returns a first-class function object that can be invoked multiple times without
+   * the overhead of name lookup on each call. The returned {@link ComponentFunction} remains valid
+   * as long as this component instance is valid.
    *
    * <p>Example usage:
    *
