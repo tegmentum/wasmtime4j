@@ -654,7 +654,10 @@ impl EnhancedComponentEngine {
                     Box::new(self.convert_wasmtime_type_to_component_type(ty))
                 ),
             },
-            Type::Flags(_) => ComponentValueType::U64, // Flags as bitset
+            Type::Flags(flags) => {
+                let flag_names = flags.names().map(|s| s.to_string()).collect();
+                ComponentValueType::Flags(flag_names)
+            }
             Type::Own(_resource) => ComponentValueType::Resource(
                 "own<resource>".to_string()
             ),
@@ -662,14 +665,10 @@ impl EnhancedComponentEngine {
                 "borrow<resource>".to_string()
             ),
             Type::Tuple(tuple) => {
-                // Convert tuple types to record with numeric field names
-                let fields = tuple.types().enumerate().map(|(i, ty)| {
-                    FieldType {
-                        name: format!("{}", i),
-                        value_type: self.convert_wasmtime_type_to_component_type(&ty),
-                    }
-                }).collect();
-                ComponentValueType::Record(fields)
+                let element_types = tuple.types()
+                    .map(|ty| self.convert_wasmtime_type_to_component_type(&ty))
+                    .collect();
+                ComponentValueType::Tuple(element_types)
             },
             Type::Future(_future_type) => {
                 // Future types - represent as generic type

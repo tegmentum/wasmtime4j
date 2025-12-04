@@ -256,18 +256,22 @@ pub enum ComponentValueType {
     /// Optional value
     Option(Box<ComponentValueType>),
     /// Result type with success and error cases
-    Result { 
+    Result {
         /// Success value type
-        ok: Option<Box<ComponentValueType>>, 
+        ok: Option<Box<ComponentValueType>>,
         /// Error value type
-        err: Option<Box<ComponentValueType>> 
+        err: Option<Box<ComponentValueType>>
     },
     /// Record type with named fields
     Record(Vec<FieldType>),
+    /// Tuple type with indexed elements
+    Tuple(Vec<ComponentValueType>),
     /// Variant type with multiple cases
     Variant(Vec<CaseType>),
     /// Enum type with named values
     Enum(Vec<String>),
+    /// Flags type with named bits
+    Flags(Vec<String>),
     /// Resource handle
     Resource(String),
     /// Custom type reference

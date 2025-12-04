@@ -1625,6 +1625,32 @@ impl WitInterfaceManager {
                     documentation: None,
                 }
             },
+            ComponentValueType::Flags(flag_names) => {
+                WitType {
+                    name: "flags".to_string(),
+                    kind: WitTypeKind::Composite(CompositeType::Flags(flag_names.clone())),
+                    size_bytes: Some(if flag_names.len() <= 8 { 1 } else if flag_names.len() <= 16 { 2 } else if flag_names.len() <= 32 { 4 } else { 8 }),
+                    alignment: Some(if flag_names.len() <= 8 { 1 } else if flag_names.len() <= 16 { 2 } else if flag_names.len() <= 32 { 4 } else { 8 }),
+                    documentation: None,
+                }
+            },
+            ComponentValueType::Tuple(elements) => {
+                let element_types: Vec<WitType> = elements
+                    .iter()
+                    .map(|e| self.convert_component_value_type(e))
+                    .collect();
+                let name = format!(
+                    "tuple<{}>",
+                    element_types.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join(", ")
+                );
+                WitType {
+                    name,
+                    kind: WitTypeKind::Composite(CompositeType::Tuple(element_types)),
+                    size_bytes: None, // Depends on element types
+                    alignment: None, // Depends on element types
+                    documentation: None,
+                }
+            },
             ComponentValueType::Resource(name) => {
                 WitType {
                     name: name.clone(),
