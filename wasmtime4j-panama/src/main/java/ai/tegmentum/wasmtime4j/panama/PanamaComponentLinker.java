@@ -314,11 +314,171 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Enable WASI Preview 2 with default settings first
+    // Apply config settings before enabling WASI Preview 2
+    applyWasiConfig(config);
+
+    // Enable WASI Preview 2
     enableWasiPreview2();
 
-    // TODO: Apply config settings (args, env, preopened dirs, etc.)
     LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
+  }
+
+  /**
+   * Applies WASI Preview 2 configuration settings to the linker.
+   *
+   * @param config the WASI configuration to apply
+   * @throws WasmException if configuration fails
+   */
+  private void applyWasiConfig(final WasiPreview2Config config) throws WasmException {
+    // Apply args if provided
+    if (config.getArgs() != null && !config.getArgs().isEmpty()) {
+      final StringBuilder jsonBuilder = new StringBuilder("[");
+      boolean first = true;
+      for (final String arg : config.getArgs()) {
+        if (!first) {
+          jsonBuilder.append(",");
+        }
+        jsonBuilder.append("\"").append(escapeJsonString(arg)).append("\"");
+        first = false;
+      }
+      jsonBuilder.append("]");
+
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment argsJson = tempArena.allocateFrom(jsonBuilder.toString());
+        final int result = NATIVE_BINDINGS.componentLinkerSetWasiArgs(nativeLinker, argsJson);
+        if (result != 0) {
+          LOGGER.warning("Failed to set WASI args (error code: " + result + ")");
+        }
+      }
+    }
+
+    // Apply environment variables
+    if (config.getEnv() != null && !config.getEnv().isEmpty()) {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        for (final Map.Entry<String, String> entry : config.getEnv().entrySet()) {
+          final MemorySegment keyPtr = tempArena.allocateFrom(entry.getKey());
+          final MemorySegment valuePtr = tempArena.allocateFrom(entry.getValue());
+          final int result =
+              NATIVE_BINDINGS.componentLinkerAddWasiEnv(nativeLinker, keyPtr, valuePtr);
+          if (result != 0) {
+            LOGGER.warning(
+                "Failed to add WASI env var '" + entry.getKey() + "' (error code: " + result + ")");
+          }
+        }
+      }
+    }
+
+    // Apply inherit env flag
+    final int inheritEnvResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiInheritEnv(
+            nativeLinker, config.isInheritEnv() ? 1 : 0);
+    if (inheritEnvResult != 0) {
+      LOGGER.warning("Failed to set WASI inherit env flag (error code: " + inheritEnvResult + ")");
+    }
+
+    // Apply inherit stdio flag
+    final int inheritStdioResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiInheritStdio(
+            nativeLinker, config.isInheritStdio() ? 1 : 0);
+    if (inheritStdioResult != 0) {
+      LOGGER.warning(
+          "Failed to set WASI inherit stdio flag (error code: " + inheritStdioResult + ")");
+    }
+
+    // Apply preopened directories
+    if (config.getPreopenDirs() != null && !config.getPreopenDirs().isEmpty()) {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        for (final WasiPreview2Config.PreopenDir dir : config.getPreopenDirs()) {
+          final MemorySegment hostPathPtr =
+              tempArena.allocateFrom(dir.getHostPath().toAbsolutePath().toString());
+          final MemorySegment guestPathPtr = tempArena.allocateFrom(dir.getGuestPath());
+          final int result =
+              NATIVE_BINDINGS.componentLinkerAddWasiPreopenDir(
+                  nativeLinker, hostPathPtr, guestPathPtr, dir.isReadOnly() ? 1 : 0);
+          if (result != 0) {
+            LOGGER.warning(
+                "Failed to add preopened dir '"
+                    + dir.getHostPath()
+                    + "' (error code: "
+                    + result
+                    + ")");
+          }
+        }
+      }
+    }
+
+    // Apply allow network flag
+    final int allowNetworkResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiAllowNetwork(
+            nativeLinker, config.isAllowNetwork() ? 1 : 0);
+    if (allowNetworkResult != 0) {
+      LOGGER.warning(
+          "Failed to set WASI allow network flag (error code: " + allowNetworkResult + ")");
+    }
+
+    // Apply allow clock flag
+    final int allowClockResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiAllowClock(
+            nativeLinker, config.isAllowClock() ? 1 : 0);
+    if (allowClockResult != 0) {
+      LOGGER.warning(
+          "Failed to set WASI allow clock flag (error code: " + allowClockResult + ")");
+    }
+
+    // Apply allow random flag
+    final int allowRandomResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiAllowRandom(
+            nativeLinker, config.isAllowRandom() ? 1 : 0);
+    if (allowRandomResult != 0) {
+      LOGGER.warning(
+          "Failed to set WASI allow random flag (error code: " + allowRandomResult + ")");
+    }
+  }
+
+  /**
+   * Escapes a string for JSON encoding.
+   *
+   * @param str the string to escape
+   * @return the escaped string
+   */
+  private String escapeJsonString(final String str) {
+    if (str == null) {
+      return "";
+    }
+    final StringBuilder result = new StringBuilder();
+    for (int i = 0; i < str.length(); i++) {
+      final char c = str.charAt(i);
+      switch (c) {
+        case '"':
+          result.append("\\\"");
+          break;
+        case '\\':
+          result.append("\\\\");
+          break;
+        case '\b':
+          result.append("\\b");
+          break;
+        case '\f':
+          result.append("\\f");
+          break;
+        case '\n':
+          result.append("\\n");
+          break;
+        case '\r':
+          result.append("\\r");
+          break;
+        case '\t':
+          result.append("\\t");
+          break;
+        default:
+          if (c < ' ') {
+            result.append(String.format("\\u%04x", (int) c));
+          } else {
+            result.append(c);
+          }
+      }
+    }
+    return result.toString();
   }
 
   @Override

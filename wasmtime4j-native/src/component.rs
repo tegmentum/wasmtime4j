@@ -1899,6 +1899,27 @@ impl std::fmt::Debug for ComponentHostFunctionEntry {
     }
 }
 
+/// WASI Preview 2 configuration for component model
+#[derive(Clone, Default)]
+pub struct WasiP2Config {
+    /// Command-line arguments
+    pub args: Vec<String>,
+    /// Environment variables
+    pub env: HashMap<String, String>,
+    /// Whether to inherit environment from host
+    pub inherit_env: bool,
+    /// Whether to inherit stdio from host
+    pub inherit_stdio: bool,
+    /// Preopened directories (host_path, guest_path, read_only)
+    pub preopened_dirs: Vec<(String, String, bool)>,
+    /// Allow network access
+    pub allow_network: bool,
+    /// Allow clock access
+    pub allow_clock: bool,
+    /// Allow random number generation
+    pub allow_random: bool,
+}
+
 /// Component Model linker for defining host functions and instantiating components
 pub struct ComponentLinker {
     /// Wasmtime engine for component compilation
@@ -1911,6 +1932,8 @@ pub struct ComponentLinker {
     defined_interfaces: HashMap<String, Vec<String>>,
     /// Whether WASI Preview 2 is enabled
     wasi_p2_enabled: bool,
+    /// WASI Preview 2 configuration
+    wasi_p2_config: WasiP2Config,
     /// Whether this linker has been disposed
     disposed: bool,
 }
@@ -1926,6 +1949,7 @@ impl ComponentLinker {
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         })
     }
@@ -1949,8 +1973,102 @@ impl ComponentLinker {
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         })
+    }
+
+    /// Configure WASI Preview 2 args
+    pub fn set_wasi_args(&mut self, args: Vec<String>) {
+        self.wasi_p2_config.args = args;
+    }
+
+    /// Configure WASI Preview 2 environment variables
+    pub fn set_wasi_env(&mut self, env: HashMap<String, String>) {
+        self.wasi_p2_config.env = env;
+    }
+
+    /// Set whether to inherit environment from host
+    pub fn set_wasi_inherit_env(&mut self, inherit: bool) {
+        self.wasi_p2_config.inherit_env = inherit;
+    }
+
+    /// Set whether to inherit stdio from host
+    pub fn set_wasi_inherit_stdio(&mut self, inherit: bool) {
+        self.wasi_p2_config.inherit_stdio = inherit;
+    }
+
+    /// Add a preopened directory
+    pub fn add_wasi_preopen_dir(&mut self, host_path: String, guest_path: String, read_only: bool) {
+        self.wasi_p2_config.preopened_dirs.push((host_path, guest_path, read_only));
+    }
+
+    /// Set whether network access is allowed
+    pub fn set_wasi_allow_network(&mut self, allow: bool) {
+        self.wasi_p2_config.allow_network = allow;
+    }
+
+    /// Set whether clock access is allowed
+    pub fn set_wasi_allow_clock(&mut self, allow: bool) {
+        self.wasi_p2_config.allow_clock = allow;
+    }
+
+    /// Set whether random number generation is allowed
+    pub fn set_wasi_allow_random(&mut self, allow: bool) {
+        self.wasi_p2_config.allow_random = allow;
+    }
+
+    /// Get the WASI P2 configuration
+    pub fn wasi_p2_config(&self) -> &WasiP2Config {
+        &self.wasi_p2_config
+    }
+
+    /// Build a WasiCtx from the stored configuration
+    #[cfg(feature = "wasi")]
+    pub fn build_wasi_ctx(&self) -> wasmtime_wasi::WasiCtx {
+        use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
+
+        let mut builder = WasiCtxBuilder::new();
+
+        // Set args
+        if !self.wasi_p2_config.args.is_empty() {
+            let args_refs: Vec<&str> = self.wasi_p2_config.args.iter().map(|s| s.as_str()).collect();
+            builder.args(&args_refs);
+        }
+
+        // Set environment
+        if self.wasi_p2_config.inherit_env {
+            builder.inherit_env();
+        } else if !self.wasi_p2_config.env.is_empty() {
+            let env_refs: Vec<(&str, &str)> = self.wasi_p2_config.env
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            builder.envs(&env_refs);
+        }
+
+        // Set stdio
+        if self.wasi_p2_config.inherit_stdio {
+            builder.inherit_stdio();
+        }
+
+        // Preopened directories
+        for (host_path, guest_path, read_only) in &self.wasi_p2_config.preopened_dirs {
+            let path = std::path::Path::new(host_path);
+            if path.exists() && path.is_dir() {
+                let (dir_perms, file_perms) = if *read_only {
+                    (DirPerms::READ, FilePerms::READ)
+                } else {
+                    (DirPerms::all(), FilePerms::all())
+                };
+
+                if let Err(e) = builder.preopened_dir(path, guest_path, dir_perms, file_perms) {
+                    log::warn!("Failed to preopen directory {}: {}", host_path, e);
+                }
+            }
+        }
+
+        builder.build()
     }
 
     /// Define a host function for a WIT interface
@@ -2124,6 +2242,25 @@ impl ComponentLinker {
             });
         }
 
+        // Build store data with configured WASI context if WASI P2 is enabled
+        #[cfg(feature = "wasi")]
+        let store_data = if self.wasi_p2_enabled {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                resource_table: ResourceTable::new(),
+                wasi_ctx: self.build_wasi_ctx(),
+                start_time: Instant::now(),
+            }
+        } else {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                ..Default::default()
+            }
+        };
+
+        #[cfg(not(feature = "wasi"))]
         let store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
@@ -2280,6 +2417,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         };
 
@@ -2434,6 +2572,166 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_p2(linker_ptr: 
             FFI_ERROR
         }
     }
+}
+
+/// Set WASI Preview 2 arguments (JSON array of strings)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_args(
+    linker_ptr: *mut c_void,
+    args_json: *const c_char,
+) -> c_int {
+    if linker_ptr.is_null() || args_json.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    let json_str = match CStr::from_ptr(args_json).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    // Parse JSON array of strings
+    let args: Vec<String> = match serde_json::from_str(json_str) {
+        Ok(a) => a,
+        Err(e) => {
+            log::error!("Failed to parse WASI args JSON: {}", e);
+            return FFI_ERROR;
+        }
+    };
+
+    linker.set_wasi_args(args);
+    FFI_SUCCESS
+}
+
+/// Add a WASI Preview 2 environment variable
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_add_wasi_env(
+    linker_ptr: *mut c_void,
+    key: *const c_char,
+    value: *const c_char,
+) -> c_int {
+    if linker_ptr.is_null() || key.is_null() || value.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    let key_str = match CStr::from_ptr(key).to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return FFI_ERROR,
+    };
+
+    let value_str = match CStr::from_ptr(value).to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return FFI_ERROR,
+    };
+
+    linker.wasi_p2_config.env.insert(key_str, value_str);
+    FFI_SUCCESS
+}
+
+/// Set whether to inherit environment from host
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_inherit_env(
+    linker_ptr: *mut c_void,
+    inherit: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_inherit_env(inherit != 0);
+    FFI_SUCCESS
+}
+
+/// Set whether to inherit stdio from host
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_inherit_stdio(
+    linker_ptr: *mut c_void,
+    inherit: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_inherit_stdio(inherit != 0);
+    FFI_SUCCESS
+}
+
+/// Add a preopened directory
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_add_wasi_preopen_dir(
+    linker_ptr: *mut c_void,
+    host_path: *const c_char,
+    guest_path: *const c_char,
+    read_only: c_int,
+) -> c_int {
+    if linker_ptr.is_null() || host_path.is_null() || guest_path.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    let host_str = match CStr::from_ptr(host_path).to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return FFI_ERROR,
+    };
+
+    let guest_str = match CStr::from_ptr(guest_path).to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return FFI_ERROR,
+    };
+
+    linker.add_wasi_preopen_dir(host_str, guest_str, read_only != 0);
+    FFI_SUCCESS
+}
+
+/// Set whether network access is allowed
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_network(
+    linker_ptr: *mut c_void,
+    allow: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_allow_network(allow != 0);
+    FFI_SUCCESS
+}
+
+/// Set whether clock access is allowed
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_clock(
+    linker_ptr: *mut c_void,
+    allow: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_allow_clock(allow != 0);
+    FFI_SUCCESS
+}
+
+/// Set whether random number generation is allowed
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_random(
+    linker_ptr: *mut c_void,
+    allow: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_allow_random(allow != 0);
+    FFI_SUCCESS
 }
 
 /// Instantiate a component using the linker

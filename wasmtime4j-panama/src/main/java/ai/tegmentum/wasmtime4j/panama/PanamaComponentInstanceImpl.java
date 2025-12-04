@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
@@ -8,6 +9,7 @@ import ai.tegmentum.wasmtime4j.ComponentSimple;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -65,6 +67,11 @@ public final class PanamaComponentInstanceImpl implements ComponentInstance {
 
   @Override
   public boolean hasFunction(final String functionName) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public Optional<ComponentFunction> getFunc(final String functionName) throws WasmException {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 

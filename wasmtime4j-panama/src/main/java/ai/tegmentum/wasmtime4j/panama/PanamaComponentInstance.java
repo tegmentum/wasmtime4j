@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -304,6 +306,20 @@ final class PanamaComponentInstance implements ComponentInstance {
     } catch (final WasmException e) {
       return false;
     }
+  }
+
+  @Override
+  public Optional<ComponentFunction> getFunc(final String functionName) throws WasmException {
+    Objects.requireNonNull(functionName, "functionName cannot be null");
+    ensureNotClosed();
+
+    // Check if the function exists in exported functions
+    final Set<String> exportedFunctions = getExportedFunctions();
+    if (exportedFunctions.contains(functionName)) {
+      return Optional.of(new PanamaComponentFunction(functionName, this));
+    }
+
+    return Optional.empty();
   }
 
   @Override

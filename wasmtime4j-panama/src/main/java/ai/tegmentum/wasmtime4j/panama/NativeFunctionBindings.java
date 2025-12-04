@@ -2552,6 +2552,131 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Sets WASI Preview 2 arguments for the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param argsJsonPtr pointer to JSON array of argument strings
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiArgs(
+      final MemorySegment linkerPtr, final MemorySegment argsJsonPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(argsJsonPtr, "argsJsonPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_args", Integer.class, linkerPtr, argsJsonPtr);
+  }
+
+  /**
+   * Adds a WASI Preview 2 environment variable to the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param keyPtr pointer to environment variable key string
+   * @param valuePtr pointer to environment variable value string
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerAddWasiEnv(
+      final MemorySegment linkerPtr,
+      final MemorySegment keyPtr,
+      final MemorySegment valuePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(keyPtr, "keyPtr");
+    validatePointer(valuePtr, "valuePtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_add_wasi_env", Integer.class, linkerPtr, keyPtr, valuePtr);
+  }
+
+  /**
+   * Sets whether to inherit environment from host in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param inherit 1 to inherit, 0 to not inherit
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiInheritEnv(final MemorySegment linkerPtr, final int inherit) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_inherit_env", Integer.class, linkerPtr, inherit);
+  }
+
+  /**
+   * Sets whether to inherit stdio from host in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param inherit 1 to inherit, 0 to not inherit
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiInheritStdio(final MemorySegment linkerPtr, final int inherit) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_inherit_stdio", Integer.class, linkerPtr, inherit);
+  }
+
+  /**
+   * Adds a preopened directory for WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param hostPathPtr pointer to host path string
+   * @param guestPathPtr pointer to guest path string
+   * @param readOnly 1 for read-only, 0 for read-write
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerAddWasiPreopenDir(
+      final MemorySegment linkerPtr,
+      final MemorySegment hostPathPtr,
+      final MemorySegment guestPathPtr,
+      final int readOnly) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(hostPathPtr, "hostPathPtr");
+    validatePointer(guestPathPtr, "guestPathPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_add_wasi_preopen_dir",
+        Integer.class,
+        linkerPtr,
+        hostPathPtr,
+        guestPathPtr,
+        readOnly);
+  }
+
+  /**
+   * Sets whether network access is allowed in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiAllowNetwork(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_allow_network", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Sets whether clock access is allowed in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiAllowClock(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_allow_clock", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Sets whether random number generation is allowed in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiAllowRandom(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_allow_random", Integer.class, linkerPtr, allow);
+  }
+
+  /**
    * Instantiates a component using the component linker.
    *
    * @param linkerPtr pointer to the component linker
@@ -5177,6 +5302,65 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
             ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_args",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS)); // args JSON string
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_add_wasi_env",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // key string
+            ValueLayout.ADDRESS)); // value string
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_inherit_env",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // inherit flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_inherit_stdio",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // inherit flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_add_wasi_preopen_dir",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.ADDRESS, // host path string
+            ValueLayout.ADDRESS, // guest path string
+            ValueLayout.JAVA_INT)); // read only flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_allow_network",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // allow flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_allow_clock",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // allow flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_allow_random",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // allow flag
 
     addFunctionBinding(
         "wasmtime4j_component_linker_instantiate",

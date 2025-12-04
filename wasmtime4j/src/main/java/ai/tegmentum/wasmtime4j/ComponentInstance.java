@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -77,6 +78,28 @@ public interface ComponentInstance extends AutoCloseable {
    * @return true if the function is exported, false otherwise
    */
   boolean hasFunction(String functionName);
+
+  /**
+   * Gets a component function by name.
+   *
+   * <p>This method returns a first-class function object that can be invoked multiple times
+   * without the overhead of name lookup on each call. The returned {@link ComponentFunction}
+   * remains valid as long as this component instance is valid.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * Optional<ComponentFunction> addFunc = instance.getFunc("add");
+   * if (addFunc.isPresent()) {
+   *     Object result = addFunc.get().call(1, 2);
+   * }
+   * }</pre>
+   *
+   * @param functionName the name of the function to retrieve
+   * @return an Optional containing the function if found, or empty if not found
+   * @throws WasmException if function retrieval fails due to an error
+   */
+  Optional<ComponentFunction> getFunc(String functionName) throws WasmException;
 
   /**
    * Gets all exported function names from this component instance.

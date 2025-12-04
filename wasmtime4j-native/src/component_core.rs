@@ -1079,44 +1079,6 @@ pub mod core {
     }
 }
 
-/// Create a default Val for a given component type
-/// This is used to pre-allocate result slots before calling a component function
-fn create_default_val_for_type(ty: &Type) -> Val {
-    match ty {
-        Type::Bool => Val::Bool(false),
-        Type::S8 => Val::S8(0),
-        Type::U8 => Val::U8(0),
-        Type::S16 => Val::S16(0),
-        Type::U16 => Val::U16(0),
-        Type::S32 => Val::S32(0),
-        Type::U32 => Val::U32(0),
-        Type::S64 => Val::S64(0),
-        Type::U64 => Val::U64(0),
-        Type::Float32 => Val::Float32(0.0),
-        Type::Float64 => Val::Float64(0.0),
-        Type::Char => Val::Char('\0'),
-        Type::String => Val::String(String::new().into()),
-        Type::List(_) => Val::List(Vec::new().into()),
-        Type::Record(_) => Val::Record(Vec::new().into()),
-        Type::Tuple(_) => Val::Tuple(Vec::new().into()),
-        Type::Variant(_) => Val::Variant(String::new(), None),
-        Type::Enum(_) => Val::Enum(String::new()),
-        Type::Option(_) => Val::Option(None),
-        Type::Result { .. } => Val::Result(Ok(None)),
-        Type::Flags(_) => Val::Flags(Vec::new()),
-        Type::Future(_) | Type::Stream(_) | Type::ErrorContext => {
-            // Future, Stream, and ErrorContext are advanced types not yet fully supported
-            panic!("Cannot create default value for Future/Stream/ErrorContext types")
-        }
-        Type::Own(_) | Type::Borrow(_) => {
-            // Resources cannot have default values - this will fail at runtime
-            // if the function actually returns a resource without it being set
-            // For now, use a sentinel value that will trigger an error
-            panic!("Cannot create default value for resource type - function must initialize all resource results")
-        }
-    }
-}
-
 // =============================================================================
 // C FFI Exports for EnhancedComponentEngine
 // =============================================================================
