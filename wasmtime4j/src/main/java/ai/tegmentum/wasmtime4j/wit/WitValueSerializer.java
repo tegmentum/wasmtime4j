@@ -90,6 +90,10 @@ public final class WitValueSerializer {
       return serializeResult((WitResult) value);
     } else if (value instanceof WitFlags) {
       return serializeFlags((WitFlags) value);
+    } else if (value instanceof WitOwn) {
+      return serializeOwn((WitOwn) value);
+    } else if (value instanceof WitBorrow) {
+      return serializeBorrow((WitBorrow) value);
     }
 
     // Handle primitive types
@@ -570,6 +574,46 @@ public final class WitValueSerializer {
   }
 
   /**
+   * Serializes an owned resource handle value.
+   *
+   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   *
+   * @param own the owned resource handle value
+   * @return serialized bytes
+   */
+  private static byte[] serializeOwn(final WitOwn own) {
+    final byte[] typeNameBytes = own.getResourceType().getBytes(StandardCharsets.UTF_8);
+    final int totalSize = 4 + typeNameBytes.length + 4; // type name length + type name + index
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(own.getIndex());
+
+    return buffer.array();
+  }
+
+  /**
+   * Serializes a borrowed resource handle value.
+   *
+   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   *
+   * @param borrow the borrowed resource handle value
+   * @return serialized bytes
+   */
+  private static byte[] serializeBorrow(final WitBorrow borrow) {
+    final byte[] typeNameBytes = borrow.getResourceType().getBytes(StandardCharsets.UTF_8);
+    final int totalSize = 4 + typeNameBytes.length + 4; // type name length + type name + index
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(borrow.getIndex());
+
+    return buffer.array();
+  }
+
+  /**
    * Gets the type discriminator for a WIT value.
    *
    * <p>Type discriminators are used by the native layer to identify the value type:
@@ -591,6 +635,13 @@ public final class WitValueSerializer {
    *   <li>14 = option
    *   <li>15 = result
    *   <li>16 = flags
+   *   <li>17 = s8 (reserved for deserializer)
+   *   <li>18 = s16 (reserved for deserializer)
+   *   <li>19 = u8 (reserved for deserializer)
+   *   <li>20 = u16 (reserved for deserializer)
+   *   <li>21 = float32 (reserved for deserializer)
+   *   <li>22 = own (owned resource handle)
+   *   <li>23 = borrow (borrowed resource handle)
    * </ul>
    *
    * @param value the WIT value
@@ -633,6 +684,10 @@ public final class WitValueSerializer {
       return 15;
     } else if (value instanceof WitFlags) {
       return 16;
+    } else if (value instanceof WitOwn) {
+      return 22;
+    } else if (value instanceof WitBorrow) {
+      return 23;
     } else {
       throw new WitValueException(
           "Unsupported value type: " + value.getClass().getName(),

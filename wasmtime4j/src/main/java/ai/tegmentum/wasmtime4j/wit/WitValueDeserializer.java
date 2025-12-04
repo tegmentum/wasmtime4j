@@ -106,6 +106,10 @@ public final class WitValueDeserializer {
         return deserializeU16(data);
       case 21:
         return deserializeFloat32(data);
+      case 22:
+        return deserializeOwn(data);
+      case 23:
+        return deserializeBorrow(data);
       default:
         throw new WitValueException(
             "Invalid type discriminator: " + typeDiscriminator,
@@ -762,5 +766,83 @@ public final class WitValueDeserializer {
     // Create a placeholder flags type - full implementation would need actual WitType
     return WitFlags.of(
         ai.tegmentum.wasmtime4j.WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
+  }
+
+  /**
+   * Deserializes an owned resource handle value.
+   *
+   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   *
+   * @param data the serialized bytes
+   * @return the owned resource handle value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitOwn deserializeOwn(final byte[] data) throws WitValueException {
+    if (data.length < 8) { // At least type name length + index
+      throw new WitValueException("Own data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Read resource type name
+    final int typeNameLength = buffer.getInt();
+    if (typeNameLength < 0) {
+      throw new WitValueException(
+          "Invalid resource type name length: " + typeNameLength,
+          WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    if (buffer.remaining() < typeNameLength + 4) { // type name + index
+      throw new WitValueException("Own data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final byte[] typeNameBytes = new byte[typeNameLength];
+    buffer.get(typeNameBytes);
+    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
+
+    // Read handle index
+    final int index = buffer.getInt();
+
+    return WitOwn.of(resourceType, index);
+  }
+
+  /**
+   * Deserializes a borrowed resource handle value.
+   *
+   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   *
+   * @param data the serialized bytes
+   * @return the borrowed resource handle value
+   * @throws WitValueException if data is invalid
+   */
+  private static WitBorrow deserializeBorrow(final byte[] data) throws WitValueException {
+    if (data.length < 8) { // At least type name length + index
+      throw new WitValueException(
+          "Borrow data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Read resource type name
+    final int typeNameLength = buffer.getInt();
+    if (typeNameLength < 0) {
+      throw new WitValueException(
+          "Invalid resource type name length: " + typeNameLength,
+          WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    if (buffer.remaining() < typeNameLength + 4) { // type name + index
+      throw new WitValueException(
+          "Borrow data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+    }
+
+    final byte[] typeNameBytes = new byte[typeNameLength];
+    buffer.get(typeNameBytes);
+    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
+
+    // Read handle index
+    final int index = buffer.getInt();
+
+    return WitBorrow.of(resourceType, index);
   }
 }
