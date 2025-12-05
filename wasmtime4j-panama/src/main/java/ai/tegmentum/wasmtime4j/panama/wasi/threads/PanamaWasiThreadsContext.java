@@ -43,183 +43,175 @@ import java.util.logging.Logger;
  */
 public final class PanamaWasiThreadsContext implements WasiThreadsContext {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(PanamaWasiThreadsContext.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PanamaWasiThreadsContext.class.getName());
 
-    private static final NativeFunctionBindings NATIVE_BINDINGS =
-            NativeFunctionBindings.getInstance();
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
 
-    /** Maximum valid thread ID as per WASI-Threads specification (0x1FFFFFFF). */
-    private static final int MAX_THREAD_ID = 0x1FFFFFFF;
+  /** Maximum valid thread ID as per WASI-Threads specification (0x1FFFFFFF). */
+  private static final int MAX_THREAD_ID = 0x1FFFFFFF;
 
-    /** The native memory segment for the WASI-Threads context. */
-    private final MemorySegment nativeContext;
+  /** The native memory segment for the WASI-Threads context. */
+  private final MemorySegment nativeContext;
 
-    /** Arena for memory management. */
-    private final Arena arena;
+  /** Arena for memory management. */
+  private final Arena arena;
 
-    /** Counter for tracking the maximum assigned thread ID. */
-    private final AtomicInteger maxThreadId = new AtomicInteger(0);
+  /** Counter for tracking the maximum assigned thread ID. */
+  private final AtomicInteger maxThreadId = new AtomicInteger(0);
 
-    /** Counter for tracking the current number of active threads. */
-    private final AtomicInteger threadCount = new AtomicInteger(1); // Main thread starts at 1
+  /** Counter for tracking the current number of active threads. */
+  private final AtomicInteger threadCount = new AtomicInteger(1); // Main thread starts at 1
 
-    /** Flag indicating if WASI-Threads support is enabled. */
-    private final boolean enabled;
+  /** Flag indicating if WASI-Threads support is enabled. */
+  private final boolean enabled;
 
-    /** Flag indicating if this context has been closed. */
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+  /** Flag indicating if this context has been closed. */
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    /**
-     * Creates a new Panama WASI-Threads context.
-     *
-     * @param nativeContext the native memory segment for the WASI-Threads context
-     * @param arena the arena used for memory management
-     * @param enabled whether WASI-Threads support is enabled
-     */
-    PanamaWasiThreadsContext(
-            final MemorySegment nativeContext, final Arena arena, final boolean enabled) {
-        if (nativeContext == null || nativeContext.equals(MemorySegment.NULL)) {
-            throw new IllegalArgumentException("Native context cannot be null");
-        }
-        if (arena == null) {
-            throw new IllegalArgumentException("Arena cannot be null");
-        }
-
-        this.nativeContext = nativeContext;
-        this.arena = arena;
-        this.enabled = enabled;
-
-        LOGGER.info(
-                String.format(
-                        "Created Panama WASI-Threads context: %s, enabled: %s",
-                        nativeContext, enabled));
+  /**
+   * Creates a new Panama WASI-Threads context.
+   *
+   * @param nativeContext the native memory segment for the WASI-Threads context
+   * @param arena the arena used for memory management
+   * @param enabled whether WASI-Threads support is enabled
+   */
+  PanamaWasiThreadsContext(
+      final MemorySegment nativeContext, final Arena arena, final boolean enabled) {
+    if (nativeContext == null || nativeContext.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native context cannot be null");
+    }
+    if (arena == null) {
+      throw new IllegalArgumentException("Arena cannot be null");
     }
 
-    @Override
-    public int spawn(final int threadStartArg) throws WasmException {
-        ensureNotClosed();
+    this.nativeContext = nativeContext;
+    this.arena = arena;
+    this.enabled = enabled;
 
-        if (!enabled) {
-            throw new WasmException("WASI-Threads is not enabled for this context");
-        }
+    LOGGER.info(
+        String.format(
+            "Created Panama WASI-Threads context: %s, enabled: %s", nativeContext, enabled));
+  }
 
-        try {
-            final int threadId = NATIVE_BINDINGS.wasiThreadsSpawn(nativeContext, threadStartArg);
+  @Override
+  public int spawn(final int threadStartArg) throws WasmException {
+    ensureNotClosed();
 
-            if (threadId > 0) {
-                // Update tracking counters
-                threadCount.incrementAndGet();
-
-                // Update max thread ID if this is higher
-                int currentMax;
-                do {
-                    currentMax = maxThreadId.get();
-                    if (threadId <= currentMax) {
-                        break;
-                    }
-                } while (!maxThreadId.compareAndSet(currentMax, threadId));
-
-                LOGGER.fine(
-                        String.format(
-                                "Spawned thread with ID: %d, arg: %d", threadId, threadStartArg));
-            } else {
-                LOGGER.warning(
-                        String.format(
-                                "Failed to spawn thread with arg: %d, returned: %d",
-                                threadStartArg, threadId));
-            }
-
-            return threadId;
-        } catch (final Exception e) {
-            throw new WasmException("Failed to spawn thread: " + e.getMessage(), e);
-        }
+    if (!enabled) {
+      throw new WasmException("WASI-Threads is not enabled for this context");
     }
 
-    @Override
-    public int getThreadCount() {
-        ensureNotClosed();
-        return threadCount.get();
+    try {
+      final int threadId = NATIVE_BINDINGS.wasiThreadsSpawn(nativeContext, threadStartArg);
+
+      if (threadId > 0) {
+        // Update tracking counters
+        threadCount.incrementAndGet();
+
+        // Update max thread ID if this is higher
+        int currentMax;
+        do {
+          currentMax = maxThreadId.get();
+          if (threadId <= currentMax) {
+            break;
+          }
+        } while (!maxThreadId.compareAndSet(currentMax, threadId));
+
+        LOGGER.fine(String.format("Spawned thread with ID: %d, arg: %d", threadId, threadStartArg));
+      } else {
+        LOGGER.warning(
+            String.format(
+                "Failed to spawn thread with arg: %d, returned: %d", threadStartArg, threadId));
+      }
+
+      return threadId;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to spawn thread: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public int getThreadCount() {
+    ensureNotClosed();
+    return threadCount.get();
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled && !closed.get();
+  }
+
+  @Override
+  public int getMaxThreadId() {
+    ensureNotClosed();
+    return maxThreadId.get();
+  }
+
+  @Override
+  public boolean isValid() {
+    return !closed.get() && enabled;
+  }
+
+  /**
+   * Gets the native memory segment for this context.
+   *
+   * @return the native context memory segment
+   */
+  public MemorySegment getNativeContext() {
+    ensureNotClosed();
+    return nativeContext;
+  }
+
+  /**
+   * Decrements the thread count when a thread completes.
+   *
+   * @param threadId the ID of the thread that completed
+   */
+  void onThreadCompleted(final int threadId) {
+    if (threadId <= 0) {
+      throw new IllegalArgumentException("Thread ID must be positive");
     }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled && !closed.get();
+    final int remaining = threadCount.decrementAndGet();
+    LOGGER.fine(String.format("Thread %d completed, remaining threads: %d", threadId, remaining));
+  }
+
+  @Override
+  public void close() {
+    if (closed.compareAndSet(false, true)) {
+      LOGGER.fine("Closing Panama WASI-Threads context");
+
+      // Wait for all threads to complete or terminate them
+      final int remaining = threadCount.get();
+      if (remaining > 1) {
+        LOGGER.warning(
+            String.format(
+                "Closing WASI-Threads context with %d threads still active", remaining - 1));
+      }
+
+      try {
+        // Release native context
+        NATIVE_BINDINGS.wasiThreadsContextClose(nativeContext);
+
+        // Close the arena
+        arena.close();
+
+        LOGGER.info("Panama WASI-Threads context closed successfully");
+      } catch (final Exception e) {
+        LOGGER.warning("Error closing WASI-Threads context: " + e.getMessage());
+      }
     }
+  }
 
-    @Override
-    public int getMaxThreadId() {
-        ensureNotClosed();
-        return maxThreadId.get();
+  /**
+   * Ensures that this context has not been closed.
+   *
+   * @throws IllegalStateException if the context has been closed
+   */
+  private void ensureNotClosed() {
+    if (closed.get()) {
+      throw new IllegalStateException("WASI-Threads context has been closed");
     }
-
-    @Override
-    public boolean isValid() {
-        return !closed.get() && enabled;
-    }
-
-    /**
-     * Gets the native memory segment for this context.
-     *
-     * @return the native context memory segment
-     */
-    public MemorySegment getNativeContext() {
-        ensureNotClosed();
-        return nativeContext;
-    }
-
-    /**
-     * Decrements the thread count when a thread completes.
-     *
-     * @param threadId the ID of the thread that completed
-     */
-    void onThreadCompleted(final int threadId) {
-        if (threadId <= 0) {
-            throw new IllegalArgumentException("Thread ID must be positive");
-        }
-
-        final int remaining = threadCount.decrementAndGet();
-        LOGGER.fine(
-                String.format(
-                        "Thread %d completed, remaining threads: %d", threadId, remaining));
-    }
-
-    @Override
-    public void close() {
-        if (closed.compareAndSet(false, true)) {
-            LOGGER.fine("Closing Panama WASI-Threads context");
-
-            // Wait for all threads to complete or terminate them
-            final int remaining = threadCount.get();
-            if (remaining > 1) {
-                LOGGER.warning(
-                        String.format(
-                                "Closing WASI-Threads context with %d threads still active",
-                                remaining - 1));
-            }
-
-            try {
-                // Release native context
-                NATIVE_BINDINGS.wasiThreadsContextClose(nativeContext);
-
-                // Close the arena
-                arena.close();
-
-                LOGGER.info("Panama WASI-Threads context closed successfully");
-            } catch (final Exception e) {
-                LOGGER.warning("Error closing WASI-Threads context: " + e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * Ensures that this context has not been closed.
-     *
-     * @throws IllegalStateException if the context has been closed
-     */
-    private void ensureNotClosed() {
-        if (closed.get()) {
-            throw new IllegalStateException("WASI-Threads context has been closed");
-        }
-    }
+  }
 }

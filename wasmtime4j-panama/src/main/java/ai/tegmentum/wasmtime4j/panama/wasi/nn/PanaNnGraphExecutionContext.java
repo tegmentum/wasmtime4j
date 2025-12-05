@@ -44,7 +44,8 @@ import java.util.logging.Logger;
  */
 public final class PanaNnGraphExecutionContext implements NnGraphExecutionContext {
 
-  private static final Logger LOGGER = Logger.getLogger(PanaNnGraphExecutionContext.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(PanaNnGraphExecutionContext.class.getName());
   private static final int MAX_DIMENSIONS = 16;
   private static final int MAX_OUTPUT_SIZE = 64 * 1024 * 1024; // 64MB max output
 
@@ -173,9 +174,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
     // The Panama FFI doesn't support named inputs directly, use index 0 as fallback
     // This is a limitation of the current implementation
     LOGGER.log(
-        Level.FINE,
-        "Setting input by name ''{0}'' - falling back to index-based input",
-        name);
+        Level.FINE, "Setting input by name ''{0}'' - falling back to index-based input", name);
     setInput(0, tensor);
   }
 
@@ -265,9 +264,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
 
     // The Panama FFI doesn't support named outputs directly, use index 0 as fallback
     LOGGER.log(
-        Level.FINE,
-        "Getting output by name ''{0}'' - falling back to index-based output",
-        name);
+        Level.FINE, "Getting output by name ''{0}'' - falling back to index-based output", name);
     return getOutput(0);
   }
 

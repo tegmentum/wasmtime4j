@@ -432,7 +432,17 @@ public final class PanamaTable implements WasmTable {
       throw new IllegalArgumentException("Count cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement table copy (same table)
+
+    if (count == 0) {
+      return; // Nothing to do
+    }
+
+    final int result =
+        NATIVE_BINDINGS.panamaTableCopy(nativeTable, getNativeStorePointer(), dst, src, count);
+
+    if (result != 0) {
+      throw new IllegalStateException("Failed to copy table elements (error code: " + result + ")");
+    }
   }
 
   @Override
@@ -450,7 +460,26 @@ public final class PanamaTable implements WasmTable {
       throw new IllegalArgumentException("Count cannot be negative");
     }
     ensureNotClosed();
-    // TODO: Implement table copy from another table
+
+    if (count == 0) {
+      return; // Nothing to do
+    }
+
+    if (!(src instanceof PanamaTable)) {
+      throw new IllegalArgumentException("Source table must be a PanamaTable instance");
+    }
+
+    final PanamaTable srcTable = (PanamaTable) src;
+    final MemorySegment srcTablePtr = srcTable.getNativeTable();
+
+    final int result =
+        NATIVE_BINDINGS.panamaTableCopyFrom(
+            nativeTable, getNativeStorePointer(), dst, srcTablePtr, srcIndex, count);
+
+    if (result != 0) {
+      throw new IllegalStateException(
+          "Failed to copy table elements from source (error code: " + result + ")");
+    }
   }
 
   @Override
@@ -619,7 +648,8 @@ public final class PanamaTable implements WasmTable {
     }
     try {
       final MemorySegment storePtr = getNativeStorePointer();
-      return NativeFunctionBindings.getInstance().tableSupports64BitAddressing(nativeTable, storePtr);
+      return NativeFunctionBindings.getInstance()
+          .tableSupports64BitAddressing(nativeTable, storePtr);
     } catch (final Exception e) {
       LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
       return false;

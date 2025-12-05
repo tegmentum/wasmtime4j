@@ -62,7 +62,8 @@ public final class PanaNnGraph implements NnGraph {
     }
     this.nativeHandle = nativeHandle;
     this.encoding = Objects.requireNonNull(encoding, "encoding cannot be null");
-    this.executionTarget = Objects.requireNonNull(executionTarget, "executionTarget cannot be null");
+    this.executionTarget =
+        Objects.requireNonNull(executionTarget, "executionTarget cannot be null");
     LOGGER.log(Level.FINE, "Created PanaNnGraph with handle: {0}", nativeHandle);
   }
 

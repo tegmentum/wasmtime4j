@@ -2073,6 +2073,68 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Copies elements within a table (same table).
+   *
+   * <p>This is equivalent to the WebAssembly table.copy instruction when copying within the same
+   * table.
+   *
+   * @param tablePtr pointer to the table
+   * @param storePtr pointer to the store
+   * @param dst destination index in the table
+   * @param src source index in the table
+   * @param count number of elements to copy
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaTableCopy(
+      final MemorySegment tablePtr,
+      final MemorySegment storePtr,
+      final int dst,
+      final int src,
+      final int count) {
+    validatePointer(tablePtr, "tablePtr");
+    validatePointer(storePtr, "storePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_table_copy", Integer.class, tablePtr, storePtr, dst, src, count);
+  }
+
+  /**
+   * Copies elements from one table to another.
+   *
+   * <p>This is equivalent to the WebAssembly table.copy instruction when copying between different
+   * tables.
+   *
+   * @param dstTablePtr pointer to the destination table
+   * @param storePtr pointer to the store
+   * @param dst destination index in the destination table
+   * @param srcTablePtr pointer to the source table
+   * @param src source index in the source table
+   * @param count number of elements to copy
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaTableCopyFrom(
+      final MemorySegment dstTablePtr,
+      final MemorySegment storePtr,
+      final int dst,
+      final MemorySegment srcTablePtr,
+      final int src,
+      final int count) {
+    validatePointer(dstTablePtr, "dstTablePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(srcTablePtr, "srcTablePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_table_copy_from",
+        Integer.class,
+        dstTablePtr,
+        storePtr,
+        dst,
+        srcTablePtr,
+        src,
+        count);
+  }
+
+  /**
    * Gets the method handle for Panama FFI table deletion.
    *
    * @return the method handle, or null if not available
@@ -2575,9 +2637,7 @@ public final class NativeFunctionBindings {
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerAddWasiEnv(
-      final MemorySegment linkerPtr,
-      final MemorySegment keyPtr,
-      final MemorySegment valuePtr) {
+      final MemorySegment linkerPtr, final MemorySegment keyPtr, final MemorySegment valuePtr) {
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(keyPtr, "keyPtr");
     validatePointer(valuePtr, "valuePtr");
@@ -11705,8 +11765,7 @@ public final class NativeFunctionBindings {
    */
   public int wasiNnExecCompute(final MemorySegment ctxHandle) {
     validatePointer(ctxHandle, "ctxHandle");
-    return callNativeFunction(
-        "wasmtime4j_panama_wasi_nn_exec_compute", Integer.class, ctxHandle);
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_exec_compute", Integer.class, ctxHandle);
   }
 
   /**
@@ -11725,12 +11784,7 @@ public final class NativeFunctionBindings {
       final long maxLen) {
     validatePointer(ctxHandle, "ctxHandle");
     return callNativeFunction(
-        "wasmtime4j_panama_wasi_nn_exec_get_output",
-        Long.class,
-        ctxHandle,
-        index,
-        outData,
-        maxLen);
+        "wasmtime4j_panama_wasi_nn_exec_get_output", Long.class, ctxHandle, index, outData, maxLen);
   }
 
   /**
@@ -11850,8 +11904,7 @@ public final class NativeFunctionBindings {
    */
   public void wasiThreadsContextClose(final MemorySegment contextHandle) {
     if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
-      callNativeFunction(
-          "wasmtime4j_panama_wasi_threads_context_close", Void.class, contextHandle);
+      callNativeFunction("wasmtime4j_panama_wasi_threads_context_close", Void.class, contextHandle);
     }
   }
 

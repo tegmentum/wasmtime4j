@@ -421,8 +421,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         NATIVE_BINDINGS.componentLinkerSetWasiAllowClock(
             nativeLinker, config.isAllowClock() ? 1 : 0);
     if (allowClockResult != 0) {
-      LOGGER.warning(
-          "Failed to set WASI allow clock flag (error code: " + allowClockResult + ")");
+      LOGGER.warning("Failed to set WASI allow clock flag (error code: " + allowClockResult + ")");
     }
 
     // Apply allow random flag

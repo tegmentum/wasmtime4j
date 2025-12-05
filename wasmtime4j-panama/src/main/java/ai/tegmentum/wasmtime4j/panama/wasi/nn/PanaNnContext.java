@@ -149,7 +149,8 @@ public final class PanaNnContext implements NnContext {
 
       final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
       final MemorySegment graphHandle =
-          bindings.wasiNnLoadGraphByName(nativeHandle, nameSegment, NnExecutionTarget.CPU.ordinal());
+          bindings.wasiNnLoadGraphByName(
+              nativeHandle, nameSegment, NnExecutionTarget.CPU.ordinal());
 
       if (graphHandle == null || graphHandle.equals(MemorySegment.NULL)) {
         throw new NnException("Failed to load graph by name: " + name);
@@ -165,8 +166,7 @@ public final class PanaNnContext implements NnContext {
     ensureNotClosed();
 
     try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment outEncodings =
-          arena.allocate(ValueLayout.JAVA_INT, MAX_ENCODINGS);
+      final MemorySegment outEncodings = arena.allocate(ValueLayout.JAVA_INT, MAX_ENCODINGS);
 
       final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
       final int count =
@@ -190,8 +190,7 @@ public final class PanaNnContext implements NnContext {
     ensureNotClosed();
 
     try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment outTargets =
-          arena.allocate(ValueLayout.JAVA_INT, MAX_TARGETS);
+      final MemorySegment outTargets = arena.allocate(ValueLayout.JAVA_INT, MAX_TARGETS);
 
       final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
       final int count = bindings.wasiNnGetSupportedTargets(nativeHandle, outTargets, MAX_TARGETS);

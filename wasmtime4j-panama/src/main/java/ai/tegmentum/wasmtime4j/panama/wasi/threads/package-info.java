@@ -18,8 +18,8 @@
  * Panama FFI implementation of WASI-Threads support for WebAssembly thread spawning.
  *
  * <p>This package provides the Panama Foreign Function API-based implementation of WASI-Threads
- * support, enabling WebAssembly modules to spawn threads. The implementation uses the shared
- * native library with Panama FFI for thread management.
+ * support, enabling WebAssembly modules to spawn threads. The implementation uses the shared native
+ * library with Panama FFI for thread management.
  *
  * <p>Key classes:
  *
