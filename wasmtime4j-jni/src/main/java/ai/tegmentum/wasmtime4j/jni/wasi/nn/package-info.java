@@ -17,9 +17,9 @@
 /**
  * JNI implementation of WASI-NN (WebAssembly System Interface for Neural Networks).
  *
- * <p>This package contains JNI-based implementations of the WASI-NN interfaces defined in
- * {@link ai.tegmentum.wasmtime4j.wasi.nn}. These implementations use JNI bindings to the native
- * Wasmtime WASI-NN implementation.
+ * <p>This package contains JNI-based implementations of the WASI-NN interfaces defined in {@link
+ * ai.tegmentum.wasmtime4j.wasi.nn}. These implementations use JNI bindings to the native Wasmtime
+ * WASI-NN implementation.
  *
  * <p>Key classes:
  *

@@ -38,117 +38,113 @@ import java.util.logging.Logger;
  */
 public final class JniWasiThreadsContextBuilder implements WasiThreadsContextBuilder {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(JniWasiThreadsContextBuilder.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(JniWasiThreadsContextBuilder.class.getName());
 
-    /** The WebAssembly module for thread spawning. */
-    private Module module;
+  /** The WebAssembly module for thread spawning. */
+  private Module module;
 
-    /** The linker with WASI imports. */
-    private Linker<?> linker;
+  /** The linker with WASI imports. */
+  private Linker<?> linker;
 
-    /** The store for the main thread. */
-    private Store store;
+  /** The store for the main thread. */
+  private Store store;
 
-    /**
-     * Creates a new JNI WASI-Threads context builder.
-     */
-    public JniWasiThreadsContextBuilder() {
-        // Default constructor
+  /** Creates a new JNI WASI-Threads context builder. */
+  public JniWasiThreadsContextBuilder() {
+    // Default constructor
+  }
+
+  @Override
+  public WasiThreadsContextBuilder withModule(final Module module) {
+    JniValidation.requireNonNull(module, "module");
+    this.module = module;
+    return this;
+  }
+
+  @Override
+  public WasiThreadsContextBuilder withLinker(final Linker<?> linker) {
+    JniValidation.requireNonNull(linker, "linker");
+    this.linker = linker;
+    return this;
+  }
+
+  @Override
+  public WasiThreadsContextBuilder withStore(final Store store) {
+    JniValidation.requireNonNull(store, "store");
+    this.store = store;
+    return this;
+  }
+
+  @Override
+  public WasiThreadsContext build() throws WasmException {
+    validateConfiguration();
+
+    try {
+      // Get native handles from JNI implementations
+      final long moduleHandle = getNativeHandle(module, "module");
+      final long linkerHandle = getNativeHandle(linker, "linker");
+      final long storeHandle = getNativeHandle(store, "store");
+
+      LOGGER.fine(
+          String.format(
+              "Creating WASI-Threads context with module=0x%x, linker=0x%x," + " store=0x%x",
+              moduleHandle, linkerHandle, storeHandle));
+
+      // Create native WASI-Threads context
+      final long nativeHandle =
+          JniWasiThreadsContext.nativeCreate(moduleHandle, linkerHandle, storeHandle);
+
+      // Determine if WASI-Threads is enabled
+      final boolean enabled = JniWasiThreadsContext.nativeIsSupported();
+
+      LOGGER.info(
+          String.format(
+              "Created WASI-Threads context with handle: 0x%x, enabled: %s",
+              nativeHandle, enabled));
+
+      return new JniWasiThreadsContext(nativeHandle, enabled);
+    } catch (final JniException e) {
+      throw new WasmException("Failed to create WASI-Threads context: " + e.getMessage(), e);
     }
+  }
 
-    @Override
-    public WasiThreadsContextBuilder withModule(final Module module) {
-        JniValidation.requireNonNull(module, "module");
-        this.module = module;
-        return this;
+  /**
+   * Validates that all required components have been configured.
+   *
+   * @throws IllegalStateException if required components are missing
+   */
+  private void validateConfiguration() {
+    if (module == null) {
+      throw new IllegalStateException("Module must be set before building");
     }
-
-    @Override
-    public WasiThreadsContextBuilder withLinker(final Linker<?> linker) {
-        JniValidation.requireNonNull(linker, "linker");
-        this.linker = linker;
-        return this;
+    if (linker == null) {
+      throw new IllegalStateException("Linker must be set before building");
     }
-
-    @Override
-    public WasiThreadsContextBuilder withStore(final Store store) {
-        JniValidation.requireNonNull(store, "store");
-        this.store = store;
-        return this;
+    if (store == null) {
+      throw new IllegalStateException("Store must be set before building");
     }
+  }
 
-    @Override
-    public WasiThreadsContext build() throws WasmException {
-        validateConfiguration();
-
-        try {
-            // Get native handles from JNI implementations
-            final long moduleHandle = getNativeHandle(module, "module");
-            final long linkerHandle = getNativeHandle(linker, "linker");
-            final long storeHandle = getNativeHandle(store, "store");
-
-            LOGGER.fine(
-                    String.format(
-                            "Creating WASI-Threads context with module=0x%x, linker=0x%x,"
-                                    + " store=0x%x",
-                            moduleHandle, linkerHandle, storeHandle));
-
-            // Create native WASI-Threads context
-            final long nativeHandle =
-                    JniWasiThreadsContext.nativeCreate(moduleHandle, linkerHandle, storeHandle);
-
-            // Determine if WASI-Threads is enabled
-            final boolean enabled = JniWasiThreadsContext.nativeIsSupported();
-
-            LOGGER.info(
-                    String.format(
-                            "Created WASI-Threads context with handle: 0x%x, enabled: %s",
-                            nativeHandle, enabled));
-
-            return new JniWasiThreadsContext(nativeHandle, enabled);
-        } catch (final JniException e) {
-            throw new WasmException("Failed to create WASI-Threads context: " + e.getMessage(), e);
-        }
+  /**
+   * Gets the native handle from a JNI resource.
+   *
+   * @param resource the resource to get the handle from
+   * @param name the name of the resource for error messages
+   * @return the native handle
+   * @throws WasmException if the resource is not a JNI implementation
+   */
+  private long getNativeHandle(final Object resource, final String name) throws WasmException {
+    if (resource instanceof JniModule) {
+      return ((JniModule) resource).getNativeHandle();
+    } else if (resource instanceof JniLinker) {
+      return ((JniLinker) resource).getNativeHandle();
+    } else if (resource instanceof JniStore) {
+      return ((JniStore) resource).getNativeHandle();
+    } else {
+      throw new WasmException(
+          String.format(
+              "Expected JNI implementation for %s, got: %s", name, resource.getClass().getName()));
     }
-
-    /**
-     * Validates that all required components have been configured.
-     *
-     * @throws IllegalStateException if required components are missing
-     */
-    private void validateConfiguration() {
-        if (module == null) {
-            throw new IllegalStateException("Module must be set before building");
-        }
-        if (linker == null) {
-            throw new IllegalStateException("Linker must be set before building");
-        }
-        if (store == null) {
-            throw new IllegalStateException("Store must be set before building");
-        }
-    }
-
-    /**
-     * Gets the native handle from a JNI resource.
-     *
-     * @param resource the resource to get the handle from
-     * @param name the name of the resource for error messages
-     * @return the native handle
-     * @throws WasmException if the resource is not a JNI implementation
-     */
-    private long getNativeHandle(final Object resource, final String name) throws WasmException {
-        if (resource instanceof JniModule) {
-            return ((JniModule) resource).getNativeHandle();
-        } else if (resource instanceof JniLinker) {
-            return ((JniLinker) resource).getNativeHandle();
-        } else if (resource instanceof JniStore) {
-            return ((JniStore) resource).getNativeHandle();
-        } else {
-            throw new WasmException(
-                    String.format(
-                            "Expected JNI implementation for %s, got: %s",
-                            name, resource.getClass().getName()));
-        }
-    }
+  }
 }

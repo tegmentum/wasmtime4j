@@ -1905,6 +1905,102 @@ pub mod component_enhanced {
         })
     }
 
+    /// Get components loaded count from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_components_loaded(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.components_loaded
+    }
+
+    /// Get instances created count from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_instances_created(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.instances_created
+    }
+
+    /// Get instances destroyed count from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_instances_destroyed(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.instances_destroyed
+    }
+
+    /// Get average instantiation time in nanoseconds from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_avg_instantiation_time_nanos(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.avg_instantiation_time.as_nanos() as u64
+    }
+
+    /// Get peak memory usage from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_peak_memory_usage(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.peak_memory_usage as u64
+    }
+
+    /// Get function calls count from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_function_calls(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.function_calls
+    }
+
+    /// Get error count from metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_get_error_count(
+        metrics_ptr: *const c_void,
+    ) -> u64 {
+        if metrics_ptr.is_null() {
+            return 0;
+        }
+        let metrics = unsafe { &*(metrics_ptr as *const crate::component_core::ComponentMetrics) };
+        metrics.error_count
+    }
+
+    /// Destroy component metrics (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_component_metrics_destroy(
+        metrics_ptr: *mut c_void,
+    ) {
+        if !metrics_ptr.is_null() {
+            unsafe {
+                let _ = Box::from_raw(metrics_ptr as *mut crate::component_core::ComponentMetrics);
+            }
+        }
+    }
+
     /// Register interface with WIT interface manager (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_wit_interface_manager_register(

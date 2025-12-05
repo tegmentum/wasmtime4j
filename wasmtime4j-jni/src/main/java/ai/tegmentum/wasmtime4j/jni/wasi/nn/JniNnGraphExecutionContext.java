@@ -37,7 +37,8 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniNnGraphExecutionContext extends JniResource implements NnGraphExecutionContext {
+public final class JniNnGraphExecutionContext extends JniResource
+    implements NnGraphExecutionContext {
 
   private static final Logger LOGGER = Logger.getLogger(JniNnGraphExecutionContext.class.getName());
 
@@ -145,7 +146,11 @@ public final class JniNnGraphExecutionContext extends JniResource implements NnG
 
     final int result =
         nativeSetInputByName(
-            nativeHandle, name, tensor.getDimensions(), tensor.getType().ordinal(), tensor.getData());
+            nativeHandle,
+            name,
+            tensor.getDimensions(),
+            tensor.getType().ordinal(),
+            tensor.getData());
     if (result != 0) {
       throw new NnException("Failed to set input tensor with name: " + name);
     }

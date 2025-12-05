@@ -648,3 +648,378 @@ pub extern "C" fn free_memory_data(data_ptr: *mut u8, size: usize) {
         }
     }
 }
+
+// Panama FFI exports with wasmtime4j_ prefix
+
+/// Variable value type constants for FFI
+pub const VARIABLE_TYPE_I32: i32 = 0;
+pub const VARIABLE_TYPE_I64: i32 = 1;
+pub const VARIABLE_TYPE_F32: i32 = 2;
+pub const VARIABLE_TYPE_F64: i32 = 3;
+pub const VARIABLE_TYPE_V128: i32 = 4;
+pub const VARIABLE_TYPE_FUNCREF: i32 = 5;
+pub const VARIABLE_TYPE_EXTERNREF: i32 = 6;
+
+/// FFI struct for evaluation results
+#[repr(C)]
+pub struct EvaluationResultFFI {
+    pub success: bool,
+    pub value_type: i32,
+    pub i32_value: i32,
+    pub i64_value: i64,
+    pub f32_value: f32,
+    pub f64_value: f64,
+    pub error_message: *mut c_char,
+}
+
+impl EvaluationResultFFI {
+    fn success_i32(value: i32) -> Self {
+        Self {
+            success: true,
+            value_type: VARIABLE_TYPE_I32,
+            i32_value: value,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            error_message: std::ptr::null_mut(),
+        }
+    }
+
+    fn success_i64(value: i64) -> Self {
+        Self {
+            success: true,
+            value_type: VARIABLE_TYPE_I64,
+            i32_value: 0,
+            i64_value: value,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            error_message: std::ptr::null_mut(),
+        }
+    }
+
+    fn success_f32(value: f32) -> Self {
+        Self {
+            success: true,
+            value_type: VARIABLE_TYPE_F32,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: value,
+            f64_value: 0.0,
+            error_message: std::ptr::null_mut(),
+        }
+    }
+
+    fn success_f64(value: f64) -> Self {
+        Self {
+            success: true,
+            value_type: VARIABLE_TYPE_F64,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: value,
+            error_message: std::ptr::null_mut(),
+        }
+    }
+
+    fn error(message: &str) -> Self {
+        let error_cstr = CString::new(message).unwrap_or_else(|_| CString::new("Unknown error").unwrap());
+        Self {
+            success: false,
+            value_type: -1,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            error_message: error_cstr.into_raw(),
+        }
+    }
+}
+
+/// Creates a debug server
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_create_server(engine_ptr: *mut Engine) -> *mut DebugServer {
+    create_debug_server(engine_ptr)
+}
+
+/// Destroys a debug server
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_destroy_server(server_ptr: *mut DebugServer) {
+    destroy_debug_server(server_ptr);
+}
+
+/// Creates a debug session
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_create_session_ffi(
+    server_ptr: *mut DebugServer,
+    instance_ptr: *mut Instance,
+    module_ptr: *mut Module,
+) -> u64 {
+    let mut session_id: u64 = 0;
+    let result = create_debug_session(server_ptr, instance_ptr, module_ptr, &mut session_id as *mut u64);
+    if result == 0 {
+        session_id
+    } else {
+        0
+    }
+}
+
+/// Sets a breakpoint
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_set_breakpoint(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    function_index: u32,
+    instruction_offset: u32,
+) -> u32 {
+    let mut breakpoint_id: u32 = 0;
+    let result = set_debug_breakpoint(
+        server_ptr,
+        session_id,
+        function_index,
+        instruction_offset,
+        std::ptr::null(),
+        &mut breakpoint_id as *mut u32,
+    );
+    if result == 0 {
+        breakpoint_id
+    } else {
+        u32::MAX
+    }
+}
+
+/// Removes a breakpoint
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_remove_breakpoint(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    breakpoint_id: u32,
+) -> bool {
+    if server_ptr.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        server.remove_breakpoint(session_id, breakpoint_id).is_ok()
+    }
+}
+
+/// Performs step-into
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_step_into(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    function_index_out: *mut u32,
+    instruction_offset_out: *mut u32,
+) -> bool {
+    if server_ptr.is_null() || function_index_out.is_null() || instruction_offset_out.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        match server.step_into(session_id) {
+            Ok(context) => {
+                *function_index_out = context.function_index;
+                *instruction_offset_out = context.instruction_offset;
+                true
+            }
+            Err(_) => false,
+        }
+    }
+}
+
+/// Performs step-over
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_step_over(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    function_index_out: *mut u32,
+    instruction_offset_out: *mut u32,
+) -> bool {
+    if server_ptr.is_null() || function_index_out.is_null() || instruction_offset_out.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        match server.step_next(session_id) {
+            Ok(context) => {
+                *function_index_out = context.function_index;
+                *instruction_offset_out = context.instruction_offset;
+                true
+            }
+            Err(_) => false,
+        }
+    }
+}
+
+/// Performs step-out
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_step_out(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    function_index_out: *mut u32,
+    instruction_offset_out: *mut u32,
+) -> bool {
+    if server_ptr.is_null() || function_index_out.is_null() || instruction_offset_out.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        match server.step_out(session_id) {
+            Ok(context) => {
+                *function_index_out = context.function_index;
+                *instruction_offset_out = context.instruction_offset;
+                true
+            }
+            Err(_) => false,
+        }
+    }
+}
+
+/// Continues execution
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_continue(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+) -> bool {
+    if server_ptr.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        server.continue_execution(session_id).is_ok()
+    }
+}
+
+/// Pauses execution
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_pause(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+) -> bool {
+    if server_ptr.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        server.pause_execution(session_id).is_ok()
+    }
+}
+
+/// Evaluates an expression in the debug context
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_evaluate_expression(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+    expression: *const c_char,
+    result_out: *mut EvaluationResultFFI,
+) -> bool {
+    if server_ptr.is_null() || expression.is_null() || result_out.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        let expr_str = match CStr::from_ptr(expression).to_str() {
+            Ok(s) => s,
+            Err(_) => {
+                *result_out = EvaluationResultFFI::error("Invalid expression string");
+                return false;
+            }
+        };
+
+        match server.evaluate_watch(session_id, expr_str) {
+            Ok(WatchResult::Success(value)) => {
+                *result_out = match value {
+                    VariableValue::I32(v) => EvaluationResultFFI::success_i32(v),
+                    VariableValue::I64(v) => EvaluationResultFFI::success_i64(v),
+                    VariableValue::F32(v) => EvaluationResultFFI::success_f32(v),
+                    VariableValue::F64(v) => EvaluationResultFFI::success_f64(v),
+                    _ => EvaluationResultFFI::error("Unsupported value type"),
+                };
+                true
+            }
+            Ok(WatchResult::Error(msg)) => {
+                *result_out = EvaluationResultFFI::error(&msg);
+                false
+            }
+            Err(e) => {
+                *result_out = EvaluationResultFFI::error(&e.to_string());
+                false
+            }
+        }
+    }
+}
+
+/// Frees an evaluation result error message
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_free_evaluation_result(result: *mut EvaluationResultFFI) {
+    if !result.is_null() {
+        unsafe {
+            let result_ref = &mut *result;
+            if !result_ref.error_message.is_null() {
+                drop(CString::from_raw(result_ref.error_message));
+                result_ref.error_message = std::ptr::null_mut();
+            }
+        }
+    }
+}
+
+/// Gets the number of local variables in the current frame
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_get_local_count(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+) -> i32 {
+    if server_ptr.is_null() {
+        return -1;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        match server.get_variables(session_id) {
+            Ok(vars) => vars.len() as i32,
+            Err(_) => -1,
+        }
+    }
+}
+
+/// Gets call stack depth
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_get_stack_depth(
+    server_ptr: *const DebugServer,
+    session_id: u64,
+) -> i32 {
+    if server_ptr.is_null() {
+        return -1;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        match server.get_call_stack(session_id) {
+            Ok(stack) => stack.len() as i32,
+            Err(_) => -1,
+        }
+    }
+}
+
+/// Closes a debug session
+#[no_mangle]
+pub extern "C" fn wasmtime4j_debug_close_session_ffi(
+    server_ptr: *mut DebugServer,
+    session_id: u64,
+) -> bool {
+    if server_ptr.is_null() {
+        return false;
+    }
+
+    unsafe {
+        let server = &*server_ptr;
+        server.remove_session(session_id).is_ok()
+    }
+}

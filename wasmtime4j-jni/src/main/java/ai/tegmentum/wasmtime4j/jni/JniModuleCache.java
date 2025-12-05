@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.cache.ModuleCache;
 import ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig;
 import ai.tegmentum.wasmtime4j.cache.ModuleCacheStatistics;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;

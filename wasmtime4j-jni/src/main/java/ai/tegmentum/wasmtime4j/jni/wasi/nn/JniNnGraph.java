@@ -57,7 +57,8 @@ public final class JniNnGraph extends JniResource implements NnGraph {
       throw new IllegalArgumentException("Native handle cannot be 0");
     }
     this.encoding = Objects.requireNonNull(encoding, "encoding cannot be null");
-    this.executionTarget = Objects.requireNonNull(executionTarget, "executionTarget cannot be null");
+    this.executionTarget =
+        Objects.requireNonNull(executionTarget, "executionTarget cannot be null");
   }
 
   @Override

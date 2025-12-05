@@ -434,7 +434,7 @@ public final class JniComponentImpl implements Component {
    * @return component metrics
    */
   public ComponentMetrics getMetrics() {
-    return new JniComponentMetrics(componentId);
+    return new JniComponentMetrics(componentId, engine.getNativeHandle());
   }
 
   /**
@@ -736,13 +736,32 @@ public final class JniComponentImpl implements Component {
     }
   }
 
-  /** Stub implementation of ComponentMetrics. */
+  // Native methods for ComponentMetrics - declared in JniComponentImpl for JNI name resolution
+  private static native long nativeGetComponentsLoaded(long engineHandle);
+
+  private static native long nativeGetInstancesCreated(long engineHandle);
+
+  private static native long nativeGetInstancesDestroyed(long engineHandle);
+
+  private static native long nativeGetAvgInstantiationTimeNanos(long engineHandle);
+
+  private static native long nativeGetPeakMemoryUsage(long engineHandle);
+
+  private static native long nativeGetFunctionCalls(long engineHandle);
+
+  private static native long nativeGetErrorCount(long engineHandle);
+
+  private static native java.util.Map<String, Long> nativeGetMetrics(long engineHandle);
+
+  /** JNI implementation of ComponentMetrics backed by native calls. */
   private static class JniComponentMetrics implements ComponentMetrics {
     private final String componentId;
+    private final long engineHandle;
     private final long startTime = System.currentTimeMillis();
 
-    JniComponentMetrics(final String componentId) {
+    JniComponentMetrics(final String componentId, final long engineHandle) {
       this.componentId = componentId;
+      this.engineHandle = engineHandle;
     }
 
     @Override
@@ -752,25 +771,28 @@ public final class JniComponentImpl implements Component {
 
     @Override
     public ExecutionMetrics getExecutionMetrics() {
+      final long handle = engineHandle;
       return new ExecutionMetrics() {
         @Override
         public long getExecutionCount() {
-          return 0;
+          return nativeGetFunctionCalls(handle);
         }
 
         @Override
         public long getSuccessfulExecutions() {
-          return 0;
+          final long total = nativeGetFunctionCalls(handle);
+          final long errors = nativeGetErrorCount(handle);
+          return total - errors;
         }
 
         @Override
         public long getFailedExecutions() {
-          return 0;
+          return nativeGetErrorCount(handle);
         }
 
         @Override
         public double getAverageExecutionTime() {
-          return 0.0;
+          return nativeGetAvgInstantiationTimeNanos(handle) / 1_000_000.0;
         }
 
         @Override
@@ -797,15 +819,16 @@ public final class JniComponentImpl implements Component {
 
     @Override
     public MemoryMetrics getMemoryMetrics() {
+      final long handle = engineHandle;
       return new MemoryMetrics() {
         @Override
         public long getCurrentMemoryUsage() {
-          return 0;
+          return nativeGetPeakMemoryUsage(handle);
         }
 
         @Override
         public long getPeakMemoryUsage() {
-          return 0;
+          return nativeGetPeakMemoryUsage(handle);
         }
 
         @Override
@@ -815,12 +838,12 @@ public final class JniComponentImpl implements Component {
 
         @Override
         public long getTotalAllocations() {
-          return 0;
+          return nativeGetInstancesCreated(handle);
         }
 
         @Override
         public long getTotalAllocatedMemory() {
-          return 0;
+          return nativeGetPeakMemoryUsage(handle);
         }
 
         @Override
@@ -830,7 +853,7 @@ public final class JniComponentImpl implements Component {
 
         @Override
         public int getGcCount() {
-          return 0;
+          return (int) nativeGetInstancesDestroyed(handle);
         }
 
         @Override
@@ -937,15 +960,20 @@ public final class JniComponentImpl implements Component {
 
     @Override
     public ErrorMetrics getErrorMetrics() {
+      final long handle = engineHandle;
       return new ErrorMetrics() {
         @Override
         public long getTotalErrors() {
-          return 0;
+          return nativeGetErrorCount(handle);
         }
 
         @Override
         public double getErrorRate() {
-          return 0.0;
+          final long total = nativeGetFunctionCalls(handle);
+          if (total == 0) {
+            return 0.0;
+          }
+          return (double) nativeGetErrorCount(handle) / total;
         }
 
         @Override
@@ -965,7 +993,7 @@ public final class JniComponentImpl implements Component {
 
         @Override
         public long getRecoverableErrors() {
-          return 0;
+          return nativeGetErrorCount(handle);
         }
       };
     }

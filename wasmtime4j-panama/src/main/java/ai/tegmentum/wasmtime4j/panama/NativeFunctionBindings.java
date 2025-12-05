@@ -6621,6 +6621,117 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT, // 0 on success, non-zero on error
             ValueLayout.ADDRESS, // error_message (C string)
             ValueLayout.ADDRESS)); // out_info (TrapInfo struct)
+
+    // Debug Server Functions
+    addFunctionBinding(
+        "wasmtime4j_debug_create_server",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns server_ptr
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_debug_destroy_server",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // server_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_debug_create_session_ffi",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // returns session_id (u64)
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_debug_set_breakpoint",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns breakpoint_id (u32)
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.JAVA_INT, // function_index (u32)
+            ValueLayout.JAVA_INT)); // instruction_offset (u32)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_remove_breakpoint",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.JAVA_INT)); // breakpoint_id (u32)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_step_into",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.ADDRESS, // function_index_out (*mut u32)
+            ValueLayout.ADDRESS)); // instruction_offset_out (*mut u32)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_step_over",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.ADDRESS, // function_index_out (*mut u32)
+            ValueLayout.ADDRESS)); // instruction_offset_out (*mut u32)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_step_out",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.ADDRESS, // function_index_out (*mut u32)
+            ValueLayout.ADDRESS)); // instruction_offset_out (*mut u32)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_continue",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG)); // session_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_pause",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG)); // session_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_evaluate_expression",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG, // session_id (u64)
+            ValueLayout.ADDRESS, // expression (C string)
+            ValueLayout.ADDRESS)); // result_out (*mut EvaluationResultFFI)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_free_evaluation_result",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // result (*mut EvaluationResultFFI)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_get_local_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns count (i32), -1 on error
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG)); // session_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_get_stack_depth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns depth (i32), -1 on error
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG)); // session_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_debug_close_session_ffi",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // returns success
+            ValueLayout.ADDRESS, // server_ptr
+            ValueLayout.JAVA_LONG)); // session_id (u64)
   }
 
   // Panama Linker Functions
@@ -8565,6 +8676,137 @@ public final class NativeFunctionBindings {
     if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
       callNativeFunction(
           "wasmtime4j_panama_enhanced_component_engine_destroy", Void.class, engineHandle);
+    }
+  }
+
+  // Component Metrics Functions
+
+  /**
+   * Gets component metrics from an enhanced component engine.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param metricsOut output pointer for the metrics handle
+   * @return 0 on success, non-zero on error
+   */
+  public int enhancedComponentGetMetrics(
+      final MemorySegment engineHandle, final MemorySegment metricsOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(metricsOut, "metricsOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_get_metrics",
+        Integer.class,
+        engineHandle,
+        metricsOut);
+  }
+
+  /**
+   * Gets the components loaded count from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the count of components loaded
+   */
+  public long componentMetricsGetComponentsLoaded(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_components_loaded", Long.class, metricsHandle);
+  }
+
+  /**
+   * Gets the instances created count from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the count of instances created
+   */
+  public long componentMetricsGetInstancesCreated(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_instances_created", Long.class, metricsHandle);
+  }
+
+  /**
+   * Gets the instances destroyed count from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the count of instances destroyed
+   */
+  public long componentMetricsGetInstancesDestroyed(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_instances_destroyed", Long.class, metricsHandle);
+  }
+
+  /**
+   * Gets the average instantiation time in nanoseconds from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the average instantiation time in nanoseconds
+   */
+  public long componentMetricsGetAvgInstantiationTimeNanos(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_avg_instantiation_time_nanos",
+        Long.class,
+        metricsHandle);
+  }
+
+  /**
+   * Gets the peak memory usage from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the peak memory usage in bytes
+   */
+  public long componentMetricsGetPeakMemoryUsage(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_peak_memory_usage", Long.class, metricsHandle);
+  }
+
+  /**
+   * Gets the function calls count from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the count of function calls
+   */
+  public long componentMetricsGetFunctionCalls(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_function_calls", Long.class, metricsHandle);
+  }
+
+  /**
+   * Gets the error count from component metrics.
+   *
+   * @param metricsHandle the component metrics handle
+   * @return the error count
+   */
+  public long componentMetricsGetErrorCount(final MemorySegment metricsHandle) {
+    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
+      return 0L;
+    }
+    return callNativeFunction(
+        "wasmtime4j_panama_component_metrics_get_error_count", Long.class, metricsHandle);
+  }
+
+  /**
+   * Destroys component metrics and frees associated resources.
+   *
+   * @param metricsHandle the component metrics handle to destroy
+   */
+  public void componentMetricsDestroy(final MemorySegment metricsHandle) {
+    if (metricsHandle != null && !metricsHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_component_metrics_destroy", Void.class, metricsHandle);
     }
   }
 

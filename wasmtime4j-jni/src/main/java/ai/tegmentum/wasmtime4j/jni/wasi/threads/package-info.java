@@ -18,8 +18,8 @@
  * JNI implementation of WASI-Threads support for WebAssembly thread spawning.
  *
  * <p>This package provides the JNI-based implementation of WASI-Threads support, enabling
- * WebAssembly modules to spawn threads. The implementation uses the wasmtime-wasi-threads crate
- * for native thread management.
+ * WebAssembly modules to spawn threads. The implementation uses the wasmtime-wasi-threads crate for
+ * native thread management.
  *
  * <p>Key classes:
  *

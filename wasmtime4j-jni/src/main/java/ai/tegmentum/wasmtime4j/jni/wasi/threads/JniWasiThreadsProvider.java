@@ -41,114 +41,106 @@ import java.util.logging.Logger;
  */
 public final class JniWasiThreadsProvider implements WasiThreadsProvider {
 
-    private static final Logger LOGGER = Logger.getLogger(JniWasiThreadsProvider.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(JniWasiThreadsProvider.class.getName());
 
-    /** Cached availability check result. */
-    private static volatile Boolean available;
+  /** Cached availability check result. */
+  private static volatile Boolean available;
 
-    /**
-     * Creates a new JNI WASI-Threads provider.
-     *
-     * <p>This no-argument constructor is required for ServiceLoader discovery.
-     */
-    public JniWasiThreadsProvider() {
-        // ServiceLoader requires a public no-arg constructor
-    }
+  /**
+   * Creates a new JNI WASI-Threads provider.
+   *
+   * <p>This no-argument constructor is required for ServiceLoader discovery.
+   */
+  public JniWasiThreadsProvider() {
+    // ServiceLoader requires a public no-arg constructor
+  }
 
-    @Override
-    public boolean isAvailable() {
+  @Override
+  public boolean isAvailable() {
+    if (available == null) {
+      synchronized (JniWasiThreadsProvider.class) {
         if (available == null) {
-            synchronized (JniWasiThreadsProvider.class) {
-                if (available == null) {
-                    available = checkAvailability();
-                }
-            }
+          available = checkAvailability();
         }
-        return available;
+      }
+    }
+    return available;
+  }
+
+  @Override
+  public WasiThreadsContextBuilder createBuilder() {
+    if (!isAvailable()) {
+      throw new UnsupportedOperationException("WASI-Threads is not available in this JNI runtime");
+    }
+    return new JniWasiThreadsContextBuilder();
+  }
+
+  @Override
+  public void addToLinker(final Linker<?> linker, final Store store, final Module module)
+      throws WasmException {
+    JniValidation.requireNonNull(linker, "linker");
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(module, "module");
+
+    if (!isAvailable()) {
+      throw new UnsupportedOperationException("WASI-Threads is not available in this JNI runtime");
     }
 
-    @Override
-    public WasiThreadsContextBuilder createBuilder() {
-        if (!isAvailable()) {
-            throw new UnsupportedOperationException(
-                    "WASI-Threads is not available in this JNI runtime");
-        }
-        return new JniWasiThreadsContextBuilder();
+    // Validate that we have JNI implementations
+    if (!(linker instanceof JniLinker)) {
+      throw new WasmException(
+          "Expected JNI linker implementation, got: " + linker.getClass().getName());
+    }
+    if (!(store instanceof JniStore)) {
+      throw new WasmException(
+          "Expected JNI store implementation, got: " + store.getClass().getName());
+    }
+    if (!(module instanceof JniModule)) {
+      throw new WasmException(
+          "Expected JNI module implementation, got: " + module.getClass().getName());
     }
 
-    @Override
-    public void addToLinker(final Linker<?> linker, final Store store, final Module module)
-            throws WasmException {
-        JniValidation.requireNonNull(linker, "linker");
-        JniValidation.requireNonNull(store, "store");
-        JniValidation.requireNonNull(module, "module");
+    try {
+      final long linkerHandle = ((JniLinker) linker).getNativeHandle();
+      final long storeHandle = ((JniStore) store).getNativeHandle();
+      final long moduleHandle = ((JniModule) module).getNativeHandle();
 
-        if (!isAvailable()) {
-            throw new UnsupportedOperationException(
-                    "WASI-Threads is not available in this JNI runtime");
-        }
+      LOGGER.fine(
+          String.format(
+              "Adding thread-spawn to linker: linker=0x%x, store=0x%x, module=0x%x",
+              linkerHandle, storeHandle, moduleHandle));
 
-        // Validate that we have JNI implementations
-        if (!(linker instanceof JniLinker)) {
-            throw new WasmException(
-                    "Expected JNI linker implementation, got: " + linker.getClass().getName());
-        }
-        if (!(store instanceof JniStore)) {
-            throw new WasmException(
-                    "Expected JNI store implementation, got: " + store.getClass().getName());
-        }
-        if (!(module instanceof JniModule)) {
-            throw new WasmException(
-                    "Expected JNI module implementation, got: " + module.getClass().getName());
-        }
+      JniWasiThreadsContext.nativeAddToLinker(linkerHandle, storeHandle, moduleHandle);
 
-        try {
-            final long linkerHandle = ((JniLinker) linker).getNativeHandle();
-            final long storeHandle = ((JniStore) store).getNativeHandle();
-            final long moduleHandle = ((JniModule) module).getNativeHandle();
-
-            LOGGER.fine(
-                    String.format(
-                            "Adding thread-spawn to linker: linker=0x%x, store=0x%x, module=0x%x",
-                            linkerHandle, storeHandle, moduleHandle));
-
-            JniWasiThreadsContext.nativeAddToLinker(linkerHandle, storeHandle, moduleHandle);
-
-            LOGGER.info("Successfully added thread-spawn function to linker");
-        } catch (final JniException e) {
-            throw new WasmException("Failed to add thread-spawn to linker: " + e.getMessage(), e);
-        }
+      LOGGER.info("Successfully added thread-spawn function to linker");
+    } catch (final JniException e) {
+      throw new WasmException("Failed to add thread-spawn to linker: " + e.getMessage(), e);
     }
+  }
 
-    /**
-     * Checks if WASI-Threads support is available.
-     *
-     * @return true if available, false otherwise
-     */
-    private static boolean checkAvailability() {
-        try {
-            // First ensure native library is loaded
-            if (!JniLibraryLoader.isLoaded()) {
-                LOGGER.fine("JNI native library not loaded, WASI-Threads unavailable");
-                return false;
-            }
+  /**
+   * Checks if WASI-Threads support is available.
+   *
+   * @return true if available, false otherwise
+   */
+  private static boolean checkAvailability() {
+    try {
+      // First ensure native library is loaded
+      if (!JniLibraryLoader.isLoaded()) {
+        LOGGER.fine("JNI native library not loaded, WASI-Threads unavailable");
+        return false;
+      }
 
-            // Check native support
-            final boolean supported = JniWasiThreadsContext.nativeIsSupported();
-            LOGGER.info("WASI-Threads support check: " + supported);
-            return supported;
-        } catch (final UnsatisfiedLinkError e) {
-            LOGGER.log(
-                    Level.FINE,
-                    "WASI-Threads native methods not available: " + e.getMessage(),
-                    e);
-            return false;
-        } catch (final Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error checking WASI-Threads availability: " + e.getMessage(),
-                    e);
-            return false;
-        }
+      // Check native support
+      final boolean supported = JniWasiThreadsContext.nativeIsSupported();
+      LOGGER.info("WASI-Threads support check: " + supported);
+      return supported;
+    } catch (final UnsatisfiedLinkError e) {
+      LOGGER.log(Level.FINE, "WASI-Threads native methods not available: " + e.getMessage(), e);
+      return false;
+    } catch (final Exception e) {
+      LOGGER.log(Level.WARNING, "Error checking WASI-Threads availability: " + e.getMessage(), e);
+      return false;
     }
+  }
 }
