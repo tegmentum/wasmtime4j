@@ -114,6 +114,16 @@ public abstract class WitTypeKind {
   }
 
   /**
+   * Creates a tuple type kind.
+   *
+   * @param elementTypes the element types
+   * @return a tuple type kind
+   */
+  public static WitTypeKind tuple(final List<WitType> elementTypes) {
+    return new TupleTypeKind(elementTypes);
+  }
+
+  /**
    * Creates a resource type kind.
    *
    * @param resourceId the resource identifier
@@ -764,6 +774,82 @@ public abstract class WitTypeKind {
     @Override
     public String toString() {
       return "ResultTypeKind{okType=" + okType + ", errorType=" + errorType + '}';
+    }
+  }
+
+  /** Tuple type kind implementation. */
+  private static final class TupleTypeKind extends WitTypeKind {
+    private final List<WitType> elementTypes;
+
+    private TupleTypeKind(final List<WitType> elementTypes) {
+      this.elementTypes = List.copyOf(Objects.requireNonNull(elementTypes, "elementTypes"));
+    }
+
+    @Override
+    public boolean isCompatibleWith(final WitTypeKind other) {
+      if (!(other instanceof TupleTypeKind)) {
+        return false;
+      }
+      final TupleTypeKind otherTuple = (TupleTypeKind) other;
+      if (elementTypes.size() != otherTuple.elementTypes.size()) {
+        return false;
+      }
+      for (int i = 0; i < elementTypes.size(); i++) {
+        if (!elementTypes.get(i).isCompatibleWith(otherTuple.elementTypes.get(i))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public Optional<Integer> getSizeBytes() {
+      return Optional.empty(); // Variable size based on element types
+    }
+
+    @Override
+    public boolean isPrimitive() {
+      return false;
+    }
+
+    @Override
+    public boolean isComposite() {
+      return true;
+    }
+
+    @Override
+    public boolean isResource() {
+      return false;
+    }
+
+    @Override
+    public WitTypeCategory getCategory() {
+      return WitTypeCategory.TUPLE;
+    }
+
+    public List<WitType> getElementTypes() {
+      return elementTypes;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TupleTypeKind)) {
+        return false;
+      }
+      return elementTypes.equals(((TupleTypeKind) obj).elementTypes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(elementTypes);
+    }
+
+    @Override
+    public String toString() {
+      return "TupleTypeKind{elementTypes=" + elementTypes + '}';
     }
   }
 

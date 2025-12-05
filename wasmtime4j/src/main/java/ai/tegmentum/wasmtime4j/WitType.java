@@ -240,6 +240,39 @@ public final class WitType {
   }
 
   /**
+   * Creates a tuple WIT type.
+   *
+   * @param elementTypes the element types
+   * @return a new WIT type
+   */
+  public static WitType tuple(final List<WitType> elementTypes) {
+    final StringBuilder nameBuilder = new StringBuilder("tuple<");
+    for (int i = 0; i < elementTypes.size(); i++) {
+      if (i > 0) {
+        nameBuilder.append(", ");
+      }
+      nameBuilder.append(elementTypes.get(i).getName());
+    }
+    nameBuilder.append(">");
+
+    return new WitType(
+        nameBuilder.toString(),
+        WitTypeKind.tuple(elementTypes),
+        Map.of("elementCount", elementTypes.size()),
+        Optional.empty());
+  }
+
+  /**
+   * Creates a tuple WIT type from varargs.
+   *
+   * @param elementTypes the element types
+   * @return a new WIT type
+   */
+  public static WitType tuple(final WitType... elementTypes) {
+    return tuple(List.of(elementTypes));
+  }
+
+  /**
    * Creates a resource WIT type.
    *
    * @param name the resource name

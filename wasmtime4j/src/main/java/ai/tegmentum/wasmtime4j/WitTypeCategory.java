@@ -48,6 +48,9 @@ public enum WitTypeCategory {
   /** Result types representing success or error. */
   RESULT,
 
+  /** Tuple types with heterogeneous elements. */
+  TUPLE,
+
   /** Resource types with opaque handles. */
   RESOURCE
 }
