@@ -7199,6 +7199,70 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Checks if the Pulley interpreter is being used.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if Pulley interpreter is being used, false if using Cranelift JIT
+   */
+  public boolean engineIsPulley(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction("wasmtime4j_panama_engine_is_pulley", Integer.class, enginePtr);
+    return result == 1;
+  }
+
+  /**
+   * Gets the precompilation compatibility hash for this engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return the compatibility hash as a byte array, or null if not available
+   */
+  public byte[] enginePrecompileCompatibilityHash(final MemorySegment enginePtr) {
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_precompile_compatibility_hash",
+              Integer.class,
+              enginePtr,
+              outDataPtr,
+              outLenPtr);
+
+      if (result != 0) {
+        return null;
+      }
+
+      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
+      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
+        return null;
+      }
+
+      final MemorySegment hashData = dataPtr.reinterpret(dataLen);
+      return hashData.toArray(ValueLayout.JAVA_BYTE);
+    } catch (final Exception e) {
+      return null;
+    }
+  }
+
+  /**
+   * Checks if a table supports 64-bit addressing (Table64).
+   *
+   * @param tablePtr pointer to the table
+   * @param storePtr pointer to the store
+   * @return true if the table supports 64-bit addressing
+   */
+  public boolean tableSupports64BitAddressing(
+      final MemorySegment tablePtr, final MemorySegment storePtr) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_table_supports_64bit_addressing", Integer.class, tablePtr, storePtr);
+    return result == 1;
+  }
+
+  /**
    * Precompiles WebAssembly bytecode into a serialized form for ahead-of-time (AOT) usage.
    *
    * <p>This method compiles the WebAssembly binary into a serialized form that can be later loaded

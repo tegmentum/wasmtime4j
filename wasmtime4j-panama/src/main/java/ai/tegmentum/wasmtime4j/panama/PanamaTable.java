@@ -611,4 +611,18 @@ public final class PanamaTable implements WasmTable {
     }
     return ((PanamaStore) instance.getStore()).getNativeStore();
   }
+
+  @Override
+  public boolean supports64BitAddressing() {
+    if (closed) {
+      return false;
+    }
+    try {
+      final MemorySegment storePtr = getNativeStorePointer();
+      return NativeFunctionBindings.getInstance().tableSupports64BitAddressing(nativeTable, storePtr);
+    } catch (final Exception e) {
+      LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
+      return false;
+    }
+  }
 }

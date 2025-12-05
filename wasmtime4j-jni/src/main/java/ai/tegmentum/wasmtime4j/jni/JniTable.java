@@ -524,4 +524,35 @@ public final class JniTable extends JniResource implements WasmTable {
             + ") from segment "
             + srcSegmentIndex);
   }
+
+  /**
+   * Checks if this table supports 64-bit addressing.
+   *
+   * <p>Returns true if the table was created with the table64 proposal enabled, allowing for table
+   * sizes and indices larger than 32-bit limits.
+   *
+   * @return true if 64-bit addressing is supported
+   * @since 1.1.0
+   */
+  @Override
+  public boolean supports64BitAddressing() {
+    if (store.isClosed()) {
+      return false;
+    }
+    try {
+      return nativeSupports64BitAddressing(getNativeHandle(), store.getNativeHandle());
+    } catch (final Exception e) {
+      LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Checks if the table supports 64-bit addressing.
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @return true if 64-bit addressing is supported
+   */
+  private static native boolean nativeSupports64BitAddressing(long tableHandle, long storeHandle);
 }

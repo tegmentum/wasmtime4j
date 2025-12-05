@@ -95,6 +95,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemor
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupportsFeature
   (JNIEnv *, jobject, jlong, jstring);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeIsPulley
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativePrecompileCompatibilityHash
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompileCompatibilityHash
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

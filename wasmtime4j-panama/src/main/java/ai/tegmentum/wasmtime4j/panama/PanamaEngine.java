@@ -543,4 +543,29 @@ public final class PanamaEngine implements Engine {
       throw new IllegalStateException("Engine has been closed");
     }
   }
+
+  @Override
+  public boolean isPulley() {
+    if (closed) {
+      return false;
+    }
+    try {
+      return NATIVE_BINDINGS.engineIsPulley(nativeEngine);
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public byte[] precompileCompatibilityHash() {
+    if (closed) {
+      return new byte[0];
+    }
+    try {
+      final byte[] hash = NATIVE_BINDINGS.enginePrecompileCompatibilityHash(nativeEngine);
+      return hash != null ? hash : new byte[0];
+    } catch (final Exception e) {
+      return new byte[0];
+    }
+  }
 }

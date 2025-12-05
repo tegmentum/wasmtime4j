@@ -95,6 +95,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy
 JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableTypeInfo
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeSupports64BitAddressing
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSupports64BitAddressing
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

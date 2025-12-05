@@ -240,6 +240,43 @@ public interface Engine extends Closeable {
   }
 
   /**
+   * Checks if the Pulley interpreter is being used.
+   *
+   * <p>Pulley is Wasmtime's portable, optimizing interpreter that can be used instead of or
+   * alongside the Cranelift JIT compiler. This method returns true if the engine is configured to
+   * use Pulley for WebAssembly execution.
+   *
+   * @return true if Pulley interpreter is being used, false if using Cranelift JIT
+   * @since 1.1.0
+   */
+  default boolean isPulley() {
+    return false;
+  }
+
+  /**
+   * Gets the precompilation compatibility hash for this engine.
+   *
+   * <p>This hash uniquely identifies the compilation settings and target configuration of this
+   * engine. Two engines with the same compatibility hash can share precompiled modules. This is
+   * useful for caching and distributing precompiled WebAssembly modules.
+   *
+   * <p>The hash includes factors such as:
+   *
+   * <ul>
+   *   <li>Target architecture (x86_64, aarch64, etc.)
+   *   <li>Compiler settings and optimizations
+   *   <li>Enabled WebAssembly features
+   *   <li>Wasmtime version
+   * </ul>
+   *
+   * @return the compatibility hash as a byte array, or empty array if not available
+   * @since 1.1.0
+   */
+  default byte[] precompileCompatibilityHash() {
+    return new byte[0];
+  }
+
+  /**
    * Closes the engine and releases associated resources.
    *
    * <p>After closing, the engine becomes invalid and should not be used. Any stores or modules

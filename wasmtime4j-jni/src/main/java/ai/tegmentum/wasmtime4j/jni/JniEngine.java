@@ -291,4 +291,33 @@ public class JniEngine implements Engine {
   private native int nativeGetMemoryLimitPages(long engineHandle);
 
   private native boolean nativeSupportsFeature(long engineHandle, String featureName);
+
+  @Override
+  public boolean isPulley() {
+    if (closed) {
+      return false;
+    }
+    try {
+      return nativeIsPulley(nativeHandle);
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  private native boolean nativeIsPulley(long engineHandle);
+
+  @Override
+  public byte[] precompileCompatibilityHash() {
+    if (closed) {
+      return new byte[0];
+    }
+    try {
+      final byte[] hash = nativePrecompileCompatibilityHash(nativeHandle);
+      return hash != null ? hash : new byte[0];
+    } catch (final Exception e) {
+      return new byte[0];
+    }
+  }
+
+  private native byte[] nativePrecompileCompatibilityHash(long engineHandle);
 }
