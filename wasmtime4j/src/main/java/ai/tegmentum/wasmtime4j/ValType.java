@@ -52,11 +52,30 @@ public interface ValType {
   /**
    * Checks if this is a reference type.
    *
-   * <p>Reference types include FUNCREF and EXTERNREF.
+   * <p>Reference types include FUNCREF, EXTERNREF, and all GC reference types.
    *
    * @return true if this is a reference type, false otherwise
    */
   boolean isReference();
+
+  /**
+   * Checks if this is a GC reference type.
+   *
+   * <p>GC reference types include ANYREF, EQREF, I31REF, STRUCTREF, ARRAYREF, NULLREF, NULLFUNCREF,
+   * and NULLEXTERNREF.
+   *
+   * @return true if this is a GC reference type, false otherwise
+   */
+  boolean isGcReference();
+
+  /**
+   * Checks if this is a nullable reference type.
+   *
+   * <p>Nullable reference types include NULLREF, NULLFUNCREF, and NULLEXTERNREF.
+   *
+   * @return true if this is a nullable reference type, false otherwise
+   */
+  boolean isNullableReference();
 
   /**
    * Checks if this is a vector type.
@@ -168,6 +187,106 @@ public interface ValType {
    * @return an EXTERNREF ValType
    */
   static ValType externref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  // WasmGC reference type factory methods
+
+  /**
+   * Creates an ANYREF value type.
+   *
+   * <p>ANYREF is the top type in the GC reference hierarchy - all GC references are subtypes of
+   * anyref.
+   *
+   * @return an ANYREF ValType
+   */
+  static ValType anyref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates an EQREF value type.
+   *
+   * <p>EQREF is the type of equality-testable references - a subset of anyref that supports ref.eq.
+   *
+   * @return an EQREF ValType
+   */
+  static ValType eqref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates an I31REF value type.
+   *
+   * <p>I31REF is the type for immediate 31-bit integer references for efficient small integer
+   * storage.
+   *
+   * @return an I31REF ValType
+   */
+  static ValType i31ref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates a STRUCTREF value type.
+   *
+   * <p>STRUCTREF is the type for references to struct instances with typed field access.
+   *
+   * @return a STRUCTREF ValType
+   */
+  static ValType structref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates an ARRAYREF value type.
+   *
+   * <p>ARRAYREF is the type for references to array instances with element type information.
+   *
+   * @return an ARRAYREF ValType
+   */
+  static ValType arrayref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates a NULLREF value type.
+   *
+   * <p>NULLREF is the null reference type - the bottom type for nullable references.
+   *
+   * @return a NULLREF ValType
+   */
+  static ValType nullref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates a NULLFUNCREF value type.
+   *
+   * <p>NULLFUNCREF is the nullable function reference type.
+   *
+   * @return a NULLFUNCREF ValType
+   */
+  static ValType nullfuncref() {
+    throw new UnsupportedOperationException(
+        "Static factory method must be provided by implementation");
+  }
+
+  /**
+   * Creates a NULLEXTERNREF value type.
+   *
+   * <p>NULLEXTERNREF is the nullable external reference type.
+   *
+   * @return a NULLEXTERNREF ValType
+   */
+  static ValType nullexternref() {
     throw new UnsupportedOperationException(
         "Static factory method must be provided by implementation");
   }

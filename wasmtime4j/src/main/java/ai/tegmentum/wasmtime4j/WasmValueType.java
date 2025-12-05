@@ -28,7 +28,33 @@ public enum WasmValueType {
   FUNCREF(-1, false, false),
 
   /** Reference to external data. */
-  EXTERNREF(-1, false, false);
+  EXTERNREF(-1, false, false),
+
+  // WasmGC reference types
+
+  /** Top type in the GC reference hierarchy - all GC references are subtypes of anyref. */
+  ANYREF(-1, false, false),
+
+  /** Equality-testable references - subset of anyref that supports ref.eq. */
+  EQREF(-1, false, false),
+
+  /** Immediate 31-bit integer references for efficient small integer storage. */
+  I31REF(-1, false, false),
+
+  /** References to struct instances with typed field access. */
+  STRUCTREF(-1, false, false),
+
+  /** References to array instances with element type information. */
+  ARRAYREF(-1, false, false),
+
+  /** The null reference type - bottom type for nullable references. */
+  NULLREF(-1, false, false),
+
+  /** Nullable function reference type. */
+  NULLFUNCREF(-1, false, false),
+
+  /** Nullable external reference type. */
+  NULLEXTERNREF(-1, false, false);
 
   private final int size;
   private final boolean isInteger;
@@ -70,10 +96,61 @@ public enum WasmValueType {
   /**
    * Checks if this is a reference type.
    *
-   * @return true if this is FUNCREF or EXTERNREF
+   * @return true if this is a reference type (FUNCREF, EXTERNREF, or any GC reference type)
    */
   public boolean isReference() {
-    return this == FUNCREF || this == EXTERNREF;
+    switch (this) {
+      case FUNCREF:
+      case EXTERNREF:
+      case ANYREF:
+      case EQREF:
+      case I31REF:
+      case STRUCTREF:
+      case ARRAYREF:
+      case NULLREF:
+      case NULLFUNCREF:
+      case NULLEXTERNREF:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Checks if this is a GC reference type.
+   *
+   * @return true if this is a WasmGC reference type
+   */
+  public boolean isGcReference() {
+    switch (this) {
+      case ANYREF:
+      case EQREF:
+      case I31REF:
+      case STRUCTREF:
+      case ARRAYREF:
+      case NULLREF:
+      case NULLFUNCREF:
+      case NULLEXTERNREF:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Checks if this is a nullable reference type.
+   *
+   * @return true if this is a nullable reference type
+   */
+  public boolean isNullableReference() {
+    switch (this) {
+      case NULLREF:
+      case NULLFUNCREF:
+      case NULLEXTERNREF:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -117,6 +194,23 @@ public enum WasmValueType {
         return FUNCREF;
       case 6:
         return EXTERNREF;
+        // WasmGC type codes
+      case 7:
+        return ANYREF;
+      case 8:
+        return EQREF;
+      case 9:
+        return I31REF;
+      case 10:
+        return STRUCTREF;
+      case 11:
+        return ARRAYREF;
+      case 12:
+        return NULLREF;
+      case 13:
+        return NULLFUNCREF;
+      case 14:
+        return NULLEXTERNREF;
       default:
         throw new IllegalArgumentException("Unknown type code: " + typeCode);
     }
@@ -143,8 +237,84 @@ public enum WasmValueType {
         return 5;
       case EXTERNREF:
         return 6;
+        // WasmGC type codes
+      case ANYREF:
+        return 7;
+      case EQREF:
+        return 8;
+      case I31REF:
+        return 9;
+      case STRUCTREF:
+        return 10;
+      case ARRAYREF:
+        return 11;
+      case NULLREF:
+        return 12;
+      case NULLFUNCREF:
+        return 13;
+      case NULLEXTERNREF:
+        return 14;
       default:
         throw new IllegalStateException("Unknown value type: " + this);
+    }
+  }
+
+  /**
+   * Checks if this type is a subtype of another type according to WasmGC subtyping rules.
+   *
+   * <p>The subtyping hierarchy for GC reference types is:
+   *
+   * <ul>
+   *   <li>anyref is the top type for all GC references
+   *   <li>eqref &lt;: anyref
+   *   <li>i31ref &lt;: eqref
+   *   <li>structref &lt;: eqref
+   *   <li>arrayref &lt;: eqref
+   *   <li>nullref is the bottom type for nullable references
+   * </ul>
+   *
+   * @param supertype the potential supertype
+   * @return true if this type is a subtype of the given supertype
+   */
+  public boolean isSubtypeOf(final WasmValueType supertype) {
+    if (this == supertype) {
+      return true;
+    }
+
+    // Non-reference types only match themselves
+    if (!this.isReference() || !supertype.isReference()) {
+      return false;
+    }
+
+    // NULLREF is a subtype of all nullable reference types
+    if (this == NULLREF) {
+      return supertype.isReference();
+    }
+
+    // NULLFUNCREF is a subtype of FUNCREF
+    if (this == NULLFUNCREF) {
+      return supertype == FUNCREF || supertype == NULLFUNCREF;
+    }
+
+    // NULLEXTERNREF is a subtype of EXTERNREF
+    if (this == NULLEXTERNREF) {
+      return supertype == EXTERNREF || supertype == NULLEXTERNREF;
+    }
+
+    // GC reference type hierarchy
+    switch (this) {
+      case ANYREF:
+        return supertype == ANYREF;
+      case EQREF:
+        return supertype == ANYREF || supertype == EQREF;
+      case I31REF:
+        return supertype == ANYREF || supertype == EQREF || supertype == I31REF;
+      case STRUCTREF:
+        return supertype == ANYREF || supertype == EQREF || supertype == STRUCTREF;
+      case ARRAYREF:
+        return supertype == ANYREF || supertype == EQREF || supertype == ARRAYREF;
+      default:
+        return false;
     }
   }
 }

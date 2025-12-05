@@ -53,6 +53,16 @@ final class SimpleValType implements ValType {
   }
 
   @Override
+  public boolean isGcReference() {
+    return valueType.isGcReference();
+  }
+
+  @Override
+  public boolean isNullableReference() {
+    return valueType.isNullableReference();
+  }
+
+  @Override
   public boolean isVector() {
     return valueType.isVector();
   }
@@ -70,10 +80,9 @@ final class SimpleValType implements ValType {
       return this.valueType == otherType;
     }
 
-    // Reference types: implement subtyping rules
-    // For now, only exact matches are supported
-    // TODO: Implement proper reference type subtyping when GC types are added
-    return this.valueType == otherType;
+    // Reference types: use subtyping rules from WasmValueType
+    // Check if this type is a subtype of the other type (can be used where other is expected)
+    return this.valueType.isSubtypeOf(otherType);
   }
 
   @Override
@@ -185,6 +194,80 @@ final class SimpleValType implements ValType {
      */
     static ValType externref() {
       return new SimpleValType(WasmValueType.EXTERNREF);
+    }
+
+    // WasmGC reference type factory methods
+
+    /**
+     * Creates an ANYREF value type.
+     *
+     * @return an ANYREF ValType
+     */
+    static ValType anyref() {
+      return new SimpleValType(WasmValueType.ANYREF);
+    }
+
+    /**
+     * Creates an EQREF value type.
+     *
+     * @return an EQREF ValType
+     */
+    static ValType eqref() {
+      return new SimpleValType(WasmValueType.EQREF);
+    }
+
+    /**
+     * Creates an I31REF value type.
+     *
+     * @return an I31REF ValType
+     */
+    static ValType i31ref() {
+      return new SimpleValType(WasmValueType.I31REF);
+    }
+
+    /**
+     * Creates a STRUCTREF value type.
+     *
+     * @return a STRUCTREF ValType
+     */
+    static ValType structref() {
+      return new SimpleValType(WasmValueType.STRUCTREF);
+    }
+
+    /**
+     * Creates an ARRAYREF value type.
+     *
+     * @return an ARRAYREF ValType
+     */
+    static ValType arrayref() {
+      return new SimpleValType(WasmValueType.ARRAYREF);
+    }
+
+    /**
+     * Creates a NULLREF value type.
+     *
+     * @return a NULLREF ValType
+     */
+    static ValType nullref() {
+      return new SimpleValType(WasmValueType.NULLREF);
+    }
+
+    /**
+     * Creates a NULLFUNCREF value type.
+     *
+     * @return a NULLFUNCREF ValType
+     */
+    static ValType nullfuncref() {
+      return new SimpleValType(WasmValueType.NULLFUNCREF);
+    }
+
+    /**
+     * Creates a NULLEXTERNREF value type.
+     *
+     * @return a NULLEXTERNREF ValType
+     */
+    static ValType nullexternref() {
+      return new SimpleValType(WasmValueType.NULLEXTERNREF);
     }
   }
 }

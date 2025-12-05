@@ -29,7 +29,16 @@ public enum GcReferenceType {
   STRUCT_REF("structref"),
 
   /** References to array instances with element type information. */
-  ARRAY_REF("arrayref");
+  ARRAY_REF("arrayref"),
+
+  /** The null reference type - bottom type for nullable references. */
+  NULL_REF("nullref"),
+
+  /** Nullable function reference type. */
+  NULL_FUNC_REF("nullfuncref"),
+
+  /** Nullable external reference type. */
+  NULL_EXTERN_REF("nullexternref");
 
   private final String wasmName;
 
@@ -53,6 +62,10 @@ public enum GcReferenceType {
    * @return true if this type is a subtype of the given supertype
    */
   public boolean isSubtypeOf(final GcReferenceType supertype) {
+    if (this == supertype) {
+      return true;
+    }
+
     switch (this) {
       case ANY_REF:
         return supertype == ANY_REF;
@@ -64,6 +77,20 @@ public enum GcReferenceType {
         return supertype == ANY_REF || supertype == EQ_REF || supertype == STRUCT_REF;
       case ARRAY_REF:
         return supertype == ANY_REF || supertype == EQ_REF || supertype == ARRAY_REF;
+      case NULL_REF:
+        // nullref is a subtype of all nullable GC reference types
+        return supertype == ANY_REF
+            || supertype == EQ_REF
+            || supertype == I31_REF
+            || supertype == STRUCT_REF
+            || supertype == ARRAY_REF
+            || supertype == NULL_REF;
+      case NULL_FUNC_REF:
+        // nullfuncref is only a subtype of itself
+        return supertype == NULL_FUNC_REF;
+      case NULL_EXTERN_REF:
+        // nullexternref is only a subtype of itself
+        return supertype == NULL_EXTERN_REF;
       default:
         return false;
     }
