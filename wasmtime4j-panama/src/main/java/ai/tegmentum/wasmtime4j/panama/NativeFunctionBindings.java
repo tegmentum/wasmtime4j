@@ -3804,6 +3804,77 @@ public final class NativeFunctionBindings {
         "wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
   }
 
+  // =============================================================================
+  // Panama Function FFI Operations
+  // =============================================================================
+
+  /**
+   * Calls a WebAssembly function directly using a function handle.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @param paramsPtr pointer to parameters array (WasmValue format)
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to results buffer (WasmValue format)
+   * @param resultCount maximum number of results
+   * @return 0 on success, negative error code on failure
+   */
+  public int funcCall(
+      final MemorySegment funcPtr,
+      final MemorySegment storePtr,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long resultCount) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_call",
+        Integer.class,
+        funcPtr,
+        storePtr,
+        paramsPtr,
+        paramCount,
+        resultsPtr,
+        resultCount);
+  }
+
+  /**
+   * Gets the function type for a function handle.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @return pointer to the function type, or null on failure
+   */
+  public MemorySegment funcGetType(final MemorySegment funcPtr, final MemorySegment storePtr) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_type", MemorySegment.class, funcPtr, storePtr);
+  }
+
+  /**
+   * Destroys a function handle.
+   *
+   * @param funcPtr pointer to the function to destroy
+   */
+  public void funcDestroy(final MemorySegment funcPtr) {
+    if (funcPtr != null && !funcPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_func_destroy", Void.class, funcPtr);
+    }
+  }
+
+  /**
+   * Destroys a function type handle.
+   *
+   * @param funcTypePtr pointer to the function type to destroy
+   */
+  public void funcTypeDestroy(final MemorySegment funcTypePtr) {
+    if (funcTypePtr != null && !funcTypePtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_func_type_destroy", Void.class, funcTypePtr);
+    }
+  }
+
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
     // Engine functions

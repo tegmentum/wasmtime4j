@@ -98,8 +98,24 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Function name cannot be null");
     }
 
-    // TODO: Implement function export retrieval
-    return Optional.empty();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment funcOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result = bindings.callerGetFunction(callerPtr, nameSegment, funcOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment funcHandle = funcOut.get(ValueLayout.ADDRESS, 0);
+      if (funcHandle.equals(MemorySegment.NULL) || funcHandle.address() == 0) {
+        return Optional.empty();
+      }
+      final PanamaCallerFunction panamaFunc = new PanamaCallerFunction(funcHandle, store, name);
+      return Optional.of(
+          new ai.tegmentum.wasmtime4j.panama.adapter.WasmFunctionToFunctionAdapter<>(panamaFunc));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get function: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
