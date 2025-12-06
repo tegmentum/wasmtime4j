@@ -115,6 +115,52 @@ where
             })
     }
 
+    /// Call the typed function asynchronously with the given parameters
+    ///
+    /// This is the async call path for engines created with `async_support(true)`.
+    /// It allows WebAssembly functions to be executed without blocking the calling thread.
+    ///
+    /// # Arguments
+    ///
+    /// * `store` - The store context
+    /// * `params` - The parameters matching the function signature
+    ///
+    /// # Returns
+    ///
+    /// The function results matching the return type, wrapped in a future
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The engine was not created with async support enabled
+    /// - The function traps during execution
+    /// - Stack overflow occurs
+    /// - Out of fuel/epoch deadline exceeded
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let result = typed_func.call_async(&mut store, (5, 10)).await?;
+    /// assert_eq!(result, 15);
+    /// ```
+    pub async fn call_async(
+        &self,
+        mut store: impl AsContextMut<Data = crate::store::StoreData>,
+        params: Params,
+    ) -> WasmtimeResult<Results>
+    where
+        Params: Send + Sync,
+        Results: Send + Sync,
+    {
+        self.inner
+            .call_async(store.as_context_mut(), params)
+            .await
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Async typed function call failed: {}", e),
+                backtrace: None,
+            })
+    }
+
     /// Get the underlying untyped function
     ///
     /// This is useful when you need to pass the function to APIs that expect `Func`.

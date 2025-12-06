@@ -625,3 +625,194 @@ pub extern "C" fn wasmtime4j_panama_wasi_nn_exec_close(ctx_ptr: *mut c_void) {
 #[cfg(not(feature = "wasi-nn"))]
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_nn_exec_close(_ctx_ptr: *mut c_void) {}
+
+// =============================================================================
+// Linker Integration Functions
+// =============================================================================
+
+/// Get the number of available backends
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_backend_count() -> c_int {
+    crate::wasi_nn::get_available_backends().len() as c_int
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_backend_count() -> c_int {
+    0
+}
+
+/// Get available backend names as a JSON array
+///
+/// Returns a newly allocated C string that must be freed with wasmtime4j_free_string
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_backends_json() -> *mut c_char {
+    let backends = crate::wasi_nn::get_available_backends();
+    let json = serde_json::to_string(&backends).unwrap_or_else(|_| "[]".to_string());
+    match std::ffi::CString::new(json) {
+        Ok(cstr) => cstr.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_backends_json() -> *mut c_char {
+    match std::ffi::CString::new("[]") {
+        Ok(cstr) => cstr.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Check if WASI-NN linker integration is available
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_linker_available() -> c_int {
+    if crate::wasi_nn::is_wasmtime_wasi_nn_available() {
+        1
+    } else {
+        0
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_linker_available() -> c_int {
+    0
+}
+
+// =============================================================================
+// Context Registry Functions
+// =============================================================================
+
+/// Register a WASI-NN context in the global registry
+///
+/// # Returns
+/// Context ID on success, 0 on error
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_register_context(
+    context_ptr: *mut c_void,
+) -> c_longlong {
+    if context_ptr.is_null() {
+        return 0;
+    }
+
+    // Take ownership of the context
+    let context = unsafe { Box::from_raw(context_ptr as *mut WasiNnContext) };
+
+    match crate::wasi_nn::register_nn_context(*context) {
+        Ok(id) => id as c_longlong,
+        Err(_) => 0,
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_register_context(
+    _context_ptr: *mut c_void,
+) -> c_longlong {
+    0
+}
+
+/// Get a registered context by ID
+///
+/// # Returns
+/// Pointer to context, or null on error
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_registered_context(
+    context_id: c_longlong,
+) -> *mut c_void {
+    match crate::wasi_nn::get_nn_context(context_id as u64) {
+        Ok(ctx) => Arc::into_raw(ctx) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_registered_context(
+    _context_id: c_longlong,
+) -> *mut c_void {
+    std::ptr::null_mut()
+}
+
+/// Unregister a context from the registry
+///
+/// # Returns
+/// 0 on success, -1 on error
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_unregister_context(context_id: c_longlong) -> c_int {
+    match crate::wasi_nn::unregister_nn_context(context_id as u64) {
+        Ok(()) => 0,
+        Err(_) => -1,
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_unregister_context(_context_id: c_longlong) -> c_int {
+    -1
+}
+
+/// Get count of registered contexts
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_context_count() -> c_int {
+    match crate::wasi_nn::get_nn_context_count() {
+        Ok(count) => count as c_int,
+        Err(_) => -1,
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_context_count() -> c_int {
+    0
+}
+
+// =============================================================================
+// Statistics Functions
+// =============================================================================
+
+/// Get context statistics as JSON
+#[cfg(feature = "wasi-nn")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_stats_json(
+    context_ptr: *mut c_void,
+) -> *mut c_char {
+    if context_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let context = unsafe { &*(context_ptr as *const WasiNnContext) };
+    let stats = context.stats();
+
+    let json = serde_json::json!({
+        "graphs_loaded": stats.graphs_loaded,
+        "graphs_unloaded": stats.graphs_unloaded,
+        "contexts_created": stats.contexts_created,
+        "contexts_closed": stats.contexts_closed,
+        "inferences_executed": stats.inferences_executed,
+        "inference_errors": stats.inference_errors,
+        "bytes_loaded": stats.bytes_loaded,
+        "tensor_bytes_processed": stats.tensor_bytes_processed,
+    });
+
+    match std::ffi::CString::new(json.to_string()) {
+        Ok(cstr) => cstr.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[cfg(not(feature = "wasi-nn"))]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_nn_get_stats_json(
+    _context_ptr: *mut c_void,
+) -> *mut c_char {
+    std::ptr::null_mut()
+}

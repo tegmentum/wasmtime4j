@@ -1465,3 +1465,449 @@ mod tests {
         assert_eq!(mapped[0].wasm_address, frames[0]);
     }
 }
+
+// ============================================================================
+// Panama FFI Functions for Source Map Support
+// ============================================================================
+
+use std::ffi::{c_char, c_int, CStr, CString};
+use std::ptr;
+
+/// Global source map integration instance
+lazy_static::lazy_static! {
+    static ref SOURCE_MAP_INTEGRATION: SourceMapIntegration = SourceMapIntegration::new();
+    static ref SOURCEMAP_REGISTRY: RwLock<HashMap<u64, Arc<SourceMap>>> = RwLock::new(HashMap::new());
+    static ref NEXT_SOURCEMAP_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+}
+
+/// Create a new source map from JSON data
+///
+/// # Arguments
+/// * `json_data` - Pointer to UTF-8 JSON source map data
+/// * `json_len` - Length of the JSON data
+///
+/// # Returns
+/// Source map ID on success, 0 on error
+///
+/// # Safety
+/// json_data must be a valid pointer to json_len bytes of UTF-8 data
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_parse(
+    json_data: *const c_char,
+    json_len: usize,
+) -> u64 {
+    if json_data.is_null() || json_len == 0 {
+        return 0;
+    }
+
+    // Convert to Rust string
+    let json_slice = std::slice::from_raw_parts(json_data as *const u8, json_len);
+    let json_str = match std::str::from_utf8(json_slice) {
+        Ok(s) => s,
+        Err(_) => return 0,
+    };
+
+    // Parse the source map
+    match SOURCE_MAP_INTEGRATION.load_source_map(json_str) {
+        Ok(source_map) => {
+            // Register the source map
+            let id = NEXT_SOURCEMAP_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if let Ok(mut registry) = SOURCEMAP_REGISTRY.write() {
+                registry.insert(id, source_map);
+            }
+            id
+        }
+        Err(_) => 0,
+    }
+}
+
+/// Free a source map
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_free(sourcemap_id: u64) -> c_int {
+    if let Ok(mut registry) = SOURCEMAP_REGISTRY.write() {
+        registry.remove(&sourcemap_id);
+        0
+    } else {
+        -1
+    }
+}
+
+/// Get the number of sources in a source map
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_source_count(sourcemap_id: u64) -> c_int {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            return source_map.sources.len() as c_int;
+        }
+    }
+    -1
+}
+
+/// Get a source file name by index
+/// Returns a newly allocated C string that must be freed with wasmtime4j_sourcemap_string_free
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_source(
+    sourcemap_id: u64,
+    source_index: c_int,
+) -> *mut c_char {
+    if source_index < 0 {
+        return ptr::null_mut();
+    }
+
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            if (source_index as usize) < source_map.sources.len() {
+                let source = &source_map.sources[source_index as usize];
+                if let Ok(cstr) = CString::new(source.as_str()) {
+                    return cstr.into_raw();
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+/// Get the number of names in a source map
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_name_count(sourcemap_id: u64) -> c_int {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            return source_map.names.len() as c_int;
+        }
+    }
+    -1
+}
+
+/// Get a name by index
+/// Returns a newly allocated C string that must be freed with wasmtime4j_sourcemap_string_free
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_name(
+    sourcemap_id: u64,
+    name_index: c_int,
+) -> *mut c_char {
+    if name_index < 0 {
+        return ptr::null_mut();
+    }
+
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            if (name_index as usize) < source_map.names.len() {
+                let name = &source_map.names[name_index as usize];
+                if let Ok(cstr) = CString::new(name.as_str()) {
+                    return cstr.into_raw();
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+/// Get source position for a WebAssembly address
+/// Returns JSON string with source position info, or null on error/not found
+///
+/// JSON format: {"source":"file.c","line":10,"column":5,"name":"funcName"}
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_position(
+    sourcemap_id: u64,
+    function_index: u32,
+    instruction_offset: u32,
+) -> *mut c_char {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            let wasm_address = WasmAddress::new(function_index, instruction_offset);
+            if let Ok(Some(position)) = SOURCE_MAP_INTEGRATION.get_source_position(source_map, wasm_address) {
+                let json = serde_json::json!({
+                    "source": position.source,
+                    "line": position.line,
+                    "column": position.column,
+                    "name": position.name,
+                });
+                if let Ok(cstr) = CString::new(json.to_string()) {
+                    return cstr.into_raw();
+                }
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+/// Map a WebAssembly stack trace to source positions
+/// Returns JSON array of mapped frame info
+///
+/// # Arguments
+/// * `sourcemap_id` - Source map ID (0 to skip source mapping)
+/// * `module_id` - Module identifier string
+/// * `addresses` - Array of (function_index, instruction_offset) pairs
+/// * `address_count` - Number of address pairs
+///
+/// # Returns
+/// JSON string with mapped frames, null on error
+///
+/// # Safety
+/// All pointers must be valid
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_map_stack_trace(
+    sourcemap_id: u64,
+    module_id: *const c_char,
+    addresses: *const u32,
+    address_count: usize,
+) -> *mut c_char {
+    if module_id.is_null() || addresses.is_null() || address_count == 0 {
+        return ptr::null_mut();
+    }
+
+    // Parse module ID
+    let module_id_str = match CStr::from_ptr(module_id).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    // Parse addresses (pairs of function_index, instruction_offset)
+    let addr_slice = std::slice::from_raw_parts(addresses, address_count * 2);
+    let mut frames = Vec::with_capacity(address_count);
+    for i in 0..address_count {
+        let func_idx = addr_slice[i * 2];
+        let inst_offset = addr_slice[i * 2 + 1];
+        frames.push(WasmAddress::new(func_idx, inst_offset));
+    }
+
+    // Get source map if provided
+    let source_map_opt = if sourcemap_id != 0 {
+        if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+            registry.get(&sourcemap_id).cloned()
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Map the stack trace
+    match SOURCE_MAP_INTEGRATION.map_stack_trace(
+        &frames,
+        source_map_opt.as_ref().map(|arc| arc.as_ref()),
+        None, // No DWARF info in this call
+        module_id_str,
+    ) {
+        Ok(mapped_frames) => {
+            let json_frames: Vec<serde_json::Value> = mapped_frames
+                .iter()
+                .map(|frame| {
+                    let mut obj = serde_json::json!({
+                        "function_index": frame.wasm_address.function_index,
+                        "instruction_offset": frame.wasm_address.instruction_offset,
+                    });
+
+                    if let Some(ref pos) = frame.source_position {
+                        obj["source"] = serde_json::json!(pos.source);
+                        obj["line"] = serde_json::json!(pos.line);
+                        obj["column"] = serde_json::json!(pos.column);
+                        if let Some(ref name) = pos.name {
+                            obj["name"] = serde_json::json!(name);
+                        }
+                    }
+
+                    if let Some(ref symbol) = frame.function_symbol {
+                        obj["function_name"] = serde_json::json!(symbol.name);
+                        obj["function_signature"] = serde_json::json!(symbol.signature);
+                    }
+
+                    obj
+                })
+                .collect();
+
+            if let Ok(cstr) = CString::new(serde_json::to_string(&json_frames).unwrap_or_default()) {
+                return cstr.into_raw();
+            }
+        }
+        Err(_) => {}
+    }
+
+    ptr::null_mut()
+}
+
+/// Format a mapped stack trace as a human-readable string
+///
+/// # Safety
+/// json_frames must be a valid JSON string from wasmtime4j_sourcemap_map_stack_trace
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_format_stack_trace(
+    json_frames: *const c_char,
+) -> *mut c_char {
+    if json_frames.is_null() {
+        return ptr::null_mut();
+    }
+
+    let json_str = match CStr::from_ptr(json_frames).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    // Parse JSON and format
+    if let Ok(frames) = serde_json::from_str::<Vec<serde_json::Value>>(json_str) {
+        let mut result = String::new();
+        for (index, frame) in frames.iter().enumerate() {
+            result.push_str(&format!("Frame {}: ", index));
+
+            if let Some(func_name) = frame.get("function_name").and_then(|v| v.as_str()) {
+                result.push_str(&format!("{}()", func_name));
+            } else if let Some(func_idx) = frame.get("function_index").and_then(|v| v.as_u64()) {
+                result.push_str(&format!("func_{}", func_idx));
+            }
+
+            if let (Some(source), Some(line)) = (
+                frame.get("source").and_then(|v| v.as_str()),
+                frame.get("line").and_then(|v| v.as_u64()),
+            ) {
+                let column = frame.get("column").and_then(|v| v.as_u64()).unwrap_or(0);
+                result.push_str(&format!(" at {}:{}:{}", source, line, column));
+            } else if let (Some(func_idx), Some(inst_offset)) = (
+                frame.get("function_index").and_then(|v| v.as_u64()),
+                frame.get("instruction_offset").and_then(|v| v.as_u64()),
+            ) {
+                result.push_str(&format!(" at wasm+0x{:x}:0x{:x}", func_idx, inst_offset));
+            }
+
+            result.push('\n');
+        }
+
+        if let Ok(cstr) = CString::new(result) {
+            return cstr.into_raw();
+        }
+    }
+
+    ptr::null_mut()
+}
+
+/// Free a string allocated by source map functions
+///
+/// # Safety
+/// s must be a valid pointer from a wasmtime4j_sourcemap_* function
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_string_free(s: *mut c_char) {
+    if !s.is_null() {
+        drop(CString::from_raw(s));
+    }
+}
+
+/// Resolve function symbol for a WebAssembly function
+/// Returns JSON with function symbol info
+///
+/// # Safety
+/// module_id must be a valid C string
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_resolve_function(
+    module_id: *const c_char,
+    function_index: u32,
+) -> *mut c_char {
+    if module_id.is_null() {
+        return ptr::null_mut();
+    }
+
+    let module_id_str = match CStr::from_ptr(module_id).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    if let Some(symbol) = SOURCE_MAP_INTEGRATION.resolve_function_symbol(module_id_str, function_index, None) {
+        let json = serde_json::json!({
+            "name": symbol.name,
+            "signature": symbol.signature,
+            "source_file": symbol.source_file,
+            "start_line": symbol.start_line,
+            "end_line": symbol.end_line,
+            "parameters": symbol.parameters.iter().map(|p| {
+                serde_json::json!({
+                    "name": p.name,
+                    "type": p.var_type,
+                })
+            }).collect::<Vec<_>>(),
+            "locals": symbol.locals.iter().map(|l| {
+                serde_json::json!({
+                    "name": l.name,
+                    "type": l.var_type,
+                })
+            }).collect::<Vec<_>>(),
+        });
+
+        if let Ok(cstr) = CString::new(json.to_string()) {
+            return cstr.into_raw();
+        }
+    }
+
+    ptr::null_mut()
+}
+
+/// Clear all source map caches
+#[no_mangle]
+pub extern "C" fn wasmtime4j_sourcemap_clear_caches() {
+    SOURCE_MAP_INTEGRATION.clear_caches();
+}
+
+/// Get the source map version
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_get_version(sourcemap_id: u64) -> c_int {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            return source_map.version as c_int;
+        }
+    }
+    -1
+}
+
+/// Validate a source map and get validation results as JSON
+///
+/// # Safety
+/// sourcemap_id must be a valid ID from wasmtime4j_sourcemap_parse
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_sourcemap_validate(sourcemap_id: u64) -> *mut c_char {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        if let Some(source_map) = registry.get(&sourcemap_id) {
+            let validator = ValidationEngine;
+            let result = validator.validate_source_map(source_map);
+
+            let json = serde_json::json!({
+                "valid": result.is_valid(),
+                "has_warnings": result.has_warnings(),
+                "errors": result.errors,
+                "warnings": result.warnings,
+            });
+
+            if let Ok(cstr) = CString::new(json.to_string()) {
+                return cstr.into_raw();
+            }
+        }
+    }
+    ptr::null_mut()
+}
+
+/// Get the number of registered source maps
+#[no_mangle]
+pub extern "C" fn wasmtime4j_sourcemap_get_count() -> c_int {
+    if let Ok(registry) = SOURCEMAP_REGISTRY.read() {
+        registry.len() as c_int
+    } else {
+        -1
+    }
+}

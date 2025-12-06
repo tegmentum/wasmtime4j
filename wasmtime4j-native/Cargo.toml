@@ -14,7 +14,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime
-wasmtime = { version = "38.0.4", features = ["component-model", "component-model-async", "async"] }
+wasmtime = { version = "38.0.4", features = ["component-model", "component-model-async", "async", "coredump"] }
 wasmtime-wasi = { version = "38.0.4", optional = true }
 wasmtime-wasi-http = { version = "38.0.4", optional = true }
 wasmtime-wasi-nn = { version = "38.0.4", optional = true }
@@ -158,6 +158,11 @@ async = ["wasmtime/async"]
 
 # Profiling support
 profiling = ["wasmtime/profiling"]
+
+# WebAssembly memory checker (wmemcheck) for debugging
+# Enables runtime detection of memory errors in wasm programs
+# Note: This adds overhead and is primarily for debugging
+wmemcheck = ["wasmtime/wmemcheck"]
 
 # Advanced networking protocols
 advanced-networking = ["tokio-tungstenite", "h2", "tonic", "hyper", "http", "prost", "tokio-rustls", "rustls", "webpki-roots"]

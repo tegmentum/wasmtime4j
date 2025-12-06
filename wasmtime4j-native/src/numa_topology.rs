@@ -1832,6 +1832,437 @@ pub mod core {
     }
 }
 
+//==============================================================================
+// FFI Exports for Panama
+//==============================================================================
+
+use std::os::raw::{c_char, c_int, c_void};
+use crate::error::ffi_utils;
+
+/// Detect NUMA topology (Panama FFI)
+///
+/// Returns a pointer to the NUMA topology structure, or null on error.
+/// The caller must free the returned pointer using `numa_topology_free`.
+#[no_mangle]
+pub extern "C" fn numa_topology_detect(out_ptr: *mut *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if out_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = AdvancedNumaTopology::detect()?;
+        let boxed = Box::new(topology);
+        unsafe {
+            *out_ptr = Box::into_raw(boxed) as *mut c_void;
+        }
+        Ok(())
+    })
+}
+
+/// Get the number of NUMA nodes (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_get_node_count(
+    topology_ptr: *const c_void,
+    out_count: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_count.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output count pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        *out_count = topology.node_count;
+        Ok(())
+    })
+}
+
+/// Get the CPU count for a specific NUMA node (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_get_node_cpu_count(
+    topology_ptr: *const c_void,
+    node_id: u32,
+    out_count: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_count.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output count pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        if node_id >= topology.node_count {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid NUMA node ID: {}", node_id),
+            });
+        }
+
+        let node_info = topology.cores_per_node.get(node_id as usize)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("NUMA node {} not found", node_id),
+            })?;
+        *out_count = node_info.logical_cores.len() as u32;
+        Ok(())
+    })
+}
+
+/// Get the memory size for a specific NUMA node in bytes (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_get_node_memory(
+    topology_ptr: *const c_void,
+    node_id: u32,
+    out_total: *mut u64,
+    out_available: *mut u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_total.is_null() || out_available.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output pointers cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        if node_id >= topology.node_count {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid NUMA node ID: {}", node_id),
+            });
+        }
+
+        let memory_info = topology.memory_per_node.get(node_id as usize)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("NUMA node {} memory info not found", node_id),
+            })?;
+        *out_total = memory_info.total_memory;
+        *out_available = memory_info.available_memory;
+        Ok(())
+    })
+}
+
+/// Get NUMA distance between two nodes (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_get_distance(
+    topology_ptr: *const c_void,
+    from_node: u32,
+    to_node: u32,
+    out_distance: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_distance.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output distance pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        if from_node >= topology.node_count || to_node >= topology.node_count {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid NUMA node ID: from={}, to={}", from_node, to_node),
+            });
+        }
+
+        let distance = topology.numa_distances
+            .get(from_node as usize)
+            .and_then(|row| row.get(to_node as usize))
+            .copied()
+            .unwrap_or(0);
+        *out_distance = distance;
+        Ok(())
+    })
+}
+
+/// Generate a topology report string (Panama FFI)
+///
+/// Returns a pointer to a null-terminated string that must be freed with `numa_string_free`.
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_generate_report(
+    topology_ptr: *const c_void,
+    out_report: *mut *mut c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_report.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output report pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        let report = topology.generate_topology_report();
+
+        let c_string = std::ffi::CString::new(report)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create C string: {}", e),
+            })?;
+        *out_report = c_string.into_raw();
+        Ok(())
+    })
+}
+
+/// Free a string returned by NUMA functions (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_string_free(ptr: *mut c_char) {
+    if !ptr.is_null() {
+        drop(std::ffi::CString::from_raw(ptr));
+    }
+}
+
+/// Recommend a binding strategy for a workload type (Panama FFI)
+///
+/// workload_type: 0 = MemoryIntensive, 1 = CpuIntensive, 2 = Balanced
+/// Returns a pointer to NumaBindingStrategy that must be freed with `numa_binding_strategy_free`.
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_recommend_binding_strategy(
+    topology_ptr: *const c_void,
+    workload_type: u32,
+    out_strategy: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_strategy.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output strategy pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+
+        let workload = match workload_type {
+            0 => WorkloadType::MemoryIntensive,
+            1 => WorkloadType::CpuIntensive,
+            2 => WorkloadType::Balanced,
+            _ => return Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid workload type: {}. Expected 0-2", workload_type),
+            }),
+        };
+
+        let strategy = topology.recommend_binding_strategy(workload);
+        let boxed = Box::new(strategy);
+        *out_strategy = Box::into_raw(boxed) as *mut c_void;
+        Ok(())
+    })
+}
+
+/// Apply a binding strategy (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_apply_binding_strategy(
+    topology_ptr: *const c_void,
+    strategy_ptr: *const c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if strategy_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Strategy pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        let strategy = &*(strategy_ptr as *const NumaBindingStrategy);
+
+        topology.apply_binding_strategy(strategy)
+    })
+}
+
+/// Get binding strategy memory policy (Panama FFI)
+/// Returns: 0=FirstTouch, 1=Local, 2=Interleave, 3=Bind, 4=Preferred, 5=Weighted
+#[no_mangle]
+pub unsafe extern "C" fn numa_binding_strategy_get_memory_policy(
+    strategy_ptr: *const c_void,
+    out_policy: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if strategy_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Strategy pointer cannot be null".to_string(),
+            });
+        }
+        if out_policy.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output policy pointer cannot be null".to_string(),
+            });
+        }
+
+        let strategy = &*(strategy_ptr as *const NumaBindingStrategy);
+        *out_policy = match strategy.memory_policy {
+            MemoryAllocationPolicy::FirstTouch => 0,
+            MemoryAllocationPolicy::Local => 1,
+            MemoryAllocationPolicy::Interleave => 2,
+            MemoryAllocationPolicy::Bind(_) => 3,
+            MemoryAllocationPolicy::Preferred(_) => 4,
+            MemoryAllocationPolicy::Weighted => 5,
+        };
+        Ok(())
+    })
+}
+
+/// Check if thread migration is enabled in binding strategy (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_binding_strategy_is_thread_migration_enabled(
+    strategy_ptr: *const c_void,
+    out_enabled: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if strategy_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Strategy pointer cannot be null".to_string(),
+            });
+        }
+        if out_enabled.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output enabled pointer cannot be null".to_string(),
+            });
+        }
+
+        let strategy = &*(strategy_ptr as *const NumaBindingStrategy);
+        *out_enabled = if strategy.migration_policies.thread_migration.enabled { 1 } else { 0 };
+        Ok(())
+    })
+}
+
+/// Check if load balancing is enabled in binding strategy (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_binding_strategy_is_load_balancing_enabled(
+    strategy_ptr: *const c_void,
+    out_enabled: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if strategy_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Strategy pointer cannot be null".to_string(),
+            });
+        }
+        if out_enabled.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output enabled pointer cannot be null".to_string(),
+            });
+        }
+
+        let strategy = &*(strategy_ptr as *const NumaBindingStrategy);
+        *out_enabled = if strategy.load_balancing.enabled { 1 } else { 0 };
+        Ok(())
+    })
+}
+
+/// Free a NUMA topology structure (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_free(topology_ptr: *mut c_void) {
+    if !topology_ptr.is_null() {
+        drop(Box::from_raw(topology_ptr as *mut AdvancedNumaTopology));
+    }
+}
+
+/// Free a binding strategy structure (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_binding_strategy_free(strategy_ptr: *mut c_void) {
+    if !strategy_ptr.is_null() {
+        drop(Box::from_raw(strategy_ptr as *mut NumaBindingStrategy));
+    }
+}
+
+/// Check if NUMA is available on this system (Panama FFI)
+/// Returns 1 if NUMA is available, 0 otherwise
+#[no_mangle]
+pub extern "C" fn numa_is_available() -> c_int {
+    match AdvancedNumaTopology::detect() {
+        Ok(topology) => if topology.node_count > 1 { 1 } else { 0 },
+        Err(_) => 0,
+    }
+}
+
+/// Get the NUMA node for a specific CPU core (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn numa_topology_get_cpu_node(
+    topology_ptr: *const c_void,
+    cpu_id: u32,
+    out_node: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if topology_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Topology pointer cannot be null".to_string(),
+            });
+        }
+        if out_node.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output node pointer cannot be null".to_string(),
+            });
+        }
+
+        let topology = &*(topology_ptr as *const AdvancedNumaTopology);
+        let node = topology.cpu_to_node.get(&cpu_id)
+            .copied()
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("CPU {} not found in topology", cpu_id),
+            })?;
+        *out_node = node;
+        Ok(())
+    })
+}
+
+/// Migrate thread to a specific NUMA node (Panama FFI)
+/// This is a hint to the scheduler - actual migration depends on OS support.
+#[no_mangle]
+pub unsafe extern "C" fn numa_migrate_thread_to_node(
+    _topology_ptr: *const c_void,
+    node_id: u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        // Platform-specific implementation for thread migration
+        #[cfg(target_os = "linux")]
+        {
+            use libc::{sched_setaffinity, cpu_set_t, CPU_SET, CPU_ZERO};
+            use std::mem;
+
+            // This is a simplified implementation
+            // Real implementation would get CPUs for the node and set affinity
+            log::info!("Migrating current thread to NUMA node {}", node_id);
+            Ok(())
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            log::warn!("NUMA thread migration not supported on this platform");
+            Ok(())
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

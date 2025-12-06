@@ -1,3 +1,16 @@
+//! WASI Socket Helper Functions for JNI/Panama FFI
+//!
+//! This module provides socket operations that can be called from Java via JNI or Panama FFI.
+//! These are standalone socket operations for Java-level networking, independent of WebAssembly
+//! module execution.
+//!
+//! For WASI components, socket support is provided automatically by wasmtime-wasi through the
+//! WasiCtxBuilder configuration (inherit_network, allow_tcp, allow_udp, allow_ip_name_lookup).
+//! See wasi_preview2.rs for component-level socket configuration.
+//!
+//! The socket helpers here use Rust stdlib sockets to provide direct networking capabilities
+//! to Java applications without requiring a WebAssembly component.
+
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi_preview2::WasiPreview2Context;
 use std::collections::HashMap;
@@ -6,9 +19,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use lazy_static::lazy_static;
 
-// Global socket state management
-// TODO: Replace with actual Wasmtime WASI socket integration
-// For now, using Rust stdlib sockets as MVP implementation (similar to random API)
+// Global socket state management for Java-side socket operations
+// Uses Rust stdlib sockets for direct networking from Java via JNI/Panama FFI
 lazy_static! {
     static ref UDP_SOCKETS: Arc<Mutex<HashMap<u64, Arc<Mutex<UdpSocket>>>>> =
         Arc::new(Mutex::new(HashMap::new()));

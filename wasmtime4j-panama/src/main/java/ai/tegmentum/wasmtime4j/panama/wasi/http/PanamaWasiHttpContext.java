@@ -20,6 +20,8 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
+import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
@@ -203,9 +205,25 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
       throw new WasmException("WASI HTTP context has been closed");
     }
 
-    // The native layer handles adding WASI HTTP interfaces to the linker
-    // This is a placeholder - actual implementation would integrate with
-    // the wasmtime-wasi-http crate's add_to_linker functionality
+    // Get native pointers from Panama implementations
+    if (!(linker instanceof PanamaLinker)) {
+      throw new WasmException("linker must be a PanamaLinker instance");
+    }
+    if (!(store instanceof PanamaStore)) {
+      throw new WasmException("store must be a PanamaStore instance");
+    }
+
+    final PanamaLinker panamaLinker = (PanamaLinker) linker;
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    final MemorySegment linkerPtr = panamaLinker.getNativeLinker();
+    final MemorySegment storePtr = panamaStore.getNativeStore();
+
+    final int result = bindings.wasiHttpAddToLinker(linkerPtr, storePtr, contextPtr);
+    if (result != 0) {
+      throw new WasmException("Failed to add WASI HTTP to linker, error code: " + result);
+    }
+
     LOGGER.info(
         "WASI HTTP context added to linker (context ID: "
             + bindings.wasiHttpContextGetId(contextPtr)

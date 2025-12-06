@@ -11,7 +11,7 @@
 
 use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
 use crate::error::{WasmtimeResult, WasmtimeError};
-use crate::gc_types::{FieldType, FieldDefinition, StructTypeDefinition, ArrayTypeDefinition, GcValue};
+use crate::gc_types::{FieldType, FieldDefinition, StructTypeDefinition, ArrayTypeDefinition, GcValue, GcReferenceType};
 use crate::gc_heap::ObjectId;
 
 const FFI_SUCCESS: i32 = 0;
@@ -672,18 +672,73 @@ fn array_new_internal(runtime_handle: i64, type_id: i32, elements_ptr: *const i6
 }
 
 fn array_new_default_internal(runtime_handle: i64, type_id: i32, length: i32) -> WasmtimeResult<ObjectId> {
-    // Simplified implementation
-    Ok(1)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Get array type
+    let array_def = runtime.get_array_type(type_id as u32)?;
+
+    // Create array with default values
+    let result = runtime.array_new_default(array_def, length as u32);
+
+    if result.success {
+        Ok(result.object_id.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn array_get_internal(runtime_handle: i64, object_id: i64, element_index: i32) -> WasmtimeResult<(i64, i32)> {
-    // Simplified implementation
-    Ok((0, 0))
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.array_get(object_id as ObjectId, element_index as u32);
+
+    if result.success {
+        if let Some(value) = result.value {
+            match value {
+                GcValue::I32(i) => Ok((i as i64, 0)),
+                GcValue::I64(i) => Ok((i, 1)),
+                GcValue::F32(f) => Ok((f.to_bits() as i64, 2)),
+                GcValue::F64(f) => Ok((f.to_bits() as i64, 3)),
+                _ => Ok((0, 0)),
+            }
+        } else {
+            Err(WasmtimeError::InvalidParameter { message: "No value returned".to_string() })
+        }
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn array_set_internal(runtime_handle: i64, object_id: i64, element_index: i32, value: i64, value_type: i32) -> WasmtimeResult<()> {
-    // Simplified implementation
-    Ok(())
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let gc_value = match value_type {
+        0 => GcValue::I32(value as i32),
+        1 => GcValue::I64(value),
+        2 => GcValue::F32(f32::from_bits(value as u32)),
+        3 => GcValue::F64(f64::from_bits(value as u64)),
+        _ => GcValue::I32(value as i32),
+    };
+
+    let result = runtime.array_set(object_id as ObjectId, element_index as u32, gc_value);
+
+    if result.success {
+        Ok(())
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn array_len_internal(runtime_handle: i64, object_id: i64) -> WasmtimeResult<u32> {
@@ -719,58 +774,156 @@ fn i31_new_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId>
 }
 
 fn i31_get_internal(runtime_handle: i64, object_id: i64, signed: u8) -> WasmtimeResult<i32> {
-    // Simplified implementation
-    Ok(0)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_get(object_id as ObjectId, signed != 0);
+
+    if result.success {
+        if let Some(GcValue::I32(value)) = result.value {
+            Ok(value)
+        } else {
+            Err(WasmtimeError::InvalidParameter { message: "No I32 value returned".to_string() })
+        }
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn ref_cast_internal(runtime_handle: i64, object_id: i64, target_type: i32) -> WasmtimeResult<ObjectId> {
-    // Simplified implementation
-    Ok(object_id as ObjectId)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Convert target_type to GcReferenceType
+    let gc_target_type = match target_type {
+        0 => GcReferenceType::AnyRef,
+        1 => GcReferenceType::EqRef,
+        2 => GcReferenceType::I31Ref,
+        _ => GcReferenceType::AnyRef,
+    };
+
+    let result = runtime.ref_cast(object_id as ObjectId, gc_target_type);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(object_id as ObjectId))
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn ref_test_internal(runtime_handle: i64, object_id: i64, target_type: i32) -> WasmtimeResult<bool> {
-    // Simplified implementation
-    Ok(true)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Convert target_type to GcReferenceType
+    let gc_target_type = match target_type {
+        0 => GcReferenceType::AnyRef,
+        1 => GcReferenceType::EqRef,
+        2 => GcReferenceType::I31Ref,
+        _ => GcReferenceType::AnyRef,
+    };
+
+    let result = runtime.ref_test(object_id as ObjectId, gc_target_type);
+
+    if result.success {
+        Ok(result.test_result.unwrap_or(false))
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn ref_eq_internal(runtime_handle: i64, object_id1: i64, object_id2: i64) -> WasmtimeResult<bool> {
-    // Simplified implementation
-    Ok(object_id1 == object_id2)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Handle null cases
+    let id1 = if object_id1 == 0 { None } else { Some(object_id1 as ObjectId) };
+    let id2 = if object_id2 == 0 { None } else { Some(object_id2 as ObjectId) };
+
+    let result = runtime.ref_eq(id1, id2);
+
+    if result.success {
+        Ok(result.eq_result.unwrap_or(false))
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn ref_is_null_internal(runtime_handle: i64, object_id: i64) -> WasmtimeResult<bool> {
-    // Simplified implementation
-    Ok(object_id == 0)
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let id = if object_id == 0 { None } else { Some(object_id as ObjectId) };
+
+    let result = runtime.ref_is_null(id);
+
+    if result.success {
+        Ok(result.is_null.unwrap_or(true))
+    } else {
+        Err(WasmtimeError::InvalidParameter { message: result.error.unwrap_or_default() })
+    }
 }
 
 fn collect_garbage_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
-    // Simplified implementation
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.collect_garbage()?;
+
+    // Get updated stats after collection
+    let stats = runtime.get_heap_stats()?;
+
     Ok(GcStatsFFI {
-        total_allocated: 0,
-        total_collected: 0,
-        bytes_allocated: 0,
-        bytes_collected: 0,
-        minor_collections: 0,
-        major_collections: 0,
-        total_gc_time_nanos: 0,
-        current_heap_size: 0,
-        peak_heap_size: 0,
-        max_heap_size: 0,
+        total_allocated: stats.total_allocated as i64,
+        total_collected: result.objects_collected as i64,
+        bytes_allocated: stats.bytes_allocated as i64,
+        bytes_collected: result.bytes_collected as i64,
+        minor_collections: stats.minor_collections as i64,
+        major_collections: stats.major_collections as i64,
+        total_gc_time_nanos: stats.total_gc_time.as_nanos() as i64,
+        current_heap_size: stats.current_heap_size as i32,
+        peak_heap_size: stats.peak_heap_size as i32,
+        max_heap_size: stats.peak_heap_size as i32, // Use peak as max since GcHeapStats doesn't have max_heap_size
     })
 }
 
 fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
-    // Simplified implementation
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter { message: "Invalid runtime handle".to_string() });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let stats = runtime.get_heap_stats()?;
+
     Ok(GcStatsFFI {
-        total_allocated: 0,
-        total_collected: 0,
-        bytes_allocated: 0,
-        bytes_collected: 0,
-        minor_collections: 0,
-        major_collections: 0,
-        total_gc_time_nanos: 0,
-        current_heap_size: 0,
-        peak_heap_size: 0,
-        max_heap_size: 0,
+        total_allocated: stats.total_allocated as i64,
+        total_collected: stats.total_collected as i64,
+        bytes_allocated: stats.bytes_allocated as i64,
+        bytes_collected: stats.bytes_collected as i64,
+        minor_collections: stats.minor_collections as i64,
+        major_collections: stats.major_collections as i64,
+        total_gc_time_nanos: stats.total_gc_time.as_nanos() as i64,
+        current_heap_size: stats.current_heap_size as i32,
+        peak_heap_size: stats.peak_heap_size as i32,
+        max_heap_size: stats.peak_heap_size as i32, // Use peak as max since GcHeapStats doesn't have max_heap_size
     })
 }

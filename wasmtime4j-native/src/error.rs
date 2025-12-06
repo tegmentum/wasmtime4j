@@ -173,9 +173,30 @@ pub enum WasmtimeError {
 
     /// Unexpected internal errors
     #[error("Internal error: {message}")]
-    Internal { 
+    Internal {
         /// Error message describing the internal system error
-        message: String 
+        message: String
+    },
+
+    /// WebAssembly coredump errors
+    #[error("Coredump error: {message}")]
+    Coredump {
+        /// Error message describing the coredump-related error
+        message: String
+    },
+
+    /// Call hook errors
+    #[error("Call hook error: {message}")]
+    CallHook {
+        /// Error message describing the call hook error
+        message: String
+    },
+
+    /// Guest profiler errors
+    #[error("Guest profiler error: {message}")]
+    GuestProfiler {
+        /// Error message describing the profiler error
+        message: String
     },
 
     /// Function execution errors
@@ -437,6 +458,9 @@ impl Clone for WasmtimeError {
             WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock { message: message.clone() },
             WasmtimeError::WastExecutionError(message) => WasmtimeError::WastExecutionError(message.clone()),
             WasmtimeError::JniError(message) => WasmtimeError::JniError(message.clone()),
+            WasmtimeError::Coredump { message } => WasmtimeError::Coredump { message: message.clone() },
+            WasmtimeError::CallHook { message } => WasmtimeError::CallHook { message: message.clone() },
+            WasmtimeError::GuestProfiler { message } => WasmtimeError::GuestProfiler { message: message.clone() },
         }
     }
 }
@@ -584,6 +608,9 @@ impl WasmtimeError {
             WasmtimeError::WouldDeadlock { .. } => ErrorCode::ConcurrencyError,
             WasmtimeError::WastExecutionError(..) => ErrorCode::ValidationError,
             WasmtimeError::JniError(..) => ErrorCode::InternalError,
+            WasmtimeError::Coredump { .. } => ErrorCode::InternalError,
+            WasmtimeError::CallHook { .. } => ErrorCode::FunctionError,
+            WasmtimeError::GuestProfiler { .. } => ErrorCode::InternalError,
         }
     }
 

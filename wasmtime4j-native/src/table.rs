@@ -26,11 +26,13 @@ pub struct TableMetadata {
     /// Element type stored in this table (funcref, externref, etc.)
     pub element_type: ValType,
     /// Initial size of the table
-    pub initial_size: u32,
+    pub initial_size: u64,
     /// Maximum size limit (None means unlimited)
-    pub maximum_size: Option<u32>,
+    pub maximum_size: Option<u64>,
     /// Optional name for debugging purposes
     pub name: Option<String>,
+    /// Whether this table uses 64-bit addressing (Memory64 proposal)
+    pub is_64: bool,
 }
 
 /// Global reference registry for managing references across table operations
@@ -99,13 +101,46 @@ pub enum TableElement {
 }
 
 impl Table {
-    /// Create a new table with specified element type and size
+    /// Create a new 32-bit table with specified element type and size
     pub fn new(
         store: &Store,
         element_type: ValType,
         initial_size: u32,
         maximum_size: Option<u32>,
         name: Option<String>,
+    ) -> WasmtimeResult<Self> {
+        Self::new_internal(
+            store,
+            element_type,
+            initial_size as u64,
+            maximum_size.map(|s| s as u64),
+            name,
+            false, // 32-bit table
+        )
+    }
+
+    /// Create a new 64-bit table with specified element type and size (Memory64 proposal)
+    ///
+    /// 64-bit tables allow for larger table sizes and are part of the WebAssembly
+    /// Memory64 proposal. This creates a table that uses 64-bit indices.
+    pub fn new64(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+    ) -> WasmtimeResult<Self> {
+        Self::new_internal(store, element_type, initial_size, maximum_size, name, true)
+    }
+
+    /// Internal table creation method
+    fn new_internal(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+        is_64: bool,
     ) -> WasmtimeResult<Self> {
         // Validate that element_type is a valid reference type
         Self::validate_element_type(&element_type)?;
@@ -123,7 +158,24 @@ impl Table {
         }
 
         let ref_type = Self::valtype_to_reftype(&element_type)?;
-        let table_type = TableType::new(ref_type, initial_size, maximum_size);
+
+        // Create table type based on 32-bit or 64-bit addressing
+        let table_type = if is_64 {
+            TableType::new64(ref_type, initial_size, maximum_size)
+        } else {
+            // For 32-bit tables, we need to validate sizes fit in u32
+            let init_size_32 = initial_size.try_into().map_err(|_| WasmtimeError::InvalidParameter {
+                message: format!(
+                    "Initial size {} exceeds u32 maximum for 32-bit table",
+                    initial_size
+                ),
+            })?;
+            let max_size_32 = maximum_size.map(|s| s.try_into()).transpose().map_err(|_| WasmtimeError::InvalidParameter {
+                message: "Maximum size exceeds u32 maximum for 32-bit table".to_string(),
+            })?;
+            TableType::new(ref_type, init_size_32, max_size_32)
+        };
+
         let initial_value = Self::default_ref_for_type(&element_type)?;
 
         let wasmtime_table = store.with_context(|ctx| {
@@ -139,12 +191,18 @@ impl Table {
             initial_size,
             maximum_size,
             name,
+            is_64,
         };
 
         Ok(Table {
             inner: Arc::new(Mutex::new(wasmtime_table)),
             metadata,
         })
+    }
+
+    /// Check if this table uses 64-bit addressing (Memory64 proposal)
+    pub fn is_64(&self) -> bool {
+        self.metadata.is_64
     }
 
     /// Get the current size of the table
@@ -831,11 +889,15 @@ impl Table {
             Ok(wasmtime_table.ty(&ctx))
         })?;
 
+        // Detect if the table uses 64-bit addressing
+        let is_64 = table_type.is_64();
+
         let metadata = TableMetadata {
             element_type: ValType::Ref(table_type.element().clone()),
-            initial_size: table_type.minimum() as u32,
-            maximum_size: table_type.maximum().map(|s| s as u32),
+            initial_size: table_type.minimum(),
+            maximum_size: table_type.maximum(),
             name,
+            is_64,
         };
 
         Ok(Table {
@@ -863,7 +925,7 @@ pub mod core {
     use std::os::raw::c_void;
     use crate::validate_ptr_not_null;
 
-    /// Core function to create a new table
+    /// Core function to create a new 32-bit table
     pub fn create_table(
         store: &Store,
         element_type: ValType,
@@ -872,6 +934,22 @@ pub mod core {
         name: Option<String>,
     ) -> WasmtimeResult<Box<Table>> {
         Table::new(store, element_type, initial_size, maximum_size, name).map(Box::new)
+    }
+
+    /// Core function to create a new 64-bit table (Memory64 proposal)
+    pub fn create_table64(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+    ) -> WasmtimeResult<Box<Table>> {
+        Table::new64(store, element_type, initial_size, maximum_size, name).map(Box::new)
+    }
+
+    /// Check if a table uses 64-bit addressing
+    pub fn is_table_64(table: &Table) -> bool {
+        table.is_64()
     }
 
     /// Core function to validate table pointer and get reference

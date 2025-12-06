@@ -509,6 +509,68 @@ impl ComponentEngine {
         Ok(instance_ref)
     }
 
+    /// Instantiate a WebAssembly component asynchronously
+    ///
+    /// This is the async version of `instantiate_component` for engines created
+    /// with `async_support(true)`. It allows component instantiation without
+    /// blocking the calling thread.
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - The compiled component to instantiate
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Arc<ComponentInstance>` containing the instantiated component.
+    ///
+    /// # Errors
+    ///
+    /// Returns `WasmtimeError::Instance` if instantiation fails for any reason,
+    /// including import resolution errors or memory allocation failures.
+    ///
+    /// # Safety
+    ///
+    /// This function performs comprehensive validation of component imports
+    /// and exports before instantiation to prevent runtime errors.
+    pub async fn instantiate_component_async(&self, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
+        let instance_id = {
+            let mut next_id = self.next_instance_id.lock()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instance ID lock".to_string(),
+                })?;
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let store_data = ComponentStoreData {
+            instance_id,
+            user_data: None,
+            ..Default::default()
+        };
+
+        let mut store = Store::new(&self.engine, store_data);
+
+        let instance = self.linker.instantiate_async(&mut store, &component.component)
+            .await
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate component asynchronously: {}", e),
+            })?;
+
+        let instance_ref = Arc::new(instance);
+
+        // Track the instance for resource management
+        {
+            let mut instances = self.instances.lock()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances lock".to_string(),
+                })?;
+            instances.insert(instance_id, Arc::downgrade(&instance_ref));
+        }
+
+        Ok(instance_ref)
+    }
+
     /// Add a host interface to the component linker
     ///
     /// This function allows binding host-provided implementations of WIT interfaces
@@ -1485,6 +1547,41 @@ pub unsafe extern "C" fn wasmtime4j_component_instantiate(
     let component = &*(component_ptr as *const Component);
 
     match engine.instantiate_component(component) {
+        Ok(instance) => {
+            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Instantiate a compiled component asynchronously
+///
+/// This function uses the global Tokio runtime to perform async component instantiation.
+/// It blocks the calling thread until the async operation completes.
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_instantiate_async(
+    engine_ptr: *mut c_void,
+    component_ptr: *const c_void,
+    instance_out: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || component_ptr.is_null() || instance_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let engine = &*(engine_ptr as *const ComponentEngine);
+    let component = &*(component_ptr as *const Component);
+
+    // Use the global Tokio runtime to execute the async operation
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match runtime.block_on(engine.instantiate_component_async(component)) {
         Ok(instance) => {
             *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
             FFI_SUCCESS

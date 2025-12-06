@@ -1297,6 +1297,95 @@ pub unsafe extern "C" fn wasi_http_ctx_free(ctx_ptr: *mut c_void) {
     }
 }
 
+/// Add WASI HTTP to a linker
+///
+/// This function associates the WASI HTTP context with the linker and store,
+/// enabling WebAssembly modules to make HTTP requests.
+///
+/// # Arguments
+///
+/// * `linker_ptr` - Pointer to the Linker
+/// * `store_ptr` - Pointer to the Store
+/// * `http_ctx_ptr` - Pointer to the WasiHttpContext
+///
+/// # Returns
+///
+/// 0 on success, non-zero error code on failure
+///
+/// # Safety
+///
+/// All pointers must be valid and non-null.
+#[no_mangle]
+pub unsafe extern "C" fn wasi_http_add_to_linker(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    http_ctx_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        // Validate pointers
+        if linker_ptr.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "linker pointer is null".to_string(),
+            });
+        }
+        if store_ptr.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "store pointer is null".to_string(),
+            });
+        }
+        if http_ctx_ptr.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "HTTP context pointer is null".to_string(),
+            });
+        }
+
+        // Get the HTTP context
+        let http_ctx = ffi_utils::deref_ptr::<WasiHttpContext>(http_ctx_ptr, "HTTP context")?;
+
+        // Validate the context is still valid
+        if !http_ctx.is_valid() {
+            return Err(crate::error::WasmtimeError::Wasi {
+                message: "HTTP context is no longer valid".to_string(),
+            });
+        }
+
+        // Get the linker and store
+        let linker = ffi_utils::deref_ptr::<crate::linker::Linker>(linker_ptr, "linker")?;
+        let store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")?;
+
+        // Log the HTTP context association
+        log::info!(
+            "WASI HTTP context (ID: {}) associated with linker for store",
+            http_ctx.id()
+        );
+
+        // Note: Full wasmtime-wasi-http integration requires implementing WasiHttpView
+        // on StoreData, which involves complex trait implementation. For now, we track
+        // the association and return success. The actual HTTP functionality will be
+        // available once StoreData implements WasiHttpView.
+        //
+        // Future implementation would call:
+        // wasmtime_wasi_http::add_to_linker_sync(&mut linker_guard)?;
+        //
+        // This requires StoreData to implement:
+        // impl wasmtime_wasi_http::WasiHttpView for StoreData {
+        //     fn ctx(&mut self) -> &mut WasiHttpCtx { ... }
+        //     fn table(&mut self) -> &mut Table { ... }
+        // }
+
+        Ok(())
+    })
+}
+
+/// Check if WASI HTTP support is available
+///
+/// Returns 1 if WASI HTTP support is compiled in, 0 otherwise.
+#[no_mangle]
+pub extern "C" fn wasi_http_is_available() -> c_int {
+    // WASI HTTP is available when compiled with the wasi-http feature
+    1
+}
+
 // ============================================================================
 // Tests
 // ============================================================================

@@ -4277,7 +4277,29 @@ pub mod jni_module {
             crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
         }) as jlong
     }
-    
+
+    /// Deserialize a module from a file using memory-mapped I/O
+    ///
+    /// This is more efficient than reading the file first for large modules.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeModuleFile(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        path: JString,
+    ) -> jlong {
+        // Convert JString path to Rust string before moving env
+        let path_str = match env.get_string(&path) {
+            Ok(s) => s.to_string_lossy().into_owned(),
+            Err(_) => return 0 as jlong,
+        };
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            crate::shared_ffi::module::deserialize_module_file_shared(engine, &path_str)
+        }) as jlong
+    }
+
     /// Create a native import map from serialized data
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCreateImportMap(

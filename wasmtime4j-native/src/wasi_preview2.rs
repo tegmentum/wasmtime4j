@@ -107,6 +107,12 @@ pub struct ComponentInstance {
 pub struct WasiPreview2Config {
     /// Enable networking support
     pub enable_networking: bool,
+    /// Enable TCP socket support
+    pub enable_tcp: bool,
+    /// Enable UDP socket support
+    pub enable_udp: bool,
+    /// Enable DNS name lookups
+    pub enable_ip_name_lookup: bool,
     /// Enable filesystem access
     pub enable_filesystem: bool,
     /// Enable process operations
@@ -403,6 +409,9 @@ impl Default for WasiPreview2Config {
     fn default() -> Self {
         Self {
             enable_networking: true,
+            enable_tcp: true,
+            enable_udp: true,
+            enable_ip_name_lookup: true,
             enable_filesystem: true,
             enable_process: false, // Conservative default
             max_async_operations: 1000,
@@ -512,6 +521,17 @@ impl WasiPreview2Context {
         } else {
             builder.inherit_stderr();
         }
+
+        // Configure network access using wasmtime-wasi socket APIs
+        if self.config.enable_networking {
+            // Allow all network addresses when networking is enabled
+            builder.inherit_network();
+        }
+
+        // Configure specific socket types
+        builder.allow_tcp(self.config.enable_tcp);
+        builder.allow_udp(self.config.enable_udp);
+        builder.allow_ip_name_lookup(self.config.enable_ip_name_lookup);
 
         let wasi_ctx = builder.build();
         let resource_table = ResourceTable::new();
@@ -1403,6 +1423,9 @@ mod tests {
     fn test_wasi_preview2_config_defaults() {
         let config = WasiPreview2Config::default();
         assert!(config.enable_networking);
+        assert!(config.enable_tcp);
+        assert!(config.enable_udp);
+        assert!(config.enable_ip_name_lookup);
         assert!(config.enable_filesystem);
         assert!(!config.enable_process);
         assert_eq!(config.max_async_operations, 1000);

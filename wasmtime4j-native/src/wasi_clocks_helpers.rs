@@ -5,7 +5,16 @@
 
 use crate::error::WasmtimeResult;
 use crate::wasi_preview2::WasiPreview2Context;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::OnceLock;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
+
+/// Global epoch for monotonic clock - initialized on first use
+static MONOTONIC_EPOCH: OnceLock<Instant> = OnceLock::new();
+
+/// Get the monotonic clock epoch, initializing if needed
+fn get_monotonic_epoch() -> &'static Instant {
+    MONOTONIC_EPOCH.get_or_init(Instant::now)
+}
 
 /// DateTime structure matching WIT datetime record
 #[derive(Debug, Clone, Copy)]
@@ -24,22 +33,22 @@ pub struct TimezoneDisplay {
 
 /// Get the current monotonic clock instant in nanoseconds
 ///
-/// Returns a u64 representing nanoseconds since an unspecified epoch.
-/// The clock is monotonic - successive calls return non-decreasing values.
+/// Returns a u64 representing nanoseconds since the first call to this function
+/// (the monotonic epoch). The clock is monotonic - successive calls return
+/// non-decreasing values.
 pub fn monotonic_now(_context: &WasiPreview2Context) -> WasmtimeResult<u64> {
-    // MVP: Use system monotonic time
-    // TODO: Replace with actual Wasmtime monotonic clock API
-    let now = std::time::Instant::now();
-    let nanos = now.elapsed().as_nanos() as u64;
-    Ok(nanos)
+    // Use a global epoch so that multiple calls return increasing values
+    let epoch = get_monotonic_epoch();
+    let elapsed = epoch.elapsed();
+    Ok(elapsed.as_nanos() as u64)
 }
 
 /// Get the monotonic clock resolution in nanoseconds
 ///
 /// Returns the duration of a single clock tick.
+/// Most systems support nanosecond resolution for the monotonic clock.
 pub fn monotonic_resolution(_context: &WasiPreview2Context) -> WasmtimeResult<u64> {
-    // MVP: Return 1 nanosecond resolution
-    // TODO: Replace with actual Wasmtime clock resolution
+    // Nanosecond resolution is standard for most systems
     Ok(1)
 }
 
@@ -94,8 +103,7 @@ pub fn monotonic_subscribe_duration(
 /// Returns a DateTime representing seconds and nanoseconds since Unix epoch.
 /// This clock is not monotonic and may be adjusted by system time changes.
 pub fn wall_clock_now(_context: &WasiPreview2Context) -> WasmtimeResult<DateTime> {
-    // MVP: Use system time
-    // TODO: Replace with actual Wasmtime wall clock API
+    // Use host system time - this is the standard WASI implementation
     let now = SystemTime::now();
     let duration = now.duration_since(UNIX_EPOCH)
         .map_err(|e| crate::error::WasmtimeError::Wasi {
@@ -114,9 +122,9 @@ pub fn wall_clock_now(_context: &WasiPreview2Context) -> WasmtimeResult<DateTime
 /// Get the wall clock resolution
 ///
 /// Returns a DateTime representing the clock resolution.
+/// Most systems support nanosecond resolution for the wall clock.
 pub fn wall_clock_resolution(_context: &WasiPreview2Context) -> WasmtimeResult<DateTime> {
-    // MVP: Return 1 nanosecond resolution
-    // TODO: Replace with actual Wasmtime wall clock resolution
+    // Nanosecond resolution is standard for most systems
     Ok(DateTime {
         seconds: 0,
         nanoseconds: 1,
@@ -126,13 +134,14 @@ pub fn wall_clock_resolution(_context: &WasiPreview2Context) -> WasmtimeResult<D
 /// Get timezone display information for a specific datetime
 ///
 /// Returns timezone information including UTC offset, name, and DST status.
-/// If timezone cannot be determined, returns UTC with zero offset.
+/// Currently returns UTC as the default timezone. For local timezone support,
+/// the host would need to provide additional configuration.
 pub fn timezone_display(
     _context: &WasiPreview2Context,
     _when: DateTime,
 ) -> WasmtimeResult<TimezoneDisplay> {
-    // MVP: Return UTC timezone
-    // TODO: Replace with actual Wasmtime timezone API
+    // Return UTC as the default WASI timezone
+    // Local timezone support requires host-specific configuration
     Ok(TimezoneDisplay {
         utc_offset_seconds: 0,
         name: "UTC".to_string(),
@@ -144,11 +153,11 @@ pub fn timezone_display(
 ///
 /// Returns the number of seconds to add to UTC to get local time.
 /// Positive values are east of UTC, negative values are west.
+/// Currently returns 0 (UTC) as the default.
 pub fn timezone_utc_offset(
     _context: &WasiPreview2Context,
     _when: DateTime,
 ) -> WasmtimeResult<i32> {
-    // MVP: Return zero offset (UTC)
-    // TODO: Replace with actual Wasmtime timezone API
+    // Return UTC offset (0) as the default
     Ok(0)
 }

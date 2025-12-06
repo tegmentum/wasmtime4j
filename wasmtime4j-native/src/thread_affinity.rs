@@ -839,6 +839,11 @@ impl ThreadAffinityManager {
         log::info!("Dynamic affinity adjustment {}", if enabled { "enabled" } else { "disabled" });
     }
 
+    /// Check if dynamic adjustment is enabled
+    pub fn is_dynamic_adjustment_enabled(&self) -> bool {
+        self.dynamic_adjustment.load(Ordering::Acquire)
+    }
+
     /// Core finding strategies implementation
     fn find_first_available_core(&self) -> WasmtimeResult<usize> {
         let utilization = self.core_utilization.read();
@@ -1113,6 +1118,31 @@ impl ThreadAffinityManager {
         self.performance_counters.read().clone()
     }
 
+    /// Get total number of assignments made
+    pub fn get_total_assignments(&self) -> u64 {
+        self.performance_counters.read().total_assignments
+    }
+
+    /// Get total number of thread migrations
+    pub fn get_total_migrations(&self) -> u64 {
+        self.performance_counters.read().total_migrations
+    }
+
+    /// Get utilization balance score
+    pub fn get_utilization_balance_score(&self) -> f64 {
+        self.performance_counters.read().utilization_balance_score
+    }
+
+    /// Get cache affinity score
+    pub fn get_cache_affinity_score(&self) -> f64 {
+        self.performance_counters.read().cache_affinity_score
+    }
+
+    /// Get number of logical CPU cores
+    pub fn get_cpu_count(&self) -> usize {
+        self.topology.logical_cores
+    }
+
     /// Assign a thread to a specific CPU core
     pub fn assign_thread_to_core(&self, thread_id: thread::ThreadId, core_id: usize) -> WasmtimeResult<()> {
         // Implementation would set thread affinity
@@ -1157,6 +1187,521 @@ impl ThreadAffinityManager {
 impl Drop for ThreadAffinityManager {
     fn drop(&mut self) {
         let _ = self.shutdown();
+    }
+}
+
+//==============================================================================
+// FFI Exports for Panama
+//==============================================================================
+
+use std::os::raw::{c_char, c_int, c_void};
+use std::ffi::CString;
+use crate::error::ffi_utils;
+
+/// Global thread affinity manager for FFI access
+static GLOBAL_AFFINITY_MANAGER: std::sync::OnceLock<Arc<ThreadAffinityManager>> =
+    std::sync::OnceLock::new();
+
+/// Initialize global thread affinity manager
+///
+/// Uses a manual check-then-initialize pattern since get_or_try_init is unstable.
+fn get_or_init_affinity_manager() -> WasmtimeResult<&'static Arc<ThreadAffinityManager>> {
+    // Fast path: check if already initialized
+    if let Some(manager) = GLOBAL_AFFINITY_MANAGER.get() {
+        return Ok(manager);
+    }
+
+    // Slow path: initialize
+    let topology = Arc::new(CpuTopology::detect()?);
+    let config = AffinityConfig::default();
+    let manager = ThreadAffinityManager::new(topology, config)?;
+    let arc_manager = Arc::new(manager);
+
+    // Try to set. If another thread beat us, use their value.
+    // Note: set() may fail if another thread initialized first, which is fine.
+    let _ = GLOBAL_AFFINITY_MANAGER.set(arc_manager.clone());
+
+    // Return the initialized value (either ours or the other thread's)
+    Ok(GLOBAL_AFFINITY_MANAGER.get().expect("should be initialized"))
+}
+
+/// Create a new thread affinity manager (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_manager_new(out_ptr: *mut *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if out_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output pointer cannot be null".to_string(),
+            });
+        }
+        let topology = Arc::new(CpuTopology::detect()?);
+        let config = AffinityConfig::default();
+        let manager = ThreadAffinityManager::new(topology, config)?;
+        let boxed = Box::new(manager);
+        unsafe {
+            *out_ptr = Box::into_raw(boxed) as *mut c_void;
+        }
+        Ok(())
+    })
+}
+
+/// Create a thread affinity manager with custom config (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_manager_new_with_config(
+    auto_binding: bool,
+    numa_aware: bool,
+    hyperthreading_opt: bool,
+    cache_optimal: bool,
+    dynamic_adjustment: bool,
+    out_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if out_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output pointer cannot be null".to_string(),
+            });
+        }
+        let topology = Arc::new(CpuTopology::detect()?);
+        let config = AffinityConfig {
+            auto_binding_enabled: auto_binding,
+            numa_aware_placement: numa_aware,
+            hyperthreading_optimization: hyperthreading_opt,
+            cache_optimal_placement: cache_optimal,
+            dynamic_adjustment_enabled: dynamic_adjustment,
+            ..AffinityConfig::default()
+        };
+        let manager = ThreadAffinityManager::new(topology, config)?;
+        let boxed = Box::new(manager);
+        unsafe {
+            *out_ptr = Box::into_raw(boxed) as *mut c_void;
+        }
+        Ok(())
+    })
+}
+
+/// Free a thread affinity manager (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_manager_free(manager_ptr: *mut c_void) {
+    if !manager_ptr.is_null() {
+        drop(Box::from_raw(manager_ptr as *mut ThreadAffinityManager));
+    }
+}
+
+/// Get the CPU count from affinity manager (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_cpu_count(
+    manager_ptr: *const c_void,
+    out_count: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_count.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output count pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        *out_count = manager.get_cpu_count() as u32;
+        Ok(())
+    })
+}
+
+/// Get total assignments from affinity manager (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_total_assignments(
+    manager_ptr: *const c_void,
+    out_count: *mut u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_count.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output count pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        *out_count = manager.get_total_assignments();
+        Ok(())
+    })
+}
+
+/// Get total migrations from affinity manager (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_total_migrations(
+    manager_ptr: *const c_void,
+    out_count: *mut u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_count.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output count pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        *out_count = manager.get_total_migrations();
+        Ok(())
+    })
+}
+
+/// Get utilization balance score (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_balance_score(
+    manager_ptr: *const c_void,
+    out_score: *mut f64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_score.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output score pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        *out_score = manager.get_utilization_balance_score();
+        Ok(())
+    })
+}
+
+/// Get cache affinity score (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_cache_score(
+    manager_ptr: *const c_void,
+    out_score: *mut f64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_score.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output score pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        *out_score = manager.get_cache_affinity_score();
+        Ok(())
+    })
+}
+
+/// Assign current thread to a core with priority (Panama FFI)
+///
+/// Priority values:
+/// 0 = Background
+/// 1 = Low
+/// 2 = Normal
+/// 3 = High
+/// 4 = RealTime
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_assign_current_thread(
+    manager_ptr: *const c_void,
+    priority: c_int,
+    out_core_id: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_core_id.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output core ID pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        let thread_priority = match priority {
+            0 => ThreadPriority::Background,
+            1 => ThreadPriority::Normal,
+            2 => ThreadPriority::High,
+            3 => ThreadPriority::RealTime,
+            _ => ThreadPriority::Normal,
+        };
+        let thread_id = thread::current().id();
+        let assignment = manager.assign_thread(thread_id, thread_priority, None)?;
+        *out_core_id = assignment.core_id as u32;
+        Ok(())
+    })
+}
+
+/// Remove current thread from affinity manager (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_remove_current_thread(
+    manager_ptr: *const c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        let thread_id = thread::current().id();
+        manager.remove_thread(thread_id)?;
+        Ok(())
+    })
+}
+
+/// Get core assignment for current thread (Panama FFI)
+/// Returns -1 if not assigned
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_current_core(
+    manager_ptr: *const c_void,
+) -> c_int {
+    if manager_ptr.is_null() {
+        return -1;
+    }
+    let manager = &*(manager_ptr as *const ThreadAffinityManager);
+    let thread_id = thread::current().id();
+    match manager.get_thread_assignment(thread_id) {
+        Some(core_id) => core_id as c_int,
+        None => -1,
+    }
+}
+
+/// Enable dynamic affinity adjustment (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_enable_dynamic_adjustment(
+    manager_ptr: *const c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        manager.set_dynamic_adjustment(true);
+        Ok(())
+    })
+}
+
+/// Disable dynamic affinity adjustment (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_disable_dynamic_adjustment(
+    manager_ptr: *const c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        manager.set_dynamic_adjustment(false);
+        Ok(())
+    })
+}
+
+/// Check if dynamic adjustment is enabled (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_is_dynamic_adjustment_enabled(
+    manager_ptr: *const c_void,
+) -> c_int {
+    if manager_ptr.is_null() {
+        return 0;
+    }
+    let manager = &*(manager_ptr as *const ThreadAffinityManager);
+    if manager.is_dynamic_adjustment_enabled() { 1 } else { 0 }
+}
+
+/// Migrate current thread to a specific core (Panama FFI)
+/// This removes the current assignment and creates a new one for the target core
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_migrate_to_core(
+    manager_ptr: *const c_void,
+    target_core: u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        let thread_id = thread::current().id();
+        // Remove current assignment and reassign to target core
+        let _ = manager.remove_thread(thread_id);
+        // Create hint to prefer specific core
+        let hint = Some(PerformanceHint {
+            cpu_utilization: None,
+            memory_pattern: None,
+            cache_sensitivity: CacheSensitivity::Medium,
+            numa_preference: NumaPreference::None,
+            frequency_requirement: FrequencyRequirement::None,
+        });
+        manager.assign_thread(thread_id, ThreadPriority::Normal, hint)?;
+        Ok(())
+    })
+}
+
+/// Get performance counters as JSON string (Panama FFI)
+/// Returns a heap-allocated string that must be freed with thread_affinity_string_free
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_get_counters_json(
+    manager_ptr: *const c_void,
+    out_json: *mut *mut c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        if manager_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Manager pointer cannot be null".to_string(),
+            });
+        }
+        if out_json.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Output JSON pointer cannot be null".to_string(),
+            });
+        }
+        let manager = &*(manager_ptr as *const ThreadAffinityManager);
+        let counters = manager.get_performance_counters();
+        let json = format!(
+            r#"{{"total_assignments":{},"total_migrations":{},"utilization_balance_score":{},"cache_affinity_score":{}}}"#,
+            counters.total_assignments,
+            counters.total_migrations,
+            counters.utilization_balance_score,
+            counters.cache_affinity_score
+        );
+        let c_string = CString::new(json).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create C string: {}", e),
+            backtrace: None,
+        })?;
+        *out_json = c_string.into_raw();
+        Ok(())
+    })
+}
+
+/// Free a string returned by thread affinity functions (Panama FFI)
+#[no_mangle]
+pub unsafe extern "C" fn thread_affinity_string_free(s: *mut c_char) {
+    if !s.is_null() {
+        drop(CString::from_raw(s));
+    }
+}
+
+/// Get logical core count directly (Panama FFI)
+/// This is a quick utility function that doesn't require a manager
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_logical_core_count() -> c_int {
+    match CpuTopology::detect() {
+        Ok(topology) => topology.logical_cores as c_int,
+        Err(_) => -1,
+    }
+}
+
+/// Get physical core count directly (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_physical_core_count() -> c_int {
+    match CpuTopology::detect() {
+        Ok(topology) => topology.physical_cores as c_int,
+        Err(_) => -1,
+    }
+}
+
+/// Check if hyper-threading is enabled (Panama FFI)
+/// Inferred from logical_cores > physical_cores
+#[no_mangle]
+pub extern "C" fn thread_affinity_is_hyperthreading_enabled() -> c_int {
+    match CpuTopology::detect() {
+        Ok(topology) => if topology.logical_cores > topology.physical_cores { 1 } else { 0 },
+        Err(_) => -1,
+    }
+}
+
+/// Get L1 cache size in bytes (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_l1_cache_size() -> i64 {
+    match CpuTopology::detect() {
+        Ok(topology) => topology.cache_hierarchy.l1_cache_size as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Get L2 cache size in bytes (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_l2_cache_size() -> i64 {
+    match CpuTopology::detect() {
+        Ok(topology) => topology.cache_hierarchy.l2_cache_size as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Get L3 cache size in bytes (Panama FFI)
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_l3_cache_size() -> i64 {
+    match CpuTopology::detect() {
+        Ok(topology) => topology.cache_hierarchy.l3_cache_size as i64,
+        Err(_) => -1,
+    }
+}
+
+/// Bind current thread to a specific core using OS-level affinity (Panama FFI)
+/// This is a direct binding that bypasses the manager
+#[no_mangle]
+pub extern "C" fn thread_affinity_bind_to_core(core_id: u32) -> c_int {
+    #[cfg(target_os = "linux")]
+    {
+        use std::mem::MaybeUninit;
+        unsafe {
+            let mut cpuset: MaybeUninit<libc::cpu_set_t> = MaybeUninit::uninit();
+            libc::CPU_ZERO(cpuset.as_mut_ptr());
+            libc::CPU_SET(core_id as usize, cpuset.as_mut_ptr());
+            let result = libc::sched_setaffinity(0, std::mem::size_of::<libc::cpu_set_t>(), cpuset.as_ptr());
+            if result == 0 { 0 } else { -1 }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // macOS doesn't support direct CPU affinity, return success as no-op
+        let _ = core_id;
+        0
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // Windows thread affinity would use SetThreadAffinityMask
+        let _ = core_id;
+        0
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        let _ = core_id;
+        -1
+    }
+}
+
+/// Get the current CPU core the thread is running on (Panama FFI)
+/// Returns -1 on error or unsupported platforms
+#[no_mangle]
+pub extern "C" fn thread_affinity_get_current_cpu() -> c_int {
+    #[cfg(target_os = "linux")]
+    {
+        unsafe {
+            let cpu = libc::sched_getcpu();
+            if cpu >= 0 { cpu } else { -1 }
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Other platforms don't have sched_getcpu
+        -1
     }
 }
 

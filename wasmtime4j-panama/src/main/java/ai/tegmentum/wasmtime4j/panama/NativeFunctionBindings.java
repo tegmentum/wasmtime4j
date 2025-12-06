@@ -6228,6 +6228,40 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_BOOLEAN, // is_profiling
             ValueLayout.ADDRESS)); // profiler
 
+    // Flame Graph Collector Functions
+    addFunctionBinding(
+        "wasmtime4j_flame_graph_collector_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // FlameGraphCollector pointer
+            ValueLayout.JAVA_LONG, // max_samples (usize)
+            ValueLayout.JAVA_LONG)); // sampling_interval_ms
+    addFunctionBinding(
+        "wasmtime4j_flame_graph_collector_start",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS)); // collector
+    addFunctionBinding(
+        "wasmtime4j_flame_graph_collector_record_sample",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS, // collector
+            ValueLayout.ADDRESS, // function_name (C string)
+            ValueLayout.ADDRESS, // file_name (C string)
+            ValueLayout.JAVA_INT, // line_number (u32)
+            ValueLayout.JAVA_LONG)); // duration_nanos
+    addFunctionBinding(
+        "wasmtime4j_flame_graph_collector_export_svg",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN, // success
+            ValueLayout.ADDRESS, // collector
+            ValueLayout.JAVA_INT, // width (u32)
+            ValueLayout.JAVA_INT, // height (u32)
+            ValueLayout.ADDRESS, // output_buffer
+            ValueLayout.JAVA_LONG)); // buffer_size
+    addFunctionBinding(
+        "wasmtime4j_flame_graph_collector_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // collector
+
     // WASI HTTP Functions
     addFunctionBinding("wasi_http_config_builder_new", FunctionDescriptor.of(ValueLayout.ADDRESS));
 
@@ -6488,6 +6522,18 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding("wasi_http_ctx_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasi_http_add_to_linker",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // http_ctx_ptr
+
+    addFunctionBinding(
+        "wasi_http_is_available",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 1 if available
+
     // Pooling Allocator Functions
     addFunctionBinding(
         "wasmtime4j_pooling_allocator_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
@@ -6732,6 +6778,212 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_BOOLEAN, // returns success
             ValueLayout.ADDRESS, // server_ptr
             ValueLayout.JAVA_LONG)); // session_id (u64)
+
+    // Thread Affinity Functions (NUMA and CPU topology)
+    addFunctionBinding(
+        "thread_affinity_manager_new",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // out_ptr for manager*
+
+    addFunctionBinding(
+        "thread_affinity_manager_free",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_get_cpu_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.ADDRESS)); // out_ptr for count
+
+    addFunctionBinding(
+        "thread_affinity_get_total_assignments",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.ADDRESS)); // out_ptr for count
+
+    addFunctionBinding(
+        "thread_affinity_get_total_migrations",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.ADDRESS)); // out_ptr for count
+
+    addFunctionBinding(
+        "thread_affinity_get_balance_score",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.ADDRESS)); // out_ptr for f64 score
+
+    addFunctionBinding(
+        "thread_affinity_get_cache_score",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.ADDRESS)); // out_ptr for f64 score
+
+    addFunctionBinding(
+        "thread_affinity_assign_current_thread",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.JAVA_INT, // priority (0=Background, 1=Normal, 2=High, 3=RealTime)
+            ValueLayout.JAVA_INT, // cache_sensitivity (0=Low, 1=Medium, 2=High, 3=Critical)
+            ValueLayout.JAVA_INT)); // preferred_core (-1 for none)
+
+    addFunctionBinding(
+        "thread_affinity_remove_current_thread",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_get_current_core",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return core id or -1 if not assigned
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_enable_dynamic_adjustment",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_disable_dynamic_adjustment",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_is_dynamic_adjustment_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 1 if enabled, 0 if disabled
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_migrate_to_core",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // manager_ptr
+            ValueLayout.JAVA_INT)); // core_id
+
+    addFunctionBinding(
+        "thread_affinity_get_counters_json",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns char* (JSON string)
+            ValueLayout.ADDRESS)); // manager_ptr
+
+    addFunctionBinding(
+        "thread_affinity_string_free",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string ptr
+
+    // CPU Topology Detection Functions
+    addFunctionBinding(
+        "thread_affinity_get_logical_core_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns core count
+
+    addFunctionBinding(
+        "thread_affinity_get_physical_core_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns core count
+
+    addFunctionBinding(
+        "thread_affinity_is_hyperthreading_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 1 if enabled, 0 otherwise
+
+    addFunctionBinding(
+        "thread_affinity_get_l1_cache_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG)); // returns size in bytes
+
+    addFunctionBinding(
+        "thread_affinity_get_l2_cache_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG)); // returns size in bytes
+
+    addFunctionBinding(
+        "thread_affinity_get_l3_cache_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG)); // returns size in bytes
+
+    addFunctionBinding(
+        "thread_affinity_bind_to_core",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.JAVA_INT)); // core_id
+
+    addFunctionBinding(
+        "thread_affinity_get_current_cpu",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns current CPU id or -1 on error
+
+    // Coredump Functions
+    addFunctionBinding(
+        "wasmtime4j_coredump_free",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns c_int (0 on success, -1 on error)
+            ValueLayout.JAVA_LONG)); // coredump_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_frame_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns frame count or -1 on error
+            ValueLayout.JAVA_LONG)); // coredump_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_trap_message",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns char* (must be freed)
+            ValueLayout.JAVA_LONG)); // coredump_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns char* (must be freed)
+            ValueLayout.JAVA_LONG)); // coredump_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_string_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // char*
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_serialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 0 on success, negative on error
+            ValueLayout.JAVA_LONG, // coredump_id (u64)
+            ValueLayout.ADDRESS, // store_ptr (*mut Store)
+            ValueLayout.ADDRESS, // name (C string)
+            ValueLayout.ADDRESS, // out_ptr (*mut *mut u8)
+            ValueLayout.ADDRESS)); // out_len (*mut c_long)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_bytes_free",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // ptr (*mut u8)
+            ValueLayout.JAVA_LONG)); // len (c_long)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_frame_info",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns char* (JSON string, must be freed)
+            ValueLayout.JAVA_LONG, // coredump_id (u64)
+            ValueLayout.JAVA_INT)); // frame_index (c_int)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_all_frames",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // returns char* (JSON array string, must be freed)
+            ValueLayout.JAVA_LONG)); // coredump_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns count or -1 on error
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_get_all_ids",
+        FunctionDescriptor.of(ValueLayout.ADDRESS)); // returns char* (JSON array of u64 IDs)
+
+    addFunctionBinding(
+        "wasmtime4j_coredump_clear_all",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 0 on success, -1 on error
   }
 
   // Panama Linker Functions
@@ -10665,6 +10917,106 @@ public final class NativeFunctionBindings {
   }
 
   // ====================================================================================
+  // Flame Graph Collector Functions
+  // ====================================================================================
+
+  /**
+   * Creates a new flame graph collector for performance profiling visualization.
+   *
+   * @param maxSamples maximum number of samples to collect
+   * @param samplingIntervalMs sampling interval in milliseconds
+   * @return pointer to the flame graph collector, or null on failure
+   */
+  public MemorySegment flameGraphCollectorCreate(
+      final long maxSamples, final long samplingIntervalMs) {
+    return callNativeFunction(
+        "wasmtime4j_flame_graph_collector_create",
+        MemorySegment.class,
+        maxSamples,
+        samplingIntervalMs);
+  }
+
+  /**
+   * Starts flame graph collection.
+   *
+   * @param collectorHandle pointer to the flame graph collector
+   * @return true on success, false on failure
+   */
+  public boolean flameGraphCollectorStart(final MemorySegment collectorHandle) {
+    validatePointer(collectorHandle, "collectorHandle");
+    return callNativeFunction(
+        "wasmtime4j_flame_graph_collector_start", Boolean.class, collectorHandle);
+  }
+
+  /**
+   * Records a stack trace sample in the flame graph collector.
+   *
+   * @param collectorHandle pointer to the flame graph collector
+   * @param functionName pointer to the function name C string
+   * @param fileName pointer to the file name C string
+   * @param lineNumber line number in the source file
+   * @param durationNanos execution duration in nanoseconds
+   * @return true on success, false on failure
+   */
+  public boolean flameGraphCollectorRecordSample(
+      final MemorySegment collectorHandle,
+      final MemorySegment functionName,
+      final MemorySegment fileName,
+      final int lineNumber,
+      final long durationNanos) {
+    validatePointer(collectorHandle, "collectorHandle");
+    validatePointer(functionName, "functionName");
+    validatePointer(fileName, "fileName");
+    return callNativeFunction(
+        "wasmtime4j_flame_graph_collector_record_sample",
+        Boolean.class,
+        collectorHandle,
+        functionName,
+        fileName,
+        lineNumber,
+        durationNanos);
+  }
+
+  /**
+   * Exports the flame graph as an SVG image.
+   *
+   * @param collectorHandle pointer to the flame graph collector
+   * @param width SVG width in pixels
+   * @param height SVG height in pixels
+   * @param outputBuffer pointer to the output buffer for the SVG data
+   * @param bufferSize size of the output buffer in bytes
+   * @return true on success, false on failure (e.g., buffer too small)
+   */
+  public boolean flameGraphCollectorExportSvg(
+      final MemorySegment collectorHandle,
+      final int width,
+      final int height,
+      final MemorySegment outputBuffer,
+      final long bufferSize) {
+    validatePointer(collectorHandle, "collectorHandle");
+    validatePointer(outputBuffer, "outputBuffer");
+    return callNativeFunction(
+        "wasmtime4j_flame_graph_collector_export_svg",
+        Boolean.class,
+        collectorHandle,
+        width,
+        height,
+        outputBuffer,
+        bufferSize);
+  }
+
+  /**
+   * Destroys a flame graph collector and frees associated resources.
+   *
+   * @param collectorHandle pointer to the flame graph collector to destroy
+   */
+  public void flameGraphCollectorDestroy(final MemorySegment collectorHandle) {
+    if (collectorHandle != null && !collectorHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_flame_graph_collector_destroy", Void.class, collectorHandle);
+    }
+  }
+
+  // ====================================================================================
   // WASI HTTP Functions
   // ====================================================================================
 
@@ -11204,6 +11556,38 @@ public final class NativeFunctionBindings {
     if (contextPtr != null && !contextPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasi_http_ctx_free", Void.class, contextPtr);
     }
+  }
+
+  /**
+   * Adds WASI HTTP to a linker.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param httpCtxPtr pointer to the WASI HTTP context
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int wasiHttpAddToLinker(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment httpCtxPtr) {
+    if (linkerPtr == null || linkerPtr.equals(MemorySegment.NULL)) {
+      return -1;
+    }
+    if (storePtr == null || storePtr.equals(MemorySegment.NULL)) {
+      return -1;
+    }
+    if (httpCtxPtr == null || httpCtxPtr.equals(MemorySegment.NULL)) {
+      return -1;
+    }
+    return callNativeFunction(
+        "wasi_http_add_to_linker", Integer.class, linkerPtr, storePtr, httpCtxPtr);
+  }
+
+  /**
+   * Checks if WASI HTTP support is available.
+   *
+   * @return 1 if WASI HTTP is available, 0 otherwise
+   */
+  public int wasiHttpIsAvailable() {
+    return callNativeFunction("wasi_http_is_available", Integer.class);
   }
 
   // Pooling Allocator Functions
@@ -12260,5 +12644,217 @@ public final class NativeFunctionBindings {
     if (result != 0) {
       throw new RuntimeException("Failed to add WASI-Threads to linker, error code: " + result);
     }
+  }
+
+  // ============================================================================
+  // Coredump Functions
+  // ============================================================================
+
+  /**
+   * Frees a coredump from the registry.
+   *
+   * @param coredumpId the coredump ID
+   * @return 0 on success, -1 on error
+   */
+  public int coredumpFree(final long coredumpId) {
+    return callNativeFunction("wasmtime4j_coredump_free", Integer.class, coredumpId);
+  }
+
+  /**
+   * Gets the number of frames in a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return frame count, or -1 on error
+   */
+  public int coredumpGetFrameCount(final long coredumpId) {
+    return callNativeFunction("wasmtime4j_coredump_get_frame_count", Integer.class, coredumpId);
+  }
+
+  /**
+   * Gets the trap message from a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return the trap message, or null if not available
+   */
+  public String coredumpGetTrapMessage(final long coredumpId) {
+    final MemorySegment ptr =
+        callNativeFunction("wasmtime4j_coredump_get_trap_message", MemorySegment.class, coredumpId);
+    if (ptr == null || ptr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    try {
+      return ptr.reinterpret(Long.MAX_VALUE).getString(0);
+    } finally {
+      coredumpStringFree(ptr);
+    }
+  }
+
+  /**
+   * Gets the name of a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return the coredump name, or null if not set
+   */
+  public String coredumpGetName(final long coredumpId) {
+    final MemorySegment ptr =
+        callNativeFunction("wasmtime4j_coredump_get_name", MemorySegment.class, coredumpId);
+    if (ptr == null || ptr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    try {
+      return ptr.reinterpret(Long.MAX_VALUE).getString(0);
+    } finally {
+      coredumpStringFree(ptr);
+    }
+  }
+
+  /**
+   * Frees a C string allocated by coredump functions.
+   *
+   * @param ptr the string pointer to free
+   */
+  public void coredumpStringFree(final MemorySegment ptr) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_coredump_string_free", Void.class, ptr);
+    }
+  }
+
+  /**
+   * Serializes a coredump to bytes.
+   *
+   * @param coredumpId the coredump ID
+   * @param storePtr pointer to the store
+   * @param name the coredump name for serialization
+   * @return the serialized bytes, or null on error
+   */
+  public byte[] coredumpSerialize(
+      final long coredumpId, final MemorySegment storePtr, final String name) {
+    validatePointer(storePtr, "storePtr");
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment namePtr = arena.allocateFrom(name);
+      final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_coredump_serialize",
+              Integer.class,
+              coredumpId,
+              storePtr,
+              namePtr,
+              outPtr,
+              outLen);
+
+      if (result != 0) {
+        return null;
+      }
+
+      final MemorySegment bytesPtr = outPtr.get(ValueLayout.ADDRESS, 0);
+      final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
+
+      if (bytesPtr.equals(MemorySegment.NULL) || length <= 0) {
+        return null;
+      }
+
+      try {
+        final byte[] bytes = new byte[(int) length];
+        bytesPtr.reinterpret(length).asByteBuffer().get(bytes);
+        return bytes;
+      } finally {
+        coredumpBytesFree(bytesPtr, length);
+      }
+    }
+  }
+
+  /**
+   * Frees bytes allocated by coredump serialization.
+   *
+   * @param ptr the bytes pointer to free
+   * @param len the length of the bytes
+   */
+  public void coredumpBytesFree(final MemorySegment ptr, final long len) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL) && len > 0) {
+      callNativeFunction("wasmtime4j_coredump_bytes_free", Void.class, ptr, len);
+    }
+  }
+
+  /**
+   * Gets information about a specific frame in the coredump as JSON.
+   *
+   * @param coredumpId the coredump ID
+   * @param frameIndex the frame index
+   * @return JSON string with frame details, or null on error
+   */
+  public String coredumpGetFrameInfo(final long coredumpId, final int frameIndex) {
+    final MemorySegment ptr =
+        callNativeFunction(
+            "wasmtime4j_coredump_get_frame_info", MemorySegment.class, coredumpId, frameIndex);
+    if (ptr == null || ptr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    try {
+      return ptr.reinterpret(Long.MAX_VALUE).getString(0);
+    } finally {
+      coredumpStringFree(ptr);
+    }
+  }
+
+  /**
+   * Gets all frame information as a JSON array.
+   *
+   * @param coredumpId the coredump ID
+   * @return JSON array string with all frames, or null on error
+   */
+  public String coredumpGetAllFrames(final long coredumpId) {
+    final MemorySegment ptr =
+        callNativeFunction("wasmtime4j_coredump_get_all_frames", MemorySegment.class, coredumpId);
+    if (ptr == null || ptr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    try {
+      return ptr.reinterpret(Long.MAX_VALUE).getString(0);
+    } finally {
+      coredumpStringFree(ptr);
+    }
+  }
+
+  /**
+   * Gets the number of registered coredumps.
+   *
+   * @return the count, or -1 on error
+   */
+  public int coredumpGetCount() {
+    return callNativeFunction("wasmtime4j_coredump_get_count", Integer.class);
+  }
+
+  /**
+   * Gets all registered coredump IDs as a JSON array.
+   *
+   * @return JSON array of coredump IDs, or null on error
+   */
+  public String coredumpGetAllIds() {
+    final MemorySegment ptr =
+        callNativeFunction("wasmtime4j_coredump_get_all_ids", MemorySegment.class);
+    if (ptr == null || ptr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    try {
+      return ptr.reinterpret(Long.MAX_VALUE).getString(0);
+    } finally {
+      coredumpStringFree(ptr);
+    }
+  }
+
+  /**
+   * Clears all registered coredumps.
+   *
+   * @return 0 on success, -1 on error
+   */
+  public int coredumpClearAll() {
+    return callNativeFunction("wasmtime4j_coredump_clear_all", Integer.class);
   }
 }

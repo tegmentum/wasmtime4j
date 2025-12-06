@@ -4,7 +4,7 @@
 //! with proper resource management and JVM crash prevention.
 
 use std::sync::Arc;
-use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, Strategy};
+use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime engine with defensive programming
@@ -83,6 +83,29 @@ pub struct EngineConfigSummary {
     pub async_support: bool,
     /// Whether coredump generation on trap is enabled
     pub coredump_on_trap: bool,
+    /// Memory reservation in bytes (virtual memory pre-allocation)
+    pub memory_reservation: Option<u64>,
+    /// Memory guard size in bytes (protection region after memory)
+    pub memory_guard_size: Option<u64>,
+    /// Memory reservation for growth in bytes (extra reservation for growing)
+    pub memory_reservation_for_growth: Option<u64>,
+    /// Maximum memory size in bytes (hard limit on memory usage)
+    pub max_memory_size: Option<usize>,
+    /// Whether Cranelift debug verifier is enabled
+    pub cranelift_debug_verifier: bool,
+    /// Whether Cranelift NaN canonicalization is enabled for determinism
+    pub cranelift_nan_canonicalization: bool,
+    /// Whether Cranelift proof-carrying code validation is enabled
+    pub cranelift_pcc: bool,
+    /// Cranelift register allocation algorithm (e.g., "Backtracking", "SinglePass")
+    pub cranelift_regalloc_algorithm: String,
+    /// Whether wmemcheck (WebAssembly memory checker) is enabled
+    /// Only available when compiled with the `wmemcheck` feature
+    pub wmemcheck_enabled: bool,
+    /// Whether table lazy initialization is enabled
+    /// When enabled, tables are initialized lazily for faster instantiation
+    /// but slightly slower indirect calls. Defaults to true.
+    pub table_lazy_init: bool,
 }
 
 /// Builder for creating configured engines
@@ -123,6 +146,21 @@ pub struct EngineBuilder {
     wasm_component_model_gc: bool,
     async_support: bool,
     coredump_on_trap: bool,
+    // Memory configuration options
+    memory_reservation: Option<u64>,
+    memory_guard_size: Option<u64>,
+    memory_reservation_for_growth: Option<u64>,
+    max_memory_size: Option<usize>,
+    // Cranelift configuration options
+    cranelift_debug_verifier: bool,
+    cranelift_nan_canonicalization: bool,
+    cranelift_pcc: bool,
+    cranelift_regalloc_algorithm: Option<RegallocAlgorithm>,
+    // wmemcheck - only available when compiled with wmemcheck feature
+    #[cfg(feature = "wmemcheck")]
+    wmemcheck_enabled: bool,
+    // Table lazy initialization - enabled by default for faster instantiation
+    table_lazy_init: bool,
 }
 
 impl Engine {
@@ -512,6 +550,17 @@ impl EngineBuilder {
             wasm_component_model_gc: false,  // Component model extension - off by default
             async_support: false,  // Async execution support - off by default
             coredump_on_trap: false,  // Coredump on trap - off by default
+            memory_reservation: None,  // Memory reservation - use Wasmtime default
+            memory_guard_size: None,  // Memory guard size - use Wasmtime default
+            memory_reservation_for_growth: None,  // Memory reservation for growth - use Wasmtime default
+            max_memory_size: None,  // Max memory size - use Wasmtime default
+            cranelift_debug_verifier: false,  // Cranelift debug verifier - off by default
+            cranelift_nan_canonicalization: false,  // Cranelift NaN canonicalization - off by default
+            cranelift_pcc: false,  // Cranelift proof-carrying code - off by default
+            cranelift_regalloc_algorithm: None,  // Cranelift regalloc algorithm - use default
+            #[cfg(feature = "wmemcheck")]
+            wmemcheck_enabled: false,  // wmemcheck - off by default
+            table_lazy_init: true,  // Table lazy init - on by default (wasmtime default)
         }
     }
 
@@ -755,6 +804,154 @@ impl EngineBuilder {
         self
     }
 
+    /// Set memory reservation size in bytes
+    ///
+    /// This configures the size of the virtual memory reservation for linear
+    /// memories. The default is 4GB when 64-bit memories are enabled, or
+    /// whatever the default is in wasmtime.
+    ///
+    /// # Arguments
+    /// * `size` - The reservation size in bytes
+    pub fn memory_reservation(mut self, size: u64) -> Self {
+        self.config.memory_reservation(size);
+        self.memory_reservation = Some(size);
+        self
+    }
+
+    /// Set memory guard size in bytes
+    ///
+    /// Guard pages are unmapped pages placed at the end of the memory to
+    /// catch out-of-bounds accesses without explicit bounds checks.
+    ///
+    /// # Arguments
+    /// * `size` - The guard size in bytes
+    pub fn memory_guard_size(mut self, size: u64) -> Self {
+        self.config.memory_guard_size(size);
+        self.memory_guard_size = Some(size);
+        self
+    }
+
+    /// Set memory reservation for growth in bytes
+    ///
+    /// This configures how much extra virtual memory is reserved after the
+    /// initial memory size to allow for memory growth without needing to
+    /// move the memory.
+    ///
+    /// # Arguments
+    /// * `size` - The reservation for growth in bytes
+    pub fn memory_reservation_for_growth(mut self, size: u64) -> Self {
+        self.config.memory_reservation_for_growth(size);
+        self.memory_reservation_for_growth = Some(size);
+        self
+    }
+
+    /// Set maximum memory size in bytes
+    ///
+    /// This limits the maximum size that any linear memory can grow to.
+    /// This is a wrapper-level limit tracked for validation.
+    ///
+    /// # Arguments
+    /// * `size` - The maximum size in bytes
+    pub fn max_memory_size(mut self, size: usize) -> Self {
+        // Note: Wasmtime doesn't have direct config for max memory size
+        // This is tracked for validation in the wrapper layer
+        self.max_memory_size = Some(size);
+        self
+    }
+
+    /// Enable or disable Cranelift debug verifier
+    ///
+    /// When enabled, Cranelift will perform additional verification checks
+    /// on the generated machine code. This is useful for debugging compiler
+    /// issues but adds overhead to compilation.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable the debug verifier
+    pub fn cranelift_debug_verifier(mut self, enable: bool) -> Self {
+        self.config.cranelift_debug_verifier(enable);
+        self.cranelift_debug_verifier = enable;
+        self
+    }
+
+    /// Enable or disable Cranelift NaN canonicalization
+    ///
+    /// When enabled, floating-point NaN values are canonicalized to a single
+    /// representation. This ensures deterministic behavior across different
+    /// platforms and is important for reproducible WebAssembly execution.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable NaN canonicalization
+    pub fn cranelift_nan_canonicalization(mut self, enable: bool) -> Self {
+        self.config.cranelift_nan_canonicalization(enable);
+        self.cranelift_nan_canonicalization = enable;
+        self
+    }
+
+    /// Enable or disable Cranelift proof-carrying code validation
+    ///
+    /// Proof-carrying code (PCC) is an advanced feature that enables runtime
+    /// verification of safety properties of the generated machine code.
+    /// This can be used to eliminate some runtime checks but adds compilation overhead.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable PCC validation
+    pub fn cranelift_pcc(mut self, enable: bool) -> Self {
+        self.config.cranelift_pcc(enable);
+        self.cranelift_pcc = enable;
+        self
+    }
+
+    /// Set the Cranelift register allocation algorithm
+    ///
+    /// This configures which register allocation algorithm Cranelift uses
+    /// during code generation. Different algorithms have different trade-offs
+    /// between compilation speed and generated code quality.
+    ///
+    /// # Arguments
+    /// * `algorithm` - The register allocation algorithm to use
+    pub fn cranelift_regalloc_algorithm(mut self, algorithm: RegallocAlgorithm) -> Self {
+        self.config.cranelift_regalloc_algorithm(algorithm.clone());
+        self.cranelift_regalloc_algorithm = Some(algorithm);
+        self
+    }
+
+    /// Enable or disable wmemcheck (WebAssembly memory checker)
+    ///
+    /// wmemcheck is a memory debugging tool similar to Valgrind's memcheck that
+    /// detects memory errors in WebAssembly programs at runtime. It can detect:
+    /// - Use of uninitialized memory
+    /// - Use-after-free (for tables)
+    /// - Double-free errors (for tables)
+    ///
+    /// **Note**: This is only available when the `wmemcheck` Cargo feature is enabled.
+    /// It adds significant runtime overhead and should only be used for debugging.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable wmemcheck memory checking
+    #[cfg(feature = "wmemcheck")]
+    pub fn wmemcheck(mut self, enable: bool) -> Self {
+        self.config.wmemcheck(enable);
+        self.wmemcheck_enabled = enable;
+        self
+    }
+
+    /// Enable or disable table lazy initialization
+    ///
+    /// When enabled (the default), tables are initialized lazily which results in
+    /// faster instantiation but slightly slower indirect calls. When disabled,
+    /// tables are initialized eagerly during instantiation.
+    ///
+    /// This trade-off is typically worth it for modules that don't use all their
+    /// table entries immediately after instantiation.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable lazy table initialization
+    pub fn table_lazy_init(mut self, enable: bool) -> Self {
+        self.config.table_lazy_init(enable);
+        self.table_lazy_init = enable;
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);
@@ -809,6 +1006,16 @@ impl EngineConfigSummary {
             max_instances: None,               // No limit by default
             async_support: false,              // Off by default
             coredump_on_trap: false,           // Off by default
+            memory_reservation: None,          // No custom reservation by default
+            memory_guard_size: None,           // No custom guard size by default
+            memory_reservation_for_growth: None, // No custom growth reservation by default
+            max_memory_size: None,             // No custom max memory by default
+            cranelift_debug_verifier: false,   // Off by default
+            cranelift_nan_canonicalization: false, // Off by default
+            cranelift_pcc: false,              // Off by default
+            cranelift_regalloc_algorithm: "Backtracking".to_string(), // Default algorithm
+            wmemcheck_enabled: false,          // Off by default (requires wmemcheck feature)
+            table_lazy_init: true,             // On by default (wasmtime default)
         }
     }
 
@@ -855,6 +1062,23 @@ impl EngineConfigSummary {
             max_instances: builder.max_instances,
             async_support: builder.async_support,
             coredump_on_trap: builder.coredump_on_trap,
+            memory_reservation: builder.memory_reservation,
+            memory_guard_size: builder.memory_guard_size,
+            memory_reservation_for_growth: builder.memory_reservation_for_growth,
+            max_memory_size: builder.max_memory_size,
+            cranelift_debug_verifier: builder.cranelift_debug_verifier,
+            cranelift_nan_canonicalization: builder.cranelift_nan_canonicalization,
+            cranelift_pcc: builder.cranelift_pcc,
+            cranelift_regalloc_algorithm: builder.cranelift_regalloc_algorithm.as_ref().map(|a| match a {
+                RegallocAlgorithm::Backtracking => "Backtracking".to_string(),
+                RegallocAlgorithm::SinglePass => "SinglePass".to_string(),
+                _ => "Unknown".to_string(),
+            }).unwrap_or_else(|| "Backtracking".to_string()),
+            #[cfg(feature = "wmemcheck")]
+            wmemcheck_enabled: builder.wmemcheck_enabled,
+            #[cfg(not(feature = "wmemcheck"))]
+            wmemcheck_enabled: false,
+            table_lazy_init: builder.table_lazy_init,
         }
     }
 }
@@ -957,6 +1181,16 @@ impl Default for Engine {
                             max_instances: None,
                             async_support: false,
                             coredump_on_trap: false,
+                            memory_reservation: None,
+                            memory_guard_size: None,
+                            memory_reservation_for_growth: None,
+                            max_memory_size: None,
+                            cranelift_debug_verifier: false,
+                            cranelift_nan_canonicalization: false,
+                            cranelift_pcc: false,
+                            cranelift_regalloc_algorithm: "Backtracking".to_string(),
+                            wmemcheck_enabled: false,
+                            table_lazy_init: true,
                         },
                     },
                     Err(_) => {
@@ -1000,6 +1234,16 @@ impl Default for Engine {
                                 max_instances: None,
                                 async_support: false,
                                 coredump_on_trap: false,
+                                memory_reservation: None,
+                                memory_guard_size: None,
+                                memory_reservation_for_growth: None,
+                                max_memory_size: None,
+                                cranelift_debug_verifier: false,
+                                cranelift_nan_canonicalization: false,
+                                cranelift_pcc: false,
+                                cranelift_regalloc_algorithm: "Backtracking".to_string(),
+                                wmemcheck_enabled: false,
+                                table_lazy_init: true,
                             },
                         }
                     }
@@ -1468,4 +1712,198 @@ pub unsafe extern "C" fn wasmtime4j_engine_precompile_module(
         }
         Err(_) => FFI_ERROR,
     }
+}
+
+/// Create a new engine with extended configuration including memory settings
+///
+/// This extends wasmtime4j_engine_new_with_config with additional memory configuration options.
+///
+/// # Safety
+///
+/// This function is unsafe because it's called from FFI
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new_with_memory_config(
+    debug_info: c_int,
+    wasm_threads: c_int,
+    wasm_simd: c_int,
+    wasm_reference_types: c_int,
+    wasm_bulk_memory: c_int,
+    wasm_multi_value: c_int,
+    fuel_enabled: c_int,
+    max_memory_pages: u32,
+    max_stack_size: usize,
+    epoch_interruption: c_int,
+    max_instances: u32,
+    memory_reservation: u64,
+    memory_guard_size: u64,
+    memory_reservation_for_growth: u64,
+) -> *mut c_void {
+    let mut builder = Engine::builder()
+        .strategy(Strategy::Cranelift)
+        .opt_level(OptLevel::Speed)
+        .debug_info(debug_info != 0)
+        .wasm_threads(wasm_threads != 0)
+        .wasm_simd(wasm_simd != 0)
+        .wasm_reference_types(wasm_reference_types != 0)
+        .wasm_bulk_memory(wasm_bulk_memory != 0)
+        .wasm_multi_value(wasm_multi_value != 0)
+        .fuel_enabled(fuel_enabled != 0)
+        .epoch_interruption(epoch_interruption != 0);
+
+    if max_memory_pages > 0 {
+        builder = builder.max_memory_pages(max_memory_pages);
+    }
+    if max_stack_size > 0 {
+        builder = builder.max_stack_size(max_stack_size);
+    }
+    if max_instances > 0 {
+        builder = builder.max_instances(max_instances);
+    }
+    if memory_reservation > 0 {
+        builder = builder.memory_reservation(memory_reservation);
+    }
+    if memory_guard_size > 0 {
+        builder = builder.memory_guard_size(memory_guard_size);
+    }
+    if memory_reservation_for_growth > 0 {
+        builder = builder.memory_reservation_for_growth(memory_reservation_for_growth);
+    }
+
+    match builder.build() {
+        Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Get the configured memory reservation size for an engine
+///
+/// Returns the memory reservation size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_reservation(engine_ptr: *const c_void) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary.memory_reservation.unwrap_or(0)
+}
+
+/// Get the configured memory guard size for an engine
+///
+/// Returns the memory guard size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_guard_size(engine_ptr: *const c_void) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary.memory_guard_size.unwrap_or(0)
+}
+
+/// Get the configured memory reservation for growth for an engine
+///
+/// Returns the memory reservation for growth in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_reservation_for_growth(engine_ptr: *const c_void) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary.memory_reservation_for_growth.unwrap_or(0)
+}
+
+/// Get the configured max memory size for an engine
+///
+/// Returns the max memory size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_max_memory_size(engine_ptr: *const c_void) -> usize {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary.max_memory_size.unwrap_or(0)
+}
+
+/// Check if wmemcheck (WebAssembly memory checker) is enabled for an engine
+///
+/// wmemcheck is a memory debugging tool similar to Valgrind's memcheck that
+/// detects memory errors in WebAssembly programs at runtime. It can detect:
+/// - Use of uninitialized memory
+/// - Use-after-free (for tables)
+/// - Double-free errors (for tables)
+///
+/// Returns 1 if wmemcheck is enabled, 0 if disabled or not supported, -1 on error.
+///
+/// **Note**: wmemcheck adds significant runtime overhead and is only available
+/// when the `wmemcheck` Cargo feature is enabled during compilation.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_wmemcheck_enabled(engine_ptr: *const c_void) -> c_int {
+    if engine_ptr.is_null() {
+        return FFI_ERROR;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    if engine.config_summary.wmemcheck_enabled { 1 } else { 0 }
+}
+
+/// Check if wmemcheck feature is available in this build
+///
+/// Returns 1 if the wmemcheck feature was compiled in, 0 otherwise.
+/// This allows Java code to check if wmemcheck can be enabled before
+/// attempting to create an engine with wmemcheck enabled.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wmemcheck_available() -> c_int {
+    #[cfg(feature = "wmemcheck")]
+    {
+        1
+    }
+    #[cfg(not(feature = "wmemcheck"))]
+    {
+        0
+    }
+}
+
+/// Check if table lazy initialization is enabled for an engine
+///
+/// Table lazy initialization is a performance optimization that defers table
+/// initialization until entries are actually used. This results in:
+/// - Faster instantiation (tables don't need to be fully populated upfront)
+/// - Slightly slower indirect calls (first access may need to initialize the entry)
+///
+/// Returns 1 if table lazy initialization is enabled, 0 if disabled, -1 on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_table_lazy_init_enabled(engine_ptr: *const c_void) -> c_int {
+    if engine_ptr.is_null() {
+        return FFI_ERROR;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    if engine.config_summary.table_lazy_init { 1 } else { 0 }
 }

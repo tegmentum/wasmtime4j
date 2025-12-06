@@ -433,6 +433,59 @@ impl Module {
             data_segments,
         })
     }
+
+    /// Deserialize module directly from a file using memory-mapped I/O
+    ///
+    /// This is more efficient than reading the file and then calling `deserialize()`
+    /// because it uses memory-mapped I/O to avoid copying the file contents into memory.
+    ///
+    /// # Safety
+    /// This function is unsafe because the file's contents must have been previously
+    /// created by `Module::serialize()` from a compatible Wasmtime engine.
+    ///
+    /// # Arguments
+    /// * `engine` - The Engine to use for deserialization
+    /// * `path` - Path to the serialized module file
+    ///
+    /// # Returns
+    /// The deserialized Module on success, or an error if deserialization fails
+    pub fn deserialize_file(engine: &Engine, path: impl AsRef<std::path::Path>) -> WasmtimeResult<Self> {
+        let path = path.as_ref();
+
+        if !path.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path.display()),
+            });
+        }
+
+        engine.validate()?;
+
+        // Safety: We trust that the serialized file came from Wasmtime
+        let module = unsafe { WasmtimeModule::deserialize_file(engine.inner(), path) }
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Module deserialization from file failed: {}", e),
+            })?;
+
+        // Note: We can't extract metadata from deserialized modules easily
+        // This is a limitation we'll document
+        let metadata = ModuleMetadata::empty();
+
+        // Element segments cannot be recovered from deserialized modules
+        // This is a known limitation - table.init() won't work with deserialized modules
+        let element_segments = Vec::new();
+
+        // Data segments cannot be recovered from deserialized modules
+        // This is a known limitation - memory.init() won't work with deserialized modules
+        let data_segments = Vec::new();
+
+        Ok(Module {
+            inner: Arc::new(module),
+            engine: engine.clone(),
+            metadata,
+            element_segments,
+            data_segments,
+        })
+    }
 }
 
 impl ModuleMetadata {

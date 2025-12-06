@@ -33,8 +33,21 @@ use jni::JavaVM;
 use jni::objects::GlobalRef;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::instance::Instance;
+use crate::instance::{Instance, WasmValue};
 use crate::store::Store;
+
+/// Convert WasmValue to wasmtime::Val for async function calls
+fn wasm_value_to_val(value: &WasmValue) -> WasmtimeResult<wasmtime::Val> {
+    Ok(match value {
+        WasmValue::I32(v) => wasmtime::Val::I32(*v),
+        WasmValue::I64(v) => wasmtime::Val::I64(*v),
+        WasmValue::F32(v) => wasmtime::Val::F32(v.to_bits()),
+        WasmValue::F64(v) => wasmtime::Val::F64(v.to_bits()),
+        WasmValue::V128(bytes) => wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes))),
+        WasmValue::ExternRef(_) => wasmtime::Val::null_extern_ref(),
+        WasmValue::FuncRef(_) => wasmtime::Val::null_func_ref(),
+    })
+}
 
 /// Global Tokio runtime for async operations
 static ASYNC_RUNTIME: Lazy<Arc<Runtime>> = Lazy::new(|| {
@@ -303,11 +316,40 @@ pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> Wasmtim
                 };
 
                 // Get function from instance
-                let func = context.instance.get_func(&mut *store_guard, &context.function_name)?;
+                let func = match context.instance.get_func(&mut *store_guard, &context.function_name)? {
+                    Some(f) => f,
+                    None => {
+                        return Err(WasmtimeError::Runtime {
+                            message: format!("Function '{}' not found in instance", context.function_name),
+                            backtrace: None,
+                        });
+                    }
+                };
 
-                // TODO: Call function - this will require Func::call_async implementation
-                // For now, just validate the function exists
-                debug!("Found function '{}', execution deferred until Func::call_async is implemented", context.function_name);
+                // Convert WasmValue arguments to wasmtime::Val
+                let wasmtime_params: Vec<wasmtime::Val> = context.arguments
+                    .iter()
+                    .map(|arg| wasm_value_to_val(arg))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                // Lock the inner store for function operations
+                let mut inner_store = store_guard.lock_store();
+
+                // Get function type to determine result count
+                let func_type = func.ty(&mut *inner_store);
+                let result_count = func_type.results().len();
+                let mut results = vec![wasmtime::Val::I32(0); result_count];
+
+                // Execute the function call
+                // Note: Using synchronous call within async context. For true async execution,
+                // use TypedFunc::call_async with engines created with async_support(true).
+                func.call(&mut *inner_store, &wasmtime_params, &mut results)
+                    .map_err(|e| WasmtimeError::Execution {
+                        message: format!("Function call failed: {}", e),
+                    })?;
+
+                debug!("Function '{}' executed successfully with {} results",
+                       context.function_name, results.len());
 
                 Ok::<(), WasmtimeError>(())
             } => res,

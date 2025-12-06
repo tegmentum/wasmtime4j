@@ -515,6 +515,42 @@ pub mod module {
         }
     }
 
+    /// Deserialize a module from a file using memory-mapped I/O
+    ///
+    /// This is more efficient than reading the file first for large modules.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_module_deserialize_file(
+        engine_ptr: *mut c_void,
+        path_ptr: *const c_char,
+        module_ptr: *mut *mut c_void,
+    ) -> c_int {
+        if path_ptr.is_null() || module_ptr.is_null() {
+            return crate::shared_ffi::FFI_ERROR;
+        }
+
+        // Convert C string to Rust string
+        let path_cstr = unsafe { std::ffi::CStr::from_ptr(path_ptr) };
+        let path_str = match path_cstr.to_str() {
+            Ok(s) => s,
+            Err(_) => return crate::shared_ffi::FFI_ERROR,
+        };
+
+        match unsafe { crate::engine::core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => {
+                match crate::shared_ffi::module::deserialize_module_file_shared(engine, path_str) {
+                    Ok(module) => {
+                        unsafe {
+                            *module_ptr = Box::into_raw(module) as *mut c_void;
+                        }
+                        crate::shared_ffi::FFI_SUCCESS
+                    }
+                    Err(_) => crate::shared_ffi::FFI_ERROR,
+                }
+            }
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        }
+    }
+
     /// Validate module functionality (defensive check)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
@@ -3546,19 +3582,21 @@ pub mod table {
     }
 
     /// Get table metadata (Panama FFI version)
+    /// Updated for Table64 support - sizes are now 64-bit
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_table_metadata(
         table_ptr: *mut c_void,
         element_type: *mut c_int,
-        initial_size: *mut c_uint,
+        initial_size: *mut c_ulong,
         has_maximum: *mut c_int,
-        maximum_size: *mut c_uint,
+        maximum_size: *mut c_ulong,
+        is_64: *mut c_int,
         name_ptr: *mut *mut c_char,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let table = unsafe { core::get_table_ref(table_ptr)? };
             let metadata = core::get_table_metadata(table);
-            
+
             unsafe {
                 if !element_type.is_null() {
                     *element_type = match metadata.element_type {
@@ -3585,6 +3623,9 @@ pub mod table {
                 if !maximum_size.is_null() {
                     *maximum_size = metadata.maximum_size.unwrap_or(0);
                 }
+                if !is_64.is_null() {
+                    *is_64 = if metadata.is_64 { 1 } else { 0 };
+                }
                 if !name_ptr.is_null() {
                     *name_ptr = if let Some(ref name) = metadata.name {
                         ffi_utils::string_to_c_char(name.clone())?
@@ -3593,7 +3634,7 @@ pub mod table {
                     };
                 }
             }
-            
+
             Ok(())
         })
     }
@@ -3603,6 +3644,58 @@ pub mod table {
     pub extern "C" fn wasmtime4j_panama_table_destroy(table_ptr: *mut c_void) {
         unsafe {
             core::destroy_table(table_ptr);
+        }
+    }
+
+    /// Create a new 64-bit WebAssembly table (Panama FFI version)
+    /// Memory64 proposal: tables with 64-bit indices
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_table_create64(
+        store_ptr: *mut c_void,
+        element_type: c_int,
+        initial_size: c_ulong,
+        has_maximum: c_int,
+        maximum_size: c_ulong,
+        name_ptr: *const c_char,
+        table_ptr: *mut *mut c_void,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+
+            let val_type = match element_type {
+                5 => ValType::Ref(RefType::FUNCREF),
+                6 => ValType::Ref(RefType::EXTERNREF),
+                _ => return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                }),
+            };
+
+            let max_size = if has_maximum != 0 { Some(maximum_size) } else { None };
+
+            let name = if name_ptr.is_null() {
+                None
+            } else {
+                Some(unsafe { ffi_utils::c_char_to_string(name_ptr)? })
+            };
+
+            let table = core::create_table64(store, val_type, initial_size, max_size, name)?;
+
+            unsafe {
+                *table_ptr = Box::into_raw(table) as *mut c_void;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Check if a table uses 64-bit addressing (Memory64 proposal)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_table_is_64(table_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_table_ref(table_ptr) } {
+            Ok(table) => {
+                if core::is_table_64(table) { 1 } else { 0 }
+            }
+            Err(_) => -1,
         }
     }
 

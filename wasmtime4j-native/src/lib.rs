@@ -290,6 +290,18 @@ pub mod debug_server;
 // Debugging support module
 pub mod debug;
 
+// WebAssembly Coredump support
+pub mod coredump;
+
+// Store resource limiter APIs
+pub mod store_limiter;
+
+// Store call hooks for execution monitoring
+pub mod call_hooks;
+
+// Guest profiler integration
+pub mod guest_profiler;
+
 // WebAssembly GC implementation
 pub mod gc_types;
 pub mod gc_heap;
@@ -430,44 +442,33 @@ pub use wasi_security::{
 };
 
 // Component model re-exports
-// TODO: Re-enable when component module is implemented
-/*
 #[cfg(feature = "component-model")]
 pub use component::{
     ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
     InterfaceDefinition, FunctionDefinition, Parameter, TypeDefinition, ResourceDefinition,
     ComponentValueType, ComponentTypeKind, FieldType, CaseType,
-    ResourceManager, HostInterface, InstanceInfo
+    ResourceManager, HostInterface, InstanceInfo, ComponentLinker, WasiP2Config,
+    ComponentInstanceWrapper, ComponentInstanceMetadata, ComponentInstanceState,
+    ComponentValue, ComponentHostCallback, ComponentHostFunctionEntry, WitParser
 };
-*/
 
-// TODO: Re-enable when component_core module is available
-/*
 #[cfg(feature = "component-model")]
 pub use component_core::{
-    EnhancedComponentEngine, ComponentInstanceHandle, ComponentMetrics,
-    ComponentInterface, ComponentFunction
+    EnhancedComponentEngine, ComponentInstanceHandle, ComponentMetrics
 };
-*/
 
-// TODO: Re-enable when wit_interfaces module is available
-/*
 #[cfg(feature = "component-model")]
 pub use wit_interfaces::{
     WitInterfaceManager, WitInterface, WitMethod, WitParameter, WitType,
     WitTypeKind, PrimitiveType, CompositeType, ValidationResult, ValidationStatus
 };
-*/
 
-// TODO: Re-enable when component_orchestration module is available
-/*
 #[cfg(feature = "component-model")]
 pub use component_orchestration::{
     ComponentOrchestrator, ComponentGraph, ComponentNode, ComponentConfiguration,
     ManagedComponent, ComponentState, HealthStatus, ComponentChannel,
     ComponentMessage, MessagePayload, LoadBalancingStrategy
 };
-*/
 
 #[cfg(feature = "component-model")]
 pub use component_resources::{
@@ -483,8 +484,6 @@ pub use component_resources::{
 //     ComponentBackupService, NetworkTopologyManager
 // };
 
-// TODO: Re-enable when component_composition module is available
-/*
 #[cfg(feature = "component-model")]
 pub use component_composition::{
     ComponentCompositionManager, ComponentDependencyGraph, GraphNode, GraphEdge,
@@ -493,7 +492,6 @@ pub use component_composition::{
     CompositionSpecification, CompositionResult, ComposedApplication,
     GraphAnalysisResult, OptimizationGoals, OptimizationResults
 };
-*/
 //
 // pub use type_introspection::{
 //     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,

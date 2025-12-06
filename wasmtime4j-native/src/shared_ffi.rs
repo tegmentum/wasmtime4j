@@ -1647,6 +1647,34 @@ pub mod module {
         core::deserialize_module(engine, bytes)
     }
 
+    /// Shared implementation for module deserialization from file
+    ///
+    /// Deserializes a module from a file path using memory-mapped I/O.
+    /// This is more efficient than reading the file first for large modules.
+    pub fn deserialize_module_file_shared(
+        engine: &Engine,
+        path: &str
+    ) -> WasmtimeResult<Box<Module>> {
+        // Validate path is not empty
+        if path.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "File path cannot be empty".to_string()
+            });
+        }
+
+        // Validate file exists
+        let path_ref = std::path::Path::new(path);
+        if !path_ref.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path),
+            });
+        }
+
+        // Call Module::deserialize_file
+        Module::deserialize_file(engine, path_ref)
+            .map(|m| Box::new(m))
+    }
+
     /// Shared implementation for getting module size
     pub fn get_module_size_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(module_ptr, "module")?;

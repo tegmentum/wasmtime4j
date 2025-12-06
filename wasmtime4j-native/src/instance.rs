@@ -2153,6 +2153,212 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
     }
 }
 
+/// Call a WebAssembly function asynchronously with timeout support
+///
+/// This function uses `Func::call_async` with the global Tokio runtime and blocks
+/// waiting for the result. Requires the Engine to be created with `async_support(true)`.
+///
+/// # Arguments
+/// * `instance_ptr` - Pointer to the Instance
+/// * `store_ptr` - Pointer to the Store
+/// * `function_name` - Name of the exported function to call
+/// * `params_ptr` - Pointer to array of WasmValue parameters (20 bytes each)
+/// * `param_count` - Number of parameters
+/// * `results_ptr` - Output buffer for results (20 bytes per WasmValue)
+/// * `max_results` - Maximum number of results the buffer can hold
+/// * `timeout_ms` - Timeout in milliseconds (0 = no timeout)
+///
+/// # Returns
+/// Number of actual results (>= 0) on success, or negative value on error:
+/// * -1: Invalid parameters or general error
+/// * -2: Timeout exceeded
+/// * -3: Function not found
+/// * -4: Async not supported (engine not configured for async)
+///
+/// # Safety
+/// This function is unsafe because it dereferences raw pointers
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
+    instance_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    function_name: *const c_char,
+    params_ptr: *const c_void,
+    param_count: usize,
+    results_ptr: *mut c_void,
+    max_results: usize,
+    timeout_ms: u64,
+) -> isize {
+    if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+        return -1;
+    }
+
+    match (
+        ffi_core::get_instance_mut(instance_ptr),
+        crate::store::core::get_store_mut(store_ptr),
+        CStr::from_ptr(function_name).to_str()
+    ) {
+        (Ok(instance), Ok(store), Ok(name_str)) => {
+            // Convert parameters from FFI WasmValue array
+            // Layout: tag (4 bytes) + value (16 bytes max) = 20 bytes per WasmValue
+            let params: Vec<WasmValue> = if param_count > 0 && !params_ptr.is_null() {
+                let mut result = Vec::with_capacity(param_count);
+                let base_ptr = params_ptr as *const u8;
+
+                for i in 0..param_count {
+                    let offset = i * 20;
+                    let tag = std::ptr::read(base_ptr.add(offset) as *const i32);
+
+                    let value = match tag {
+                        0 => { // I32
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i32);
+                            WasmValue::I32(val)
+                        }
+                        1 => { // I64
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::I64(val)
+                        }
+                        2 => { // F32
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const f32);
+                            WasmValue::F32(val)
+                        }
+                        3 => { // F64
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const f64);
+                            WasmValue::F64(val)
+                        }
+                        4 => { // V128
+                            let mut bytes = [0u8; 16];
+                            std::ptr::copy_nonoverlapping(base_ptr.add(offset + 4), bytes.as_mut_ptr(), 16);
+                            WasmValue::V128(bytes)
+                        }
+                        5 => { // FUNCREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::FuncRef(if val == 0 { None } else { Some(val) })
+                        }
+                        6 => { // EXTERNREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::ExternRef(if val == 0 { None } else { Some(val) })
+                        }
+                        _ => {
+                            // Invalid tag - return error
+                            return -1;
+                        }
+                    };
+                    result.push(value);
+                }
+                result
+            } else {
+                Vec::new()
+            };
+
+            // Get the function from the instance
+            let func = match instance.get_func(store, name_str) {
+                Ok(Some(f)) => f,
+                Ok(None) => return -3, // Function not found
+                Err(_) => return -1,
+            };
+
+            // Convert WasmValue params to wasmtime::Val
+            let wasmtime_params: Vec<Val> = params.iter().map(|wv| {
+                match wv {
+                    WasmValue::I32(v) => Val::I32(*v),
+                    WasmValue::I64(v) => Val::I64(*v),
+                    WasmValue::F32(v) => Val::F32(v.to_bits()),
+                    WasmValue::F64(v) => Val::F64(v.to_bits()),
+                    WasmValue::V128(bytes) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes))),
+                    WasmValue::FuncRef(_) => Val::null_func_ref(),
+                    WasmValue::ExternRef(_) => Val::null_extern_ref(),
+                }
+            }).collect();
+
+            // Get function type to determine result count
+            let mut store_lock = store.lock_store();
+            let func_type = func.ty(&mut *store_lock);
+            let result_count = func_type.results().len();
+            let mut results = vec![Val::I32(0); result_count];
+
+            // Get the async runtime
+            let runtime = crate::async_runtime::get_async_runtime();
+
+            // Execute the async call with optional timeout
+            let call_future = func.call_async(&mut *store_lock, &wasmtime_params, &mut results);
+
+            let call_result = if timeout_ms > 0 {
+                // Execute with timeout
+                runtime.block_on(async {
+                    tokio::time::timeout(
+                        std::time::Duration::from_millis(timeout_ms),
+                        call_future
+                    ).await
+                })
+            } else {
+                // Execute without timeout - wrap in Ok to match timeout result type
+                Ok(runtime.block_on(call_future))
+            };
+
+            // Handle the result
+            match call_result {
+                Ok(Ok(())) => {
+                    // Success - copy results to output buffer
+                    let actual_count = results.len().min(max_results);
+
+                    if actual_count > 0 && !results_ptr.is_null() {
+                        for (i, val) in results.iter().take(actual_count).enumerate() {
+                            let base_offset = i * 20;
+                            let dest_ptr = results_ptr as *mut u8;
+
+                            match val {
+                                Val::I32(v) => {
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 0);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i32, *v);
+                                }
+                                Val::I64(v) => {
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 1);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, *v);
+                                }
+                                Val::F32(v) => {
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 2);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut f32, f32::from_bits(*v));
+                                }
+                                Val::F64(v) => {
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 3);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut f64, f64::from_bits(*v));
+                                }
+                                Val::V128(v) => {
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 4);
+                                    let bytes = u128::from(*v).to_le_bytes();
+                                    std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest_ptr.add(base_offset + 4), 16);
+                                }
+                                _ => {
+                                    // FuncRef/ExternRef - write tag only
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 5);
+                                }
+                            }
+                        }
+                    }
+
+                    actual_count as isize
+                }
+                Ok(Err(e)) => {
+                    // Async call failed - check if it's an async support error
+                    let err_msg = e.to_string();
+                    if err_msg.contains("async support") || err_msg.contains("async_support") {
+                        -4 // Async not supported
+                    } else {
+                        log::error!("Async function call failed: {}", e);
+                        -1
+                    }
+                }
+                Err(_) => {
+                    // Timeout
+                    log::warn!("Async function call timed out after {}ms", timeout_ms);
+                    -2
+                }
+            }
+        },
+        _ => -1,
+    }
+}
+
 /// Get exported memory by name
 /// Returns memory handle or null if not found
 #[no_mangle]
