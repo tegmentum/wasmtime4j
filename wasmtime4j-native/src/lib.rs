@@ -107,6 +107,8 @@ pub mod jni_wasi_clocks_bindings;
 pub mod jni_wasi_random_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_sockets_bindings;
+#[cfg(all(feature = "jni-bindings", feature = "wasi-keyvalue"))]
+pub mod jni_wasi_keyvalue_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -153,6 +155,8 @@ pub mod panama_simd_ffi;
 pub mod panama_wasi_nn_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
 pub mod panama_wasi_threads_ffi;
+#[cfg(all(feature = "panama-ffi", feature = "wasi-keyvalue"))]
+pub mod panama_wasi_keyvalue_ffi;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
@@ -219,6 +223,10 @@ pub mod wasi_random_helpers;
 
 // Shared helper functions for WASI sockets operations (used by both JNI and Panama FFI)
 pub mod wasi_sockets_helpers;
+
+// Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
+#[cfg(feature = "wasi-keyvalue")]
+pub mod wasi_keyvalue_helpers;
 
 // Real networking operations
 pub mod networking;
