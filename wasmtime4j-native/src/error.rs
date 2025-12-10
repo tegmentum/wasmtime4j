@@ -280,6 +280,13 @@ pub enum WasmtimeError {
         message: String,
     },
 
+    /// Operation would block (for non-blocking I/O)
+    #[error("Operation would block: {message}")]
+    WouldBlock {
+        /// Error message describing why the operation would block
+        message: String,
+    },
+
     /// Validation errors
     #[error("Validation error: {message}")]
     ValidationError {
@@ -461,6 +468,7 @@ impl Clone for WasmtimeError {
             WasmtimeError::Coredump { message } => WasmtimeError::Coredump { message: message.clone() },
             WasmtimeError::CallHook { message } => WasmtimeError::CallHook { message: message.clone() },
             WasmtimeError::GuestProfiler { message } => WasmtimeError::GuestProfiler { message: message.clone() },
+            WasmtimeError::WouldBlock { message } => WasmtimeError::WouldBlock { message: message.clone() },
         }
     }
 }
@@ -524,6 +532,8 @@ pub enum ErrorCode {
     IOError = -24,
     /// Unsupported operation error
     UnsupportedOperation = -25,
+    /// Operation would block (non-blocking I/O)
+    WouldBlock = -26,
 }
 
 // The impl WasmtimeError block is defined below to avoid duplication
@@ -611,6 +621,7 @@ impl WasmtimeError {
             WasmtimeError::Coredump { .. } => ErrorCode::InternalError,
             WasmtimeError::CallHook { .. } => ErrorCode::FunctionError,
             WasmtimeError::GuestProfiler { .. } => ErrorCode::InternalError,
+            WasmtimeError::WouldBlock { .. } => ErrorCode::WouldBlock,
         }
     }
 

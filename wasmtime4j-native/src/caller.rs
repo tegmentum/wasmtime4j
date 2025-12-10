@@ -97,6 +97,10 @@ impl CallerContext {
                 wasi_stdout_pipe: None,
                 wasi_stderr_pipe: None,
                 wasi_fd_manager: None,
+                #[cfg(feature = "wasi-http")]
+                wasi_http_ctx: None,
+                #[cfg(feature = "wasi-http")]
+                resource_table: wasmtime::component::ResourceTable::new(),
             }),
             exports,
             fuel_consumed,

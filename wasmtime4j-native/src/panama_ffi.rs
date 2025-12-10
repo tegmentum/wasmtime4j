@@ -715,6 +715,214 @@ pub mod instance {
             crate::instance::core::destroy_instance(instance_ptr);
         }
     }
+
+    /// Check if instance has specific export (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_has_export(
+        instance_ptr: *const c_void,
+        name: *const c_char,
+    ) -> c_int {
+        if instance_ptr.is_null() || name.is_null() {
+            return -1;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_has_export(instance_ptr, name) }
+    }
+
+    /// Get number of exports in instance (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_export_count(
+        instance_ptr: *const c_void,
+    ) -> usize {
+        if instance_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_export_count(instance_ptr) }
+    }
+
+    /// Dispose instance resources (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_dispose(instance_ptr: *mut c_void) -> c_int {
+        if instance_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_dispose(instance_ptr) }
+    }
+
+    /// Check if instance is disposed (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_is_disposed(
+        instance_ptr: *const c_void,
+    ) -> c_int {
+        if instance_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_is_disposed(instance_ptr) }
+    }
+
+    /// Call exported function with i32 parameters (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_call_i32_function(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        function_name: *const c_char,
+        params: *const i32,
+        param_count: usize,
+    ) -> i32 {
+        if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+            return 0;
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_call_i32_function(
+                instance_ptr,
+                store_ptr,
+                function_name,
+                params,
+                param_count,
+            )
+        }
+    }
+
+    /// Call exported function with no parameters that returns i32 (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_call_i32_function_no_params(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        function_name: *const c_char,
+    ) -> i32 {
+        if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+            return 0;
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_call_i32_function_no_params(
+                instance_ptr,
+                store_ptr,
+                function_name,
+            )
+        }
+    }
+
+    /// Get instance creation timestamp in microseconds since epoch (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_created_at_micros(
+        instance_ptr: *const c_void,
+    ) -> u64 {
+        if instance_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_created_at_micros(instance_ptr) }
+    }
+
+    /// Get instance metadata export count (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_metadata_export_count(
+        instance_ptr: *const c_void,
+    ) -> usize {
+        if instance_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::instance::wasmtime4j_instance_metadata_export_count(instance_ptr) }
+    }
+
+    /// Call instance function with WasmValue parameters (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_call_function(
+        instance_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        function_name: *const c_char,
+        params_ptr: *const c_void,
+        param_count: usize,
+        results_ptr: *mut c_void,
+        max_results: usize,
+    ) -> isize {
+        if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_call_function(
+                instance_ptr,
+                store_ptr,
+                function_name,
+                params_ptr,
+                param_count,
+                results_ptr,
+                max_results,
+            )
+        }
+    }
+
+    /// Call instance function asynchronously with timeout (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_call_function_async(
+        instance_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        function_name: *const c_char,
+        params_ptr: *const c_void,
+        param_count: usize,
+        results_ptr: *mut c_void,
+        max_results: usize,
+        timeout_ms: u64,
+    ) -> isize {
+        if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_call_function_async(
+                instance_ptr,
+                store_ptr,
+                function_name,
+                params_ptr,
+                param_count,
+                results_ptr,
+                max_results,
+                timeout_ms,
+            )
+        }
+    }
+
+    /// Get exported memory by name (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_get_memory_by_name(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> *mut c_void {
+        if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_get_memory_by_name(instance_ptr, store_ptr, name)
+        }
+    }
+
+    /// Get exported table by name (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_get_table_by_name(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> *mut c_void {
+        if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_get_table_by_name(instance_ptr, store_ptr, name)
+        }
+    }
+
+    /// Get exported global by name (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_get_global_by_name(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> *mut c_void {
+        if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe {
+            crate::instance::wasmtime4j_instance_get_global_by_name(instance_ptr, store_ptr, name)
+        }
+    }
 }
 
 /// Panama FFI bindings for WebAssembly store operations
@@ -5367,6 +5575,21 @@ pub mod linker {
         })
     }
 
+    /// Get the number of host functions in the linker (Panama FFI version)
+    ///
+    /// # Parameters
+    /// - linker_ptr: Pointer to the Linker
+    ///
+    /// # Returns
+    /// The number of host functions registered in the linker, or 0 if the pointer is null
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_host_function_count(linker_ptr: *const c_void) -> usize {
+        if linker_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::linker::wasmtime4j_linker_host_function_count(linker_ptr) }
+    }
+
     /// Destroy a linker (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
@@ -5911,5 +6134,870 @@ pub mod trap {
         }
 
         0
+    }
+}
+
+/// WASI Context Configuration FFI module for Panama
+pub mod wasi_context {
+    use super::*;
+    use std::os::raw::{c_char, c_int, c_void};
+
+    /// Set command-line arguments for the WASI context (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_argv(
+        ctx_ptr: *mut c_void,
+        argv: *const *const c_char,
+        argc: usize,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_argv(ctx_ptr, argv, argc) }
+    }
+
+    /// Set a single environment variable for the WASI context (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_env(
+        ctx_ptr: *mut c_void,
+        key: *const c_char,
+        value: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() || key.is_null() || value.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_env(ctx_ptr, key, value) }
+    }
+
+    /// Inherit environment from host process (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_inherit_env(
+        ctx_ptr: *mut c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_inherit_env(ctx_ptr) }
+    }
+
+    /// Inherit stdio from host process (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_inherit_stdio(
+        ctx_ptr: *mut c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_inherit_stdio(ctx_ptr) }
+    }
+
+    /// Set stdin to read from file (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_stdin(
+        ctx_ptr: *mut c_void,
+        path: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_stdin(ctx_ptr, path) }
+    }
+
+    /// Set stdin bytes for the WASI context (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_stdin_bytes(
+        ctx_ptr: *mut c_void,
+        data: *const u8,
+        len: usize,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_stdin_bytes(ctx_ptr, data, len) }
+    }
+
+    /// Set stdout to write to file (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_stdout(
+        ctx_ptr: *mut c_void,
+        path: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_stdout(ctx_ptr, path) }
+    }
+
+    /// Set stderr to write to file (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_set_stderr(
+        ctx_ptr: *mut c_void,
+        path: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_set_stderr(ctx_ptr, path) }
+    }
+
+    /// Enable output capture for stdout/stderr (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_enable_output_capture(
+        ctx_ptr: *mut c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_enable_output_capture(ctx_ptr) }
+    }
+
+    /// Get captured stdout content (Panama FFI)
+    /// Returns pointer to captured data, caller must free with wasmtime4j_wasi_free_capture_buffer
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_get_stdout_capture(
+        ctx_ptr: *const c_void,
+        data_len_out: *mut usize,
+    ) -> *mut u8 {
+        if ctx_ptr.is_null() || data_len_out.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_get_stdout_capture(ctx_ptr, data_len_out) }
+    }
+
+    /// Get captured stderr content (Panama FFI)
+    /// Returns pointer to captured data, caller must free with wasmtime4j_wasi_free_capture_buffer
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_get_stderr_capture(
+        ctx_ptr: *const c_void,
+        data_len_out: *mut usize,
+    ) -> *mut u8 {
+        if ctx_ptr.is_null() || data_len_out.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_get_stderr_capture(ctx_ptr, data_len_out) }
+    }
+
+    /// Free capture buffer allocated by get_stdout/stderr_capture (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_free_capture_buffer(data: *mut u8) {
+        if !data.is_null() {
+            unsafe { crate::wasi::wasmtime4j_wasi_free_capture_buffer(data) }
+        }
+    }
+
+    /// Check if stdout capture is available (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_has_stdout_capture(
+        ctx_ptr: *const c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_has_stdout_capture(ctx_ptr) }
+    }
+
+    /// Check if stderr capture is available (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_has_stderr_capture(
+        ctx_ptr: *const c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_has_stderr_capture(ctx_ptr) }
+    }
+
+    /// Preopen a directory for the WASI context (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir(
+        ctx_ptr: *mut c_void,
+        host_path: *const c_char,
+        guest_path: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() || host_path.is_null() || guest_path.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi::wasmtime4j_wasi_context_preopen_dir(ctx_ptr, host_path, guest_path) }
+    }
+
+    /// Preopen a directory as readonly (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir_readonly(
+        ctx_ptr: *mut c_void,
+        host_path: *const c_char,
+        guest_path: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() || host_path.is_null() || guest_path.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi::wasmtime4j_wasi_context_preopen_dir_readonly(ctx_ptr, host_path, guest_path)
+        }
+    }
+
+    /// Preopen a directory with specific permissions (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir_with_perms(
+        ctx_ptr: *mut c_void,
+        host_path: *const c_char,
+        guest_path: *const c_char,
+        can_read: c_int,
+        can_write: c_int,
+        can_create: c_int,
+    ) -> c_int {
+        if ctx_ptr.is_null() || host_path.is_null() || guest_path.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi::wasmtime4j_wasi_context_preopen_dir_with_perms(
+                ctx_ptr,
+                host_path,
+                guest_path,
+                can_read,
+                can_write,
+                can_create,
+            )
+        }
+    }
+}
+
+/// Utility and Version FFI module for Panama
+pub mod utility {
+    use super::*;
+    use std::os::raw::c_char;
+
+    /// Get the library version string (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_get_library_version() -> *const c_char {
+        static VERSION: &[u8] = b"1.0.0\0";
+        VERSION.as_ptr() as *const c_char
+    }
+}
+
+/// InstancePre management FFI module for Panama
+pub mod instance_pre {
+    use super::*;
+    use std::os::raw::{c_int, c_void};
+
+    /// Instantiate from an InstancePre (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_instantiate(
+        instance_pre_ptr: *const c_void,
+        store_ptr: *mut c_void,
+    ) -> *mut c_void {
+        if instance_pre_ptr.is_null() || store_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe {
+            crate::linker::wasmtime4j_instance_pre_instantiate(instance_pre_ptr, store_ptr)
+        }
+    }
+
+    /// Check if InstancePre is valid (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_is_valid(
+        instance_pre_ptr: *const c_void,
+    ) -> c_int {
+        if instance_pre_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::linker::wasmtime4j_instance_pre_is_valid(instance_pre_ptr) }
+    }
+
+    /// Get instance count from InstancePre (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_instance_count(
+        instance_pre_ptr: *const c_void,
+    ) -> u64 {
+        if instance_pre_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::linker::wasmtime4j_instance_pre_instance_count(instance_pre_ptr) }
+    }
+
+    /// Get preparation time in nanoseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_preparation_time_ns(
+        instance_pre_ptr: *const c_void,
+    ) -> u64 {
+        if instance_pre_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::linker::wasmtime4j_instance_pre_preparation_time_ns(instance_pre_ptr) }
+    }
+
+    /// Get average instantiation time in nanoseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_avg_instantiation_time_ns(
+        instance_pre_ptr: *const c_void,
+    ) -> u64 {
+        if instance_pre_ptr.is_null() {
+            return 0;
+        }
+        unsafe {
+            crate::linker::wasmtime4j_instance_pre_avg_instantiation_time_ns(instance_pre_ptr)
+        }
+    }
+
+    /// Get module handle from InstancePre (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_get_module(
+        instance_pre_ptr: *const c_void,
+    ) -> *mut c_void {
+        if instance_pre_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { crate::linker::wasmtime4j_instance_pre_get_module(instance_pre_ptr) }
+    }
+
+    /// Destroy an InstancePre (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_pre_destroy(instance_pre_ptr: *mut c_void) {
+        if !instance_pre_ptr.is_null() {
+            unsafe { crate::linker::wasmtime4j_instance_pre_destroy(instance_pre_ptr) }
+        }
+    }
+}
+
+/// WASI HTTP FFI module for Panama
+pub mod wasi_http {
+    use std::os::raw::{c_char, c_int, c_void};
+
+    // ============================================================================
+    // Config Builder Functions
+    // ============================================================================
+
+    /// Create a new WASI HTTP config builder (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_new() -> *mut c_void {
+        unsafe { crate::wasi_http::wasi_http_config_builder_new() }
+    }
+
+    /// Add an allowed host to the config builder (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_allow_host(
+        builder_ptr: *mut c_void,
+        host: *const c_char,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi_http::wasi_http_config_builder_allow_host(builder_ptr, host) }
+    }
+
+    /// Block a host in the config builder (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_block_host(
+        builder_ptr: *mut c_void,
+        host: *const c_char,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi_http::wasi_http_config_builder_block_host(builder_ptr, host) }
+    }
+
+    /// Set allow all hosts flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_allow_all_hosts(
+        builder_ptr: *mut c_void,
+        allow: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi_http::wasi_http_config_builder_allow_all_hosts(builder_ptr, allow) }
+    }
+
+    /// Set connect timeout in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_connect_timeout(
+        builder_ptr: *mut c_void,
+        timeout_ms: u64,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_connect_timeout(builder_ptr, timeout_ms)
+        }
+    }
+
+    /// Set read timeout in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_read_timeout(
+        builder_ptr: *mut c_void,
+        timeout_ms: u64,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_read_timeout(builder_ptr, timeout_ms)
+        }
+    }
+
+    /// Set write timeout in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_write_timeout(
+        builder_ptr: *mut c_void,
+        timeout_ms: u64,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_write_timeout(builder_ptr, timeout_ms)
+        }
+    }
+
+    /// Set max connections (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_max_connections(
+        builder_ptr: *mut c_void,
+        max: u32,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_max_connections(builder_ptr, max)
+        }
+    }
+
+    /// Set max connections per host (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_max_connections_per_host(
+        builder_ptr: *mut c_void,
+        max: u32,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_max_connections_per_host(builder_ptr, max)
+        }
+    }
+
+    /// Set max request body size (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_max_request_body_size(
+        builder_ptr: *mut c_void,
+        size: u64,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_max_request_body_size(builder_ptr, size)
+        }
+    }
+
+    /// Set max response body size (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_max_response_body_size(
+        builder_ptr: *mut c_void,
+        size: u64,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_max_response_body_size(builder_ptr, size)
+        }
+    }
+
+    /// Set HTTPS required flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_https_required(
+        builder_ptr: *mut c_void,
+        required: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_https_required(builder_ptr, required)
+        }
+    }
+
+    /// Set certificate validation flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_certificate_validation(
+        builder_ptr: *mut c_void,
+        enabled: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_certificate_validation(
+                builder_ptr,
+                enabled,
+            )
+        }
+    }
+
+    /// Set HTTP/2 enabled flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_http2_enabled(
+        builder_ptr: *mut c_void,
+        enabled: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_http2_enabled(builder_ptr, enabled)
+        }
+    }
+
+    /// Set connection pooling flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_connection_pooling(
+        builder_ptr: *mut c_void,
+        enabled: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_connection_pooling(builder_ptr, enabled)
+        }
+    }
+
+    /// Set follow redirects flag (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_follow_redirects(
+        builder_ptr: *mut c_void,
+        follow: c_int,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_follow_redirects(builder_ptr, follow)
+        }
+    }
+
+    /// Set max redirects (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_max_redirects(
+        builder_ptr: *mut c_void,
+        max: u32,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_max_redirects(builder_ptr, max)
+        }
+    }
+
+    /// Set user agent (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_user_agent(
+        builder_ptr: *mut c_void,
+        user_agent: *const c_char,
+    ) -> c_int {
+        if builder_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_config_builder_set_user_agent(builder_ptr, user_agent)
+        }
+    }
+
+    /// Build the config from builder (consumes builder) (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_build(
+        builder_ptr: *mut c_void,
+    ) -> *mut c_void {
+        if builder_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { crate::wasi_http::wasi_http_config_builder_build(builder_ptr) }
+    }
+
+    /// Free a config builder (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_free(builder_ptr: *mut c_void) {
+        if !builder_ptr.is_null() {
+            unsafe { crate::wasi_http::wasi_http_config_builder_free(builder_ptr) }
+        }
+    }
+
+    // ============================================================================
+    // Config Functions
+    // ============================================================================
+
+    /// Create a default WASI HTTP config (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_default() -> *mut c_void {
+        unsafe { crate::wasi_http::wasi_http_config_default() }
+    }
+
+    /// Free a WASI HTTP config (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_config_free(config_ptr: *mut c_void) {
+        if !config_ptr.is_null() {
+            unsafe { crate::wasi_http::wasi_http_config_free(config_ptr) }
+        }
+    }
+
+    // ============================================================================
+    // Context Functions
+    // ============================================================================
+
+    /// Create a new WASI HTTP context with config (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_new(config_ptr: *mut c_void) -> *mut c_void {
+        unsafe { crate::wasi_http::wasi_http_ctx_new(config_ptr) }
+    }
+
+    /// Create a new WASI HTTP context with default config (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_new_default() -> *mut c_void {
+        unsafe { crate::wasi_http::wasi_http_ctx_new_default() }
+    }
+
+    /// Get context ID (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_get_id(ctx_ptr: *const c_void) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_get_id(ctx_ptr) }
+    }
+
+    /// Check if context is valid (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_is_valid(ctx_ptr: *const c_void) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_is_valid(ctx_ptr) }
+    }
+
+    /// Check if host is allowed (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_is_host_allowed(
+        ctx_ptr: *const c_void,
+        host: *const c_char,
+    ) -> c_int {
+        if ctx_ptr.is_null() || host.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_is_host_allowed(ctx_ptr, host) }
+    }
+
+    /// Reset statistics (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_reset_stats(ctx_ptr: *mut c_void) -> c_int {
+        if ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_reset_stats(ctx_ptr) }
+    }
+
+    // ============================================================================
+    // Statistics Functions
+    // ============================================================================
+
+    /// Get statistics - total requests (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_total_requests(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_total_requests(ctx_ptr) }
+    }
+
+    /// Get statistics - successful requests (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_successful_requests(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_successful_requests(ctx_ptr) }
+    }
+
+    /// Get statistics - failed requests (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_failed_requests(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_failed_requests(ctx_ptr) }
+    }
+
+    /// Get statistics - active requests (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_active_requests(
+        ctx_ptr: *const c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_active_requests(ctx_ptr) }
+    }
+
+    /// Get statistics - bytes sent (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_bytes_sent(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_bytes_sent(ctx_ptr) }
+    }
+
+    /// Get statistics - bytes received (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_bytes_received(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_bytes_received(ctx_ptr) }
+    }
+
+    /// Get statistics - connection timeouts (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_connection_timeouts(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_connection_timeouts(ctx_ptr) }
+    }
+
+    /// Get statistics - read timeouts (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_read_timeouts(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_read_timeouts(ctx_ptr) }
+    }
+
+    /// Get statistics - blocked requests (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_blocked_requests(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_blocked_requests(ctx_ptr) }
+    }
+
+    /// Get statistics - body size violations (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_body_size_violations(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_body_size_violations(ctx_ptr) }
+    }
+
+    /// Get statistics - active connections (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_active_connections(
+        ctx_ptr: *const c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_active_connections(ctx_ptr) }
+    }
+
+    /// Get statistics - idle connections (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_idle_connections(
+        ctx_ptr: *const c_void,
+    ) -> c_int {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_idle_connections(ctx_ptr) }
+    }
+
+    /// Get statistics - average duration in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_avg_duration_ms(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_avg_duration_ms(ctx_ptr) }
+    }
+
+    /// Get statistics - min duration in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_min_duration_ms(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_min_duration_ms(ctx_ptr) }
+    }
+
+    /// Get statistics - max duration in milliseconds (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_max_duration_ms(
+        ctx_ptr: *const c_void,
+    ) -> u64 {
+        if ctx_ptr.is_null() {
+            return 0;
+        }
+        unsafe { crate::wasi_http::wasi_http_ctx_stats_max_duration_ms(ctx_ptr) }
+    }
+
+    /// Free a WASI HTTP context (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_free(ctx_ptr: *mut c_void) {
+        if !ctx_ptr.is_null() {
+            unsafe { crate::wasi_http::wasi_http_ctx_free(ctx_ptr) }
+        }
+    }
+
+    // ============================================================================
+    // Linker Integration Functions
+    // ============================================================================
+
+    /// Add WASI HTTP to a linker (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_add_to_linker(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        http_ctx_ptr: *mut c_void,
+    ) -> c_int {
+        if linker_ptr.is_null() || store_ptr.is_null() || http_ctx_ptr.is_null() {
+            return -1;
+        }
+        unsafe {
+            crate::wasi_http::wasi_http_add_to_linker(linker_ptr, store_ptr, http_ctx_ptr)
+        }
+    }
+
+    /// Check if WASI HTTP support is available (Panama FFI)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_wasi_http_is_available() -> c_int {
+        crate::wasi_http::wasi_http_is_available()
     }
 }

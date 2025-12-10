@@ -182,8 +182,6 @@ tls = ["tokio-rustls", "rustls", "webpki-roots"]
 # Connection pooling
 connection-pooling = ["bb8", "tower-http"]
 
-# Note: Memory64 support not available in Wasmtime 36.0.2
-
 [profile.release]
 # Optimize for size and speed in release builds
 opt-level = 3

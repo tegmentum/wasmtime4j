@@ -489,18 +489,13 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
         let result = tokio::select! {
             // Perform actual compilation
             res = async {
-                // TODO: Implement actual async module compilation
-                // This will require integrating with Wasmtime's Module::new_async or similar
-                debug!("Module compilation deferred until Module::new_async is implemented");
-
-                // Simulate progress callback
+                // Report 10% progress - starting validation
                 if let Some(progress_cb) = context.progress_callback {
                     match context.jvm.attach_current_thread() {
-                        Ok(mut env) => {
-                            let msg = CString::new("Compilation in progress").unwrap();
-                            // SAFETY: user_data pointer is passed through from C and remains valid
+                        Ok(_env) => {
+                            let msg = CString::new("Validating module bytes").unwrap();
                             unsafe {
-                                progress_cb(context.user_data.as_ptr(), 50, msg.as_ptr());
+                                progress_cb(context.user_data.as_ptr(), 10, msg.as_ptr());
                             }
                         }
                         Err(e) => {
@@ -509,7 +504,94 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                     }
                 }
 
-                Ok::<(), WasmtimeError>(())
+                // Create engine with appropriate configuration
+                let mut engine_config = wasmtime::Config::new();
+
+                // Apply compilation options
+                if context.options.optimize {
+                    engine_config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+                } else {
+                    engine_config.cranelift_opt_level(wasmtime::OptLevel::None);
+                }
+
+                if context.options.debug_info {
+                    engine_config.debug_info(true);
+                }
+
+                if context.options.profiling {
+                    engine_config.profiler(wasmtime::ProfilingStrategy::JitDump);
+                }
+
+                // Enable async support for async compilation
+                engine_config.async_support(true);
+
+                let engine = wasmtime::Engine::new(&engine_config).map_err(|e| {
+                    WasmtimeError::EngineConfig {
+                        message: format!("Failed to create engine for async compilation: {}", e),
+                    }
+                })?;
+
+                // Report 30% progress - engine created
+                if let Some(progress_cb) = context.progress_callback {
+                    match context.jvm.attach_current_thread() {
+                        Ok(_env) => {
+                            let msg = CString::new("Engine configured, starting compilation").unwrap();
+                            unsafe {
+                                progress_cb(context.user_data.as_ptr(), 30, msg.as_ptr());
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+
+                // Perform synchronous compilation in blocking context
+                // Note: Wasmtime's Module::new is CPU-bound, so we use spawn_blocking
+                let bytes = context.module_bytes.clone();
+                let module_result = tokio::task::spawn_blocking(move || {
+                    wasmtime::Module::new(&engine, &bytes)
+                }).await;
+
+                // Report 80% progress - compilation complete
+                if let Some(progress_cb) = context.progress_callback {
+                    match context.jvm.attach_current_thread() {
+                        Ok(_env) => {
+                            let msg = CString::new("Compilation complete, finalizing").unwrap();
+                            unsafe {
+                                progress_cb(context.user_data.as_ptr(), 80, msg.as_ptr());
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+
+                // Handle the spawn_blocking result
+                match module_result {
+                    Ok(Ok(_module)) => {
+                        // Report 100% progress
+                        if let Some(progress_cb) = context.progress_callback {
+                            match context.jvm.attach_current_thread() {
+                                Ok(_env) => {
+                                    let msg = CString::new("Module ready").unwrap();
+                                    unsafe {
+                                        progress_cb(context.user_data.as_ptr(), 100, msg.as_ptr());
+                                    }
+                                }
+                                Err(_) => {}
+                            }
+                        }
+                        Ok::<(), WasmtimeError>(())
+                    }
+                    Ok(Err(e)) => {
+                        Err(WasmtimeError::Compilation {
+                            message: format!("Module compilation failed: {}", e),
+                        })
+                    }
+                    Err(e) => {
+                        Err(WasmtimeError::Internal {
+                            message: format!("Compilation task panicked: {}", e),
+                        })
+                    }
+                }
             } => res,
 
             // Handle cancellation
@@ -558,7 +640,7 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
 
         // Attach to JVM for completion callback
         match context.jvm.attach_current_thread() {
-            Ok(mut env) => {
+            Ok(_env) => {
                 debug!("Attached to JVM for compilation callback in operation {}", operation_id);
 
                 let message_cstring = match CString::new(error_msg) {

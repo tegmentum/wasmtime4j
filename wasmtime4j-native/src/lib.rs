@@ -299,6 +299,9 @@ pub mod store_limiter;
 // Store call hooks for execution monitoring
 pub mod call_hooks;
 
+// Fuel exhaustion callback handling
+pub mod fuel_callback;
+
 // Guest profiler integration
 pub mod guest_profiler;
 

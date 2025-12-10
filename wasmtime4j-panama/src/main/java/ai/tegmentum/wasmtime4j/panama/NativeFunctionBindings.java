@@ -2737,6 +2737,33 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Enables WASI HTTP support in the component linker.
+   *
+   * <p>This enables HTTP request/response functionality in WebAssembly components. WASI Preview 2
+   * must be enabled first for this to work.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerEnableWasiHttp(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_enable_wasi_http", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Checks if WASI HTTP is enabled in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 1 if WASI HTTP is enabled, 0 if not, negative on error
+   */
+  public int componentLinkerWasiHttpEnabled(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_wasi_http_enabled", Integer.class, linkerPtr);
+  }
+
+  /**
    * Instantiates a component using the component linker.
    *
    * @param linkerPtr pointer to the component linker
@@ -5493,6 +5520,19 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // linker pointer
             ValueLayout.JAVA_INT)); // allow flag
 
+    // WASI HTTP functions
+    addFunctionBinding(
+        "wasmtime4j_component_linker_enable_wasi_http",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_wasi_http_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 1 if enabled, 0 if not, negative on error
+            ValueLayout.ADDRESS)); // linker pointer
+
     addFunctionBinding(
         "wasmtime4j_component_linker_instantiate",
         FunctionDescriptor.of(
@@ -6984,6 +7024,695 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_coredump_clear_all",
         FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 0 on success, -1 on error
+
+    // Panama WASI HTTP Config Builder Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_allow_host",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_block_host",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_allow_all_hosts",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_connect_timeout",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_read_timeout",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_write_timeout",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_max_connections",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_max_connections_per_host",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_max_request_body_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_max_response_body_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_https_required",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_certificate_validation",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_http2_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_connection_pooling",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_follow_redirects",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_max_redirects",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_set_user_agent",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_build",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_builder_free",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama WASI HTTP Config Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_default", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_config_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama WASI HTTP Context Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_new",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_new_default", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_get_id",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_is_host_allowed",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_reset_stats",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    // Panama WASI HTTP Statistics Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_total_requests",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_successful_requests",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_failed_requests",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_active_requests",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_bytes_sent",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_bytes_received",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_connection_timeouts",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_read_timeouts",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_blocked_requests",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_body_size_violations",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_active_connections",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_idle_connections",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_avg_duration_ms",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_min_duration_ms",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_stats_max_duration_ms",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_ctx_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama WASI HTTP Linker Integration Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_add_to_linker",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_http_is_available", FunctionDescriptor.of(ValueLayout.JAVA_INT));
+
+    // Panama WASI Context Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_argv",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_env",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_inherit_env",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_inherit_stdio",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_stdin",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_stdin_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_stdout",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_set_stderr",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_enable_output_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_get_stdout_capture",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_get_stderr_capture",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_free_capture_buffer",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_has_stdout_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_has_stderr_capture",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_preopen_dir",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_preopen_dir_readonly",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_context_preopen_dir_with_perms",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    // Panama Caller Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_fuel_remaining",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_add_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_set_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_has_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_has_export",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    // Panama Instance Pre Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_instantiate",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_instance_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_preparation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_avg_instantiation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_get_module",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama Experimental Features Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_create_config", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_create_all_config",
+        FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_stack_switching",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_call_cc",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_extended_const_expressions",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_apply_features",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_flexible_vectors",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_string_imports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_resource_types",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_type_imports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_shared_everything_threads",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_enable_custom_page_sizes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_get_feature_support",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_experimental_destroy_config",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama Memory Registry Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_registry_create",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_registry_register",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_registry_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_registry_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama Component Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_component_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_load_from_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_instantiate",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_get_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_exports_interface",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_imports_interface",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_get_active_instances_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_cleanup_instances",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_free_wit_values",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_engine_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_instance_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama Component Orchestrator and Resource Manager
+    addFunctionBinding(
+        "wasmtime4j_panama_component_orchestrator_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_resource_manager_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_resource_manager_create_resource",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_distributed_component_manager_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    // Panama Component Metrics Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_get_metrics",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_components_loaded",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_instances_created",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_instances_destroyed",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_avg_instantiation_time_nanos",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_peak_memory_usage",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_function_calls",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_get_error_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_metrics_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama WIT Interface Manager Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wit_interface_manager_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wit_interface_manager_register",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    // Fuel Callback Functions
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_create_auto_refill",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return handler_id (u64)
+            ValueLayout.JAVA_LONG, // store_id (u64)
+            ValueLayout.JAVA_LONG, // refill_amount (u64)
+            ValueLayout.JAVA_INT)); // max_refills (i32, -1 for unlimited)
+
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_create_custom",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return handler_id (u64)
+            ValueLayout.JAVA_LONG, // store_id (u64)
+            ValueLayout.ADDRESS, // callback_ptr (*const c_void)
+            ValueLayout.JAVA_INT, // max_refill_count (i32, -1 for unlimited)
+            ValueLayout.JAVA_LONG)); // max_total_fuel (i64, -1 for unlimited)
+
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_handle_exhaustion",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG, // store_id (u64)
+            ValueLayout.JAVA_LONG, // fuel_consumed (u64)
+            ValueLayout.JAVA_LONG, // initial_fuel (u64)
+            ValueLayout.JAVA_INT, // exhaustion_count (u32)
+            ValueLayout.ADDRESS, // action_out (*mut i32)
+            ValueLayout.ADDRESS)); // additional_fuel_out (*mut u64)
+
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_destroy",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG)); // handler_id (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_get_stats",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG, // handler_id (u64)
+            ValueLayout.ADDRESS, // exhaustion_events_out (*mut u64)
+            ValueLayout.ADDRESS, // total_fuel_added_out (*mut u64)
+            ValueLayout.ADDRESS, // continued_count_out (*mut u64)
+            ValueLayout.ADDRESS, // trapped_count_out (*mut u64)
+            ValueLayout.ADDRESS)); // paused_count_out (*mut u64)
+
+    addFunctionBinding(
+        "wasmtime4j_fuel_callback_reset_stats",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG)); // handler_id (u64)
+
+    // Store Limiter Functions
+    addFunctionBinding(
+        "wasmtime4j_limiter_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // return limiter_id (c_longlong)
+            ValueLayout.JAVA_LONG, // max_memory_bytes (c_longlong, -1 for unlimited)
+            ValueLayout.JAVA_LONG, // max_memory_pages (c_longlong, -1 for unlimited)
+            ValueLayout.JAVA_LONG, // max_table_elements (c_longlong, -1 for unlimited)
+            ValueLayout.JAVA_INT, // max_instances (c_int, -1 for unlimited)
+            ValueLayout.JAVA_INT, // max_tables (c_int, -1 for unlimited)
+            ValueLayout.JAVA_INT)); // max_memories (c_int, -1 for unlimited)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_create_default",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG)); // return limiter_id (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_free",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG)); // limiter_id (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_allow_memory_grow",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (1 allowed, 0 denied)
+            ValueLayout.JAVA_LONG, // limiter_id (c_longlong)
+            ValueLayout.JAVA_LONG, // current_pages (c_longlong)
+            ValueLayout.JAVA_LONG)); // requested_pages (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_allow_table_grow",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (1 allowed, 0 denied)
+            ValueLayout.JAVA_LONG, // limiter_id (c_longlong)
+            ValueLayout.JAVA_LONG, // current_elements (c_longlong)
+            ValueLayout.JAVA_LONG)); // requested_elements (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_get_stats_json",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_char (JSON string)
+            ValueLayout.JAVA_LONG)); // limiter_id (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_string_free",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // s (*mut c_char)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_reset_stats",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (0 success, non-zero error)
+            ValueLayout.JAVA_LONG)); // limiter_id (c_longlong)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_get_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // return c_int (count of active limiters)
+
+    addFunctionBinding(
+        "wasmtime4j_limiter_get_config_json",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_char (JSON string)
+            ValueLayout.JAVA_LONG)); // limiter_id (c_longlong)
   }
 
   // Panama Linker Functions

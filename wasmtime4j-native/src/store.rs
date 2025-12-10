@@ -9,6 +9,10 @@ use std::time::{Duration, Instant};
 use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut, FuncType, Func};
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
+#[cfg(feature = "wasi-http")]
+use wasmtime_wasi_http::WasiHttpCtx;
+#[cfg(feature = "wasi-http")]
+use wasmtime::component::ResourceTable;
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
@@ -68,19 +72,30 @@ pub struct StoreData {
     pub wasi_stderr_pipe: Option<MemoryOutputPipe>,
     /// Optional WASI file descriptor manager
     pub wasi_fd_manager: Option<crate::wasi::WasiFileDescriptorManager>,
+    /// Optional WASI HTTP context for HTTP requests
+    #[cfg(feature = "wasi-http")]
+    pub wasi_http_ctx: Option<WasiHttpCtx>,
+    /// Resource table for WASI HTTP (required by WasiHttpView trait)
+    #[cfg(feature = "wasi-http")]
+    pub resource_table: ResourceTable,
 }
 
 impl std::fmt::Debug for StoreData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("StoreData")
+        let mut debug = f.debug_struct("StoreData");
+        debug
             .field("user_data", &self.user_data.as_ref().map(|_| "<user_data>"))
             .field("resource_limits", &self.resource_limits)
             .field("execution_state", &self.execution_state)
             .field("wasi_ctx", &self.wasi_ctx.as_ref().map(|_| "<WasiP1Ctx>"))
             .field("wasi_stdout_pipe", &self.wasi_stdout_pipe.as_ref().map(|_| "<pipe>"))
             .field("wasi_stderr_pipe", &self.wasi_stderr_pipe.as_ref().map(|_| "<pipe>"))
-            .field("wasi_fd_manager", &self.wasi_fd_manager.as_ref().map(|_| "<fd_manager>"))
-            .finish()
+            .field("wasi_fd_manager", &self.wasi_fd_manager.as_ref().map(|_| "<fd_manager>"));
+        #[cfg(feature = "wasi-http")]
+        debug
+            .field("wasi_http_ctx", &self.wasi_http_ctx.as_ref().map(|_| "<WasiHttpCtx>"))
+            .field("resource_table", &"<ResourceTable>");
+        debug.finish()
     }
 }
 
@@ -94,7 +109,22 @@ impl Clone for StoreData {
             wasi_stdout_pipe: self.wasi_stdout_pipe.clone(),
             wasi_stderr_pipe: self.wasi_stderr_pipe.clone(),
             wasi_fd_manager: None, // FD manager is store-specific
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None, // WasiHttpCtx is store-specific
+            #[cfg(feature = "wasi-http")]
+            resource_table: ResourceTable::new(), // Fresh table for cloned store
         }
+    }
+}
+
+#[cfg(feature = "wasi-http")]
+impl wasmtime_wasi_http::WasiHttpView for StoreData {
+    fn ctx(&mut self) -> &mut WasiHttpCtx {
+        self.wasi_http_ctx.get_or_insert_with(WasiHttpCtx::new)
+    }
+
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.resource_table
     }
 }
 
@@ -513,6 +543,10 @@ impl StoreBuilder {
             wasi_stdout_pipe: None,
             wasi_stderr_pipe: None,
             wasi_fd_manager: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            resource_table: ResourceTable::new(),
         };
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
@@ -587,6 +621,10 @@ impl StoreBuilder {
             wasi_stdout_pipe: None,
             wasi_stderr_pipe: None,
             wasi_fd_manager: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            resource_table: ResourceTable::new(),
         };
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module

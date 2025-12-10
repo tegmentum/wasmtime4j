@@ -61,6 +61,9 @@ pub struct ComponentStoreData {
     /// WASI context for Preview 2 support
     #[cfg(feature = "wasi")]
     pub wasi_ctx: wasmtime_wasi::WasiCtx,
+    /// WASI HTTP context for HTTP request/response support
+    #[cfg(feature = "wasi-http")]
+    pub wasi_http_ctx: Option<wasmtime_wasi_http::WasiHttpCtx>,
     /// Start time for performance tracking
     pub start_time: Instant,
 }
@@ -73,6 +76,8 @@ impl Default for ComponentStoreData {
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi")]
             wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
             start_time: Instant::now(),
         }
     }
@@ -86,6 +91,18 @@ impl wasmtime_wasi::WasiView for ComponentStoreData {
             ctx: &mut self.wasi_ctx,
             table: &mut self.resource_table,
         }
+    }
+}
+
+// Implement WasiHttpView for ComponentStoreData to enable WASI HTTP support
+#[cfg(feature = "wasi-http")]
+impl wasmtime_wasi_http::WasiHttpView for ComponentStoreData {
+    fn ctx(&mut self) -> &mut wasmtime_wasi_http::WasiHttpCtx {
+        self.wasi_http_ctx.get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new)
+    }
+
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.resource_table
     }
 }
 
@@ -2033,6 +2050,8 @@ pub struct ComponentLinker {
     defined_interfaces: HashMap<String, Vec<String>>,
     /// Whether WASI Preview 2 is enabled
     wasi_p2_enabled: bool,
+    /// Whether WASI HTTP is enabled
+    wasi_http_enabled: bool,
     /// WASI Preview 2 configuration
     wasi_p2_config: WasiP2Config,
     /// Whether this linker has been disposed
@@ -2050,6 +2069,7 @@ impl ComponentLinker {
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         })
@@ -2074,6 +2094,7 @@ impl ComponentLinker {
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         })
@@ -2334,6 +2355,57 @@ impl ComponentLinker {
         })
     }
 
+    /// Enable WASI HTTP support
+    ///
+    /// This enables HTTP request/response functionality in WebAssembly components.
+    /// WASI Preview 2 must be enabled first for this to work.
+    #[cfg(feature = "wasi-http")]
+    pub fn enable_wasi_http(&mut self) -> WasmtimeResult<()> {
+        if self.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "ComponentLinker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+
+        if self.wasi_http_enabled {
+            return Ok(()); // Already enabled
+        }
+
+        // WASI HTTP requires WASI Preview 2 to be enabled first
+        if !self.wasi_p2_enabled {
+            return Err(WasmtimeError::Runtime {
+                message: "WASI Preview 2 must be enabled before WASI HTTP".to_string(),
+                backtrace: None,
+            });
+        }
+
+        // Add WASI HTTP to the linker - use add_only_http_to_linker_sync
+        // since WASI P2 is already added
+        wasmtime_wasi_http::add_only_http_to_linker_sync(&mut self.linker)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to enable WASI HTTP: {}", e),
+            })?;
+
+        self.wasi_http_enabled = true;
+        log::debug!("WASI HTTP enabled in component linker");
+
+        Ok(())
+    }
+
+    #[cfg(not(feature = "wasi-http"))]
+    pub fn enable_wasi_http(&mut self) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI HTTP support not compiled in".to_string(),
+            backtrace: None,
+        })
+    }
+
+    /// Check if WASI HTTP is enabled
+    pub fn is_wasi_http_enabled(&self) -> bool {
+        self.wasi_http_enabled
+    }
+
     /// Instantiate a component using this linker
     pub fn instantiate(&self, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
         if self.disposed {
@@ -2351,6 +2423,8 @@ impl ComponentLinker {
                 user_data: None,
                 resource_table: ResourceTable::new(),
                 wasi_ctx: self.build_wasi_ctx(),
+                #[cfg(feature = "wasi-http")]
+                wasi_http_ctx: if self.wasi_http_enabled { Some(wasmtime_wasi_http::WasiHttpCtx::new()) } else { None },
                 start_time: Instant::now(),
             }
         } else {
@@ -2518,6 +2592,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
             wasi_p2_enabled: false,
+            wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
         };
@@ -2833,6 +2908,38 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_random(
     let linker = &mut *(linker_ptr as *mut ComponentLinker);
     linker.set_wasi_allow_random(allow != 0);
     FFI_SUCCESS
+}
+
+/// Enable WASI HTTP support
+///
+/// This enables HTTP request/response functionality in WebAssembly components.
+/// WASI Preview 2 must be enabled first for this to work.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http(linker_ptr: *mut c_void) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    match linker.enable_wasi_http() {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            log::error!("Failed to enable WASI HTTP: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Check if WASI HTTP is enabled
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_http_enabled(linker_ptr: *const c_void) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &*(linker_ptr as *const ComponentLinker);
+    if linker.is_wasi_http_enabled() { 1 } else { 0 }
 }
 
 /// Instantiate a component using the linker
