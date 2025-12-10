@@ -1320,3 +1320,193 @@ pub extern "C" fn wasmtime4j_panama_wasi_network_close(
         Err(_) => -1,
     }
 }
+
+// =============================================================================
+// IP Name Lookup Functions
+// =============================================================================
+
+/// Resolve hostname to IP addresses
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `network_handle`: The network handle (validated but not used)
+/// - `hostname`: Pointer to the hostname string
+/// - `hostname_len`: Length of the hostname string
+/// - `address_family`: Address family filter: 0 = all, 4 = IPv4 only, 6 = IPv6 only
+///
+/// # Returns
+/// Stream handle on success (> 0), 0 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_resolve_addresses(
+    context_handle: *mut c_void,
+    network_handle: c_longlong,
+    hostname: *const c_uchar,
+    hostname_len: c_longlong,
+    address_family: c_uchar,
+) -> c_longlong {
+    if context_handle.is_null() || hostname.is_null() || hostname_len <= 0 {
+        return 0;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return 0;
+    }
+
+    // Convert hostname to string
+    let hostname_str = unsafe {
+        let slice = std::slice::from_raw_parts(hostname, hostname_len as usize);
+        match std::str::from_utf8(slice) {
+            Ok(s) => s,
+            Err(_) => return 0,
+        }
+    };
+
+    match wasi_sockets_helpers::ip_name_lookup_resolve_addresses(
+        context.unwrap(),
+        network_handle as u64,
+        hostname_str,
+        address_family,
+    ) {
+        Ok(handle) => handle as c_longlong,
+        Err(_) => 0,
+    }
+}
+
+/// Get the next address from a resolve address stream
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `stream_handle`: The stream handle from resolve_addresses
+/// - `out_result`: Pointer to int[14] array to receive:
+///   [0] = has_address (1 if address returned, 0 if exhausted)
+///   [1] = is_ipv4 (1 for IPv4, 0 for IPv6)
+///   [2-5] = IPv4 bytes (if is_ipv4)
+///   [6-13] = IPv6 segments (if !is_ipv4)
+///
+/// # Returns
+/// 0 on success, -1 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_next(
+    context_handle: *mut c_void,
+    stream_handle: c_longlong,
+    out_result: *mut c_int,
+) -> c_int {
+    if context_handle.is_null() || out_result.is_null() || stream_handle <= 0 {
+        return -1;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return -1;
+    }
+
+    match wasi_sockets_helpers::resolve_address_stream_next(context.unwrap(), stream_handle as u64)
+    {
+        Ok((has_address, is_ipv4, ipv4_bytes, ipv6_segments)) => {
+            unsafe {
+                // [0] = has_address
+                *out_result = if has_address { 1 } else { 0 };
+                // [1] = is_ipv4
+                *out_result.add(1) = if is_ipv4 { 1 } else { 0 };
+
+                // [2-5] = IPv4 bytes
+                for i in 0..4 {
+                    *out_result.add(2 + i) = ipv4_bytes[i] as c_int;
+                }
+
+                // [6-13] = IPv6 segments
+                for i in 0..8 {
+                    *out_result.add(6 + i) = ipv6_segments[i] as c_int;
+                }
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Subscribe to a resolve address stream
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `stream_handle`: The stream handle
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_subscribe(
+    context_handle: *mut c_void,
+    stream_handle: c_longlong,
+) {
+    if context_handle.is_null() || stream_handle <= 0 {
+        return;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return;
+    }
+
+    let _ = wasi_sockets_helpers::resolve_address_stream_subscribe(
+        context.unwrap(),
+        stream_handle as u64,
+    );
+}
+
+/// Check if a resolve address stream is closed
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `stream_handle`: The stream handle
+///
+/// # Returns
+/// 1 if closed, 0 if open, -1 on error
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_is_closed(
+    context_handle: *mut c_void,
+    stream_handle: c_longlong,
+) -> c_int {
+    if context_handle.is_null() || stream_handle <= 0 {
+        return -1;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return -1;
+    }
+
+    match wasi_sockets_helpers::resolve_address_stream_is_closed(
+        context.unwrap(),
+        stream_handle as u64,
+    ) {
+        Ok(closed) => {
+            if closed {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Close a resolve address stream
+///
+/// # Parameters
+/// - `context_handle`: Pointer to the WASI context
+/// - `stream_handle`: The stream handle to close
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_close(
+    context_handle: *mut c_void,
+    stream_handle: c_longlong,
+) {
+    if context_handle.is_null() || stream_handle <= 0 {
+        return;
+    }
+
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return;
+    }
+
+    let _ =
+        wasi_sockets_helpers::resolve_address_stream_close(context.unwrap(), stream_handle as u64);
+}

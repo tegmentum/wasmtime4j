@@ -1737,3 +1737,217 @@ fn encode_ip_socket_address(env: &mut JNIEnv, addr: &IpSocketAddress) -> jlongAr
         }
     }
 }
+
+// =============================================================================
+// IP Name Lookup Functions
+// =============================================================================
+
+/// JNI: Resolve hostname to IP addresses
+///
+/// # Arguments
+/// * `context_handle` - The WASI context handle
+/// * `network_handle` - The network handle (validated but not used)
+/// * `hostname` - The hostname to resolve
+/// * `address_family` - Address family filter: 0 = all, 4 = IPv4 only, 6 = IPv6 only
+///
+/// # Returns
+/// Stream handle on success (> 0), 0 on error
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiIpNameLookup_nativeResolveAddresses(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    network_handle: jlong,
+    hostname: JObject,
+    address_family: jbyte,
+) -> jlong {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            "Invalid context handle",
+        );
+        return 0;
+    }
+
+    // Convert Java string to Rust string
+    let hostname_str = match env.get_string(&hostname.into()) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid hostname string",
+            );
+            return 0;
+        }
+    };
+
+    match wasi_sockets_helpers::ip_name_lookup_resolve_addresses(
+        context.unwrap(),
+        network_handle as u64,
+        &hostname_str,
+        address_family as u8,
+    ) {
+        Ok(handle) => handle as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to resolve addresses: {}", e),
+            );
+            0
+        }
+    }
+}
+
+/// JNI: Get the next address from a resolve address stream
+///
+/// # Arguments
+/// * `context_handle` - The WASI context handle
+/// * `stream_handle` - The stream handle from resolve_addresses
+///
+/// # Returns
+/// int[14] array: [hasAddress, isIpv4, ipv4_b0-b3, ipv6_s0-s7] or null on error
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeGetNextAddress(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    stream_handle: jlong,
+) -> jlongArray {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            "Invalid context handle",
+        );
+        return JObject::null().into_raw();
+    }
+
+    match wasi_sockets_helpers::resolve_address_stream_next(context.unwrap(), stream_handle as u64)
+    {
+        Ok((has_address, is_ipv4, ipv4_bytes, ipv6_segments)) => {
+            // Create int array: [hasAddress, isIpv4, ipv4_b0-b3, ipv6_s0-s7]
+            let result = env.new_int_array(14);
+            match result {
+                Ok(arr) => {
+                    let mut data = [0i32; 14];
+                    data[0] = if has_address { 1 } else { 0 };
+                    data[1] = if is_ipv4 { 1 } else { 0 };
+                    // IPv4 bytes
+                    for i in 0..4 {
+                        data[2 + i] = ipv4_bytes[i] as i32;
+                    }
+                    // IPv6 segments
+                    for i in 0..8 {
+                        data[6 + i] = ipv6_segments[i] as i32;
+                    }
+                    let _ = env.set_int_array_region(&arr, 0, &data);
+                    arr.into_raw()
+                }
+                Err(_) => {
+                    let _ = env.throw_new(
+                        "java/lang/OutOfMemoryError",
+                        "Failed to allocate result array",
+                    );
+                    JObject::null().into_raw()
+                }
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to get next address: {}", e),
+            );
+            JObject::null().into_raw()
+        }
+    }
+}
+
+/// JNI: Subscribe to a resolve address stream
+///
+/// # Arguments
+/// * `context_handle` - The WASI context handle
+/// * `stream_handle` - The stream handle
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeSubscribe(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    stream_handle: jlong,
+) {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        let _ = env.throw_new(
+            "java/lang/IllegalStateException",
+            "Invalid context handle",
+        );
+        return;
+    }
+
+    if let Err(e) = wasi_sockets_helpers::resolve_address_stream_subscribe(
+        context.unwrap(),
+        stream_handle as u64,
+    ) {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/exception/WasmException",
+            format!("Failed to subscribe: {}", e),
+        );
+    }
+}
+
+/// JNI: Check if a resolve address stream is closed
+///
+/// # Arguments
+/// * `context_handle` - The WASI context handle
+/// * `stream_handle` - The stream handle
+///
+/// # Returns
+/// true if closed, false if open
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeIsClosed(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    stream_handle: jlong,
+) -> jboolean {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        // Return true (closed) if context is invalid
+        return 1;
+    }
+
+    match wasi_sockets_helpers::resolve_address_stream_is_closed(
+        context.unwrap(),
+        stream_handle as u64,
+    ) {
+        Ok(closed) => {
+            if closed {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => 1, // Error means closed
+    }
+}
+
+/// JNI: Close a resolve address stream
+///
+/// # Arguments
+/// * `context_handle` - The WASI context handle
+/// * `stream_handle` - The stream handle to close
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeClose(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    stream_handle: jlong,
+) {
+    let context = unsafe { get_context(context_handle) };
+    if context.is_none() {
+        return;
+    }
+
+    let _ =
+        wasi_sockets_helpers::resolve_address_stream_close(context.unwrap(), stream_handle as u64);
+}
