@@ -100,6 +100,17 @@ public interface ComponentFuture<T> extends AutoCloseable {
   Optional<T> get() throws WasmException;
 
   /**
+   * Gets the future's value, blocking up to the specified timeout.
+   *
+   * @param timeout the maximum time to wait
+   * @param unit the time unit of the timeout
+   * @return the value if completed within timeout, or empty if timed out
+   * @throws WasmException if retrieving the value fails
+   * @throws IllegalStateException if the future has been closed
+   */
+  Optional<T> get(long timeout, TimeUnit unit) throws WasmException;
+
+  /**
    * Gets the future's value, blocking until available.
    *
    * <p>This method blocks indefinitely until the future completes. For bounded waiting, use {@link
@@ -110,17 +121,6 @@ public interface ComponentFuture<T> extends AutoCloseable {
    * @throws IllegalStateException if the future has been closed
    */
   T getBlocking() throws WasmException;
-
-  /**
-   * Gets the future's value, blocking up to the specified timeout.
-   *
-   * @param timeout the maximum time to wait
-   * @param unit the time unit of the timeout
-   * @return the value if completed within timeout, or empty if timed out
-   * @throws WasmException if retrieving the value fails
-   * @throws IllegalStateException if the future has been closed
-   */
-  Optional<T> get(long timeout, TimeUnit unit) throws WasmException;
 
   /**
    * Creates a pollable handle for this future.

@@ -262,6 +262,12 @@ public final class DefaultCoreDumpMemory implements CoreDumpMemory {
       return this;
     }
 
+    /**
+     * Adds a memory segment to this memory dump.
+     *
+     * @param segment the memory segment to add
+     * @return this builder
+     */
     public Builder addSegment(final MemorySegment segment) {
       Objects.requireNonNull(segment, "Segment cannot be null");
       this.segments.add(segment);
@@ -272,6 +278,12 @@ public final class DefaultCoreDumpMemory implements CoreDumpMemory {
       return addSegment(new DefaultMemorySegment(offset, data));
     }
 
+    /**
+     * Adds multiple memory segments to this memory dump.
+     *
+     * @param segments the list of memory segments to add
+     * @return this builder
+     */
     public Builder addSegments(final List<MemorySegment> segments) {
       Objects.requireNonNull(segments, "Segments cannot be null");
       this.segments.addAll(segments);

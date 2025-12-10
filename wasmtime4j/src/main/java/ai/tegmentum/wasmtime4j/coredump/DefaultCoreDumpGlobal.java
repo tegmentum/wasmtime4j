@@ -175,24 +175,48 @@ public final class DefaultCoreDumpGlobal implements CoreDumpGlobal {
       return this;
     }
 
+    /**
+     * Sets the global value as an i32.
+     *
+     * @param value the i32 value
+     * @return this builder
+     */
     public Builder i32Value(final int value) {
       this.valueType = WasmValueType.I32;
       this.rawValue = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
       return this;
     }
 
+    /**
+     * Sets the global value as an i64.
+     *
+     * @param value the i64 value
+     * @return this builder
+     */
     public Builder i64Value(final long value) {
       this.valueType = WasmValueType.I64;
       this.rawValue = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
       return this;
     }
 
+    /**
+     * Sets the global value as an f32.
+     *
+     * @param value the f32 value
+     * @return this builder
+     */
     public Builder f32Value(final float value) {
       this.valueType = WasmValueType.F32;
       this.rawValue = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putFloat(value).array();
       return this;
     }
 
+    /**
+     * Sets the global value as an f64.
+     *
+     * @param value the f64 value
+     * @return this builder
+     */
     public Builder f64Value(final double value) {
       this.valueType = WasmValueType.F64;
       this.rawValue =

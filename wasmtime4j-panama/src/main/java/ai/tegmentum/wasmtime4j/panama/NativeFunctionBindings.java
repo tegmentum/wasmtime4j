@@ -12642,6 +12642,8 @@ public final class NativeFunctionBindings {
     }
 
     /**
+     * Gets the trap code.
+     *
      * @return the trap code
      */
     public int getTrapCode() {
@@ -12649,6 +12651,8 @@ public final class NativeFunctionBindings {
     }
 
     /**
+     * Gets the instruction offset.
+     *
      * @return the instruction offset, or -1 if not available
      */
     public long getInstructionOffset() {
@@ -12656,6 +12660,8 @@ public final class NativeFunctionBindings {
     }
 
     /**
+     * Checks if this is a trap.
+     *
      * @return true if this is a trap
      */
     public boolean isTrap() {

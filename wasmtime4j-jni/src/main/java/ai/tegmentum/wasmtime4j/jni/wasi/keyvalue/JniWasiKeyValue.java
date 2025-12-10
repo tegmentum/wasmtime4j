@@ -23,7 +23,6 @@ import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueEntry;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueException;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueTransaction;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.WasiKeyValue;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -133,27 +132,7 @@ public final class JniWasiKeyValue implements WasiKeyValue {
 
     @Override
     public Optional<KeyValueEntry> getEntry(final String key) throws KeyValueException {
-        return get(key).map(value -> new KeyValueEntry() {
-            @Override
-            public String getKey() {
-                return key;
-            }
-
-            @Override
-            public byte[] getValue() {
-                return value;
-            }
-
-            @Override
-            public long getVersion() {
-                return 0; // Version not supported in basic implementation
-            }
-
-            @Override
-            public Optional<java.time.Instant> getExpiresAt() {
-                return Optional.empty();
-            }
-        });
+        return get(key).map(value -> KeyValueEntry.builder(key, value).build());
     }
 
     @Override

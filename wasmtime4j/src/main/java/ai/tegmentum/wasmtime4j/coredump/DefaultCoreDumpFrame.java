@@ -169,6 +169,12 @@ public final class DefaultCoreDumpFrame implements CoreDumpFrame {
       return this;
     }
 
+    /**
+     * Adds multiple local variable values to this frame.
+     *
+     * @param values the list of local values to add
+     * @return this builder
+     */
     public Builder addLocals(final List<byte[]> values) {
       for (final byte[] value : values) {
         this.locals.add(value != null ? value.clone() : null);
@@ -181,6 +187,12 @@ public final class DefaultCoreDumpFrame implements CoreDumpFrame {
       return this;
     }
 
+    /**
+     * Adds multiple operand stack values to this frame.
+     *
+     * @param values the list of stack values to add
+     * @return this builder
+     */
     public Builder addStackValues(final List<byte[]> values) {
       for (final byte[] value : values) {
         this.stack.add(value != null ? value.clone() : null);

@@ -18,6 +18,8 @@ package ai.tegmentum.wasmtime4j.jni.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddress;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
+import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.ResolveAddressStream;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -112,14 +114,14 @@ public final class JniResolveAddressStream implements ResolveAddressStream {
               + (ipv4Bytes[2] & 0xFF)
               + "."
               + (ipv4Bytes[3] & 0xFF));
-      return Optional.of(IpAddress.ipv4(ipv4Bytes));
+      return Optional.of(IpAddress.ipv4(new Ipv4Address(ipv4Bytes)));
     } else {
       final short[] ipv6Segments = new short[8];
       for (int i = 0; i < 8; i++) {
         ipv6Segments[i] = (short) result[6 + i];
       }
       LOGGER.fine("Resolved IPv6 address with first segment: " + (ipv6Segments[0] & 0xFFFF));
-      return Optional.of(IpAddress.ipv6(ipv6Segments));
+      return Optional.of(IpAddress.ipv6(new Ipv6Address(ipv6Segments)));
     }
   }
 
