@@ -387,7 +387,7 @@ impl EnhancedComponentEngine {
 
         // Pre-allocate results vector with correct size
         // Wasmtime requires the results vec to be pre-sized, not just have capacity
-        let result_count = func.results(&instance_info.store).len();
+        let result_count = func.ty(&instance_info.store).results().len();
         let mut results: Vec<Val> = vec![Val::Bool(false); result_count];  // Initialize with dummy values
 
         eprintln!("DEBUG: Calling function with {} params, expecting {} results", params.len(), result_count);

@@ -5092,7 +5092,7 @@ pub mod jni_component {
                 })?;
 
             // Call the function
-            let mut results = vec![wasmtime::component::Val::Bool(false); func.results(&handle.store).len()];
+            let mut results = vec![wasmtime::component::Val::Bool(false); func.ty(&handle.store).results().len()];
             func.call(&mut handle.store, &params, &mut results)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Function call failed: {}", e),
