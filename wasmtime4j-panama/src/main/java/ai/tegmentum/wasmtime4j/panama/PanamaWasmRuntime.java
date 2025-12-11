@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
@@ -29,8 +30,11 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Serializer;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StoreLimits;
+import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasiContext;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.io.IOException;
@@ -210,6 +214,43 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
     final PanamaEngine panamaEngine = (PanamaEngine) engine;
     return new PanamaStore(panamaEngine, limits);
+  }
+
+  @Override
+  public Tag createTag(final Store store, final TagType tagType) throws WasmException {
+    PanamaValidation.requireNonNull(store, "store");
+    PanamaValidation.requireNonNull(tagType, "tagType");
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama runtime");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final java.lang.foreign.MemorySegment storeHandle = panamaStore.getNativeStore();
+    final FunctionType funcType = tagType.getFunctionType();
+
+    // Convert function type to native format
+    final WasmValueType[] funcParamTypes = funcType.getParamTypes();
+    final int[] paramTypes = new int[funcParamTypes.length];
+    for (int i = 0; i < funcParamTypes.length; i++) {
+      paramTypes[i] = funcParamTypes[i].toNativeTypeCode();
+    }
+
+    final WasmValueType[] funcReturnTypes = funcType.getReturnTypes();
+    final int[] returnTypes = new int[funcReturnTypes.length];
+    for (int i = 0; i < funcReturnTypes.length; i++) {
+      returnTypes[i] = funcReturnTypes[i].toNativeTypeCode();
+    }
+
+    final java.lang.foreign.MemorySegment tagPtr =
+        NativeFunctionBindings.getInstance().tagCreate(storeHandle, paramTypes, returnTypes);
+
+    if (tagPtr == null || tagPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+      throw new WasmException("Failed to create tag");
+    }
+
+    return new PanamaTag(tagPtr, storeHandle);
   }
 
   @Override

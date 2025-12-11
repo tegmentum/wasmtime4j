@@ -656,7 +656,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  public Map<String, String> getCustomSections() {
+  public Map<String, byte[]> getCustomSections() {
     ensureNotClosed();
 
     // Get custom sections as JSON from native code
@@ -674,7 +674,7 @@ public final class PanamaModule implements Module {
         return Collections.emptyMap();
       }
 
-      final Map<String, String> result = new java.util.HashMap<>();
+      final Map<String, byte[]> result = new java.util.HashMap<>();
 
       // Simple JSON parsing for { "key": "value", ... } format
       // Remove outer braces
@@ -688,7 +688,6 @@ public final class PanamaModule implements Module {
 
       if (!content.isEmpty()) {
         // Split by commas that are not inside quotes
-        int depth = 0;
         int start = 0;
         boolean inString = false;
         boolean escaped = false;
@@ -706,13 +705,13 @@ public final class PanamaModule implements Module {
           if (c == '"') {
             inString = !inString;
           } else if (!inString && c == ',') {
-            parseJsonKeyValue(content.substring(start, i).trim(), result);
+            parseJsonKeyValueBytes(content.substring(start, i).trim(), result);
             start = i + 1;
           }
         }
         // Parse the last key-value pair
         if (start < content.length()) {
-          parseJsonKeyValue(content.substring(start).trim(), result);
+          parseJsonKeyValueBytes(content.substring(start).trim(), result);
         }
       }
 
@@ -723,8 +722,8 @@ public final class PanamaModule implements Module {
     }
   }
 
-  /** Parses a JSON key-value pair in format "key":"value". */
-  private void parseJsonKeyValue(final String pair, final Map<String, String> result) {
+  /** Parses a JSON key-value pair and decodes Base64 value to byte[]. */
+  private void parseJsonKeyValueBytes(final String pair, final Map<String, byte[]> result) {
     if (pair.isEmpty()) {
       return;
     }
@@ -768,7 +767,14 @@ public final class PanamaModule implements Module {
       value = unescapeJsonString(value.substring(1, value.length() - 1));
     }
 
-    result.put(key, value);
+    // Decode Base64 value to byte array
+    try {
+      final byte[] decoded = java.util.Base64.getDecoder().decode(value);
+      result.put(key, decoded);
+    } catch (final IllegalArgumentException e) {
+      // If not valid Base64, store as UTF-8 bytes
+      result.put(key, value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
   }
 
   /** Unescapes a JSON string value. */

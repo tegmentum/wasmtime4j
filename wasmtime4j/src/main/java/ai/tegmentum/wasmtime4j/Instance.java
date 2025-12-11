@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents an instantiated WebAssembly module.
@@ -40,6 +41,45 @@ public interface Instance extends Closeable {
    * @throws IllegalArgumentException if index is negative
    */
   java.util.Optional<WasmFunction> getFunction(final int index);
+
+  /**
+   * Gets an exported tag by name.
+   *
+   * <p>Tags are used in the WebAssembly exception handling proposal to identify exception types.
+   * Returns a tag that can be used for exception handling operations.
+   *
+   * @param name the name of the exported tag
+   * @return the exported tag, or empty if not found
+   * @throws IllegalArgumentException if name is null
+   * @since 1.1.0
+   */
+  default Optional<Tag> getTag(final String name) {
+    return Optional.empty();
+  }
+
+  /**
+   * Gets an exported typed function by name with signature validation.
+   *
+   * <p>This method returns a TypedFunc that provides compile-time type safety for function calls.
+   * The function signature is validated against the expected parameter and result types.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * TypedFunc<Integer, Integer> addFunc = instance.getTypedFunc("add",
+   *     WasmValueType.I32, WasmValueType.I32);
+   * int result = addFunc.call(10, 20);
+   * }</pre>
+   *
+   * @param name the name of the exported function
+   * @param paramTypes the expected parameter types
+   * @return the typed function, or empty if not found or signature mismatch
+   * @throws IllegalArgumentException if name or paramTypes is null
+   * @since 1.1.0
+   */
+  default Optional<TypedFunc> getTypedFunc(final String name, final WasmValueType... paramTypes) {
+    return Optional.empty();
+  }
 
   /**
    * Gets an exported global by name.
@@ -362,6 +402,45 @@ public interface Instance extends Closeable {
    */
   @Override
   void close();
+
+  // ===== Async Instance Creation Methods =====
+
+  /**
+   * Creates an instance of a WebAssembly module asynchronously.
+   *
+   * <p>This method performs module instantiation in an async context, allowing the operation
+   * to yield during start function execution if the module uses async features.
+   *
+   * <p>This is useful when:
+   * <ul>
+   *   <li>The module's start function may perform async operations</li>
+   *   <li>Resource limiting with async callbacks is enabled</li>
+   *   <li>The instantiation may take significant time</li>
+   * </ul>
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store to create the instance in
+   * @param module the compiled module to instantiate
+   * @return a future that completes with the new Instance
+   * @throws IllegalArgumentException if store or module is null
+   * @since 1.1.0
+   */
+  static CompletableFuture<Instance> createAsync(final Store store, final Module module) {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return store.createInstance(module);
+      } catch (WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
 
   /**
    * Creates an instance of a WebAssembly module in the given store.

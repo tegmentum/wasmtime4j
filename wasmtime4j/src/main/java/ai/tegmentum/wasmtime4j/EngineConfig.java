@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.config.CompilationStrategy;
+
 /**
  * Configuration options for WebAssembly engine creation.
  *
@@ -29,6 +31,7 @@ public final class EngineConfig {
   private long maxWasmStack = 0; // 0 means unlimited
   private long asyncStackSize = 0; // 0 means unlimited
   private boolean asyncSupport = false;
+  private long fuelAsyncYieldInterval = 0; // 0 means disabled
   private boolean generateDebugInfo = false;
   private boolean epochInterruption = false;
   private boolean coredumpOnTrap = false;
@@ -54,8 +57,44 @@ public final class EngineConfig {
 
   // Pooling allocator configuration
   private boolean poolingAllocatorEnabled = false;
+
+  // GC configuration
+  private boolean wasmGc = false;
+  private boolean gcSupport = false;
+  private Collector collector = Collector.AUTO;
+
+  // Memory configuration (0 = use platform default)
+  private long memoryReservation = 0;
+  private long memoryGuardSize = 0;
+  private long memoryReservationForGrowth = 0;
+  private boolean memoryMayMove = true;
+  private boolean guardBeforeLinearMemory = true;
   private int instancePoolSize = 1000;
   private long maxMemoryPerInstance = 1024L * 1024L * 1024L; // 1GB
+
+  // Additional wasmtime 39.0.1 feature flags
+  private boolean wasmWideArithmetic = false;
+  private boolean wasmFunctionReferences = false;
+  private boolean relaxedSimdDeterministic = false;
+  private CompilationStrategy strategy = CompilationStrategy.AUTO;
+  private String target = null; // null = native target
+
+  // Security and advanced config options (wasmtime 39.0.1)
+  private boolean asyncStackZeroing = false;
+  private boolean nativeUnwindInfo = true;
+  private boolean craneliftNanCanonicalization = false;
+  private boolean memoryInitCow = true;
+  private boolean wasmExceptions = false;
+  private boolean wasmComponentModelAsyncBuiltins = false;
+
+  // Register allocation and backtrace configuration
+  private ai.tegmentum.wasmtime4j.config.RegallocAlgorithm regallocAlgorithm =
+      ai.tegmentum.wasmtime4j.config.RegallocAlgorithm.BACKTRACKING;
+  private ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails backtraceDetails =
+      ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails.ENABLE;
+
+  // Custom async stack creator
+  private ai.tegmentum.wasmtime4j.async.StackCreator stackCreator = null;
 
   // Experimental features configuration
   // Note: ExperimentalFeatureConfig moved to advanced package
@@ -216,6 +255,41 @@ public final class EngineConfig {
   public EngineConfig asyncSupport(final boolean asyncSupport) {
     this.asyncSupport = asyncSupport;
     return this;
+  }
+
+  /**
+   * Configures the fuel async yield interval for cooperative yielding.
+   *
+   * <p>When async support is enabled and this interval is set to a positive value, WebAssembly
+   * execution will automatically yield back to the async executor after consuming this many units
+   * of fuel. This enables cooperative timeslicing of multiple Wasm guests without requiring
+   * epoch-based interruption.
+   *
+   * <p>A value of 0 (default) disables fuel-based async yielding.
+   *
+   * <p><b>Note:</b> Both async support and fuel consumption must be enabled for this to take
+   * effect.
+   *
+   * @param interval the fuel units to consume before yielding (0 to disable)
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if interval is negative
+   * @since 1.0.0
+   */
+  public EngineConfig fuelAsyncYieldInterval(final long interval) {
+    if (interval < 0) {
+      throw new IllegalArgumentException("Fuel async yield interval cannot be negative");
+    }
+    this.fuelAsyncYieldInterval = interval;
+    return this;
+  }
+
+  /**
+   * Gets the fuel async yield interval.
+   *
+   * @return the fuel async yield interval (0 means disabled)
+   */
+  public long getFuelAsyncYieldInterval() {
+    return fuelAsyncYieldInterval;
   }
 
   /**
@@ -579,6 +653,89 @@ public final class EngineConfig {
     return wasmFlexibleVectors;
   }
 
+  // ===== Register Allocation and Backtrace Configuration =====
+
+  /**
+   * Sets the register allocation algorithm for the Cranelift compiler.
+   *
+   * @param algorithm the register allocation algorithm
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if algorithm is null
+   * @since 1.1.0
+   */
+  public EngineConfig regallocAlgorithm(
+      final ai.tegmentum.wasmtime4j.config.RegallocAlgorithm algorithm) {
+    if (algorithm == null) {
+      throw new IllegalArgumentException("Register allocation algorithm cannot be null");
+    }
+    this.regallocAlgorithm = algorithm;
+    return this;
+  }
+
+  /**
+   * Gets the register allocation algorithm.
+   *
+   * @return the register allocation algorithm
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.config.RegallocAlgorithm getRegallocAlgorithm() {
+    return regallocAlgorithm;
+  }
+
+  /**
+   * Sets the level of detail for WebAssembly backtraces.
+   *
+   * @param details the backtrace detail level
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if details is null
+   * @since 1.1.0
+   */
+  public EngineConfig backtraceDetails(
+      final ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails details) {
+    if (details == null) {
+      throw new IllegalArgumentException("Backtrace details cannot be null");
+    }
+    this.backtraceDetails = details;
+    return this;
+  }
+
+  /**
+   * Gets the backtrace detail level.
+   *
+   * @return the backtrace detail level
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails getBacktraceDetails() {
+    return backtraceDetails;
+  }
+
+  // ===== Custom Stack Creator =====
+
+  /**
+   * Sets a custom stack creator for async execution.
+   *
+   * <p>This allows customization of how async stacks are allocated, enabling
+   * custom memory management, stack pooling, and guard page configuration.
+   *
+   * @param creator the stack creator, or null to use the default
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig stackCreator(final ai.tegmentum.wasmtime4j.async.StackCreator creator) {
+    this.stackCreator = creator;
+    return this;
+  }
+
+  /**
+   * Gets the custom stack creator.
+   *
+   * @return the stack creator, or null if using the default
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.async.StackCreator getStackCreator() {
+    return stackCreator;
+  }
+
   /**
    * Creates a new configuration with default settings optimized for speed.
    *
@@ -726,6 +883,236 @@ public final class EngineConfig {
    */
   public EngineConfig withEpochInterruption(final boolean enabled) {
     return setEpochInterruption(enabled);
+  }
+
+  // GC configuration methods
+
+  /**
+   * Enables or disables the WebAssembly Garbage Collection proposal.
+   *
+   * <p>When enabled, this gates support for struct and array types, as well as i31ref. The GC
+   * proposal depends on the function references proposal.
+   *
+   * <p><b>Note:</b> Enabling this requires GC support to also be enabled via {@link
+   * #gcSupport(boolean)}.
+   *
+   * @param enable true to enable the GC proposal
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmGc(final boolean enable) {
+    this.wasmGc = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables GC support infrastructure in Wasmtime.
+   *
+   * <p>This gates the entire GC infrastructure including heap allocation and collection. This must
+   * be enabled for GC-dependent proposals like {@link #wasmGc(boolean)} to function.
+   *
+   * @param enable true to enable GC support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig gcSupport(final boolean enable) {
+    this.gcSupport = enable;
+    return this;
+  }
+
+  /**
+   * Selects the garbage collector implementation to use.
+   *
+   * <p>Different collectors have different trade-offs between latency, throughput, and memory
+   * usage. See {@link Collector} for available options and their characteristics.
+   *
+   * @param collector the collector strategy to use
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if collector is null
+   * @since 1.0.0
+   */
+  public EngineConfig collector(final Collector collector) {
+    if (collector == null) {
+      throw new IllegalArgumentException("Collector cannot be null");
+    }
+    this.collector = collector;
+    return this;
+  }
+
+  /**
+   * Returns whether the WebAssembly GC proposal is enabled.
+   *
+   * @return true if GC proposal is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmGc() {
+    return wasmGc;
+  }
+
+  /**
+   * Returns whether GC support is enabled.
+   *
+   * @return true if GC support is enabled
+   * @since 1.0.0
+   */
+  public boolean isGcSupport() {
+    return gcSupport;
+  }
+
+  /**
+   * Returns the configured garbage collector.
+   *
+   * @return the collector
+   * @since 1.0.0
+   */
+  public Collector getCollector() {
+    return collector;
+  }
+
+  // Memory configuration methods
+
+  /**
+   * Sets the initial linear memory allocation capacity in bytes.
+   *
+   * <p>This configures the size of the initial virtual memory mapping used for linear memory. A
+   * value of 0 means use the platform default (4GiB on 64-bit, 10MiB on 32-bit platforms).
+   *
+   * @param bytes the reservation size in bytes, or 0 for platform default
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is negative
+   * @since 1.0.0
+   */
+  public EngineConfig memoryReservation(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Memory reservation cannot be negative");
+    }
+    this.memoryReservation = bytes;
+    return this;
+  }
+
+  /**
+   * Sets the guard region size at the end of linear memory in bytes.
+   *
+   * <p>The guard region is unmapped memory that traps on access, providing defense against
+   * out-of-bounds accesses. A value of 0 means use the platform default (32MiB on 64-bit, 64KiB on
+   * 32-bit platforms).
+   *
+   * @param bytes the guard size in bytes, or 0 for platform default
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is negative
+   * @since 1.0.0
+   */
+  public EngineConfig memoryGuardSize(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Memory guard size cannot be negative");
+    }
+    this.memoryGuardSize = bytes;
+    return this;
+  }
+
+  /**
+   * Sets extra virtual memory space reserved for growth in bytes.
+   *
+   * <p>This reserves additional virtual address space to allow memory growth without relocating the
+   * linear memory base pointer. A value of 0 means use the platform default (2GiB on 64-bit, 1MiB
+   * on 32-bit platforms).
+   *
+   * @param bytes the reservation for growth in bytes, or 0 for platform default
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if bytes is negative
+   * @since 1.0.0
+   */
+  public EngineConfig memoryReservationForGrowth(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Memory reservation for growth cannot be negative");
+    }
+    this.memoryReservationForGrowth = bytes;
+    return this;
+  }
+
+  /**
+   * Controls whether linear memory base pointers may relocate during growth.
+   *
+   * <p>When set to false, the linear memory base pointer is guaranteed to remain static, enabling
+   * certain optimizations. However, this limits memory growth to the initial reservation size.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to allow memory movement
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig memoryMayMove(final boolean enable) {
+    this.memoryMayMove = enable;
+    return this;
+  }
+
+  /**
+   * Indicates whether a guard region precedes linear memory allocations.
+   *
+   * <p>When enabled, an additional guard region is placed before the linear memory allocation. This
+   * provides defense-in-depth against potential code generator bugs that might cause negative
+   * offsets.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable guard before memory
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig guardBeforeLinearMemory(final boolean enable) {
+    this.guardBeforeLinearMemory = enable;
+    return this;
+  }
+
+  /**
+   * Returns the configured memory reservation in bytes.
+   *
+   * @return the memory reservation, or 0 for platform default
+   * @since 1.0.0
+   */
+  public long getMemoryReservation() {
+    return memoryReservation;
+  }
+
+  /**
+   * Returns the configured memory guard size in bytes.
+   *
+   * @return the memory guard size, or 0 for platform default
+   * @since 1.0.0
+   */
+  public long getMemoryGuardSize() {
+    return memoryGuardSize;
+  }
+
+  /**
+   * Returns the configured memory reservation for growth in bytes.
+   *
+   * @return the memory reservation for growth, or 0 for platform default
+   * @since 1.0.0
+   */
+  public long getMemoryReservationForGrowth() {
+    return memoryReservationForGrowth;
+  }
+
+  /**
+   * Returns whether memory may move during growth.
+   *
+   * @return true if memory may move
+   * @since 1.0.0
+   */
+  public boolean isMemoryMayMove() {
+    return memoryMayMove;
+  }
+
+  /**
+   * Returns whether a guard region precedes linear memory.
+   *
+   * @return true if guard before linear memory is enabled
+   * @since 1.0.0
+   */
+  public boolean isGuardBeforeLinearMemory() {
+    return guardBeforeLinearMemory;
   }
 
   // Pooling allocator configuration methods
@@ -883,5 +1270,303 @@ public final class EngineConfig {
     return setAllocationStrategy(InstanceAllocationStrategy.POOLING)
         .setInstancePoolSize(instancePoolSize)
         .setMaxMemoryPerInstance(maxMemoryPerInstance);
+  }
+
+  // Wasmtime 39.0.1 additional feature configuration methods
+
+  /**
+   * Enables or disables the wide arithmetic proposal.
+   *
+   * <p>When enabled, this allows 128-bit integer operations for cryptographic applications.
+   *
+   * @param enable true to enable wide arithmetic
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmWideArithmetic(final boolean enable) {
+    this.wasmWideArithmetic = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether wide arithmetic is enabled.
+   *
+   * @return true if wide arithmetic is enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmWideArithmetic() {
+    return wasmWideArithmetic;
+  }
+
+  /**
+   * Enables or disables the function references proposal.
+   *
+   * <p>When enabled, this allows non-nullable function references and call_ref instruction.
+   *
+   * @param enable true to enable function references
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmFunctionReferences(final boolean enable) {
+    this.wasmFunctionReferences = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether function references are enabled.
+   *
+   * @return true if function references are enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmFunctionReferences() {
+    return wasmFunctionReferences;
+  }
+
+  /**
+   * Forces deterministic behavior for relaxed SIMD operations.
+   *
+   * <p>When enabled, relaxed SIMD operations will produce deterministic results across all
+   * platforms, at the cost of some performance.
+   *
+   * @param enable true to force deterministic relaxed SIMD
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig relaxedSimdDeterministic(final boolean enable) {
+    this.relaxedSimdDeterministic = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether relaxed SIMD deterministic mode is enabled.
+   *
+   * @return true if relaxed SIMD deterministic mode is enabled
+   * @since 1.1.0
+   */
+  public boolean isRelaxedSimdDeterministic() {
+    return relaxedSimdDeterministic;
+  }
+
+  /**
+   * Sets the compilation strategy for the engine.
+   *
+   * <p>The strategy determines which compiler backend to use (Cranelift vs Winch) and how
+   * aggressively to optimize.
+   *
+   * @param strategy the compilation strategy
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if strategy is null
+   * @since 1.1.0
+   */
+  public EngineConfig strategy(final CompilationStrategy strategy) {
+    if (strategy == null) {
+      throw new IllegalArgumentException("Strategy cannot be null");
+    }
+    this.strategy = strategy;
+    return this;
+  }
+
+  /**
+   * Returns the compilation strategy.
+   *
+   * @return the compilation strategy
+   * @since 1.1.0
+   */
+  public CompilationStrategy getStrategy() {
+    return strategy;
+  }
+
+  /**
+   * Sets the cross-compilation target triple.
+   *
+   * <p>This allows compiling WebAssembly for a different target architecture than the host. The
+   * target triple follows LLVM conventions (e.g., "x86_64-unknown-linux-gnu").
+   *
+   * @param target the target triple, or null for native target
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig target(final String target) {
+    this.target = target;
+    return this;
+  }
+
+  /**
+   * Returns the cross-compilation target.
+   *
+   * @return the target triple, or null for native target
+   * @since 1.1.0
+   */
+  public String getTarget() {
+    return target;
+  }
+
+  // Security and advanced configuration methods (wasmtime 39.0.1)
+
+  /**
+   * Enables or disables zeroing of async stacks when not in use.
+   *
+   * <p>When enabled, async stacks are zeroed when transitioning out of WebAssembly code.
+   * This provides defense-in-depth against potential information leaks but has a small
+   * performance cost.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable async stack zeroing
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig asyncStackZeroing(final boolean enable) {
+    this.asyncStackZeroing = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether async stack zeroing is enabled.
+   *
+   * @return true if async stack zeroing is enabled
+   * @since 1.1.0
+   */
+  public boolean isAsyncStackZeroing() {
+    return asyncStackZeroing;
+  }
+
+  /**
+   * Enables or disables emission of native unwind information (.eh_frame on Linux).
+   *
+   * <p>When enabled, the JIT compiler emits unwind tables that allow native debuggers
+   * and profilers to properly unwind WebAssembly stack frames. This is useful for
+   * integration with system-level debugging tools.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to emit native unwind info
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig nativeUnwindInfo(final boolean enable) {
+    this.nativeUnwindInfo = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether native unwind info emission is enabled.
+   *
+   * @return true if native unwind info is enabled
+   * @since 1.1.0
+   */
+  public boolean isNativeUnwindInfo() {
+    return nativeUnwindInfo;
+  }
+
+  /**
+   * Enables or disables NaN canonicalization in the Cranelift compiler.
+   *
+   * <p>When enabled, all NaN values produced by floating-point operations are
+   * canonicalized to a single representation. This provides deterministic behavior
+   * across platforms but may have a small performance cost.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable NaN canonicalization
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig craneliftNanCanonicalization(final boolean enable) {
+    this.craneliftNanCanonicalization = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether Cranelift NaN canonicalization is enabled.
+   *
+   * @return true if NaN canonicalization is enabled
+   * @since 1.1.0
+   */
+  public boolean isCraneliftNanCanonicalization() {
+    return craneliftNanCanonicalization;
+  }
+
+  /**
+   * Enables or disables copy-on-write (CoW) initialization for linear memory.
+   *
+   * <p>When enabled, linear memory is initialized using copy-on-write semantics,
+   * which can significantly reduce memory usage when running multiple instances
+   * of the same module with similar memory contents.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable CoW memory initialization
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig memoryInitCow(final boolean enable) {
+    this.memoryInitCow = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether copy-on-write memory initialization is enabled.
+   *
+   * @return true if CoW initialization is enabled
+   * @since 1.1.0
+   */
+  public boolean isMemoryInitCow() {
+    return memoryInitCow;
+  }
+
+  /**
+   * Enables or disables the WebAssembly exception handling proposal.
+   *
+   * <p>When enabled, WebAssembly modules can use the exception handling instructions
+   * (try, catch, throw, rethrow) for structured error handling.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable exception handling
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmExceptions(final boolean enable) {
+    this.wasmExceptions = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether WebAssembly exception handling is enabled.
+   *
+   * @return true if exception handling is enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmExceptions() {
+    return wasmExceptions;
+  }
+
+  /**
+   * Enables or disables async builtins for the component model.
+   *
+   * <p>When enabled, components can use async-compatible builtin functions for
+   * operations like memory allocation and string encoding. This is required for
+   * full async component model support.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable component model async builtins
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmComponentModelAsyncBuiltins(final boolean enable) {
+    this.wasmComponentModelAsyncBuiltins = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model async builtins are enabled.
+   *
+   * @return true if async builtins are enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmComponentModelAsyncBuiltins() {
+    return wasmComponentModelAsyncBuiltins;
   }
 }

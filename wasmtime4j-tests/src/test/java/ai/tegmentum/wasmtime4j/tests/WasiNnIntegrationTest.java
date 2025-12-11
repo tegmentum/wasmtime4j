@@ -438,9 +438,9 @@ public class WasiNnIntegrationTest {
       NnContext.NnImplementationInfo info = context.getImplementationInfo();
       assertNotNull(info, "Implementation info should not be null");
 
-      LOGGER.info("Implementation version: " + info.version());
-      LOGGER.info("Available backends: " + info.backends());
-      LOGGER.info("Default backend: " + info.defaultBackend());
+      LOGGER.info("Implementation version: " + info.getVersion());
+      LOGGER.info("Available backends: " + info.getBackends());
+      LOGGER.info("Default backend: " + info.getDefaultBackend());
     }
   }
 

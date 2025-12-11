@@ -414,6 +414,68 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a null funcref value.
+   *
+   * @return a new WasmValue representing null funcref
+   */
+  public static WasmValue nullFuncref() {
+    return new WasmValue(WasmValueType.FUNCREF, null);
+  }
+
+  /**
+   * Creates a null externref value.
+   *
+   * @return a new WasmValue representing null externref
+   */
+  public static WasmValue nullExternref() {
+    return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
+   * Creates a null anyref value.
+   *
+   * <p>This is used in WebAssembly GC for null references in the anyref hierarchy.
+   *
+   * @return a new WasmValue representing null anyref
+   */
+  public static WasmValue nullAnyRef() {
+    return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
+   * Creates a null eqref value.
+   *
+   * <p>This is used in WebAssembly GC for null references in the eqref hierarchy.
+   *
+   * @return a new WasmValue representing null eqref
+   */
+  public static WasmValue nullEqRef() {
+    return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
+   * Creates a null structref value.
+   *
+   * <p>This is used in WebAssembly GC for null struct references.
+   *
+   * @return a new WasmValue representing null structref
+   */
+  public static WasmValue nullStructRef() {
+    return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
+   * Creates a null arrayref value.
+   *
+   * <p>This is used in WebAssembly GC for null array references.
+   *
+   * @return a new WasmValue representing null arrayref
+   */
+  public static WasmValue nullArrayRef() {
+    return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
    * Creates a 32-bit integer value (alias for i32).
    *
    * @param value the integer value

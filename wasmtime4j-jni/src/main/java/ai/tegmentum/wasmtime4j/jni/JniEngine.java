@@ -319,5 +319,57 @@ public class JniEngine implements Engine {
     }
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      return null;
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+
+    final int result = nativeDetectPrecompiled(nativeHandle, bytes);
+    // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+    if (result < 0) {
+      return null;
+    }
+    return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+  }
+
   private native byte[] nativePrecompileCompatibilityHash(long engineHandle);
+
+  private native int nativeDetectPrecompiled(long engineHandle, byte[] bytes);
+
+  @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
+    if (other == null) {
+      throw new IllegalArgumentException("other cannot be null");
+    }
+    if (closed) {
+      return false;
+    }
+    if (!(other instanceof JniEngine)) {
+      return false;
+    }
+    final JniEngine otherEngine = (JniEngine) other;
+    if (otherEngine.nativeHandle == 0 || this.nativeHandle == 0) {
+      return false;
+    }
+    return nativeEngineSame(this.nativeHandle, otherEngine.nativeHandle);
+  }
+
+  @Override
+  public boolean isAsync() {
+    if (closed || nativeHandle == 0) {
+      return false;
+    }
+    return nativeIsAsync(nativeHandle);
+  }
+
+  private native boolean nativeEngineSame(long handle1, long handle2);
+
+  private native boolean nativeIsAsync(long engineHandle);
 }

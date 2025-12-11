@@ -312,9 +312,93 @@ public interface Module extends Closeable {
    * <p>Custom sections contain arbitrary data that can be embedded in WebAssembly modules for
    * metadata or debugging purposes.
    *
-   * @return a map of custom section names to their data
+   * @return a map of custom section names to their binary data
    */
-  java.util.Map<String, String> getCustomSections();
+  java.util.Map<String, byte[]> getCustomSections();
+
+  /**
+   * Gets the resources required to instantiate this module.
+   *
+   * <p>This provides information about the memory, table, and other resources that will be needed
+   * when instantiating the module. This can be used for resource planning and validation before
+   * attempting instantiation.
+   *
+   * @return the resources required for instantiation
+   * @since 1.1.0
+   */
+  default ResourcesRequired resourcesRequired() {
+    // Default implementation computes from type information
+    long minMemory = 0;
+    long maxMemory = 0;
+    long minTable = 0;
+    long maxTable = 0;
+
+    java.util.List<MemoryType> memTypes = getMemoryTypes();
+    for (MemoryType mt : memTypes) {
+      minMemory += mt.getMinimum() * 65536L;
+      java.util.Optional<Long> max = mt.getMaximum();
+      if (max.isEmpty()) {
+        maxMemory = -1;
+      } else if (maxMemory >= 0) {
+        maxMemory += max.get() * 65536L;
+      }
+    }
+
+    java.util.List<TableType> tableTypes = getTableTypes();
+    for (TableType tt : tableTypes) {
+      minTable += tt.getMinimum();
+      java.util.Optional<Long> max = tt.getMaximum();
+      if (max.isEmpty()) {
+        maxTable = -1;
+      } else if (maxTable >= 0) {
+        maxTable += max.get();
+      }
+    }
+
+    return new ResourcesRequired(
+        minMemory,
+        maxMemory,
+        (int) minTable,
+        (int) maxTable,
+        memTypes.size(),
+        tableTypes.size(),
+        getGlobalTypes().size(),
+        getFunctionTypes().size());
+  }
+
+  /**
+   * Gets an iterable over all functions in this module.
+   *
+   * <p>This includes both imported functions and locally defined functions, providing metadata
+   * about each function's index, name, type, and origin.
+   *
+   * @return an iterable of function information
+   * @since 1.1.0
+   */
+  default Iterable<FunctionInfo> functions() {
+    java.util.List<FunctionInfo> funcs = new java.util.ArrayList<>();
+    int index = 0;
+
+    // Add imported functions first
+    for (ImportType imp : getImports()) {
+      WasmType type = imp.getType();
+      if (type != null && type.getKind() == WasmTypeKind.FUNCTION) {
+        java.util.Optional<FuncType> ft = getFunctionType(imp.getName());
+        funcs.add(new FunctionInfo(index++, imp.getName(), ft.orElse(null), true));
+      }
+    }
+
+    // Add exported functions
+    for (ExportType exp : getExports()) {
+      WasmType type = exp.getType();
+      if (type != null && type.getKind() == WasmTypeKind.FUNCTION) {
+        java.util.Optional<FuncType> ft = getFunctionType(exp.getName());
+        funcs.add(new FunctionInfo(index++, exp.getName(), ft.orElse(null), false));
+      }
+    }
+
+    return funcs;
+  }
 
   /**
    * Gets the name of this module if it has one.
@@ -408,5 +492,132 @@ public interface Module extends Closeable {
    */
   default boolean isSerializable() {
     return true;
+  }
+
+  // ===== Low-level/Unsafe Methods =====
+
+  /**
+   * Deserializes a module from a memory range without copying data.
+   *
+   * <p>This is a low-level method that deserializes directly from a memory range, avoiding
+   * data copies. The provided memory must remain valid for the lifetime of the returned module.
+   *
+   * <p><b>Warning:</b> This method is unsafe because:
+   * <ul>
+   *   <li>The caller must ensure the memory remains valid</li>
+   *   <li>The memory must contain valid serialized module data</li>
+   *   <li>Incorrect usage may cause undefined behavior or crashes</li>
+   * </ul>
+   *
+   * @param engine the engine to use for deserialization
+   * @param address the starting memory address of the serialized data
+   * @param length the length of the serialized data in bytes
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine is null or address/length are invalid
+   * @since 1.1.0
+   */
+  static Module deserializeRaw(final Engine engine, final long address, final long length)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (address < 0) {
+      throw new IllegalArgumentException("Address cannot be negative");
+    }
+    if (length <= 0) {
+      throw new IllegalArgumentException("Length must be positive");
+    }
+    // Default implementation: read from address into byte array and use normal deserialize
+    // Subclasses can provide more efficient implementations using native memory
+    throw new UnsupportedOperationException(
+        "deserializeRaw not supported in this implementation");
+  }
+
+  /**
+   * Gets the memory range of the compiled code for this module.
+   *
+   * <p>This method returns the start address and length of the compiled code region
+   * for this module. This is useful for advanced use cases like:
+   * <ul>
+   *   <li>Memory mapping optimizations</li>
+   *   <li>Custom caching implementations</li>
+   *   <li>Integration with native profilers</li>
+   * </ul>
+   *
+   * <p><b>Note:</b> The returned range is only valid while the module is alive.
+   *
+   * @return a ModuleImageRange containing the start address and length, or empty if unavailable
+   * @since 1.1.0
+   */
+  default java.util.Optional<ModuleImageRange> imageRange() {
+    return java.util.Optional.empty();
+  }
+
+  /**
+   * Gets access to the compiled module data.
+   *
+   * <p>CompiledModule provides low-level access to the compiled native code and
+   * metadata for advanced use cases such as:
+   * <ul>
+   *   <li>Module caching and serialization</li>
+   *   <li>Code analysis and inspection</li>
+   *   <li>Custom loading and memory management</li>
+   *   <li>Debugging and profiling</li>
+   * </ul>
+   *
+   * @return an Optional containing the CompiledModule, or empty if not available
+   * @since 1.1.0
+   */
+  default java.util.Optional<CompiledModule> getCompiledModule() {
+    return java.util.Optional.empty();
+  }
+
+  /**
+   * Represents a memory range for module compiled code.
+   *
+   * @since 1.1.0
+   */
+  final class ModuleImageRange {
+    private final long startAddress;
+    private final long length;
+
+    /**
+     * Creates a new module image range.
+     *
+     * @param startAddress the starting memory address
+     * @param length the length in bytes
+     */
+    public ModuleImageRange(final long startAddress, final long length) {
+      this.startAddress = startAddress;
+      this.length = length;
+    }
+
+    /**
+     * Gets the starting memory address.
+     *
+     * @return the start address
+     */
+    public long getStartAddress() {
+      return startAddress;
+    }
+
+    /**
+     * Gets the length of the image in bytes.
+     *
+     * @return the length
+     */
+    public long getLength() {
+      return length;
+    }
+
+    /**
+     * Gets the end address (startAddress + length).
+     *
+     * @return the end address
+     */
+    public long getEndAddress() {
+      return startAddress + length;
+    }
   }
 }

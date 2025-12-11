@@ -85,7 +85,7 @@ public interface ExtendedReferenceType {
    * @return a nullable reference type
    */
   static ExtendedReferenceType nullable(final WasmValueType baseType) {
-    return create(baseType, true, inferHeapType(baseType));
+    return create(baseType, true, ExtendedReferenceTypeHelper.inferHeapType(baseType));
   }
 
   /**
@@ -95,7 +95,7 @@ public interface ExtendedReferenceType {
    * @return a non-nullable reference type
    */
   static ExtendedReferenceType nonNullable(final WasmValueType baseType) {
-    return create(baseType, false, inferHeapType(baseType));
+    return create(baseType, false, ExtendedReferenceTypeHelper.inferHeapType(baseType));
   }
 
   /**
@@ -212,14 +212,25 @@ public interface ExtendedReferenceType {
     };
   }
 
-  /** Infers the heap type from a base type. */
-  private static HeapType inferHeapType(final WasmValueType baseType) {
-    if (baseType == WasmValueType.FUNCREF) {
-      return HeapType.FUNC;
-    } else if (baseType == WasmValueType.EXTERNREF) {
-      return HeapType.EXTERN;
-    } else {
-      return HeapType.CUSTOM;
+  /** Helper class for ExtendedReferenceType utility methods. */
+  final class ExtendedReferenceTypeHelper {
+
+    private ExtendedReferenceTypeHelper() {}
+
+    /**
+     * Infers the heap type from a base type.
+     *
+     * @param baseType the base value type
+     * @return the inferred heap type
+     */
+    static HeapType inferHeapType(final WasmValueType baseType) {
+      if (baseType == WasmValueType.FUNCREF) {
+        return HeapType.FUNC;
+      } else if (baseType == WasmValueType.EXTERNREF) {
+        return HeapType.EXTERN;
+      } else {
+        return HeapType.CUSTOM;
+      }
     }
   }
 }

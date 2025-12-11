@@ -320,32 +320,39 @@ public class MarshalingException extends WasmException {
       return new String[0];
     }
 
-    return switch (operationType) {
-      case MEMORY_ALLOCATION -> new String[] {
-        "Reduce object size", "Use memory-based marshaling", "Increase available memory"
-      };
-      case OBJECT_GRAPH_TRAVERSAL -> new String[] {
-        "Reduce object graph depth",
-        "Break complex objects into simpler parts",
-        "Use custom serialization"
-      };
-      case CIRCULAR_REFERENCE_DETECTION -> new String[] {
-        "Disable circular reference detection",
-        "Break circular references manually",
-        "Use object references instead of embedded objects"
-      };
-      case STRATEGY_SELECTION -> new String[] {
-        "Use memory-based marshaling",
-        "Enable streaming marshaling",
-        "Break object into smaller chunks"
-      };
-      case ARRAY_MARSHALING, COLLECTION_MARSHALING -> new String[] {
-        "Use smaller data structures",
-        "Enable memory-based marshaling",
-        "Use lazy loading for large collections"
-      };
-      default -> new String[0];
-    };
+    switch (operationType) {
+      case MEMORY_ALLOCATION:
+        return new String[] {
+          "Reduce object size", "Use memory-based marshaling", "Increase available memory"
+        };
+      case OBJECT_GRAPH_TRAVERSAL:
+        return new String[] {
+          "Reduce object graph depth",
+          "Break complex objects into simpler parts",
+          "Use custom serialization"
+        };
+      case CIRCULAR_REFERENCE_DETECTION:
+        return new String[] {
+          "Disable circular reference detection",
+          "Break circular references manually",
+          "Use object references instead of embedded objects"
+        };
+      case STRATEGY_SELECTION:
+        return new String[] {
+          "Use memory-based marshaling",
+          "Enable streaming marshaling",
+          "Break object into smaller chunks"
+        };
+      case ARRAY_MARSHALING:
+      case COLLECTION_MARSHALING:
+        return new String[] {
+          "Use smaller data structures",
+          "Enable memory-based marshaling",
+          "Use lazy loading for large collections"
+        };
+      default:
+        return new String[0];
+    }
   }
 
   /**

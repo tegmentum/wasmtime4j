@@ -118,7 +118,7 @@ public class JniModule implements Module {
   }
 
   @Override
-  public Map<String, String> getCustomSections() {
+  public Map<String, byte[]> getCustomSections() {
     ensureNotClosed();
     if (!isNativeHandleReasonable()) {
       // Return empty map for unreasonable handle - prevents crashes from test fake pointers
@@ -758,7 +758,7 @@ public class JniModule implements Module {
    * through JNI.
    *
    * @param moduleHandle the native module handle
-   * @return map of custom section names to their Base64-encoded data
+   * @return map of custom section names to their binary data
    */
-  private native Map<String, String> nativeGetCustomSections(long moduleHandle);
+  private native Map<String, byte[]> nativeGetCustomSections(long moduleHandle);
 }

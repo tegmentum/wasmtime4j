@@ -37,6 +37,11 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
   private final boolean memoryDecommitEnabled;
   private final boolean poolWarmingEnabled;
   private final float poolWarmingPercentage;
+  private final int totalCoreInstances;
+  private final int totalComponentInstances;
+  private final int maxCoreInstancesPerComponent;
+  private final int totalGcHeaps;
+  private final long maxMemorySize;
 
   /**
    * Creates a new PanamaPoolingAllocatorConfig with all parameters.
@@ -50,6 +55,11 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
    * @param memoryDecommitEnabled whether memory decommit optimization is enabled
    * @param poolWarmingEnabled whether pool warming is enabled on startup
    * @param poolWarmingPercentage the pool warming percentage (0.0 to 1.0)
+   * @param totalCoreInstances maximum concurrent core module instances
+   * @param totalComponentInstances maximum concurrent component instances
+   * @param maxCoreInstancesPerComponent max core instances per component
+   * @param totalGcHeaps maximum concurrent GC heaps
+   * @param maxMemorySize maximum memory size for any memory in the pool
    */
   public PanamaPoolingAllocatorConfig(
       final int instancePoolSize,
@@ -60,7 +70,12 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
       final int maxTables,
       final boolean memoryDecommitEnabled,
       final boolean poolWarmingEnabled,
-      final float poolWarmingPercentage) {
+      final float poolWarmingPercentage,
+      final int totalCoreInstances,
+      final int totalComponentInstances,
+      final int maxCoreInstancesPerComponent,
+      final int totalGcHeaps,
+      final long maxMemorySize) {
     this.instancePoolSize = instancePoolSize;
     this.maxMemoryPerInstance = maxMemoryPerInstance;
     this.stackSize = stackSize;
@@ -70,6 +85,11 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
     this.memoryDecommitEnabled = memoryDecommitEnabled;
     this.poolWarmingEnabled = poolWarmingEnabled;
     this.poolWarmingPercentage = poolWarmingPercentage;
+    this.totalCoreInstances = totalCoreInstances;
+    this.totalComponentInstances = totalComponentInstances;
+    this.maxCoreInstancesPerComponent = maxCoreInstancesPerComponent;
+    this.totalGcHeaps = totalGcHeaps;
+    this.maxMemorySize = maxMemorySize;
   }
 
   /** Creates a new PanamaPoolingAllocatorConfig with default values. */
@@ -83,7 +103,12 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
         DEFAULT_MAX_TABLES,
         true, // memoryDecommitEnabled
         true, // poolWarmingEnabled
-        DEFAULT_POOL_WARMING_PERCENTAGE);
+        DEFAULT_POOL_WARMING_PERCENTAGE,
+        DEFAULT_TOTAL_CORE_INSTANCES,
+        DEFAULT_TOTAL_COMPONENT_INSTANCES,
+        DEFAULT_MAX_CORE_INSTANCES_PER_COMPONENT,
+        DEFAULT_TOTAL_GC_HEAPS,
+        DEFAULT_MAX_MEMORY_SIZE);
   }
 
   @Override
@@ -132,6 +157,31 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
   }
 
   @Override
+  public int getTotalCoreInstances() {
+    return totalCoreInstances;
+  }
+
+  @Override
+  public int getTotalComponentInstances() {
+    return totalComponentInstances;
+  }
+
+  @Override
+  public int getMaxCoreInstancesPerComponent() {
+    return maxCoreInstancesPerComponent;
+  }
+
+  @Override
+  public int getTotalGcHeaps() {
+    return totalGcHeaps;
+  }
+
+  @Override
+  public long getMaxMemorySize() {
+    return maxMemorySize;
+  }
+
+  @Override
   public void validate() {
     if (instancePoolSize <= 0) {
       throw new IllegalArgumentException("instancePoolSize must be positive");
@@ -153,6 +203,21 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
     }
     if (poolWarmingPercentage < 0.0f || poolWarmingPercentage > 1.0f) {
       throw new IllegalArgumentException("poolWarmingPercentage must be between 0.0 and 1.0");
+    }
+    if (totalCoreInstances <= 0) {
+      throw new IllegalArgumentException("totalCoreInstances must be positive");
+    }
+    if (totalComponentInstances <= 0) {
+      throw new IllegalArgumentException("totalComponentInstances must be positive");
+    }
+    if (maxCoreInstancesPerComponent <= 0) {
+      throw new IllegalArgumentException("maxCoreInstancesPerComponent must be positive");
+    }
+    if (totalGcHeaps <= 0) {
+      throw new IllegalArgumentException("totalGcHeaps must be positive");
+    }
+    if (maxMemorySize <= 0) {
+      throw new IllegalArgumentException("maxMemorySize must be positive");
     }
   }
 
@@ -177,6 +242,16 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
         + poolWarmingEnabled
         + ", poolWarmingPercentage="
         + poolWarmingPercentage
+        + ", totalCoreInstances="
+        + totalCoreInstances
+        + ", totalComponentInstances="
+        + totalComponentInstances
+        + ", maxCoreInstancesPerComponent="
+        + maxCoreInstancesPerComponent
+        + ", totalGcHeaps="
+        + totalGcHeaps
+        + ", maxMemorySize="
+        + maxMemorySize
         + '}';
   }
 }

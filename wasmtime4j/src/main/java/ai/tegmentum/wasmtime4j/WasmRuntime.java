@@ -139,6 +139,22 @@ public interface WasmRuntime extends Closeable {
   Store createStore(final Engine engine, final StoreLimits limits) throws WasmException;
 
   /**
+   * Creates a new exception tag with the specified type in the given store.
+   *
+   * <p>Tags are used in the WebAssembly exception handling proposal to define types of exceptions
+   * that can be thrown and caught. The tag type's function parameters define the payload types for
+   * exceptions of this tag.
+   *
+   * @param store the store to create the tag in
+   * @param tagType the type descriptor for this tag
+   * @return a new Tag instance
+   * @throws WasmException if tag creation fails
+   * @throws IllegalArgumentException if store or tagType is null
+   * @since 1.0.0
+   */
+  Tag createTag(Store store, TagType tagType) throws WasmException;
+
+  /**
    * Creates a new linker for the given engine.
    *
    * <p>A linker provides the mechanism to define host functions and bind imports before

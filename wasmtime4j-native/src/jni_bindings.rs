@@ -1212,6 +1212,60 @@ pub mod jni_engine {
         // Return false by default
         0
     }
+
+    /// Check if the engine is using Pulley interpreter (JNI version)
+    ///
+    /// Note: Pulley is only available in wasmtime >= 40.0.0. In 39.0.1, always returns false.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
+            Ok(_engine) => {
+                // Pulley is not available in wasmtime 39.0.1
+                // Return 0 (false/not using Pulley) - correct behavior for pre-Pulley versions
+                0
+            }
+            Err(_) => 0,
+        }
+    }
+
+    /// Get the precompile compatibility hash for the engine (JNI version)
+    ///
+    /// Returns a hash value that can be compared between engines to check compatibility.
+    /// Note: precompile_compatibility_hash is only available in wasmtime >= 40.0.0.
+    /// In 39.0.1, we compute a hash based on available engine properties.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompileCompatibilityHash(
+        _env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jlong {
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
+
+        match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
+            Ok(engine) => {
+                // Compute a compatibility hash based on available engine properties
+                // This is a best-effort approximation for wasmtime 39.0.1 which lacks
+                // the precompile_compatibility_hash() method
+                let mut hasher = DefaultHasher::new();
+
+                // Hash based on engine feature flags
+                engine.fuel_enabled().hash(&mut hasher);
+                engine.epoch_interruption_enabled().hash(&mut hasher);
+                engine.coredump_on_trap().hash(&mut hasher);
+
+                // Include wasmtime version in the hash
+                "wasmtime-39.0.1".hash(&mut hasher);
+
+                hasher.finish() as jlong
+            }
+            Err(_) => 0,
+        }
+    }
 }
 
 
@@ -2724,6 +2778,30 @@ pub mod jni_store {
         match result {
             Ok(obj) => obj,
             Err(_) => JObject::null(),
+        }
+    }
+
+    /// JNI binding for Store.gc() - triggers garbage collection
+    #[allow(non_snake_case)]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGc(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) {
+        let result = (|| -> Result<(), crate::error::WasmtimeError> {
+            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let mut store = store_ref.inner.lock();
+            // Wasmtime's gc() method takes Option<&GcHeapOutOfMemory<()>>
+            // Passing None means we're not in an OOM recovery scenario
+            store.gc(None);
+            Ok(())
+        })();
+
+        if let Err(e) = result {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("GC failed: {:?}", e),
+            );
         }
     }
 
@@ -13298,6 +13376,279 @@ mod profiler_jni {
     ) {
         if profiler_ptr != 0 {
             profiler::wasmtime4j_profiler_destroy(profiler_ptr as *mut profiler::PerformanceProfiler);
+        }
+    }
+}
+
+// ==================== Exception Handling JNI Bindings ====================
+
+#[cfg(feature = "jni-bindings")]
+mod exception_handling_jni {
+    use jni::objects::JClass;
+    use jni::sys::{jboolean, jlong, jintArray, JNI_FALSE};
+    use jni::JNIEnv;
+
+    /// JNI binding for WasmRuntime.nativeCreateTag
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateTag(
+        _env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+        _param_types: jintArray,
+        _return_types: jintArray,
+    ) -> jlong {
+        // Tag creation is not yet implemented in Wasmtime's public API
+        0
+    }
+
+    /// JNI binding for JniTag.nativeGetParamTypes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetParamTypes<'local>(
+        env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        _tag_handle: jlong,
+        _store_handle: jlong,
+    ) -> jintArray {
+        // Tag.getParamTypes is not yet implemented
+        match env.new_int_array(0) {
+            Ok(arr) => arr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// JNI binding for JniTag.nativeGetReturnTypes
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetReturnTypes<'local>(
+        env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        _tag_handle: jlong,
+        _store_handle: jlong,
+    ) -> jintArray {
+        // Tag.getReturnTypes is not yet implemented
+        match env.new_int_array(0) {
+            Ok(arr) => arr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        }
+    }
+
+    /// JNI binding for JniTag.nativeEquals
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeEquals(
+        _env: JNIEnv,
+        _class: JClass,
+        _tag1_handle: jlong,
+        _tag2_handle: jlong,
+        _store_handle: jlong,
+    ) -> jboolean {
+        // Tag.equals is not yet implemented
+        JNI_FALSE
+    }
+
+    /// JNI binding for JniTag.nativeDestroy
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        _tag_handle: jlong,
+    ) {
+        // Tag destruction is not yet implemented
+    }
+
+    /// JNI binding for JniExnRef.nativeGetTag
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetTag(
+        _env: JNIEnv,
+        _class: JClass,
+        _exnref_handle: jlong,
+        _store_handle: jlong,
+    ) -> jlong {
+        // ExnRef.getTag is not yet implemented
+        0
+    }
+
+    /// JNI binding for JniExnRef.nativeIsValid
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeIsValid(
+        _env: JNIEnv,
+        _class: JClass,
+        _exnref_handle: jlong,
+        _store_handle: jlong,
+    ) -> jboolean {
+        // ExnRef.isValid is not yet implemented
+        JNI_FALSE
+    }
+
+    /// JNI binding for JniExnRef.nativeDestroy
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        _exnref_handle: jlong,
+    ) {
+        // ExnRef destruction is not yet implemented
+    }
+
+    /// JNI binding for JniStore.nativeThrowException
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeThrowException(
+        _env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+        _exnref_handle: jlong,
+    ) {
+        // Store.throwException is not yet implemented
+    }
+
+    /// JNI binding for JniStore.nativeTakePendingException
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeTakePendingException(
+        _env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+    ) -> jlong {
+        // Store.takePendingException is not yet implemented
+        0
+    }
+
+    /// JNI binding for JniStore.nativeHasPendingException
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeHasPendingException(
+        _env: JNIEnv,
+        _class: JClass,
+        _store_handle: jlong,
+    ) -> jboolean {
+        // Store.hasPendingException is not yet implemented
+        JNI_FALSE
+    }
+}
+
+/// JNI bindings for ResourceLimiter operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_resource_limiter {
+    use super::*;
+    use crate::store_limiter;
+
+    /// JNI binding for JniResourceLimiter.nativeCreate
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeCreate(
+        _env: JNIEnv,
+        _class: JClass,
+        max_memory_bytes: jlong,
+        max_memory_pages: jlong,
+        max_table_elements: jlong,
+        max_instances: jint,
+        max_tables: jint,
+        max_memories: jint,
+    ) -> jlong {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_create(
+                max_memory_bytes,
+                max_memory_pages,
+                max_table_elements,
+                max_instances,
+                max_tables,
+                max_memories,
+            )
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeCreateDefault
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeCreateDefault(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_create_default()
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeFree
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeFree(
+        _env: JNIEnv,
+        _class: JClass,
+        limiter_id: jlong,
+    ) -> jint {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_free(limiter_id)
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeAllowMemoryGrow
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeAllowMemoryGrow(
+        _env: JNIEnv,
+        _class: JClass,
+        limiter_id: jlong,
+        current_pages: jlong,
+        requested_pages: jlong,
+    ) -> jint {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_allow_memory_grow(limiter_id, current_pages, requested_pages)
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeAllowTableGrow
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeAllowTableGrow(
+        _env: JNIEnv,
+        _class: JClass,
+        limiter_id: jlong,
+        current_elements: jlong,
+        requested_elements: jlong,
+    ) -> jint {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_allow_table_grow(limiter_id, current_elements, requested_elements)
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeGetStatsJson
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeGetStatsJson(
+        mut env: JNIEnv,
+        _class: JClass,
+        limiter_id: jlong,
+    ) -> jstring {
+        unsafe {
+            let json_ptr = store_limiter::wasmtime4j_limiter_get_stats_json(limiter_id);
+            if json_ptr.is_null() {
+                return std::ptr::null_mut();
+            }
+
+            let c_str = std::ffi::CStr::from_ptr(json_ptr);
+            let result = match c_str.to_str() {
+                Ok(s) => env.new_string(s).map(|js| js.into_raw()).unwrap_or(std::ptr::null_mut()),
+                Err(_) => std::ptr::null_mut(),
+            };
+
+            // Free the native string
+            store_limiter::wasmtime4j_limiter_string_free(json_ptr);
+
+            result
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeResetStats
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeResetStats(
+        _env: JNIEnv,
+        _class: JClass,
+        limiter_id: jlong,
+    ) -> jint {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_reset_stats(limiter_id)
+        }
+    }
+
+    /// JNI binding for JniResourceLimiter.nativeGetCount
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLimiter_nativeGetCount(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jint {
+        unsafe {
+            store_limiter::wasmtime4j_limiter_get_count()
         }
     }
 }

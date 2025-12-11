@@ -568,4 +568,56 @@ public final class PanamaEngine implements Engine {
       return new byte[0];
     }
   }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      return null;
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+
+    try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment bytesSegment = arena.allocate(bytes.length);
+      bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
+      final int result =
+          NATIVE_BINDINGS.engineDetectPrecompiled(nativeEngine, bytesSegment, bytes.length);
+      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+      if (result < 0) {
+        return null;
+      }
+      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    }
+  }
+
+  @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
+    if (other == null) {
+      throw new IllegalArgumentException("other cannot be null");
+    }
+    if (closed) {
+      return false;
+    }
+    if (!(other instanceof PanamaEngine)) {
+      return false;
+    }
+    final PanamaEngine otherEngine = (PanamaEngine) other;
+    if (otherEngine.nativeEngine == null
+        || otherEngine.nativeEngine.equals(java.lang.foreign.MemorySegment.NULL)) {
+      return false;
+    }
+    // Compare native pointers for equality
+    return this.nativeEngine.equals(otherEngine.nativeEngine);
+  }
+
+  @Override
+  public boolean isAsync() {
+    // Panama engines don't support async mode by default
+    // This would require async_support feature in wasmtime
+    return false;
+  }
 }

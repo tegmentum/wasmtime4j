@@ -277,6 +277,100 @@ public interface Engine extends Closeable {
   }
 
   /**
+   * Checks if this engine shares the same configuration and compilation settings as another engine.
+   *
+   * <p>Two engines are considered the same if they were created with identical configurations and
+   * will produce compatible compiled modules. This is useful for verifying that precompiled modules
+   * from one engine can be used with another.
+   *
+   * @param other the other engine to compare with
+   * @return true if both engines share the same configuration
+   * @throws IllegalArgumentException if other is null
+   * @since 1.1.0
+   */
+  boolean same(Engine other);
+
+  /**
+   * Checks if this engine was created with async support enabled.
+   *
+   * <p>When async support is enabled, the engine can create async stores and execute WebAssembly
+   * code asynchronously. This is required for async WASI and non-blocking I/O operations.
+   *
+   * @return true if async support is enabled
+   * @since 1.1.0
+   */
+  boolean isAsync();
+
+  /**
+   * Gets the pooling allocator metrics for this engine.
+   *
+   * <p>If the engine was configured to use a pooling allocator, this method returns metrics about
+   * pool usage, allocations, and performance. If pooling allocation is not enabled, returns null.
+   *
+   * @return pooling allocator metrics, or null if pooling is not enabled
+   * @since 1.1.0
+   */
+  default ai.tegmentum.wasmtime4j.pool.PoolStatistics getPoolingAllocatorMetrics() {
+    return null;
+  }
+
+  /**
+   * Detects whether the given bytes are a precompiled artifact produced by Wasmtime.
+   *
+   * <p>This method inspects the header of the bytes to determine if they look like a precompiled
+   * WebAssembly module or component. This is useful for determining how to handle incoming bytes -
+   * whether to compile them as source or deserialize them as precompiled.
+   *
+   * <p>Note that this method only performs a quick header check and does not validate the full
+   * structure. A positive result does not guarantee that deserialization will succeed.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * byte[] bytes = Files.readAllBytes(path);
+   * Precompiled type = engine.detectPrecompiled(bytes);
+   * if (type == Precompiled.MODULE) {
+   *     module = Module.deserialize(engine, bytes);
+   * } else {
+   *     module = engine.compileModule(bytes);
+   * }
+   * }</pre>
+   *
+   * @param bytes the bytes to inspect
+   * @return the type of precompiled artifact, or null if not a precompiled artifact
+   * @throws IllegalArgumentException if bytes is null
+   * @since 1.1.0
+   */
+  Precompiled detectPrecompiled(byte[] bytes);
+
+  /**
+   * Detects whether the file at the given path contains a precompiled artifact.
+   *
+   * <p>This is a convenience method that reads the header of the file to determine if it contains a
+   * precompiled WebAssembly module or component.
+   *
+   * @param path the path to the file to inspect
+   * @return the type of precompiled artifact, or null if not a precompiled artifact
+   * @throws IllegalArgumentException if path is null
+   * @throws java.io.IOException if the file cannot be read
+   * @since 1.1.0
+   */
+  default Precompiled detectPrecompiledFile(java.nio.file.Path path) throws java.io.IOException {
+    if (path == null) {
+      throw new IllegalArgumentException("Path cannot be null");
+    }
+    // Read first 16 bytes which should be enough for header detection
+    byte[] header = new byte[16];
+    try (java.io.InputStream is = java.nio.file.Files.newInputStream(path)) {
+      int read = is.read(header);
+      if (read < header.length) {
+        header = java.util.Arrays.copyOf(header, read);
+      }
+    }
+    return detectPrecompiled(header);
+  }
+
+  /**
    * Closes the engine and releases associated resources.
    *
    * <p>After closing, the engine becomes invalid and should not be used. Any stores or modules

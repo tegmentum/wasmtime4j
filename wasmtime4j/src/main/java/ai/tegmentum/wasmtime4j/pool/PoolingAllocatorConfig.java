@@ -60,6 +60,21 @@ public interface PoolingAllocatorConfig {
   /** Default pool warming percentage. */
   float DEFAULT_POOL_WARMING_PERCENTAGE = 0.2f;
 
+  /** Default total core instances. */
+  int DEFAULT_TOTAL_CORE_INSTANCES = 1000;
+
+  /** Default total component instances. */
+  int DEFAULT_TOTAL_COMPONENT_INSTANCES = 1000;
+
+  /** Default max core instances per component. */
+  int DEFAULT_MAX_CORE_INSTANCES_PER_COMPONENT = 20;
+
+  /** Default total GC heaps. */
+  int DEFAULT_TOTAL_GC_HEAPS = 1000;
+
+  /** Default max memory size (2GB). */
+  long DEFAULT_MAX_MEMORY_SIZE = 2L * 1024L * 1024L * 1024L;
+
   /**
    * Creates a new configuration builder with default values.
    *
@@ -158,6 +173,50 @@ public interface PoolingAllocatorConfig {
    * @return the pool warming percentage
    */
   float getPoolWarmingPercentage();
+
+  /**
+   * Gets the maximum number of concurrent core module instances.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   *
+   * @return the total core instances
+   */
+  int getTotalCoreInstances();
+
+  /**
+   * Gets the maximum number of concurrent component instances.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   *
+   * @return the total component instances
+   */
+  int getTotalComponentInstances();
+
+  /**
+   * Gets the maximum number of core instances a single component can create.
+   *
+   * @return the max core instances per component
+   */
+  int getMaxCoreInstancesPerComponent();
+
+  /**
+   * Gets the maximum number of concurrent GC heaps.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   * The GC heap pool contains the space needed for each GC heap used by a store.
+   *
+   * @return the total GC heaps
+   */
+  int getTotalGcHeaps();
+
+  /**
+   * Gets the maximum size in bytes that a linear memory can grow to.
+   *
+   * <p>This is the maximum size of any memory in the pool.
+   *
+   * @return the max memory size
+   */
+  long getMaxMemorySize();
 
   /**
    * Validates this configuration for consistency.

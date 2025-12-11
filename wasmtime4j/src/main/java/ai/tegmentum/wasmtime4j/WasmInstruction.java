@@ -232,8 +232,9 @@ public interface WasmInstruction {
         // Simplified - real implementation would be more precise
         final int pops = getPops();
         final WasmValueType[] types = new WasmValueType[pops];
+        final WasmValueType inferredType = WasmInstructionHelper.inferTypeFromMnemonic(mnemonic);
         for (int i = 0; i < pops; i++) {
-          types[i] = inferTypeFromMnemonic(mnemonic);
+          types[i] = inferredType;
         }
         return types;
       }
@@ -242,8 +243,9 @@ public interface WasmInstruction {
       public WasmValueType[] getPushTypes() {
         final int pushes = getPushes();
         final WasmValueType[] types = new WasmValueType[pushes];
+        final WasmValueType inferredType = WasmInstructionHelper.inferTypeFromMnemonic(mnemonic);
         for (int i = 0; i < pushes; i++) {
-          types[i] = inferTypeFromMnemonic(mnemonic);
+          types[i] = inferredType;
         }
         return types;
       }
@@ -255,20 +257,31 @@ public interface WasmInstruction {
     };
   }
 
-  /** Infers value type from instruction mnemonic. */
-  private static WasmValueType inferTypeFromMnemonic(final String mnemonic) {
-    if (mnemonic.startsWith("i32.")) {
-      return WasmValueType.I32;
+  /** Helper class for WasmInstruction utility methods. */
+  final class WasmInstructionHelper {
+
+    private WasmInstructionHelper() {}
+
+    /**
+     * Infers value type from instruction mnemonic.
+     *
+     * @param mnemonic the instruction mnemonic
+     * @return the inferred value type
+     */
+    static WasmValueType inferTypeFromMnemonic(final String mnemonic) {
+      if (mnemonic.startsWith("i32.")) {
+        return WasmValueType.I32;
+      }
+      if (mnemonic.startsWith("i64.")) {
+        return WasmValueType.I64;
+      }
+      if (mnemonic.startsWith("f32.")) {
+        return WasmValueType.F32;
+      }
+      if (mnemonic.startsWith("f64.")) {
+        return WasmValueType.F64;
+      }
+      return WasmValueType.I32; // Default
     }
-    if (mnemonic.startsWith("i64.")) {
-      return WasmValueType.I64;
-    }
-    if (mnemonic.startsWith("f32.")) {
-      return WasmValueType.F32;
-    }
-    if (mnemonic.startsWith("f64.")) {
-      return WasmValueType.F64;
-    }
-    return WasmValueType.I32; // Default
   }
 }

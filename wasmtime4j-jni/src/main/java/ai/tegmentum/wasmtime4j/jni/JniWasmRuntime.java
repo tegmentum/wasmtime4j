@@ -9,6 +9,8 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
@@ -317,6 +319,54 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
         throw (WasmException) e;
       }
       throw new WasmException("Unexpected error creating store with resource limits", e);
+    }
+  }
+
+  @Override
+  public Tag createTag(final Store store, final TagType tagType) throws WasmException {
+    JniValidation.requireNonNull(store, "store");
+    JniValidation.requireNonNull(tagType, "tagType");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance for JNI runtime");
+      }
+
+      final JniStore jniStore = (JniStore) store;
+      final long storeHandle = jniStore.getNativeHandle();
+      final ai.tegmentum.wasmtime4j.FunctionType funcType = tagType.getFunctionType();
+
+      // Convert function type to native format
+      final ai.tegmentum.wasmtime4j.WasmValueType[] funcParamTypes = funcType.getParamTypes();
+      final int[] paramTypes = new int[funcParamTypes.length];
+      for (int i = 0; i < funcParamTypes.length; i++) {
+        paramTypes[i] = funcParamTypes[i].toNativeTypeCode();
+      }
+
+      final ai.tegmentum.wasmtime4j.WasmValueType[] funcReturnTypes = funcType.getReturnTypes();
+      final int[] returnTypes = new int[funcReturnTypes.length];
+      for (int i = 0; i < funcReturnTypes.length; i++) {
+        returnTypes[i] = funcReturnTypes[i].toNativeTypeCode();
+      }
+
+      final long tagHandle = nativeCreateTag(storeHandle, paramTypes, returnTypes);
+
+      if (tagHandle == 0) {
+        throw new WasmException("Failed to create tag");
+      }
+
+      final JniTag tag = new JniTag(tagHandle, storeHandle);
+
+      LOGGER.fine("Created tag with handle: 0x" + Long.toHexString(tagHandle));
+      return tag;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Unexpected error creating tag", e);
     }
   }
 
@@ -1360,4 +1410,16 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return non-zero if WASI-NN is available, 0 otherwise
    */
   private static native int nativeIsNnAvailable();
+
+  // ===== TAG NATIVE METHOD DECLARATIONS =====
+
+  /**
+   * Create a new exception tag.
+   *
+   * @param storeHandle the store handle
+   * @param paramTypes the parameter type codes
+   * @param returnTypes the return type codes (typically empty for tags)
+   * @return the native tag handle, or 0 on failure
+   */
+  private static native long nativeCreateTag(long storeHandle, int[] paramTypes, int[] returnTypes);
 }

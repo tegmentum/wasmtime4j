@@ -928,6 +928,152 @@ public final class PanamaStore implements Store {
     }
   }
 
+  @Override
+  public void gc() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.storeGc(nativeStore);
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to perform garbage collection: error code " + result);
+    }
+  }
+
+  @Override
+  public <R> R throwException(final ai.tegmentum.wasmtime4j.ExnRef exceptionRef)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (exceptionRef == null) {
+      throw new IllegalArgumentException("exceptionRef cannot be null");
+    }
+    if (!(exceptionRef instanceof PanamaExnRef)) {
+      throw new IllegalArgumentException("ExnRef must be a PanamaExnRef instance");
+    }
+
+    final PanamaExnRef panamaExnRef = (PanamaExnRef) exceptionRef;
+    NATIVE_BINDINGS.storeThrowException(nativeStore, panamaExnRef.getNativeSegment());
+    // This should never be reached - the native call always throws
+    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Exception was thrown");
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.ExnRef takePendingException()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final java.lang.foreign.MemorySegment exnRefPtr =
+        NATIVE_BINDINGS.storeTakePendingException(nativeStore);
+    if (exnRefPtr == null || exnRefPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+      return null;
+    }
+    return new PanamaExnRef(exnRefPtr, nativeStore);
+  }
+
+  @Override
+  public boolean hasPendingException() {
+    if (closed) {
+      return false;
+    }
+    return NATIVE_BINDINGS.storeHasPendingException(nativeStore) != 0;
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<Void> gcAsync()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          final int result = NATIVE_BINDINGS.storeGcAsync(nativeStore);
+          if (result != 0) {
+            throw new RuntimeException("Async GC failed: error code " + result);
+          }
+          return null;
+        });
+  }
+
+  @Override
+  public void epochDeadlineAsyncYieldAndUpdate(final long deltaTicks)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (deltaTicks < 0) {
+      throw new IllegalArgumentException("deltaTicks cannot be negative");
+    }
+    final int result =
+        NATIVE_BINDINGS.storeEpochDeadlineAsyncYieldAndUpdate(nativeStore, deltaTicks);
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to set epoch deadline async yield: error code " + result);
+    }
+  }
+
+  @Override
+  public void epochDeadlineTrap() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.storeEpochDeadlineTrap(nativeStore);
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to set epoch deadline trap: error code " + result);
+    }
+  }
+
+  @Override
+  public void epochDeadlineCallback(
+      final ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    // Store callback reference to prevent GC
+    this.epochDeadlineCallback = callback;
+    int result;
+    if (callback == null) {
+      result = NATIVE_BINDINGS.storeClearEpochDeadlineCallback(nativeStore);
+    } else {
+      result = NATIVE_BINDINGS.storeSetEpochDeadlineCallback(nativeStore);
+    }
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to configure epoch deadline callback: error code " + result);
+    }
+  }
+
+  // Callback holder to prevent garbage collection
+  private ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback epochDeadlineCallback;
+
+  // Call hook support
+  private ai.tegmentum.wasmtime4j.CallHookHandler callHookHandler;
+  private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
+
+  @Override
+  public void setCallHook(final ai.tegmentum.wasmtime4j.CallHookHandler handler)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    this.callHookHandler = handler;
+    int result;
+    if (handler == null) {
+      result = NATIVE_BINDINGS.storeClearCallHook(nativeStore);
+    } else {
+      result = NATIVE_BINDINGS.storeSetCallHook(nativeStore);
+    }
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to configure call hook: error code " + result);
+    }
+  }
+
+  @Override
+  public void setCallHookAsync(final ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler handler)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    this.asyncCallHookHandler = handler;
+    int result;
+    if (handler == null) {
+      result = NATIVE_BINDINGS.storeClearCallHookAsync(nativeStore);
+    } else {
+      result = NATIVE_BINDINGS.storeSetCallHookAsync(nativeStore);
+    }
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to configure async call hook: error code " + result);
+    }
+  }
+
   /**
    * Ensures the store is not closed.
    *
@@ -950,6 +1096,211 @@ public final class PanamaStore implements Store {
       this.executionCount = executionCount;
       this.totalExecutionTimeMicros = totalExecutionTimeMicros;
       this.fuelConsumed = fuelConsumed;
+    }
+  }
+
+  // ===== Concurrency Methods =====
+
+  @Override
+  public <T, R> R runConcurrent(
+      final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (task == null) {
+      throw new IllegalArgumentException("Task cannot be null");
+    }
+    // Create accessor wrapper
+    @SuppressWarnings("unchecked")
+    final PanamaAccessor<T> accessor =
+        new PanamaAccessor<>((T) userData.get(), nativeStore.address());
+    try {
+      return task.execute(accessor);
+    } finally {
+      accessor.invalidate();
+    }
+  }
+
+  @Override
+  public <R> ai.tegmentum.wasmtime4j.concurrent.JoinHandle<R> spawn(
+      final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (task == null) {
+      throw new IllegalArgumentException("Task cannot be null");
+    }
+    return new PanamaJoinHandle<>(task);
+  }
+
+  // ===== Debug Methods =====
+
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    // Return empty list - debug frames require native implementation
+    return java.util.Collections.emptyList();
+  }
+
+  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
+
+  @Override
+  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    this.debugHandler = handler;
+    // Native binding would be called here
+  }
+
+  // ===== Fuel Async Methods =====
+
+  private long fuelAsyncYieldInterval = 0;
+
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (interval < 0) {
+      throw new IllegalArgumentException("Interval cannot be negative");
+    }
+    this.fuelAsyncYieldInterval = interval;
+    // Native binding would be called here: NATIVE_BINDINGS.storeSetFuelAsyncYieldInterval(...)
+  }
+
+  @Override
+  public long getFuelAsyncYieldInterval() {
+    return fuelAsyncYieldInterval;
+  }
+
+  // ===== Inner Classes =====
+
+  /**
+   * Panama implementation of Accessor for concurrent store access.
+   */
+  private static final class PanamaAccessor<T>
+      implements ai.tegmentum.wasmtime4j.concurrent.Accessor<T> {
+    private final T data;
+    private final long storeId;
+    private volatile boolean valid = true;
+
+    PanamaAccessor(final T data, final long storeId) {
+      this.data = data;
+      this.storeId = storeId;
+    }
+
+    @Override
+    public T getData() {
+      return data;
+    }
+
+    @Override
+    public boolean isValid() {
+      return valid;
+    }
+
+    @Override
+    public long getStoreId() {
+      return storeId;
+    }
+
+    @Override
+    public void complete() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+      valid = false;
+    }
+
+    @Override
+    public void fail(final Throwable error)
+        throws ai.tegmentum.wasmtime4j.exception.WasmException {
+      valid = false;
+    }
+
+    void invalidate() {
+      valid = false;
+    }
+  }
+
+  /**
+   * Panama implementation of JoinHandle for spawned tasks.
+   */
+  private static final class PanamaJoinHandle<T>
+      implements ai.tegmentum.wasmtime4j.concurrent.JoinHandle<T> {
+    private static final java.util.concurrent.atomic.AtomicLong ID_COUNTER =
+        new java.util.concurrent.atomic.AtomicLong(0);
+
+    private final long id;
+    private final java.util.concurrent.CompletableFuture<T> future;
+
+    PanamaJoinHandle(final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<T> task) {
+      this.id = ID_COUNTER.incrementAndGet();
+      this.future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+        try {
+          return task.run();
+        } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
+
+    @Override
+    public T join()
+        throws ai.tegmentum.wasmtime4j.exception.WasmException, InterruptedException {
+      try {
+        return future.get();
+      } catch (java.util.concurrent.ExecutionException e) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Task failed: " + e.getCause().getMessage(), e.getCause());
+      }
+    }
+
+    @Override
+    public T join(final long timeout, final java.util.concurrent.TimeUnit unit)
+        throws ai.tegmentum.wasmtime4j.exception.WasmException, InterruptedException {
+      try {
+        return future.get(timeout, unit);
+      } catch (java.util.concurrent.ExecutionException e) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Task failed: " + e.getCause().getMessage(), e.getCause());
+      } catch (java.util.concurrent.TimeoutException e) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException("Task timed out", e);
+      }
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<T> toFuture() {
+      return future;
+    }
+
+    @Override
+    public boolean isDone() {
+      return future.isDone();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return future.isCancelled();
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      return future.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public long getId() {
+      return id;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus getStatus() {
+      if (future.isCancelled()) {
+        return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.CANCELLED;
+      }
+      if (future.isDone()) {
+        if (future.isCompletedExceptionally()) {
+          return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.FAILED;
+        }
+        return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.COMPLETED;
+      }
+      return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.RUNNING;
     }
   }
 }

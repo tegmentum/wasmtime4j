@@ -163,6 +163,16 @@ public final class PanamaHostFunction implements WasmFunction {
     return functionName;
   }
 
+  @Override
+  public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    // Host functions are called FROM WebAssembly, not TO WebAssembly
+    // This method shouldn't be used directly for host functions
+    return java.util.concurrent.CompletableFuture.failedFuture(
+        new ai.tegmentum.wasmtime4j.exception.ValidationException(
+            "Host functions are called from WebAssembly, not directly from Java. "
+                + "Use the callback mechanism instead."));
+  }
+
   /**
    * Gets the native function handle for use in WebAssembly import operations.
    *

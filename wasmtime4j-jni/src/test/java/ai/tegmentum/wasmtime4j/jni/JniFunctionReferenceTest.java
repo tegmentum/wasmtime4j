@@ -155,6 +155,19 @@ class JniFunctionReferenceTest {
       public String getName() {
         return name;
       }
+
+      @Override
+      public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmValue[]> callAsync(
+          final ai.tegmentum.wasmtime4j.WasmValue... params) {
+        return java.util.concurrent.CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return call(params);
+              } catch (final WasmException e) {
+                throw new RuntimeException(e);
+              }
+            });
+      }
     };
   }
 }

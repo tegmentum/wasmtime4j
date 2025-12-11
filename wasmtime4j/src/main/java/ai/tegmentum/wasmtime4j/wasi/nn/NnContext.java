@@ -174,14 +174,53 @@ public interface NnContext extends AutoCloseable {
   @Override
   void close();
 
-  /**
-   * Information about the WASI-NN implementation.
-   *
-   * @param version the implementation version
-   * @param backends the list of available backend names
-   * @param defaultBackend the default backend name (may be null)
-   */
-  record NnImplementationInfo(String version, List<String> backends, String defaultBackend) {
+  /** Information about the WASI-NN implementation. */
+  final class NnImplementationInfo {
+
+    private final String version;
+    private final List<String> backends;
+    private final String defaultBackend;
+
+    /**
+     * Creates a new NnImplementationInfo.
+     *
+     * @param version the implementation version
+     * @param backends the list of available backend names
+     * @param defaultBackend the default backend name (may be null)
+     */
+    public NnImplementationInfo(
+        final String version, final List<String> backends, final String defaultBackend) {
+      this.version = version;
+      this.backends = backends;
+      this.defaultBackend = defaultBackend;
+    }
+
+    /**
+     * Gets the implementation version.
+     *
+     * @return the version
+     */
+    public String getVersion() {
+      return version;
+    }
+
+    /**
+     * Gets the list of available backend names.
+     *
+     * @return the backends
+     */
+    public List<String> getBackends() {
+      return backends;
+    }
+
+    /**
+     * Gets the default backend name.
+     *
+     * @return the default backend name (may be null)
+     */
+    public String getDefaultBackend() {
+      return defaultBackend;
+    }
 
     /**
      * Checks if a specific backend is available.

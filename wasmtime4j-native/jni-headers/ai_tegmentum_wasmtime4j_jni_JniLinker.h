@@ -95,6 +95,62 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeEnableWa
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeAllowShadowing
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowShadowing
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeAllowUnknownExports
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowUnknownExports
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineUnknownImportsAsTraps
+ * Signature: (JJJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUnknownImportsAsTraps
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineUnknownImportsAsDefaultValues
+ * Signature: (JJJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUnknownImportsAsDefaultValues
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeGetByImport
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetByImport
+  (JNIEnv *, jobject, jlong, jlong, jstring, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeGetDefault
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetDefault
+  (JNIEnv *, jobject, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeGetExternType
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetExternType
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

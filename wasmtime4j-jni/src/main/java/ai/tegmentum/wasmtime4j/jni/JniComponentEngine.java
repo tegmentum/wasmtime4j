@@ -178,6 +178,21 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     return nativeEngine != null && nativeEngine.isValid();
   }
 
+  @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
+    if (other == null || !(other instanceof JniComponentEngine)) {
+      return false;
+    }
+    final JniComponentEngine otherEngine = (JniComponentEngine) other;
+    return getNativeHandle() == otherEngine.getNativeHandle();
+  }
+
+  @Override
+  public boolean isAsync() {
+    // Component engines are not async by default
+    return false;
+  }
+
   /**
    * Instantiates a component.
    *
@@ -786,6 +801,28 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private String generateComponentId() {
     return engineId + "-component-" + componentIdCounter.incrementAndGet();
   }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      return null;
+    }
+    if (isClosed()) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+
+    final int result = nativeDetectPrecompiled(getNativeHandle(), bytes);
+    // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+    if (result < 0) {
+      return null;
+    }
+    return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+  }
+
+  private native int nativeDetectPrecompiled(long engineHandle, byte[] bytes);
 
   // Implementation classes for result interfaces
 

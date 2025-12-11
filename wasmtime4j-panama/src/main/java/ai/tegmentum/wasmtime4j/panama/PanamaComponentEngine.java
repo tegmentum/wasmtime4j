@@ -461,6 +461,22 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
+    if (other == null || !(other instanceof PanamaComponentEngine)) {
+      return false;
+    }
+    final PanamaComponentEngine otherEngine = (PanamaComponentEngine) other;
+    return enhancedEngineHandle != null
+        && enhancedEngineHandle.equals(otherEngine.enhancedEngineHandle);
+  }
+
+  @Override
+  public boolean isAsync() {
+    // Component engines are not async by default
+    return false;
+  }
+
+  @Override
   public int getMemoryLimitPages() {
     return 0; // Unlimited by default
   }
@@ -505,6 +521,31 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   private String generateComponentId() {
     return "component-" + componentIdCounter.incrementAndGet();
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      return null;
+    }
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+
+    try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment bytesSegment = tempArena.allocate(bytes.length);
+      bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
+      final int result =
+          NATIVE_BINDINGS.engineDetectPrecompiled(enhancedEngineHandle, bytesSegment, bytes.length);
+      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+      if (result < 0) {
+        return null;
+      }
+      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    }
   }
 
   /**

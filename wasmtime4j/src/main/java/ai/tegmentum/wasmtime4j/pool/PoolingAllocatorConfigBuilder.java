@@ -114,6 +114,60 @@ public interface PoolingAllocatorConfigBuilder {
   PoolingAllocatorConfigBuilder poolWarmingPercentage(float percentage);
 
   /**
+   * Sets the maximum number of concurrent core module instances.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   *
+   * @param count the total core instances
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if count is not positive
+   */
+  PoolingAllocatorConfigBuilder totalCoreInstances(int count);
+
+  /**
+   * Sets the maximum number of concurrent component instances.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   *
+   * @param count the total component instances
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if count is not positive
+   */
+  PoolingAllocatorConfigBuilder totalComponentInstances(int count);
+
+  /**
+   * Sets the maximum number of core instances a single component can create.
+   *
+   * @param count the max core instances per component
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if count is not positive
+   */
+  PoolingAllocatorConfigBuilder maxCoreInstancesPerComponent(int count);
+
+  /**
+   * Sets the maximum number of concurrent GC heaps.
+   *
+   * <p>This value has a direct impact on the amount of memory allocated by the pooling allocator.
+   * The GC heap pool contains the space needed for each GC heap used by a store.
+   *
+   * @param count the total GC heaps
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if count is not positive
+   */
+  PoolingAllocatorConfigBuilder totalGcHeaps(int count);
+
+  /**
+   * Sets the maximum size in bytes that a linear memory can grow to.
+   *
+   * <p>This is the maximum size of any memory in the pool.
+   *
+   * @param bytes the max memory size
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if bytes is not positive
+   */
+  PoolingAllocatorConfigBuilder maxMemorySize(long bytes);
+
+  /**
    * Builds the configuration with the specified settings.
    *
    * @return a new PoolingAllocatorConfig instance

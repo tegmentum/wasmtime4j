@@ -214,37 +214,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
-   * Performs garbage collection within this store.
-   *
-   * <p>This method triggers garbage collection of unused WebAssembly resources within this store
-   * context. This can help reclaim memory from instances, functions, and other WebAssembly objects
-   * that are no longer reachable.
-   *
-   * <p>Note: This is separate from Java's garbage collection and only affects WebAssembly-specific
-   * resources managed by this store.
-   *
-   * @throws JniException if garbage collection fails
-   * @throws JniResourceException if this store has been closed
-   */
-  public void gc() {
-    ensureNotClosed();
-
-    try {
-      final boolean success = nativeGarbageCollect(getNativeHandle());
-      if (!success) {
-        throw new JniException("Store garbage collection failed");
-      }
-      LOGGER.fine(
-          "Performed garbage collection for store 0x" + Long.toHexString(getNativeHandle()));
-    } catch (final Exception e) {
-      if (e instanceof JniException) {
-        throw e;
-      }
-      throw new JniException("Unexpected error during store garbage collection", e);
-    }
-  }
-
-  /**
    * Sets the fuel limit for this store.
    *
    * <p>Fuel is a mechanism for limiting WebAssembly execution time. When fuel is enabled,
@@ -1413,8 +1382,396 @@ public final class JniStore extends JniResource implements Store {
     return nativeForceCaptureBacktrace(nativeHandle);
   }
 
+  @Override
+  public void gc() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    nativeGc(nativeHandle);
+  }
+
+  @Override
+  public <R> R throwException(final ai.tegmentum.wasmtime4j.ExnRef exceptionRef)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (exceptionRef == null) {
+      throw new IllegalArgumentException("exceptionRef cannot be null");
+    }
+    if (!(exceptionRef instanceof JniExnRef)) {
+      throw new IllegalArgumentException("ExnRef must be a JniExnRef instance");
+    }
+
+    final JniExnRef jniExnRef = (JniExnRef) exceptionRef;
+    nativeThrowException(nativeHandle, jniExnRef.getNativeHandle());
+    // This should never be reached - the native call always throws
+    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Exception was thrown");
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.ExnRef takePendingException()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final long exnRefHandle = nativeTakePendingException(nativeHandle);
+    if (exnRefHandle == 0) {
+      return null;
+    }
+    return new JniExnRef(exnRefHandle, nativeHandle);
+  }
+
+  @Override
+  public boolean hasPendingException() {
+    if (isClosed()) {
+      return false;
+    }
+    return nativeHasPendingException(nativeHandle);
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<Void> gcAsync()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          nativeGcAsync(nativeHandle);
+          return null;
+        });
+  }
+
+  @Override
+  public void epochDeadlineAsyncYieldAndUpdate(final long deltaTicks)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    if (deltaTicks < 0) {
+      throw new IllegalArgumentException("deltaTicks cannot be negative");
+    }
+    nativeEpochDeadlineAsyncYieldAndUpdate(nativeHandle, deltaTicks);
+  }
+
+  @Override
+  public void epochDeadlineTrap() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    nativeEpochDeadlineTrap(nativeHandle);
+  }
+
+  @Override
+  public void epochDeadlineCallback(
+      final ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    // Store callback reference to prevent GC
+    this.epochDeadlineCallback = callback;
+    if (callback == null) {
+      nativeClearEpochDeadlineCallback(nativeHandle);
+    } else {
+      nativeSetEpochDeadlineCallback(nativeHandle);
+    }
+  }
+
+  // Callback holder to prevent garbage collection
+  private ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback epochDeadlineCallback;
+
+  // Called from native code when epoch deadline is reached
+  @SuppressWarnings("unused")
+  private long onEpochDeadlineReached(final long currentEpoch) {
+    if (epochDeadlineCallback == null) {
+      return -1; // Signal trap
+    }
+    final ai.tegmentum.wasmtime4j.Store.EpochDeadlineAction action =
+        epochDeadlineCallback.onEpochDeadline(currentEpoch);
+    if (action.shouldContinue()) {
+      return action.getDeltaTicks();
+    }
+    return -1; // Signal trap
+  }
+
   private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeCaptureBacktrace(long storeHandle);
 
   private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeForceCaptureBacktrace(
       long storeHandle);
+
+  private native void nativeGc(long storeHandle);
+
+  private native void nativeThrowException(long storeHandle, long exnRefHandle);
+
+  private native long nativeTakePendingException(long storeHandle);
+
+  private native boolean nativeHasPendingException(long storeHandle);
+
+  private native void nativeGcAsync(long storeHandle);
+
+  private native void nativeEpochDeadlineAsyncYieldAndUpdate(long storeHandle, long deltaTicks);
+
+  private native void nativeEpochDeadlineTrap(long storeHandle);
+
+  private native void nativeSetEpochDeadlineCallback(long storeHandle);
+
+  private native void nativeClearEpochDeadlineCallback(long storeHandle);
+
+  // Call hook support
+  private ai.tegmentum.wasmtime4j.CallHookHandler callHookHandler;
+  private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
+
+  @Override
+  public void setCallHook(final ai.tegmentum.wasmtime4j.CallHookHandler handler)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    this.callHookHandler = handler;
+    if (handler == null) {
+      nativeClearCallHook(nativeHandle);
+    } else {
+      nativeSetCallHook(nativeHandle);
+    }
+  }
+
+  @Override
+  public void setCallHookAsync(final ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler handler)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    this.asyncCallHookHandler = handler;
+    if (handler == null) {
+      nativeClearCallHookAsync(nativeHandle);
+    } else {
+      nativeSetCallHookAsync(nativeHandle);
+    }
+  }
+
+  // Called from native code when a call hook event occurs
+  @SuppressWarnings("unused")
+  private void onCallHook(final int hookType)
+      throws ai.tegmentum.wasmtime4j.exception.TrapException {
+    if (callHookHandler != null) {
+      callHookHandler.onCallHook(ai.tegmentum.wasmtime4j.CallHook.fromValue(hookType));
+    }
+  }
+
+  // Called from native code for async call hook
+  @SuppressWarnings("unused")
+  private void onCallHookAsync(final int hookType) {
+    if (asyncCallHookHandler != null) {
+      asyncCallHookHandler.onCallHook(ai.tegmentum.wasmtime4j.CallHook.fromValue(hookType));
+    }
+  }
+
+  private native void nativeSetCallHook(long storeHandle);
+
+  private native void nativeClearCallHook(long storeHandle);
+
+  private native void nativeSetCallHookAsync(long storeHandle);
+
+  private native void nativeClearCallHookAsync(long storeHandle);
+
+  // ===== Concurrency Methods =====
+
+  @Override
+  public <T, R> R runConcurrent(
+      final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
+      throws WasmException {
+    ensureNotClosed();
+    JniValidation.requireNonNull(task, "task");
+    // Create accessor wrapper
+    @SuppressWarnings("unchecked")
+    final JniAccessor<T> accessor = new JniAccessor<>((T) customData, nativeHandle);
+    try {
+      return task.execute(accessor);
+    } finally {
+      accessor.invalidate();
+    }
+  }
+
+  @Override
+  public <R> ai.tegmentum.wasmtime4j.concurrent.JoinHandle<R> spawn(
+      final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task)
+      throws WasmException {
+    ensureNotClosed();
+    JniValidation.requireNonNull(task, "task");
+    return new JniJoinHandle<>(task);
+  }
+
+  // ===== Debug Methods =====
+
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames() throws WasmException {
+    ensureNotClosed();
+    // Return debug frames from native (empty if debugging not enabled)
+    final String framesJson = nativeGetDebugFrames(nativeHandle);
+    if (framesJson == null || framesJson.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+    return parseDebugFrames(framesJson);
+  }
+
+  private java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> parseDebugFrames(final String json) {
+    // Simple JSON parsing for debug frames
+    java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> frames = new java.util.ArrayList<>();
+    // For now return empty list - native implementation will provide real data
+    return frames;
+  }
+
+  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
+
+  @Override
+  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler)
+      throws WasmException {
+    ensureNotClosed();
+    this.debugHandler = handler;
+    if (handler == null) {
+      nativeClearDebugHandler(nativeHandle);
+    } else {
+      nativeSetDebugHandler(nativeHandle);
+    }
+  }
+
+  // ===== Fuel Async Methods =====
+
+  private long fuelAsyncYieldInterval = 0;
+
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    ensureNotClosed();
+    if (interval < 0) {
+      throw new IllegalArgumentException("Interval cannot be negative");
+    }
+    this.fuelAsyncYieldInterval = interval;
+    nativeSetFuelAsyncYieldInterval(nativeHandle, interval);
+  }
+
+  @Override
+  public long getFuelAsyncYieldInterval() {
+    return fuelAsyncYieldInterval;
+  }
+
+  // Native methods for new functionality
+  private native String nativeGetDebugFrames(long storeHandle);
+
+  private native void nativeSetDebugHandler(long storeHandle);
+
+  private native void nativeClearDebugHandler(long storeHandle);
+
+  private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
+
+  // ===== Inner Classes =====
+
+  /**
+   * JNI implementation of Accessor for concurrent store access.
+   */
+  private static final class JniAccessor<T> implements ai.tegmentum.wasmtime4j.concurrent.Accessor<T> {
+    private final T data;
+    private final long storeId;
+    private volatile boolean valid = true;
+
+    JniAccessor(final T data, final long storeId) {
+      this.data = data;
+      this.storeId = storeId;
+    }
+
+    @Override
+    public T getData() {
+      return data;
+    }
+
+    @Override
+    public boolean isValid() {
+      return valid;
+    }
+
+    @Override
+    public long getStoreId() {
+      return storeId;
+    }
+
+    @Override
+    public void complete() throws WasmException {
+      valid = false;
+    }
+
+    @Override
+    public void fail(final Throwable error) throws WasmException {
+      valid = false;
+    }
+
+    void invalidate() {
+      valid = false;
+    }
+  }
+
+  /**
+   * JNI implementation of JoinHandle for spawned tasks.
+   */
+  private static final class JniJoinHandle<T>
+      implements ai.tegmentum.wasmtime4j.concurrent.JoinHandle<T> {
+    private static final java.util.concurrent.atomic.AtomicLong ID_COUNTER =
+        new java.util.concurrent.atomic.AtomicLong(0);
+
+    private final long id;
+    private final java.util.concurrent.CompletableFuture<T> future;
+
+    JniJoinHandle(final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<T> task) {
+      this.id = ID_COUNTER.incrementAndGet();
+      this.future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+        try {
+          return task.run();
+        } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
+
+    @Override
+    public T join() throws WasmException, InterruptedException {
+      try {
+        return future.get();
+      } catch (java.util.concurrent.ExecutionException e) {
+        throw new WasmException("Task failed: " + e.getCause().getMessage(), e.getCause());
+      }
+    }
+
+    @Override
+    public T join(final long timeout, final java.util.concurrent.TimeUnit unit)
+        throws WasmException, InterruptedException {
+      try {
+        return future.get(timeout, unit);
+      } catch (java.util.concurrent.ExecutionException e) {
+        throw new WasmException("Task failed: " + e.getCause().getMessage(), e.getCause());
+      } catch (java.util.concurrent.TimeoutException e) {
+        throw new WasmException("Task timed out", e);
+      }
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<T> toFuture() {
+      return future;
+    }
+
+    @Override
+    public boolean isDone() {
+      return future.isDone();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return future.isCancelled();
+    }
+
+    @Override
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      return future.cancel(mayInterruptIfRunning);
+    }
+
+    @Override
+    public long getId() {
+      return id;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus getStatus() {
+      if (future.isCancelled()) {
+        return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.CANCELLED;
+      }
+      if (future.isDone()) {
+        if (future.isCompletedExceptionally()) {
+          return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.FAILED;
+        }
+        return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.COMPLETED;
+      }
+      return ai.tegmentum.wasmtime4j.concurrent.JoinHandle.TaskStatus.RUNNING;
+    }
+  }
 }

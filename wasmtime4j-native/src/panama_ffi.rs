@@ -271,6 +271,67 @@ pub mod engine {
             }
         }
     }
+
+    /// Check if the engine is using Pulley interpreter (Panama FFI version)
+    ///
+    /// Returns 1 if using Pulley, 0 if not, -1 on error.
+    /// Note: Pulley is only available in wasmtime >= 40.0.0. In 39.0.1, always returns 0.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_engine_is_pulley(engine_ptr: *mut c_void) -> c_int {
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(_engine) => {
+                // Pulley is not available in wasmtime 39.0.1
+                // Return 0 (not using Pulley) - this is the correct behavior for pre-Pulley versions
+                0
+            }
+            Err(_) => -1,
+        }
+    }
+
+    /// Get the precompile compatibility hash for the engine (Panama FFI version)
+    ///
+    /// Returns a hash value that can be compared between engines to check compatibility.
+    /// The hash is written to out_hash buffer (must be at least 8 bytes).
+    /// Returns 0 on success, -1 on error.
+    /// Note: precompile_compatibility_hash is only available in wasmtime >= 40.0.0.
+    /// In 39.0.1, we compute a hash based on available engine properties.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_engine_precompile_compatibility_hash(
+        engine_ptr: *mut c_void,
+        out_hash: *mut u64,
+    ) -> c_int {
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
+
+        match unsafe { core::get_engine_ref(engine_ptr) } {
+            Ok(engine) => {
+                // Compute a compatibility hash based on available engine properties
+                // This is a best-effort approximation for wasmtime 39.0.1 which lacks
+                // the precompile_compatibility_hash() method
+                let mut hasher = DefaultHasher::new();
+
+                // Hash based on engine feature flags
+                engine.fuel_enabled().hash(&mut hasher);
+                engine.epoch_interruption_enabled().hash(&mut hasher);
+                engine.coredump_on_trap().hash(&mut hasher);
+
+                // Include wasmtime version in the hash
+                "wasmtime-39.0.1".hash(&mut hasher);
+
+                let hash = hasher.finish();
+                unsafe {
+                    if !out_hash.is_null() {
+                        *out_hash = hash;
+                    }
+                }
+                0  // Success
+            }
+            Err(e) => {
+                log::error!("Invalid engine pointer: {:?}", e);
+                -1
+            }
+        }
+    }
 }
 
 /// Panama FFI bindings for WebAssembly module operations
@@ -1206,6 +1267,25 @@ pub mod store {
                 *buffer_len_out = (&(*buffer)).len() as c_uint;
             }
 
+            Ok(())
+        })
+    }
+
+    /// Trigger garbage collection on a WebAssembly store (Panama FFI version)
+    ///
+    /// This explicitly triggers GC to reclaim unreachable GC objects. If GC support
+    /// is not enabled in the engine configuration, this is a no-op.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_gc(store_ptr: *mut c_void) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            let mut store_lock = store.inner.lock();
+            // Wasmtime's gc() method takes Option<&GcHeapOutOfMemory<()>>
+            // Passing None means we're not in an OOM recovery scenario
+            store_lock.gc(None);
             Ok(())
         })
     }
@@ -6999,5 +7079,178 @@ pub mod wasi_http {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_wasi_http_is_available() -> c_int {
         crate::wasi_http::wasi_http_is_available()
+    }
+
+    // ============================================================================
+    // Exception Handling Functions
+    // ============================================================================
+
+    /// Creates a new WebAssembly tag for exception handling.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    /// - param_types and return_types must be valid pointers to int arrays
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_create(
+        _store_ptr: *mut c_void,
+        _param_types: *const c_int,
+        _param_count: c_int,
+        _return_types: *const c_int,
+        _return_count: c_int,
+    ) -> *mut c_void {
+        // Tag creation is not yet implemented in Wasmtime's public API
+        // This is a placeholder for when the API becomes available
+        std::ptr::null_mut()
+    }
+
+    /// Gets the parameter types of a tag.
+    ///
+    /// # Safety
+    /// - tag_ptr must be a valid pointer to a Tag
+    /// - store_ptr must be a valid pointer to a Store
+    /// - out_count must be a valid pointer
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
+        _tag_ptr: *const c_void,
+        _store_ptr: *mut c_void,
+        out_count: *mut c_int,
+    ) -> *mut c_int {
+        if !out_count.is_null() {
+            unsafe { *out_count = 0; }
+        }
+        std::ptr::null_mut()
+    }
+
+    /// Gets the return types of a tag.
+    ///
+    /// # Safety
+    /// - tag_ptr must be a valid pointer to a Tag
+    /// - store_ptr must be a valid pointer to a Store
+    /// - out_count must be a valid pointer
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
+        _tag_ptr: *const c_void,
+        _store_ptr: *mut c_void,
+        out_count: *mut c_int,
+    ) -> *mut c_int {
+        if !out_count.is_null() {
+            unsafe { *out_count = 0; }
+        }
+        std::ptr::null_mut()
+    }
+
+    /// Frees a tag types array.
+    ///
+    /// # Safety
+    /// - types_ptr must be a valid pointer allocated by tag_get_param/return_types
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_types_free(
+        types_ptr: *mut c_int,
+        count: c_int,
+    ) {
+        if !types_ptr.is_null() && count > 0 {
+            unsafe {
+                let _ = Vec::from_raw_parts(types_ptr, count as usize, count as usize);
+            }
+        }
+    }
+
+    /// Checks if two tags are equal.
+    ///
+    /// # Safety
+    /// - tag1_ptr and tag2_ptr must be valid pointers to Tags
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_equals(
+        _tag1_ptr: *const c_void,
+        _tag2_ptr: *const c_void,
+        _store_ptr: *mut c_void,
+    ) -> c_int {
+        // Tag equality is not yet implemented
+        0
+    }
+
+    /// Destroys a tag and frees its native resources.
+    ///
+    /// # Safety
+    /// - tag_ptr must be a valid pointer to a Tag
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_tag_destroy(_tag_ptr: *mut c_void) {
+        // Tag destruction is not yet implemented
+    }
+
+    /// Gets the tag from an exception reference.
+    ///
+    /// # Safety
+    /// - exnref_ptr must be a valid pointer to an ExnRef
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_exnref_get_tag(
+        _exnref_ptr: *const c_void,
+        _store_ptr: *mut c_void,
+    ) -> *mut c_void {
+        // ExnRef.getTag is not yet implemented
+        std::ptr::null_mut()
+    }
+
+    /// Checks if an exception reference is valid.
+    ///
+    /// # Safety
+    /// - exnref_ptr must be a valid pointer to an ExnRef
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_exnref_is_valid(
+        _exnref_ptr: *const c_void,
+        _store_ptr: *mut c_void,
+    ) -> c_int {
+        // ExnRef.isValid is not yet implemented
+        0
+    }
+
+    /// Destroys an exception reference and frees its native resources.
+    ///
+    /// # Safety
+    /// - exnref_ptr must be a valid pointer to an ExnRef
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_exnref_destroy(_exnref_ptr: *mut c_void) {
+        // ExnRef destruction is not yet implemented
+    }
+
+    /// Throws an exception in the store.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    /// - exnref_ptr must be a valid pointer to an ExnRef
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_throw_exception(
+        _store_ptr: *mut c_void,
+        _exnref_ptr: *const c_void,
+    ) -> c_int {
+        // Store.throwException is not yet implemented
+        -1
+    }
+
+    /// Takes and removes the pending exception from the store.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_take_pending_exception(
+        _store_ptr: *mut c_void,
+    ) -> *mut c_void {
+        // Store.takePendingException is not yet implemented
+        std::ptr::null_mut()
+    }
+
+    /// Checks if the store has a pending exception.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_has_pending_exception(
+        _store_ptr: *mut c_void,
+    ) -> c_int {
+        // Store.hasPendingException is not yet implemented
+        0
     }
 }

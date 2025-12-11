@@ -192,14 +192,52 @@ public interface NnGraphExecutionContext extends AutoCloseable {
   @Override
   void close();
 
-  /**
-   * Metadata about a tensor (input or output).
-   *
-   * @param name the tensor name
-   * @param dimensions the expected dimensions (null means dynamic)
-   * @param type the expected data type (null means any)
-   */
-  record NnTensorMetadata(String name, int[] dimensions, NnTensorType type) {
+  /** Metadata about a tensor (input or output). */
+  final class NnTensorMetadata {
+
+    private final String name;
+    private final int[] dimensions;
+    private final NnTensorType type;
+
+    /**
+     * Creates a new NnTensorMetadata.
+     *
+     * @param name the tensor name
+     * @param dimensions the expected dimensions (null means dynamic)
+     * @param type the expected data type (null means any)
+     */
+    public NnTensorMetadata(final String name, final int[] dimensions, final NnTensorType type) {
+      this.name = name;
+      this.dimensions = dimensions;
+      this.type = type;
+    }
+
+    /**
+     * Gets the tensor name.
+     *
+     * @return the name
+     */
+    public String getName() {
+      return name;
+    }
+
+    /**
+     * Gets the expected dimensions.
+     *
+     * @return the dimensions (null means dynamic)
+     */
+    public int[] getDimensions() {
+      return dimensions;
+    }
+
+    /**
+     * Gets the expected data type.
+     *
+     * @return the type (null means any)
+     */
+    public NnTensorType getType() {
+      return type;
+    }
 
     /**
      * Checks if the dimensions are fixed.

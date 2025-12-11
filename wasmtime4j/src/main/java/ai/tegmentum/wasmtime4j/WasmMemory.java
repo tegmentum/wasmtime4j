@@ -847,4 +847,88 @@ public interface WasmMemory {
   default void writeFloat64(final long offset, final double value) {
     writeInt64(offset, Double.doubleToLongBits(value));
   }
+
+  // Direct memory access methods (wasmtime 39.0.1 API)
+
+  /**
+   * Gets the base pointer address for direct memory access.
+   *
+   * <p>This returns the native memory address of the linear memory's data buffer. This pointer can
+   * be used for direct memory access via unsafe operations or JNI/Panama FFI.
+   *
+   * <p><b>Warning:</b> The returned pointer may be invalidated by memory growth operations. Always
+   * re-fetch the pointer after any operation that may grow memory.
+   *
+   * @return the native memory address, or 0 if not available
+   * @since 1.1.0
+   */
+  default long dataPtr() {
+    return 0;
+  }
+
+  /**
+   * Gets the current size of the memory in bytes.
+   *
+   * <p>This is equivalent to {@code getSize() * 65536L} but may be more efficient as it can be
+   * calculated directly from the native memory state.
+   *
+   * @return the current size in bytes
+   * @since 1.1.0
+   */
+  default long dataSize() {
+    return (long) getSize() * 65536L;
+  }
+
+  /**
+   * Gets the page size for this memory in bytes.
+   *
+   * <p>Standard WebAssembly page size is 64KB (65536 bytes). Custom page sizes are available via
+   * the custom-page-sizes proposal.
+   *
+   * @return the page size in bytes (typically 65536)
+   * @since 1.1.0
+   */
+  default int pageSize() {
+    return 65536;
+  }
+
+  /**
+   * Gets the log2 of the page size for this memory.
+   *
+   * <p>For standard 64KB pages, this returns 16. This is useful for efficient page calculations
+   * using bit shifts instead of division.
+   *
+   * @return the log2 of page size (typically 16)
+   * @since 1.1.0
+   */
+  default int pageSizeLog2() {
+    return 16;
+  }
+
+  /**
+   * Grows the memory asynchronously by the specified number of pages.
+   *
+   * <p>This method allows memory growth operations to be performed without blocking the calling
+   * thread, which is useful for async-enabled stores.
+   *
+   * @param pages the number of pages to grow by
+   * @return a CompletableFuture that completes with the previous size in pages, or -1 if failed
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Integer> growAsync(final int pages) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> grow(pages));
+  }
+
+  /**
+   * Gets the minimum number of pages for this memory.
+   *
+   * <p>This is the minimum size that the memory was created with and cannot shrink below.
+   *
+   * @return the minimum number of pages
+   * @since 1.1.0
+   */
+  default int getMinSize() {
+    MemoryType memType = getMemoryType();
+    return memType != null ? (int) memType.getMinimum() : 0;
+  }
 }

@@ -250,6 +250,74 @@ class JniModuleTest {
               int initialPages, int maxPages) {
             return null;
           }
+
+          @Override
+          public void gc() {}
+
+          @Override
+          public <R> R throwException(ai.tegmentum.wasmtime4j.ExnRef exceptionRef) {
+            return null;
+          }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.ExnRef takePendingException() {
+            return null;
+          }
+
+          @Override
+          public boolean hasPendingException() {
+            return false;
+          }
+
+          @Override
+          public java.util.concurrent.CompletableFuture<Void> gcAsync() {
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
+          }
+
+          @Override
+          public void epochDeadlineAsyncYieldAndUpdate(long deltaTicks) {}
+
+          @Override
+          public void epochDeadlineTrap() {}
+
+          @Override
+          public void epochDeadlineCallback(
+              ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback) {}
+
+          @Override
+          public void setCallHook(ai.tegmentum.wasmtime4j.CallHookHandler handler) {}
+
+          @Override
+          public void setCallHookAsync(
+              ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler handler) {}
+
+          @Override
+          public <T, R> R runConcurrent(
+              ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task) {
+            return null;
+          }
+
+          @Override
+          public <R> ai.tegmentum.wasmtime4j.concurrent.JoinHandle<R> spawn(
+              ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task) {
+            return null;
+          }
+
+          @Override
+          public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames() {
+            return java.util.Collections.emptyList();
+          }
+
+          @Override
+          public void setDebugHandler(ai.tegmentum.wasmtime4j.debug.DebugHandler handler) {}
+
+          @Override
+          public void setFuelAsyncYieldInterval(long interval) {}
+
+          @Override
+          public long getFuelAsyncYieldInterval() {
+            return 0;
+          }
         };
 
     final IllegalArgumentException exception =

@@ -1122,6 +1122,226 @@ public class JniLinker<T> implements Linker<T> {
     }
   }
 
+  @Override
+  public Linker<T> allowShadowing(final boolean allow) {
+    ensureNotClosed();
+    if (isNativeHandleReasonable()) {
+      nativeAllowShadowing(nativeHandle, allow);
+    }
+    return this;
+  }
+
+  @Override
+  public Linker<T> allowUnknownExports(final boolean allow) {
+    ensureNotClosed();
+    if (isNativeHandleReasonable()) {
+      nativeAllowUnknownExports(nativeHandle, allow);
+    }
+    return this;
+  }
+
+  @Override
+  public void defineUnknownImportsAsTraps(final Store store, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final JniModule jniModule = (JniModule) module;
+
+    if (isNativeHandleReasonable()) {
+      final boolean success =
+          nativeDefineUnknownImportsAsTraps(
+              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+      if (!success) {
+        throw new WasmException("Failed to define unknown imports as traps");
+      }
+    }
+  }
+
+  @Override
+  public void defineUnknownImportsAsDefaultValues(final Store store, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final JniModule jniModule = (JniModule) module;
+
+    if (isNativeHandleReasonable()) {
+      final boolean success =
+          nativeDefineUnknownImportsAsDefaultValues(
+              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+      if (!success) {
+        throw new WasmException("Failed to define unknown imports as default values");
+      }
+    }
+  }
+
+  @Override
+  public void funcNewUnchecked(
+      final Store store,
+      final String moduleName,
+      final String name,
+      final FunctionType functionType,
+      final HostFunction implementation)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // For unchecked version, use defineHostFunction
+    defineHostFunction(moduleName, name, functionType, implementation);
+  }
+
+  @Override
+  public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter() {
+    ensureNotClosed();
+
+    final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+        new java.util.ArrayList<>();
+
+    for (final ai.tegmentum.wasmtime4j.ImportInfo info : importRegistry.values()) {
+      final ai.tegmentum.wasmtime4j.ExternType externType;
+      switch (info.getImportType()) {
+        case FUNCTION:
+          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+          break;
+        case MEMORY:
+          externType = ai.tegmentum.wasmtime4j.ExternType.MEMORY;
+          break;
+        case TABLE:
+          externType = ai.tegmentum.wasmtime4j.ExternType.TABLE;
+          break;
+        case GLOBAL:
+          externType = ai.tegmentum.wasmtime4j.ExternType.GLOBAL;
+          break;
+        default:
+          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+      }
+
+      definitions.add(
+          new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+              info.getModuleName(), info.getImportName(), externType));
+    }
+
+    return definitions;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Extern getByImport(
+      final Store store, final String moduleName, final String name) {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+
+    if (!isNativeHandleReasonable()) {
+      return null;
+    }
+
+    final long externHandle =
+        nativeGetByImport(nativeHandle, jniStore.getNativeHandle(), moduleName, name);
+
+    if (externHandle == 0) {
+      return null;
+    }
+
+    final int externTypeCode = nativeGetExternType(externHandle);
+    switch (externTypeCode) {
+      case 0: // FUNC
+        return new JniExternFunc(externHandle, jniStore);
+      case 1: // TABLE
+        return new JniExternTable(externHandle, jniStore);
+      case 2: // MEMORY
+        return new JniExternMemory(externHandle, jniStore);
+      case 3: // GLOBAL
+        return new JniExternGlobal(externHandle, jniStore);
+      default:
+        LOGGER.warning("Unknown extern type code: " + externTypeCode);
+        return null;
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmFunction getDefault(
+      final Store store, final String moduleName) {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+
+    if (!isNativeHandleReasonable()) {
+      return null;
+    }
+
+    final long funcHandle = nativeGetDefault(nativeHandle, jniStore.getNativeHandle(), moduleName);
+
+    if (funcHandle == 0) {
+      return null;
+    }
+
+    return new JniFunction(funcHandle, moduleName, 0, jniStore);
+  }
+
   /** Wrapper for host function callbacks. */
   private static class HostFunctionWrapper {
     private static final java.util.concurrent.atomic.AtomicLong nextId =
@@ -1282,4 +1502,72 @@ public class JniLinker<T> implements Linker<T> {
    * @param handle the linker handle
    */
   private native void nativeDestroyLinker(long handle);
+
+  /**
+   * Allows shadowing of prior definitions.
+   *
+   * @param linkerHandle the linker handle
+   * @param allow true to allow shadowing
+   */
+  private native void nativeAllowShadowing(long linkerHandle, boolean allow);
+
+  /**
+   * Allows unknown exports from modules.
+   *
+   * @param linkerHandle the linker handle
+   * @param allow true to allow unknown exports
+   */
+  private native void nativeAllowUnknownExports(long linkerHandle, boolean allow);
+
+  /**
+   * Defines all undefined imports as trapping functions.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleHandle the module handle
+   * @return true on success
+   */
+  private native boolean nativeDefineUnknownImportsAsTraps(
+      long linkerHandle, long storeHandle, long moduleHandle);
+
+  /**
+   * Defines all undefined imports with default values.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleHandle the module handle
+   * @return true on success
+   */
+  private native boolean nativeDefineUnknownImportsAsDefaultValues(
+      long linkerHandle, long storeHandle, long moduleHandle);
+
+  /**
+   * Gets an extern by import specifier.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleName the module name
+   * @param name the import name
+   * @return extern handle or 0 if not found
+   */
+  private native long nativeGetByImport(
+      long linkerHandle, long storeHandle, String moduleName, String name);
+
+  /**
+   * Gets the default function for a module.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleName the module name
+   * @return function handle or 0 if not found
+   */
+  private native long nativeGetDefault(long linkerHandle, long storeHandle, String moduleName);
+
+  /**
+   * Gets the type of an extern value.
+   *
+   * @param externHandle the extern handle
+   * @return type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL), or -1 on error
+   */
+  private native int nativeGetExternType(long externHandle);
 }

@@ -1,8 +1,10 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * WebAssembly linker interface for defining host functions and resolving imports.
@@ -262,12 +264,314 @@ public interface Linker<T> extends Closeable {
   java.util.List<ImportInfo> getImportRegistry();
 
   /**
+   * Allows subsequent definitions to shadow prior definitions.
+   *
+   * <p>By default, the linker will return an error if the same item is defined twice. Calling this
+   * method allows later definitions to shadow earlier ones.
+   *
+   * @param allow true to allow shadowing, false to prohibit it (default)
+   * @return this linker for method chaining
+   * @since 1.0.0
+   */
+  Linker<T> allowShadowing(boolean allow);
+
+  /**
+   * Allows unknown exports from modules.
+   *
+   * <p>When set to true, the linker will not report errors for exports that are not expected or
+   * defined in the linker namespace.
+   *
+   * @param allow true to allow unknown exports
+   * @return this linker for method chaining
+   * @since 1.0.0
+   */
+  Linker<T> allowUnknownExports(boolean allow);
+
+  /**
+   * Defines all undefined imports as trapping functions.
+   *
+   * <p>For any import that hasn't been explicitly defined, this method will create a function that
+   * traps immediately when called. This is useful for linking modules where some imports are not
+   * needed for the specific use case.
+   *
+   * @param store the store context for creating trap functions
+   * @param module the module to define trap functions for
+   * @throws WasmException if trap functions cannot be defined
+   * @since 1.0.0
+   */
+  void defineUnknownImportsAsTraps(Store store, Module module) throws WasmException;
+
+  /**
+   * Defines all undefined imports with default values.
+   *
+   * <p>For any import that hasn't been explicitly defined, this method will create a function or
+   * value using a sensible default (e.g., functions return default values, globals are initialized
+   * to zero).
+   *
+   * @param store the store context for creating default values
+   * @param module the module to define defaults for
+   * @throws WasmException if defaults cannot be defined
+   * @since 1.0.0
+   */
+  void defineUnknownImportsAsDefaultValues(Store store, Module module) throws WasmException;
+
+  /**
+   * Defines a function without type checking.
+   *
+   * <p>This is a performance optimization that skips type validation when defining host functions.
+   * The caller must ensure that the function type matches exactly, as type mismatches will result
+   * in undefined behavior or runtime errors.
+   *
+   * <p><b>Warning:</b> Use this method only when you are certain the types are correct and need the
+   * performance benefit of skipping validation.
+   *
+   * @param store the store context
+   * @param moduleName the module name for the import
+   * @param name the function name for the import
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @throws WasmException if the function cannot be defined
+   * @since 1.0.0
+   */
+  void funcNewUnchecked(
+      Store store,
+      String moduleName,
+      String name,
+      FunctionType functionType,
+      HostFunction implementation)
+      throws WasmException;
+
+  /**
+   * Iterates over all definitions in this linker.
+   *
+   * <p>Returns an iterator over all module/name pairs that have been defined.
+   *
+   * @return an iterable of module/name pairs
+   * @since 1.0.0
+   */
+  Iterable<LinkerDefinition> iter();
+
+  /**
+   * Gets a definition by its import specifier.
+   *
+   * <p>Looks up a specific definition by module name and item name.
+   *
+   * @param store the store context
+   * @param moduleName the module name
+   * @param name the item name
+   * @return the extern value, or null if not found
+   * @since 1.0.0
+   */
+  Extern getByImport(Store store, String moduleName, String name);
+
+  /**
+   * Gets the default function for a module.
+   *
+   * <p>Returns the default export from a module, which is typically the main entry point (usually
+   * named "" or "_start").
+   *
+   * @param store the store context
+   * @param moduleName the module name
+   * @return the default function, or null if none
+   * @since 1.0.0
+   */
+  WasmFunction getDefault(Store store, String moduleName);
+
+  /**
+   * Defines an async host function that can be imported by WebAssembly modules.
+   *
+   * <p>Async functions allow for non-blocking operations during WebAssembly execution. When the
+   * function yields, the WebAssembly execution is paused until the async operation completes.
+   *
+   * @param moduleName the module name for the import
+   * @param name the function name for the import
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the async Java implementation
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default void funcNewAsync(
+      final String moduleName,
+      final String name,
+      final FunctionType functionType,
+      final AsyncHostFunction implementation)
+      throws WasmException {
+    throw new UnsupportedOperationException("Async functions not supported in this implementation");
+  }
+
+  /**
+   * Wraps an async function with the given implementation.
+   *
+   * <p>This is a convenience method for defining async host functions with automatic type inference
+   * from the implementation.
+   *
+   * @param moduleName the module name for the import
+   * @param name the function name for the import
+   * @param implementation the async Java implementation
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default void funcWrapAsync(
+      final String moduleName, final String name, final AsyncHostFunction implementation)
+      throws WasmException {
+    throw new UnsupportedOperationException("Async functions not supported in this implementation");
+  }
+
+  /**
+   * Creates an alias for an entire module's exports.
+   *
+   * <p>This makes all exports from the source module available under the destination module name,
+   * allowing for namespace renaming.
+   *
+   * @param fromModule the source module name
+   * @param toModule the destination module name
+   * @throws WasmException if the alias cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default void aliasModule(final String fromModule, final String toModule) throws WasmException {
+    throw new UnsupportedOperationException("Module aliasing not supported in this implementation");
+  }
+
+  // ===== Async Module and Instantiation Methods =====
+
+  /**
+   * Defines a module in the linker namespace asynchronously.
+   *
+   * <p>This method performs module definition in an async context, allowing the operation
+   * to yield if needed. The module's exports will be available under the specified name
+   * for linking with other modules.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store context
+   * @param moduleName the name to assign to this module in the linker
+   * @param module the compiled module to define
+   * @return a future that completes when the module is defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<Void> moduleAsync(
+      final Store store, final String moduleName, final Module module) {
+    return CompletableFuture.runAsync(() -> {
+      try {
+        instantiate(store, moduleName, module);
+      } catch (WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
+   * Instantiates a WebAssembly module asynchronously using this linker.
+   *
+   * <p>This method performs module instantiation in an async context, allowing the operation
+   * to yield during start function execution if the module uses async features.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store to instantiate the module in
+   * @param module the compiled module to instantiate
+   * @return a future that completes with the new Instance
+   * @throws IllegalArgumentException if store or module is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, module);
+      } catch (WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
+   * Instantiates a WebAssembly module with a name asynchronously using this linker.
+   *
+   * <p>This method performs module instantiation in an async context. The module's exports
+   * will be available under the specified name for subsequent linking operations.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store to instantiate the module in
+   * @param moduleName the name to assign to this module in the linker
+   * @param module the compiled module to instantiate
+   * @return a future that completes with the new Instance
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<Instance> instantiateAsync(
+      final Store store, final String moduleName, final Module module) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, moduleName, module);
+      } catch (WasmException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  /**
    * Closes the linker and releases associated resources.
    *
    * <p>After closing, the linker becomes invalid and should not be used.
    */
   @Override
   void close();
+
+  /**
+   * Represents a definition in the linker.
+   *
+   * @since 1.0.0
+   */
+  final class LinkerDefinition {
+    private final String moduleName;
+    private final String name;
+    private final ExternType type;
+
+    /**
+     * Creates a new linker definition.
+     *
+     * @param moduleName the module name
+     * @param name the item name
+     * @param type the extern type
+     */
+    public LinkerDefinition(final String moduleName, final String name, final ExternType type) {
+      this.moduleName = moduleName;
+      this.name = name;
+      this.type = type;
+    }
+
+    /**
+     * Gets the module name.
+     *
+     * @return the module name
+     */
+    public String getModuleName() {
+      return moduleName;
+    }
+
+    /**
+     * Gets the item name.
+     *
+     * @return the item name
+     */
+    public String getName() {
+      return name;
+    }
+
+    /**
+     * Gets the extern type.
+     *
+     * @return the extern type
+     */
+    public ExternType getType() {
+      return type;
+    }
+  }
 
   /**
    * Creates a new Linker for the given engine.

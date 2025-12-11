@@ -495,6 +495,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCr
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsNnAvailable
   (JNIEnv *, jclass);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeCreateTag
+ * Signature: (J[I[I)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateTag
+  (JNIEnv *, jclass, jlong, jintArray, jintArray);
+
 #ifdef __cplusplus
 }
 #endif

@@ -89,10 +89,14 @@ public enum AnalysisMethod {
    * @return true if performance-intensive
    */
   public boolean isPerformanceIntensive() {
-    return switch (this) {
-      case INSTRUMENTATION_ANALYSIS, MEMORY_USAGE_ANALYSIS, CACHE_ANALYSIS -> true;
-      default -> false;
-    };
+    switch (this) {
+      case INSTRUMENTATION_ANALYSIS:
+      case MEMORY_USAGE_ANALYSIS:
+      case CACHE_ANALYSIS:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -101,14 +105,16 @@ public enum AnalysisMethod {
    * @return true if timing information is provided
    */
   public boolean providesTimingInfo() {
-    return switch (this) {
-      case SAMPLING_ANALYSIS,
-          INSTRUMENTATION_ANALYSIS,
-          EXECUTION_TIME_ANALYSIS,
-          HOTNESS_ANALYSIS,
-          CACHE_ANALYSIS -> true;
-      default -> false;
-    };
+    switch (this) {
+      case SAMPLING_ANALYSIS:
+      case INSTRUMENTATION_ANALYSIS:
+      case EXECUTION_TIME_ANALYSIS:
+      case HOTNESS_ANALYSIS:
+      case CACHE_ANALYSIS:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -135,20 +141,28 @@ public enum AnalysisMethod {
    * @return overhead level (LOW, MEDIUM, HIGH)
    */
   public OverheadLevel getOverheadLevel() {
-    return switch (this) {
-      case SAMPLING_ANALYSIS,
-          CALL_FREQUENCY_ANALYSIS,
-          DEAD_CODE_ANALYSIS,
-          CALL_GRAPH_ANALYSIS,
-          CONTROL_FLOW_ANALYSIS,
-          DATA_FLOW_ANALYSIS,
-          LOOP_ANALYSIS,
-          RECURSION_ANALYSIS,
-          OPTIMIZATION_ANALYSIS -> OverheadLevel.LOW;
-      case EXECUTION_TIME_ANALYSIS, HOTNESS_ANALYSIS, BRANCH_PREDICTION_ANALYSIS -> OverheadLevel
-          .MEDIUM;
-      case INSTRUMENTATION_ANALYSIS, MEMORY_USAGE_ANALYSIS, CACHE_ANALYSIS -> OverheadLevel.HIGH;
-    };
+    switch (this) {
+      case SAMPLING_ANALYSIS:
+      case CALL_FREQUENCY_ANALYSIS:
+      case DEAD_CODE_ANALYSIS:
+      case CALL_GRAPH_ANALYSIS:
+      case CONTROL_FLOW_ANALYSIS:
+      case DATA_FLOW_ANALYSIS:
+      case LOOP_ANALYSIS:
+      case RECURSION_ANALYSIS:
+      case OPTIMIZATION_ANALYSIS:
+        return OverheadLevel.LOW;
+      case EXECUTION_TIME_ANALYSIS:
+      case HOTNESS_ANALYSIS:
+      case BRANCH_PREDICTION_ANALYSIS:
+        return OverheadLevel.MEDIUM;
+      case INSTRUMENTATION_ANALYSIS:
+      case MEMORY_USAGE_ANALYSIS:
+      case CACHE_ANALYSIS:
+        return OverheadLevel.HIGH;
+      default:
+        return OverheadLevel.LOW;
+    }
   }
 
   /**
@@ -157,23 +171,40 @@ public enum AnalysisMethod {
    * @return description string
    */
   public String getDescription() {
-    return switch (this) {
-      case SAMPLING_ANALYSIS -> "Statistical sampling of execution patterns and behavior";
-      case INSTRUMENTATION_ANALYSIS -> "Detailed instrumentation-based tracking of all operations";
-      case CALL_FREQUENCY_ANALYSIS -> "Analysis of function call frequencies and patterns";
-      case EXECUTION_TIME_ANALYSIS -> "Measurement and analysis of execution times";
-      case MEMORY_USAGE_ANALYSIS -> "Analysis of memory allocation and usage patterns";
-      case HOTNESS_ANALYSIS -> "Detection of frequently executed (hot) code sections";
-      case DEAD_CODE_ANALYSIS -> "Detection of unused or unreachable code";
-      case CALL_GRAPH_ANALYSIS -> "Analysis of function call relationships and structure";
-      case CONTROL_FLOW_ANALYSIS -> "Analysis of program control flow and branching";
-      case DATA_FLOW_ANALYSIS -> "Analysis of data dependencies and flow";
-      case LOOP_ANALYSIS -> "Detection and analysis of loop structures";
-      case RECURSION_ANALYSIS -> "Analysis of recursive function calls and patterns";
-      case CACHE_ANALYSIS -> "Analysis of cache behavior and performance";
-      case BRANCH_PREDICTION_ANALYSIS -> "Analysis of branch prediction effectiveness";
-      case OPTIMIZATION_ANALYSIS -> "Analysis of compiler optimization opportunities";
-    };
+    switch (this) {
+      case SAMPLING_ANALYSIS:
+        return "Statistical sampling of execution patterns and behavior";
+      case INSTRUMENTATION_ANALYSIS:
+        return "Detailed instrumentation-based tracking of all operations";
+      case CALL_FREQUENCY_ANALYSIS:
+        return "Analysis of function call frequencies and patterns";
+      case EXECUTION_TIME_ANALYSIS:
+        return "Measurement and analysis of execution times";
+      case MEMORY_USAGE_ANALYSIS:
+        return "Analysis of memory allocation and usage patterns";
+      case HOTNESS_ANALYSIS:
+        return "Detection of frequently executed (hot) code sections";
+      case DEAD_CODE_ANALYSIS:
+        return "Detection of unused or unreachable code";
+      case CALL_GRAPH_ANALYSIS:
+        return "Analysis of function call relationships and structure";
+      case CONTROL_FLOW_ANALYSIS:
+        return "Analysis of program control flow and branching";
+      case DATA_FLOW_ANALYSIS:
+        return "Analysis of data dependencies and flow";
+      case LOOP_ANALYSIS:
+        return "Detection and analysis of loop structures";
+      case RECURSION_ANALYSIS:
+        return "Analysis of recursive function calls and patterns";
+      case CACHE_ANALYSIS:
+        return "Analysis of cache behavior and performance";
+      case BRANCH_PREDICTION_ANALYSIS:
+        return "Analysis of branch prediction effectiveness";
+      case OPTIMIZATION_ANALYSIS:
+        return "Analysis of compiler optimization opportunities";
+      default:
+        return "Unknown analysis method";
+    }
   }
 
   /** Overhead levels for analysis methods. */

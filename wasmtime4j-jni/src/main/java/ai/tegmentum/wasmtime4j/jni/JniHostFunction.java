@@ -245,6 +245,19 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   }
 
   @Override
+  public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    // Host functions are called FROM WebAssembly, not TO WebAssembly
+    // This method shouldn't be used directly for host functions
+    final java.util.concurrent.CompletableFuture<WasmValue[]> result =
+        new java.util.concurrent.CompletableFuture<>();
+    result.completeExceptionally(
+        new ai.tegmentum.wasmtime4j.exception.ValidationException(
+            "Host functions are called from WebAssembly, not directly from Java. "
+                + "Use the callback mechanism instead."));
+    return result;
+  }
+
+  @Override
   protected void doClose() throws Exception {
     try {
       // Remove from registry first

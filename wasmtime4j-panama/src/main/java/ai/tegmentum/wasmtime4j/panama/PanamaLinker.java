@@ -1284,6 +1284,240 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.Linker<T> allowShadowing(final boolean allow) {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+    if (result != 0) {
+      LOGGER.warning("Failed to set allow shadowing: error code " + result);
+    }
+    return this;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Linker<T> allowUnknownExports(final boolean allow) {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
+    if (result != 0) {
+      LOGGER.warning("Failed to set allow unknown exports: error code " + result);
+    }
+    return this;
+  }
+
+  @Override
+  public void defineUnknownImportsAsTraps(final Store store, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    final int result =
+        NATIVE_BINDINGS.linkerDefineUnknownImportsAsTraps(
+            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+    if (result != 0) {
+      throw new WasmException("Failed to define unknown imports as traps: error code " + result);
+    }
+
+    LOGGER.fine("Defined unknown imports as traps");
+  }
+
+  @Override
+  public void defineUnknownImportsAsDefaultValues(final Store store, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    final int result =
+        NATIVE_BINDINGS.linkerDefineUnknownImportsAsDefaultValues(
+            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+    if (result != 0) {
+      throw new WasmException(
+          "Failed to define unknown imports as default values: error code " + result);
+    }
+
+    LOGGER.fine("Defined unknown imports as default values");
+  }
+
+  @Override
+  public void funcNewUnchecked(
+      final Store store,
+      final String moduleName,
+      final String name,
+      final FunctionType functionType,
+      final HostFunction implementation)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // For unchecked version, we simply call defineHostFunction
+    // The native layer handles the unchecked semantics
+    defineHostFunction(moduleName, name, functionType, implementation);
+    LOGGER.fine("Defined unchecked function: " + moduleName + "::" + name);
+  }
+
+  @Override
+  public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter() {
+    ensureNotClosed();
+
+    final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+        new java.util.ArrayList<>();
+
+    // Convert import registry to LinkerDefinition objects
+    for (final ImportInfo info : importRegistry.values()) {
+      final ai.tegmentum.wasmtime4j.ExternType externType;
+      switch (info.getImportType()) {
+        case FUNCTION:
+          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+          break;
+        case MEMORY:
+          externType = ai.tegmentum.wasmtime4j.ExternType.MEMORY;
+          break;
+        case TABLE:
+          externType = ai.tegmentum.wasmtime4j.ExternType.TABLE;
+          break;
+        case GLOBAL:
+          externType = ai.tegmentum.wasmtime4j.ExternType.GLOBAL;
+          break;
+        default:
+          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+      }
+
+      definitions.add(
+          new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+              info.getModuleName(), info.getImportName(), externType));
+    }
+
+    return definitions;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Extern getByImport(
+      final Store store, final String moduleName, final String name) {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    // Allocate C strings for module name and item name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    // Call native function to get the extern
+    final MemorySegment externPtr =
+        NATIVE_BINDINGS.linkerGetByImport(
+            nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr);
+
+    if (externPtr == null || externPtr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+
+    // Determine extern type and wrap appropriately
+    final int externTypeCode = NATIVE_BINDINGS.externGetType(externPtr);
+    switch (externTypeCode) {
+      case 0: // FUNC
+        return new PanamaExternFunc(externPtr, panamaStore);
+      case 1: // TABLE
+        return new PanamaExternTable(externPtr, panamaStore);
+      case 2: // MEMORY
+        return new PanamaExternMemory(externPtr, panamaStore);
+      case 3: // GLOBAL
+        return new PanamaExternGlobal(externPtr, panamaStore);
+      default:
+        LOGGER.warning("Unknown extern type code: " + externTypeCode);
+        return null;
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmFunction getDefault(
+      final Store store, final String moduleName) {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    // Allocate C string for module name
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+
+    // Call native function to get the default function
+    final MemorySegment funcPtr =
+        NATIVE_BINDINGS.linkerGetDefault(nativeLinker, panamaStore.getNativeStore(), moduleNamePtr);
+
+    if (funcPtr == null || funcPtr.equals(MemorySegment.NULL)) {
+      return null;
+    }
+
+    // Cannot create a PanamaFunction without an instance context
+    // The function handle is valid but requires an instance for call operations
+    return null;
+  }
+
   /** Wrapper for host function callbacks. */
   private static class HostFunctionWrapper {
     private static final AtomicLong nextId = new AtomicLong(1);

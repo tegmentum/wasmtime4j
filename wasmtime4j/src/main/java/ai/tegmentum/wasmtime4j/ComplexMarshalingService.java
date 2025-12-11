@@ -124,12 +124,18 @@ public final class ComplexMarshalingService {
     Objects.requireNonNull(expectedType, "Expected type cannot be null");
 
     try {
-      return switch (marshaledData.getStrategy()) {
-        case VALUE_BASED -> (T) unmarshalFromValue(marshaledData, expectedType);
-        case MEMORY_BASED -> (T) unmarshalFromMemory(marshaledData, expectedType);
-        case HYBRID -> (T) unmarshalFromHybrid(marshaledData, expectedType);
-      };
-
+      switch (marshaledData.getStrategy()) {
+        case VALUE_BASED:
+          return (T) unmarshalFromValue(marshaledData, expectedType);
+        case MEMORY_BASED:
+          return (T) unmarshalFromMemory(marshaledData, expectedType);
+        case HYBRID:
+          return (T) unmarshalFromHybrid(marshaledData, expectedType);
+        default:
+          throw new WasmException("Unknown marshaling strategy: " + marshaledData.getStrategy());
+      }
+    } catch (WasmException e) {
+      throw e;
     } catch (Exception e) {
       throw new WasmException("Failed to unmarshal data to " + expectedType.getName(), e);
     }

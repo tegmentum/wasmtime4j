@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.concurrent.Accessor;
+import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
+import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
+import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
@@ -331,6 +335,395 @@ public interface Store extends Closeable {
    * @since 1.0.0
    */
   WasmBacktrace forceCaptureBacktrace();
+
+  /**
+   * Triggers garbage collection for this store.
+   *
+   * <p>Garbage collection is performed automatically according to internal heuristics, but this
+   * method allows explicit triggering when needed. This is useful when:
+   *
+   * <ul>
+   *   <li>Memory pressure is known and immediate reclamation is desired
+   *   <li>Deterministic collection timing is required for testing
+   *   <li>Preparing for a batch of allocations
+   * </ul>
+   *
+   * <p><b>Note:</b> GC support must be enabled in the engine configuration for this method to have
+   * any effect. If GC is disabled, this method is a no-op.
+   *
+   * @throws WasmException if the GC operation fails
+   * @since 1.0.0
+   */
+  void gc() throws WasmException;
+
+  /**
+   * Performs asynchronous garbage collection of externrefs in this store.
+   *
+   * <p>This method is similar to {@link #gc()} but designed for use in async contexts. It performs
+   * cooperative, async-yielding during GC if configured with epoch-based interruption.
+   *
+   * <p><b>Note:</b> Requires both the GC feature and async feature to be enabled. The store must
+   * also be configured with async support via epoch interruption.
+   *
+   * @return a CompletableFuture that completes when GC is finished
+   * @throws WasmException if the async GC operation fails
+   * @since 1.0.0
+   */
+  java.util.concurrent.CompletableFuture<Void> gcAsync() throws WasmException;
+
+  /**
+   * Configures epoch-deadline expiration to yield to the async caller and update the deadline.
+   *
+   * <p>When epoch-interruption-instrumented code is executed on this store and the epoch deadline
+   * is reached before completion, with the store configured in this way, execution will yield (the
+   * future will return Pending but re-awake itself for later execution) and, upon resuming, the
+   * store will be configured with an epoch deadline equal to the current epoch plus delta ticks.
+   *
+   * <p>This setting is intended to allow for cooperative timeslicing of multiple CPU-bound Wasm
+   * guests in different stores, all executing under the control of an async executor. Stores should
+   * be configured to "yield and update" automatically with this method, and some external driver (a
+   * thread that wakes up periodically, or a timer signal/interrupt) should call {@link
+   * Engine#incrementEpoch()}.
+   *
+   * <p><b>Note:</b> Epoch interruption must be enabled in the engine configuration.
+   *
+   * @param deltaTicks the number of ticks to add to the current epoch for the new deadline
+   * @throws WasmException if configuration fails
+   * @throws IllegalArgumentException if deltaTicks is negative
+   * @since 1.0.0
+   */
+  void epochDeadlineAsyncYieldAndUpdate(long deltaTicks) throws WasmException;
+
+  /**
+   * Sets the epoch deadline to trap when reached.
+   *
+   * <p>When the epoch deadline is reached, execution will trap immediately rather than yielding.
+   *
+   * <p><b>Note:</b> Epoch interruption must be enabled in the engine configuration.
+   *
+   * @throws WasmException if configuration fails
+   * @since 1.0.0
+   */
+  void epochDeadlineTrap() throws WasmException;
+
+  /**
+   * Sets a callback to be invoked when the epoch deadline is reached.
+   *
+   * <p>The callback receives the current epoch and returns the action to take.
+   *
+   * <p><b>Note:</b> Epoch interruption must be enabled in the engine configuration.
+   *
+   * @param callback the callback to invoke, or null to clear any existing callback
+   * @throws WasmException if configuration fails
+   * @since 1.0.0
+   */
+  void epochDeadlineCallback(EpochDeadlineCallback callback) throws WasmException;
+
+  /**
+   * Callback interface for epoch deadline handling.
+   *
+   * @since 1.0.0
+   */
+  @FunctionalInterface
+  interface EpochDeadlineCallback {
+    /**
+     * Called when the epoch deadline is reached.
+     *
+     * @param currentEpoch the current epoch value
+     * @return the action to take (continue with new delta, or trap)
+     */
+    EpochDeadlineAction onEpochDeadline(long currentEpoch);
+  }
+
+  /**
+   * Action to take when epoch deadline is reached.
+   *
+   * @since 1.0.0
+   */
+  final class EpochDeadlineAction {
+    private final boolean shouldContinue;
+    private final long deltaTicks;
+
+    private EpochDeadlineAction(final boolean shouldContinue, final long deltaTicks) {
+      this.shouldContinue = shouldContinue;
+      this.deltaTicks = deltaTicks;
+    }
+
+    /**
+     * Creates an action to continue execution with a new deadline.
+     *
+     * @param deltaTicks the ticks to add for the new deadline
+     * @return the continue action
+     */
+    public static EpochDeadlineAction continueWith(final long deltaTicks) {
+      return new EpochDeadlineAction(true, deltaTicks);
+    }
+
+    /**
+     * Creates an action to trap execution.
+     *
+     * @return the trap action
+     */
+    public static EpochDeadlineAction trap() {
+      return new EpochDeadlineAction(false, 0);
+    }
+
+    /**
+     * Returns whether execution should continue.
+     *
+     * @return true to continue, false to trap
+     */
+    public boolean shouldContinue() {
+      return shouldContinue;
+    }
+
+    /**
+     * Gets the delta ticks for the new deadline.
+     *
+     * @return the delta ticks (only valid if shouldContinue is true)
+     */
+    public long getDeltaTicks() {
+      return deltaTicks;
+    }
+  }
+
+  // ===== Exception Handling Methods =====
+
+  /**
+   * Throws an exception reference within the WebAssembly context.
+   *
+   * <p>This method sets the exception as pending and propagates it through host calls. The method
+   * never returns normally - it always throws a WasmException wrapping the thrown exception.
+   *
+   * <p><b>Note:</b> Exception handling must be enabled in the engine configuration for this method
+   * to work.
+   *
+   * @param <R> the declared return type (never actually returned)
+   * @param exceptionRef the exception reference to throw
+   * @return never returns - always throws
+   * @throws WasmException with the thrown exception information
+   * @throws IllegalArgumentException if exceptionRef is null
+   * @since 1.0.0
+   */
+  <R> R throwException(ExnRef exceptionRef) throws WasmException;
+
+  /**
+   * Takes and removes the currently pending exception from the store.
+   *
+   * <p>If an exception was thrown during WebAssembly execution and has not been caught, this method
+   * retrieves and clears it from the store.
+   *
+   * @return the pending exception, or null if none exists
+   * @throws WasmException if retrieval fails
+   * @since 1.0.0
+   */
+  ExnRef takePendingException() throws WasmException;
+
+  /**
+   * Tests whether a pending exception currently exists on the store.
+   *
+   * <p>This method allows checking for pending exceptions without consuming them.
+   *
+   * @return true if there is a pending exception
+   * @since 1.0.0
+   */
+  boolean hasPendingException();
+
+  // ===== Call Hook Methods =====
+
+  /**
+   * Sets a call hook handler that is invoked on every transition between WebAssembly and host code.
+   *
+   * <p>The handler receives a {@link CallHook} indicating the type of transition:
+   *
+   * <ul>
+   *   <li>{@link CallHook#CALLING_WASM} - Host is calling into WebAssembly
+   *   <li>{@link CallHook#RETURNING_FROM_WASM} - Returning from WebAssembly to host
+   *   <li>{@link CallHook#CALLING_HOST} - WebAssembly is calling a host function
+   *   <li>{@link CallHook#RETURNING_FROM_HOST} - Returning from host function to WebAssembly
+   * </ul>
+   *
+   * <p><b>Performance note:</b> Call hooks incur a small overhead on all entries/exits from
+   * WebAssembly. Only enable when necessary.
+   *
+   * <p><b>Note:</b> The call-hook feature must be enabled in the engine configuration for this to
+   * work.
+   *
+   * @param handler the call hook handler, or null to disable call hooks
+   * @throws WasmException if setting the hook fails
+   * @since 1.0.0
+   */
+  void setCallHook(CallHookHandler handler) throws WasmException;
+
+  /**
+   * Sets an async call hook handler for use with async execution.
+   *
+   * <p>This is the async equivalent of {@link #setCallHook(CallHookHandler)}. The handler may
+   * perform async operations and returns a CompletableFuture.
+   *
+   * <p><b>Note:</b> The call-hook and async features must be enabled in the engine configuration.
+   *
+   * @param handler the async call hook handler, or null to disable
+   * @throws WasmException if setting the hook fails
+   * @since 1.0.0
+   */
+  void setCallHookAsync(AsyncCallHookHandler handler) throws WasmException;
+
+  /**
+   * Async handler for call hook events.
+   *
+   * @since 1.0.0
+   */
+  @FunctionalInterface
+  interface AsyncCallHookHandler {
+    /**
+     * Handles a call hook event asynchronously.
+     *
+     * @param hook the type of call transition
+     * @return a future that completes when the hook processing is done
+     */
+    java.util.concurrent.CompletableFuture<Void> onCallHook(CallHook hook);
+  }
+
+  // ===== Concurrency Methods =====
+
+  /**
+   * Runs a concurrent task with access to the store's data.
+   *
+   * <p>This method allows running a task that can access the store's user data from multiple
+   * threads concurrently. The task receives an {@link Accessor} that provides thread-safe
+   * read access to the store's data.
+   *
+   * <p>This corresponds to wasmtime's {@code Store::run_concurrent} method which enables
+   * concurrent access patterns for multi-threaded WebAssembly execution.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * Integer result = store.runConcurrent(accessor -> {
+   *     MyData data = accessor.getData(MyData.class);
+   *     return data.computeValue();
+   * });
+   * }</pre>
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param <T> the type of user data stored in this store
+   * @param <R> the type of the task result
+   * @param task the concurrent task to execute
+   * @return the task result
+   * @throws WasmException if concurrent execution fails
+   * @throws IllegalArgumentException if task is null
+   * @since 1.0.0
+   */
+  <T, R> R runConcurrent(ConcurrentTask<T, R> task) throws WasmException;
+
+  /**
+   * Spawns a concurrent task for asynchronous execution.
+   *
+   * <p>This method spawns a task that runs concurrently with the main execution thread.
+   * The returned {@link JoinHandle} can be used to wait for completion, cancel the task,
+   * or check its status.
+   *
+   * <p>This corresponds to wasmtime's {@code Store::spawn} method for spawning concurrent
+   * tasks in async contexts.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * JoinHandle<Integer> handle = store.spawn(() -> {
+   *     // Long-running computation
+   *     return computeExpensiveValue();
+   * });
+   *
+   * // Do other work while the task runs
+   * doOtherWork();
+   *
+   * // Wait for the result
+   * Integer result = handle.join();
+   * }</pre>
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param <R> the type of the task result
+   * @param task the task to spawn
+   * @return a handle to the spawned task
+   * @throws WasmException if spawning fails
+   * @throws IllegalArgumentException if task is null
+   * @since 1.0.0
+   */
+  <R> JoinHandle<R> spawn(SpawnableTask<R> task) throws WasmException;
+
+  // ===== Debug Methods =====
+
+  /**
+   * Gets the debug stack frames for the current execution context.
+   *
+   * <p>This method provides access to WebAssembly execution stack frames for debugging
+   * purposes. It requires guest debugging to be enabled in the engine configuration
+   * via {@link EngineConfig#guestDebug(boolean)}.
+   *
+   * <p>The returned list contains frames from the innermost (current) to outermost (caller).
+   *
+   * <p><b>Note:</b> This method may have performance implications when called frequently.
+   *
+   * @return a list of debug frames, or empty list if debugging is not enabled
+   * @throws WasmException if retrieving frames fails
+   * @since 1.0.0
+   */
+  java.util.List<DebugFrame> debugFrames() throws WasmException;
+
+  /**
+   * Sets a debug handler for receiving debug events.
+   *
+   * <p>The debug handler is invoked when debug events occur during WebAssembly execution,
+   * such as breakpoints, single-stepping, or exceptions.
+   *
+   * <p><b>Note:</b> Debug instrumentation must be enabled via {@link EngineConfig#guestDebug(boolean)}.
+   *
+   * @param handler the debug handler, or null to clear any existing handler
+   * @throws WasmException if setting the handler fails
+   * @since 1.0.0
+   */
+  void setDebugHandler(ai.tegmentum.wasmtime4j.debug.DebugHandler handler) throws WasmException;
+
+  /**
+   * Clears any previously set debug handler.
+   *
+   * <p>This is equivalent to calling {@code setDebugHandler(null)}.
+   *
+   * @throws WasmException if clearing the handler fails
+   * @since 1.0.0
+   */
+  default void clearDebugHandler() throws WasmException {
+    setDebugHandler(null);
+  }
+
+  // ===== Fuel Async Methods =====
+
+  /**
+   * Configures the interval at which async execution should yield based on fuel consumption.
+   *
+   * <p>When set to a positive value, WebAssembly execution will automatically yield to the
+   * async executor after consuming the specified amount of fuel. This enables cooperative
+   * timeslicing without requiring epoch-based interruption.
+   *
+   * <p>A value of 0 (default) disables fuel-based async yielding.
+   *
+   * <p><b>Note:</b> Both async support and fuel consumption must be enabled for this to work.
+   *
+   * @param interval the fuel units to consume before yielding (0 to disable)
+   * @throws WasmException if configuration fails
+   * @throws IllegalArgumentException if interval is negative
+   * @since 1.0.0
+   */
+  void setFuelAsyncYieldInterval(long interval) throws WasmException;
+
+  /**
+   * Gets the currently configured fuel async yield interval.
+   *
+   * @return the fuel async yield interval (0 means disabled)
+   * @since 1.0.0
+   */
+  long getFuelAsyncYieldInterval();
 
   /**
    * Closes the store and releases associated resources.

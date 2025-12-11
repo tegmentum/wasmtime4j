@@ -306,4 +306,20 @@ public interface WasmTable {
     }
     init((int) destOffset, elementSegmentIndex, (int) srcOffset, (int) length);
   }
+
+  /**
+   * Grows the table asynchronously by the specified number of elements.
+   *
+   * <p>This method allows table growth operations to be performed without blocking the calling
+   * thread, which is useful for async-enabled stores.
+   *
+   * @param elements the number of elements to grow by
+   * @param initValue the initial value for new elements
+   * @return a CompletableFuture that completes with the previous size, or -1 if failed
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Integer> growAsync(
+      final int elements, final Object initValue) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> grow(elements, initValue));
+  }
 }

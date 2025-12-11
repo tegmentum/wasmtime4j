@@ -1196,17 +1196,6 @@ public final class NativeFunctionBindings {
   }
 
   /**
-   * Triggers garbage collection for a WebAssembly store.
-   *
-   * @param storePtr pointer to the store
-   * @return 0 on success, negative error code on failure
-   */
-  public int storeGc(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_store_gc", Integer.class, storePtr);
-  }
-
-  /**
    * Gets execution statistics for a WebAssembly store.
    *
    * @param storePtr pointer to the store
@@ -1320,6 +1309,92 @@ public final class NativeFunctionBindings {
         storePtr,
         bufferOutPtr,
         bufferLenOutPtr);
+  }
+
+  /**
+   * Performs garbage collection on a WebAssembly store.
+   *
+   * <p>This triggers garbage collection to reclaim unreachable GC objects. If GC support is not
+   * enabled in the engine configuration, this is a no-op.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGc(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_gc", Integer.class, storePtr);
+  }
+
+  /**
+   * Performs asynchronous garbage collection on a WebAssembly store.
+   *
+   * <p>This is the async version of {@link #storeGc(MemorySegment)} that cooperatively yields
+   * during GC if the store is configured with epoch-based interruption.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeGcAsync(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_gc_async", Integer.class, storePtr);
+  }
+
+  /**
+   * Configures the epoch deadline to async yield and update.
+   *
+   * <p>When the epoch deadline is reached, execution will yield back to the async executor and then
+   * continue with a new deadline of current epoch + deltaTicks.
+   *
+   * @param storePtr pointer to the store
+   * @param deltaTicks number of ticks to add for the new deadline
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeEpochDeadlineAsyncYieldAndUpdate(
+      final MemorySegment storePtr, final long deltaTicks) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_epoch_deadline_async_yield_and_update",
+        Integer.class,
+        storePtr,
+        deltaTicks);
+  }
+
+  /**
+   * Configures the epoch deadline to trap when reached.
+   *
+   * <p>When the epoch deadline is reached, execution will trap immediately.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeEpochDeadlineTrap(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_epoch_deadline_trap", Integer.class, storePtr);
+  }
+
+  /**
+   * Sets an epoch deadline callback on the store.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetEpochDeadlineCallback(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_epoch_deadline_callback", Integer.class, storePtr);
+  }
+
+  /**
+   * Clears the epoch deadline callback from the store.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeClearEpochDeadlineCallback(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_clear_epoch_deadline_callback", Integer.class, storePtr);
   }
 
   /**
@@ -7713,6 +7788,87 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return *mut c_char (JSON string)
             ValueLayout.JAVA_LONG)); // limiter_id (c_longlong)
+
+    // Exception Handling Bindings
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_void (tag pointer)
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // param_types
+            ValueLayout.JAVA_INT, // param_count
+            ValueLayout.ADDRESS, // return_types
+            ValueLayout.JAVA_INT)); // return_count
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_get_param_types",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_int (types array)
+            ValueLayout.ADDRESS, // tag_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // out_count
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_get_return_types",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_int (types array)
+            ValueLayout.ADDRESS, // tag_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // out_count
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_types_free",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // types_ptr
+            ValueLayout.JAVA_INT)); // count
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_equals",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (1 if equal, 0 if not)
+            ValueLayout.ADDRESS, // tag1_ptr
+            ValueLayout.ADDRESS, // tag2_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // tag_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_get_tag",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_void (tag pointer)
+            ValueLayout.ADDRESS, // exnref_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_is_valid",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (1 if valid)
+            ValueLayout.ADDRESS, // exnref_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // exnref_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_throw_exception",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // exnref_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_take_pending_exception",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return *mut c_void (exnref pointer)
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_has_pending_exception",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return c_int (1 if has pending)
+            ValueLayout.ADDRESS)); // store_ptr
   }
 
   // Panama Linker Functions
@@ -13591,5 +13747,429 @@ public final class NativeFunctionBindings {
    */
   public int coredumpClearAll() {
     return callNativeFunction("wasmtime4j_coredump_clear_all", Integer.class);
+  }
+
+  // ===== Exception Handling Methods =====
+
+  /**
+   * Creates a new WebAssembly tag for exception handling.
+   *
+   * @param storePtr the store pointer
+   * @param paramTypes the parameter type codes
+   * @param returnTypes the return type codes
+   * @return the tag pointer, or NULL on error
+   */
+  public MemorySegment tagCreate(
+      final MemorySegment storePtr, final int[] paramTypes, final int[] returnTypes) {
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment paramsSegment = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramsSegment.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+      }
+
+      final MemorySegment returnsSegment = arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+      for (int i = 0; i < returnTypes.length; i++) {
+        returnsSegment.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
+      }
+
+      return callNativeFunction(
+          "wasmtime4j_panama_tag_create",
+          MemorySegment.class,
+          storePtr,
+          paramsSegment,
+          paramTypes.length,
+          returnsSegment,
+          returnTypes.length);
+    }
+  }
+
+  /**
+   * Gets the parameter types of a tag.
+   *
+   * @param tagPtr the tag pointer
+   * @param storePtr the store pointer
+   * @return the parameter type codes
+   */
+  public int[] tagGetParamTypes(final MemorySegment tagPtr, final MemorySegment storePtr) {
+    validatePointer(tagPtr, "tagPtr");
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment countPtr = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment typesPtr =
+          callNativeFunction(
+              "wasmtime4j_panama_tag_get_param_types",
+              MemorySegment.class,
+              tagPtr,
+              storePtr,
+              countPtr);
+      if (typesPtr == null || typesPtr.equals(MemorySegment.NULL)) {
+        return new int[0];
+      }
+      final int count = countPtr.get(ValueLayout.JAVA_INT, 0);
+      final int[] types = new int[count];
+      for (int i = 0; i < count; i++) {
+        types[i] =
+            typesPtr
+                .reinterpret(count * ValueLayout.JAVA_INT.byteSize())
+                .getAtIndex(ValueLayout.JAVA_INT, i);
+      }
+      tagTypesArrayFree(typesPtr, count);
+      return types;
+    }
+  }
+
+  /**
+   * Gets the return types of a tag.
+   *
+   * @param tagPtr the tag pointer
+   * @param storePtr the store pointer
+   * @return the return type codes
+   */
+  public int[] tagGetReturnTypes(final MemorySegment tagPtr, final MemorySegment storePtr) {
+    validatePointer(tagPtr, "tagPtr");
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment countPtr = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment typesPtr =
+          callNativeFunction(
+              "wasmtime4j_panama_tag_get_return_types",
+              MemorySegment.class,
+              tagPtr,
+              storePtr,
+              countPtr);
+      if (typesPtr == null || typesPtr.equals(MemorySegment.NULL)) {
+        return new int[0];
+      }
+      final int count = countPtr.get(ValueLayout.JAVA_INT, 0);
+      final int[] types = new int[count];
+      for (int i = 0; i < count; i++) {
+        types[i] =
+            typesPtr
+                .reinterpret(count * ValueLayout.JAVA_INT.byteSize())
+                .getAtIndex(ValueLayout.JAVA_INT, i);
+      }
+      tagTypesArrayFree(typesPtr, count);
+      return types;
+    }
+  }
+
+  /**
+   * Frees a tag types array.
+   *
+   * @param ptr the types array pointer
+   * @param count the number of elements
+   */
+  private void tagTypesArrayFree(final MemorySegment ptr, final int count) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_tag_types_free", Void.class, ptr, count);
+    }
+  }
+
+  /**
+   * Checks if two tags are equal.
+   *
+   * @param tag1Ptr the first tag pointer
+   * @param tag2Ptr the second tag pointer
+   * @param storePtr the store pointer
+   * @return 1 if equal, 0 if not equal, -1 on error
+   */
+  public int tagEquals(
+      final MemorySegment tag1Ptr, final MemorySegment tag2Ptr, final MemorySegment storePtr) {
+    validatePointer(tag1Ptr, "tag1Ptr");
+    validatePointer(tag2Ptr, "tag2Ptr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_tag_equals", Integer.class, tag1Ptr, tag2Ptr, storePtr);
+  }
+
+  /**
+   * Destroys a tag and frees its native resources.
+   *
+   * @param tagPtr the tag pointer
+   */
+  public void tagDestroy(final MemorySegment tagPtr) {
+    if (tagPtr != null && !tagPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_tag_destroy", Void.class, tagPtr);
+    }
+  }
+
+  // ===== Exception Reference Methods =====
+
+  /**
+   * Gets the tag from an exception reference.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return the tag pointer, or NULL on error
+   */
+  public MemorySegment exnRefGetTag(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_get_tag", MemorySegment.class, exnRefPtr, storePtr);
+  }
+
+  /**
+   * Checks if an exception reference is valid.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return 1 if valid, 0 if not valid, -1 on error
+   */
+  public int exnRefIsValid(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_is_valid", Integer.class, exnRefPtr, storePtr);
+  }
+
+  /**
+   * Destroys an exception reference and frees its native resources.
+   *
+   * @param exnRefPtr the exception reference pointer
+   */
+  public void exnRefDestroy(final MemorySegment exnRefPtr) {
+    if (exnRefPtr != null && !exnRefPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_exnref_destroy", Void.class, exnRefPtr);
+    }
+  }
+
+  // ===== Store Exception Methods =====
+
+  /**
+   * Throws an exception in the store.
+   *
+   * @param storePtr the store pointer
+   * @param exnRefPtr the exception reference pointer
+   * @return 0 on success, -1 on error
+   */
+  public int storeThrowException(final MemorySegment storePtr, final MemorySegment exnRefPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(exnRefPtr, "exnRefPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_throw_exception", Integer.class, storePtr, exnRefPtr);
+  }
+
+  /**
+   * Takes and removes the pending exception from the store.
+   *
+   * @param storePtr the store pointer
+   * @return the exception reference pointer, or NULL if no pending exception
+   */
+  public MemorySegment storeTakePendingException(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_take_pending_exception", MemorySegment.class, storePtr);
+  }
+
+  /**
+   * Checks if the store has a pending exception.
+   *
+   * @param storePtr the store pointer
+   * @return 1 if pending exception exists, 0 if not, -1 on error
+   */
+  public int storeHasPendingException(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_has_pending_exception", Integer.class, storePtr);
+  }
+
+  // ===== Linker Configuration Methods =====
+
+  /**
+   * Allows subsequent definitions to shadow prior definitions.
+   *
+   * @param linkerPtr the linker pointer
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, -1 on error
+   */
+  public int linkerAllowShadowing(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_allow_shadowing", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Allows unknown exports from modules.
+   *
+   * @param linkerPtr the linker pointer
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, -1 on error
+   */
+  public int linkerAllowUnknownExports(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_allow_unknown_exports", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Defines all undefined imports as trapping functions.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param modulePtr the module pointer
+   * @return 0 on success, -1 on error
+   */
+  public int linkerDefineUnknownImportsAsTraps(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_traps",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        modulePtr);
+  }
+
+  /**
+   * Defines all undefined imports with default values.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param modulePtr the module pointer
+   * @return 0 on success, -1 on error
+   */
+  public int linkerDefineUnknownImportsAsDefaultValues(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_default_values",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        modulePtr);
+  }
+
+  /**
+   * Gets a definition by its import specifier.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param moduleNamePtr the module name string
+   * @param namePtr the item name string
+   * @return the extern pointer, or NULL if not found
+   */
+  public MemorySegment linkerGetByImport(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_get",
+        MemorySegment.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr);
+  }
+
+  /**
+   * Gets the default function for a module.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param moduleNamePtr the module name string
+   * @return the function pointer, or NULL if not found
+   */
+  public MemorySegment linkerGetDefault(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_get_default",
+        MemorySegment.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr);
+  }
+
+  /**
+   * Gets the type of an extern value.
+   *
+   * @param externPtr the extern pointer
+   * @return the extern type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL), or -1 on error
+   */
+  public int externGetType(final MemorySegment externPtr) {
+    validatePointer(externPtr, "externPtr");
+    return callNativeFunction("wasmtime4j_panama_extern_type", Integer.class, externPtr);
+  }
+
+  // ===== Call Hook Methods =====
+
+  /**
+   * Sets a call hook on the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeSetCallHook(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_set_call_hook", Integer.class, storePtr);
+  }
+
+  /**
+   * Clears the call hook from the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeClearCallHook(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_clear_call_hook", Integer.class, storePtr);
+  }
+
+  /**
+   * Sets an async call hook on the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeSetCallHookAsync(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_call_hook_async", Integer.class, storePtr);
+  }
+
+  /**
+   * Clears the async call hook from the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeClearCallHookAsync(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_clear_call_hook_async", Integer.class, storePtr);
+  }
+
+  // ===== Detect Precompiled Method =====
+
+  /**
+   * Detects whether bytes are a precompiled artifact.
+   *
+   * @param enginePtr the engine pointer
+   * @param bytesPtr pointer to the bytes to inspect
+   * @param bytesLen length of the bytes
+   * @return -1 if not precompiled, 0 for MODULE, 1 for COMPONENT
+   */
+  public int engineDetectPrecompiled(
+      final MemorySegment enginePtr, final MemorySegment bytesPtr, final long bytesLen) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(bytesPtr, "bytesPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_engine_detect_precompiled",
+        Integer.class,
+        enginePtr,
+        bytesPtr,
+        bytesLen);
   }
 }
