@@ -124,4 +124,24 @@ public interface HeapType {
   static HeapType noextern() {
     return NoExtern.INSTANCE;
   }
+
+  /**
+   * Creates a null function reference.
+   *
+   * @return a null FuncRef
+   */
+  static FuncRef funcNull() {
+    return FuncRef.nullRef();
+  }
+
+  /**
+   * Creates a function reference from a WebAssembly function.
+   *
+   * @param function the WebAssembly function
+   * @return a FuncRef wrapping the function
+   * @throws IllegalArgumentException if function is null
+   */
+  static FuncRef func(final ai.tegmentum.wasmtime4j.WasmFunction function) {
+    return FuncRef.fromFunction(function);
+  }
 }

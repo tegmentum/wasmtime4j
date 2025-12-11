@@ -75,6 +75,42 @@ public interface PoolingAllocatorConfig {
   /** Default max memory size (2GB). */
   long DEFAULT_MAX_MEMORY_SIZE = 2L * 1024L * 1024L * 1024L;
 
+  /** Default max unused warm slots. */
+  int DEFAULT_MAX_UNUSED_WARM_SLOTS = 100;
+
+  /** Default decommit batch size. */
+  int DEFAULT_DECOMMIT_BATCH_SIZE = 1;
+
+  /** Default linear memory keep resident (0 means use system default). */
+  long DEFAULT_LINEAR_MEMORY_KEEP_RESIDENT = 0;
+
+  /** Default table keep resident (0 means use system default). */
+  long DEFAULT_TABLE_KEEP_RESIDENT = 0;
+
+  /** Default async stack keep resident (0 means use system default). */
+  long DEFAULT_ASYNC_STACK_KEEP_RESIDENT = 0;
+
+  /** Default total memories. */
+  int DEFAULT_TOTAL_MEMORIES = 1000;
+
+  /** Default max core instance size (1MB). */
+  long DEFAULT_MAX_CORE_INSTANCE_SIZE = 1024L * 1024L;
+
+  /** Default max component instance size (2MB). */
+  long DEFAULT_MAX_COMPONENT_INSTANCE_SIZE = 2L * 1024L * 1024L;
+
+  /** Default max memories per module. */
+  int DEFAULT_MAX_MEMORIES_PER_MODULE = 1;
+
+  /** Default max memories per component. */
+  int DEFAULT_MAX_MEMORIES_PER_COMPONENT = 1;
+
+  /** Default table elements (10000). */
+  int DEFAULT_TABLE_ELEMENTS = 10000;
+
+  /** Default max memory protection keys. */
+  int DEFAULT_MAX_MEMORY_PROTECTION_KEYS = 0;
+
   /**
    * Creates a new configuration builder with default values.
    *
@@ -217,6 +253,157 @@ public interface PoolingAllocatorConfig {
    * @return the max memory size
    */
   long getMaxMemorySize();
+
+  /**
+   * Gets the maximum number of unused warm slots to retain.
+   *
+   * <p>When using the pooling allocator with affine slot selection, this configures
+   * how many "warm" slots are retained for reuse by an affine allocation.
+   *
+   * @return the max unused warm slots
+   * @since 1.1.0
+   */
+  int getMaxUnusedWarmSlots();
+
+  /**
+   * Gets the decommit batch size.
+   *
+   * <p>This controls how many pages are decommitted at once, which can help amortize
+   * the cost of decommit operations.
+   *
+   * @return the decommit batch size
+   * @since 1.1.0
+   */
+  int getDecommitBatchSize();
+
+  /**
+   * Gets the amount of linear memory to keep resident in bytes.
+   *
+   * <p>This controls the minimum amount of memory that will remain resident
+   * after an instance is deallocated, avoiding expensive decommit/recommit cycles.
+   * A value of 0 means use the system default.
+   *
+   * @return the linear memory keep resident size
+   * @since 1.1.0
+   */
+  long getLinearMemoryKeepResident();
+
+  /**
+   * Gets the amount of table memory to keep resident in bytes.
+   *
+   * <p>This controls the minimum amount of table memory that will remain resident
+   * after an instance is deallocated. A value of 0 means use the system default.
+   *
+   * @return the table keep resident size
+   * @since 1.1.0
+   */
+  long getTableKeepResident();
+
+  /**
+   * Gets the amount of async stack memory to keep resident in bytes.
+   *
+   * <p>This controls the minimum amount of async stack memory that will remain resident
+   * after an instance is deallocated. A value of 0 means use the system default.
+   *
+   * @return the async stack keep resident size
+   * @since 1.1.0
+   */
+  long getAsyncStackKeepResident();
+
+  /**
+   * Gets the total number of memories that can be allocated in the pool.
+   *
+   * <p>This is separate from instance count and controls the total memory slots
+   * available across all instances.
+   *
+   * @return the total memories
+   * @since 1.1.0
+   */
+  int getTotalMemories();
+
+  /**
+   * Gets the maximum size of core instance metadata in bytes.
+   *
+   * <p>This limits the amount of memory used for instance metadata like globals,
+   * exported function trampolines, etc.
+   *
+   * @return the max core instance size
+   * @since 1.1.0
+   */
+  long getMaxCoreInstanceSize();
+
+  /**
+   * Gets the maximum size of component instance metadata in bytes.
+   *
+   * <p>This limits the amount of memory used for component instance metadata.
+   *
+   * @return the max component instance size
+   * @since 1.1.0
+   */
+  long getMaxComponentInstanceSize();
+
+  /**
+   * Gets the maximum number of memories per module.
+   *
+   * <p>This limits how many linear memories a single module can define.
+   *
+   * @return the max memories per module
+   * @since 1.1.0
+   */
+  int getMaxMemoriesPerModule();
+
+  /**
+   * Gets the maximum number of memories per component.
+   *
+   * <p>This limits how many linear memories a single component can use across
+   * all of its internal modules.
+   *
+   * @return the max memories per component
+   * @since 1.1.0
+   */
+  int getMaxMemoriesPerComponent();
+
+  /**
+   * Gets the maximum number of table elements.
+   *
+   * <p>This is the maximum size of any table in the pool.
+   *
+   * @return the max table elements
+   * @since 1.1.0
+   */
+  int getTableElements();
+
+  /**
+   * Gets whether memory protection keys (MPK) are enabled.
+   *
+   * <p>Memory protection keys are a Linux/x86-specific feature that provides
+   * hardware-assisted memory isolation between instances.
+   *
+   * @return true if MPK is enabled
+   * @since 1.1.0
+   */
+  boolean isMemoryProtectionKeysEnabled();
+
+  /**
+   * Gets the maximum number of memory protection keys to use.
+   *
+   * <p>This is only relevant on Linux/x86 systems that support MPK.
+   * A value of 0 means MPK is disabled.
+   *
+   * @return the max memory protection keys
+   * @since 1.1.0
+   */
+  int getMaxMemoryProtectionKeys();
+
+  /**
+   * Gets whether PAGEMAP_SCAN ioctl is enabled for memory tracking.
+   *
+   * <p>This is a Linux 6.7+ feature that enables more efficient memory tracking.
+   *
+   * @return true if PAGEMAP_SCAN is enabled
+   * @since 1.1.0
+   */
+  boolean isPagemapScanEnabled();
 
   /**
    * Validates this configuration for consistency.
