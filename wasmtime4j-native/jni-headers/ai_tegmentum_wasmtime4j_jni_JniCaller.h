@@ -103,6 +103,30 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetEpoc
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetEpochDeadline
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeGc
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGc
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeGetFuelAsyncYieldInterval
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuelAsyncYieldInterval
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeSetFuelAsyncYieldInterval
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuelAsyncYieldInterval
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

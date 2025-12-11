@@ -17,10 +17,12 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Export;
 import ai.tegmentum.wasmtime4j.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.adapter.WasmGlobalToGlobalAdapter;
@@ -291,6 +293,51 @@ final class PanamaCaller<T> implements Caller<T> {
     } catch (Exception e) {
       throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
     }
+  }
+
+  @Override
+  public Optional<Export> getExportByModuleExport(final ModuleExport moduleExport) {
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("moduleExport cannot be null");
+    }
+
+    try {
+      // Use the name from the module export for lookup
+      return getExport(moduleExport.getName());
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.WARNING, "Failed to get export by module export: " + moduleExport.getName(), e);
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Engine engine() {
+    // Get the engine from the store
+    return store.getEngine();
+  }
+
+  @Override
+  public void gc() throws WasmException {
+    // Caller GC is not currently supported in Panama implementation
+    throw new UnsupportedOperationException("Caller GC not yet supported in Panama implementation");
+  }
+
+  @Override
+  public Optional<Long> fuelAsyncYieldInterval() {
+    // Fuel async yield interval not currently supported in Panama implementation
+    return Optional.empty();
+  }
+
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    if (interval < 0) {
+      throw new IllegalArgumentException("Interval cannot be negative");
+    }
+
+    // Fuel async yield interval not currently supported in Panama implementation
+    throw new UnsupportedOperationException(
+        "Fuel async yield interval not yet supported in Panama implementation");
   }
 
   /**

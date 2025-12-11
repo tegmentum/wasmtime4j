@@ -28,6 +28,7 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -133,6 +134,35 @@ public final class PanamaInstancePre implements InstancePre {
       return 0;
     }
     return NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
+  }
+
+  @Override
+  public CompletableFuture<Instance> instantiateAsync(final Store store) {
+    Objects.requireNonNull(store, "store cannot be null");
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store);
+          } catch (WasmException e) {
+            throw new RuntimeException("Failed to instantiate asynchronously", e);
+          }
+        });
+  }
+
+  @Override
+  public CompletableFuture<Instance> instantiateAsync(final Store store, final ImportMap imports) {
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(imports, "imports cannot be null");
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, imports);
+          } catch (WasmException e) {
+            throw new RuntimeException("Failed to instantiate asynchronously with imports", e);
+          }
+        });
   }
 
   @Override

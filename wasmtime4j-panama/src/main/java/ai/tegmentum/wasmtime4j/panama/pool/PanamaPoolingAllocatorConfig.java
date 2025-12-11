@@ -42,6 +42,20 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
   private final int maxCoreInstancesPerComponent;
   private final int totalGcHeaps;
   private final long maxMemorySize;
+  private final int maxUnusedWarmSlots;
+  private final int decommitBatchSize;
+  private final long linearMemoryKeepResident;
+  private final long tableKeepResident;
+  private final long asyncStackKeepResident;
+  private final int totalMemories;
+  private final long maxCoreInstanceSize;
+  private final long maxComponentInstanceSize;
+  private final int maxMemoriesPerModule;
+  private final int maxMemoriesPerComponent;
+  private final int tableElements;
+  private final boolean memoryProtectionKeysEnabled;
+  private final int maxMemoryProtectionKeys;
+  private final boolean pagemapScanEnabled;
 
   /**
    * Creates a new PanamaPoolingAllocatorConfig with all parameters.
@@ -76,6 +90,99 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
       final int maxCoreInstancesPerComponent,
       final int totalGcHeaps,
       final long maxMemorySize) {
+    this(
+        instancePoolSize,
+        maxMemoryPerInstance,
+        stackSize,
+        maxStacks,
+        maxTablesPerInstance,
+        maxTables,
+        memoryDecommitEnabled,
+        poolWarmingEnabled,
+        poolWarmingPercentage,
+        totalCoreInstances,
+        totalComponentInstances,
+        maxCoreInstancesPerComponent,
+        totalGcHeaps,
+        maxMemorySize,
+        DEFAULT_MAX_UNUSED_WARM_SLOTS,
+        DEFAULT_DECOMMIT_BATCH_SIZE,
+        DEFAULT_LINEAR_MEMORY_KEEP_RESIDENT,
+        DEFAULT_TABLE_KEEP_RESIDENT,
+        DEFAULT_ASYNC_STACK_KEEP_RESIDENT,
+        DEFAULT_TOTAL_MEMORIES,
+        DEFAULT_MAX_CORE_INSTANCE_SIZE,
+        DEFAULT_MAX_COMPONENT_INSTANCE_SIZE,
+        DEFAULT_MAX_MEMORIES_PER_MODULE,
+        DEFAULT_MAX_MEMORIES_PER_COMPONENT,
+        DEFAULT_TABLE_ELEMENTS,
+        false,
+        DEFAULT_MAX_MEMORY_PROTECTION_KEYS,
+        false);
+  }
+
+  /**
+   * Creates a new PanamaPoolingAllocatorConfig with all parameters including extended options.
+   *
+   * @param instancePoolSize the number of instances in the pool
+   * @param maxMemoryPerInstance maximum memory per instance in bytes
+   * @param stackSize stack size for WebAssembly execution in bytes
+   * @param maxStacks maximum number of stacks in the pool
+   * @param maxTablesPerInstance maximum tables per instance
+   * @param maxTables maximum total tables in the pool
+   * @param memoryDecommitEnabled whether memory decommit optimization is enabled
+   * @param poolWarmingEnabled whether pool warming is enabled on startup
+   * @param poolWarmingPercentage the pool warming percentage (0.0 to 1.0)
+   * @param totalCoreInstances maximum concurrent core module instances
+   * @param totalComponentInstances maximum concurrent component instances
+   * @param maxCoreInstancesPerComponent max core instances per component
+   * @param totalGcHeaps maximum concurrent GC heaps
+   * @param maxMemorySize maximum memory size for any memory in the pool
+   * @param maxUnusedWarmSlots maximum unused warm slots
+   * @param decommitBatchSize decommit batch size
+   * @param linearMemoryKeepResident linear memory keep resident size
+   * @param tableKeepResident table keep resident size
+   * @param asyncStackKeepResident async stack keep resident size
+   * @param totalMemories total memories in the pool
+   * @param maxCoreInstanceSize max core instance size
+   * @param maxComponentInstanceSize max component instance size
+   * @param maxMemoriesPerModule max memories per module
+   * @param maxMemoriesPerComponent max memories per component
+   * @param tableElements max table elements
+   * @param memoryProtectionKeysEnabled whether MPK is enabled
+   * @param maxMemoryProtectionKeys max memory protection keys
+   * @param pagemapScanEnabled whether pagemap scan is enabled
+   */
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  public PanamaPoolingAllocatorConfig(
+      final int instancePoolSize,
+      final long maxMemoryPerInstance,
+      final int stackSize,
+      final int maxStacks,
+      final int maxTablesPerInstance,
+      final int maxTables,
+      final boolean memoryDecommitEnabled,
+      final boolean poolWarmingEnabled,
+      final float poolWarmingPercentage,
+      final int totalCoreInstances,
+      final int totalComponentInstances,
+      final int maxCoreInstancesPerComponent,
+      final int totalGcHeaps,
+      final long maxMemorySize,
+      final int maxUnusedWarmSlots,
+      final int decommitBatchSize,
+      final long linearMemoryKeepResident,
+      final long tableKeepResident,
+      final long asyncStackKeepResident,
+      final int totalMemories,
+      final long maxCoreInstanceSize,
+      final long maxComponentInstanceSize,
+      final int maxMemoriesPerModule,
+      final int maxMemoriesPerComponent,
+      final int tableElements,
+      final boolean memoryProtectionKeysEnabled,
+      final int maxMemoryProtectionKeys,
+      final boolean pagemapScanEnabled) {
     this.instancePoolSize = instancePoolSize;
     this.maxMemoryPerInstance = maxMemoryPerInstance;
     this.stackSize = stackSize;
@@ -90,6 +197,20 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
     this.maxCoreInstancesPerComponent = maxCoreInstancesPerComponent;
     this.totalGcHeaps = totalGcHeaps;
     this.maxMemorySize = maxMemorySize;
+    this.maxUnusedWarmSlots = maxUnusedWarmSlots;
+    this.decommitBatchSize = decommitBatchSize;
+    this.linearMemoryKeepResident = linearMemoryKeepResident;
+    this.tableKeepResident = tableKeepResident;
+    this.asyncStackKeepResident = asyncStackKeepResident;
+    this.totalMemories = totalMemories;
+    this.maxCoreInstanceSize = maxCoreInstanceSize;
+    this.maxComponentInstanceSize = maxComponentInstanceSize;
+    this.maxMemoriesPerModule = maxMemoriesPerModule;
+    this.maxMemoriesPerComponent = maxMemoriesPerComponent;
+    this.tableElements = tableElements;
+    this.memoryProtectionKeysEnabled = memoryProtectionKeysEnabled;
+    this.maxMemoryProtectionKeys = maxMemoryProtectionKeys;
+    this.pagemapScanEnabled = pagemapScanEnabled;
   }
 
   /** Creates a new PanamaPoolingAllocatorConfig with default values. */
@@ -179,6 +300,76 @@ public final class PanamaPoolingAllocatorConfig implements PoolingAllocatorConfi
   @Override
   public long getMaxMemorySize() {
     return maxMemorySize;
+  }
+
+  @Override
+  public int getMaxUnusedWarmSlots() {
+    return maxUnusedWarmSlots;
+  }
+
+  @Override
+  public int getDecommitBatchSize() {
+    return decommitBatchSize;
+  }
+
+  @Override
+  public long getLinearMemoryKeepResident() {
+    return linearMemoryKeepResident;
+  }
+
+  @Override
+  public long getTableKeepResident() {
+    return tableKeepResident;
+  }
+
+  @Override
+  public long getAsyncStackKeepResident() {
+    return asyncStackKeepResident;
+  }
+
+  @Override
+  public int getTotalMemories() {
+    return totalMemories;
+  }
+
+  @Override
+  public long getMaxCoreInstanceSize() {
+    return maxCoreInstanceSize;
+  }
+
+  @Override
+  public long getMaxComponentInstanceSize() {
+    return maxComponentInstanceSize;
+  }
+
+  @Override
+  public int getMaxMemoriesPerModule() {
+    return maxMemoriesPerModule;
+  }
+
+  @Override
+  public int getMaxMemoriesPerComponent() {
+    return maxMemoriesPerComponent;
+  }
+
+  @Override
+  public int getTableElements() {
+    return tableElements;
+  }
+
+  @Override
+  public boolean isMemoryProtectionKeysEnabled() {
+    return memoryProtectionKeysEnabled;
+  }
+
+  @Override
+  public int getMaxMemoryProtectionKeys() {
+    return maxMemoryProtectionKeys;
+  }
+
+  @Override
+  public boolean isPagemapScanEnabled() {
+    return pagemapScanEnabled;
   }
 
   @Override

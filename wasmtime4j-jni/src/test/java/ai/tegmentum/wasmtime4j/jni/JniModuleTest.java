@@ -252,6 +252,21 @@ class JniModuleTest {
           }
 
           @Override
+          public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable>
+              createTableAsync(
+                  ai.tegmentum.wasmtime4j.WasmValueType elementType,
+                  int initialSize,
+                  int maxSize) {
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
+          }
+
+          @Override
+          public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
+              createMemoryAsync(int initialPages, int maxPages) {
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
+          }
+
+          @Override
           public void gc() {}
 
           @Override
@@ -317,6 +332,17 @@ class JniModuleTest {
           @Override
           public long getFuelAsyncYieldInterval() {
             return 0;
+          }
+
+          @Override
+          public void limiter(ai.tegmentum.wasmtime4j.execution.ResourceLimiter limiter) {}
+
+          @Override
+          public void limiterAsync(ai.tegmentum.wasmtime4j.Store.AsyncResourceLimiter limiter) {}
+
+          @Override
+          public ai.tegmentum.wasmtime4j.execution.ResourceLimiter getLimiter() {
+            return null;
           }
         };
 

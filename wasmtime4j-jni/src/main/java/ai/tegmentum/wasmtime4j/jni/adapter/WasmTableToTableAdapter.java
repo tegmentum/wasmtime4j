@@ -17,9 +17,11 @@
 package ai.tegmentum.wasmtime4j.jni.adapter;
 
 import ai.tegmentum.wasmtime4j.Table;
+import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Adapter class that wraps a WasmTable instance to implement the Table interface.
@@ -135,6 +137,91 @@ public final class WasmTableToTableAdapter implements Table {
     } catch (final Exception e) {
       return false;
     }
+  }
+
+  @Override
+  public void fill(final long dstIndex, final Object value, final long length)
+      throws WasmException {
+    if (dstIndex < 0) {
+      throw new IllegalArgumentException("dstIndex cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length cannot be negative");
+    }
+    if (dstIndex > Integer.MAX_VALUE || length > Integer.MAX_VALUE) {
+      throw new WasmException("Index or length exceeds maximum supported value");
+    }
+
+    try {
+      delegate.fill((int) dstIndex, (int) length, value);
+    } catch (final IndexOutOfBoundsException e) {
+      throw new WasmException("Table fill out of bounds: " + e.getMessage(), e);
+    } catch (final RuntimeException e) {
+      throw new WasmException("Table fill failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void copy(
+      final long dstIndex, final Table srcTable, final long srcIndex, final long length)
+      throws WasmException {
+    if (srcTable == null) {
+      throw new IllegalArgumentException("srcTable cannot be null");
+    }
+    if (dstIndex < 0) {
+      throw new IllegalArgumentException("dstIndex cannot be negative");
+    }
+    if (srcIndex < 0) {
+      throw new IllegalArgumentException("srcIndex cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length cannot be negative");
+    }
+    if (dstIndex > Integer.MAX_VALUE
+        || srcIndex > Integer.MAX_VALUE
+        || length > Integer.MAX_VALUE) {
+      throw new WasmException("Parameters exceed maximum supported value");
+    }
+
+    try {
+      // Handle self-copy using single-table copy method
+      if (srcTable == this) {
+        delegate.copy((int) dstIndex, (int) srcIndex, (int) length);
+        return;
+      }
+
+      // For cross-table copy, need to get the underlying WasmTable
+      if (srcTable instanceof WasmTableToTableAdapter) {
+        final WasmTable srcWasmTable = ((WasmTableToTableAdapter) srcTable).getDelegate();
+        delegate.copy((int) dstIndex, srcWasmTable, (int) srcIndex, (int) length);
+      } else {
+        throw new WasmException(
+            "Source table must be a WasmTableToTableAdapter for cross-table copy");
+      }
+    } catch (final IndexOutOfBoundsException e) {
+      throw new WasmException("Table copy out of bounds: " + e.getMessage(), e);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final RuntimeException e) {
+      throw new WasmException("Table copy failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public TableType getTableType() {
+    return delegate.getTableType();
+  }
+
+  @Override
+  public CompletableFuture<Long> growAsync(final long deltaElements, final Object initValue) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return grow(deltaElements, initValue);
+          } catch (final WasmException e) {
+            throw new RuntimeException("Failed to grow table asynchronously", e);
+          }
+        });
   }
 
   /**

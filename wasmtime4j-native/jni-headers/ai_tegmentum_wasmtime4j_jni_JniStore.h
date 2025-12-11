@@ -375,6 +375,38 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearDebu
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetFuelAsyncYieldInterval
   (JNIEnv *, jobject, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeSetLimiter
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetLimiter
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeClearLimiter
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearLimiter
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeSetAsyncLimiter
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetAsyncLimiter
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeClearAsyncLimiter
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearAsyncLimiter
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

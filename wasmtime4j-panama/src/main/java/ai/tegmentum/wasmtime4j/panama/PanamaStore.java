@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -557,6 +558,21 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
+      final ai.tegmentum.wasmtime4j.WasmValueType elementType,
+      final int initialSize,
+      final int maxSize) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createTable(elementType, initialSize, maxSize);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
       throws WasmException {
     if (initialPages < 0) {
@@ -606,6 +622,19 @@ public final class PanamaStore implements Store {
       }
       throw new WasmException("Error creating memory: " + e.getMessage(), e);
     }
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
+      createMemoryAsync(final int initialPages, final int maxPages) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createMemory(initialPages, maxPages);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
@@ -735,6 +764,26 @@ public final class PanamaStore implements Store {
   @Override
   public boolean isValid() {
     return !closed;
+  }
+
+  @Override
+  public void limiter(final ResourceLimiter limiter) throws WasmException {
+    // Resource limiter not currently supported in Panama implementation
+    throw new UnsupportedOperationException(
+        "Resource limiter not yet supported in Panama implementation");
+  }
+
+  @Override
+  public void limiterAsync(final AsyncResourceLimiter limiter) throws WasmException {
+    // Async resource limiter not currently supported in Panama implementation
+    throw new UnsupportedOperationException(
+        "Async resource limiter not yet supported in Panama implementation");
+  }
+
+  @Override
+  public ResourceLimiter getLimiter() {
+    // Panama implementation does not currently support resource limiter retrieval
+    return null;
   }
 
   @Override
@@ -939,6 +988,21 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public java.util.concurrent.CompletableFuture<Void> gcAsync()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            gc();
+          } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
+            throw new RuntimeException(e);
+          }
+          return null;
+        });
+  }
+
+  @Override
   public <R> R throwException(final ai.tegmentum.wasmtime4j.ExnRef exceptionRef)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
@@ -973,20 +1037,6 @@ public final class PanamaStore implements Store {
       return false;
     }
     return NATIVE_BINDINGS.storeHasPendingException(nativeStore) != 0;
-  }
-
-  @Override
-  public java.util.concurrent.CompletableFuture<Void> gcAsync()
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          final int result = NATIVE_BINDINGS.storeGcAsync(nativeStore);
-          if (result != 0) {
-            throw new RuntimeException("Async GC failed: error code " + result);
-          }
-          return null;
-        });
   }
 
   @Override
@@ -1102,8 +1152,7 @@ public final class PanamaStore implements Store {
   // ===== Concurrency Methods =====
 
   @Override
-  public <T, R> R runConcurrent(
-      final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
+  public <T, R> R runConcurrent(final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
     if (task == null) {
@@ -1173,9 +1222,7 @@ public final class PanamaStore implements Store {
 
   // ===== Inner Classes =====
 
-  /**
-   * Panama implementation of Accessor for concurrent store access.
-   */
+  /** Panama implementation of Accessor for concurrent store access. */
   private static final class PanamaAccessor<T>
       implements ai.tegmentum.wasmtime4j.concurrent.Accessor<T> {
     private final T data;
@@ -1208,8 +1255,7 @@ public final class PanamaStore implements Store {
     }
 
     @Override
-    public void fail(final Throwable error)
-        throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    public void fail(final Throwable error) throws ai.tegmentum.wasmtime4j.exception.WasmException {
       valid = false;
     }
 
@@ -1218,9 +1264,7 @@ public final class PanamaStore implements Store {
     }
   }
 
-  /**
-   * Panama implementation of JoinHandle for spawned tasks.
-   */
+  /** Panama implementation of JoinHandle for spawned tasks. */
   private static final class PanamaJoinHandle<T>
       implements ai.tegmentum.wasmtime4j.concurrent.JoinHandle<T> {
     private static final java.util.concurrent.atomic.AtomicLong ID_COUNTER =
@@ -1231,18 +1275,19 @@ public final class PanamaStore implements Store {
 
     PanamaJoinHandle(final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<T> task) {
       this.id = ID_COUNTER.incrementAndGet();
-      this.future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-        try {
-          return task.run();
-        } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      this.future =
+          java.util.concurrent.CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  return task.run();
+                } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
 
     @Override
-    public T join()
-        throws ai.tegmentum.wasmtime4j.exception.WasmException, InterruptedException {
+    public T join() throws ai.tegmentum.wasmtime4j.exception.WasmException, InterruptedException {
       try {
         return future.get();
       } catch (java.util.concurrent.ExecutionException e) {

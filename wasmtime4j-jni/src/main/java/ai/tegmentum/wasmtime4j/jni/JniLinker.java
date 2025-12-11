@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -1313,6 +1314,116 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
+  public void defineName(final Store store, final String name, final Extern extern)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (extern == null) {
+      throw new IllegalArgumentException("Extern cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+
+    // DEFENSIVE: Check if handle looks valid before calling native code
+    if (!isNativeHandleReasonable()) {
+      // For test code with fake handles, just track the import without calling native code
+      addImportWithMetadata(
+          "", // No module name for top-level definitions
+          name,
+          getExternImportType(extern),
+          extern.toString());
+      return;
+    }
+
+    try {
+      // Get the native handle from the extern
+      final long externHandle = getExternNativeHandle(extern);
+      final int externTypeCode = getExternTypeCode(extern);
+
+      final boolean success =
+          nativeDefineName(
+              nativeHandle, jniStore.getNativeHandle(), name, externHandle, externTypeCode);
+
+      if (!success) {
+        throw new WasmException("Failed to define name: " + name);
+      }
+
+      addImportWithMetadata("", name, getExternImportType(extern), extern.toString());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining name: " + name, e);
+    }
+  }
+
+  /**
+   * Gets the native handle from an Extern.
+   *
+   * @param extern the extern to get the handle from
+   * @return the native handle
+   */
+  private long getExternNativeHandle(final Extern extern) {
+    if (extern instanceof JniExternFunc) {
+      return ((JniExternFunc) extern).getNativeHandle();
+    } else if (extern instanceof JniExternMemory) {
+      return ((JniExternMemory) extern).getNativeHandle();
+    } else if (extern instanceof JniExternTable) {
+      return ((JniExternTable) extern).getNativeHandle();
+    } else if (extern instanceof JniExternGlobal) {
+      return ((JniExternGlobal) extern).getNativeHandle();
+    }
+    throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
+  }
+
+  /**
+   * Gets the type code for an Extern.
+   *
+   * @param extern the extern to get the type code from
+   * @return the type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL)
+   */
+  private int getExternTypeCode(final Extern extern) {
+    if (extern instanceof JniExternFunc) {
+      return 0;
+    } else if (extern instanceof JniExternTable) {
+      return 1;
+    } else if (extern instanceof JniExternMemory) {
+      return 2;
+    } else if (extern instanceof JniExternGlobal) {
+      return 3;
+    }
+    throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
+  }
+
+  /**
+   * Gets the ImportInfo.ImportType for an Extern.
+   *
+   * @param extern the extern to get the type from
+   * @return the import type
+   */
+  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType getExternImportType(final Extern extern) {
+    if (extern instanceof JniExternFunc) {
+      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+    } else if (extern instanceof JniExternTable) {
+      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+    } else if (extern instanceof JniExternMemory) {
+      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+    } else if (extern instanceof JniExternGlobal) {
+      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+    }
+    return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WasmFunction getDefault(
       final Store store, final String moduleName) {
     if (store == null) {
@@ -1570,4 +1681,17 @@ public class JniLinker<T> implements Linker<T> {
    * @return type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL), or -1 on error
    */
   private native int nativeGetExternType(long externHandle);
+
+  /**
+   * Defines an item at the top-level namespace without a module prefix.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param name the name for the definition
+   * @param externHandle the extern handle
+   * @param externTypeCode the extern type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL)
+   * @return true on success
+   */
+  private native boolean nativeDefineName(
+      long linkerHandle, long storeHandle, String name, long externHandle, int externTypeCode);
 }

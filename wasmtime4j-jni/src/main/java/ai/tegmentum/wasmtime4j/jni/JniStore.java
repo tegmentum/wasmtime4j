@@ -10,14 +10,18 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -1561,8 +1565,7 @@ public final class JniStore extends JniResource implements Store {
   // ===== Concurrency Methods =====
 
   @Override
-  public <T, R> R runConcurrent(
-      final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
+  public <T, R> R runConcurrent(final ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
       throws WasmException {
     ensureNotClosed();
     JniValidation.requireNonNull(task, "task");
@@ -1578,8 +1581,7 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public <R> ai.tegmentum.wasmtime4j.concurrent.JoinHandle<R> spawn(
-      final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task)
-      throws WasmException {
+      final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task) throws WasmException {
     ensureNotClosed();
     JniValidation.requireNonNull(task, "task");
     return new JniJoinHandle<>(task);
@@ -1647,12 +1649,108 @@ public final class JniStore extends JniResource implements Store {
 
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
 
+  // ===== Resource Limiter Methods =====
+
+  private ResourceLimiter resourceLimiter;
+  private AsyncResourceLimiter asyncResourceLimiter;
+
+  @Override
+  public void limiter(final ResourceLimiter limiter) throws WasmException {
+    ensureNotClosed();
+    this.resourceLimiter = limiter;
+    if (limiter == null) {
+      nativeClearLimiter(nativeHandle);
+    } else {
+      nativeSetLimiter(nativeHandle, limiter.getId());
+    }
+  }
+
+  @Override
+  public void limiterAsync(final AsyncResourceLimiter limiter) throws WasmException {
+    ensureNotClosed();
+    this.asyncResourceLimiter = limiter;
+    if (limiter == null) {
+      nativeClearAsyncLimiter(nativeHandle);
+    } else {
+      nativeSetAsyncLimiter(nativeHandle);
+    }
+  }
+
+  @Override
+  public ResourceLimiter getLimiter() {
+    return resourceLimiter;
+  }
+
+  // Called from native code when async memory growth is requested
+  @SuppressWarnings("unused")
+  private boolean onAsyncMemoryGrowRequest(final long currentPages, final long requestedPages) {
+    if (asyncResourceLimiter == null) {
+      return true;
+    }
+    try {
+      return asyncResourceLimiter.allowMemoryGrow(currentPages, requestedPages).get();
+    } catch (Exception e) {
+      LOGGER.warning("Async memory grow callback failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  // Called from native code when async table growth is requested
+  @SuppressWarnings("unused")
+  private boolean onAsyncTableGrowRequest(
+      final long currentElements, final long requestedElements) {
+    if (asyncResourceLimiter == null) {
+      return true;
+    }
+    try {
+      return asyncResourceLimiter.allowTableGrow(currentElements, requestedElements).get();
+    } catch (Exception e) {
+      LOGGER.warning("Async table grow callback failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  private native void nativeSetLimiter(long storeHandle, long limiterId);
+
+  private native void nativeClearLimiter(long storeHandle);
+
+  private native void nativeSetAsyncLimiter(long storeHandle);
+
+  private native void nativeClearAsyncLimiter(long storeHandle);
+
+  // ===== Async Creation Methods =====
+
+  @Override
+  public CompletableFuture<WasmTable> createTableAsync(
+      final WasmValueType elementType, final int initialSize, final int maxSize) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createTable(elementType, initialSize, maxSize);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  @Override
+  public CompletableFuture<WasmMemory> createMemoryAsync(
+      final int initialPages, final int maxPages) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createMemory(initialPages, maxPages);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
   // ===== Inner Classes =====
 
-  /**
-   * JNI implementation of Accessor for concurrent store access.
-   */
-  private static final class JniAccessor<T> implements ai.tegmentum.wasmtime4j.concurrent.Accessor<T> {
+  /** JNI implementation of Accessor for concurrent store access. */
+  private static final class JniAccessor<T>
+      implements ai.tegmentum.wasmtime4j.concurrent.Accessor<T> {
     private final T data;
     private final long storeId;
     private volatile boolean valid = true;
@@ -1692,9 +1790,7 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * JNI implementation of JoinHandle for spawned tasks.
-   */
+  /** JNI implementation of JoinHandle for spawned tasks. */
   private static final class JniJoinHandle<T>
       implements ai.tegmentum.wasmtime4j.concurrent.JoinHandle<T> {
     private static final java.util.concurrent.atomic.AtomicLong ID_COUNTER =
@@ -1705,13 +1801,15 @@ public final class JniStore extends JniResource implements Store {
 
     JniJoinHandle(final ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<T> task) {
       this.id = ID_COUNTER.incrementAndGet();
-      this.future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-        try {
-          return task.run();
-        } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      this.future =
+          java.util.concurrent.CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  return task.run();
+                } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
 
     @Override

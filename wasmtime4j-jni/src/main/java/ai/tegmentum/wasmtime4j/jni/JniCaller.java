@@ -17,10 +17,12 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Export;
 import ai.tegmentum.wasmtime4j.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.adapter.WasmFunctionToFunctionAdapter;
@@ -266,6 +268,61 @@ final class JniCaller<T> implements Caller<T> {
     }
   }
 
+  @Override
+  public Optional<Export> getExportByModuleExport(final ModuleExport moduleExport) {
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("moduleExport cannot be null");
+    }
+
+    try {
+      // Use the name from the module export for lookup
+      return getExport(moduleExport.getName());
+    } catch (Exception e) {
+      LOGGER.log(
+          Level.WARNING, "Failed to get export by module export: " + moduleExport.getName(), e);
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Engine engine() {
+    // Get the engine from the store
+    return store.getEngine();
+  }
+
+  @Override
+  public void gc() throws WasmException {
+    try {
+      nativeGc(callerHandle);
+    } catch (Exception e) {
+      throw new WasmException("Failed to perform GC: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Optional<Long> fuelAsyncYieldInterval() {
+    try {
+      final long interval = nativeGetFuelAsyncYieldInterval(callerHandle);
+      return interval >= 0 ? Optional.of(interval) : Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.FINE, "Fuel async yield interval not available", e);
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    if (interval < 0) {
+      throw new IllegalArgumentException("Interval cannot be negative");
+    }
+
+    try {
+      nativeSetFuelAsyncYieldInterval(callerHandle, interval);
+    } catch (Exception e) {
+      throw new WasmException("Failed to set fuel async yield interval: " + e.getMessage(), e);
+    }
+  }
+
   /**
    * Gets the native caller handle.
    *
@@ -392,4 +449,27 @@ final class JniCaller<T> implements Caller<T> {
    * @param deadline the epoch deadline to set
    */
   private static native void nativeSetEpochDeadline(long callerHandle, long deadline);
+
+  /**
+   * Triggers garbage collection from within the caller context.
+   *
+   * @param callerHandle the native caller handle
+   */
+  private static native void nativeGc(long callerHandle);
+
+  /**
+   * Gets the fuel async yield interval.
+   *
+   * @param callerHandle the native caller handle
+   * @return the yield interval, or -1 if not configured
+   */
+  private static native long nativeGetFuelAsyncYieldInterval(long callerHandle);
+
+  /**
+   * Sets the fuel async yield interval.
+   *
+   * @param callerHandle the native caller handle
+   * @param interval the yield interval to set
+   */
+  private static native void nativeSetFuelAsyncYieldInterval(long callerHandle, long interval);
 }

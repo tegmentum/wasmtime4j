@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.ImportInfo;
@@ -1483,6 +1484,25 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         LOGGER.warning("Unknown extern type code: " + externTypeCode);
         return null;
     }
+  }
+
+  @Override
+  public void defineName(final Store store, final String name, final Extern extern)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (extern == null) {
+      throw new IllegalArgumentException("Extern cannot be null");
+    }
+    ensureNotClosed();
+
+    // Native binding for linkerDefineName not yet implemented
+    throw new UnsupportedOperationException(
+        "defineName is not yet supported in Panama implementation");
   }
 
   @Override

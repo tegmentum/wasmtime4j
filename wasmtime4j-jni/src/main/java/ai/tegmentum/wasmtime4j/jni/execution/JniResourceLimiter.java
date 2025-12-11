@@ -44,8 +44,7 @@ public final class JniResourceLimiter extends JniResource implements ResourceLim
    * @return a new resource limiter
    * @throws WasmException if limiter creation fails
    */
-  public static JniResourceLimiter create(final ResourceLimiterConfig config)
-      throws WasmException {
+  public static JniResourceLimiter create(final ResourceLimiterConfig config) throws WasmException {
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
@@ -58,8 +57,7 @@ public final class JniResourceLimiter extends JniResource implements ResourceLim
         config.getMaxTableElements().isPresent() ? config.getMaxTableElements().getAsLong() : -1L;
     final int maxInstances =
         config.getMaxInstances().isPresent() ? config.getMaxInstances().getAsInt() : -1;
-    final int maxTables =
-        config.getMaxTables().isPresent() ? config.getMaxTables().getAsInt() : -1;
+    final int maxTables = config.getMaxTables().isPresent() ? config.getMaxTables().getAsInt() : -1;
     final int maxMemories =
         config.getMaxMemories().isPresent() ? config.getMaxMemories().getAsInt() : -1;
 

@@ -44,6 +44,20 @@ public final class JniPoolingAllocatorConfigBuilder implements PoolingAllocatorC
       PoolingAllocatorConfig.DEFAULT_MAX_CORE_INSTANCES_PER_COMPONENT;
   private int totalGcHeaps = PoolingAllocatorConfig.DEFAULT_TOTAL_GC_HEAPS;
   private long maxMemorySize = PoolingAllocatorConfig.DEFAULT_MAX_MEMORY_SIZE;
+  private int maxUnusedWarmSlots = 0;
+  private int decommitBatchSize = 1;
+  private long linearMemoryKeepResident = 0;
+  private long tableKeepResident = 0;
+  private long asyncStackKeepResident = 0;
+  private int totalMemories = 1000;
+  private long maxCoreInstanceSize = 1024 * 1024;
+  private long maxComponentInstanceSize = 1024 * 1024;
+  private int maxMemoriesPerModule = 1;
+  private int maxMemoriesPerComponent = 1;
+  private int tableElements = 10000;
+  private boolean memoryProtectionKeysEnabled = false;
+  private int maxMemoryProtectionKeys = 0;
+  private boolean pagemapScanEnabled = false;
 
   @Override
   public PoolingAllocatorConfigBuilder instancePoolSize(final int instancePoolSize) {
@@ -127,6 +141,93 @@ public final class JniPoolingAllocatorConfigBuilder implements PoolingAllocatorC
   @Override
   public PoolingAllocatorConfigBuilder maxMemorySize(final long maxMemorySize) {
     this.maxMemorySize = maxMemorySize;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxUnusedWarmSlots(final int maxUnusedWarmSlots) {
+    this.maxUnusedWarmSlots = maxUnusedWarmSlots;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder decommitBatchSize(final int decommitBatchSize) {
+    this.decommitBatchSize = decommitBatchSize;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder linearMemoryKeepResident(
+      final long linearMemoryKeepResident) {
+    this.linearMemoryKeepResident = linearMemoryKeepResident;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder tableKeepResident(final long tableKeepResident) {
+    this.tableKeepResident = tableKeepResident;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder asyncStackKeepResident(final long asyncStackKeepResident) {
+    this.asyncStackKeepResident = asyncStackKeepResident;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder totalMemories(final int totalMemories) {
+    this.totalMemories = totalMemories;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxCoreInstanceSize(final long maxCoreInstanceSize) {
+    this.maxCoreInstanceSize = maxCoreInstanceSize;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxComponentInstanceSize(
+      final long maxComponentInstanceSize) {
+    this.maxComponentInstanceSize = maxComponentInstanceSize;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxMemoriesPerModule(final int maxMemoriesPerModule) {
+    this.maxMemoriesPerModule = maxMemoriesPerModule;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxMemoriesPerComponent(final int maxMemoriesPerComponent) {
+    this.maxMemoriesPerComponent = maxMemoriesPerComponent;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder tableElements(final int tableElements) {
+    this.tableElements = tableElements;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder memoryProtectionKeysEnabled(
+      final boolean memoryProtectionKeysEnabled) {
+    this.memoryProtectionKeysEnabled = memoryProtectionKeysEnabled;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxMemoryProtectionKeys(final int maxMemoryProtectionKeys) {
+    this.maxMemoryProtectionKeys = maxMemoryProtectionKeys;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder pagemapScanEnabled(final boolean pagemapScanEnabled) {
+    this.pagemapScanEnabled = pagemapScanEnabled;
     return this;
   }
 

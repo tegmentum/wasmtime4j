@@ -1,11 +1,14 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -420,6 +423,26 @@ public final class PanamaTable implements WasmTable {
     }
   }
 
+  /**
+   * Fills a region of this table with the specified value.
+   *
+   * @param dstIndex the starting index in this table
+   * @param value the value to fill with
+   * @param length the number of elements to fill
+   * @throws WasmException if the operation fails or indices are out of bounds
+   */
+  public void fill(final long dstIndex, final Object value, final long length)
+      throws WasmException {
+    if (dstIndex < 0) {
+      throw new IllegalArgumentException("dstIndex cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length cannot be negative");
+    }
+    // Delegate to existing fill method with int parameters
+    fill((int) dstIndex, (int) length, value);
+  }
+
   @Override
   public void copy(final int dst, final int src, final int count) {
     if (dst < 0) {
@@ -482,6 +505,47 @@ public final class PanamaTable implements WasmTable {
     }
   }
 
+  /**
+   * Copies elements from another table to this table.
+   *
+   * @param dstIndex the starting index in this table
+   * @param srcTable the source table to copy from
+   * @param srcIndex the starting index in the source table
+   * @param length the number of elements to copy
+   * @throws WasmException if the operation fails or indices are out of bounds
+   */
+  public void copy(
+      final long dstIndex, final Table srcTable, final long srcIndex, final long length)
+      throws WasmException {
+    if (srcTable == null) {
+      throw new IllegalArgumentException("srcTable cannot be null");
+    }
+    if (dstIndex < 0) {
+      throw new IllegalArgumentException("dstIndex cannot be negative");
+    }
+    if (srcIndex < 0) {
+      throw new IllegalArgumentException("srcIndex cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("length cannot be negative");
+    }
+
+    // Handle self-copy case - use equals() since Table and PanamaTable are different interface
+    // types
+    if (this.equals(srcTable)) {
+      copy((int) dstIndex, (int) srcIndex, (int) length);
+      return;
+    }
+
+    // For cross-table copy, we need to get the WasmTable
+    if (srcTable instanceof WasmTable) {
+      copy((int) dstIndex, (WasmTable) srcTable, (int) srcIndex, (int) length);
+    } else {
+      throw new IllegalArgumentException(
+          "Source table must be a WasmTable instance for cross-table copy");
+    }
+  }
+
   @Override
   public void init(
       final int destIndex, final int elementSegmentIndex, final int srcIndex, final int count) {
@@ -541,6 +605,26 @@ public final class PanamaTable implements WasmTable {
             + elementSegmentIndex
             + " at offset "
             + srcIndex);
+  }
+
+  /**
+   * Grows this table asynchronously.
+   *
+   * @param deltaElements the number of elements to grow by
+   * @param initValue the initial value for new elements
+   * @return a future that completes with the previous size, or -1 if growth failed
+   */
+  public CompletableFuture<Long> growAsync(final long deltaElements, final Object initValue) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            ensureNotClosed();
+            final int result = grow((int) deltaElements, initValue);
+            return (long) result;
+          } catch (final Exception e) {
+            throw new RuntimeException("Failed to grow table asynchronously", e);
+          }
+        });
   }
 
   @Override

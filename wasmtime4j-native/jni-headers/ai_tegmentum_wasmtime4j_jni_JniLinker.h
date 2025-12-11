@@ -151,6 +151,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetDefa
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetExternType
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineName
+ * Signature: (JJLjava/lang/String;JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineName
+  (JNIEnv *, jobject, jlong, jlong, jstring, jlong, jint);
+
 #ifdef __cplusplus
 }
 #endif
