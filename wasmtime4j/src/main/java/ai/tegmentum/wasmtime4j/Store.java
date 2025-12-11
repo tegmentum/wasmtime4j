@@ -5,8 +5,10 @@ import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
 import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
 import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a WebAssembly store.
@@ -224,6 +226,44 @@ public interface Store extends Closeable {
    * @since 1.0.0
    */
   WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
+
+  // ===== Async Creation Methods =====
+
+  /**
+   * Creates a new WebAssembly table asynchronously with the specified element type and size.
+   *
+   * <p>This method performs table creation in an async context, allowing the operation to yield if
+   * the store is configured with async resource limiting. This is useful when table creation needs
+   * to check external quotas or resources asynchronously.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param elementType the type of elements this table will store (FUNCREF or EXTERNREF)
+   * @param initialSize the initial number of elements
+   * @param maxSize the maximum number of elements, or -1 for unlimited
+   * @return a future that completes with a new WasmTable
+   * @throws IllegalArgumentException if any parameter is invalid
+   * @since 1.0.0
+   */
+  CompletableFuture<WasmTable> createTableAsync(
+      WasmValueType elementType, int initialSize, int maxSize);
+
+  /**
+   * Creates a new WebAssembly linear memory asynchronously with the specified size.
+   *
+   * <p>This method performs memory creation in an async context, allowing the operation to yield if
+   * the store is configured with async resource limiting. This is useful when memory allocation
+   * needs to check external quotas or resources asynchronously.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages, or -1 for unlimited
+   * @return a future that completes with a new WasmMemory
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @since 1.0.0
+   */
+  CompletableFuture<WasmMemory> createMemoryAsync(int initialPages, int maxPages);
 
   /**
    * Creates a function reference from a host function.
@@ -695,6 +735,81 @@ public interface Store extends Closeable {
    */
   default void clearDebugHandler() throws WasmException {
     setDebugHandler(null);
+  }
+
+  // ===== Resource Limiter Methods =====
+
+  /**
+   * Sets a resource limiter for this store.
+   *
+   * <p>The resource limiter is invoked whenever WebAssembly code attempts to grow memory or tables.
+   * This provides fine-grained control over resource consumption per-store.
+   *
+   * <p>Only one limiter can be active at a time. Setting a new limiter replaces any existing one.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * ResourceLimiter limiter = ResourceLimiter.create(config);
+   * store.limiter(limiter);
+   * // WebAssembly memory/table growth will now be controlled by the limiter
+   * }</pre>
+   *
+   * @param limiter the resource limiter to use, or null to remove any existing limiter
+   * @throws WasmException if setting the limiter fails
+   * @since 1.0.0
+   */
+  void limiter(ResourceLimiter limiter) throws WasmException;
+
+  /**
+   * Sets an async resource limiter for this store.
+   *
+   * <p>The async limiter is similar to {@link #limiter(ResourceLimiter)} but supports
+   * asynchronous decision-making. When memory or table growth is requested, the limiter
+   * can perform async operations (like checking quotas from a database) before allowing
+   * or denying the request.
+   *
+   * <p>The limiter callback receives the current and requested sizes and returns a
+   * CompletableFuture that resolves to true (allow) or false (deny).
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param limiter the async resource limiter callback
+   * @throws WasmException if setting the async limiter fails
+   * @since 1.0.0
+   */
+  void limiterAsync(AsyncResourceLimiter limiter) throws WasmException;
+
+  /**
+   * Gets the currently configured resource limiter, if any.
+   *
+   * @return the resource limiter, or null if none is configured
+   * @since 1.0.0
+   */
+  ResourceLimiter getLimiter();
+
+  /**
+   * Async resource limiter interface for controlling resource growth asynchronously.
+   *
+   * @since 1.0.0
+   */
+  interface AsyncResourceLimiter {
+    /**
+     * Decides whether memory growth should be allowed.
+     *
+     * @param currentPages current memory size in pages
+     * @param requestedPages requested additional pages
+     * @return a future that resolves to true to allow, false to deny
+     */
+    CompletableFuture<Boolean> allowMemoryGrow(long currentPages, long requestedPages);
+
+    /**
+     * Decides whether table growth should be allowed.
+     *
+     * @param currentElements current table size
+     * @param requestedElements requested additional elements
+     * @return a future that resolves to true to allow, false to deny
+     */
+    CompletableFuture<Boolean> allowTableGrow(long currentElements, long requestedElements);
   }
 
   // ===== Fuel Async Methods =====

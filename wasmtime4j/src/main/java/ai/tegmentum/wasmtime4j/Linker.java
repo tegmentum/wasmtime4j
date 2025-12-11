@@ -435,6 +435,44 @@ public interface Linker<T> extends Closeable {
     throw new UnsupportedOperationException("Module aliasing not supported in this implementation");
   }
 
+  // ===== Top-Level Name Definition =====
+
+  /**
+   * Defines an item at the top-level namespace without a module prefix.
+   *
+   * <p>This method allows defining items that can be imported with a single-level name, which is
+   * useful for default module resolution or when working with modules that use simple import names.
+   *
+   * <p>This corresponds to wasmtime's single-level naming feature where items can be defined
+   * without the traditional "module::name" hierarchy.
+   *
+   * @param store the store context for the definition
+   * @param name the name for the definition (at top level, no module prefix)
+   * @param extern the extern value to define (function, memory, table, or global)
+   * @throws WasmException if the definition cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.0.0
+   */
+  void defineName(Store store, String name, Extern extern) throws WasmException;
+
+  /**
+   * Defines a host function at the top-level namespace without a module prefix.
+   *
+   * <p>This is a convenience method for defining host functions with single-level names.
+   *
+   * @param name the name for the function (at top level)
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.0.0
+   */
+  default void defineName(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    defineHostFunction("", name, functionType, implementation);
+  }
+
   // ===== Async Module and Instantiation Methods =====
 
   /**

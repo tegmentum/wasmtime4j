@@ -170,4 +170,77 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   void setEpochDeadline(long deadline) throws WasmException;
+
+  // ===== Additional Caller Methods =====
+
+  /**
+   * Gets an export using a pre-computed ModuleExport reference.
+   *
+   * <p>This method provides faster export lookup compared to string-based lookup because it avoids
+   * string comparison on every call. The ModuleExport can be obtained from the module's export list
+   * and cached for repeated use.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * // Cache the export reference at initialization
+   * ModuleExport memoryExport = module.getExports().stream()
+   *     .filter(e -> e.getName().equals("memory"))
+   *     .findFirst().orElseThrow();
+   *
+   * // Use it in hot path for faster lookup
+   * Optional<Memory> memory = caller.getExportByModuleExport(memoryExport);
+   * }</pre>
+   *
+   * @param moduleExport the pre-computed module export reference
+   * @return the export if it exists, empty otherwise
+   * @throws IllegalArgumentException if moduleExport is null
+   * @since 1.0.0
+   */
+  Optional<Export> getExportByModuleExport(ModuleExport moduleExport);
+
+  /**
+   * Gets the engine associated with the caller's store.
+   *
+   * <p>This provides access to engine configuration during host function execution, which can be
+   * useful for checking enabled features or accessing shared engine state.
+   *
+   * @return the Engine associated with this caller
+   * @since 1.0.0
+   */
+  Engine engine();
+
+  /**
+   * Triggers garbage collection from within a host function.
+   *
+   * <p>This is useful for managing memory during long-running host operations that may have
+   * accumulated many unreferenced GC objects. Unlike the synchronous GC call, this method is
+   * designed for use within host function contexts.
+   *
+   * <p><b>Note:</b> GC support must be enabled in the engine configuration for this method to have
+   * any effect.
+   *
+   * @throws WasmException if the GC operation fails
+   * @since 1.0.0
+   */
+  void gc() throws WasmException;
+
+  /**
+   * Gets or sets the fuel async yield interval from within a host function.
+   *
+   * <p>This allows dynamic adjustment of the fuel-based async yielding interval during execution.
+   * Setting a non-zero value enables fuel-based cooperative scheduling.
+   *
+   * @return the current fuel async yield interval
+   * @since 1.0.0
+   */
+  Optional<Long> fuelAsyncYieldInterval();
+
+  /**
+   * Sets the fuel async yield interval from within a host function.
+   *
+   * @param interval the interval (0 to disable)
+   * @throws WasmException if setting fails
+   * @since 1.0.0
+   */
+  void setFuelAsyncYieldInterval(long interval) throws WasmException;
 }

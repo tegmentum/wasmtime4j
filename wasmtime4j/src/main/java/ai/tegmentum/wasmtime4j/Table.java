@@ -69,6 +69,68 @@ public interface Table {
    */
   boolean isValid();
 
+  // ===== Bulk Table Operations =====
+
+  /**
+   * Fills a region of this table with the specified value.
+   *
+   * <p>This method efficiently sets multiple consecutive elements to the same value, which is
+   * useful for initializing or resetting table regions.
+   *
+   * @param dstIndex the starting index in this table
+   * @param value the value to fill with
+   * @param length the number of elements to fill
+   * @throws WasmException if the operation fails or indices are out of bounds
+   * @throws IllegalArgumentException if length is negative
+   * @since 1.0.0
+   */
+  void fill(long dstIndex, Object value, long length) throws WasmException;
+
+  /**
+   * Copies elements from another table to this table.
+   *
+   * <p>This method efficiently copies a region of elements from a source table to a destination
+   * region in this table. The source and destination regions may overlap if the tables are the
+   * same.
+   *
+   * @param dstIndex the starting index in this table
+   * @param srcTable the source table to copy from
+   * @param srcIndex the starting index in the source table
+   * @param length the number of elements to copy
+   * @throws WasmException if the operation fails or indices are out of bounds
+   * @throws IllegalArgumentException if srcTable is null or length is negative
+   * @since 1.0.0
+   */
+  void copy(long dstIndex, Table srcTable, long srcIndex, long length) throws WasmException;
+
+  /**
+   * Gets the table type (full type information including limits).
+   *
+   * <p>This returns complete type information about the table, including the element type, minimum
+   * size, and optional maximum size.
+   *
+   * @return the complete TableType
+   * @since 1.0.0
+   */
+  TableType getTableType();
+
+  // ===== Async Table Operations =====
+
+  /**
+   * Grows this table asynchronously.
+   *
+   * <p>This method performs table growth in an async context, allowing the operation to yield if
+   * the store is configured with async resource limiting.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param deltaElements the number of elements to grow by
+   * @param initValue the initial value for new elements
+   * @return a future that completes with the previous size, or -1 if growth failed
+   * @since 1.0.0
+   */
+  java.util.concurrent.CompletableFuture<Long> growAsync(long deltaElements, Object initValue);
+
   /** Enumeration of supported table element types. */
   enum TableElementType {
     /** Function reference type. */

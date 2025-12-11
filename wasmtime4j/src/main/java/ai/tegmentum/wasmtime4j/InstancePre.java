@@ -76,6 +76,41 @@ public interface InstancePre extends Closeable {
    */
   PreInstantiationStatistics getStatistics();
 
+  // ===== Async Instantiation Methods =====
+
+  /**
+   * Creates a new instance asynchronously from this pre-instantiated module.
+   *
+   * <p>This method performs instantiation in an async context, allowing the operation to yield
+   * during start function execution if the module uses async features.
+   *
+   * <p>This is particularly useful for modules that have start functions which may perform
+   * long-running operations or need to be interruptible.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store to create the instance in
+   * @return a future that completes with a new Instance
+   * @throws IllegalArgumentException if store is null
+   * @since 1.0.0
+   */
+  java.util.concurrent.CompletableFuture<Instance> instantiateAsync(Store store);
+
+  /**
+   * Creates a new instance asynchronously with imports from this pre-instantiated module.
+   *
+   * <p>This method performs instantiation in an async context with the specified imports.
+   *
+   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
+   *
+   * @param store the store to create the instance in
+   * @param imports the import definitions for the module
+   * @return a future that completes with a new Instance with the specified imports
+   * @throws IllegalArgumentException if store or imports is null
+   * @since 1.0.0
+   */
+  java.util.concurrent.CompletableFuture<Instance> instantiateAsync(Store store, ImportMap imports);
+
   /**
    * Closes the pre-instantiated module and releases associated resources.
    *
