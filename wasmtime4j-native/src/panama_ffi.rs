@@ -332,6 +332,126 @@ pub mod engine {
             }
         }
     }
+
+    /// Create an engine with extended configuration including GC and memory options (Panama FFI version)
+    ///
+    /// Returns a pointer to the engine or null on error.
+    /// All boolean parameters: 0 = false, 1 = true
+    /// Memory parameters: 0 = use default
+    #[no_mangle]
+    #[allow(clippy::too_many_arguments)]
+    pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
+        strategy: c_int,
+        opt_level: c_int,
+        debug_info: c_int,
+        wasm_threads: c_int,
+        wasm_simd: c_int,
+        wasm_reference_types: c_int,
+        wasm_bulk_memory: c_int,
+        wasm_multi_value: c_int,
+        fuel_enabled: c_int,
+        max_memory_pages: c_int,
+        max_stack_size: c_int,
+        epoch_interruption: c_int,
+        max_instances: c_int,
+        async_support: c_int,
+        // GC configuration
+        wasm_gc: c_int,
+        wasm_function_references: c_int,
+        wasm_exceptions: c_int,
+        // Memory configuration (0 = use default)
+        memory_reservation: i64,
+        memory_guard_size: i64,
+        memory_reservation_for_growth: i64,
+        // Additional features
+        wasm_tail_call: c_int,
+        wasm_relaxed_simd: c_int,
+        wasm_multi_memory: c_int,
+        wasm_memory64: c_int,
+        wasm_extended_const: c_int,
+        wasm_component_model: c_int,
+        coredump_on_trap: c_int,
+        cranelift_nan_canonicalization: c_int,
+    ) -> *mut c_void {
+        use crate::ffi_common::parameter_conversion;
+
+        let strategy_opt = parameter_conversion::convert_strategy(strategy);
+        let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
+        let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+        let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+        let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
+
+        // Memory config: 0 means use default
+        let memory_reservation_opt = if memory_reservation > 0 { Some(memory_reservation as u64) } else { None };
+        let memory_guard_size_opt = if memory_guard_size > 0 { Some(memory_guard_size as u64) } else { None };
+        let memory_reservation_for_growth_opt = if memory_reservation_for_growth > 0 {
+            Some(memory_reservation_for_growth as u64)
+        } else {
+            None
+        };
+
+        match core::create_engine_with_extended_config(
+            strategy_opt,
+            opt_level_opt,
+            parameter_conversion::convert_int_to_bool(debug_info),
+            parameter_conversion::convert_int_to_bool(wasm_threads),
+            parameter_conversion::convert_int_to_bool(wasm_simd),
+            parameter_conversion::convert_int_to_bool(wasm_reference_types),
+            parameter_conversion::convert_int_to_bool(wasm_bulk_memory),
+            parameter_conversion::convert_int_to_bool(wasm_multi_value),
+            parameter_conversion::convert_int_to_bool(fuel_enabled),
+            max_memory_pages_opt,
+            max_stack_size_opt,
+            parameter_conversion::convert_int_to_bool(epoch_interruption),
+            max_instances_opt,
+            parameter_conversion::convert_int_to_bool(async_support),
+            // GC configuration
+            parameter_conversion::convert_int_to_bool(wasm_gc),
+            parameter_conversion::convert_int_to_bool(wasm_function_references),
+            parameter_conversion::convert_int_to_bool(wasm_exceptions),
+            // Memory configuration
+            memory_reservation_opt,
+            memory_guard_size_opt,
+            memory_reservation_for_growth_opt,
+            // Additional features
+            parameter_conversion::convert_int_to_bool(wasm_tail_call),
+            parameter_conversion::convert_int_to_bool(wasm_relaxed_simd),
+            parameter_conversion::convert_int_to_bool(wasm_multi_memory),
+            parameter_conversion::convert_int_to_bool(wasm_memory64),
+            parameter_conversion::convert_int_to_bool(wasm_extended_const),
+            parameter_conversion::convert_int_to_bool(wasm_component_model),
+            parameter_conversion::convert_int_to_bool(coredump_on_trap),
+            parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization),
+        ) {
+            Ok(engine) => Box::into_raw(engine) as *mut c_void,
+            Err(e) => {
+                log::error!("Failed to create engine with extended config: {:?}", e);
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    /// Detect if a host CPU feature is available (Panama FFI version)
+    ///
+    /// feature_name: Null-terminated C string of the feature name (e.g., "sse4.2", "avx2")
+    /// Returns 1 if feature is available, 0 if not.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_engine_detect_host_feature(
+        feature_name: *const c_char,
+    ) -> c_int {
+        if feature_name.is_null() {
+            return 0;
+        }
+
+        let feature_str = unsafe {
+            match std::ffi::CStr::from_ptr(feature_name).to_str() {
+                Ok(s) => s,
+                Err(_) => return 0,
+            }
+        };
+
+        if core::detect_host_feature(feature_str) { 1 } else { 0 }
+    }
 }
 
 /// Panama FFI bindings for WebAssembly module operations
@@ -5670,6 +5790,80 @@ pub mod linker {
         unsafe { crate::linker::wasmtime4j_linker_host_function_count(linker_ptr) }
     }
 
+    /// Define unknown imports as traps (Panama FFI version)
+    ///
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that trap when called.
+    ///
+    /// # Arguments
+    /// * `linker_ptr` - Pointer to the linker
+    /// * `module_ptr` - Pointer to the module
+    ///
+    /// # Returns
+    /// 0 on success, non-zero error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_traps(
+        linker_ptr: *mut c_void,
+        module_ptr: *const c_void,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Get mutable linker reference
+                let linker = linker_core::get_linker_mut(linker_ptr)?;
+
+                // Get module reference
+                let module = crate::module::core::get_module_ref(module_ptr)?;
+
+                // Call the method
+                linker.define_unknown_imports_as_traps(module)?;
+
+                Ok(())
+            }
+        })
+    }
+
+    /// Define unknown imports as default values (Panama FFI version)
+    ///
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that return default values (zero for numbers, null for references).
+    ///
+    /// # Arguments
+    /// * `linker_ptr` - Pointer to the linker
+    /// * `store_ptr` - Pointer to the store
+    /// * `module_ptr` - Pointer to the module
+    ///
+    /// # Returns
+    /// 0 on success, non-zero error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_default_values(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_ptr: *const c_void,
+    ) -> c_int {
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Get mutable linker reference
+                let linker = linker_core::get_linker_mut(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Get module reference
+                let module = crate::module::core::get_module_ref(module_ptr)?;
+
+                // Lock store and call the method
+                let mut store_lock = store.lock_store();
+                linker.define_unknown_imports_as_default_values(&mut *store_lock, module)?;
+
+                Ok(())
+            }
+        })
+    }
+
     /// Destroy a linker (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
@@ -7092,15 +7286,51 @@ pub mod wasi_http {
     /// - param_types and return_types must be valid pointers to int arrays
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_tag_create(
-        _store_ptr: *mut c_void,
-        _param_types: *const c_int,
-        _param_count: c_int,
+        store_ptr: *mut c_void,
+        param_types: *const c_int,
+        param_count: c_int,
         _return_types: *const c_int,
         _return_count: c_int,
     ) -> *mut c_void {
-        // Tag creation is not yet implemented in Wasmtime's public API
-        // This is a placeholder for when the API becomes available
-        std::ptr::null_mut()
+        use wasmtime::{FuncType, Tag, TagType, ValType};
+
+        if store_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+
+        // Convert param type codes to ValTypes
+        let params: Vec<ValType> = if param_count > 0 && !param_types.is_null() {
+            let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
+            param_slice.iter().filter_map(|&code| {
+                match code {
+                    0 => Some(ValType::I32),
+                    1 => Some(ValType::I64),
+                    2 => Some(ValType::F32),
+                    3 => Some(ValType::F64),
+                    4 => Some(ValType::V128),
+                    5 => Some(ValType::FUNCREF),
+                    6 => Some(ValType::EXTERNREF),
+                    _ => None,
+                }
+            }).collect()
+        } else {
+            Vec::new()
+        };
+
+        // Create FuncType for the tag (tags use params only, empty results)
+        let func_type = FuncType::new(store.engine().inner(), params.iter().cloned(), []);
+
+        // Create TagType from FuncType
+        let tag_type = TagType::new(func_type);
+
+        // Lock the store and create the Tag
+        let mut store_guard = store.lock_store();
+        match Tag::new(&mut *store_guard, &tag_type) {
+            Ok(tag) => Box::into_raw(Box::new(tag)) as *mut c_void,
+            Err(_) => std::ptr::null_mut(),
+        }
     }
 
     /// Gets the parameter types of a tag.
@@ -7111,14 +7341,50 @@ pub mod wasi_http {
     /// - out_count must be a valid pointer
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
-        _tag_ptr: *const c_void,
-        _store_ptr: *mut c_void,
+        tag_ptr: *const c_void,
+        store_ptr: *mut c_void,
         out_count: *mut c_int,
     ) -> *mut c_int {
-        if !out_count.is_null() {
-            unsafe { *out_count = 0; }
+        use wasmtime::{Tag, ValType};
+
+        if tag_ptr.is_null() || store_ptr.is_null() || out_count.is_null() {
+            if !out_count.is_null() {
+                unsafe { *out_count = 0; }
+            }
+            return std::ptr::null_mut();
         }
-        std::ptr::null_mut()
+
+        let tag = unsafe { &*(tag_ptr as *const Tag) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let store_guard = store.lock_store();
+
+        let tag_type = tag.ty(&*store_guard);
+        let func_type = tag_type.ty();
+        let params: Vec<c_int> = func_type.params().map(|vt| {
+            match vt {
+                ValType::I32 => 0,
+                ValType::I64 => 1,
+                ValType::F32 => 2,
+                ValType::F64 => 3,
+                ValType::V128 => 4,
+                ValType::Ref(r) => {
+                    match r.heap_type() {
+                        wasmtime::HeapType::Func => 5,
+                        _ => 6, // EXTERNREF or other ref types
+                    }
+                }
+            }
+        }).collect();
+
+        let count = params.len();
+        unsafe { *out_count = count as c_int; }
+
+        if count == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let boxed = params.into_boxed_slice();
+        Box::into_raw(boxed) as *mut c_int
     }
 
     /// Gets the return types of a tag.
@@ -7129,14 +7395,50 @@ pub mod wasi_http {
     /// - out_count must be a valid pointer
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
-        _tag_ptr: *const c_void,
-        _store_ptr: *mut c_void,
+        tag_ptr: *const c_void,
+        store_ptr: *mut c_void,
         out_count: *mut c_int,
     ) -> *mut c_int {
-        if !out_count.is_null() {
-            unsafe { *out_count = 0; }
+        use wasmtime::{Tag, ValType};
+
+        if tag_ptr.is_null() || store_ptr.is_null() || out_count.is_null() {
+            if !out_count.is_null() {
+                unsafe { *out_count = 0; }
+            }
+            return std::ptr::null_mut();
         }
-        std::ptr::null_mut()
+
+        let tag = unsafe { &*(tag_ptr as *const Tag) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let store_guard = store.lock_store();
+
+        let tag_type = tag.ty(&*store_guard);
+        let func_type = tag_type.ty();
+        let results: Vec<c_int> = func_type.results().map(|vt| {
+            match vt {
+                ValType::I32 => 0,
+                ValType::I64 => 1,
+                ValType::F32 => 2,
+                ValType::F64 => 3,
+                ValType::V128 => 4,
+                ValType::Ref(r) => {
+                    match r.heap_type() {
+                        wasmtime::HeapType::Func => 5,
+                        _ => 6, // EXTERNREF or other ref types
+                    }
+                }
+            }
+        }).collect();
+
+        let count = results.len();
+        unsafe { *out_count = count as c_int; }
+
+        if count == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let boxed = results.into_boxed_slice();
+        Box::into_raw(boxed) as *mut c_int
     }
 
     /// Frees a tag types array.
@@ -7162,12 +7464,54 @@ pub mod wasi_http {
     /// - store_ptr must be a valid pointer to a Store
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_tag_equals(
-        _tag1_ptr: *const c_void,
-        _tag2_ptr: *const c_void,
-        _store_ptr: *mut c_void,
+        tag1_ptr: *const c_void,
+        tag2_ptr: *const c_void,
+        store_ptr: *mut c_void,
     ) -> c_int {
-        // Tag equality is not yet implemented
-        0
+        use wasmtime::Tag;
+
+        if tag1_ptr.is_null() || tag2_ptr.is_null() || store_ptr.is_null() {
+            return 0;
+        }
+
+        let tag1 = unsafe { &*(tag1_ptr as *const Tag) };
+        let tag2 = unsafe { &*(tag2_ptr as *const Tag) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let store_guard = store.lock_store();
+
+        // Compare tags by checking if they have the same type
+        let ty1 = tag1.ty(&*store_guard);
+        let ty2 = tag2.ty(&*store_guard);
+
+        // Tags are equal if their func types match
+        let ft1 = ty1.ty();
+        let ft2 = ty2.ty();
+
+        // Compare params and results count and types using matches()
+        let params1: Vec<_> = ft1.params().collect();
+        let params2: Vec<_> = ft2.params().collect();
+        let results1: Vec<_> = ft1.results().collect();
+        let results2: Vec<_> = ft2.results().collect();
+
+        if params1.len() != params2.len() || results1.len() != results2.len() {
+            return 0;
+        }
+
+        // Check each param type matches
+        for (p1, p2) in params1.iter().zip(params2.iter()) {
+            if !p1.matches(p2) {
+                return 0;
+            }
+        }
+
+        // Check each result type matches
+        for (r1, r2) in results1.iter().zip(results2.iter()) {
+            if !r1.matches(r2) {
+                return 0;
+            }
+        }
+
+        1
     }
 
     /// Destroys a tag and frees its native resources.
@@ -7175,8 +7519,14 @@ pub mod wasi_http {
     /// # Safety
     /// - tag_ptr must be a valid pointer to a Tag
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_tag_destroy(_tag_ptr: *mut c_void) {
-        // Tag destruction is not yet implemented
+    pub extern "C" fn wasmtime4j_panama_tag_destroy(tag_ptr: *mut c_void) {
+        use wasmtime::Tag;
+
+        if !tag_ptr.is_null() {
+            unsafe {
+                let _ = Box::from_raw(tag_ptr as *mut Tag);
+            }
+        }
     }
 
     /// Gets the tag from an exception reference.
@@ -7186,11 +7536,26 @@ pub mod wasi_http {
     /// - store_ptr must be a valid pointer to a Store
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_exnref_get_tag(
-        _exnref_ptr: *const c_void,
-        _store_ptr: *mut c_void,
+        exnref_ptr: *const c_void,
+        store_ptr: *mut c_void,
     ) -> *mut c_void {
-        // ExnRef.getTag is not yet implemented
-        std::ptr::null_mut()
+        use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+        if exnref_ptr.is_null() || store_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let mut store_guard = store.lock_store();
+
+        // Create a root scope and get the tag
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+        match exnref.tag(&mut scope) {
+            Ok(tag) => Box::into_raw(Box::new(tag)) as *mut c_void,
+            Err(_) => std::ptr::null_mut(),
+        }
     }
 
     /// Checks if an exception reference is valid.
@@ -7210,36 +7575,17 @@ pub mod wasi_http {
     /// Destroys an exception reference and frees its native resources.
     ///
     /// # Safety
-    /// - exnref_ptr must be a valid pointer to an ExnRef
+    /// - exnref_ptr must be a valid pointer to an OwnedRooted<ExnRef>
     #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_exnref_destroy(_exnref_ptr: *mut c_void) {
-        // ExnRef destruction is not yet implemented
-    }
-
-    /// Throws an exception in the store.
-    ///
-    /// # Safety
-    /// - store_ptr must be a valid pointer to a Store
-    /// - exnref_ptr must be a valid pointer to an ExnRef
-    #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_store_throw_exception(
-        _store_ptr: *mut c_void,
-        _exnref_ptr: *const c_void,
-    ) -> c_int {
-        // Store.throwException is not yet implemented
-        -1
-    }
-
-    /// Takes and removes the pending exception from the store.
-    ///
-    /// # Safety
-    /// - store_ptr must be a valid pointer to a Store
-    #[no_mangle]
-    pub extern "C" fn wasmtime4j_panama_store_take_pending_exception(
-        _store_ptr: *mut c_void,
-    ) -> *mut c_void {
-        // Store.takePendingException is not yet implemented
-        std::ptr::null_mut()
+    pub extern "C" fn wasmtime4j_panama_exnref_destroy(exnref_ptr: *mut c_void) -> c_int {
+        if exnref_ptr.is_null() {
+            return 0; // FFI_SUCCESS
+        }
+        unsafe {
+            let _boxed = Box::from_raw(exnref_ptr as *mut wasmtime::OwnedRooted<wasmtime::ExnRef>);
+            // Dropping the Box cleans up the OwnedRooted
+        }
+        0 // FFI_SUCCESS
     }
 
     /// Checks if the store has a pending exception.
@@ -7248,9 +7594,44 @@ pub mod wasi_http {
     /// - store_ptr must be a valid pointer to a Store
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_store_has_pending_exception(
-        _store_ptr: *mut c_void,
+        store_ptr: *mut c_void,
     ) -> c_int {
-        // Store.hasPendingException is not yet implemented
-        0
+        if store_ptr.is_null() {
+            return 0;
+        }
+        unsafe {
+            match crate::store::core::get_store_ref(store_ptr) {
+                Ok(store) => if store.has_pending_exception() { 1 } else { 0 },
+                Err(_) => 0,
+            }
+        }
+    }
+
+    /// Takes and removes the pending exception from the store.
+    /// Returns a handle to the ExnRef, or null if no exception is pending.
+    ///
+    /// # Safety
+    /// - store_ptr must be a valid pointer to a Store
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_take_pending_exception(
+        store_ptr: *mut c_void,
+    ) -> *mut c_void {
+        if store_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe {
+            match crate::store::core::get_store_ref(store_ptr) {
+                Ok(store) => {
+                    match store.take_pending_exception() {
+                        Some(exn_ref) => {
+                            // Box the OwnedRooted<ExnRef> and return as handle
+                            Box::into_raw(Box::new(exn_ref)) as *mut c_void
+                        }
+                        None => std::ptr::null_mut(),
+                    }
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
     }
 }

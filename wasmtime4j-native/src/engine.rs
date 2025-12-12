@@ -106,10 +106,36 @@ pub struct EngineConfigSummary {
     /// When enabled, tables are initialized lazily for faster instantiation
     /// but slightly slower indirect calls. Defaults to true.
     pub table_lazy_init: bool,
+    /// Whether GC support infrastructure is enabled
+    /// Required for GC, function references, and exception proposals
+    pub gc_support: bool,
+    /// The GC collector implementation in use (e.g., "Auto", "DeferredReferenceCounting", "Null")
+    pub collector: String,
+    /// Whether linear memories may relocate their base pointer at runtime
+    pub memory_may_move: bool,
+    /// Whether guard regions exist before linear memory allocations
+    pub guard_before_linear_memory: bool,
+    /// Whether copy-on-write memory-mapped data initialization is enabled
+    pub memory_init_cow: bool,
+    /// Whether component model threading support is enabled (experimental)
+    pub wasm_component_model_threading: bool,
+    /// Whether deterministic relaxed SIMD behavior is forced across platforms
+    pub relaxed_simd_deterministic: bool,
+    /// Whether async stacks are zeroed before (re)use for defense-in-depth
+    pub async_stack_zeroing: bool,
+    /// Size of async stacks in bytes
+    pub async_stack_size: Option<usize>,
+    /// Whether multi-threaded module compilation is enabled
+    pub parallel_compilation: bool,
+    /// Whether Mach ports are used instead of Unix signals on macOS
+    pub macos_use_mach_ports: bool,
+    /// Module version strategy for serialization compatibility (e.g., "WasmtimeVersion", "None", "Custom")
+    pub module_version_strategy: String,
+    /// Instance allocation strategy (e.g., "OnDemand", "Pooling")
+    pub allocation_strategy: String,
 }
 
 /// Builder for creating configured engines
-#[derive(Debug)]
 pub struct EngineBuilder {
     config: Config,
     strategy: Option<Strategy>,
@@ -161,6 +187,32 @@ pub struct EngineBuilder {
     wmemcheck_enabled: bool,
     // Table lazy initialization - enabled by default for faster instantiation
     table_lazy_init: bool,
+    // GC support infrastructure - required for GC, function references, exceptions
+    gc_support: bool,
+    // GC collector implementation choice
+    collector: Option<wasmtime::Collector>,
+    // Memory may relocate at runtime
+    memory_may_move: bool,
+    // Guard regions before linear memory
+    guard_before_linear_memory: bool,
+    // Copy-on-write memory initialization
+    memory_init_cow: bool,
+    // Component model threading support (experimental)
+    wasm_component_model_threading: bool,
+    // Deterministic relaxed SIMD behavior
+    relaxed_simd_deterministic: bool,
+    // Zero async stacks before reuse
+    async_stack_zeroing: bool,
+    // Async stack size
+    async_stack_size: Option<usize>,
+    // Multi-threaded compilation
+    parallel_compilation: bool,
+    // Use Mach ports on macOS
+    macos_use_mach_ports: bool,
+    // Module version strategy
+    module_version_strategy: Option<wasmtime::ModuleVersionStrategy>,
+    // Instance allocation strategy
+    allocation_strategy: Option<wasmtime::InstanceAllocationStrategy>,
 }
 
 impl Engine {
@@ -343,15 +395,15 @@ pub mod core {
         async_support: bool,
     ) -> WasmtimeResult<Box<Engine>> {
         let mut builder = Engine::builder();
-        
+
         if let Some(strategy) = strategy {
             builder = builder.strategy(strategy);
         }
-        
+
         if let Some(opt_level) = opt_level {
             builder = builder.opt_level(opt_level);
         }
-        
+
         builder = builder
             .debug_info(debug_info)
             .wasm_threads(wasm_threads)
@@ -374,8 +426,138 @@ pub mod core {
         if let Some(instances) = max_instances {
             builder = builder.max_instances(instances);
         }
-            
+
         builder.build().map(Box::new)
+    }
+
+    /// Core function to create an engine with extended configuration including GC and memory options
+    pub fn create_engine_with_extended_config(
+        strategy: Option<Strategy>,
+        opt_level: Option<OptLevel>,
+        debug_info: bool,
+        wasm_threads: bool,
+        wasm_simd: bool,
+        wasm_reference_types: bool,
+        wasm_bulk_memory: bool,
+        wasm_multi_value: bool,
+        fuel_enabled: bool,
+        max_memory_pages: Option<u32>,
+        max_stack_size: Option<usize>,
+        epoch_interruption: bool,
+        max_instances: Option<u32>,
+        async_support: bool,
+        // GC configuration
+        wasm_gc: bool,
+        wasm_function_references: bool,
+        wasm_exceptions: bool,
+        // Memory configuration
+        memory_reservation: Option<u64>,
+        memory_guard_size: Option<u64>,
+        memory_reservation_for_growth: Option<u64>,
+        // Additional features
+        wasm_tail_call: bool,
+        wasm_relaxed_simd: bool,
+        wasm_multi_memory: bool,
+        wasm_memory64: bool,
+        wasm_extended_const: bool,
+        wasm_component_model: bool,
+        coredump_on_trap: bool,
+        cranelift_nan_canonicalization: bool,
+    ) -> WasmtimeResult<Box<Engine>> {
+        let mut builder = Engine::builder();
+
+        if let Some(strategy) = strategy {
+            builder = builder.strategy(strategy);
+        }
+
+        if let Some(opt_level) = opt_level {
+            builder = builder.opt_level(opt_level);
+        }
+
+        builder = builder
+            .debug_info(debug_info)
+            .wasm_threads(wasm_threads)
+            .wasm_simd(wasm_simd)
+            .wasm_reference_types(wasm_reference_types)
+            .wasm_bulk_memory(wasm_bulk_memory)
+            .wasm_multi_value(wasm_multi_value)
+            .fuel_enabled(fuel_enabled)
+            .epoch_interruption(epoch_interruption)
+            .async_support(async_support)
+            // GC configuration
+            .wasm_gc(wasm_gc)
+            .wasm_function_references(wasm_function_references)
+            .wasm_exceptions(wasm_exceptions)
+            // Additional features
+            .wasm_tail_call(wasm_tail_call)
+            .wasm_relaxed_simd(wasm_relaxed_simd)
+            .wasm_multi_memory(wasm_multi_memory)
+            .wasm_memory64(wasm_memory64)
+            .wasm_extended_const(wasm_extended_const)
+            .wasm_component_model(wasm_component_model)
+            .coredump_on_trap(coredump_on_trap)
+            .cranelift_nan_canonicalization(cranelift_nan_canonicalization);
+
+        if let Some(pages) = max_memory_pages {
+            builder = builder.max_memory_pages(pages);
+        }
+
+        if let Some(stack_size) = max_stack_size {
+            builder = builder.max_stack_size(stack_size);
+        }
+
+        if let Some(instances) = max_instances {
+            builder = builder.max_instances(instances);
+        }
+
+        // Memory configuration
+        if let Some(reservation) = memory_reservation {
+            builder = builder.memory_reservation(reservation);
+        }
+
+        if let Some(guard_size) = memory_guard_size {
+            builder = builder.memory_guard_size(guard_size);
+        }
+
+        if let Some(growth_reservation) = memory_reservation_for_growth {
+            builder = builder.memory_reservation_for_growth(growth_reservation);
+        }
+
+        builder.build().map(Box::new)
+    }
+
+    /// Core function to detect if a host CPU feature is available
+    ///
+    /// Note: In wasmtime 39, the Config::detect_host_feature method is used
+    /// to override feature detection (for testing), not to query features.
+    /// The actual feature detection happens automatically during compilation.
+    /// This function uses Rust's std_detect crate features where available,
+    /// or returns false for unknown features.
+    pub fn detect_host_feature(feature_name: &str) -> bool {
+        // Wasmtime 39's detect_host_feature is for overriding detection, not querying.
+        // We use target_feature detection at compile time and cfg checks for runtime.
+        // For common CPU features, we check using Rust's built-in capabilities.
+        match feature_name {
+            // x86_64 features
+            "sse" => cfg!(target_feature = "sse"),
+            "sse2" => cfg!(target_feature = "sse2"),
+            "sse3" => cfg!(target_feature = "sse3"),
+            "ssse3" => cfg!(target_feature = "ssse3"),
+            "sse4.1" | "sse41" => cfg!(target_feature = "sse4.1"),
+            "sse4.2" | "sse42" => cfg!(target_feature = "sse4.2"),
+            "avx" => cfg!(target_feature = "avx"),
+            "avx2" => cfg!(target_feature = "avx2"),
+            "avx512f" => cfg!(target_feature = "avx512f"),
+            "bmi1" => cfg!(target_feature = "bmi1"),
+            "bmi2" => cfg!(target_feature = "bmi2"),
+            "lzcnt" => cfg!(target_feature = "lzcnt"),
+            "popcnt" => cfg!(target_feature = "popcnt"),
+            "fma" => cfg!(target_feature = "fma"),
+            // ARM features
+            "neon" => cfg!(target_feature = "neon"),
+            // Unknown features
+            _ => false,
+        }
     }
     
     /// Core function to validate engine pointer and get reference
@@ -561,6 +743,20 @@ impl EngineBuilder {
             #[cfg(feature = "wmemcheck")]
             wmemcheck_enabled: false,  // wmemcheck - off by default
             table_lazy_init: true,  // Table lazy init - on by default (wasmtime default)
+            // New config options with wasmtime defaults
+            gc_support: true,  // GC support - on by default (enables GC infrastructure)
+            collector: None,  // Collector - use wasmtime default (Auto)
+            memory_may_move: true,  // Memory may move - on by default
+            guard_before_linear_memory: true,  // Guard before memory - on by default
+            memory_init_cow: true,  // CoW memory init - on by default
+            wasm_component_model_threading: false,  // Component threading - off (experimental)
+            relaxed_simd_deterministic: false,  // Relaxed SIMD deterministic - off by default
+            async_stack_zeroing: false,  // Async stack zeroing - off by default
+            async_stack_size: None,  // Async stack size - use wasmtime default
+            parallel_compilation: true,  // Parallel compilation - on by default
+            macos_use_mach_ports: true,  // Mach ports on macOS - on by default
+            module_version_strategy: None,  // Module version - use wasmtime default
+            allocation_strategy: None,  // Allocation strategy - use wasmtime default (OnDemand)
         }
     }
 
@@ -952,6 +1148,186 @@ impl EngineBuilder {
         self
     }
 
+    /// Enable or disable GC support infrastructure
+    ///
+    /// GC support is required for the WebAssembly GC proposal, function references,
+    /// and exception handling proposals. When disabled, these proposals cannot be used.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable GC support
+    pub fn gc_support(mut self, enable: bool) -> Self {
+        self.config.gc_support(enable);
+        self.gc_support = enable;
+        self
+    }
+
+    /// Configure which garbage collector implementation is used
+    ///
+    /// This selects the GC implementation for managing WebAssembly GC types.
+    /// The default is `Collector::Auto` which selects an appropriate collector.
+    ///
+    /// # Arguments
+    /// * `collector` - The collector implementation to use
+    pub fn collector(mut self, collector: wasmtime::Collector) -> Self {
+        self.config.collector(collector.clone());
+        self.collector = Some(collector);
+        self
+    }
+
+    /// Configure whether linear memories may relocate at runtime
+    ///
+    /// When enabled, Wasmtime may relocate the base pointer of a linear memory
+    /// during memory growth operations. This allows for more efficient memory
+    /// management but requires that host code never caches linear memory pointers.
+    ///
+    /// When disabled, the memory base pointer is guaranteed to remain stable,
+    /// which is safer but may be less efficient.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to allow memory relocation (default: true)
+    pub fn memory_may_move(mut self, enable: bool) -> Self {
+        self.config.memory_may_move(enable);
+        self.memory_may_move = enable;
+        self
+    }
+
+    /// Configure whether guard regions exist before linear memory
+    ///
+    /// Guard regions are unmapped pages that provide extra protection against
+    /// buffer underflows. This is a defense-in-depth measure.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to add guard regions before memory (default: true)
+    pub fn guard_before_linear_memory(mut self, enable: bool) -> Self {
+        self.config.guard_before_linear_memory(enable);
+        self.guard_before_linear_memory = enable;
+        self
+    }
+
+    /// Enable or disable copy-on-write memory initialization
+    ///
+    /// When enabled, Wasmtime uses memory-mapped files for data segment
+    /// initialization, which can significantly speed up module instantiation
+    /// for modules with large data sections.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to use CoW memory initialization (default: true)
+    pub fn memory_init_cow(mut self, enable: bool) -> Self {
+        self.config.memory_init_cow(enable);
+        self.memory_init_cow = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model threading support (experimental)
+    ///
+    /// This enables threading support in the component model, corresponding to
+    /// the shared-everything-threads proposal. This feature is highly experimental.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable component model threading
+    pub fn wasm_component_model_threading(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_threading(enable);
+        self.wasm_component_model_threading = enable;
+        self
+    }
+
+    /// Configure deterministic relaxed SIMD behavior
+    ///
+    /// When enabled, relaxed SIMD instructions produce deterministic results
+    /// across all platforms. This is useful for reproducible execution but
+    /// may reduce performance on some platforms.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to force deterministic relaxed SIMD (default: false)
+    pub fn relaxed_simd_deterministic(mut self, enable: bool) -> Self {
+        self.config.relaxed_simd_deterministic(enable);
+        self.relaxed_simd_deterministic = enable;
+        self
+    }
+
+    /// Configure async stack zeroing for defense-in-depth
+    ///
+    /// When enabled, async stacks are zeroed before (re)use. This provides
+    /// defense-in-depth against information leakage but adds overhead.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to zero async stacks (default: false)
+    pub fn async_stack_zeroing(mut self, enable: bool) -> Self {
+        self.config.async_stack_zeroing(enable);
+        self.async_stack_zeroing = enable;
+        self
+    }
+
+    /// Configure async stack size
+    ///
+    /// Sets the size of the stack used for async execution. This is separate
+    /// from the WebAssembly linear memory stack and is used by the async
+    /// runtime for suspending and resuming execution.
+    ///
+    /// # Arguments
+    /// * `size` - The async stack size in bytes
+    pub fn async_stack_size(mut self, size: usize) -> Self {
+        self.config.async_stack_size(size);
+        self.async_stack_size = Some(size);
+        self
+    }
+
+    /// Configure parallel compilation
+    ///
+    /// When enabled (the default), module compilation uses multiple threads.
+    /// Disabling this can be useful for debugging or in resource-constrained
+    /// environments.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable parallel compilation (default: true)
+    pub fn parallel_compilation(mut self, enable: bool) -> Self {
+        self.config.parallel_compilation(enable);
+        self.parallel_compilation = enable;
+        self
+    }
+
+    /// Configure Mach port usage on macOS
+    ///
+    /// When enabled (the default on macOS), Wasmtime uses Mach ports instead
+    /// of Unix signals for exception handling. This is more reliable but
+    /// requires macOS-specific code paths.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to use Mach ports on macOS (default: true)
+    #[cfg(target_os = "macos")]
+    pub fn macos_use_mach_ports(mut self, enable: bool) -> Self {
+        self.config.macos_use_mach_ports(enable);
+        self.macos_use_mach_ports = enable;
+        self
+    }
+
+    /// Configure module version strategy for serialization
+    ///
+    /// This controls how module version compatibility is checked when
+    /// deserializing precompiled modules. The default uses Wasmtime's version.
+    ///
+    /// # Arguments
+    /// * `strategy` - The version strategy to use
+    pub fn module_version_strategy(mut self, strategy: wasmtime::ModuleVersionStrategy) -> Self {
+        let _ = self.config.module_version(strategy.clone());
+        self.module_version_strategy = Some(strategy);
+        self
+    }
+
+    /// Configure instance allocation strategy
+    ///
+    /// This configures how WebAssembly instances are allocated. The default
+    /// is on-demand allocation. Pooling allocation can improve instantiation
+    /// performance for high-throughput scenarios.
+    ///
+    /// # Arguments
+    /// * `strategy` - The allocation strategy to use
+    pub fn allocation_strategy(mut self, strategy: wasmtime::InstanceAllocationStrategy) -> Self {
+        self.config.allocation_strategy(strategy.clone());
+        self.allocation_strategy = Some(strategy);
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);
@@ -1012,6 +1388,19 @@ impl EngineConfigSummary {
         hasher.update(self.cranelift_regalloc_algorithm.as_bytes());
         hasher.update(if self.wmemcheck_enabled { b"1" } else { b"0" });
         hasher.update(if self.table_lazy_init { b"1" } else { b"0" });
+        // New config options
+        hasher.update(if self.gc_support { b"1" } else { b"0" });
+        hasher.update(self.collector.as_bytes());
+        hasher.update(if self.memory_may_move { b"1" } else { b"0" });
+        hasher.update(if self.guard_before_linear_memory { b"1" } else { b"0" });
+        hasher.update(if self.memory_init_cow { b"1" } else { b"0" });
+        hasher.update(if self.wasm_component_model_threading { b"1" } else { b"0" });
+        hasher.update(if self.relaxed_simd_deterministic { b"1" } else { b"0" });
+        hasher.update(if self.async_stack_zeroing { b"1" } else { b"0" });
+        hasher.update(if self.parallel_compilation { b"1" } else { b"0" });
+        hasher.update(if self.macos_use_mach_ports { b"1" } else { b"0" });
+        hasher.update(self.module_version_strategy.as_bytes());
+        hasher.update(self.allocation_strategy.as_bytes());
 
         // Include target architecture and OS for cross-platform compatibility
         hasher.update(std::env::consts::ARCH.as_bytes());
@@ -1070,6 +1459,20 @@ impl EngineConfigSummary {
             cranelift_regalloc_algorithm: "Backtracking".to_string(), // Default algorithm
             wmemcheck_enabled: false,          // Off by default (requires wmemcheck feature)
             table_lazy_init: true,             // On by default (wasmtime default)
+            // New config options with wasmtime defaults
+            gc_support: true,                  // GC support - on by default
+            collector: "Auto".to_string(),     // Collector - Auto by default
+            memory_may_move: true,             // Memory may move - on by default
+            guard_before_linear_memory: true,  // Guard before memory - on by default
+            memory_init_cow: true,             // CoW memory init - on by default
+            wasm_component_model_threading: false, // Component threading - off (experimental)
+            relaxed_simd_deterministic: false, // Relaxed SIMD deterministic - off by default
+            async_stack_zeroing: false,        // Async stack zeroing - off by default
+            async_stack_size: None,            // Async stack size - use default
+            parallel_compilation: true,        // Parallel compilation - on by default
+            macos_use_mach_ports: true,        // Mach ports on macOS - on by default
+            module_version_strategy: "WasmtimeVersion".to_string(), // Use wasmtime version
+            allocation_strategy: "OnDemand".to_string(), // On-demand allocation by default
         }
     }
 
@@ -1133,6 +1536,33 @@ impl EngineConfigSummary {
             #[cfg(not(feature = "wmemcheck"))]
             wmemcheck_enabled: false,
             table_lazy_init: builder.table_lazy_init,
+            // New config options
+            gc_support: builder.gc_support,
+            collector: builder.collector.as_ref().map(|c| match c {
+                wasmtime::Collector::Auto => "Auto".to_string(),
+                wasmtime::Collector::DeferredReferenceCounting => "DeferredReferenceCounting".to_string(),
+                wasmtime::Collector::Null => "Null".to_string(),
+                _ => "Unknown".to_string(),
+            }).unwrap_or_else(|| "Auto".to_string()),
+            memory_may_move: builder.memory_may_move,
+            guard_before_linear_memory: builder.guard_before_linear_memory,
+            memory_init_cow: builder.memory_init_cow,
+            wasm_component_model_threading: builder.wasm_component_model_threading,
+            relaxed_simd_deterministic: builder.relaxed_simd_deterministic,
+            async_stack_zeroing: builder.async_stack_zeroing,
+            async_stack_size: builder.async_stack_size,
+            parallel_compilation: builder.parallel_compilation,
+            macos_use_mach_ports: builder.macos_use_mach_ports,
+            module_version_strategy: builder.module_version_strategy.as_ref().map(|s| match s {
+                wasmtime::ModuleVersionStrategy::WasmtimeVersion => "WasmtimeVersion".to_string(),
+                wasmtime::ModuleVersionStrategy::None => "None".to_string(),
+                wasmtime::ModuleVersionStrategy::Custom(_) => "Custom".to_string(),
+            }).unwrap_or_else(|| "WasmtimeVersion".to_string()),
+            allocation_strategy: builder.allocation_strategy.as_ref().map(|s| match s {
+                wasmtime::InstanceAllocationStrategy::OnDemand => "OnDemand".to_string(),
+                wasmtime::InstanceAllocationStrategy::Pooling(_) => "Pooling".to_string(),
+                _ => "Unknown".to_string(),
+            }).unwrap_or_else(|| "OnDemand".to_string()),
         }
     }
 }
@@ -1245,6 +1675,20 @@ impl Default for Engine {
                             cranelift_regalloc_algorithm: "Backtracking".to_string(),
                             wmemcheck_enabled: false,
                             table_lazy_init: true,
+                            // New config options with minimal defaults
+                            gc_support: false,
+                            collector: "Auto".to_string(),
+                            memory_may_move: true,
+                            guard_before_linear_memory: true,
+                            memory_init_cow: true,
+                            wasm_component_model_threading: false,
+                            relaxed_simd_deterministic: false,
+                            async_stack_zeroing: false,
+                            async_stack_size: None,
+                            parallel_compilation: true,
+                            macos_use_mach_ports: true,
+                            module_version_strategy: "WasmtimeVersion".to_string(),
+                            allocation_strategy: "OnDemand".to_string(),
                         },
                     },
                     Err(_) => {
@@ -1298,6 +1742,20 @@ impl Default for Engine {
                                 cranelift_regalloc_algorithm: "Backtracking".to_string(),
                                 wmemcheck_enabled: false,
                                 table_lazy_init: true,
+                                // New config options with minimal defaults
+                                gc_support: false,
+                                collector: "Auto".to_string(),
+                                memory_may_move: true,
+                                guard_before_linear_memory: true,
+                                memory_init_cow: true,
+                                wasm_component_model_threading: false,
+                                relaxed_simd_deterministic: false,
+                                async_stack_zeroing: false,
+                                async_stack_size: None,
+                                parallel_compilation: true,
+                                macos_use_mach_ports: true,
+                                module_version_strategy: "WasmtimeVersion".to_string(),
+                                allocation_strategy: "OnDemand".to_string(),
                             },
                         }
                     }

@@ -545,6 +545,87 @@ impl Linker {
         Ok(())
     }
 
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that trap when called.
+    ///
+    /// This is useful for stubbing out imports when testing or when you want to
+    /// ensure that all imports are satisfied but don't need the actual implementations.
+    ///
+    /// # Arguments
+    /// * `module` - The module whose unknown imports should be satisfied with traps
+    ///
+    /// # Returns
+    /// Returns Ok(()) on success, or an error if the operation fails
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the linker has been disposed or if defining traps fails
+    pub fn define_unknown_imports_as_traps(&mut self, module: &Module) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
+
+        linker
+            .define_unknown_imports_as_traps(module.inner())
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define unknown imports as traps: {}", e),
+                backtrace: None,
+            })?;
+
+        log::debug!("Defined unknown imports as traps for module");
+        Ok(())
+    }
+
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that return default values (zero for numbers, null for references).
+    ///
+    /// This is useful for running modules in a "lenient" mode where missing imports
+    /// are satisfied with no-op implementations that return default values.
+    ///
+    /// # Arguments
+    /// * `store` - The store context for creating default-value functions
+    /// * `module` - The module whose unknown imports should be satisfied with defaults
+    ///
+    /// # Returns
+    /// Returns Ok(()) on success, or an error if the operation fails
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if the linker has been disposed or if defining defaults fails
+    pub fn define_unknown_imports_as_default_values(
+        &mut self,
+        store: &mut wasmtime::Store<StoreData>,
+        module: &Module,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
+
+        linker
+            .define_unknown_imports_as_default_values(&mut *store, module.inner())
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define unknown imports as default values: {}", e),
+                backtrace: None,
+            })?;
+
+        log::debug!("Defined unknown imports as default values for module");
+        Ok(())
+    }
+
     /// Sets the WASI context to be attached to stores during instantiation
     ///
     /// # Arguments

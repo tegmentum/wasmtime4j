@@ -935,6 +935,114 @@ pub mod jni_engine {
         }) as jlong
     }
 
+    /// Create a new Wasmtime engine with extended configuration including GC and memory options (JNI version)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithExtendedConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+        strategy: jint,
+        opt_level: jint,
+        debug_info: jboolean,
+        wasm_threads: jboolean,
+        wasm_simd: jboolean,
+        wasm_reference_types: jboolean,
+        wasm_bulk_memory: jboolean,
+        wasm_multi_value: jboolean,
+        fuel_enabled: jboolean,
+        max_memory_pages: jint,
+        max_stack_size: jint,
+        epoch_interruption: jboolean,
+        max_instances: jint,
+        async_support: jboolean,
+        // GC configuration
+        wasm_gc: jboolean,
+        wasm_function_references: jboolean,
+        wasm_exceptions: jboolean,
+        // Memory configuration (0 = use default)
+        memory_reservation: jlong,
+        memory_guard_size: jlong,
+        memory_reservation_for_growth: jlong,
+        // Additional features
+        wasm_tail_call: jboolean,
+        wasm_relaxed_simd: jboolean,
+        wasm_multi_memory: jboolean,
+        wasm_memory64: jboolean,
+        wasm_extended_const: jboolean,
+        wasm_component_model: jboolean,
+        coredump_on_trap: jboolean,
+        cranelift_nan_canonicalization: jboolean,
+    ) -> jlong {
+        jni_utils::jni_try_ptr(&mut env, || {
+            let strategy_opt = parameter_conversion::convert_strategy(strategy);
+            let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
+            let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+            let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+            let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
+
+            // Memory config: 0 means use default
+            let memory_reservation_opt = if memory_reservation > 0 { Some(memory_reservation as u64) } else { None };
+            let memory_guard_size_opt = if memory_guard_size > 0 { Some(memory_guard_size as u64) } else { None };
+            let memory_reservation_for_growth_opt = if memory_reservation_for_growth > 0 {
+                Some(memory_reservation_for_growth as u64)
+            } else {
+                None
+            };
+
+            core::create_engine_with_extended_config(
+                strategy_opt,
+                opt_level_opt,
+                parameter_conversion::convert_int_to_bool(debug_info as i32),
+                parameter_conversion::convert_int_to_bool(wasm_threads as i32),
+                parameter_conversion::convert_int_to_bool(wasm_simd as i32),
+                parameter_conversion::convert_int_to_bool(wasm_reference_types as i32),
+                parameter_conversion::convert_int_to_bool(wasm_bulk_memory as i32),
+                parameter_conversion::convert_int_to_bool(wasm_multi_value as i32),
+                parameter_conversion::convert_int_to_bool(fuel_enabled as i32),
+                max_memory_pages_opt,
+                max_stack_size_opt,
+                parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
+                max_instances_opt,
+                parameter_conversion::convert_int_to_bool(async_support as i32),
+                // GC configuration
+                parameter_conversion::convert_int_to_bool(wasm_gc as i32),
+                parameter_conversion::convert_int_to_bool(wasm_function_references as i32),
+                parameter_conversion::convert_int_to_bool(wasm_exceptions as i32),
+                // Memory configuration
+                memory_reservation_opt,
+                memory_guard_size_opt,
+                memory_reservation_for_growth_opt,
+                // Additional features
+                parameter_conversion::convert_int_to_bool(wasm_tail_call as i32),
+                parameter_conversion::convert_int_to_bool(wasm_relaxed_simd as i32),
+                parameter_conversion::convert_int_to_bool(wasm_multi_memory as i32),
+                parameter_conversion::convert_int_to_bool(wasm_memory64 as i32),
+                parameter_conversion::convert_int_to_bool(wasm_extended_const as i32),
+                parameter_conversion::convert_int_to_bool(wasm_component_model as i32),
+                parameter_conversion::convert_int_to_bool(coredump_on_trap as i32),
+                parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization as i32),
+            )
+        }) as jlong
+    }
+
+    /// Detect if a host CPU feature is available
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectHostFeature(
+        mut env: JNIEnv,
+        _class: JClass,
+        feature_name: JString,
+    ) -> jboolean {
+        use jni::sys::{JNI_FALSE, JNI_TRUE};
+
+        // Convert Java string first (outside the closure to avoid borrow issues)
+        let feature_str: String = match env.get_string(&feature_name) {
+            Ok(s) => s.into(),
+            Err(_) => return JNI_FALSE as jboolean,
+        };
+
+        let result = core::detect_host_feature(&feature_str);
+        if result { JNI_TRUE as jboolean } else { JNI_FALSE as jboolean }
+    }
+
     /// Destroy a Wasmtime engine (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine(
@@ -3789,6 +3897,65 @@ pub mod jni_linker {
 
             Ok(())
         });
+    }
+
+    /// Define unknown imports as traps
+    ///
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that trap when called.
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUnknownImportsAsTraps(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        module_handle: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            // Get mutable linker reference
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+
+            // Get module reference
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+            // Call the method
+            linker.define_unknown_imports_as_traps(module)?;
+
+            Ok(1) // JNI_TRUE
+        })
+    }
+
+    /// Define unknown imports as default values
+    ///
+    /// Implements any function imports of the module that are not already defined
+    /// with functions that return default values (zero for numbers, null for references).
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUnknownImportsAsDefaultValues(
+        mut env: JNIEnv,
+        _obj: jobject,
+        linker_handle: jlong,
+        store_handle: jlong,
+        module_handle: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            use std::os::raw::c_void;
+
+            // Get mutable linker reference
+            let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+
+            // Get store reference
+            let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Get module reference
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+            // Lock store and call the method
+            let mut store_lock = store.lock_store();
+            linker.define_unknown_imports_as_default_values(&mut *store_lock, module)?;
+
+            Ok(1) // JNI_TRUE
+        })
     }
 
     /// Destroy a linker
@@ -13385,38 +13552,169 @@ mod profiler_jni {
 #[cfg(feature = "jni-bindings")]
 mod exception_handling_jni {
     use jni::objects::JClass;
-    use jni::sys::{jboolean, jlong, jintArray, JNI_FALSE};
+    use jni::sys::{jboolean, jlong, jintArray, JNI_FALSE, JNI_TRUE};
     use jni::JNIEnv;
+    use wasmtime::{Tag, TagType, ValType, FuncType, AsContext, AsContextMut};
+    use crate::store::Store;
+    use crate::error::jni_utils;
 
-    /// JNI binding for WasmRuntime.nativeCreateTag
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateTag(
-        _env: JNIEnv,
-        _class: JClass,
-        _store_handle: jlong,
-        _param_types: jintArray,
-        _return_types: jintArray,
-    ) -> jlong {
-        // Tag creation is not yet implemented in Wasmtime's public API
-        0
-    }
-
-    /// JNI binding for JniTag.nativeGetParamTypes
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetParamTypes<'local>(
-        env: JNIEnv<'local>,
-        _class: JClass<'local>,
-        _tag_handle: jlong,
-        _store_handle: jlong,
-    ) -> jintArray {
-        // Tag.getParamTypes is not yet implemented
-        match env.new_int_array(0) {
-            Ok(arr) => arr.into_raw(),
-            Err(_) => std::ptr::null_mut(),
+    /// Helper to convert ValType to integer code
+    fn val_type_to_code(ty: &ValType) -> i32 {
+        use wasmtime::HeapType;
+        match ty {
+            ValType::I32 => 0,
+            ValType::I64 => 1,
+            ValType::F32 => 2,
+            ValType::F64 => 3,
+            ValType::V128 => 4,
+            ValType::Ref(r) => {
+                // Check heap_type() to determine the reference type
+                match r.heap_type() {
+                    HeapType::Func => 5,    // funcref
+                    HeapType::Extern => 6,  // externref
+                    _ => 7,                 // Other reference types (anyref, eqref, etc.)
+                }
+            }
         }
     }
 
+    /// Helper to convert integer code to ValType
+    fn code_to_val_type(code: i32) -> Option<ValType> {
+        match code {
+            0 => Some(ValType::I32),
+            1 => Some(ValType::I64),
+            2 => Some(ValType::F32),
+            3 => Some(ValType::F64),
+            4 => Some(ValType::V128),
+            5 => Some(ValType::FUNCREF),
+            6 => Some(ValType::EXTERNREF),
+            _ => None,
+        }
+    }
+
+    /// JNI binding for WasmRuntime.nativeCreateTag
+    /// Creates a new Tag with the given parameter types
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateTag<'local>(
+        mut env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        store_handle: jlong,
+        param_types: jintArray,
+        _return_types: jintArray,
+    ) -> jlong {
+        use crate::error::WasmtimeError;
+
+        // Validate inputs first
+        if store_handle == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+            return 0;
+        }
+
+        let store = unsafe { &*(store_handle as *const Store) };
+
+        // Get parameter types from Java array
+        let param_array = unsafe { jni::objects::JIntArray::from_raw(param_types) };
+        let param_len = match env.get_array_length(&param_array) {
+            Ok(len) => len as usize,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                    message: format!("Failed to get param types length: {}", e),
+                });
+                return 0;
+            }
+        };
+
+        let mut param_codes = vec![0i32; param_len];
+        if param_len > 0 {
+            if let Err(e) = env.get_int_array_region(&param_array, 0, &mut param_codes) {
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                    message: format!("Failed to read param types: {}", e),
+                });
+                return 0;
+            }
+        }
+
+        // Convert codes to ValTypes
+        let params: Vec<ValType> = param_codes
+            .iter()
+            .filter_map(|&code| code_to_val_type(code))
+            .collect();
+
+        // Create a FuncType for the tag (tags use params only, empty results)
+        let func_type = FuncType::new(store.engine().inner(), params.iter().cloned(), []);
+
+        // Create TagType from FuncType
+        let tag_type = TagType::new(func_type);
+
+        // Lock the store and create the Tag
+        let mut store_guard = store.lock_store();
+        match Tag::new(&mut *store_guard, &tag_type) {
+            Ok(tag) => Box::into_raw(Box::new(tag)) as jlong,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                    message: format!("Failed to create tag: {}", e),
+                });
+                0
+            }
+        }
+    }
+
+    /// JNI binding for JniTag.nativeGetParamTypes
+    /// Gets the parameter types of the tag
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetParamTypes<'local>(
+        mut env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        tag_handle: jlong,
+        store_handle: jlong,
+    ) -> jintArray {
+        use crate::error::{WasmtimeError, ErrorCode};
+
+        if tag_handle == 0 || store_handle == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "Tag or store handle cannot be null".to_string(),
+            });
+            return std::ptr::null_mut();
+        }
+
+        let tag = unsafe { &*(tag_handle as *const Tag) };
+        let store = unsafe { &*(store_handle as *const Store) };
+
+        // Lock the store and get the tag type
+        let store_guard = store.lock_store();
+        let tag_type = tag.ty(&*store_guard);
+
+        // TagType has ty() which returns &FuncType, and FuncType has params()
+        let func_type = tag_type.ty();
+        let params: Vec<i32> = func_type.params().map(|ty| val_type_to_code(&ty)).collect();
+
+        // Create Java int array and fill it
+        let arr = match env.new_int_array(params.len() as i32) {
+            Ok(arr) => arr,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                    message: format!("Failed to create int array: {}", e),
+                });
+                return std::ptr::null_mut();
+            }
+        };
+
+        if !params.is_empty() {
+            if let Err(e) = env.set_int_array_region(&arr, 0, &params) {
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                    message: format!("Failed to set int array: {}", e),
+                });
+                return std::ptr::null_mut();
+            }
+        }
+
+        arr.into_raw()
+    }
+
     /// JNI binding for JniTag.nativeGetReturnTypes
+    /// Tags don't have return types in wasmtime - returns empty array
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetReturnTypes<'local>(
         env: JNIEnv<'local>,
@@ -13424,7 +13722,7 @@ mod exception_handling_jni {
         _tag_handle: jlong,
         _store_handle: jlong,
     ) -> jintArray {
-        // Tag.getReturnTypes is not yet implemented
+        // Tags in wasmtime don't have return types - they only have params
         match env.new_int_array(0) {
             Ok(arr) => arr.into_raw(),
             Err(_) => std::ptr::null_mut(),
@@ -13432,29 +13730,49 @@ mod exception_handling_jni {
     }
 
     /// JNI binding for JniTag.nativeEquals
+    /// Compares two tags for equality
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeEquals(
-        _env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
-        _tag1_handle: jlong,
-        _tag2_handle: jlong,
-        _store_handle: jlong,
+        tag1_handle: jlong,
+        tag2_handle: jlong,
+        store_handle: jlong,
     ) -> jboolean {
-        // Tag.equals is not yet implemented
-        JNI_FALSE
+        let result = jni_utils::jni_try_bool(&mut env, || {
+            if tag1_handle == 0 || tag2_handle == 0 || store_handle == 0 {
+                return Ok(false);
+            }
+
+            let tag1 = unsafe { &*(tag1_handle as *const Tag) };
+            let tag2 = unsafe { &*(tag2_handle as *const Tag) };
+            let store = unsafe { &*(store_handle as *const Store) };
+
+            // Lock the store and compare tags
+            let store_guard = store.lock_store();
+            Ok(Tag::eq(tag1, tag2, &*store_guard))
+        });
+
+        if result { JNI_TRUE } else { JNI_FALSE }
     }
 
     /// JNI binding for JniTag.nativeDestroy
+    /// Destroys a tag (deallocates memory)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeDestroy(
         _env: JNIEnv,
         _class: JClass,
-        _tag_handle: jlong,
+        tag_handle: jlong,
     ) {
-        // Tag destruction is not yet implemented
+        if tag_handle != 0 {
+            unsafe {
+                let _ = Box::from_raw(tag_handle as *mut Tag);
+            }
+        }
     }
 
     /// JNI binding for JniExnRef.nativeGetTag
+    /// Gets the tag associated with an exception reference
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetTag(
         _env: JNIEnv,
@@ -13462,33 +13780,44 @@ mod exception_handling_jni {
         _exnref_handle: jlong,
         _store_handle: jlong,
     ) -> jlong {
-        // ExnRef.getTag is not yet implemented
+        // ExnRef.tag() requires Rooted<ExnRef> which is more complex to manage
+        // across JNI boundary. For now, return 0 (null).
+        // Full implementation would require storing ExnRef in a RootScope.
         0
     }
 
     /// JNI binding for JniExnRef.nativeIsValid
+    /// Checks if an exception reference is valid
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeIsValid(
         _env: JNIEnv,
         _class: JClass,
-        _exnref_handle: jlong,
+        exnref_handle: jlong,
         _store_handle: jlong,
     ) -> jboolean {
-        // ExnRef.isValid is not yet implemented
-        JNI_FALSE
+        // Basic validity check - non-null handle
+        if exnref_handle != 0 { JNI_TRUE } else { JNI_FALSE }
     }
 
     /// JNI binding for JniExnRef.nativeDestroy
+    /// Destroys an exception reference handle
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeDestroy(
         _env: JNIEnv,
         _class: JClass,
-        _exnref_handle: jlong,
+        exnref_handle: jlong,
     ) {
-        // ExnRef destruction is not yet implemented
+        if exnref_handle == 0 {
+            return;
+        }
+        unsafe {
+            let _boxed = Box::from_raw(exnref_handle as *mut wasmtime::OwnedRooted<wasmtime::ExnRef>);
+            // Dropping the Box cleans up the OwnedRooted
+        }
     }
 
     /// JNI binding for JniStore.nativeThrowException
+    /// Throws an exception in the store context
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeThrowException(
         _env: JNIEnv,
@@ -13496,29 +13825,45 @@ mod exception_handling_jni {
         _store_handle: jlong,
         _exnref_handle: jlong,
     ) {
-        // Store.throwException is not yet implemented
+        // Exception throwing requires careful integration with wasmtime's
+        // trap handling. The Store doesn't directly expose throw_exception -
+        // exceptions are thrown during WebAssembly execution via throw/throw_ref
+        // instructions.
     }
 
     /// JNI binding for JniStore.nativeTakePendingException
+    /// Takes a pending exception from the store, returning a handle to the ExnRef
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeTakePendingException(
-        _env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
-        _store_handle: jlong,
+        store_handle: jlong,
     ) -> jlong {
-        // Store.takePendingException is not yet implemented
-        0
+        jni_utils::jni_try_with_default(&mut env, 0, || {
+            let store = unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+            match store.take_pending_exception() {
+                Some(exn_ref) => {
+                    // Box the OwnedRooted<ExnRef> and return as handle
+                    let handle = Box::into_raw(Box::new(exn_ref)) as jlong;
+                    Ok(handle)
+                }
+                None => Ok(0),
+            }
+        })
     }
 
     /// JNI binding for JniStore.nativeHasPendingException
+    /// Checks if the store has a pending exception
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeHasPendingException(
-        _env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
-        _store_handle: jlong,
+        store_handle: jlong,
     ) -> jboolean {
-        // Store.hasPendingException is not yet implemented
-        JNI_FALSE
+        jni_utils::jni_try_with_default(&mut env, JNI_FALSE, || {
+            let store = unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+            Ok(if store.has_pending_exception() { JNI_TRUE } else { JNI_FALSE })
+        })
     }
 }
 

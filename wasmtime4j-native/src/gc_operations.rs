@@ -33,6 +33,7 @@ pub enum GcObjectRef {
     Struct(wasmtime::OwnedRooted<wasmtime::StructRef>),
     Array(wasmtime::OwnedRooted<wasmtime::ArrayRef>),
     Any(wasmtime::OwnedRooted<wasmtime::AnyRef>),
+    ExnRef(wasmtime::OwnedRooted<wasmtime::ExnRef>),
 }
 
 /// Real WebAssembly GC operations using Wasmtime's native GC runtime
@@ -1493,6 +1494,14 @@ impl WasmtimeGcOperations {
                             let any_rooted = owned_any.to_rooted(scope);
                             Ok(any_rooted)
                         },
+                        GcObjectRef::ExnRef(owned_exn) => {
+                            // ExnRef cannot be converted to AnyRef directly
+                            // Return an error for now
+                            Err(crate::error::WasmtimeError::Runtime {
+                                message: "ExnRef cannot be converted to AnyRef".to_string(),
+                                backtrace: None,
+                            })
+                        },
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
@@ -1559,6 +1568,13 @@ impl WasmtimeGcOperations {
                         GcObjectRef::Any(owned_any) => {
                             let any_rooted = owned_any.to_rooted(&mut scope);
                             Ok(any_rooted)
+                        },
+                        GcObjectRef::ExnRef(_owned_exn) => {
+                            // ExnRef cannot be converted to AnyRef directly
+                            Err(crate::error::WasmtimeError::Runtime {
+                                message: "ExnRef cannot be converted to AnyRef".to_string(),
+                                backtrace: None,
+                            })
                         },
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
@@ -1644,6 +1660,7 @@ impl WasmtimeGcOperations {
                         // Check if it's an I31 reference
                         (*any_ref).unwrap_i31(&self.store).is_ok()
                     },
+                    GcObjectRef::ExnRef(_) => false, // ExnRef is not eq-comparable
                 }
             },
             GcReferenceType::I31Ref => {

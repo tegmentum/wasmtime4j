@@ -20,6 +20,7 @@ wasmtime-wasi-http = { version = "39.0.1", optional = true }
 wasmtime-wasi-nn = { version = "39.0.1", optional = true }
 wasmtime-wasi-threads = { version = "39.0.1", optional = true }
 wasmtime-wasi-keyvalue = { version = "39.0.1", optional = true }
+wasmtime-wasi-config = { version = "39.0.1", optional = true }
 wasi-common = { version = "39.0.1", optional = true }
 wasmtime-wast = { version = "39.0.1", features = ["component-model", "component-model-async"] }
 
@@ -150,6 +151,9 @@ wasi-threads = ["wasmtime-wasi-threads", "wasi-common", "wasi"]
 
 # WASI-KeyValue support (key-value store - requires wasmtime 39+)
 wasi-keyvalue = ["wasmtime-wasi-keyvalue", "wasi"]
+
+# WASI-Config support (configuration variables - requires wasmtime 39+)
+wasi-config = ["wasmtime-wasi-config", "wasi"]
 
 # Component model support (WASI2)
 component-model = [

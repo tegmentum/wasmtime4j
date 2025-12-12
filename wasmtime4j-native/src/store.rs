@@ -347,6 +347,51 @@ impl Store {
         Ok(())
     }
 
+    /// Check if there is a pending exception in the store
+    pub fn has_pending_exception(&self) -> bool {
+        let store = self.inner.lock();
+        store.has_pending_exception()
+    }
+
+    /// Take and remove the pending exception from the store, if any.
+    /// Returns the exception as an OwnedRooted handle that can be stored across FFI boundaries.
+    pub fn take_pending_exception(&self) -> Option<wasmtime::OwnedRooted<wasmtime::ExnRef>> {
+        let mut store = self.inner.lock();
+        store.take_pending_exception().and_then(|exn| {
+            let mut scope = wasmtime::RootScope::new(&mut *store);
+            exn.to_owned_rooted(&mut scope).ok()
+        })
+    }
+
+    /// Set fuel async yield interval for cooperative multitasking
+    ///
+    /// Configures the store to yield back to the caller periodically during
+    /// async fuel consumption. This enables cooperative multitasking where
+    /// long-running computations can be interrupted.
+    ///
+    /// # Arguments
+    /// * `interval` - The fuel interval at which to yield, or None to disable
+    pub fn fuel_async_yield_interval(&self, interval: Option<u64>) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+        store.fuel_async_yield_interval(interval).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to set fuel async yield interval: {}", e),
+            backtrace: None,
+        })
+    }
+
+    /// Set epoch deadline with async yield and update
+    ///
+    /// Configures the store to yield when the epoch deadline is reached during
+    /// async execution, then automatically update the deadline by the given delta.
+    ///
+    /// # Arguments
+    /// * `delta` - The number of ticks to add to the deadline after yielding
+    pub fn epoch_deadline_async_yield_and_update(&self, delta: u64) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+        store.epoch_deadline_async_yield_and_update(delta);
+        Ok(())
+    }
+
     /// Get memory usage statistics
     pub fn memory_usage(&self) -> WasmtimeResult<MemoryUsage> {
         let store = self.inner.lock();

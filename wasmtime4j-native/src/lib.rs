@@ -283,6 +283,8 @@ pub mod component_resources;
 // pub mod distributed_components;
 #[cfg(feature = "component-model")]
 pub mod component_composition;
+#[cfg(feature = "component-model")]
+pub mod resource_dynamic;
 
 // Experimental modules for cutting-edge WebAssembly proposals
 pub mod exceptions;
@@ -311,6 +313,9 @@ pub mod call_hooks;
 
 // Fuel exhaustion callback handling
 pub mod fuel_callback;
+
+// Epoch deadline callback handling
+pub mod epoch_callback;
 
 // Guest profiler integration
 pub mod guest_profiler;
@@ -664,7 +669,7 @@ pub use cpu_cache_management::{
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Wasmtime version this library is built against
-pub const WASMTIME_VERSION: &str = "38.0.3";
+pub const WASMTIME_VERSION: &str = "39.0.1";
 
 /// Initialize the native library
 ///
