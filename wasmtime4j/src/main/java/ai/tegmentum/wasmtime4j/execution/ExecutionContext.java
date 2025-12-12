@@ -44,11 +44,11 @@ public interface ExecutionContext {
   ExecutionContextConfig getConfig();
 
   /**
-   * Gets the security context.
+   * Gets the security context as a generic object.
    *
-   * @return security context
+   * @return security context or null
    */
-  ai.tegmentum.wasmtime4j.security.SecurityContext getSecurityContext();
+  Object getSecurityContext();
 
   /**
    * Gets execution metadata.

@@ -255,9 +255,6 @@ pub mod filesystem_snapshots;
 // Full process integration
 pub mod process;
 
-// WASI security and capabilities
-pub mod wasi_security;
-
 // Type introspection system
 pub mod type_introspection;
 
@@ -450,13 +447,6 @@ pub use process::{
     ProcessResourceUsage, ProcessStdioConfig, EnvironmentInheritance,
     ProcessPriority, ProcessSignal, ProcessSpawnOptions, EnvironmentOperation,
     ProcessStats
-};
-
-// Re-export WASI security functionality
-pub use wasi_security::{
-    WasiSecurityManager, WasiSecurityConfig, WasiCapability, WasiCapabilitySet,
-    WasiSecurityPolicy, WasiSecuritySession, SecurityAction, PathPattern,
-    NetworkPattern, EnvironmentPattern, ProcessPattern, WasiSecurityStats
 };
 
 // Component model re-exports
