@@ -308,40 +308,48 @@ class JniModuleTest {
 
           @Override
           public <T, R> R runConcurrent(
-              ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task) {
+              ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask<T, R> task)
+              throws ai.tegmentum.wasmtime4j.WasmException {
             return null;
           }
 
           @Override
           public <R> ai.tegmentum.wasmtime4j.concurrent.JoinHandle<R> spawn(
-              ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task) {
+              ai.tegmentum.wasmtime4j.concurrent.SpawnableTask<R> task)
+              throws ai.tegmentum.wasmtime4j.WasmException {
             return null;
           }
 
           @Override
-          public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames() {
+          public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames()
+              throws ai.tegmentum.wasmtime4j.WasmException {
             return java.util.Collections.emptyList();
           }
 
           @Override
-          public void setDebugHandler(ai.tegmentum.wasmtime4j.debug.DebugHandler handler) {}
+          public void setDebugHandler(ai.tegmentum.wasmtime4j.debug.DebugHandler handler)
+              throws ai.tegmentum.wasmtime4j.WasmException {}
 
           @Override
-          public void setFuelAsyncYieldInterval(long interval) {}
+          public void setFuelAsyncYieldInterval(long interval)
+              throws ai.tegmentum.wasmtime4j.WasmException {}
 
           @Override
-          public long getFuelAsyncYieldInterval() {
+          public long getFuelAsyncYieldInterval() throws ai.tegmentum.wasmtime4j.WasmException {
             return 0;
           }
 
           @Override
-          public void limiter(ai.tegmentum.wasmtime4j.execution.ResourceLimiter limiter) {}
+          public void limiter(ai.tegmentum.wasmtime4j.execution.ResourceLimiter limiter)
+              throws ai.tegmentum.wasmtime4j.WasmException {}
 
           @Override
-          public void limiterAsync(ai.tegmentum.wasmtime4j.Store.AsyncResourceLimiter limiter) {}
+          public void limiterAsync(ai.tegmentum.wasmtime4j.Store.AsyncResourceLimiter limiter)
+              throws ai.tegmentum.wasmtime4j.WasmException {}
 
           @Override
-          public ai.tegmentum.wasmtime4j.execution.ResourceLimiter getLimiter() {
+          public ai.tegmentum.wasmtime4j.execution.ResourceLimiter getLimiter()
+              throws ai.tegmentum.wasmtime4j.WasmException {
             return null;
           }
         };

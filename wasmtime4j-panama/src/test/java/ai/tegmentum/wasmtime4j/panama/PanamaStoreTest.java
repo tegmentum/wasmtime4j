@@ -30,7 +30,7 @@ class PanamaStoreTest {
 
   @Test
   void testConstructorWithLimitsNullEngine() {
-    final StoreLimits limits = new StoreLimits();
+    final StoreLimits limits = StoreLimits.builder().build();
 
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> new PanamaStore(null, limits));
@@ -113,7 +113,7 @@ class PanamaStoreTest {
       }
 
       @Override
-      public java.util.List<ai.tegmentum.wasmtime4j.FunctionType> getFunctionTypes() {
+      public java.util.List<ai.tegmentum.wasmtime4j.FuncType> getFunctionTypes() {
         return java.util.Collections.emptyList();
       }
 
@@ -168,7 +168,21 @@ class PanamaStoreTest {
       }
 
       @Override
-      public void validateImports(ai.tegmentum.wasmtime4j.ImportMap imports) {}
+      public boolean validateImports(ai.tegmentum.wasmtime4j.ImportMap imports) {
+        return true;
+      }
+
+      @Override
+      public ai.tegmentum.wasmtime4j.ImportValidation validateImportsDetailed(
+          ai.tegmentum.wasmtime4j.ImportMap imports) {
+        return new ai.tegmentum.wasmtime4j.ImportValidation(
+            true,
+            java.util.Collections.emptyList(),
+            java.util.Collections.emptyList(),
+            0,
+            0,
+            java.time.Duration.ZERO);
+      }
 
       @Override
       public byte[] serialize() {

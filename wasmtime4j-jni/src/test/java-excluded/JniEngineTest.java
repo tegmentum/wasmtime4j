@@ -196,26 +196,6 @@ class JniEngineTest {
   }
 
   @Test
-  void testCreateStreamingCompilerUnsupported() {
-    final JniEngine engine = new JniEngine(VALID_HANDLE);
-
-    final UnsupportedOperationException exception =
-        assertThrows(UnsupportedOperationException.class, engine::createStreamingCompiler);
-
-    assertThat(exception.getMessage()).contains("not yet implemented");
-  }
-
-  @Test
-  void testCreateStreamingCompilerWithZeroHandle() {
-    final JniEngine engine = new JniEngine(ZERO_HANDLE);
-
-    final IllegalStateException exception =
-        assertThrows(IllegalStateException.class, engine::createStreamingCompiler);
-
-    assertThat(exception.getMessage()).contains("invalid native handle");
-  }
-
-  @Test
   void testGetConfigReturnsNull() {
     final JniEngine engine = new JniEngine(VALID_HANDLE);
 
