@@ -709,7 +709,7 @@ public final class WitValueMarshaler {
     }
 
     public Map<String, Object> getFields() {
-      return fields;
+      return new java.util.HashMap<>(fields);
     }
   }
 
@@ -754,7 +754,7 @@ public final class WitValueMarshaler {
     }
 
     public List<String> getFlags() {
-      return flags;
+      return new java.util.ArrayList<>(flags);
     }
   }
 
@@ -767,7 +767,7 @@ public final class WitValueMarshaler {
     }
 
     public List<?> getElements() {
-      return elements;
+      return new java.util.ArrayList<>(elements);
     }
   }
 

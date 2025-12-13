@@ -92,12 +92,12 @@ public final class DefaultCoreDumpFrame implements CoreDumpFrame {
 
   @Override
   public List<byte[]> getLocals() {
-    return locals;
+    return new java.util.ArrayList<>(locals);
   }
 
   @Override
   public List<byte[]> getStack() {
-    return stack;
+    return new java.util.ArrayList<>(stack);
   }
 
   @Override

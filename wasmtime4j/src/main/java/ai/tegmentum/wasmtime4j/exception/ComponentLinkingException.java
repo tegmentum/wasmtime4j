@@ -44,11 +44,16 @@ public class ComponentLinkingException extends WasmException {
       List<String> suggestedResolutions) {
     super(message);
     this.failureType = failureType;
-    this.involvedComponents = involvedComponents;
-    this.compatibilityIssues = compatibilityIssues;
-    this.missingDependencies = missingDependencies;
-    this.circularDependencies = circularDependencies;
-    this.suggestedResolutions = suggestedResolutions;
+    this.involvedComponents =
+        involvedComponents == null ? null : new java.util.ArrayList<>(involvedComponents);
+    this.compatibilityIssues =
+        compatibilityIssues == null ? null : new java.util.HashMap<>(compatibilityIssues);
+    this.missingDependencies =
+        missingDependencies == null ? null : new java.util.HashSet<>(missingDependencies);
+    this.circularDependencies =
+        circularDependencies == null ? null : new java.util.HashSet<>(circularDependencies);
+    this.suggestedResolutions =
+        suggestedResolutions == null ? null : new java.util.ArrayList<>(suggestedResolutions);
   }
 
   /**
@@ -74,11 +79,16 @@ public class ComponentLinkingException extends WasmException {
       List<String> suggestedResolutions) {
     super(message, cause);
     this.failureType = failureType;
-    this.involvedComponents = involvedComponents;
-    this.compatibilityIssues = compatibilityIssues;
-    this.missingDependencies = missingDependencies;
-    this.circularDependencies = circularDependencies;
-    this.suggestedResolutions = suggestedResolutions;
+    this.involvedComponents =
+        involvedComponents == null ? null : new java.util.ArrayList<>(involvedComponents);
+    this.compatibilityIssues =
+        compatibilityIssues == null ? null : new java.util.HashMap<>(compatibilityIssues);
+    this.missingDependencies =
+        missingDependencies == null ? null : new java.util.HashSet<>(missingDependencies);
+    this.circularDependencies =
+        circularDependencies == null ? null : new java.util.HashSet<>(circularDependencies);
+    this.suggestedResolutions =
+        suggestedResolutions == null ? null : new java.util.ArrayList<>(suggestedResolutions);
   }
 
   /**
@@ -96,7 +106,7 @@ public class ComponentLinkingException extends WasmException {
    * @return list of component IDs
    */
   public List<String> getInvolvedComponents() {
-    return involvedComponents;
+    return involvedComponents == null ? null : new java.util.ArrayList<>(involvedComponents);
   }
 
   /**
@@ -105,7 +115,7 @@ public class ComponentLinkingException extends WasmException {
    * @return map of component pairs to their compatibility issues
    */
   public Map<String, String> getCompatibilityIssues() {
-    return compatibilityIssues;
+    return compatibilityIssues == null ? null : new java.util.HashMap<>(compatibilityIssues);
   }
 
   /**
@@ -114,7 +124,7 @@ public class ComponentLinkingException extends WasmException {
    * @return set of missing dependency names
    */
   public Set<String> getMissingDependencies() {
-    return missingDependencies;
+    return missingDependencies == null ? null : new java.util.HashSet<>(missingDependencies);
   }
 
   /**
@@ -123,7 +133,7 @@ public class ComponentLinkingException extends WasmException {
    * @return set of component IDs with circular dependencies
    */
   public Set<String> getCircularDependencies() {
-    return circularDependencies;
+    return circularDependencies == null ? null : new java.util.HashSet<>(circularDependencies);
   }
 
   /**
@@ -132,7 +142,7 @@ public class ComponentLinkingException extends WasmException {
    * @return list of suggested resolutions
    */
   public List<String> getSuggestedResolutions() {
-    return suggestedResolutions;
+    return suggestedResolutions == null ? null : new java.util.ArrayList<>(suggestedResolutions);
   }
 
   /**

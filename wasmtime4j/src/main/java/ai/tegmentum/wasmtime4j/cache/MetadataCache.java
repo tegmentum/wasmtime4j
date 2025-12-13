@@ -197,19 +197,19 @@ public final class MetadataCache {
     }
 
     public Map<String, FunctionSignature> getExportedFunctions() {
-      return exportedFunctions;
+      return new java.util.HashMap<>(exportedFunctions);
     }
 
     public Map<String, GlobalMetadata> getGlobals() {
-      return globals;
+      return new java.util.HashMap<>(globals);
     }
 
     public Map<String, MemoryMetadata> getMemories() {
-      return memories;
+      return new java.util.HashMap<>(memories);
     }
 
     public Map<String, TableMetadata> getTables() {
-      return tables;
+      return new java.util.HashMap<>(tables);
     }
 
     public Set<String> getImportedModules() {
@@ -217,7 +217,7 @@ public final class MetadataCache {
     }
 
     public Map<String, byte[]> getCustomSections() {
-      return customSections;
+      return new java.util.HashMap<>(customSections);
     }
 
     public TypeValidationResult getValidationResult() {
