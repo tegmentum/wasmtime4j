@@ -46,8 +46,12 @@ import java.util.regex.Pattern;
  *   <li>Input sanitization
  * </ul>
  *
+ * <p>PMD: InefficientEmptyStringCheck - Using trim().isEmpty() for Java 8 compatibility.
+ * CyclomaticComplexity/NPathComplexity - Security validation requires comprehensive checks.
+ *
  * @since 1.0.0
  */
+@SuppressWarnings({"PMD.InefficientEmptyStringCheck", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
 final class ResourcePathResolver {
 
   /** Pattern to detect path traversal attempts. */
@@ -204,7 +208,7 @@ final class ResourcePathResolver {
     Objects.requireNonNull(libraryName, "libraryName must not be null");
 
     // Remove any path separators from library name
-    String sanitized = libraryName.replace("/", "").replace("\\", "");
+    final String sanitized = libraryName.replace("/", "").replace("\\", "");
 
     // Remove any control characters
     final StringBuilder result = new StringBuilder(sanitized.length());

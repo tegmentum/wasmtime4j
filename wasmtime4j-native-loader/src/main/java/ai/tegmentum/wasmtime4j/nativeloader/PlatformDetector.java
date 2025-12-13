@@ -33,6 +33,15 @@ public final class PlatformDetector {
 
   private static final Logger LOGGER = Logger.getLogger(PlatformDetector.class.getName());
 
+  /**
+   * Cache for the detected platform information.
+   *
+   * <p>PMD: AvoidUsingVolatile - Volatile is required for double-checked locking pattern to ensure
+   * visibility across threads. FieldDeclarationsShouldBeAtStartOfClass - Moved to top as required.
+   */
+  @SuppressWarnings("PMD.AvoidUsingVolatile")
+  private static volatile PlatformInfo cachedPlatformInfo;
+
   /** Supported operating systems. */
   public enum OperatingSystem {
     LINUX("linux", ".so", "lib"),
@@ -183,9 +192,6 @@ public final class PlatformDetector {
     }
   }
 
-  /** Cache for the detected platform information. */
-  private static volatile PlatformInfo cachedPlatformInfo;
-
   /** Private constructor to prevent instantiation of utility class. */
   private PlatformDetector() {
     throw new AssertionError("Utility class should not be instantiated");
@@ -209,9 +215,13 @@ public final class PlatformDetector {
    * Sanitizes a library name for safe use in file paths by removing malicious characters and path
    * traversal sequences. Optimized for performance.
    *
+   * <p>PMD: CognitiveComplexity/CyclomaticComplexity - Security-critical path traversal prevention
+   * logic requires thorough character-by-character validation. Splitting would reduce clarity.
+   *
    * @param libraryName the library name to sanitize
    * @return the sanitized library name safe for use in file paths
    */
+  @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
   private static String sanitizeLibraryName(final String libraryName) {
     if (libraryName == null) {
       return "";
@@ -265,9 +275,13 @@ public final class PlatformDetector {
    *
    * <p>This method caches the result after the first call for performance.
    *
+   * <p>PMD: AvoidSynchronizedStatement - Synchronized required for thread-safe double-checked
+   * locking pattern with volatile field.
+   *
    * @return the platform information
    * @throws RuntimeException if the current platform is not supported
    */
+  @SuppressWarnings("PMD.AvoidSynchronizedStatement")
   public static PlatformInfo detect() {
     PlatformInfo result = cachedPlatformInfo;
     if (result == null) {
@@ -308,6 +322,7 @@ public final class PlatformDetector {
    *
    * @return true if the platform is supported, false otherwise
    */
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
   public static boolean isPlatformSupported() {
     try {
       detect();
@@ -322,6 +337,7 @@ public final class PlatformDetector {
    *
    * @return the platform description
    */
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
   public static String getPlatformDescription() {
     final String osName = System.getProperty("os.name");
     final String osArch = System.getProperty("os.arch");
@@ -367,7 +383,7 @@ public final class PlatformDetector {
     } else if (osName.contains("mac") || osName.contains("darwin")) {
       return OperatingSystem.MACOS;
     } else {
-      throw new RuntimeException("Unsupported operating system: " + osName);
+      throw new UnsupportedOperationException("Unsupported operating system: " + osName);
     }
   }
 
@@ -385,7 +401,7 @@ public final class PlatformDetector {
     } else if ("aarch64".equals(archName) || "arm64".equals(archName)) {
       return Architecture.AARCH64;
     } else {
-      throw new RuntimeException("Unsupported architecture: " + archName);
+      throw new UnsupportedOperationException("Unsupported architecture: " + archName);
     }
   }
 }

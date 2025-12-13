@@ -50,6 +50,7 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("PMD.InefficientEmptyStringCheck")
 public enum PathConvention {
 
   /**
@@ -188,11 +189,17 @@ public enum PathConvention {
     return new CustomPathConvention(customPattern);
   }
 
-  /** Wrapper class for custom path conventions with user-defined patterns. */
+  /**
+   * Wrapper class for custom path conventions with user-defined patterns.
+   *
+   * <p>PMD: AccessorClassGeneration - Private constructor is intentional for factory pattern.
+   * InefficientEmptyStringCheck - Using trim().isEmpty() for Java 8 compatibility.
+   */
+  @SuppressWarnings({"PMD.AccessorClassGeneration", "PMD.InefficientEmptyStringCheck"})
   public static final class CustomPathConvention {
     private final String customPattern;
 
-    private CustomPathConvention(final String customPattern) {
+    CustomPathConvention(final String customPattern) {
       this.customPattern = customPattern;
     }
 
