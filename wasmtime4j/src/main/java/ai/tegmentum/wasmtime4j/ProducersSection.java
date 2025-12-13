@@ -39,7 +39,7 @@ public final class ProducersSection {
    * @return an immutable list of language producer entries
    */
   public List<ProducerEntry> getLanguages() {
-    return languages;
+    return new java.util.ArrayList<>(languages);
   }
 
   /**
@@ -48,7 +48,7 @@ public final class ProducersSection {
    * @return an immutable list of tool producer entries
    */
   public List<ProducerEntry> getProcessedBy() {
-    return processedBy;
+    return new java.util.ArrayList<>(processedBy);
   }
 
   /**
@@ -57,7 +57,7 @@ public final class ProducersSection {
    * @return an immutable list of SDK producer entries
    */
   public List<ProducerEntry> getSdk() {
-    return sdk;
+    return new java.util.ArrayList<>(sdk);
   }
 
   /**
@@ -308,7 +308,7 @@ public final class ProducersSection {
      * @return an immutable map of metadata
      */
     public Map<String, String> getMetadata() {
-      return metadata;
+      return new java.util.HashMap<>(metadata);
     }
 
     /**

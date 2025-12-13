@@ -41,7 +41,7 @@ public final class WasmBacktrace {
    * @return an immutable list of stack frames
    */
   public List<FrameInfo> getFrames() {
-    return frames;
+    return new java.util.ArrayList<>(frames);
   }
 
   /**

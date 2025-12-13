@@ -29,7 +29,7 @@ public final class TargetFeaturesSection {
    * @return an immutable list of feature entries
    */
   public List<FeatureEntry> getFeatures() {
-    return features;
+    return new java.util.ArrayList<>(features);
   }
 
   /**
@@ -476,7 +476,7 @@ public final class TargetFeaturesSection {
      * @return list of missing required features
      */
     public List<String> getMissingRequiredFeatures() {
-      return missingRequiredFeatures;
+      return new java.util.ArrayList<>(missingRequiredFeatures);
     }
 
     /**
@@ -485,7 +485,7 @@ public final class TargetFeaturesSection {
      * @return list of unsupported used features
      */
     public List<String> getUnsupportedUsedFeatures() {
-      return unsupportedUsedFeatures;
+      return new java.util.ArrayList<>(unsupportedUsedFeatures);
     }
 
     /**
