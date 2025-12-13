@@ -20,7 +20,7 @@ class NativeLibraryLoaderTest {
 
     // Should contain platform and architecture
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-      assertThat(resourcePath).contains("macos");
+      assertThat(resourcePath).contains("darwin");
       assertThat(resourcePath).endsWith(".dylib");
     } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
       assertThat(resourcePath).contains("linux");
@@ -50,7 +50,7 @@ class NativeLibraryLoaderTest {
 
     // Should contain current platform info
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-      assertThat(platformInfo).contains("macos");
+      assertThat(platformInfo).contains("darwin");
     } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
       assertThat(platformInfo).contains("linux");
     } else if (System.getProperty("os.name").toLowerCase().contains("windows")) {
