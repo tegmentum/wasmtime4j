@@ -155,8 +155,8 @@ public interface ComponentVersionCompatibilityChecker {
       this.compatible = compatible;
       this.message = message;
       this.level = level;
-      this.issues = issues;
-      this.warnings = warnings;
+      this.issues = issues == null ? null : new java.util.HashSet<>(issues);
+      this.warnings = warnings == null ? null : new java.util.HashSet<>(warnings);
     }
 
     public boolean isCompatible() {
@@ -172,11 +172,11 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public Set<String> getIssues() {
-      return issues;
+      return issues == null ? null : new java.util.HashSet<>(issues);
     }
 
     public Set<String> getWarnings() {
-      return warnings;
+      return warnings == null ? null : new java.util.HashSet<>(warnings);
     }
   }
 
@@ -201,9 +201,12 @@ public interface ComponentVersionCompatibilityChecker {
         Set<String> missingInterfaces,
         Set<String> extraInterfaces) {
       this.compatible = compatible;
-      this.interfaceResults = interfaceResults;
-      this.missingInterfaces = missingInterfaces;
-      this.extraInterfaces = extraInterfaces;
+      this.interfaceResults =
+          interfaceResults == null ? null : new java.util.HashMap<>(interfaceResults);
+      this.missingInterfaces =
+          missingInterfaces == null ? null : new java.util.HashSet<>(missingInterfaces);
+      this.extraInterfaces =
+          extraInterfaces == null ? null : new java.util.HashSet<>(extraInterfaces);
     }
 
     public boolean isCompatible() {
@@ -211,15 +214,15 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public Map<String, InterfaceVersionCompatibility> getInterfaceResults() {
-      return interfaceResults;
+      return interfaceResults == null ? null : new java.util.HashMap<>(interfaceResults);
     }
 
     public Set<String> getMissingInterfaces() {
-      return missingInterfaces;
+      return missingInterfaces == null ? null : new java.util.HashSet<>(missingInterfaces);
     }
 
     public Set<String> getExtraInterfaces() {
-      return extraInterfaces;
+      return extraInterfaces == null ? null : new java.util.HashSet<>(extraInterfaces);
     }
   }
 
@@ -253,8 +256,10 @@ public interface ComponentVersionCompatibilityChecker {
       this.compatible = compatible;
       this.sourceVersion = sourceVersion;
       this.targetVersion = targetVersion;
-      this.incompatibleFunctions = incompatibleFunctions;
-      this.incompatibleTypes = incompatibleTypes;
+      this.incompatibleFunctions =
+          incompatibleFunctions == null ? null : new java.util.HashSet<>(incompatibleFunctions);
+      this.incompatibleTypes =
+          incompatibleTypes == null ? null : new java.util.HashSet<>(incompatibleTypes);
     }
 
     public String getInterfaceName() {
@@ -274,11 +279,11 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public Set<String> getIncompatibleFunctions() {
-      return incompatibleFunctions;
+      return incompatibleFunctions == null ? null : new java.util.HashSet<>(incompatibleFunctions);
     }
 
     public Set<String> getIncompatibleTypes() {
-      return incompatibleTypes;
+      return incompatibleTypes == null ? null : new java.util.HashSet<>(incompatibleTypes);
     }
   }
 
@@ -303,8 +308,10 @@ public interface ComponentVersionCompatibilityChecker {
         List<CompatibleChange> compatibleChanges,
         VersionChangeType changeType) {
       this.hasBreakingChanges = hasBreakingChanges;
-      this.breakingChanges = breakingChanges;
-      this.compatibleChanges = compatibleChanges;
+      this.breakingChanges =
+          breakingChanges == null ? null : new java.util.ArrayList<>(breakingChanges);
+      this.compatibleChanges =
+          compatibleChanges == null ? null : new java.util.ArrayList<>(compatibleChanges);
       this.changeType = changeType;
     }
 
@@ -313,11 +320,11 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public List<BreakingChange> getBreakingChanges() {
-      return breakingChanges;
+      return breakingChanges == null ? null : new java.util.ArrayList<>(breakingChanges);
     }
 
     public List<CompatibleChange> getCompatibleChanges() {
-      return compatibleChanges;
+      return compatibleChanges == null ? null : new java.util.ArrayList<>(compatibleChanges);
     }
 
     public VersionChangeType getChangeType() {
@@ -333,8 +340,8 @@ public interface ComponentVersionCompatibilityChecker {
     public ComponentCompatibilityMatrix(
         Map<String, Map<String, ComponentVersionCompatibilityResult>> matrix,
         Set<String> componentIds) {
-      this.matrix = matrix;
-      this.componentIds = componentIds;
+      this.matrix = matrix == null ? null : new java.util.HashMap<>(matrix);
+      this.componentIds = componentIds == null ? null : new java.util.HashSet<>(componentIds);
     }
 
     public ComponentVersionCompatibilityResult getCompatibility(String source, String target) {
@@ -342,11 +349,11 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public Map<String, Map<String, ComponentVersionCompatibilityResult>> getMatrix() {
-      return matrix;
+      return matrix == null ? null : new java.util.HashMap<>(matrix);
     }
 
     public Set<String> getComponentIds() {
-      return componentIds;
+      return componentIds == null ? null : new java.util.HashSet<>(componentIds);
     }
   }
 
@@ -371,9 +378,10 @@ public interface ComponentVersionCompatibilityChecker {
         Set<String> blockers,
         Set<String> warnings) {
       this.valid = valid;
-      this.intermediatePath = intermediatePath;
-      this.blockers = blockers;
-      this.warnings = warnings;
+      this.intermediatePath =
+          intermediatePath == null ? null : new java.util.ArrayList<>(intermediatePath);
+      this.blockers = blockers == null ? null : new java.util.HashSet<>(blockers);
+      this.warnings = warnings == null ? null : new java.util.HashSet<>(warnings);
     }
 
     public boolean isValid() {
@@ -381,15 +389,15 @@ public interface ComponentVersionCompatibilityChecker {
     }
 
     public List<ComponentVersion> getIntermediatePath() {
-      return intermediatePath;
+      return intermediatePath == null ? null : new java.util.ArrayList<>(intermediatePath);
     }
 
     public Set<String> getBlockers() {
-      return blockers;
+      return blockers == null ? null : new java.util.HashSet<>(blockers);
     }
 
     public Set<String> getWarnings() {
-      return warnings;
+      return warnings == null ? null : new java.util.HashSet<>(warnings);
     }
   }
 
