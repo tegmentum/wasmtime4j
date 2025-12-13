@@ -313,7 +313,7 @@ public final class ComponentSwapResult {
     }
 
     public Builder warnings(List<String> warnings) {
-      this.warnings = warnings;
+      this.warnings = warnings == null ? null : new java.util.ArrayList<>(warnings);
       return this;
     }
 
@@ -323,7 +323,7 @@ public final class ComponentSwapResult {
     }
 
     public Builder metrics(Map<String, Object> metrics) {
-      this.metrics = metrics;
+      this.metrics = metrics == null ? null : new java.util.HashMap<>(metrics);
       return this;
     }
 

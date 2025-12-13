@@ -385,7 +385,7 @@ public interface ComponentLifecycleManager {
       this.healthy = healthy;
       this.message = message;
       this.timestamp = timestamp;
-      this.details = details;
+      this.details = details == null ? null : new java.util.HashMap<>(details);
     }
 
     public boolean isHealthy() {
@@ -401,7 +401,7 @@ public interface ComponentLifecycleManager {
     }
 
     public Map<String, Object> getDetails() {
-      return details;
+      return details == null ? null : new java.util.HashMap<>(details);
     }
   }
 

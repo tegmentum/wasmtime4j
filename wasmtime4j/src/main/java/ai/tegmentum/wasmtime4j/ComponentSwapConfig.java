@@ -223,12 +223,12 @@ public final class ComponentSwapConfig {
     }
 
     public Builder stateScopes(Set<StatePreservationScope> stateScopes) {
-      this.stateScopes = stateScopes;
+      this.stateScopes = stateScopes == null ? null : new java.util.HashSet<>(stateScopes);
       return this;
     }
 
     public Builder swapParameters(Map<String, Object> swapParameters) {
-      this.swapParameters = swapParameters;
+      this.swapParameters = swapParameters == null ? null : new java.util.HashMap<>(swapParameters);
       return this;
     }
 

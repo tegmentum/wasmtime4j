@@ -218,13 +218,20 @@ public final class ComponentLinkingConfig {
       return this;
     }
 
+    /**
+     * Sets the required capabilities for component linking.
+     *
+     * @param capabilities the set of required capabilities
+     * @return this builder for method chaining
+     */
     public Builder requiredCapabilities(Set<ComponentCapability> capabilities) {
-      this.requiredCapabilities = capabilities;
+      this.requiredCapabilities =
+          capabilities == null ? null : new java.util.HashSet<>(capabilities);
       return this;
     }
 
     public Builder linkingParameters(Map<String, Object> parameters) {
-      this.linkingParameters = parameters;
+      this.linkingParameters = parameters == null ? null : new java.util.HashMap<>(parameters);
       return this;
     }
 
