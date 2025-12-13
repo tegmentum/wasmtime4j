@@ -191,7 +191,7 @@ public interface NnContext extends AutoCloseable {
     public NnImplementationInfo(
         final String version, final List<String> backends, final String defaultBackend) {
       this.version = version;
-      this.backends = backends;
+      this.backends = backends != null ? new java.util.ArrayList<>(backends) : null;
       this.defaultBackend = defaultBackend;
     }
 
@@ -210,7 +210,7 @@ public interface NnContext extends AutoCloseable {
      * @return the backends
      */
     public List<String> getBackends() {
-      return backends;
+      return backends != null ? new java.util.ArrayList<>(backends) : null;
     }
 
     /**

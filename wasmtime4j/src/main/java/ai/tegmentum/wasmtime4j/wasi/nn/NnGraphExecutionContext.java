@@ -208,7 +208,7 @@ public interface NnGraphExecutionContext extends AutoCloseable {
      */
     public NnTensorMetadata(final String name, final int[] dimensions, final NnTensorType type) {
       this.name = name;
-      this.dimensions = dimensions;
+      this.dimensions = dimensions != null ? dimensions.clone() : null;
       this.type = type;
     }
 
@@ -227,7 +227,7 @@ public interface NnGraphExecutionContext extends AutoCloseable {
      * @return the dimensions (null means dynamic)
      */
     public int[] getDimensions() {
-      return dimensions;
+      return dimensions != null ? dimensions.clone() : null;
     }
 
     /**

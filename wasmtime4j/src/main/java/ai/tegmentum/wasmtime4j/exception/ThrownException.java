@@ -30,9 +30,8 @@ import java.util.Optional;
  * <p>This class provides access to exception details when a WebAssembly exception is thrown,
  * including the exception tag, payload values, and the exception reference if available.
  *
- * <p>ThrownException is used in conjunction with the WebAssembly exception handling proposal
- * to inspect exceptions caught during execution or exceptions that propagated out of
- * WebAssembly code.
+ * <p>ThrownException is used in conjunction with the WebAssembly exception handling proposal to
+ * inspect exceptions caught during execution or exceptions that propagated out of WebAssembly code.
  *
  * <p>Example usage:
  *
@@ -64,8 +63,7 @@ public final class ThrownException {
    * @param payload the exception payload values
    * @param exnRef the exception reference, may be null
    */
-  public ThrownException(
-      final Tag tag, final List<WasmValue> payload, final ExnRef exnRef) {
+  public ThrownException(final Tag tag, final List<WasmValue> payload, final ExnRef exnRef) {
     this.tag = Objects.requireNonNull(tag, "tag cannot be null");
     this.payload =
         payload != null ? Collections.unmodifiableList(payload) : Collections.emptyList();
@@ -97,8 +95,8 @@ public final class ThrownException {
   /**
    * Gets the exception payload.
    *
-   * <p>The payload contains the values that were passed when the exception was thrown.
-   * The types and number of values are determined by the tag's type signature.
+   * <p>The payload contains the values that were passed when the exception was thrown. The types
+   * and number of values are determined by the tag's type signature.
    *
    * @return an unmodifiable list of payload values
    */
@@ -109,8 +107,8 @@ public final class ThrownException {
   /**
    * Gets the exception reference if available.
    *
-   * <p>The ExnRef provides a handle to the exception object in WebAssembly memory,
-   * which can be used to rethrow or further inspect the exception.
+   * <p>The ExnRef provides a handle to the exception object in WebAssembly memory, which can be
+   * used to rethrow or further inspect the exception.
    *
    * @return an Optional containing the ExnRef, or empty if not available
    */
@@ -149,8 +147,13 @@ public final class ThrownException {
 
   @Override
   public String toString() {
-    return "ThrownException{tag=" + tag + ", payload=" + payload
-        + ", hasExnRef=" + (exnRef != null) + "}";
+    return "ThrownException{tag="
+        + tag
+        + ", payload="
+        + payload
+        + ", hasExnRef="
+        + (exnRef != null)
+        + "}";
   }
 
   @Override
@@ -182,9 +185,7 @@ public final class ThrownException {
     return new Builder(tag);
   }
 
-  /**
-   * Builder for ThrownException instances.
-   */
+  /** Builder for ThrownException instances. */
   public static final class Builder {
     private final Tag tag;
     private List<WasmValue> payload = Collections.emptyList();
@@ -201,7 +202,7 @@ public final class ThrownException {
      * @return this builder
      */
     public Builder payload(final List<WasmValue> payload) {
-      this.payload = payload;
+      this.payload = payload != null ? new java.util.ArrayList<>(payload) : null;
       return this;
     }
 
