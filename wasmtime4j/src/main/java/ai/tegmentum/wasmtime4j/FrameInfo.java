@@ -106,7 +106,7 @@ public final class FrameInfo {
    * @return an immutable list of frame symbols (may be empty)
    */
   public List<FrameSymbol> getSymbols() {
-    return symbols;
+    return new java.util.ArrayList<>(symbols);
   }
 
   @Override
