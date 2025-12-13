@@ -272,7 +272,7 @@ final class PlatformDetectorParameterizedTest {
   @CsvSource({
     "Linux, x86_64, linux-x86_64",
     "Windows, aarch64, windows-aarch64",
-    "macOS, x86_64, macos-x86_64"
+    "macOS, x86_64, darwin-x86_64"
   })
   void testPlatformIdFormat(
       final String osName, final String osArch, final String expectedPlatformId) {
