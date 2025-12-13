@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.jni.experimental;
+package ai.tegmentum.wasmtime4j.tests.jni.experimental;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,18 +23,18 @@ import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionHandlingConfig;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler.ExceptionHandlingConfig;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler.ExceptionTag;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler.HandlingResult;
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import ai.tegmentum.wasmtime4j.jni.experimental.JniExceptionHandlerImpl;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link JniExceptionHandlerImpl} class. */
-@DisplayName("JniExceptionHandlerImpl Tests")
-@Disabled("Requires native library to be loaded")
+/** Integration tests for {@link JniExceptionHandlerImpl} class. */
+@DisplayName("JniExceptionHandlerImpl Integration Tests")
 public class JniExceptionHandlerImplTest {
 
   private static final Logger LOGGER =
@@ -203,7 +203,7 @@ public class JniExceptionHandlerImplTest {
 
     try (JniExceptionHandlerImpl handler = JniExceptionHandlerImpl.create()) {
       assertThrows(
-          NullPointerException.class,
+          JniValidationException.class,
           () -> handler.createExceptionTag(null, Collections.emptyList()),
           "Should reject null tag name");
 
