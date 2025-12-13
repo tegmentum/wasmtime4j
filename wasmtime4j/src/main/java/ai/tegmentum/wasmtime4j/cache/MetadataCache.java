@@ -89,7 +89,7 @@ public final class MetadataCache {
     final Object value;
     final long createdTime;
     volatile long lastAccessTime;
-    volatile long accessCount;
+    final AtomicLong accessCount;
     final int valueSize;
 
     CacheEntry(final String key, final Object value) {
@@ -97,7 +97,7 @@ public final class MetadataCache {
       this.value = value;
       this.createdTime = System.currentTimeMillis();
       this.lastAccessTime = createdTime;
-      this.accessCount = 1;
+      this.accessCount = new AtomicLong(1);
       this.valueSize = estimateSize(value);
     }
 
@@ -107,7 +107,7 @@ public final class MetadataCache {
 
     void recordAccess() {
       lastAccessTime = System.currentTimeMillis();
-      accessCount++;
+      accessCount.incrementAndGet();
     }
 
     private int estimateSize(final Object obj) {

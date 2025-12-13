@@ -106,8 +106,8 @@ public final class ChaosEngineeringFramework {
     private final boolean enabled;
     private volatile Instant startTime;
     private volatile Instant endTime;
-    private volatile long executionCount;
-    private volatile long failureCount;
+    private final AtomicLong executionCount;
+    private final AtomicLong failureCount;
 
     /**
      * Creates a new chaos experiment.
@@ -133,8 +133,8 @@ public final class ChaosEngineeringFramework {
       this.targetComponent = targetComponent;
       this.parameters = Map.copyOf(parameters != null ? parameters : Map.of());
       this.enabled = true;
-      this.executionCount = 0;
-      this.failureCount = 0;
+      this.executionCount = new AtomicLong(0);
+      this.failureCount = new AtomicLong(0);
     }
 
     public String getExperimentId() {
@@ -174,11 +174,11 @@ public final class ChaosEngineeringFramework {
     }
 
     public long getExecutionCount() {
-      return executionCount;
+      return executionCount.get();
     }
 
     public long getFailureCount() {
-      return failureCount;
+      return failureCount.get();
     }
 
     /**
@@ -198,11 +198,11 @@ public final class ChaosEngineeringFramework {
     }
 
     public void recordExecution() {
-      this.executionCount++;
+      this.executionCount.incrementAndGet();
     }
 
     public void recordFailure() {
-      this.failureCount++;
+      this.failureCount.incrementAndGet();
     }
 
     public void stop() {
