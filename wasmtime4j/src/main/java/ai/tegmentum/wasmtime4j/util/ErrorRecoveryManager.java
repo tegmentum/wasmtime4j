@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.util;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -209,6 +210,9 @@ public final class ErrorRecoveryManager {
       return attemptCount;
     }
 
+    @SuppressFBWarnings(
+        value = "EI_EXPOSE_REP",
+        justification = "WasmException is effectively immutable; returning original is intentional")
     public WasmException getLastException() {
       return lastException;
     }

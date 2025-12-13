@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * TCP socket interface providing connection-oriented network communication.
@@ -207,6 +208,9 @@ public interface WasiTcpSocket {
   void close() throws WasmException;
 
   /** Result of a successful connection containing input and output streams. */
+  @SuppressFBWarnings(
+      value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"},
+      justification = "I/O streams are intentionally shared resources; copying would break semantics")
   final class ConnectionStreams {
     private final WasiInputStream inputStream;
     private final WasiOutputStream outputStream;
@@ -239,6 +243,10 @@ public interface WasiTcpSocket {
   }
 
   /** Result of accepting a connection containing the new socket and its streams. */
+  @SuppressFBWarnings(
+      value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"},
+      justification =
+          "Socket and I/O streams are intentionally shared resources; copying would break semantics")
   final class AcceptResult {
     private final WasiTcpSocket socket;
     private final WasiInputStream inputStream;

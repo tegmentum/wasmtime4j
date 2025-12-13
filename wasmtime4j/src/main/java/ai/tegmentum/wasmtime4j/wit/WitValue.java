@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import ai.tegmentum.wasmtime4j.WitType;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Base class for all WebAssembly Interface Type (WIT) values.
@@ -40,6 +41,10 @@ public abstract class WitValue {
    * @param type the WIT type of this value (must not be null)
    * @throws IllegalArgumentException if type is null
    */
+  @SuppressFBWarnings(
+      value = "CT_CONSTRUCTOR_THROW",
+      justification =
+          "Constructor validates inputs before object construction; no subclass can bypass this")
   protected WitValue(final WitType type) {
     if (type == null) {
       throw new IllegalArgumentException("WIT type cannot be null");

@@ -109,7 +109,7 @@ public final class CallerContextValidator {
   private static <T> void validateBasicFunctionality(Caller<T> caller, ValidationResult result) {
     // Test data access
     try {
-      T data = caller.data();
+      caller.data(); // Just verify method doesn't throw
       result.addSuccess("Basic data access works");
     } catch (Exception e) {
       result.addError("Failed to access caller data: " + e.getMessage());
@@ -118,14 +118,14 @@ public final class CallerContextValidator {
 
   private static <T> void validateExportAccess(Caller<T> caller, ValidationResult result) {
     try {
-      // Test hasExport with various scenarios
-      boolean hasMemory = caller.hasExport("memory");
-      boolean hasNonExistent = caller.hasExport("nonexistent_export_12345");
+      // Test hasExport with various scenarios - just verify methods don't throw
+      caller.hasExport("memory");
+      caller.hasExport("nonexistent_export_12345");
 
       result.addSuccess("hasExport method works for existing and non-existing exports");
 
-      // Test export retrieval
-      Optional<Export> export = caller.getExport("memory");
+      // Test export retrieval - just verify method doesn't throw
+      caller.getExport("memory");
       result.addSuccess("getExport method works");
 
       // Test specific export types
@@ -172,8 +172,8 @@ public final class CallerContextValidator {
 
   private static <T> void validateFuelOperations(Caller<T> caller, ValidationResult result) {
     try {
-      // Test fuel consumption tracking
-      Optional<Long> consumed = caller.fuelConsumed();
+      // Test fuel consumption tracking - just verify method doesn't throw
+      caller.fuelConsumed();
       result.addSuccess("Fuel consumption tracking works");
 
       // Test fuel remaining
@@ -205,19 +205,17 @@ public final class CallerContextValidator {
 
   private static <T> void validateEpochOperations(Caller<T> caller, ValidationResult result) {
     try {
-      // Test epoch deadline checking
-      boolean hasDeadline = caller.hasEpochDeadline();
+      // Test epoch deadline checking - just verify method doesn't throw
+      caller.hasEpochDeadline();
       result.addSuccess("Epoch deadline checking works");
 
-      // Test epoch deadline retrieval
-      Optional<Long> deadline = caller.epochDeadline();
+      // Test epoch deadline retrieval - just verify method doesn't throw
+      caller.epochDeadline();
       result.addSuccess("Epoch deadline retrieval works");
 
       // Test epoch deadline setting
       caller.setEpochDeadline(System.currentTimeMillis() + 5000);
-      boolean hasDeadlineAfterSet = caller.hasEpochDeadline();
-
-      if (hasDeadlineAfterSet) {
+      if (caller.hasEpochDeadline()) {
         result.addSuccess("Epoch deadline setting works correctly");
       } else {
         result.addWarning("Epoch deadline setting may not be working correctly");

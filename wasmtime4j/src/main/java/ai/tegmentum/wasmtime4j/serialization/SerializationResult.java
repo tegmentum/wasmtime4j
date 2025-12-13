@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.serialization;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -111,10 +112,10 @@ public final class SerializationResult {
     final StringBuilder summary = new StringBuilder();
     summary.append("Serialization Result:\n");
     summary.append("  Format: ").append(metadata.getFormat().getIdentifier()).append("\n");
-    summary.append("  Size: ").append(String.format("%.2f MB", getSizeMB())).append("\n");
+    summary.append("  Size: ").append(String.format(Locale.ROOT, "%.2f MB", getSizeMB())).append("\n");
     summary
         .append("  Compression: ")
-        .append(String.format("%.2fx", getCompressionRatio()))
+        .append(String.format(Locale.ROOT, "%.2fx", getCompressionRatio()))
         .append("\n");
     summary.append("  Duration: ").append(metadata.getSerializationDurationMs()).append("ms\n");
 
@@ -241,14 +242,14 @@ public final class SerializationResult {
     final double sizePercent = ((double) sizeDiff / other.getSize()) * 100;
     comparison
         .append("  Size: ")
-        .append(String.format("%+.2f%% (%+d bytes)", sizePercent, sizeDiff))
+        .append(String.format(Locale.ROOT, "%+.2f%% (%+d bytes)", sizePercent, sizeDiff))
         .append("\n");
 
     // Compression comparison
     final double compressionDiff = this.getCompressionRatio() - other.getCompressionRatio();
     comparison
         .append("  Compression: ")
-        .append(String.format("%+.2fx", compressionDiff))
+        .append(String.format(Locale.ROOT, "%+.2fx", compressionDiff))
         .append("\n");
 
     // Duration comparison
@@ -260,7 +261,7 @@ public final class SerializationResult {
             : 0;
     comparison
         .append("  Duration: ")
-        .append(String.format("%+.1f%% (%+dms)", durationPercent, durationDiff))
+        .append(String.format(Locale.ROOT, "%+.1f%% (%+dms)", durationPercent, durationDiff))
         .append("\n");
 
     return comparison.toString();
@@ -304,8 +305,13 @@ public final class SerializationResult {
    * @return the metadata file path
    */
   private static Path getMetadataPath(final Path modulePath) {
-    final String fileName = modulePath.getFileName().toString();
-    final String metadataFileName = fileName + ".meta";
+    final Path fileName = modulePath.getFileName();
+    if (fileName == null) {
+      // Handle root path case by using the path string directly
+      final String metadataFileName = modulePath.toString() + ".meta";
+      return modulePath.getFileSystem().getPath(metadataFileName);
+    }
+    final String metadataFileName = fileName.toString() + ".meta";
     return modulePath.resolveSibling(metadataFileName);
   }
 

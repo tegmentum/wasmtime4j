@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.simd;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -77,6 +78,10 @@ public final class SimdVector {
    *
    * @return the internal data array (do not modify!)
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP",
+      justification =
+          "Intentional performance optimization for internal use; documented as do-not-modify")
   public byte[] getDataInternal() {
     return data;
   }

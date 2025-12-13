@@ -315,7 +315,6 @@ public final class WitValueSerializer {
     for (final java.util.Map.Entry<String, WitValue> entry : fields.entrySet()) {
       final String fieldName = entry.getKey();
       final WitValue fieldValue = entry.getValue();
-      final int discriminator = getTypeDiscriminator(fieldValue);
       final byte[] data = serialize(fieldValue);
       final byte[] nameBytes = fieldName.getBytes(StandardCharsets.UTF_8);
 
