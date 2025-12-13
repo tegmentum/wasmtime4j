@@ -804,7 +804,7 @@ public final class ComplexMarshalingService {
     }
 
     public MemoryHandle getMemoryHandle() {
-      return memoryHandle;
+      return memoryHandle == null ? null : new MemoryHandle(memoryHandle);
     }
   }
 
@@ -819,6 +819,17 @@ public final class ComplexMarshalingService {
       this.size = size;
     }
 
+    /**
+     * Copy constructor for defensive copying.
+     *
+     * @param other the handle to copy
+     */
+    MemoryHandle(final MemoryHandle other) {
+      this.address = other.address;
+      this.size = other.size;
+      this.data = other.data != null ? other.data.clone() : null;
+    }
+
     public long getAddress() {
       return address;
     }
@@ -828,11 +839,11 @@ public final class ComplexMarshalingService {
     }
 
     void setData(final byte[] data) {
-      this.data = data;
+      this.data = data != null ? data.clone() : null;
     }
 
     byte[] getData() {
-      return data;
+      return data != null ? data.clone() : null;
     }
   }
 

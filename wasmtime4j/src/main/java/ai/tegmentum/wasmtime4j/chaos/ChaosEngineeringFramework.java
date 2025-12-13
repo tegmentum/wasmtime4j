@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.chaos;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -344,6 +344,7 @@ public final class ChaosEngineeringFramework {
 
   /** CPU saturation fault injector. */
   private static final class CpuSaturationInjector implements FaultInjector {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private volatile boolean active = false;
     private volatile Thread[] cpuThreads;
 
@@ -368,7 +369,7 @@ public final class ChaosEngineeringFramework {
                     while (active) {
                       // CPU-intensive work
                       for (int j = 0; j < intensityPercent * 1000; j++) {
-                        Math.sin(Math.random());
+                        Math.sin(SECURE_RANDOM.nextDouble());
                       }
                       try {
                         Thread.sleep(100 - intensityPercent); // Brief pause based on intensity
@@ -409,7 +410,7 @@ public final class ChaosEngineeringFramework {
 
   /** Random error fault injector. */
   private static final class RandomErrorInjector implements FaultInjector {
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
     private volatile boolean active = false;
 
     @Override
@@ -490,7 +491,7 @@ public final class ChaosEngineeringFramework {
   /** Background processing. */
   private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 
-  private final Random random = new Random();
+  private final SecureRandom random = new SecureRandom();
 
   /** Configuration. */
   private volatile Duration maxExperimentDuration = Duration.ofMinutes(30);

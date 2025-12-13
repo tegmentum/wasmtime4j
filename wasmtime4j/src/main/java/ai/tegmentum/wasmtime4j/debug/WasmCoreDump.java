@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.debug;
 import ai.tegmentum.wasmtime4j.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -196,7 +197,7 @@ public final class WasmCoreDump {
       sb.append(dump.getSize()).append(" bytes\n");
     }
 
-    return sb.toString().getBytes();
+    return sb.toString().getBytes(StandardCharsets.UTF_8);
   }
 
   /**
@@ -235,15 +236,20 @@ public final class WasmCoreDump {
 
   @Override
   public String toString() {
-    return "WasmCoreDump{trap='" + trapMessage + "', timestamp=" + timestamp
-        + ", memoryDumps=" + memoryDumps.size()
-        + ", globals=" + globals.size()
-        + ", stackFrames=" + stackFrames.size() + "}";
+    return "WasmCoreDump{trap='"
+        + trapMessage
+        + "', timestamp="
+        + timestamp
+        + ", memoryDumps="
+        + memoryDumps.size()
+        + ", globals="
+        + globals.size()
+        + ", stackFrames="
+        + stackFrames.size()
+        + "}";
   }
 
-  /**
-   * A memory dump from a WebAssembly memory.
-   */
+  /** A memory dump from a WebAssembly memory. */
   public static final class MemoryDump {
     private final int memoryIndex;
     private final byte[] data;
@@ -279,9 +285,7 @@ public final class WasmCoreDump {
     }
   }
 
-  /**
-   * Detailed information about a stack frame.
-   */
+  /** Detailed information about a stack frame. */
   public static final class StackFrame {
     private final String functionName;
     private final int functionIndex;
@@ -325,8 +329,15 @@ public final class WasmCoreDump {
 
     @Override
     public String toString() {
-      return "StackFrame{func='" + functionName + "' (#" + functionIndex + "), offset="
-          + instructionOffset + ", locals=" + locals.length + "}";
+      return "StackFrame{func='"
+          + functionName
+          + "' (#"
+          + functionIndex
+          + "), offset="
+          + instructionOffset
+          + ", locals="
+          + locals.length
+          + "}";
     }
   }
 }

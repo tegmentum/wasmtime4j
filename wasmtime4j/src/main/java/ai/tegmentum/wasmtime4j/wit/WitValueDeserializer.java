@@ -624,7 +624,8 @@ public final class WitValueDeserializer {
 
     if (isSome == 0) {
       // Create a placeholder option type - full implementation would need actual WitType
-      return WitOption.none(ai.tegmentum.wasmtime4j.WitType.option(null));
+      return WitOption.none(
+          ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createBool()));
     } else {
       if (buffer.remaining() < 8) {
         throw new WitValueException(
@@ -650,7 +651,9 @@ public final class WitValueDeserializer {
       final WitValue value = deserialize(discriminator, valueData);
 
       // Create a placeholder option type - full implementation would need actual WitType
-      return WitOption.some(ai.tegmentum.wasmtime4j.WitType.option(null), value);
+      return WitOption.some(
+          ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createBool()),
+          value);
     }
   }
 
@@ -679,7 +682,8 @@ public final class WitValueDeserializer {
 
     // Create a placeholder result type - full implementation would need actual WitType
     final ai.tegmentum.wasmtime4j.WitType resultType =
-        ai.tegmentum.wasmtime4j.WitType.result(null, null);
+        ai.tegmentum.wasmtime4j.WitType.result(
+            java.util.Optional.empty(), java.util.Optional.empty());
 
     if (hasValue == 0) {
       return isOk != 0 ? WitResult.ok(resultType) : WitResult.err(resultType);

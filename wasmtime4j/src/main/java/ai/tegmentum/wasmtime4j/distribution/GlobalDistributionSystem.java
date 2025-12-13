@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.distribution;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -52,6 +53,7 @@ import java.util.logging.Logger;
 public final class GlobalDistributionSystem {
 
   private static final Logger LOGGER = Logger.getLogger(GlobalDistributionSystem.class.getName());
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   /** Geographic regions for global distribution. */
   public enum Region {
@@ -787,23 +789,23 @@ public final class GlobalDistributionSystem {
       switch (job.getStrategy()) {
         case EVENTUAL_CONSISTENCY:
           // High success rate, low latency
-          success = Math.random() > 0.05; // 95% success rate
+          success = SECURE_RANDOM.nextDouble() > 0.05; // 95% success rate
           break;
 
         case STRONG_CONSISTENCY:
           // Lower success rate, higher latency
           Thread.sleep(replicationLatency.toMillis() * 2); // Double latency
-          success = Math.random() > 0.10; // 90% success rate
+          success = SECURE_RANDOM.nextDouble() > 0.10; // 90% success rate
           break;
 
         case QUORUM_CONSISTENCY:
           // Balanced approach
           Thread.sleep(replicationLatency.toMillis());
-          success = Math.random() > 0.08; // 92% success rate
+          success = SECURE_RANDOM.nextDouble() > 0.08; // 92% success rate
           break;
 
         default:
-          success = Math.random() > 0.15; // 85% success rate
+          success = SECURE_RANDOM.nextDouble() > 0.15; // 85% success rate
           break;
       }
 
@@ -941,7 +943,7 @@ public final class GlobalDistributionSystem {
   /** Simulates a health check for a node. */
   private NodeHealthStatus simulateHealthCheck(final RegionalNode node) {
     // Simulate various health conditions
-    final double random = Math.random();
+    final double random = SECURE_RANDOM.nextDouble();
 
     if (random < 0.05) { // 5% chance of being unhealthy
       return NodeHealthStatus.UNHEALTHY;
@@ -957,12 +959,14 @@ public final class GlobalDistributionSystem {
   /** Updates simulated metrics for a node. */
   private void updateSimulatedMetrics(final RegionalNode node) {
     // Simulate realistic metrics
-    final long requestCount = (long) (Math.random() * 1000);
-    final long errorCount = (long) (requestCount * node.getErrorRate() * Math.random());
-    final Duration averageLatency = Duration.ofMillis(50 + (long) (Math.random() * 200));
-    final double cpuUsage = 0.3 + (Math.random() * 0.4); // 30-70% CPU
-    final double memoryUsage = 0.4 + (Math.random() * 0.3); // 40-70% memory
-    final int activeConnections = (int) (Math.random() * 500);
+    final long requestCount = (long) (SECURE_RANDOM.nextDouble() * 1000);
+    final long errorCount =
+        (long) (requestCount * node.getErrorRate() * SECURE_RANDOM.nextDouble());
+    final Duration averageLatency =
+        Duration.ofMillis(50 + (long) (SECURE_RANDOM.nextDouble() * 200));
+    final double cpuUsage = 0.3 + (SECURE_RANDOM.nextDouble() * 0.4); // 30-70% CPU
+    final double memoryUsage = 0.4 + (SECURE_RANDOM.nextDouble() * 0.3); // 40-70% memory
+    final int activeConnections = (int) (SECURE_RANDOM.nextDouble() * 500);
 
     node.updateMetrics(
         requestCount, errorCount, averageLatency, cpuUsage, memoryUsage, activeConnections);

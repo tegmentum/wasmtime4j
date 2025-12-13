@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -215,7 +216,7 @@ public final class ComponentEvent {
      * @return this builder
      */
     public Builder metadata(final Map<String, String> metadata) {
-      this.metadata = metadata;
+      this.metadata = metadata == null ? null : new HashMap<>(metadata);
       return this;
     }
 

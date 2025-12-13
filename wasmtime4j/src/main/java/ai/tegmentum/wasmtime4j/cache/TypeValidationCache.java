@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.cache;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -494,7 +495,7 @@ public final class TypeValidationCache {
       if (parameterTypes != null) {
         for (final String type : parameterTypes) {
           if (type != null) {
-            digest.update(type.getBytes());
+            digest.update(type.getBytes(StandardCharsets.UTF_8));
           }
         }
       }
@@ -503,14 +504,14 @@ public final class TypeValidationCache {
       if (returnTypes != null) {
         for (final String type : returnTypes) {
           if (type != null) {
-            digest.update(type.getBytes());
+            digest.update(type.getBytes(StandardCharsets.UTF_8));
           }
         }
       }
 
       // Add context
       if (moduleContext != null) {
-        digest.update(moduleContext.getBytes());
+        digest.update(moduleContext.getBytes(StandardCharsets.UTF_8));
       }
 
       // Convert to hex using String.format to prevent BAD_HEXA_CONVERSION
@@ -543,7 +544,7 @@ public final class TypeValidationCache {
       if (sourceTypes != null) {
         for (final String type : sourceTypes) {
           if (type != null) {
-            digest.update(("src_" + type).getBytes());
+            digest.update(("src_" + type).getBytes(StandardCharsets.UTF_8));
           }
         }
       }
@@ -552,14 +553,14 @@ public final class TypeValidationCache {
       if (targetTypes != null) {
         for (final String type : targetTypes) {
           if (type != null) {
-            digest.update(("tgt_" + type).getBytes());
+            digest.update(("tgt_" + type).getBytes(StandardCharsets.UTF_8));
           }
         }
       }
 
       // Add context
       if (context != null) {
-        digest.update(context.getBytes());
+        digest.update(context.getBytes(StandardCharsets.UTF_8));
       }
 
       // Convert to hex using String.format to prevent BAD_HEXA_CONVERSION

@@ -40,7 +40,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
     try {
       final CustomSectionType type = CustomSectionType.fromName(name);
       return Optional.of(new CustomSection(name, data, type));
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       // Log the error and return empty
       return Optional.empty();
     }
@@ -107,7 +107,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       }
 
       return Optional.of(builder.build());
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
@@ -144,7 +144,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       }
 
       return Optional.of(builder.build());
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
@@ -183,7 +183,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       }
 
       return Optional.of(builder.build());
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
@@ -289,7 +289,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       if (data != null) {
         return Optional.of(new CustomSection(name, data, type));
       }
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       // Serialization failed
     }
 
@@ -356,7 +356,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       }
 
       return Optional.of(combineByteArrays(subsections));
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
@@ -386,7 +386,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       final byte[] fieldCount = writeUleb128(fields.size());
 
       return Optional.of(combineByteArrays(List.of(fieldCount, fieldsData)));
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
@@ -426,7 +426,7 @@ public final class DefaultCustomSectionParser implements CustomSectionParser {
       final byte[] featureCount = writeUleb128(features.size());
 
       return Optional.of(combineByteArrays(List.of(featureCount, featuresData)));
-    } catch (final Exception e) {
+    } catch (final RuntimeException e) {
       return Optional.empty();
     }
   }
