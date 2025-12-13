@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.optimization;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -446,6 +447,9 @@ public final class MemoryOptimizer {
   }
 
   /** Forces cleanup of unused resources to reduce memory pressure. */
+  @SuppressFBWarnings(
+      value = "DM_GC",
+      justification = "System.gc() is intentional for memory optimization and cleanup operations")
   public void forceCleanup() {
     if (!enabled) {
       return;

@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.chaos;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -301,6 +302,9 @@ public final class ChaosEngineeringFramework {
   }
 
   /** Memory exhaustion fault injector. */
+  @SuppressFBWarnings(
+      value = "DM_GC",
+      justification = "System.gc() is intentional for chaos engineering memory pressure simulation")
   private static final class MemoryExhaustionInjector implements FaultInjector {
     private volatile List<byte[]> memoryHog;
 

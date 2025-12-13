@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -158,6 +159,9 @@ public final class GcImpactMetrics {
    *
    * @return GC impact metrics from forced collection
    */
+  @SuppressFBWarnings(
+      value = "DM_GC",
+      justification = "System.gc() is intentional for GC impact measurement and benchmarking")
   public static GcImpactMetrics measureForcedGc() {
     final Snapshot before = captureSnapshot();
     final Instant gcStart = Instant.now();
