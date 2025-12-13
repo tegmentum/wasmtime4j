@@ -8,8 +8,8 @@ import java.util.Map;
  * Represents a debug stack frame from WebAssembly execution.
  *
  * <p>DebugFrame provides detailed information about a single stack frame during WebAssembly
- * execution, including function information, local variables, and operand stack state.
- * This is useful for debugging and profiling WebAssembly code.
+ * execution, including function information, local variables, and operand stack state. This is
+ * useful for debugging and profiling WebAssembly code.
  *
  * <p>Frames are obtained from {@link Store#debugFrames()} when guest debugging is enabled.
  *
@@ -48,12 +48,11 @@ public final class DebugFrame {
     this.functionName = functionName;
     this.moduleName = moduleName;
     this.instructionOffset = instructionOffset;
-    this.locals = locals != null
-        ? Collections.unmodifiableList(locals) : Collections.emptyList();
-    this.operandStack = operandStack != null
-        ? Collections.unmodifiableList(operandStack) : Collections.emptyList();
-    this.attributes = attributes != null
-        ? Collections.unmodifiableMap(attributes) : Collections.emptyMap();
+    this.locals = locals != null ? Collections.unmodifiableList(locals) : Collections.emptyList();
+    this.operandStack =
+        operandStack != null ? Collections.unmodifiableList(operandStack) : Collections.emptyList();
+    this.attributes =
+        attributes != null ? Collections.unmodifiableMap(attributes) : Collections.emptyMap();
   }
 
   /**
@@ -78,8 +77,8 @@ public final class DebugFrame {
   /**
    * Gets the function name if available.
    *
-   * <p>The function name is derived from the WebAssembly name section if present,
-   * or may be null if the module was compiled without debug information.
+   * <p>The function name is derived from the WebAssembly name section if present, or may be null if
+   * the module was compiled without debug information.
    *
    * @return the function name, or null if not available
    */
@@ -108,14 +107,13 @@ public final class DebugFrame {
   /**
    * Gets the current values of local variables.
    *
-   * <p>The list contains values for all local variables in the function,
-   * including function parameters. The order matches the WebAssembly local
-   * variable indices.
+   * <p>The list contains values for all local variables in the function, including function
+   * parameters. The order matches the WebAssembly local variable indices.
    *
    * @return an unmodifiable list of local variable values
    */
   public List<WasmValue> getLocals() {
-    return locals;
+    return locals == null ? null : new java.util.ArrayList<>(locals);
   }
 
   /**
@@ -141,13 +139,13 @@ public final class DebugFrame {
   /**
    * Gets the current operand stack values.
    *
-   * <p>The list contains values currently on the operand stack, with the
-   * top of stack at the end of the list.
+   * <p>The list contains values currently on the operand stack, with the top of stack at the end of
+   * the list.
    *
    * @return an unmodifiable list of operand stack values
    */
   public List<WasmValue> getOperandStack() {
-    return operandStack;
+    return operandStack == null ? null : new java.util.ArrayList<>(operandStack);
   }
 
   /**
@@ -162,13 +160,13 @@ public final class DebugFrame {
   /**
    * Gets additional frame attributes.
    *
-   * <p>Attributes may include debug metadata, source locations, and other
-   * implementation-specific information.
+   * <p>Attributes may include debug metadata, source locations, and other implementation-specific
+   * information.
    *
    * @return an unmodifiable map of frame attributes
    */
   public Map<String, Object> getAttributes() {
-    return attributes;
+    return attributes == null ? null : new java.util.HashMap<>(attributes);
   }
 
   /**
@@ -194,8 +192,8 @@ public final class DebugFrame {
   /**
    * Returns a formatted string representation of the frame.
    *
-   * <p>The format is suitable for stack trace display:
-   * {@code moduleName!functionName+offset} or {@code func[index]+offset}
+   * <p>The format is suitable for stack trace display: {@code moduleName!functionName+offset} or
+   * {@code func[index]+offset}
    *
    * @return formatted frame string
    */
@@ -232,9 +230,7 @@ public final class DebugFrame {
     private List<WasmValue> operandStack;
     private Map<String, Object> attributes;
 
-    /**
-     * Creates a new builder.
-     */
+    /** Creates a new builder. */
     public Builder() {
       // Default constructor
     }
@@ -290,7 +286,7 @@ public final class DebugFrame {
      * @return this builder
      */
     public Builder locals(final List<WasmValue> locals) {
-      this.locals = locals;
+      this.locals = locals == null ? null : new java.util.ArrayList<>(locals);
       return this;
     }
 
@@ -301,7 +297,7 @@ public final class DebugFrame {
      * @return this builder
      */
     public Builder operandStack(final List<WasmValue> operandStack) {
-      this.operandStack = operandStack;
+      this.operandStack = operandStack == null ? null : new java.util.ArrayList<>(operandStack);
       return this;
     }
 
@@ -312,7 +308,7 @@ public final class DebugFrame {
      * @return this builder
      */
     public Builder attributes(final Map<String, Object> attributes) {
-      this.attributes = attributes;
+      this.attributes = attributes == null ? null : new java.util.HashMap<>(attributes);
       return this;
     }
 
@@ -323,8 +319,13 @@ public final class DebugFrame {
      */
     public DebugFrame build() {
       return new DebugFrame(
-          functionIndex, functionName, moduleName, instructionOffset,
-          locals, operandStack, attributes);
+          functionIndex,
+          functionName,
+          moduleName,
+          instructionOffset,
+          locals,
+          operandStack,
+          attributes);
     }
   }
 
