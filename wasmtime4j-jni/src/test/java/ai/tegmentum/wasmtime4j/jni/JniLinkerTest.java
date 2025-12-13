@@ -318,17 +318,21 @@ class JniLinkerTest {
   }
 
   @Test
-  void testValidateImportsThrowsUnsupportedOperationException() {
+  void testValidateImportsAcceptsValidModule() {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-    assertThrows(UnsupportedOperationException.class, () -> linker.validateImports(module));
+    // validateImports is now implemented and should not throw for valid module
+    final ai.tegmentum.wasmtime4j.ImportValidation result = linker.validateImports(module);
+    assertThat(result).isNotNull();
   }
 
   @Test
-  void testResolveDependenciesThrowsUnsupportedOperationException() {
+  void testResolveDependenciesAcceptsValidModule() throws WasmException {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-    assertThrows(UnsupportedOperationException.class, () -> linker.resolveDependencies(module));
+    // resolveDependencies is now implemented and should not throw for valid module
+    final ai.tegmentum.wasmtime4j.DependencyResolution result = linker.resolveDependencies(module);
+    assertThat(result).isNotNull();
   }
 
   // State validation tests
