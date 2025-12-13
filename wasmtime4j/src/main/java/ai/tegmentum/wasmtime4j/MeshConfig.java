@@ -261,7 +261,7 @@ public final class MeshConfig {
     }
 
     public List<String> getDiscoveryProtocols() {
-      return discoveryProtocols;
+      return new java.util.ArrayList<>(discoveryProtocols);
     }
 
     public Duration getHealthCheckInterval() {
@@ -277,7 +277,7 @@ public final class MeshConfig {
     }
 
     public Map<String, String> getMetadata() {
-      return metadata;
+      return new java.util.HashMap<>(metadata);
     }
   }
 
@@ -326,7 +326,7 @@ public final class MeshConfig {
     }
 
     public List<String> getAvailableStrategies() {
-      return availableStrategies;
+      return new java.util.ArrayList<>(availableStrategies);
     }
 
     public Duration getCircuitBreakerTimeout() {
@@ -391,7 +391,7 @@ public final class MeshConfig {
     }
 
     public List<String> getComplianceFrameworks() {
-      return complianceFrameworks;
+      return new java.util.ArrayList<>(complianceFrameworks);
     }
   }
 
@@ -481,7 +481,7 @@ public final class MeshConfig {
     }
 
     public List<String> getEdgeLocations() {
-      return edgeLocations;
+      return new java.util.ArrayList<>(edgeLocations);
     }
 
     public Duration getCacheTtl() {
@@ -540,7 +540,7 @@ public final class MeshConfig {
     }
 
     public List<String> getMetricTypes() {
-      return metricTypes;
+      return new java.util.ArrayList<>(metricTypes);
     }
   }
 
@@ -635,7 +635,7 @@ public final class MeshConfig {
     }
 
     public List<String> getHealthChecks() {
-      return healthChecks;
+      return new java.util.ArrayList<>(healthChecks);
     }
 
     public boolean isMetricsExportEnabled() {

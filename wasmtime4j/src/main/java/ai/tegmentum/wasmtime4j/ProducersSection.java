@@ -122,11 +122,11 @@ public final class ProducersSection {
 
     switch (type) {
       case LANGUAGE:
-        return languages;
+        return new java.util.ArrayList<>(languages);
       case PROCESSED_BY:
-        return processedBy;
+        return new java.util.ArrayList<>(processedBy);
       case SDK:
-        return sdk;
+        return new java.util.ArrayList<>(sdk);
       default:
         return java.util.Collections.emptyList();
     }
