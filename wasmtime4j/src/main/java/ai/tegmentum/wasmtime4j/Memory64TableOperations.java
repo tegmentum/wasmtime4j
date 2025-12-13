@@ -181,7 +181,7 @@ public enum Memory64TableOperations {
         return null;
 
       case TABLE_COPY_64:
-        if (args.length < 4) {
+        if (args.length < 3) {
           throw new IllegalArgumentException(
               "TABLE_COPY_64 requires dest, src, and length arguments");
         }

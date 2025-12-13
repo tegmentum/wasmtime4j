@@ -75,6 +75,9 @@ public final class SerializationSecurity {
   private static final String SHA512_ALGORITHM = "SHA-512";
   private static final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
 
+  /** Shared SecureRandom instance (thread-safe). */
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
   // Private constructor to prevent instantiation
   private SerializationSecurity() {
     throw new UnsupportedOperationException("Utility class cannot be instantiated");
@@ -487,9 +490,8 @@ public final class SerializationSecurity {
       throw new IllegalArgumentException("Length cannot be negative");
     }
 
-    final SecureRandom secureRandom = new SecureRandom();
     final byte[] randomBytes = new byte[length];
-    secureRandom.nextBytes(randomBytes);
+    SECURE_RANDOM.nextBytes(randomBytes);
     return randomBytes;
   }
 
