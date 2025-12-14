@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,10 @@ import java.util.regex.Pattern;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = {"URF_UNREAD_FIELD", "REDOS"},
+    justification = "Validator field reserved for future validation; possessive quantifiers"
+        + " mitigate ReDoS but pattern flagged conservatively")
 public final class WitInterfaceParser {
 
   private static final Pattern INTERFACE_PATTERN =

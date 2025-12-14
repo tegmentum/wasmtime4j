@@ -51,6 +51,10 @@ import java.util.Optional;
  *
  * @since 1.1.0
  */
+@SuppressFBWarnings(
+    value = "NM_CLASS_NOT_EXCEPTION",
+    justification = "This is a value object representing WebAssembly exception data,"
+        + " not a Java exception to be thrown")
 public final class ThrownException {
 
   private final Tag tag;

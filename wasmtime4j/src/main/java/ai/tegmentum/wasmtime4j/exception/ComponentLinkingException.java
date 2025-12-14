@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.exception;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +13,10 @@ import java.util.Set;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
+    justification = "Transient fields contain detailed linking context not needed after"
+        + " deserialization; core exception message is preserved")
 public class ComponentLinkingException extends WasmException {
 
   private static final long serialVersionUID = 1L;
