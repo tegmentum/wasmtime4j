@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.serialization;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Collections;
@@ -346,6 +347,9 @@ public final class SerializedModuleMetadata {
    * @param serialized the OS used for serialization
    * @return true if compatible
    */
+  @SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification = "OS names are ASCII-only system identifiers")
   private boolean isPlatformOsCompatible(final String current, final String serialized) {
     // OS compatibility check
     final String currentLower = current.toLowerCase(Locale.ROOT);

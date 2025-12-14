@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -59,7 +60,7 @@ class ModuleSerializationIntegrationTest {
   @DisplayName("Security integration should work correctly")
   void testSecurityIntegration() {
     // Test integration with security features
-    final byte[] testData = "test data".getBytes();
+    final byte[] testData = "test data".getBytes(StandardCharsets.UTF_8);
 
     assertDoesNotThrow(
         () -> {

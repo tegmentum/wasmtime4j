@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 
 /**
@@ -285,6 +286,9 @@ public enum ExportFormat {
    * @return the corresponding export format
    * @throws IllegalArgumentException if the format is not recognized
    */
+  @SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification = "Format strings are ASCII-only technical identifiers")
   public static ExportFormat fromString(final String formatString) {
     if (formatString == null || formatString.trim().isEmpty()) {
       throw new IllegalArgumentException("Format string cannot be null or empty");

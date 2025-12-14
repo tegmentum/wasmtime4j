@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -129,7 +130,7 @@ public final class CompilerConfig {
    * @return true if optimization level is not "none"
    */
   public boolean hasOptimizations() {
-    return !"none".equalsIgnoreCase(optimizationLevel);
+    return !"none".equals(optimizationLevel.toLowerCase(Locale.ROOT));
   }
 
   @Override

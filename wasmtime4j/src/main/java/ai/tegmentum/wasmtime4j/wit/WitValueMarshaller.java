@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -161,6 +162,9 @@ public final class WitValueMarshaller {
    * @return the created WIT value
    * @throws WitValueException if the conversion fails
    */
+  @SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification = "WIT types are ASCII-only specification identifiers")
   public static WitValue fromJava(final Object javaValue, final String witType)
       throws WitValueException {
     if (javaValue == null) {
