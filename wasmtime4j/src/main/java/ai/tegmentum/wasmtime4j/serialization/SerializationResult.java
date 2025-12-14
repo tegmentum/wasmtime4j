@@ -110,20 +110,18 @@ public final class SerializationResult {
    */
   public String getSummary() {
     final StringBuilder summary = new StringBuilder();
-    summary.append("Serialization Result:\n");
-    summary.append("  Format: ").append(metadata.getFormat().getIdentifier()).append("\n");
-    summary.append("  Size: ").append(String.format(Locale.ROOT, "%.2f MB", getSizeMB())).append("\n");
-    summary
-        .append("  Compression: ")
-        .append(String.format(Locale.ROOT, "%.2fx", getCompressionRatio()))
-        .append("\n");
-    summary.append("  Duration: ").append(metadata.getSerializationDurationMs()).append("ms\n");
+    summary.append(String.format("Serialization Result:%n"));
+    summary.append(
+        String.format("  Format: %s%n", metadata.getFormat().getIdentifier()));
+    summary.append(String.format(Locale.ROOT, "  Size: %.2f MB%n", getSizeMB()));
+    summary.append(String.format(Locale.ROOT, "  Compression: %.2fx%n", getCompressionRatio()));
+    summary.append(
+        String.format("  Duration: %dms%n", metadata.getSerializationDurationMs()));
 
     if (metadata.getPerformanceMetrics() != null) {
-      summary
-          .append("  Performance: ")
-          .append(metadata.getPerformanceMetrics().getPerformanceSummary())
-          .append("\n");
+      summary.append(
+          String.format(
+              "  Performance: %s%n", metadata.getPerformanceMetrics().getPerformanceSummary()));
     }
 
     return summary.toString();
@@ -235,22 +233,17 @@ public final class SerializationResult {
     Objects.requireNonNull(other, "Other result cannot be null");
 
     final StringBuilder comparison = new StringBuilder();
-    comparison.append("Serialization Comparison:\n");
+    comparison.append(String.format("Serialization Comparison:%n"));
 
     // Size comparison
     final long sizeDiff = this.getSize() - other.getSize();
     final double sizePercent = ((double) sizeDiff / other.getSize()) * 100;
-    comparison
-        .append("  Size: ")
-        .append(String.format(Locale.ROOT, "%+.2f%% (%+d bytes)", sizePercent, sizeDiff))
-        .append("\n");
+    comparison.append(
+        String.format(Locale.ROOT, "  Size: %+.2f%% (%+d bytes)%n", sizePercent, sizeDiff));
 
     // Compression comparison
     final double compressionDiff = this.getCompressionRatio() - other.getCompressionRatio();
-    comparison
-        .append("  Compression: ")
-        .append(String.format(Locale.ROOT, "%+.2fx", compressionDiff))
-        .append("\n");
+    comparison.append(String.format(Locale.ROOT, "  Compression: %+.2fx%n", compressionDiff));
 
     // Duration comparison
     final long durationDiff =
@@ -259,10 +252,8 @@ public final class SerializationResult {
         other.metadata.getSerializationDurationMs() > 0
             ? ((double) durationDiff / other.metadata.getSerializationDurationMs()) * 100
             : 0;
-    comparison
-        .append("  Duration: ")
-        .append(String.format(Locale.ROOT, "%+.1f%% (%+dms)", durationPercent, durationDiff))
-        .append("\n");
+    comparison.append(
+        String.format(Locale.ROOT, "  Duration: %+.1f%% (%+dms)%n", durationPercent, durationDiff));
 
     return comparison.toString();
   }

@@ -626,37 +626,37 @@ public final class MemoryOptimizer {
     final MemoryMetrics metrics = getMemoryMetrics();
     final StringBuilder sb = new StringBuilder();
 
-    sb.append("=== Memory Optimization Statistics ===\n");
-    sb.append(String.format("Memory state: %s\n", metrics.getState()));
-    sb.append(String.format("Memory pressure: %.1f%%\n", metrics.getMemoryPressure() * 100));
+    sb.append(String.format("=== Memory Optimization Statistics ===%n"));
+    sb.append(String.format("Memory state: %s%n", metrics.getState()));
+    sb.append(String.format("Memory pressure: %.1f%%%n", metrics.getMemoryPressure() * 100));
     sb.append(
         String.format(
-            "Heap: %,d / %,d MB\n",
+            "Heap: %,d / %,d MB%n",
             metrics.getHeapUsed() / (1024 * 1024), metrics.getHeapMax() / (1024 * 1024)));
-    sb.append(String.format("Native memory: %,d MB\n", metrics.getNativeMemory() / (1024 * 1024)));
-    sb.append(String.format("Peak native: %,d MB\n", peakNativeMemory.get() / (1024 * 1024)));
+    sb.append(String.format("Native memory: %,d MB%n", metrics.getNativeMemory() / (1024 * 1024)));
+    sb.append(String.format("Peak native: %,d MB%n", peakNativeMemory.get() / (1024 * 1024)));
 
-    sb.append("\nObject Pool Statistics:\n");
+    sb.append(String.format("%nObject Pool Statistics:%n"));
     objectPools.forEach(
         (type, pool) -> {
           sb.append(
               String.format(
-                  "  %s: %d pooled, %.1f%% hit rate\n",
+                  "  %s: %d pooled, %.1f%% hit rate%n",
                   type.getSimpleName(), pool.getPoolSize(), pool.getHitRate()));
         });
 
-    sb.append(String.format("\nOperations:\n"));
-    sb.append(String.format("Native allocations: %,d\n", totalNativeAllocations.get()));
-    sb.append(String.format("Native deallocations: %,d\n", totalNativeDeallocations.get()));
-    sb.append(String.format("Pooled allocations: %,d\n", pooledAllocations.get()));
-    sb.append(String.format("Pool hits: %,d\n", pooledHits.get()));
-    sb.append(String.format("Forced cleanups: %,d\n", forcedCleanups.get()));
-    sb.append(String.format("Leak preventions: %,d\n", leakPreventions.get()));
+    sb.append(String.format("%nOperations:%n"));
+    sb.append(String.format("Native allocations: %,d%n", totalNativeAllocations.get()));
+    sb.append(String.format("Native deallocations: %,d%n", totalNativeDeallocations.get()));
+    sb.append(String.format("Pooled allocations: %,d%n", pooledAllocations.get()));
+    sb.append(String.format("Pool hits: %,d%n", pooledHits.get()));
+    sb.append(String.format("Forced cleanups: %,d%n", forcedCleanups.get()));
+    sb.append(String.format("Leak preventions: %,d%n", leakPreventions.get()));
 
     if (metrics.getRecommendations().length > 0) {
-      sb.append("\nRecommendations:\n");
+      sb.append(String.format("%nRecommendations:%n"));
       for (final String recommendation : metrics.getRecommendations()) {
-        sb.append("  • ").append(recommendation).append("\n");
+        sb.append(String.format("  • %s%n", recommendation));
       }
     }
 
