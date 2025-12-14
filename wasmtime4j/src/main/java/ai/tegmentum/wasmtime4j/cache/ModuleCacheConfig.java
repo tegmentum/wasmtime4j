@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.cache;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -183,6 +184,13 @@ public final class ModuleCacheConfig {
      * @param cacheDir the directory path string
      * @return this builder
      */
+    @SuppressFBWarnings(
+        value = "PATH_TRAVERSAL_IN",
+        justification =
+            "This is a configuration API where users intentionally specify the cache directory "
+                + "location. Path traversal is a feature, not a vulnerability - users should be "
+                + "able to configure any valid path for their module cache. The path is not from "
+                + "untrusted external input but from application configuration.")
     public Builder cacheDir(final String cacheDir) {
       return cacheDir(Paths.get(Objects.requireNonNull(cacheDir, "cacheDir cannot be null")));
     }

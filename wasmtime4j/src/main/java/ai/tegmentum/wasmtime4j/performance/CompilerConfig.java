@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.performance;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -129,6 +130,12 @@ public final class CompilerConfig {
    *
    * @return true if optimization level is not "none"
    */
+  @SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification =
+          "Using Locale.ROOT for case conversion is correct. The comparison with ASCII-only "
+              + "string literal (\"none\") does not require Unicode normalization since this is a "
+              + "pure ASCII identifier that cannot have Unicode variants.")
   public boolean hasOptimizations() {
     return !"none".equals(optimizationLevel.toLowerCase(Locale.ROOT));
   }

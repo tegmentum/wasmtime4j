@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -147,6 +148,13 @@ public interface ComponentResourceDefinition<T> {
     private Consumer<T> destructor;
     private final Map<String, ResourceMethod<T>> methods = new HashMap<>();
 
+    @SuppressFBWarnings(
+        value = "CT_CONSTRUCTOR_THROW",
+        justification =
+            "Constructor throws IllegalArgumentException for defensive validation of required "
+                + "parameters. This is the standard Java pattern for builder validation and the "
+                + "object is not subclassable (package-private class) so finalizer attacks are not "
+                + "applicable.")
     Builder(final String name) {
       if (name == null || name.isEmpty()) {
         throw new IllegalArgumentException("Resource name cannot be null or empty");

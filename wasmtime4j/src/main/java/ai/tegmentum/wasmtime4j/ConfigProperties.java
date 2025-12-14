@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
@@ -16,6 +17,12 @@ import java.util.Properties;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "IMPROPER_UNICODE",
+    justification =
+        "Using Locale.ROOT for case conversion is correct. The comparison with ASCII-only "
+            + "string literals (\"true\", \"yes\", \"1\") does not require Unicode normalization "
+            + "since these are pure ASCII identifiers that cannot have Unicode variants.")
 public final class ConfigProperties {
 
   private final Map<String, String> properties;
