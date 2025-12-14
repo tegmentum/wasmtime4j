@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,6 +12,10 @@ import java.util.Map;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "URF_UNREAD_FIELD",
+    justification = "Configuration fields are part of the public API and will be used as"
+        + " implementation expands. Fields store builder state for future native bindings.")
 public final class ComponentInstanceConfig {
 
   // Resource Management
