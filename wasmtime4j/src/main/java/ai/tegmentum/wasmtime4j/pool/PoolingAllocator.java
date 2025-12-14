@@ -146,8 +146,8 @@ public interface PoolingAllocator extends Closeable {
   /**
    * Gets runtime metrics for the pooling allocator.
    *
-   * <p>Metrics provide real-time statistics about pool utilization, performance,
-   * and health. These are more detailed than statistics and include timing information.
+   * <p>Metrics provide real-time statistics about pool utilization, performance, and health. These
+   * are more detailed than statistics and include timing information.
    *
    * @return the allocator metrics
    * @since 1.1.0

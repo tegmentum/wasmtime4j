@@ -21,14 +21,15 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 /**
  * Represents the noextern heap type - the bottom type in the extern type hierarchy.
  *
- * <p>NoExtern is an uninhabited type, meaning no values can have this type. It serves as
- * the bottom type in the extern reference type hierarchy, used for type system completeness
- * in the WebAssembly GC proposal.
+ * <p>NoExtern is an uninhabited type, meaning no values can have this type. It serves as the bottom
+ * type in the extern reference type hierarchy, used for type system completeness in the WebAssembly
+ * GC proposal.
  *
- * <p>This type is primarily used in type checking and validation rather than for storing
- * actual values.
+ * <p>This type is primarily used in type checking and validation rather than for storing actual
+ * values.
  *
  * <p>Type hierarchy:
+ *
  * <pre>
  *      extern
  *         |

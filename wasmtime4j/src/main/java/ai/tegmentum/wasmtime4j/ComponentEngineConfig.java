@@ -18,8 +18,9 @@ import java.util.Set;
  */
 @SuppressFBWarnings(
     value = "URF_UNREAD_FIELD",
-    justification = "Configuration fields are part of the public API and will be used as"
-        + " implementation expands. Fields store builder state for future native bindings.")
+    justification =
+        "Configuration fields are part of the public API and will be used as"
+            + " implementation expands. Fields store builder state for future native bindings.")
 public final class ComponentEngineConfig {
 
   // Core Component Model Features

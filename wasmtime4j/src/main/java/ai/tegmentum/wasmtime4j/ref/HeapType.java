@@ -21,19 +21,18 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 /**
  * Represents a WebAssembly heap type for reference types.
  *
- * <p>Heap types are used in the WebAssembly GC proposal to define the types
- * of values that can be stored in references. This interface provides a common
- * abstraction for all heap types including:
+ * <p>Heap types are used in the WebAssembly GC proposal to define the types of values that can be
+ * stored in references. This interface provides a common abstraction for all heap types including:
  *
  * <ul>
- *   <li>func - Function references</li>
- *   <li>extern - External references</li>
- *   <li>any - Any GC reference</li>
- *   <li>eq - Equality-comparable references</li>
- *   <li>i31 - 31-bit integers</li>
- *   <li>struct - Struct references</li>
- *   <li>array - Array references</li>
- *   <li>none, nofunc, noextern - Bottom types</li>
+ *   <li>func - Function references
+ *   <li>extern - External references
+ *   <li>any - Any GC reference
+ *   <li>eq - Equality-comparable references
+ *   <li>i31 - 31-bit integers
+ *   <li>struct - Struct references
+ *   <li>array - Array references
+ *   <li>none, nofunc, noextern - Bottom types
  * </ul>
  *
  * @since 1.1.0

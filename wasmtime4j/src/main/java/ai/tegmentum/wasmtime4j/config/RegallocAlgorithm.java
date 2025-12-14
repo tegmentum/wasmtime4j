@@ -19,9 +19,9 @@ package ai.tegmentum.wasmtime4j.config;
 /**
  * Register allocation algorithm selection for the Cranelift compiler.
  *
- * <p>The register allocator is responsible for mapping virtual registers to physical
- * machine registers during code generation. Different algorithms provide different
- * tradeoffs between compilation speed and generated code quality.
+ * <p>The register allocator is responsible for mapping virtual registers to physical machine
+ * registers during code generation. Different algorithms provide different tradeoffs between
+ * compilation speed and generated code quality.
  *
  * <p>Example usage:
  *
@@ -38,15 +38,15 @@ public enum RegallocAlgorithm {
   /**
    * Single-pass register allocation algorithm.
    *
-   * <p>This is the fastest register allocation algorithm but may produce lower quality code.
-   * It performs a single linear scan over the code, making allocation decisions without
-   * backtracking.
+   * <p>This is the fastest register allocation algorithm but may produce lower quality code. It
+   * performs a single linear scan over the code, making allocation decisions without backtracking.
    *
    * <p>Best suited for:
+   *
    * <ul>
-   *   <li>Debug builds where fast compilation is more important</li>
-   *   <li>JIT compilation where startup time is critical</li>
-   *   <li>Very large functions where other algorithms may be slow</li>
+   *   <li>Debug builds where fast compilation is more important
+   *   <li>JIT compilation where startup time is critical
+   *   <li>Very large functions where other algorithms may be slow
    * </ul>
    */
   SINGLE_PASS("single_pass"),
@@ -54,14 +54,15 @@ public enum RegallocAlgorithm {
   /**
    * Backtracking register allocation algorithm.
    *
-   * <p>This algorithm may revisit allocation decisions to find better solutions,
-   * producing higher quality code at the cost of increased compilation time.
+   * <p>This algorithm may revisit allocation decisions to find better solutions, producing higher
+   * quality code at the cost of increased compilation time.
    *
    * <p>Best suited for:
+   *
    * <ul>
-   *   <li>Release builds where code quality is important</li>
-   *   <li>AOT compilation where compilation time is less critical</li>
-   *   <li>Performance-critical code paths</li>
+   *   <li>Release builds where code quality is important
+   *   <li>AOT compilation where compilation time is less critical
+   *   <li>Performance-critical code paths
    * </ul>
    */
   BACKTRACKING("backtracking");

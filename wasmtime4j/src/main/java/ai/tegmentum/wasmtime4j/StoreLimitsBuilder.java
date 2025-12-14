@@ -44,9 +44,7 @@ public final class StoreLimitsBuilder {
   private long tables = 0;
   private long memories = 0;
 
-  /**
-   * Creates a new StoreLimitsBuilder with default (unlimited) values.
-   */
+  /** Creates a new StoreLimitsBuilder with default (unlimited) values. */
   public StoreLimitsBuilder() {
     // Default values are already set to 0 (unlimited)
   }
@@ -200,11 +198,16 @@ public final class StoreLimitsBuilder {
   @Override
   public String toString() {
     return "StoreLimitsBuilder{"
-        + "memorySize=" + memorySize
-        + ", tableElements=" + tableElements
-        + ", instances=" + instances
-        + ", tables=" + tables
-        + ", memories=" + memories
+        + "memorySize="
+        + memorySize
+        + ", tableElements="
+        + tableElements
+        + ", instances="
+        + instances
+        + ", tables="
+        + tables
+        + ", memories="
+        + memories
         + "}";
   }
 }

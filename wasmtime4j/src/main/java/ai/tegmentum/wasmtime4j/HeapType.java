@@ -37,6 +37,11 @@ package ai.tegmentum.wasmtime4j;
  *
  * @since 1.0.0
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+    value = "DB_DUPLICATE_SWITCH_CLAUSES",
+    justification =
+        "Multiple heap types intentionally share the same supertype check logic"
+            + " as per WebAssembly GC type hierarchy specification")
 public enum HeapType {
 
   /**
@@ -153,8 +158,12 @@ public enum HeapType {
       case ARRAY:
         return supertype == ANY || supertype == EQ;
       case NONE:
-        return supertype == ANY || supertype == EQ || supertype == I31
-            || supertype == STRUCT || supertype == ARRAY || supertype == NONE;
+        return supertype == ANY
+            || supertype == EQ
+            || supertype == I31
+            || supertype == STRUCT
+            || supertype == ARRAY
+            || supertype == NONE;
       case FUNC:
         return supertype == FUNC;
       case NOFUNC:

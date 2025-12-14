@@ -478,9 +478,9 @@ public interface Linker<T> extends Closeable {
   /**
    * Defines a module in the linker namespace asynchronously.
    *
-   * <p>This method performs module definition in an async context, allowing the operation
-   * to yield if needed. The module's exports will be available under the specified name
-   * for linking with other modules.
+   * <p>This method performs module definition in an async context, allowing the operation to yield
+   * if needed. The module's exports will be available under the specified name for linking with
+   * other modules.
    *
    * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
    *
@@ -493,20 +493,21 @@ public interface Linker<T> extends Closeable {
    */
   default CompletableFuture<Void> moduleAsync(
       final Store store, final String moduleName, final Module module) {
-    return CompletableFuture.runAsync(() -> {
-      try {
-        instantiate(store, moduleName, module);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            instantiate(store, moduleName, module);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
    * Instantiates a WebAssembly module asynchronously using this linker.
    *
-   * <p>This method performs module instantiation in an async context, allowing the operation
-   * to yield during start function execution if the module uses async features.
+   * <p>This method performs module instantiation in an async context, allowing the operation to
+   * yield during start function execution if the module uses async features.
    *
    * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
    *
@@ -517,20 +518,21 @@ public interface Linker<T> extends Closeable {
    * @since 1.1.0
    */
   default CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, module);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, module);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
    * Instantiates a WebAssembly module with a name asynchronously using this linker.
    *
-   * <p>This method performs module instantiation in an async context. The module's exports
-   * will be available under the specified name for subsequent linking operations.
+   * <p>This method performs module instantiation in an async context. The module's exports will be
+   * available under the specified name for subsequent linking operations.
    *
    * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
    *
@@ -543,13 +545,14 @@ public interface Linker<T> extends Closeable {
    */
   default CompletableFuture<Instance> instantiateAsync(
       final Store store, final String moduleName, final Module module) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, moduleName, module);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, moduleName, module);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**

@@ -58,9 +58,7 @@ public final class CodeBuilder {
   private final List<TableEntry> tables;
   private final List<GlobalEntry> globals;
 
-  /**
-   * Creates a new CodeBuilder.
-   */
+  /** Creates a new CodeBuilder. */
   public CodeBuilder() {
     this.types = new ArrayList<>();
     this.functions = new ArrayList<>();
@@ -112,8 +110,9 @@ public final class CodeBuilder {
       final String moduleName, final String fieldName, final int minPages, final int maxPages) {
     Objects.requireNonNull(moduleName, "moduleName cannot be null");
     Objects.requireNonNull(fieldName, "fieldName cannot be null");
-    imports.add(new ImportEntry(moduleName, fieldName, ImportKind.MEMORY,
-        encodeMemoryLimits(minPages, maxPages)));
+    imports.add(
+        new ImportEntry(
+            moduleName, fieldName, ImportKind.MEMORY, encodeMemoryLimits(minPages, maxPages)));
     return this;
   }
 
@@ -368,8 +367,8 @@ public final class CodeBuilder {
     writeSection(out, 10, section.toByteArray());
   }
 
-  private void writeSection(
-      final OutputStream out, final int sectionId, final byte[] content) throws IOException {
+  private void writeSection(final OutputStream out, final int sectionId, final byte[] content)
+      throws IOException {
     out.write(sectionId);
     writeUnsignedLeb128(out, content.length);
     out.write(content);
@@ -381,8 +380,8 @@ public final class CodeBuilder {
     out.write(bytes);
   }
 
-  private void writeLimits(
-      final OutputStream out, final int min, final int max) throws IOException {
+  private void writeLimits(final OutputStream out, final int min, final int max)
+      throws IOException {
     if (max < 0) {
       out.write(0x00);
       writeUnsignedLeb128(out, min);
@@ -393,8 +392,8 @@ public final class CodeBuilder {
     }
   }
 
-  private void writeConstExpr(
-      final OutputStream out, final WasmValueType type, final long value) throws IOException {
+  private void writeConstExpr(final OutputStream out, final WasmValueType type, final long value)
+      throws IOException {
     switch (type) {
       case I32:
         out.write(0x41); // i32.const
@@ -578,9 +577,7 @@ public final class CodeBuilder {
     }
   }
 
-  /**
-   * Import kinds.
-   */
+  /** Import kinds. */
   public enum ImportKind {
     FUNCTION,
     TABLE,
@@ -588,9 +585,7 @@ public final class CodeBuilder {
     GLOBAL
   }
 
-  /**
-   * Export kinds.
-   */
+  /** Export kinds. */
   public enum ExportKind {
     FUNCTION,
     TABLE,

@@ -23,8 +23,7 @@ class PanamaTableTest {
     // PanamaTable(MemorySegment, PanamaInstance) checks for null native pointer
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new PanamaTable(null, createMockInstance()));
+            IllegalArgumentException.class, () -> new PanamaTable(null, createMockInstance()));
 
     assertThat(exception.getMessage()).contains("Native table pointer cannot be null");
   }

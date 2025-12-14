@@ -21,6 +21,11 @@ import java.util.logging.Logger;
  *
  * @since 1.1.0
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+    value = "ISC_INSTANTIATE_STATIC_CLASS",
+    justification =
+        "Builder classes intentionally instantiate result classes that have"
+            + " minimal instance methods; this is the standard builder pattern")
 public final class Memory64Compatibility {
 
   private static final Logger LOGGER = Logger.getLogger(Memory64Compatibility.class.getName());

@@ -5,9 +5,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 /**
  * A task that can be executed concurrently with access to store data.
  *
- * <p>This functional interface represents a task that runs in the context of a store's
- * concurrent execution environment. The task receives an {@link Accessor} that provides
- * thread-safe access to the store's user data.
+ * <p>This functional interface represents a task that runs in the context of a store's concurrent
+ * execution environment. The task receives an {@link Accessor} that provides thread-safe access to
+ * the store's user data.
  *
  * @param <T> the type of user data in the store
  * @param <R> the type of the task result

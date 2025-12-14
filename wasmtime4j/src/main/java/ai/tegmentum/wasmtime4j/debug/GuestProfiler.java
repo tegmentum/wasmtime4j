@@ -130,9 +130,7 @@ public interface GuestProfiler extends AutoCloseable {
    */
   void exportTo(OutputStream outputStream, ProfileFormat format) throws WasmException;
 
-  /**
-   * Resets the profiler, clearing all collected data.
-   */
+  /** Resets the profiler, clearing all collected data. */
   void reset();
 
   /**
@@ -143,9 +141,7 @@ public interface GuestProfiler extends AutoCloseable {
   @Override
   void close() throws WasmException;
 
-  /**
-   * Profile output formats.
-   */
+  /** Profile output formats. */
   enum ProfileFormat {
     /** JSON format for general consumption. */
     JSON,

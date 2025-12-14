@@ -210,7 +210,8 @@ public interface WasiTcpSocket {
   /** Result of a successful connection containing input and output streams. */
   @SuppressFBWarnings(
       value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"},
-      justification = "I/O streams are intentionally shared resources; copying would break semantics")
+      justification =
+          "I/O streams are intentionally shared resources; copying would break semantics")
   final class ConnectionStreams {
     private final WasiInputStream inputStream;
     private final WasiOutputStream outputStream;
@@ -246,7 +247,8 @@ public interface WasiTcpSocket {
   @SuppressFBWarnings(
       value = {"EI_EXPOSE_REP", "EI_EXPOSE_REP2"},
       justification =
-          "Socket and I/O streams are intentionally shared resources; copying would break semantics")
+          "Socket and I/O streams are intentionally shared resources; copying would break"
+              + " semantics")
   final class AcceptResult {
     private final WasiTcpSocket socket;
     private final WasiInputStream inputStream;

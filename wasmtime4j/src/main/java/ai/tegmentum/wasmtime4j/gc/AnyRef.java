@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Represents a WebAssembly {@code anyref} reference type.
  *
- * <p>In the WebAssembly GC proposal, {@code anyref} is the top type of the reference type hierarchy.
- * All GC reference types (eqref, structref, arrayref, i31ref) are subtypes of anyref.
+ * <p>In the WebAssembly GC proposal, {@code anyref} is the top type of the reference type
+ * hierarchy. All GC reference types (eqref, structref, arrayref, i31ref) are subtypes of anyref.
  *
  * <p>An AnyRef can hold:
  *

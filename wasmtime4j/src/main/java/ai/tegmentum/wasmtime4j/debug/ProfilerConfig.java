@@ -83,9 +83,7 @@ public final class ProfilerConfig {
     return maxStackFrames;
   }
 
-  /**
-   * Builder for ProfilerConfig.
-   */
+  /** Builder for ProfilerConfig. */
   public static final class Builder {
     private boolean trackFunctionCalls = true;
     private boolean trackMemoryOperations = false;

@@ -44,6 +44,11 @@ import java.util.stream.Collectors;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION",
+    justification =
+        "The sequence of get-check-promote on ConcurrentHashMap is intentionally non-atomic;"
+            + " race conditions only result in redundant promotions, not correctness issues")
 public final class MetadataCache {
 
   private static final Logger LOGGER = Logger.getLogger(MetadataCache.class.getName());
@@ -85,6 +90,9 @@ public final class MetadataCache {
   private final AtomicLong totalAccesses = new AtomicLong(0);
 
   /** Cache entry with TTL and access tracking. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_FIELD",
+      justification = "Fields key and valueSize store metadata for debugging and future analytics")
   private static final class CacheEntry {
     final String key;
     final Object value;

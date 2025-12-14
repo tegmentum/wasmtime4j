@@ -499,14 +499,15 @@ public interface Module extends Closeable {
   /**
    * Deserializes a module from a memory range without copying data.
    *
-   * <p>This is a low-level method that deserializes directly from a memory range, avoiding
-   * data copies. The provided memory must remain valid for the lifetime of the returned module.
+   * <p>This is a low-level method that deserializes directly from a memory range, avoiding data
+   * copies. The provided memory must remain valid for the lifetime of the returned module.
    *
    * <p><b>Warning:</b> This method is unsafe because:
+   *
    * <ul>
-   *   <li>The caller must ensure the memory remains valid</li>
-   *   <li>The memory must contain valid serialized module data</li>
-   *   <li>Incorrect usage may cause undefined behavior or crashes</li>
+   *   <li>The caller must ensure the memory remains valid
+   *   <li>The memory must contain valid serialized module data
+   *   <li>Incorrect usage may cause undefined behavior or crashes
    * </ul>
    *
    * @param engine the engine to use for deserialization
@@ -530,19 +531,19 @@ public interface Module extends Closeable {
     }
     // Default implementation: read from address into byte array and use normal deserialize
     // Subclasses can provide more efficient implementations using native memory
-    throw new UnsupportedOperationException(
-        "deserializeRaw not supported in this implementation");
+    throw new UnsupportedOperationException("deserializeRaw not supported in this implementation");
   }
 
   /**
    * Gets the memory range of the compiled code for this module.
    *
-   * <p>This method returns the start address and length of the compiled code region
-   * for this module. This is useful for advanced use cases like:
+   * <p>This method returns the start address and length of the compiled code region for this
+   * module. This is useful for advanced use cases like:
+   *
    * <ul>
-   *   <li>Memory mapping optimizations</li>
-   *   <li>Custom caching implementations</li>
-   *   <li>Integration with native profilers</li>
+   *   <li>Memory mapping optimizations
+   *   <li>Custom caching implementations
+   *   <li>Integration with native profilers
    * </ul>
    *
    * <p><b>Note:</b> The returned range is only valid while the module is alive.
@@ -557,13 +558,14 @@ public interface Module extends Closeable {
   /**
    * Gets access to the compiled module data.
    *
-   * <p>CompiledModule provides low-level access to the compiled native code and
-   * metadata for advanced use cases such as:
+   * <p>CompiledModule provides low-level access to the compiled native code and metadata for
+   * advanced use cases such as:
+   *
    * <ul>
-   *   <li>Module caching and serialization</li>
-   *   <li>Code analysis and inspection</li>
-   *   <li>Custom loading and memory management</li>
-   *   <li>Debugging and profiling</li>
+   *   <li>Module caching and serialization
+   *   <li>Code analysis and inspection
+   *   <li>Custom loading and memory management
+   *   <li>Debugging and profiling
    * </ul>
    *
    * @return an Optional containing the CompiledModule, or empty if not available

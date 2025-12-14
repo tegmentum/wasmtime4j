@@ -181,6 +181,7 @@ public interface Caller<T> {
    * and cached for repeated use.
    *
    * <p>Example usage:
+   *
    * <pre>{@code
    * // Cache the export reference at initialization
    * ModuleExport memoryExport = module.getExports().stream()

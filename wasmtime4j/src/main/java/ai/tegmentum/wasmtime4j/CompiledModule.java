@@ -23,15 +23,15 @@ import java.util.Optional;
 /**
  * Provides low-level access to compiled WebAssembly module data.
  *
- * <p>CompiledModule represents a WebAssembly module that has been compiled to native code
- * by the Cranelift compiler. This interface provides access to the compiled code artifacts
- * for advanced use cases such as:
+ * <p>CompiledModule represents a WebAssembly module that has been compiled to native code by the
+ * Cranelift compiler. This interface provides access to the compiled code artifacts for advanced
+ * use cases such as:
  *
  * <ul>
- *   <li>Module caching and serialization</li>
- *   <li>Code analysis and inspection</li>
- *   <li>Custom loading and memory management</li>
- *   <li>Debugging and profiling</li>
+ *   <li>Module caching and serialization
+ *   <li>Code analysis and inspection
+ *   <li>Custom loading and memory management
+ *   <li>Debugging and profiling
  * </ul>
  *
  * <p>Example usage:
@@ -77,8 +77,8 @@ public interface CompiledModule {
   /**
    * Serializes the compiled module to bytes.
    *
-   * <p>The serialized format can be later deserialized using {@link Module#deserialize(Engine, byte[])}
-   * for faster loading, avoiding the need for recompilation.
+   * <p>The serialized format can be later deserialized using {@link Module#deserialize(Engine,
+   * byte[])} for faster loading, avoiding the need for recompilation.
    *
    * @return the serialized bytes
    * @throws WasmException if serialization fails
@@ -122,9 +122,7 @@ public interface CompiledModule {
    */
   CompilationMetadata getMetadata();
 
-  /**
-   * Information about a compiled function.
-   */
+  /** Information about a compiled function. */
   interface CompiledFunction {
 
     /**
@@ -170,9 +168,7 @@ public interface CompiledModule {
     int getStackSlots();
   }
 
-  /**
-   * Represents an address range in memory.
-   */
+  /** Represents an address range in memory. */
   interface AddressRange {
 
     /**
@@ -209,9 +205,7 @@ public interface CompiledModule {
     }
   }
 
-  /**
-   * Metadata about the compilation process.
-   */
+  /** Metadata about the compilation process. */
   interface CompilationMetadata {
 
     /**

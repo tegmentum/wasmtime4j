@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>In the WebAssembly GC proposal, {@code arrayref} represents a reference to an array instance.
  * Arrays are homogeneous sequences of elements with a fixed element type and mutable length.
  *
- * <p>ArrayRef provides access to the underlying array's elements and type information. All arrayrefs
- * are subtypes of both eqref and anyref.
+ * <p>ArrayRef provides access to the underlying array's elements and type information. All
+ * arrayrefs are subtypes of both eqref and anyref.
  *
  * <p>Example usage:
  *
@@ -103,8 +103,8 @@ public final class ArrayRef implements GcRef {
    */
   @SuppressFBWarnings(
       value = "EI_EXPOSE_REP",
-      justification = "GC references require direct access to internal instance for WebAssembly"
-          + " interop")
+      justification =
+          "GC references require direct access to internal instance for WebAssembly" + " interop")
   public ArrayInstance getInstance() {
     return instance;
   }
@@ -255,7 +255,12 @@ public final class ArrayRef implements GcRef {
     if (instance == null) {
       return "ArrayRef{null}";
     }
-    return "ArrayRef{type=" + instance.getType() + ", length=" + instance.getLength()
-        + ", id=" + id + "}";
+    return "ArrayRef{type="
+        + instance.getType()
+        + ", length="
+        + instance.getLength()
+        + ", id="
+        + id
+        + "}";
   }
 }

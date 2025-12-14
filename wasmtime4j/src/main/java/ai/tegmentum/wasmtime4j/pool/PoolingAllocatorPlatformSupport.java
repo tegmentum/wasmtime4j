@@ -21,11 +21,11 @@ import java.util.Locale;
 /**
  * Platform support utilities for pooling allocator features.
  *
- * <p>This class provides methods to check for platform-specific features that may be
- * available for the pooling allocator, such as memory protection keys (MPK) and
- * PAGEMAP_SCAN support.
+ * <p>This class provides methods to check for platform-specific features that may be available for
+ * the pooling allocator, such as memory protection keys (MPK) and PAGEMAP_SCAN support.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * if (PoolingAllocatorPlatformSupport.areMemoryProtectionKeysAvailable()) {
  *     // Configure allocator with MPK support
@@ -50,12 +50,12 @@ public final class PoolingAllocatorPlatformSupport {
   /**
    * Checks if memory protection keys (MPK) are potentially available on this platform.
    *
-   * <p>Memory protection keys are a hardware feature available on Intel x86-64 processors
-   * (Skylake and later) running Linux. This method checks if the platform is compatible,
-   * but does not guarantee that MPK is actually available or enabled on this specific system.
+   * <p>Memory protection keys are a hardware feature available on Intel x86-64 processors (Skylake
+   * and later) running Linux. This method checks if the platform is compatible, but does not
+   * guarantee that MPK is actually available or enabled on this specific system.
    *
-   * <p>MPK provides hardware-assisted memory isolation between WebAssembly instances,
-   * offering additional security and potential performance benefits for the pooling allocator.
+   * <p>MPK provides hardware-assisted memory isolation between WebAssembly instances, offering
+   * additional security and potential performance benefits for the pooling allocator.
    *
    * @return true if MPK may be available on this platform
    */
@@ -67,12 +67,12 @@ public final class PoolingAllocatorPlatformSupport {
   /**
    * Checks if PAGEMAP_SCAN ioctl is potentially available on this platform.
    *
-   * <p>PAGEMAP_SCAN is a Linux kernel feature introduced in Linux 6.7 that enables
-   * more efficient memory tracking. This method checks if the platform is compatible,
-   * but does not guarantee that the feature is available on this specific kernel version.
+   * <p>PAGEMAP_SCAN is a Linux kernel feature introduced in Linux 6.7 that enables more efficient
+   * memory tracking. This method checks if the platform is compatible, but does not guarantee that
+   * the feature is available on this specific kernel version.
    *
-   * <p>When available, PAGEMAP_SCAN can improve the performance of memory decommit
-   * operations in the pooling allocator.
+   * <p>When available, PAGEMAP_SCAN can improve the performance of memory decommit operations in
+   * the pooling allocator.
    *
    * @return true if PAGEMAP_SCAN may be available on this platform
    */
@@ -139,8 +139,8 @@ public final class PoolingAllocatorPlatformSupport {
   /**
    * Gets the maximum number of memory protection keys typically available.
    *
-   * <p>On x86-64 processors with MPK support, there are typically 16 protection keys
-   * available (0-15), with key 0 reserved by the system.
+   * <p>On x86-64 processors with MPK support, there are typically 16 protection keys available
+   * (0-15), with key 0 reserved by the system.
    *
    * @return the maximum number of MPK keys, or 0 if MPK is not available
    */

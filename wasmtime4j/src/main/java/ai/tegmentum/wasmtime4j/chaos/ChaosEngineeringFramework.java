@@ -354,6 +354,11 @@ public final class ChaosEngineeringFramework {
   }
 
   /** CPU saturation fault injector. */
+  @SuppressFBWarnings(
+      value = "VO_VOLATILE_REFERENCE_TO_ARRAY",
+      justification =
+          "The volatile array reference ensures thread-safe null assignment for cleanup;"
+              + " individual element access during fault injection is synchronized externally")
   private static final class CpuSaturationInjector implements FaultInjector {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private volatile boolean active = false;

@@ -21,16 +21,16 @@ import java.util.Objects;
 /**
  * Raw representation of a WebAssembly value for low-level operations.
  *
- * <p>ValRaw provides a type-unsafe but efficient way to work with WebAssembly values. Unlike
- * {@link WasmValue} which provides type-safe access, ValRaw stores all values as raw bits,
- * allowing for zero-copy interop with native code.
+ * <p>ValRaw provides a type-unsafe but efficient way to work with WebAssembly values. Unlike {@link
+ * WasmValue} which provides type-safe access, ValRaw stores all values as raw bits, allowing for
+ * zero-copy interop with native code.
  *
  * <p><b>Warning:</b> Using ValRaw incorrectly can lead to undefined behavior or crashes. This API
  * is intended for advanced use cases where type safety can be guaranteed externally and maximum
  * performance is required.
  *
- * <p>The raw value is stored as a 128-bit quantity (two longs) to accommodate all WebAssembly
- * types including v128 (SIMD).
+ * <p>The raw value is stored as a 128-bit quantity (two longs) to accommodate all WebAssembly types
+ * including v128 (SIMD).
  *
  * <p>Example usage:
  *
@@ -306,10 +306,12 @@ public final class ValRaw {
       case V128:
         return WasmValue.v128(lowBits, highBits);
       case FUNCREF:
-        return asFuncrefIndex() == -1 ? WasmValue.nullFuncref()
+        return asFuncrefIndex() == -1
+            ? WasmValue.nullFuncref()
             : WasmValue.funcref(asFuncrefIndex());
       case EXTERNREF:
-        return asExternrefPtr() == 0 ? WasmValue.nullExternref()
+        return asExternrefPtr() == 0
+            ? WasmValue.nullExternref()
             : WasmValue.externref(asExternrefPtr());
       default:
         throw new IllegalArgumentException("Unsupported type for conversion: " + type);
@@ -370,8 +372,11 @@ public final class ValRaw {
 
   @Override
   public String toString() {
-    return "ValRaw{low=0x" + Long.toHexString(lowBits)
-        + ", high=0x" + Long.toHexString(highBits) + "}";
+    return "ValRaw{low=0x"
+        + Long.toHexString(lowBits)
+        + ", high=0x"
+        + Long.toHexString(highBits)
+        + "}";
   }
 
   /**

@@ -164,8 +164,9 @@ public final class StackTracePreserver {
   /** Enhanced exception that preserves WebAssembly stack trace information. */
   @SuppressFBWarnings(
       value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
-      justification = "Transient WebAssembly stack frames are debugging context not needed after"
-          + " deserialization; core exception message is preserved")
+      justification =
+          "Transient WebAssembly stack frames are debugging context not needed after"
+              + " deserialization; core exception message is preserved")
   public static final class EnhancedWasmException extends WasmException {
     private static final long serialVersionUID = 1L;
 

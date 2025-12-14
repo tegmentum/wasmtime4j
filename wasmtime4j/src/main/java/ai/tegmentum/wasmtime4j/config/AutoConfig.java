@@ -23,6 +23,11 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+    value = "DB_DUPLICATE_SWITCH_CLAUSES",
+    justification =
+        "Multiple workload types intentionally share the same SIMD recommendation"
+            + " (CPU_INTENSIVE, MACHINE_LEARNING, WEB_APPLICATION all benefit from SIMD)")
 public final class AutoConfig {
 
   private static final Logger LOGGER = Logger.getLogger(AutoConfig.class.getName());

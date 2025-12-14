@@ -114,9 +114,7 @@ public final class ProfileData {
     return customMetrics;
   }
 
-  /**
-   * Profile data for a single function.
-   */
+  /** Profile data for a single function. */
   public static final class FunctionProfile {
     private final String functionName;
     private final int functionIndex;
@@ -168,8 +166,17 @@ public final class ProfileData {
 
     @Override
     public String toString() {
-      return "FunctionProfile{name='" + functionName + "', index=" + functionIndex
-          + ", calls=" + callCount + ", total=" + totalTime + ", self=" + selfTime + "}";
+      return "FunctionProfile{name='"
+          + functionName
+          + "', index="
+          + functionIndex
+          + ", calls="
+          + callCount
+          + ", total="
+          + totalTime
+          + ", self="
+          + selfTime
+          + "}";
     }
   }
 }

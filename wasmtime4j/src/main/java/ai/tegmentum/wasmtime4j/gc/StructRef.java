@@ -26,10 +26,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * Represents a WebAssembly {@code structref} reference type.
  *
  * <p>In the WebAssembly GC proposal, {@code structref} represents a reference to a struct instance.
- * Structs are composite types with named or indexed fields, each with a specific type and mutability.
+ * Structs are composite types with named or indexed fields, each with a specific type and
+ * mutability.
  *
- * <p>StructRef provides access to the underlying struct's fields and type information. All structrefs
- * are subtypes of both eqref and anyref.
+ * <p>StructRef provides access to the underlying struct's fields and type information. All
+ * structrefs are subtypes of both eqref and anyref.
  *
  * <p>Example usage:
  *
@@ -103,8 +104,8 @@ public final class StructRef implements GcRef {
    */
   @SuppressFBWarnings(
       value = "EI_EXPOSE_REP",
-      justification = "GC references require direct access to internal instance for WebAssembly"
-          + " interop")
+      justification =
+          "GC references require direct access to internal instance for WebAssembly" + " interop")
   public StructInstance getInstance() {
     return instance;
   }

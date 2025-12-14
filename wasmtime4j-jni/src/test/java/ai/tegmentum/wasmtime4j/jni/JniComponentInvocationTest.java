@@ -104,7 +104,8 @@ public final class JniComponentInvocationTest {
   public void testWitCharCreation() throws Exception {
     final WitChar letterZ = WitChar.of('Z');
     assertNotNull(letterZ, "WitChar.of('Z') should not return null");
-    assertEquals(Character.valueOf('Z'), letterZ.toJava(), "WitChar should preserve character value");
+    assertEquals(
+        Character.valueOf('Z'), letterZ.toJava(), "WitChar should preserve character value");
   }
 
   @Test

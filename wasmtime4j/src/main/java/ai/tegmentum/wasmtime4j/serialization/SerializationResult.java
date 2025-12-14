@@ -112,12 +112,10 @@ public final class SerializationResult {
   public String getSummary() {
     final StringBuilder summary = new StringBuilder();
     summary.append(String.format("Serialization Result:%n"));
-    summary.append(
-        String.format("  Format: %s%n", metadata.getFormat().getIdentifier()));
+    summary.append(String.format("  Format: %s%n", metadata.getFormat().getIdentifier()));
     summary.append(String.format(Locale.ROOT, "  Size: %.2f MB%n", getSizeMB()));
     summary.append(String.format(Locale.ROOT, "  Compression: %.2fx%n", getCompressionRatio()));
-    summary.append(
-        String.format("  Duration: %dms%n", metadata.getSerializationDurationMs()));
+    summary.append(String.format("  Duration: %dms%n", metadata.getSerializationDurationMs()));
 
     if (metadata.getPerformanceMetrics() != null) {
       summary.append(

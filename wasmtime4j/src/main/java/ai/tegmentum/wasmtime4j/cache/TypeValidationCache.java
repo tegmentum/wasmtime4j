@@ -88,6 +88,9 @@ public final class TypeValidationCache {
   private final AtomicLong totalCacheAccesses = new AtomicLong(0);
 
   /** Validation result cache entry. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_FIELD",
+      justification = "Field key stores metadata for debugging and cache management")
   private static final class ValidationCacheEntry {
     final String key;
     final ValidationResult result;
@@ -117,6 +120,9 @@ public final class TypeValidationCache {
   }
 
   /** Type compatibility cache entry. */
+  @SuppressFBWarnings(
+      value = "URF_UNREAD_FIELD",
+      justification = "Field key stores metadata for debugging and cache management")
   private static final class CompatibilityCacheEntry {
     final String key;
     final boolean compatible;

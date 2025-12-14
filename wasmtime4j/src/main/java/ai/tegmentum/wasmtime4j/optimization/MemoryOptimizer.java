@@ -49,10 +49,12 @@ import java.util.logging.Logger;
  * @since 1.0.0
  */
 @SuppressFBWarnings(
-    value = "REC_CATCH_EXCEPTION",
+    value = {"REC_CATCH_EXCEPTION", "URF_UNREAD_FIELD"},
     justification =
-        "Broad exception catching for defensive memory optimization;"
-            + " ensures pool operations and allocations fail gracefully")
+        "REC_CATCH_EXCEPTION: Broad exception catching for defensive memory optimization;"
+            + " ensures pool operations and allocations fail gracefully."
+            + " URF_UNREAD_FIELD: Fields lastGcTime and lastGcCount reserved for"
+            + " future GC analysis and optimization tuning")
 public final class MemoryOptimizer {
 
   private static final Logger LOGGER = Logger.getLogger(MemoryOptimizer.class.getName());

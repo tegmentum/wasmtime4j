@@ -22,15 +22,15 @@ import java.util.Optional;
 /**
  * Interface for custom async stack allocation.
  *
- * <p>StackCreator allows customization of how async stacks are allocated for WebAssembly
- * async execution. This is an advanced feature that enables control over stack memory
- * allocation, which can be useful for:
+ * <p>StackCreator allows customization of how async stacks are allocated for WebAssembly async
+ * execution. This is an advanced feature that enables control over stack memory allocation, which
+ * can be useful for:
  *
  * <ul>
- *   <li>Custom memory management strategies</li>
- *   <li>Stack pooling for reduced allocation overhead</li>
- *   <li>Guard page customization</li>
- *   <li>Integration with custom memory allocators</li>
+ *   <li>Custom memory management strategies
+ *   <li>Stack pooling for reduced allocation overhead
+ *   <li>Guard page customization
+ *   <li>Integration with custom memory allocators
  * </ul>
  *
  * <p>Example usage:
@@ -45,9 +45,8 @@ import java.util.Optional;
  * Engine engine = Engine.create(config);
  * }</pre>
  *
- * <p><b>Warning:</b> Incorrect stack management can cause crashes or security issues.
- * Only implement this interface if you understand the implications of custom stack
- * allocation.
+ * <p><b>Warning:</b> Incorrect stack management can cause crashes or security issues. Only
+ * implement this interface if you understand the implications of custom stack allocation.
  *
  * @since 1.1.0
  */
@@ -56,8 +55,8 @@ public interface StackCreator {
   /**
    * Creates a new async stack with the specified size.
    *
-   * <p>The implementation should allocate a contiguous block of memory for the stack.
-   * The returned AsyncStack must remain valid until {@link AsyncStack#release()} is called.
+   * <p>The implementation should allocate a contiguous block of memory for the stack. The returned
+   * AsyncStack must remain valid until {@link AsyncStack#release()} is called.
    *
    * @param size the required stack size in bytes
    * @return an AsyncStack representing the allocated stack
@@ -112,9 +111,7 @@ public interface StackCreator {
     return new DefaultStackCreator();
   }
 
-  /**
-   * Represents an allocated async stack.
-   */
+  /** Represents an allocated async stack. */
   interface AsyncStack {
 
     /**
@@ -175,16 +172,20 @@ public interface StackCreator {
     }
   }
 
-  /**
-   * Default stack creator using system memory allocation.
-   */
+  /** Default stack creator using system memory allocation. */
   final class DefaultStackCreator implements StackCreator {
 
     @Override
     public AsyncStack createStack(final long size) throws WasmException {
       if (size < getMinStackSize() || size > getMaxStackSize()) {
-        throw new WasmException("Invalid stack size: " + size
-            + " (must be between " + getMinStackSize() + " and " + getMaxStackSize() + ")");
+        throw new WasmException(
+            "Invalid stack size: "
+                + size
+                + " (must be between "
+                + getMinStackSize()
+                + " and "
+                + getMaxStackSize()
+                + ")");
       }
       return new DefaultAsyncStack(size);
     }

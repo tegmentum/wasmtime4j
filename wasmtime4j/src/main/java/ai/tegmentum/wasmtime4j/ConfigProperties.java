@@ -191,9 +191,7 @@ public final class ConfigProperties {
         .map(
             value -> {
               final String lowerValue = value.toLowerCase(Locale.ROOT);
-              return "true".equals(lowerValue)
-                  || "yes".equals(lowerValue)
-                  || "1".equals(value);
+              return "true".equals(lowerValue) || "yes".equals(lowerValue) || "1".equals(value);
             });
   }
 

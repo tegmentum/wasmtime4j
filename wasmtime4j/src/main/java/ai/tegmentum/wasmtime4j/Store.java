@@ -631,13 +631,14 @@ public interface Store extends Closeable {
    * Runs a concurrent task with access to the store's data.
    *
    * <p>This method allows running a task that can access the store's user data from multiple
-   * threads concurrently. The task receives an {@link Accessor} that provides thread-safe
-   * read access to the store's data.
+   * threads concurrently. The task receives an {@link Accessor} that provides thread-safe read
+   * access to the store's data.
    *
-   * <p>This corresponds to wasmtime's {@code Store::run_concurrent} method which enables
-   * concurrent access patterns for multi-threaded WebAssembly execution.
+   * <p>This corresponds to wasmtime's {@code Store::run_concurrent} method which enables concurrent
+   * access patterns for multi-threaded WebAssembly execution.
    *
    * <p>Example usage:
+   *
    * <pre>{@code
    * Integer result = store.runConcurrent(accessor -> {
    *     MyData data = accessor.getData(MyData.class);
@@ -660,14 +661,15 @@ public interface Store extends Closeable {
   /**
    * Spawns a concurrent task for asynchronous execution.
    *
-   * <p>This method spawns a task that runs concurrently with the main execution thread.
-   * The returned {@link JoinHandle} can be used to wait for completion, cancel the task,
-   * or check its status.
+   * <p>This method spawns a task that runs concurrently with the main execution thread. The
+   * returned {@link JoinHandle} can be used to wait for completion, cancel the task, or check its
+   * status.
    *
-   * <p>This corresponds to wasmtime's {@code Store::spawn} method for spawning concurrent
-   * tasks in async contexts.
+   * <p>This corresponds to wasmtime's {@code Store::spawn} method for spawning concurrent tasks in
+   * async contexts.
    *
    * <p>Example usage:
+   *
    * <pre>{@code
    * JoinHandle<Integer> handle = store.spawn(() -> {
    *     // Long-running computation
@@ -697,9 +699,9 @@ public interface Store extends Closeable {
   /**
    * Gets the debug stack frames for the current execution context.
    *
-   * <p>This method provides access to WebAssembly execution stack frames for debugging
-   * purposes. It requires guest debugging to be enabled in the engine configuration
-   * via {@link EngineConfig#guestDebug(boolean)}.
+   * <p>This method provides access to WebAssembly execution stack frames for debugging purposes. It
+   * requires guest debugging to be enabled in the engine configuration via {@link
+   * EngineConfig#guestDebug(boolean)}.
    *
    * <p>The returned list contains frames from the innermost (current) to outermost (caller).
    *
@@ -714,10 +716,11 @@ public interface Store extends Closeable {
   /**
    * Sets a debug handler for receiving debug events.
    *
-   * <p>The debug handler is invoked when debug events occur during WebAssembly execution,
-   * such as breakpoints, single-stepping, or exceptions.
+   * <p>The debug handler is invoked when debug events occur during WebAssembly execution, such as
+   * breakpoints, single-stepping, or exceptions.
    *
-   * <p><b>Note:</b> Debug instrumentation must be enabled via {@link EngineConfig#guestDebug(boolean)}.
+   * <p><b>Note:</b> Debug instrumentation must be enabled via {@link
+   * EngineConfig#guestDebug(boolean)}.
    *
    * @param handler the debug handler, or null to clear any existing handler
    * @throws WasmException if setting the handler fails
@@ -748,6 +751,7 @@ public interface Store extends Closeable {
    * <p>Only one limiter can be active at a time. Setting a new limiter replaces any existing one.
    *
    * <p>Example usage:
+   *
    * <pre>{@code
    * ResourceLimiter limiter = ResourceLimiter.create(config);
    * store.limiter(limiter);
@@ -763,10 +767,9 @@ public interface Store extends Closeable {
   /**
    * Sets an async resource limiter for this store.
    *
-   * <p>The async limiter is similar to {@link #limiter(ResourceLimiter)} but supports
-   * asynchronous decision-making. When memory or table growth is requested, the limiter
-   * can perform async operations (like checking quotas from a database) before allowing
-   * or denying the request.
+   * <p>The async limiter is similar to {@link #limiter(ResourceLimiter)} but supports asynchronous
+   * decision-making. When memory or table growth is requested, the limiter can perform async
+   * operations (like checking quotas from a database) before allowing or denying the request.
    *
    * <p>The limiter callback receives the current and requested sizes and returns a
    * CompletableFuture that resolves to true (allow) or false (deny).
@@ -817,9 +820,9 @@ public interface Store extends Closeable {
   /**
    * Configures the interval at which async execution should yield based on fuel consumption.
    *
-   * <p>When set to a positive value, WebAssembly execution will automatically yield to the
-   * async executor after consuming the specified amount of fuel. This enables cooperative
-   * timeslicing without requiring epoch-based interruption.
+   * <p>When set to a positive value, WebAssembly execution will automatically yield to the async
+   * executor after consuming the specified amount of fuel. This enables cooperative timeslicing
+   * without requiring epoch-based interruption.
    *
    * <p>A value of 0 (default) disables fuel-based async yielding.
    *

@@ -25,12 +25,12 @@ import java.util.Optional;
 /**
  * Provides cursor-based navigation through WebAssembly debug frames.
  *
- * <p>DebugFrameCursor allows step-by-step navigation through the call stack during
- * debugging, enabling inspection and modification of local variables, examination
- * of function parameters, and controlled execution.
+ * <p>DebugFrameCursor allows step-by-step navigation through the call stack during debugging,
+ * enabling inspection and modification of local variables, examination of function parameters, and
+ * controlled execution.
  *
- * <p>This is a low-level debugging API intended for debugger implementations and
- * advanced diagnostic tools.
+ * <p>This is a low-level debugging API intended for debugger implementations and advanced
+ * diagnostic tools.
  *
  * <p>Example usage:
  *
@@ -140,8 +140,8 @@ public interface DebugFrameCursor extends AutoCloseable {
   /**
    * Sets a local variable value.
    *
-   * <p><b>Warning:</b> Modifying local variables can cause undefined behavior
-   * if the new value is incompatible with the expected type.
+   * <p><b>Warning:</b> Modifying local variables can cause undefined behavior if the new value is
+   * incompatible with the expected type.
    *
    * @param index the local variable index
    * @param value the new value
@@ -190,9 +190,7 @@ public interface DebugFrameCursor extends AutoCloseable {
     return getCurrentIndex() == getFrameCount() - 1;
   }
 
-  /**
-   * Resets the cursor to the top of the stack.
-   */
+  /** Resets the cursor to the top of the stack. */
   default void reset() {
     moveToTop();
   }
@@ -215,9 +213,7 @@ public interface DebugFrameCursor extends AutoCloseable {
    */
   void restore(CursorSnapshot snapshot);
 
-  /**
-   * A snapshot of cursor state for save/restore operations.
-   */
+  /** A snapshot of cursor state for save/restore operations. */
   interface CursorSnapshot {
     /**
      * Gets the frame index at the time of the snapshot.

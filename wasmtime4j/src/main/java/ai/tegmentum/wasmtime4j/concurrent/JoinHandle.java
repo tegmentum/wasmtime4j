@@ -7,11 +7,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * A handle to a spawned concurrent task.
  *
- * <p>JoinHandle represents a spawned asynchronous task and provides methods to wait for
- * its completion, cancel it, or check its status. This corresponds to wasmtime's
- * {@code JoinHandle<T>} type.
+ * <p>JoinHandle represents a spawned asynchronous task and provides methods to wait for its
+ * completion, cancel it, or check its status. This corresponds to wasmtime's {@code JoinHandle<T>}
+ * type.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * JoinHandle<Integer> handle = store.spawn(() -> {
  *     // Concurrent work
@@ -58,8 +59,8 @@ public interface JoinHandle<T> {
   /**
    * Returns a CompletableFuture representing this task.
    *
-   * <p>The returned future will complete when the task completes, allowing integration
-   * with Java's async programming model.
+   * <p>The returned future will complete when the task completes, allowing integration with Java's
+   * async programming model.
    *
    * @return a CompletableFuture for the task result
    * @since 1.0.0
@@ -69,8 +70,8 @@ public interface JoinHandle<T> {
   /**
    * Checks if the task has completed.
    *
-   * <p>A task is considered done when it has finished (successfully or with an error),
-   * or has been cancelled.
+   * <p>A task is considered done when it has finished (successfully or with an error), or has been
+   * cancelled.
    *
    * @return true if the task is done, false if still running
    * @since 1.0.0
@@ -88,9 +89,9 @@ public interface JoinHandle<T> {
   /**
    * Attempts to cancel the task.
    *
-   * <p>If the task has not yet started, it will be prevented from running. If the task
-   * is already running, the cancellation attempt may or may not succeed depending on
-   * the task's implementation.
+   * <p>If the task has not yet started, it will be prevented from running. If the task is already
+   * running, the cancellation attempt may or may not succeed depending on the task's
+   * implementation.
    *
    * @param mayInterruptIfRunning if true, attempt to interrupt running tasks
    * @return true if the task was successfully cancelled

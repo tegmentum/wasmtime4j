@@ -22,14 +22,14 @@ import java.time.Instant;
 /**
  * Runtime metrics for the pooling allocator.
  *
- * <p>PoolingAllocatorMetrics provides real-time statistics about the pooling allocator's
- * usage, performance, and health. These metrics are useful for:
+ * <p>PoolingAllocatorMetrics provides real-time statistics about the pooling allocator's usage,
+ * performance, and health. These metrics are useful for:
  *
  * <ul>
- *   <li>Monitoring pool utilization</li>
- *   <li>Detecting resource exhaustion</li>
- *   <li>Performance tuning</li>
- *   <li>Capacity planning</li>
+ *   <li>Monitoring pool utilization
+ *   <li>Detecting resource exhaustion
+ *   <li>Performance tuning
+ *   <li>Capacity planning
  * </ul>
  *
  * <p>Example usage:
@@ -270,8 +270,7 @@ public interface PoolingAllocatorMetrics {
   /**
    * Creates a point-in-time snapshot of all metrics.
    *
-   * <p>This is useful for consistent reporting when multiple metrics
-   * need to be captured together.
+   * <p>This is useful for consistent reporting when multiple metrics need to be captured together.
    *
    * @return a snapshot of current metrics
    */
@@ -284,9 +283,7 @@ public interface PoolingAllocatorMetrics {
    */
   void resetStatistics();
 
-  /**
-   * An immutable snapshot of metrics at a point in time.
-   */
+  /** An immutable snapshot of metrics at a point in time. */
   interface MetricsSnapshot {
     /** Gets the snapshot timestamp. */
     Instant getTimestamp();

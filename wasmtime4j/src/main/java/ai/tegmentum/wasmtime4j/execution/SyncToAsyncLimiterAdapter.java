@@ -39,59 +39,64 @@ final class SyncToAsyncLimiterAdapter implements ResourceLimiterAsync {
 
   @Override
   public CompletableFuture<ResourceLimiterConfig> getConfigAsync() {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return delegate.getConfig();
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return delegate.getConfig();
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
   public CompletableFuture<Boolean> allowMemoryGrowAsync(
       final long currentPages, final long requestedPages) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return delegate.allowMemoryGrow(currentPages, requestedPages);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return delegate.allowMemoryGrow(currentPages, requestedPages);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
   public CompletableFuture<Boolean> allowTableGrowAsync(
       final long currentElements, final long requestedElements) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return delegate.allowTableGrow(currentElements, requestedElements);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return delegate.allowTableGrow(currentElements, requestedElements);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
   public CompletableFuture<ResourceLimiterStats> getStatsAsync() {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return delegate.getStats();
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return delegate.getStats();
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
   public CompletableFuture<Void> resetStatsAsync() {
-    return CompletableFuture.runAsync(() -> {
-      try {
-        delegate.resetStats();
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            delegate.resetStats();
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override

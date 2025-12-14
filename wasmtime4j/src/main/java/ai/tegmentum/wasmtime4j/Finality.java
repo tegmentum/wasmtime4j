@@ -27,8 +27,8 @@ package ai.tegmentum.wasmtime4j;
  * <ul>
  *   <li>{@link #FINAL} - The type cannot have subtypes. This allows for more efficient runtime
  *       checks since the type cannot be extended.
- *   <li>{@link #NON_FINAL} - The type can be used as a supertype. Other types can declare this
- *       type as their supertype.
+ *   <li>{@link #NON_FINAL} - The type can be used as a supertype. Other types can declare this type
+ *       as their supertype.
  * </ul>
  *
  * <p>Example in WebAssembly text format:

@@ -103,8 +103,8 @@ public interface ResourceLimiterAsync extends AutoCloseable {
   /**
    * Synchronous wrapper that checks if memory growth should be allowed.
    *
-   * <p>This is a convenience method that blocks on the async result. Prefer using
-   * {@link #allowMemoryGrowAsync} for non-blocking code.
+   * <p>This is a convenience method that blocks on the async result. Prefer using {@link
+   * #allowMemoryGrowAsync} for non-blocking code.
    *
    * @param currentPages the current memory size in pages
    * @param requestedPages the number of pages being requested
@@ -127,7 +127,8 @@ public interface ResourceLimiterAsync extends AutoCloseable {
    * @return true if growth should be allowed
    * @throws WasmException if the check fails
    */
-  default boolean allowTableGrow(long currentElements, long requestedElements) throws WasmException {
+  default boolean allowTableGrow(long currentElements, long requestedElements)
+      throws WasmException {
     try {
       return allowTableGrowAsync(currentElements, requestedElements).join();
     } catch (Exception e) {

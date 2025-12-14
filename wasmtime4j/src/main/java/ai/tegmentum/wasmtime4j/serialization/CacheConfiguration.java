@@ -112,7 +112,8 @@ public final class CacheConfiguration {
 
   @SuppressFBWarnings(
       value = "EI_EXPOSE_REP",
-      justification = "Connector is intentionally shared as the configured cache connector instance")
+      justification =
+          "Connector is intentionally shared as the configured cache connector instance")
   public ModuleSerializationCache.DistributedCacheConnector getDistributedCacheConnector() {
     return distributedCacheConnector;
   }

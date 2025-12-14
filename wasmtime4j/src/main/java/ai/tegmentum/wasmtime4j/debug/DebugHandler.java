@@ -91,48 +91,33 @@ public interface DebugHandler {
    * @return a trap-only debug handler
    */
   static DebugHandler breakOnTrap() {
-    return event -> event.getType() == DebugEvent.DebugEventType.EXCEPTION
-        ? DebugAction.PAUSE
-        : DebugAction.CONTINUE;
+    return event ->
+        event.getType() == DebugEvent.DebugEventType.EXCEPTION
+            ? DebugAction.PAUSE
+            : DebugAction.CONTINUE;
   }
 
-  /**
-   * Actions that can be returned by a debug handler.
-   */
+  /** Actions that can be returned by a debug handler. */
   enum DebugAction {
-    /**
-     * Continue execution normally.
-     */
+    /** Continue execution normally. */
     CONTINUE,
 
-    /**
-     * Execute a single instruction and break again.
-     */
+    /** Execute a single instruction and break again. */
     STEP,
 
-    /**
-     * Step into function calls.
-     */
+    /** Step into function calls. */
     STEP_INTO,
 
-    /**
-     * Step over function calls (complete the call and break after).
-     */
+    /** Step over function calls (complete the call and break after). */
     STEP_OVER,
 
-    /**
-     * Step out of the current function.
-     */
+    /** Step out of the current function. */
     STEP_OUT,
 
-    /**
-     * Pause execution at this point.
-     */
+    /** Pause execution at this point. */
     PAUSE,
 
-    /**
-     * Abort execution with an error.
-     */
+    /** Abort execution with an error. */
     ABORT
   }
 }

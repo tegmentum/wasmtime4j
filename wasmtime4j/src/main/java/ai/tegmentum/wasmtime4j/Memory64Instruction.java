@@ -18,6 +18,11 @@ package ai.tegmentum.wasmtime4j;
  *
  * @since 1.1.0
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+    value = "DB_DUPLICATE_SWITCH_CLAUSES",
+    justification =
+        "Multiple store instructions intentionally share the same byte-width operation"
+            + " (e.g., I32_STORE8_64 and I64_STORE8_64 both write a single byte)")
 public enum Memory64Instruction {
 
   // Load Instructions with 64-bit addressing

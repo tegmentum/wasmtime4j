@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.validation;
 
 import ai.tegmentum.wasmtime4j.Caller;
-import ai.tegmentum.wasmtime4j.Export;
 import ai.tegmentum.wasmtime4j.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
@@ -258,6 +257,11 @@ public final class CallerContextValidator {
   }
 
   /** Configuration for caller context validation. */
+  @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+      value = "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD",
+      justification =
+          "Field validateBasicFunctionality is part of public API configuration;"
+              + " reserved for future enhanced validation modes")
   public static class ValidationConfig {
     public final boolean validateBasicFunctionality;
     public final boolean validateExportAccess;

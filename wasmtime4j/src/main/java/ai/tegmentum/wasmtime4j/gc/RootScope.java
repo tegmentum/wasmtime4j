@@ -195,8 +195,8 @@ public final class RootScope implements AutoCloseable {
    */
   @SuppressFBWarnings(
       value = "EI_EXPOSE_REP",
-      justification = "Store is intentionally shared as it represents the WebAssembly runtime"
-          + " context")
+      justification =
+          "Store is intentionally shared as it represents the WebAssembly runtime" + " context")
   public Store getStore() {
     return store;
   }
@@ -233,7 +233,12 @@ public final class RootScope implements AutoCloseable {
 
   @Override
   public String toString() {
-    return "RootScope{scopeId=" + scopeId + ", rootedCount=" + rootedRefs.size()
-        + ", closed=" + closed + "}";
+    return "RootScope{scopeId="
+        + scopeId
+        + ", rootedCount="
+        + rootedRefs.size()
+        + ", closed="
+        + closed
+        + "}";
   }
 }

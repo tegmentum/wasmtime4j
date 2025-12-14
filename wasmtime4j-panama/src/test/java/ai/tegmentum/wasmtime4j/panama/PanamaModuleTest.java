@@ -221,7 +221,8 @@ class PanamaModuleTest {
       }
 
       @Override
-      public ai.tegmentum.wasmtime4j.Instance createInstance(ai.tegmentum.wasmtime4j.Module module) {
+      public ai.tegmentum.wasmtime4j.Instance createInstance(
+          ai.tegmentum.wasmtime4j.Module module) {
         return null;
       }
 
@@ -259,8 +260,7 @@ class PanamaModuleTest {
       }
 
       @Override
-      public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
-          int initialPages, int maxPages) {
+      public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(int initialPages, int maxPages) {
         return null;
       }
 

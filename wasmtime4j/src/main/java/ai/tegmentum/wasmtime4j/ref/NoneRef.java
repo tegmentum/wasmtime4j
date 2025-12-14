@@ -21,14 +21,15 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 /**
  * Represents the none heap type - the bottom type in the any/eq type hierarchy.
  *
- * <p>NoneRef is an uninhabited type, meaning no values can have this type. It serves as
- * the bottom type in the GC reference type hierarchy, used for type system completeness
- * in the WebAssembly GC proposal.
+ * <p>NoneRef is an uninhabited type, meaning no values can have this type. It serves as the bottom
+ * type in the GC reference type hierarchy, used for type system completeness in the WebAssembly GC
+ * proposal.
  *
- * <p>This type is primarily used in type checking and validation rather than for storing
- * actual values. It is a subtype of all GC heap types (struct, array, i31, eq, any).
+ * <p>This type is primarily used in type checking and validation rather than for storing actual
+ * values. It is a subtype of all GC heap types (struct, array, i31, eq, any).
  *
  * <p>Type hierarchy:
+ *
  * <pre>
  *        any
  *         |

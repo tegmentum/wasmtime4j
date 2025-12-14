@@ -51,7 +51,11 @@ import java.util.regex.Pattern;
  *
  * @since 1.0.0
  */
-@SuppressWarnings({"PMD.InefficientEmptyStringCheck", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
+@SuppressWarnings({
+  "PMD.InefficientEmptyStringCheck",
+  "PMD.CyclomaticComplexity",
+  "PMD.NPathComplexity"
+})
 final class ResourcePathResolver {
 
   /** Pattern to detect path traversal attempts. */

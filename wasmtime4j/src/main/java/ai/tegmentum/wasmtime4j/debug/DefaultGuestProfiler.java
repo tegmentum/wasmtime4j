@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.debug;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +39,9 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "URF_UNREAD_FIELD",
+    justification = "Fields store and config reserved for future native profiling integration")
 final class DefaultGuestProfiler implements GuestProfiler {
 
   private final Store store;
@@ -100,9 +104,10 @@ final class DefaultGuestProfiler implements GuestProfiler {
     if (profiling) {
       throw new IllegalStateException("Profiling must be stopped before getting data");
     }
-    Duration duration = startTime != null && stopTime != null
-        ? Duration.between(startTime, stopTime)
-        : Duration.ZERO;
+    Duration duration =
+        startTime != null && stopTime != null
+            ? Duration.between(startTime, stopTime)
+            : Duration.ZERO;
 
     return new ProfileData(
         duration,
@@ -211,8 +216,10 @@ final class DefaultGuestProfiler implements GuestProfiler {
   private String exportAsFlamegraph(final ProfileData data) {
     StringBuilder sb = new StringBuilder();
     for (ProfileData.FunctionProfile fp : data.getFunctionProfiles()) {
-      sb.append(fp.getFunctionName()).append(" ")
-          .append(fp.getSelfTime().toNanos() / 1000).append("\n");
+      sb.append(fp.getFunctionName())
+          .append(" ")
+          .append(fp.getSelfTime().toNanos() / 1000)
+          .append("\n");
     }
     return sb.toString();
   }
@@ -246,10 +253,12 @@ final class DefaultGuestProfiler implements GuestProfiler {
     sb.append("samples: ").append(data.getTotalFunctionCalls()).append("\n\n");
 
     for (ProfileData.FunctionProfile fp : data.getFunctionProfiles()) {
-      sb.append(String.format("%8d %8d %s%n",
-          fp.getSelfTime().toNanos() / 1000,
-          fp.getTotalTime().toNanos() / 1000,
-          fp.getFunctionName()));
+      sb.append(
+          String.format(
+              "%8d %8d %s%n",
+              fp.getSelfTime().toNanos() / 1000,
+              fp.getTotalTime().toNanos() / 1000,
+              fp.getFunctionName()));
     }
     return sb.toString();
   }

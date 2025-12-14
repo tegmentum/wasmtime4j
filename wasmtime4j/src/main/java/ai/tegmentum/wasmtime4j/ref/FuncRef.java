@@ -29,18 +29,20 @@ import java.util.Optional;
  * Represents a WebAssembly function reference (funcref).
  *
  * <p>FuncRef is a first-class reference to a WebAssembly function that can be stored in tables,
- * passed as arguments, or returned from functions. Unlike ExternRef, FuncRef references are
- * typed and can only hold references to functions.
+ * passed as arguments, or returned from functions. Unlike ExternRef, FuncRef references are typed
+ * and can only hold references to functions.
  *
  * <p>FuncRef is part of the WebAssembly reference types proposal and provides:
+ *
  * <ul>
- *   <li>First-class function references that can be passed around</li>
- *   <li>Typed function pointers for indirect calls</li>
- *   <li>Null function references for optional function values</li>
- *   <li>Type-safe function invocation</li>
+ *   <li>First-class function references that can be passed around
+ *   <li>Typed function pointers for indirect calls
+ *   <li>Null function references for optional function values
+ *   <li>Type-safe function invocation
  * </ul>
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * // Get a function reference from a table or export
  * FuncRef funcRef = table.get(store, 0, FuncRef.class);
@@ -59,6 +61,7 @@ import java.util.Optional;
  * }</pre>
  *
  * <p>Type hierarchy:
+ *
  * <pre>
  *       func (top)
  *         |
@@ -74,8 +77,8 @@ public interface FuncRef extends HeapType {
   /**
    * Creates a null function reference.
    *
-   * <p>A null funcref represents the absence of a function reference. It can be used
-   * as a default value in tables or to indicate an optional function.
+   * <p>A null funcref represents the absence of a function reference. It can be used as a default
+   * value in tables or to indicate an optional function.
    *
    * @return a null function reference
    */
@@ -155,9 +158,7 @@ public interface FuncRef extends HeapType {
     return "funcref";
   }
 
-  /**
-   * Null function reference implementation.
-   */
+  /** Null function reference implementation. */
   final class NullFuncRefImpl implements FuncRef {
 
     static final NullFuncRefImpl INSTANCE = new NullFuncRefImpl();
@@ -213,9 +214,7 @@ public interface FuncRef extends HeapType {
     }
   }
 
-  /**
-   * Function reference wrapping a WebAssembly function.
-   */
+  /** Function reference wrapping a WebAssembly function. */
   final class WasmFunctionRefImpl implements FuncRef {
 
     private final WasmFunction function;

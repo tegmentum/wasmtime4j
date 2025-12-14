@@ -50,6 +50,11 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+    value = "URF_UNREAD_FIELD",
+    justification =
+        "Configuration fields defaultReplicationStrategy, nodeTimeout, maxReplicationRetries"
+            + " reserved for future cross-region replication implementation")
 public final class GlobalDistributionSystem {
 
   private static final Logger LOGGER = Logger.getLogger(GlobalDistributionSystem.class.getName());

@@ -19,9 +19,9 @@ package ai.tegmentum.wasmtime4j.config;
 /**
  * Configuration for the level of detail included in WebAssembly backtraces.
  *
- * <p>When a WebAssembly trap occurs, wasmtime can generate backtraces with varying
- * levels of detail. This configuration controls how much information is captured,
- * which affects both the usefulness of error messages and the runtime overhead.
+ * <p>When a WebAssembly trap occurs, wasmtime can generate backtraces with varying levels of
+ * detail. This configuration controls how much information is captured, which affects both the
+ * usefulness of error messages and the runtime overhead.
  *
  * <p>Example usage:
  *
@@ -38,14 +38,15 @@ public enum WasmBacktraceDetails {
   /**
    * Disable backtrace collection entirely.
    *
-   * <p>No backtrace information will be captured when a trap occurs. This provides
-   * the best performance but the least debugging information.
+   * <p>No backtrace information will be captured when a trap occurs. This provides the best
+   * performance but the least debugging information.
    *
    * <p>Use this setting when:
+   *
    * <ul>
-   *   <li>Maximum performance is critical</li>
-   *   <li>Debugging information is not needed</li>
-   *   <li>Running trusted code that shouldn't trap</li>
+   *   <li>Maximum performance is critical
+   *   <li>Debugging information is not needed
+   *   <li>Running trusted code that shouldn't trap
    * </ul>
    */
   DISABLE(0),
@@ -53,13 +54,14 @@ public enum WasmBacktraceDetails {
   /**
    * Enable basic backtrace collection.
    *
-   * <p>Backtraces will include function names and module information when available.
-   * This provides a good balance between debugging capability and performance.
+   * <p>Backtraces will include function names and module information when available. This provides
+   * a good balance between debugging capability and performance.
    *
    * <p>Use this setting for:
+   *
    * <ul>
-   *   <li>Development and debugging</li>
-   *   <li>Production environments where debugging is sometimes needed</li>
+   *   <li>Development and debugging
+   *   <li>Production environments where debugging is sometimes needed
    * </ul>
    */
   ENABLE(1),
@@ -67,13 +69,14 @@ public enum WasmBacktraceDetails {
   /**
    * Use environment-based configuration.
    *
-   * <p>The backtrace detail level is determined by the WASMTIME_BACKTRACE_DETAILS
-   * environment variable. If not set, defaults to ENABLE.
+   * <p>The backtrace detail level is determined by the WASMTIME_BACKTRACE_DETAILS environment
+   * variable. If not set, defaults to ENABLE.
    *
    * <p>Valid environment values:
+   *
    * <ul>
-   *   <li>"0" or "disable" - equivalent to DISABLE</li>
-   *   <li>"1" or "enable" - equivalent to ENABLE</li>
+   *   <li>"0" or "disable" - equivalent to DISABLE
+   *   <li>"1" or "enable" - equivalent to ENABLE
    * </ul>
    */
   ENVIRONMENT(2);

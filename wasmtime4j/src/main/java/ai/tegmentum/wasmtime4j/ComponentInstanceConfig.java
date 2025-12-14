@@ -14,8 +14,9 @@ import java.util.Map;
  */
 @SuppressFBWarnings(
     value = "URF_UNREAD_FIELD",
-    justification = "Configuration fields are part of the public API and will be used as"
-        + " implementation expands. Fields store builder state for future native bindings.")
+    justification =
+        "Configuration fields are part of the public API and will be used as"
+            + " implementation expands. Fields store builder state for future native bindings.")
 public final class ComponentInstanceConfig {
 
   // Resource Management

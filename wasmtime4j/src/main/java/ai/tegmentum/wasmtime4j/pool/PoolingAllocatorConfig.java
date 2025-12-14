@@ -257,8 +257,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the maximum number of unused warm slots to retain.
    *
-   * <p>When using the pooling allocator with affine slot selection, this configures
-   * how many "warm" slots are retained for reuse by an affine allocation.
+   * <p>When using the pooling allocator with affine slot selection, this configures how many "warm"
+   * slots are retained for reuse by an affine allocation.
    *
    * @return the max unused warm slots
    * @since 1.1.0
@@ -268,8 +268,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the decommit batch size.
    *
-   * <p>This controls how many pages are decommitted at once, which can help amortize
-   * the cost of decommit operations.
+   * <p>This controls how many pages are decommitted at once, which can help amortize the cost of
+   * decommit operations.
    *
    * @return the decommit batch size
    * @since 1.1.0
@@ -279,9 +279,9 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the amount of linear memory to keep resident in bytes.
    *
-   * <p>This controls the minimum amount of memory that will remain resident
-   * after an instance is deallocated, avoiding expensive decommit/recommit cycles.
-   * A value of 0 means use the system default.
+   * <p>This controls the minimum amount of memory that will remain resident after an instance is
+   * deallocated, avoiding expensive decommit/recommit cycles. A value of 0 means use the system
+   * default.
    *
    * @return the linear memory keep resident size
    * @since 1.1.0
@@ -291,8 +291,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the amount of table memory to keep resident in bytes.
    *
-   * <p>This controls the minimum amount of table memory that will remain resident
-   * after an instance is deallocated. A value of 0 means use the system default.
+   * <p>This controls the minimum amount of table memory that will remain resident after an instance
+   * is deallocated. A value of 0 means use the system default.
    *
    * @return the table keep resident size
    * @since 1.1.0
@@ -302,8 +302,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the amount of async stack memory to keep resident in bytes.
    *
-   * <p>This controls the minimum amount of async stack memory that will remain resident
-   * after an instance is deallocated. A value of 0 means use the system default.
+   * <p>This controls the minimum amount of async stack memory that will remain resident after an
+   * instance is deallocated. A value of 0 means use the system default.
    *
    * @return the async stack keep resident size
    * @since 1.1.0
@@ -313,8 +313,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the total number of memories that can be allocated in the pool.
    *
-   * <p>This is separate from instance count and controls the total memory slots
-   * available across all instances.
+   * <p>This is separate from instance count and controls the total memory slots available across
+   * all instances.
    *
    * @return the total memories
    * @since 1.1.0
@@ -324,8 +324,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the maximum size of core instance metadata in bytes.
    *
-   * <p>This limits the amount of memory used for instance metadata like globals,
-   * exported function trampolines, etc.
+   * <p>This limits the amount of memory used for instance metadata like globals, exported function
+   * trampolines, etc.
    *
    * @return the max core instance size
    * @since 1.1.0
@@ -355,8 +355,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the maximum number of memories per component.
    *
-   * <p>This limits how many linear memories a single component can use across
-   * all of its internal modules.
+   * <p>This limits how many linear memories a single component can use across all of its internal
+   * modules.
    *
    * @return the max memories per component
    * @since 1.1.0
@@ -376,8 +376,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets whether memory protection keys (MPK) are enabled.
    *
-   * <p>Memory protection keys are a Linux/x86-specific feature that provides
-   * hardware-assisted memory isolation between instances.
+   * <p>Memory protection keys are a Linux/x86-specific feature that provides hardware-assisted
+   * memory isolation between instances.
    *
    * @return true if MPK is enabled
    * @since 1.1.0
@@ -387,8 +387,8 @@ public interface PoolingAllocatorConfig {
   /**
    * Gets the maximum number of memory protection keys to use.
    *
-   * <p>This is only relevant on Linux/x86 systems that support MPK.
-   * A value of 0 means MPK is disabled.
+   * <p>This is only relevant on Linux/x86 systems that support MPK. A value of 0 means MPK is
+   * disabled.
    *
    * @return the max memory protection keys
    * @since 1.1.0

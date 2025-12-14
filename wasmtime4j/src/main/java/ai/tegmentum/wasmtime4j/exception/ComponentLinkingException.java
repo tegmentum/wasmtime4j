@@ -15,8 +15,9 @@ import java.util.Set;
  */
 @SuppressFBWarnings(
     value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
-    justification = "Transient fields contain detailed linking context not needed after"
-        + " deserialization; core exception message is preserved")
+    justification =
+        "Transient fields contain detailed linking context not needed after"
+            + " deserialization; core exception message is preserved")
 public class ComponentLinkingException extends WasmException {
 
   private static final long serialVersionUID = 1L;

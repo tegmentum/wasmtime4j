@@ -408,14 +408,15 @@ public interface Instance extends Closeable {
   /**
    * Creates an instance of a WebAssembly module asynchronously.
    *
-   * <p>This method performs module instantiation in an async context, allowing the operation
-   * to yield during start function execution if the module uses async features.
+   * <p>This method performs module instantiation in an async context, allowing the operation to
+   * yield during start function execution if the module uses async features.
    *
    * <p>This is useful when:
+   *
    * <ul>
-   *   <li>The module's start function may perform async operations</li>
-   *   <li>Resource limiting with async callbacks is enabled</li>
-   *   <li>The instantiation may take significant time</li>
+   *   <li>The module's start function may perform async operations
+   *   <li>Resource limiting with async callbacks is enabled
+   *   <li>The instantiation may take significant time
    * </ul>
    *
    * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
@@ -433,13 +434,14 @@ public interface Instance extends Closeable {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return store.createInstance(module);
-      } catch (WasmException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return store.createInstance(module);
+          } catch (WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**

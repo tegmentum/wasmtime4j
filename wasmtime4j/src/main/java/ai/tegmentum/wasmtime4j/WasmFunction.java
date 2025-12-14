@@ -185,16 +185,17 @@ public interface WasmFunction {
   /**
    * Calls this function without type checking using raw values.
    *
-   * <p>This is a low-level method that bypasses type validation for maximum performance.
-   * The caller is responsible for ensuring that the ValRaw values have the correct types
-   * matching the function signature.
+   * <p>This is a low-level method that bypasses type validation for maximum performance. The caller
+   * is responsible for ensuring that the ValRaw values have the correct types matching the function
+   * signature.
    *
-   * <p><b>Warning:</b> Incorrect types may cause undefined behavior, memory corruption,
-   * or JVM crashes. Only use this method when:
+   * <p><b>Warning:</b> Incorrect types may cause undefined behavior, memory corruption, or JVM
+   * crashes. Only use this method when:
+   *
    * <ul>
-   *   <li>You have already validated the types externally</li>
-   *   <li>You need the absolute maximum performance</li>
-   *   <li>You understand the risks of bypassing type safety</li>
+   *   <li>You have already validated the types externally
+   *   <li>You need the absolute maximum performance
+   *   <li>You understand the risks of bypassing type safety
    * </ul>
    *
    * @param params the raw parameter values
@@ -220,8 +221,8 @@ public interface WasmFunction {
   /**
    * Gets the raw function reference for use with unchecked calls.
    *
-   * <p>This method returns a handle suitable for direct native calls without
-   * going through the Java type system. The returned value is implementation-specific.
+   * <p>This method returns a handle suitable for direct native calls without going through the Java
+   * type system. The returned value is implementation-specific.
    *
    * @return the native function handle
    * @since 1.1.0

@@ -39,8 +39,9 @@ import java.util.regex.Pattern;
  */
 @SuppressFBWarnings(
     value = {"URF_UNREAD_FIELD", "REDOS"},
-    justification = "Validator field reserved for future validation; possessive quantifiers"
-        + " mitigate ReDoS but pattern flagged conservatively")
+    justification =
+        "Validator field reserved for future validation; possessive quantifiers"
+            + " mitigate ReDoS but pattern flagged conservatively")
 public final class WitInterfaceParser {
 
   private static final Pattern INTERFACE_PATTERN =

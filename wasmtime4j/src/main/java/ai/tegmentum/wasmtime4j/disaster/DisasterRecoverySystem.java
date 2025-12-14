@@ -63,10 +63,12 @@ import java.util.zip.GZIPOutputStream;
  * @since 1.0.0
  */
 @SuppressFBWarnings(
-    value = "REC_CATCH_EXCEPTION",
+    value = {"REC_CATCH_EXCEPTION", "URF_UNREAD_FIELD"},
     justification =
-        "Broad exception catching for defensive disaster recovery;"
-            + " ensures recovery operations continue even with unexpected failures")
+        "REC_CATCH_EXCEPTION: Broad exception catching for defensive disaster recovery;"
+            + " ensures recovery operations continue even with unexpected failures."
+            + " URF_UNREAD_FIELD: Configuration fields backupInterval etc. reserved for"
+            + " future scheduled backup integration")
 public final class DisasterRecoverySystem {
 
   private static final Logger LOGGER = Logger.getLogger(DisasterRecoverySystem.class.getName());

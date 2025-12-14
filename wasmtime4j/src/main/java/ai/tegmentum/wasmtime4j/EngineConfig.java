@@ -714,8 +714,8 @@ public final class EngineConfig {
   /**
    * Sets a custom stack creator for async execution.
    *
-   * <p>This allows customization of how async stacks are allocated, enabling
-   * custom memory management, stack pooling, and guard page configuration.
+   * <p>This allows customization of how async stacks are allocated, enabling custom memory
+   * management, stack pooling, and guard page configuration.
    *
    * @param creator the stack creator, or null to use the default
    * @return this configuration for method chaining
@@ -1406,9 +1406,8 @@ public final class EngineConfig {
   /**
    * Enables or disables zeroing of async stacks when not in use.
    *
-   * <p>When enabled, async stacks are zeroed when transitioning out of WebAssembly code.
-   * This provides defense-in-depth against potential information leaks but has a small
-   * performance cost.
+   * <p>When enabled, async stacks are zeroed when transitioning out of WebAssembly code. This
+   * provides defense-in-depth against potential information leaks but has a small performance cost.
    *
    * <p>Default: false
    *
@@ -1434,9 +1433,9 @@ public final class EngineConfig {
   /**
    * Enables or disables emission of native unwind information (.eh_frame on Linux).
    *
-   * <p>When enabled, the JIT compiler emits unwind tables that allow native debuggers
-   * and profilers to properly unwind WebAssembly stack frames. This is useful for
-   * integration with system-level debugging tools.
+   * <p>When enabled, the JIT compiler emits unwind tables that allow native debuggers and profilers
+   * to properly unwind WebAssembly stack frames. This is useful for integration with system-level
+   * debugging tools.
    *
    * <p>Default: true
    *
@@ -1462,9 +1461,9 @@ public final class EngineConfig {
   /**
    * Enables or disables NaN canonicalization in the Cranelift compiler.
    *
-   * <p>When enabled, all NaN values produced by floating-point operations are
-   * canonicalized to a single representation. This provides deterministic behavior
-   * across platforms but may have a small performance cost.
+   * <p>When enabled, all NaN values produced by floating-point operations are canonicalized to a
+   * single representation. This provides deterministic behavior across platforms but may have a
+   * small performance cost.
    *
    * <p>Default: false
    *
@@ -1490,9 +1489,9 @@ public final class EngineConfig {
   /**
    * Enables or disables copy-on-write (CoW) initialization for linear memory.
    *
-   * <p>When enabled, linear memory is initialized using copy-on-write semantics,
-   * which can significantly reduce memory usage when running multiple instances
-   * of the same module with similar memory contents.
+   * <p>When enabled, linear memory is initialized using copy-on-write semantics, which can
+   * significantly reduce memory usage when running multiple instances of the same module with
+   * similar memory contents.
    *
    * <p>Default: true
    *
@@ -1518,8 +1517,8 @@ public final class EngineConfig {
   /**
    * Enables or disables the WebAssembly exception handling proposal.
    *
-   * <p>When enabled, WebAssembly modules can use the exception handling instructions
-   * (try, catch, throw, rethrow) for structured error handling.
+   * <p>When enabled, WebAssembly modules can use the exception handling instructions (try, catch,
+   * throw, rethrow) for structured error handling.
    *
    * <p>Default: false
    *
@@ -1545,9 +1544,8 @@ public final class EngineConfig {
   /**
    * Enables or disables async builtins for the component model.
    *
-   * <p>When enabled, components can use async-compatible builtin functions for
-   * operations like memory allocation and string encoding. This is required for
-   * full async component model support.
+   * <p>When enabled, components can use async-compatible builtin functions for operations like
+   * memory allocation and string encoding. This is required for full async component model support.
    *
    * <p>Default: false
    *

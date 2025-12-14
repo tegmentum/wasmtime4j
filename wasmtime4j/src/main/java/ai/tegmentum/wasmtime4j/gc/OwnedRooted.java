@@ -179,8 +179,8 @@ public final class OwnedRooted<T> implements AutoCloseable {
   /**
    * Releases this owned rooted reference.
    *
-   * <p>After releasing, any attempt to access the underlying value will throw an exception.
-   * The GC object may be collected if no other references exist.
+   * <p>After releasing, any attempt to access the underlying value will throw an exception. The GC
+   * object may be collected if no other references exist.
    */
   public void release() {
     released = true;
@@ -234,7 +234,14 @@ public final class OwnedRooted<T> implements AutoCloseable {
 
   @Override
   public String toString() {
-    return "OwnedRooted{value=" + value + ", rootId=" + rootId
-        + ", storeId=" + storeId + ", released=" + released + "}";
+    return "OwnedRooted{value="
+        + value
+        + ", rootId="
+        + rootId
+        + ", storeId="
+        + storeId
+        + ", released="
+        + released
+        + "}";
   }
 }
