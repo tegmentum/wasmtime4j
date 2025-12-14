@@ -341,9 +341,7 @@ public final class WitFunctionBinder {
 
     // Basic primitive type compatibility
     if (witType.isPrimitive()) {
-      final WitTypeKind kind = witType.getKind();
-      // This would require access to the primitive type from the kind
-      // For now, use name-based matching
+      // Use name-based matching for primitive compatibility
       return isJavaTypePrimitiveCompatible(javaType, witType.getName());
     }
 

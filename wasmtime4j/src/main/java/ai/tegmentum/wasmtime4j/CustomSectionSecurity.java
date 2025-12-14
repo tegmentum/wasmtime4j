@@ -262,9 +262,13 @@ public final class CustomSectionSecurity {
 
     // Validate encoding for text-based sections
     if (isTextBasedSection(section.getType())) {
+      java.nio.charset.CharsetDecoder decoder =
+          java.nio.charset.StandardCharsets.UTF_8.newDecoder();
+      decoder.onMalformedInput(java.nio.charset.CodingErrorAction.REPORT);
+      decoder.onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT);
       try {
-        new String(section.getData(), java.nio.charset.StandardCharsets.UTF_8);
-      } catch (final Exception e) {
+        decoder.decode(java.nio.ByteBuffer.wrap(section.getData()));
+      } catch (final java.nio.charset.CharacterCodingException e) {
         builder.addWarning(section.getName(), "Section does not contain valid UTF-8 text");
       }
     }
@@ -311,15 +315,6 @@ public final class CustomSectionSecurity {
     // For now, just return the original data
     // In a full implementation, this could remove suspicious patterns
     return data;
-  }
-
-  private static List<CustomSectionValidationResult.ValidationIssue> combineIssues(
-      final List<CustomSectionValidationResult.ValidationIssue> existingIssues,
-      final List<CustomSectionValidationResult.ValidationIssue> newIssues) {
-    final List<CustomSectionValidationResult.ValidationIssue> combined =
-        new java.util.ArrayList<>(existingIssues);
-    combined.addAll(newIssues);
-    return combined;
   }
 
   /** Security configuration for custom section handling. */

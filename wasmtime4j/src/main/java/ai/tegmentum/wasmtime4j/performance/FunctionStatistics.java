@@ -161,7 +161,7 @@ public final class FunctionStatistics {
     if (basicBlockCount == 0) {
       return true;
     }
-    final long microsPerBlock = compilationTime.toNanos() / (basicBlockCount * 1000);
+    final long microsPerBlock = compilationTime.toNanos() / ((long) basicBlockCount * 1000);
     return microsPerBlock < 100;
   }
 

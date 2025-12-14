@@ -275,15 +275,6 @@ public interface FunctionContext {
       public FunctionMetrics getMetrics() {
         return metrics;
       }
-
-      // Package-private methods for updating state
-      void incrementCallDepth() {
-        currentCallDepth++;
-      }
-
-      void decrementCallDepth() {
-        currentCallDepth = Math.max(0, currentCallDepth - 1);
-      }
     };
   }
 

@@ -185,7 +185,7 @@ public final class GcStats {
     if (elapsed.isZero() || elapsed.isNegative()) {
       return 0.0;
     }
-    return bytesAllocated / elapsed.toNanos() * 1_000_000_000.0;
+    return (double) bytesAllocated / elapsed.toNanos() * 1_000_000_000.0;
   }
 
   /**

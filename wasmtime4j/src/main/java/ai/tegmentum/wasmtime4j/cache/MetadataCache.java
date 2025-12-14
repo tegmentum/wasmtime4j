@@ -708,7 +708,6 @@ public final class MetadataCache {
     cacheLock.writeLock().lock();
     try {
       // Remove expired entries
-      final long currentTime = System.currentTimeMillis();
       l2Cache
           .entrySet()
           .removeIf(

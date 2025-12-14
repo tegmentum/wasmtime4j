@@ -370,10 +370,15 @@ public final class ChaosEngineeringFramework {
           cpuThreads[i] =
               new Thread(
                   () -> {
+                    double cpuSink = 0.0;
                     while (active) {
                       // CPU-intensive work
                       for (int j = 0; j < intensityPercent * 1000; j++) {
-                        Math.sin(SECURE_RANDOM.nextDouble());
+                        cpuSink += Math.sin(SECURE_RANDOM.nextDouble());
+                      }
+                      // Use result to prevent dead code elimination
+                      if (cpuSink == Double.MAX_VALUE) {
+                        cpuSink = 0.0;
                       }
                       try {
                         Thread.sleep(100 - intensityPercent); // Brief pause based on intensity
