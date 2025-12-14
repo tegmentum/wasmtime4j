@@ -289,6 +289,9 @@ public final class TypeValidationCache {
    *
    * @return the type validation cache instance
    */
+  @SuppressFBWarnings(
+      value = "MS_EXPOSE_REP",
+      justification = "Singleton pattern - returning the single shared instance is intentional")
   public static TypeValidationCache getInstance() {
     if (instance == null) {
       synchronized (INSTANCE_LOCK) {

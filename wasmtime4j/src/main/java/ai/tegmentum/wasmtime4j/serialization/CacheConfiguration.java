@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.serialization;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -109,6 +110,9 @@ public final class CacheConfiguration {
     return diskCacheEnabled;
   }
 
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP",
+      justification = "Connector is intentionally shared as the configured cache connector instance")
   public ModuleSerializationCache.DistributedCacheConnector getDistributedCacheConnector() {
     return distributedCacheConnector;
   }

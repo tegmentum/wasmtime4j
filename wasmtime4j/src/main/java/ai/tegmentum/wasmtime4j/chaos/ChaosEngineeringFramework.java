@@ -231,6 +231,9 @@ public final class ChaosEngineeringFramework {
      * @param metrics experiment metrics
      * @param exception exception thrown during experiment (if any)
      */
+    @SuppressFBWarnings(
+        value = "EI_EXPOSE_REP2",
+        justification = "Throwable objects cannot be defensively copied and must be stored as-is")
     public ChaosExperimentResult(
         final String experimentId,
         final boolean successful,
@@ -243,6 +246,7 @@ public final class ChaosEngineeringFramework {
       this.executionTime = executionTime;
       this.resultMessage = resultMessage;
       this.metrics = Map.copyOf(metrics != null ? metrics : Map.of());
+      // Suppress EI_EXPOSE_REP2 - Throwable cannot be defensively copied
       this.exception = exception;
       this.timestamp = Instant.now();
     }
@@ -267,6 +271,9 @@ public final class ChaosEngineeringFramework {
       return metrics;
     }
 
+    @SuppressFBWarnings(
+        value = "EI_EXPOSE_REP",
+        justification = "Throwable objects cannot be defensively copied and must be returned as-is")
     public Throwable getException() {
       return exception;
     }

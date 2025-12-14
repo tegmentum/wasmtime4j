@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -64,6 +65,9 @@ public final class GcRootManager {
    *
    * @return the root manager instance
    */
+  @SuppressFBWarnings(
+      value = "MS_EXPOSE_REP",
+      justification = "Singleton pattern - returning the single shared instance is intentional")
   public static GcRootManager getInstance() {
     if (instance == null) {
       synchronized (GcRootManager.class) {

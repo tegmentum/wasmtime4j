@@ -446,6 +446,9 @@ public final class MetadataCache {
    *
    * @return the metadata cache instance
    */
+  @SuppressFBWarnings(
+      value = "MS_EXPOSE_REP",
+      justification = "Singleton pattern - returning the single shared instance is intentional")
   public static MetadataCache getInstance() {
     if (instance == null) {
       synchronized (INSTANCE_LOCK) {

@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.exception;
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Tag;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -100,6 +101,9 @@ public final class ThrownException {
    *
    * @return an unmodifiable list of payload values
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP",
+      justification = "Payload is already unmodifiable via Collections.unmodifiableList")
   public List<WasmValue> getPayload() {
     return payload;
   }

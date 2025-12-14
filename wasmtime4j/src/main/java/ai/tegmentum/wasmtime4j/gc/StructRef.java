@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -100,6 +101,10 @@ public final class StructRef implements GcRef {
    *
    * @return the struct instance, or null if this is a null reference
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP",
+      justification = "GC references require direct access to internal instance for WebAssembly"
+          + " interop")
   public StructInstance getInstance() {
     return instance;
   }

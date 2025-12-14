@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -192,6 +193,10 @@ public final class RootScope implements AutoCloseable {
    *
    * @return the store
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP",
+      justification = "Store is intentionally shared as it represents the WebAssembly runtime"
+          + " context")
   public Store getStore() {
     return store;
   }

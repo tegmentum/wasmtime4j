@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.async;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -157,6 +158,9 @@ public final class AsyncExecutionContext {
    *
    * @param error the error that occurred
    */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP2",
+      justification = "Throwable objects cannot be defensively copied and must be stored as-is")
   public void setError(final Throwable error) {
     this.error = error;
     this.completed = true;
