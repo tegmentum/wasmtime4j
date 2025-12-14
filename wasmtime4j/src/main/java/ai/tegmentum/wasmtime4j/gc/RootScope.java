@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A scope for managing rooted GC references with automatic cleanup.
@@ -51,16 +52,17 @@ import java.util.Objects;
  */
 public final class RootScope implements AutoCloseable {
 
+  private static final AtomicLong SCOPE_ID_COUNTER = new AtomicLong(0);
+
   private final Store store;
   private final List<Rooted<?>> rootedRefs;
   private final long scopeId;
   private volatile boolean closed;
-  private static long scopeIdCounter = 0;
 
   private RootScope(final Store store) {
     this.store = Objects.requireNonNull(store, "store cannot be null");
     this.rootedRefs = new ArrayList<>();
-    this.scopeId = ++scopeIdCounter;
+    this.scopeId = SCOPE_ID_COUNTER.incrementAndGet();
     this.closed = false;
   }
 

@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents a WebAssembly external reference with type-safe wrapping.
@@ -57,7 +58,7 @@ import java.util.Optional;
  */
 public final class ExternRef<T> {
 
-  private static long idCounter = 0;
+  private static final AtomicLong ID_COUNTER = new AtomicLong(0);
 
   private final T value;
   private final Class<T> type;
@@ -73,7 +74,7 @@ public final class ExternRef<T> {
   private ExternRef(final T value, final Class<T> type) {
     this.value = value;
     this.type = type != null ? type : (value != null ? (Class<T>) value.getClass() : null);
-    this.id = ++idCounter;
+    this.id = ID_COUNTER.incrementAndGet();
   }
 
   /**

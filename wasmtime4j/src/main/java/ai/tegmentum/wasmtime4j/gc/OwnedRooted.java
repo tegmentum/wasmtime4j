@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.gc;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An owned rooted reference to a GC-managed WebAssembly object.
@@ -44,15 +45,16 @@ import java.util.Objects;
  */
 public final class OwnedRooted<T> implements AutoCloseable {
 
+  private static final AtomicLong ID_COUNTER = new AtomicLong(0);
+
   private final T value;
   private final long rootId;
   private final long storeId;
   private volatile boolean released;
-  private static long idCounter = 0;
 
   private OwnedRooted(final T value, final long storeId) {
     this.value = Objects.requireNonNull(value, "value cannot be null");
-    this.rootId = ++idCounter;
+    this.rootId = ID_COUNTER.incrementAndGet();
     this.storeId = storeId;
     this.released = false;
   }

@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.gc;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents a WebAssembly {@code arrayref} reference type.
@@ -48,13 +49,14 @@ import java.util.Objects;
  */
 public final class ArrayRef implements GcRef {
 
+  private static final AtomicLong ID_COUNTER = new AtomicLong(0);
+
   private final ArrayInstance instance;
   private final long id;
-  private static long idCounter = 0;
 
   private ArrayRef(final ArrayInstance instance) {
     this.instance = instance;
-    this.id = ++idCounter;
+    this.id = ID_COUNTER.incrementAndGet();
   }
 
   /**

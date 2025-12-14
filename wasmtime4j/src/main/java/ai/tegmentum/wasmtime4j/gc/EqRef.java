@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.gc;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Represents a WebAssembly {@code eqref} reference type.
@@ -51,13 +52,14 @@ import java.util.Objects;
  */
 public final class EqRef implements GcRef {
 
+  private static final AtomicLong ID_COUNTER = new AtomicLong(0);
+
   private final GcObject value;
   private final long id;
-  private static long idCounter = 0;
 
   private EqRef(final GcObject value) {
     this.value = value;
-    this.id = ++idCounter;
+    this.id = ID_COUNTER.incrementAndGet();
   }
 
   /**
