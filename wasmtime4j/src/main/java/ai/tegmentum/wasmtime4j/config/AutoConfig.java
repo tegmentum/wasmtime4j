@@ -6,9 +6,6 @@ import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.config.profiles.OptimizationTemplate;
 import ai.tegmentum.wasmtime4j.config.profiles.PerformanceProfile;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
@@ -519,8 +516,7 @@ public final class AutoConfig {
     private final Map<String, String> environmentProperties;
 
     private RuntimeEnvironment() {
-      final RuntimeMXBean runtimeMX = ManagementFactory.getRuntimeMXBean();
-
+      // Note: ManagementFactory.getRuntimeMXBean() is used in detectDevelopmentMode()
       this.javaVersion = System.getProperty("java.version");
       this.javaVendor = System.getProperty("java.vendor");
       this.developmentMode = detectDevelopmentMode();
@@ -600,9 +596,8 @@ public final class AutoConfig {
     private final boolean detailedCpuInfo;
 
     private SystemCapabilities() {
-      final OperatingSystemMXBean osMX = ManagementFactory.getOperatingSystemMXBean();
-      final MemoryMXBean memoryMX = ManagementFactory.getMemoryMXBean();
-
+      // Use Runtime directly for processor count and memory
+      // OperatingSystemMXBean and MemoryMXBean not needed for current implementation
       this.processorCount = Runtime.getRuntime().availableProcessors();
       this.availableMemoryMB = Runtime.getRuntime().maxMemory() / (1024 * 1024);
       this.operatingSystem = System.getProperty("os.name");
