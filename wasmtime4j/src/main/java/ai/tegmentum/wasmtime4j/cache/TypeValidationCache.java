@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -92,7 +93,7 @@ public final class TypeValidationCache {
     final ValidationResult result;
     final long createdTime;
     volatile long lastAccessTime;
-    volatile int accessCount;
+    final AtomicInteger accessCount;
     final long validationTimeMs;
 
     ValidationCacheEntry(
@@ -101,13 +102,13 @@ public final class TypeValidationCache {
       this.result = result;
       this.createdTime = System.currentTimeMillis();
       this.lastAccessTime = createdTime;
-      this.accessCount = 1;
+      this.accessCount = new AtomicInteger(1);
       this.validationTimeMs = validationTimeMs;
     }
 
     void recordAccess() {
       lastAccessTime = System.currentTimeMillis();
-      accessCount++;
+      accessCount.incrementAndGet();
     }
 
     boolean isExpired() {
@@ -122,7 +123,7 @@ public final class TypeValidationCache {
     final String reason;
     final long createdTime;
     volatile long lastAccessTime;
-    volatile int accessCount;
+    final AtomicInteger accessCount;
 
     CompatibilityCacheEntry(final String key, final boolean compatible, final String reason) {
       this.key = key;
@@ -130,12 +131,12 @@ public final class TypeValidationCache {
       this.reason = reason;
       this.createdTime = System.currentTimeMillis();
       this.lastAccessTime = createdTime;
-      this.accessCount = 1;
+      this.accessCount = new AtomicInteger(1);
     }
 
     void recordAccess() {
       lastAccessTime = System.currentTimeMillis();
-      accessCount++;
+      accessCount.incrementAndGet();
     }
 
     boolean isExpired() {
