@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,9 @@ public final class WitFunctionBinder {
    * @param methodName the Java method name
    * @throws WasmException if binding fails
    */
+  @SuppressFBWarnings(
+      value = "REC_CATCH_EXCEPTION",
+      justification = "Intentionally catching Exception to wrap all failures in WasmException")
   public void bindFunction(
       final String functionName,
       final WitInterfaceParser.WitFunction function,
