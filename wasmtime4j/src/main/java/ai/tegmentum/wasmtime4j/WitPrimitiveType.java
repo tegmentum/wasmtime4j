@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 
 /**
@@ -175,6 +176,9 @@ public enum WitPrimitiveType {
    * @return the corresponding primitive type
    * @throws IllegalArgumentException if the type name is not recognized
    */
+  @SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification = "WIT type names are ASCII-only specification identifiers")
   public static WitPrimitiveType fromString(final String typeName) {
     if (typeName == null || typeName.isEmpty()) {
       throw new IllegalArgumentException("Type name cannot be null or empty");

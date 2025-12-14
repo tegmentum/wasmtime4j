@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -189,8 +190,9 @@ public final class ConfigProperties {
     return getString(key)
         .map(
             value -> {
-              return "true".equalsIgnoreCase(value)
-                  || "yes".equalsIgnoreCase(value)
+              final String lowerValue = value.toLowerCase(Locale.ROOT);
+              return "true".equals(lowerValue)
+                  || "yes".equals(lowerValue)
                   || "1".equals(value);
             });
   }

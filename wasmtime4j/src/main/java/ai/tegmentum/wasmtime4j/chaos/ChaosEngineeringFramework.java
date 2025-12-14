@@ -865,6 +865,9 @@ public final class ChaosEngineeringFramework {
    *
    * @return formatted status report
    */
+  @SuppressFBWarnings(
+      value = "VA_FORMAT_STRING_USES_NEWLINE",
+      justification = "Using \\n for consistent output in status report display")
   public String getActiveExperimentsStatus() {
     if (activeExperiments.isEmpty()) {
       return "No active chaos experiments";

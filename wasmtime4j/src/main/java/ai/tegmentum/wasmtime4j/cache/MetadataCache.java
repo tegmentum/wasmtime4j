@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.cache;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -623,6 +624,9 @@ public final class MetadataCache {
    *
    * @return formatted cache statistics
    */
+  @SuppressFBWarnings(
+      value = "VA_FORMAT_STRING_USES_NEWLINE",
+      justification = "Using \\n for consistent output across platforms in statistics display")
   public String getStatistics() {
     if (!enabled) {
       return "Metadata cache is disabled";

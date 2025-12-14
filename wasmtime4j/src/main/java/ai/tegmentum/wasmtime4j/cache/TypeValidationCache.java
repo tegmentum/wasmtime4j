@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.cache;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -636,6 +637,9 @@ public final class TypeValidationCache {
    *
    * @return formatted cache statistics
    */
+  @SuppressFBWarnings(
+      value = "VA_FORMAT_STRING_USES_NEWLINE",
+      justification = "Using \\n for consistent output across platforms in statistics display")
   public String getStatistics() {
     if (!enabled) {
       return "Type validation cache is disabled";
