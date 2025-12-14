@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wasi.keyvalue;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,6 +69,9 @@ public final class KeyValueEntry {
    *
    * @return the value bytes
    */
+  @SuppressFBWarnings(
+      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+      justification = "Null indicates key not found vs empty array for empty value")
   public byte[] getValue() {
     return value != null ? value.clone() : null;
   }

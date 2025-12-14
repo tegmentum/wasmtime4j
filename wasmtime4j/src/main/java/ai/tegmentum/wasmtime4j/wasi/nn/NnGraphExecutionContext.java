@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wasi.nn;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
 
@@ -226,6 +227,9 @@ public interface NnGraphExecutionContext extends AutoCloseable {
      *
      * @return the dimensions (null means dynamic)
      */
+    @SuppressFBWarnings(
+        value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+        justification = "Null indicates dynamic dimensions vs empty array for scalar tensor")
     public int[] getDimensions() {
       return dimensions != null ? dimensions.clone() : null;
     }

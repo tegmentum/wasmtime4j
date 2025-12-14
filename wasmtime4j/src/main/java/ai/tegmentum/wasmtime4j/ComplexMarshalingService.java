@@ -799,6 +799,9 @@ public final class ComplexMarshalingService {
       }
     }
 
+    @SuppressFBWarnings(
+        value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+        justification = "Null semantically indicates no value data vs empty array for empty data")
     public byte[] getValueData() {
       return valueData != null ? valueData.clone() : null;
     }
@@ -842,6 +845,9 @@ public final class ComplexMarshalingService {
       this.data = data != null ? data.clone() : null;
     }
 
+    @SuppressFBWarnings(
+        value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+        justification = "Null semantically indicates uninitialized memory vs empty data")
     byte[] getData() {
       return data != null ? data.clone() : null;
     }

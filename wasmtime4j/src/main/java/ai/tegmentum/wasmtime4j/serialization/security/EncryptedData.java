@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.serialization.security;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
@@ -105,6 +106,9 @@ public final class EncryptedData {
    *
    * @return a defensive copy of the authentication tag, or null if not applicable
    */
+  @SuppressFBWarnings(
+      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+      justification = "Null indicates no auth tag vs empty tag which is invalid for crypto")
   public byte[] getAuthTag() {
     return authTag != null ? authTag.clone() : null;
   }

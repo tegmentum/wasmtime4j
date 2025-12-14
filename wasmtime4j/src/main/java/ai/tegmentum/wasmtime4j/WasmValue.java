@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * Represents a WebAssembly value that can be passed to and from WebAssembly functions.
  *
@@ -734,6 +736,9 @@ public final class WasmValue {
    * @param values the values to copy
    * @return deep copy of the values array
    */
+  @SuppressFBWarnings(
+      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+      justification = "Null input produces null output - distinct from empty array input/output")
   public static WasmValue[] copyMultiValue(final WasmValue[] values) {
     if (values == null) {
       return null;

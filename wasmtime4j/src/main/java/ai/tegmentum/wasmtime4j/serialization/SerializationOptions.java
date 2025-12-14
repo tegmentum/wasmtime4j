@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.serialization;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -135,6 +136,9 @@ public final class SerializationOptions {
     return encryptionAlgorithm;
   }
 
+  @SuppressFBWarnings(
+      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+      justification = "Null indicates encryption is disabled vs empty key which is invalid")
   public byte[] getEncryptionKey() {
     return encryptionKey != null ? encryptionKey.clone() : null;
   }
