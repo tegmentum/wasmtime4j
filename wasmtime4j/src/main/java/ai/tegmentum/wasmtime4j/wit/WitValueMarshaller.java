@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.wit;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * High-level marshaller for WIT values.
@@ -167,7 +168,7 @@ public final class WitValueMarshaller {
           "Cannot create WIT value from null", WitValueException.ErrorCode.NULL_VALUE);
     }
 
-    switch (witType.toLowerCase()) {
+    switch (witType.toLowerCase(Locale.ROOT)) {
       case "bool":
         if (!(javaValue instanceof Boolean)) {
           throw new WitValueException(

@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.exception;
 
+import java.util.Locale;
+
 /**
  * Exception thrown when security violations occur in WebAssembly operations.
  *
@@ -247,7 +249,7 @@ public class SecurityException extends WasmException {
     final StringBuilder desc = new StringBuilder("Security violation");
 
     desc.append(" [context: ")
-        .append(securityContext.name().toLowerCase().replace('_', ' '))
+        .append(securityContext.name().toLowerCase(Locale.ROOT).replace('_', ' '))
         .append("]");
 
     if (violatedPolicy != null) {

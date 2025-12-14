@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.exception;
 
+import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -194,7 +195,7 @@ public final class ErrorMapper {
   /** Maps compilation errors to specific compilation exception types. */
   private static CompilationException mapCompilationError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine compilation error type based on message content
     ModuleCompilationException.CompilationErrorType errorType;
@@ -233,7 +234,7 @@ public final class ErrorMapper {
   /** Maps validation errors to specific validation exception types. */
   private static ValidationException mapValidationError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine validation error type based on message content
     ModuleValidationException.ValidationErrorType errorType;
@@ -276,7 +277,7 @@ public final class ErrorMapper {
   /** Maps runtime errors to specific runtime or trap exception types. */
   private static RuntimeException mapRuntimeError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Check if this is a trap condition
     final Matcher trapMatcher = TRAP_PATTERN.matcher(errorMessage);
@@ -314,7 +315,7 @@ public final class ErrorMapper {
 
   /** Maps trap errors to specific trap exception types. */
   private static TrapException mapTrapError(final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine trap type based on message content
     TrapException.TrapType trapType;
@@ -366,7 +367,7 @@ public final class ErrorMapper {
   /** Maps instantiation errors to specific instantiation exception types. */
   private static InstantiationException mapInstantiationError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine instantiation error type
     ModuleInstantiationException.InstantiationErrorType errorType;
@@ -417,7 +418,7 @@ public final class ErrorMapper {
   /** Maps linking errors to specific linking exception types. */
   private static LinkingException mapLinkingError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine linking error type
     LinkingException.LinkingErrorType errorType;
@@ -466,7 +467,7 @@ public final class ErrorMapper {
 
   /** Maps WASI errors to specific WASI exception types. */
   private static WasiException mapWasiError(final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Check if this is a file system error
     if (lowerMessage.contains("file")
@@ -497,7 +498,7 @@ public final class ErrorMapper {
   /** Maps WASI file system errors to specific file system exception types. */
   private static WasiFileSystemException mapWasiFileSystemError(
       final String errorMessage, final Throwable cause) {
-    final String lowerMessage = errorMessage.toLowerCase();
+    final String lowerMessage = errorMessage.toLowerCase(Locale.ROOT);
 
     // Determine file system error type
     WasiFileSystemException.FileSystemErrorType errorType;

@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.pool;
 
+import java.util.Locale;
+
 /**
  * Platform support utilities for pooling allocator features.
  *
@@ -38,8 +40,8 @@ package ai.tegmentum.wasmtime4j.pool;
  */
 public final class PoolingAllocatorPlatformSupport {
 
-  private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase();
-  private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase();
+  private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+  private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
 
   private PoolingAllocatorPlatformSupport() {
     // Utility class

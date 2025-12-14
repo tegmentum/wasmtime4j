@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.util.Locale;
 
 /**
  * WebAssembly GC field type representation.
@@ -323,6 +324,6 @@ public final class FieldType {
     if (isReference()) {
       return referenceType.getWasmName() + (nullable ? "?" : "");
     }
-    return kind.name().toLowerCase();
+    return kind.name().toLowerCase(Locale.ROOT);
   }
 }

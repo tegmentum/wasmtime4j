@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.exception;
 
+import java.util.Locale;
+
 /**
  * Base exception for resource management errors in WebAssembly operations.
  *
@@ -128,7 +130,7 @@ public class ResourceException extends WasmException {
    * @return true if this is a memory resource error, false otherwise
    */
   public boolean isMemoryResourceError() {
-    return resourceType != null && resourceType.toLowerCase().contains("memory");
+    return resourceType != null && resourceType.toLowerCase(Locale.ROOT).contains("memory");
   }
 
   /**
@@ -137,7 +139,7 @@ public class ResourceException extends WasmException {
    * @return true if this is a handle resource error, false otherwise
    */
   public boolean isHandleResourceError() {
-    return resourceType != null && resourceType.toLowerCase().contains("handle");
+    return resourceType != null && resourceType.toLowerCase(Locale.ROOT).contains("handle");
   }
 
   /**

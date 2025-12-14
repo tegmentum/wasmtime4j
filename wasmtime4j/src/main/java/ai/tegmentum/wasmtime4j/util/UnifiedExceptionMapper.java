@@ -27,6 +27,7 @@ import ai.tegmentum.wasmtime4j.exception.WasiConfigurationException;
 import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.exception.WasiResourceException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -202,7 +203,7 @@ public final class UnifiedExceptionMapper {
   private static WasmException mapByMessageContent(
       final Throwable exception, final String message) {
     if (message != null) {
-      final String lowerMessage = message.toLowerCase();
+      final String lowerMessage = message.toLowerCase(Locale.ROOT);
 
       // Compilation-related errors
       if (lowerMessage.contains("compilation") || lowerMessage.contains("compile")) {
@@ -284,7 +285,7 @@ public final class UnifiedExceptionMapper {
 
     final String message = exception.getMessage();
     if (message != null) {
-      final String lowerMessage = message.toLowerCase();
+      final String lowerMessage = message.toLowerCase(Locale.ROOT);
 
       // These types of errors might be recoverable
       if (lowerMessage.contains("not found")
