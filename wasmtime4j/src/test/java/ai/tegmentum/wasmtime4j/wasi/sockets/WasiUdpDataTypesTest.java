@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiUdpSocket.IncomingDatagram;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiUdpSocket.OutgoingDatagram;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -558,7 +559,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should create IncomingDatagram with valid data and address")
     void shouldCreateWithValidDataAndAddress() {
-      final byte[] data = "Hello, UDP!".getBytes();
+      final byte[] data = "Hello, UDP!".getBytes(StandardCharsets.UTF_8);
       final Ipv4Address addr = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 100});
       final Ipv4SocketAddress socketAddr = new Ipv4SocketAddress(12345, addr);
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
@@ -587,7 +588,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should defensively copy data on construction")
     void shouldDefensivelyCopyDataOnConstruction() {
-      final byte[] data = "Original".getBytes();
+      final byte[] data = "Original".getBytes(StandardCharsets.UTF_8);
       final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       final Ipv4SocketAddress socketAddr = new Ipv4SocketAddress(8080, addr);
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
@@ -606,7 +607,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should defensively copy data on retrieval")
     void shouldDefensivelyCopyDataOnRetrieval() {
-      final byte[] data = "Original".getBytes();
+      final byte[] data = "Original".getBytes(StandardCharsets.UTF_8);
       final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       final Ipv4SocketAddress socketAddr = new Ipv4SocketAddress(8080, addr);
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
@@ -641,7 +642,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should reject null remote address")
     void shouldRejectNullRemoteAddress() {
-      final byte[] data = "Hello".getBytes();
+      final byte[] data = "Hello".getBytes(StandardCharsets.UTF_8);
 
       final IllegalArgumentException exception =
           assertThrows(IllegalArgumentException.class, () -> new IncomingDatagram(data, null));
@@ -658,7 +659,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should create OutgoingDatagram with data and address")
     void shouldCreateWithDataAndAddress() {
-      final byte[] data = "Hello, UDP!".getBytes();
+      final byte[] data = "Hello, UDP!".getBytes(StandardCharsets.UTF_8);
       final Ipv4Address addr = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 100});
       final Ipv4SocketAddress socketAddr = new Ipv4SocketAddress(12345, addr);
       final IpSocketAddress remoteAddr = IpSocketAddress.ipv4(socketAddr);
@@ -674,7 +675,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should create OutgoingDatagram with data only (for connected socket)")
     void shouldCreateWithDataOnly() {
-      final byte[] data = "Hello, connected UDP!".getBytes();
+      final byte[] data = "Hello, connected UDP!".getBytes(StandardCharsets.UTF_8);
 
       final OutgoingDatagram datagram = new OutgoingDatagram(data);
 
@@ -698,7 +699,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should defensively copy data on construction")
     void shouldDefensivelyCopyDataOnConstruction() {
-      final byte[] data = "Original".getBytes();
+      final byte[] data = "Original".getBytes(StandardCharsets.UTF_8);
 
       final OutgoingDatagram datagram = new OutgoingDatagram(data);
 
@@ -714,7 +715,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should defensively copy data on retrieval")
     void shouldDefensivelyCopyDataOnRetrieval() {
-      final byte[] data = "Original".getBytes();
+      final byte[] data = "Original".getBytes(StandardCharsets.UTF_8);
 
       final OutgoingDatagram datagram = new OutgoingDatagram(data);
 
@@ -756,7 +757,7 @@ public class WasiUdpDataTypesTest {
     @Test
     @DisplayName("Should allow null remote address in constructor with address")
     void shouldAllowNullRemoteAddress() {
-      final byte[] data = "Hello".getBytes();
+      final byte[] data = "Hello".getBytes(StandardCharsets.UTF_8);
 
       final OutgoingDatagram datagram = new OutgoingDatagram(data, null);
 
