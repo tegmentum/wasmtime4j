@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.serialization;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -312,6 +313,9 @@ public final class SerializationResult {
    * @param metadata the metadata to serialize
    * @return JSON string representation
    */
+  @SuppressFBWarnings(
+      value = "VA_FORMAT_STRING_USES_NEWLINE",
+      justification = "JSON format requires Unix-style newlines for cross-platform compatibility")
   private static String serializeMetadata(final SerializedModuleMetadata metadata) {
     // Simplified JSON serialization - in production would use Jackson or similar
     return String.format(

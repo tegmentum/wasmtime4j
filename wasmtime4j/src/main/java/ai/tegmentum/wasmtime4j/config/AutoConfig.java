@@ -11,6 +11,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -613,7 +614,7 @@ public final class AutoConfig {
 
     private boolean detectSimdSupport() {
       // Basic heuristic based on architecture
-      final String arch = cpuArchitecture.toLowerCase();
+      final String arch = cpuArchitecture.toLowerCase(Locale.ROOT);
       return arch.contains("x86")
           || arch.contains("amd64")
           || arch.contains("aarch64")

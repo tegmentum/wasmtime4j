@@ -1122,29 +1122,30 @@ public final class DisasterRecoverySystem {
    * @return formatted status report
    */
   public String getRecoveryStatus() {
-    final StringBuilder sb = new StringBuilder("=== Disaster Recovery Status ===\n");
+    final StringBuilder sb = new StringBuilder();
+    sb.append(String.format("=== Disaster Recovery Status ===%n"));
 
-    sb.append(String.format("DR Enabled: %s\n", disasterRecoveryEnabled.get()));
-    sb.append(String.format("Auto Failover: %s\n", autoFailoverEnabled));
-    sb.append(String.format("Total Backups: %,d\n", totalBackups.get()));
-    sb.append(String.format("Total Recoveries: %,d\n", totalRecoveries.get()));
-    sb.append(String.format("Successful Recoveries: %,d\n", successfulRecoveries.get()));
-    sb.append(String.format("Active Recovery Plans: %d\n", recoveryPlans.size()));
-    sb.append(String.format("Backup Repository Size: %d\n", backupRepository.size()));
+    sb.append(String.format("DR Enabled: %s%n", disasterRecoveryEnabled.get()));
+    sb.append(String.format("Auto Failover: %s%n", autoFailoverEnabled));
+    sb.append(String.format("Total Backups: %,d%n", totalBackups.get()));
+    sb.append(String.format("Total Recoveries: %,d%n", totalRecoveries.get()));
+    sb.append(String.format("Successful Recoveries: %,d%n", successfulRecoveries.get()));
+    sb.append(String.format("Active Recovery Plans: %d%n", recoveryPlans.size()));
+    sb.append(String.format("Backup Repository Size: %d%n", backupRepository.size()));
 
     final DisasterType currentDisaster = currentDisasterType.get();
     sb.append(
         String.format(
-            "Current Disaster: %s\n", currentDisaster != null ? currentDisaster : "None"));
+            "Current Disaster: %s%n", currentDisaster != null ? currentDisaster : "None"));
 
     final RecoveryExecution activeExecution = activeRecovery.get();
     if (activeExecution != null) {
       final Duration elapsed = Duration.between(activeExecution.getStartTime(), Instant.now());
       sb.append(
           String.format(
-              "Active Recovery: %s [%s elapsed]\n", activeExecution.getExecutionId(), elapsed));
+              "Active Recovery: %s [%s elapsed]%n", activeExecution.getExecutionId(), elapsed));
     } else {
-      sb.append("Active Recovery: None\n");
+      sb.append(String.format("Active Recovery: None%n"));
     }
 
     return sb.toString();
