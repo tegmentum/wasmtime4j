@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -171,7 +172,7 @@ public final class CustomSectionSecurity {
       throw new IllegalArgumentException("Section name cannot be null");
     }
 
-    final String lowerName = sectionName.toLowerCase();
+    final String lowerName = sectionName.toLowerCase(Locale.ROOT);
 
     return SUSPICIOUS_SECTION_NAMES.stream().anyMatch(lowerName::contains);
   }
@@ -209,7 +210,7 @@ public final class CustomSectionSecurity {
     // Check for script-like content
     final String dataStr =
         new String(data, 0, Math.min(data.length, 1024), java.nio.charset.StandardCharsets.UTF_8);
-    final String lowerData = dataStr.toLowerCase();
+    final String lowerData = dataStr.toLowerCase(Locale.ROOT);
 
     return lowerData.contains("eval(")
         || lowerData.contains("exec(")

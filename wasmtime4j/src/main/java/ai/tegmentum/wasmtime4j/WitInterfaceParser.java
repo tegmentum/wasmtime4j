@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -525,7 +526,7 @@ public final class WitInterfaceParser {
     for (final WitPrimitiveType primitive : WitPrimitiveType.values()) {
       final WitType type = WitType.primitive(primitive);
       typeCache.put(primitive.getWitTypeName(), type);
-      typeCache.put(primitive.name().toLowerCase(), type);
+      typeCache.put(primitive.name().toLowerCase(Locale.ROOT), type);
     }
   }
 

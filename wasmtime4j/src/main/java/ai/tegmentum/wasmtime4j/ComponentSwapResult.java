@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -195,7 +196,7 @@ public final class ComponentSwapResult {
     StringBuilder summary = new StringBuilder();
     summary
         .append("Component swap ")
-        .append(status.toString().toLowerCase())
+        .append(status.toString().toLowerCase(Locale.ROOT))
         .append(" in ")
         .append(totalTime.toMillis())
         .append("ms");

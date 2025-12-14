@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -307,7 +308,7 @@ public interface ComponentTypeDescriptor {
 
     @Override
     public String toString() {
-      return type.name().toLowerCase();
+      return type.name().toLowerCase(Locale.ROOT);
     }
   }
 

@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,7 +64,7 @@ public final class WitType {
    */
   public static WitType primitive(final WitPrimitiveType primitive) {
     return new WitType(
-        primitive.name().toLowerCase(),
+        primitive.name().toLowerCase(Locale.ROOT),
         WitTypeKind.primitive(primitive),
         Map.of(),
         Optional.empty());

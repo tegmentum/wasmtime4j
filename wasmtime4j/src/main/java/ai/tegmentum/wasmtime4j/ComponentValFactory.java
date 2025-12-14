@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -538,7 +539,7 @@ public abstract class ComponentValFactory {
 
     @Override
     public String toString() {
-      return type.name().toLowerCase() + "(" + value + ")";
+      return type.name().toLowerCase(Locale.ROOT) + "(" + value + ")";
     }
   }
 }
