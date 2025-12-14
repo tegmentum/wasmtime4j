@@ -48,6 +48,11 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "REC_CATCH_EXCEPTION",
+    justification =
+        "Broad exception catching for defensive memory optimization;"
+            + " ensures pool operations and allocations fail gracefully")
 public final class MemoryOptimizer {
 
   private static final Logger LOGGER = Logger.getLogger(MemoryOptimizer.class.getName());

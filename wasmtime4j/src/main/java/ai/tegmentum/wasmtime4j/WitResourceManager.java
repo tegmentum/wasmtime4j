@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.ResourceException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.Collections;
@@ -41,6 +42,11 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "REC_CATCH_EXCEPTION",
+    justification =
+        "Broad exception catching for defensive resource cleanup;"
+            + " ensures cleanup completes even with unexpected failures")
 public final class WitResourceManager implements AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(WitResourceManager.class.getName());

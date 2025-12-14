@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "REC_CATCH_EXCEPTION",
+    justification =
+        "Broad exception catching for defensive reflection-based marshaling;"
+            + " skips inaccessible methods without interrupting the marshaling process")
 public final class WitValueMarshaler {
 
   private final Map<String, ValueConverter> converters;

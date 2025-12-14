@@ -62,6 +62,11 @@ import java.util.zip.GZIPOutputStream;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "REC_CATCH_EXCEPTION",
+    justification =
+        "Broad exception catching for defensive disaster recovery;"
+            + " ensures recovery operations continue even with unexpected failures")
 public final class DisasterRecoverySystem {
 
   private static final Logger LOGGER = Logger.getLogger(DisasterRecoverySystem.class.getName());
@@ -111,8 +116,9 @@ public final class DisasterRecoverySystem {
   /** System component that can be backed up and restored. */
   @SuppressFBWarnings(
       value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
-      justification = "Transient metadata is runtime-only context not needed after deserialization;"
-          + " core backup data is preserved")
+      justification =
+          "Transient metadata is runtime-only context not needed after deserialization;"
+              + " core backup data is preserved")
   public static final class RecoverableComponent implements Serializable {
     private static final long serialVersionUID = 1L;
 

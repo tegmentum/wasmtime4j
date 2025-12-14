@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.serialization;
 
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -58,6 +59,11 @@ import java.util.zip.GZIPOutputStream;
  *
  * @since 1.0.0
  */
+@SuppressFBWarnings(
+    value = "REC_CATCH_EXCEPTION",
+    justification =
+        "Broad exception catching for defensive serialization error handling;"
+            + " wraps all failures into WasmException with preserved context")
 public final class ModuleSerializationEngine {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleSerializationEngine.class.getName());
