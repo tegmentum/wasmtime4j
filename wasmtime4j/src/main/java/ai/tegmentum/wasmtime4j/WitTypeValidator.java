@@ -207,7 +207,7 @@ public final class WitTypeValidator {
       final int depth) {
 
     final WitTypeKind kind = type.getKind();
-    if (kind instanceof WitTypeKind) {
+    if (kind != null) {
       // Access record fields through reflection or provide accessor methods
       // For now, validate that the type is properly constructed
       if (type.getMetadata().containsKey("fieldCount")) {

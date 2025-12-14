@@ -406,7 +406,10 @@ public final class ModuleSerializationCache implements AutoCloseable {
     final Path metadataFile = getCacheMetadataPath(contentHash);
 
     // Create subdirectories for better file system performance
-    Files.createDirectories(cacheFile.getParent());
+    final Path parentDir = cacheFile.getParent();
+    if (parentDir != null) {
+      Files.createDirectories(parentDir);
+    }
 
     // Write module data
     Files.write(cacheFile, entry.getModuleData());
