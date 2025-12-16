@@ -90,7 +90,7 @@ public final class NameSection {
    * @return an immutable map of function indices to names
    */
   public Map<Integer, String> getFunctionNames() {
-    return new java.util.HashMap<>(functionNames);
+    return functionNames;
   }
 
   /**
@@ -122,7 +122,7 @@ public final class NameSection {
    * @return an immutable map of function indices to local name maps
    */
   public Map<Integer, Map<Integer, String>> getAllLocalNames() {
-    return new java.util.HashMap<>(localNames);
+    return localNames;
   }
 
   /**
@@ -141,7 +141,7 @@ public final class NameSection {
    * @return an immutable map of type indices to names
    */
   public Map<Integer, String> getTypeNames() {
-    return new java.util.HashMap<>(typeNames);
+    return typeNames;
   }
 
   /**
@@ -160,7 +160,7 @@ public final class NameSection {
    * @return an immutable map of table indices to names
    */
   public Map<Integer, String> getTableNames() {
-    return new java.util.HashMap<>(tableNames);
+    return tableNames;
   }
 
   /**
@@ -179,7 +179,7 @@ public final class NameSection {
    * @return an immutable map of memory indices to names
    */
   public Map<Integer, String> getMemoryNames() {
-    return new java.util.HashMap<>(memoryNames);
+    return memoryNames;
   }
 
   /**
@@ -198,7 +198,7 @@ public final class NameSection {
    * @return an immutable map of global indices to names
    */
   public Map<Integer, String> getGlobalNames() {
-    return new java.util.HashMap<>(globalNames);
+    return globalNames;
   }
 
   /**
@@ -217,7 +217,7 @@ public final class NameSection {
    * @return an immutable map of element segment indices to names
    */
   public Map<Integer, String> getElementSegmentNames() {
-    return new java.util.HashMap<>(elementSegmentNames);
+    return elementSegmentNames;
   }
 
   /**
@@ -236,7 +236,7 @@ public final class NameSection {
    * @return an immutable map of data segment indices to names
    */
   public Map<Integer, String> getDataSegmentNames() {
-    return new java.util.HashMap<>(dataSegmentNames);
+    return dataSegmentNames;
   }
 
   /**
@@ -255,7 +255,7 @@ public final class NameSection {
    * @return an immutable map of tag indices to names
    */
   public Map<Integer, String> getTagNames() {
-    return new java.util.HashMap<>(tagNames);
+    return tagNames;
   }
 
   /**

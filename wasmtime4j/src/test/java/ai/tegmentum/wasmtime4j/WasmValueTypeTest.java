@@ -1,0 +1,357 @@
+package ai.tegmentum.wasmtime4j;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Unit tests for the WasmValueType enum.
+ *
+ * <p>Tests verify type properties, classification methods, native code conversion, and subtyping
+ * rules for all WebAssembly value types.
+ */
+@DisplayName("WasmValueType Enum Tests")
+class WasmValueTypeTest {
+
+  @Nested
+  @DisplayName("Integer Type Tests")
+  class IntegerTypeTests {
+
+    @Test
+    @DisplayName("I32 should have correct properties")
+    void i32ShouldHaveCorrectProperties() {
+      assertEquals(4, WasmValueType.I32.getSize(), "I32 size should be 4 bytes");
+      assertTrue(WasmValueType.I32.isInteger(), "I32 should be an integer type");
+      assertFalse(WasmValueType.I32.isFloat(), "I32 should not be a float type");
+      assertFalse(WasmValueType.I32.isReference(), "I32 should not be a reference type");
+      assertTrue(WasmValueType.I32.isNumeric(), "I32 should be a numeric type");
+      assertFalse(WasmValueType.I32.isVector(), "I32 should not be a vector type");
+    }
+
+    @Test
+    @DisplayName("I64 should have correct properties")
+    void i64ShouldHaveCorrectProperties() {
+      assertEquals(8, WasmValueType.I64.getSize(), "I64 size should be 8 bytes");
+      assertTrue(WasmValueType.I64.isInteger(), "I64 should be an integer type");
+      assertFalse(WasmValueType.I64.isFloat(), "I64 should not be a float type");
+      assertFalse(WasmValueType.I64.isReference(), "I64 should not be a reference type");
+      assertTrue(WasmValueType.I64.isNumeric(), "I64 should be a numeric type");
+    }
+  }
+
+  @Nested
+  @DisplayName("Float Type Tests")
+  class FloatTypeTests {
+
+    @Test
+    @DisplayName("F32 should have correct properties")
+    void f32ShouldHaveCorrectProperties() {
+      assertEquals(4, WasmValueType.F32.getSize(), "F32 size should be 4 bytes");
+      assertFalse(WasmValueType.F32.isInteger(), "F32 should not be an integer type");
+      assertTrue(WasmValueType.F32.isFloat(), "F32 should be a float type");
+      assertFalse(WasmValueType.F32.isReference(), "F32 should not be a reference type");
+      assertTrue(WasmValueType.F32.isNumeric(), "F32 should be a numeric type");
+    }
+
+    @Test
+    @DisplayName("F64 should have correct properties")
+    void f64ShouldHaveCorrectProperties() {
+      assertEquals(8, WasmValueType.F64.getSize(), "F64 size should be 8 bytes");
+      assertFalse(WasmValueType.F64.isInteger(), "F64 should not be an integer type");
+      assertTrue(WasmValueType.F64.isFloat(), "F64 should be a float type");
+      assertFalse(WasmValueType.F64.isReference(), "F64 should not be a reference type");
+      assertTrue(WasmValueType.F64.isNumeric(), "F64 should be a numeric type");
+    }
+  }
+
+  @Nested
+  @DisplayName("Vector Type Tests")
+  class VectorTypeTests {
+
+    @Test
+    @DisplayName("V128 should have correct properties")
+    void v128ShouldHaveCorrectProperties() {
+      assertEquals(16, WasmValueType.V128.getSize(), "V128 size should be 16 bytes");
+      assertFalse(WasmValueType.V128.isInteger(), "V128 should not be an integer type");
+      assertFalse(WasmValueType.V128.isFloat(), "V128 should not be a float type");
+      assertFalse(WasmValueType.V128.isReference(), "V128 should not be a reference type");
+      assertTrue(WasmValueType.V128.isVector(), "V128 should be a vector type");
+      assertFalse(WasmValueType.V128.isNumeric(), "V128 should not be a numeric type");
+    }
+  }
+
+  @Nested
+  @DisplayName("Reference Type Tests")
+  class ReferenceTypeTests {
+
+    @Test
+    @DisplayName("FUNCREF should have correct properties")
+    void funcrefShouldHaveCorrectProperties() {
+      assertEquals(-1, WasmValueType.FUNCREF.getSize(), "FUNCREF size should be -1 (reference)");
+      assertTrue(WasmValueType.FUNCREF.isReference(), "FUNCREF should be a reference type");
+      assertFalse(WasmValueType.FUNCREF.isInteger(), "FUNCREF should not be an integer type");
+      assertFalse(WasmValueType.FUNCREF.isFloat(), "FUNCREF should not be a float type");
+      assertFalse(
+          WasmValueType.FUNCREF.isGcReference(), "FUNCREF should not be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("EXTERNREF should have correct properties")
+    void externrefShouldHaveCorrectProperties() {
+      assertEquals(
+          -1, WasmValueType.EXTERNREF.getSize(), "EXTERNREF size should be -1 (reference)");
+      assertTrue(WasmValueType.EXTERNREF.isReference(), "EXTERNREF should be a reference type");
+      assertFalse(
+          WasmValueType.EXTERNREF.isGcReference(), "EXTERNREF should not be a GC reference type");
+    }
+  }
+
+  @Nested
+  @DisplayName("GC Reference Type Tests")
+  class GcReferenceTypeTests {
+
+    @Test
+    @DisplayName("ANYREF should be a GC reference type")
+    void anyrefShouldBeGcReference() {
+      assertTrue(WasmValueType.ANYREF.isReference(), "ANYREF should be a reference type");
+      assertTrue(WasmValueType.ANYREF.isGcReference(), "ANYREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("EQREF should be a GC reference type")
+    void eqrefShouldBeGcReference() {
+      assertTrue(WasmValueType.EQREF.isReference(), "EQREF should be a reference type");
+      assertTrue(WasmValueType.EQREF.isGcReference(), "EQREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("I31REF should be a GC reference type")
+    void i31refShouldBeGcReference() {
+      assertTrue(WasmValueType.I31REF.isReference(), "I31REF should be a reference type");
+      assertTrue(WasmValueType.I31REF.isGcReference(), "I31REF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("STRUCTREF should be a GC reference type")
+    void structrefShouldBeGcReference() {
+      assertTrue(WasmValueType.STRUCTREF.isReference(), "STRUCTREF should be a reference type");
+      assertTrue(
+          WasmValueType.STRUCTREF.isGcReference(), "STRUCTREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("ARRAYREF should be a GC reference type")
+    void arrayrefShouldBeGcReference() {
+      assertTrue(WasmValueType.ARRAYREF.isReference(), "ARRAYREF should be a reference type");
+      assertTrue(WasmValueType.ARRAYREF.isGcReference(), "ARRAYREF should be a GC reference type");
+    }
+  }
+
+  @Nested
+  @DisplayName("Nullable Reference Type Tests")
+  class NullableReferenceTypeTests {
+
+    @Test
+    @DisplayName("NULLREF should be a nullable reference type")
+    void nullrefShouldBeNullable() {
+      assertTrue(WasmValueType.NULLREF.isReference(), "NULLREF should be a reference type");
+      assertTrue(WasmValueType.NULLREF.isNullableReference(), "NULLREF should be nullable");
+    }
+
+    @Test
+    @DisplayName("NULLFUNCREF should be a nullable reference type")
+    void nullfuncrefShouldBeNullable() {
+      assertTrue(WasmValueType.NULLFUNCREF.isReference(), "NULLFUNCREF should be a reference type");
+      assertTrue(WasmValueType.NULLFUNCREF.isNullableReference(), "NULLFUNCREF should be nullable");
+    }
+
+    @Test
+    @DisplayName("NULLEXTERNREF should be a nullable reference type")
+    void nullexternrefShouldBeNullable() {
+      assertTrue(
+          WasmValueType.NULLEXTERNREF.isReference(), "NULLEXTERNREF should be a reference type");
+      assertTrue(
+          WasmValueType.NULLEXTERNREF.isNullableReference(), "NULLEXTERNREF should be nullable");
+    }
+
+    @Test
+    @DisplayName("Non-null types should not be nullable")
+    void nonNullTypesShouldNotBeNullable() {
+      assertFalse(WasmValueType.I32.isNullableReference(), "I32 should not be nullable");
+      assertFalse(WasmValueType.FUNCREF.isNullableReference(), "FUNCREF should not be nullable");
+      assertFalse(WasmValueType.ANYREF.isNullableReference(), "ANYREF should not be nullable");
+    }
+  }
+
+  @Nested
+  @DisplayName("Native Type Code Conversion Tests")
+  class NativeTypeCodeConversionTests {
+
+    @Test
+    @DisplayName("should convert I32 to and from native code")
+    void shouldConvertI32() {
+      assertEquals(0, WasmValueType.I32.toNativeTypeCode(), "I32 native code should be 0");
+      assertEquals(WasmValueType.I32, WasmValueType.fromNativeTypeCode(0), "Code 0 should be I32");
+    }
+
+    @Test
+    @DisplayName("should convert I64 to and from native code")
+    void shouldConvertI64() {
+      assertEquals(1, WasmValueType.I64.toNativeTypeCode(), "I64 native code should be 1");
+      assertEquals(WasmValueType.I64, WasmValueType.fromNativeTypeCode(1), "Code 1 should be I64");
+    }
+
+    @Test
+    @DisplayName("should convert F32 to and from native code")
+    void shouldConvertF32() {
+      assertEquals(2, WasmValueType.F32.toNativeTypeCode(), "F32 native code should be 2");
+      assertEquals(WasmValueType.F32, WasmValueType.fromNativeTypeCode(2), "Code 2 should be F32");
+    }
+
+    @Test
+    @DisplayName("should convert F64 to and from native code")
+    void shouldConvertF64() {
+      assertEquals(3, WasmValueType.F64.toNativeTypeCode(), "F64 native code should be 3");
+      assertEquals(WasmValueType.F64, WasmValueType.fromNativeTypeCode(3), "Code 3 should be F64");
+    }
+
+    @Test
+    @DisplayName("should convert V128 to and from native code")
+    void shouldConvertV128() {
+      assertEquals(4, WasmValueType.V128.toNativeTypeCode(), "V128 native code should be 4");
+      assertEquals(
+          WasmValueType.V128, WasmValueType.fromNativeTypeCode(4), "Code 4 should be V128");
+    }
+
+    @Test
+    @DisplayName("should convert reference types to and from native code")
+    void shouldConvertReferenceTypes() {
+      assertEquals(5, WasmValueType.FUNCREF.toNativeTypeCode(), "FUNCREF native code should be 5");
+      assertEquals(
+          WasmValueType.FUNCREF, WasmValueType.fromNativeTypeCode(5), "Code 5 should be FUNCREF");
+
+      assertEquals(
+          6, WasmValueType.EXTERNREF.toNativeTypeCode(), "EXTERNREF native code should be 6");
+      assertEquals(
+          WasmValueType.EXTERNREF,
+          WasmValueType.fromNativeTypeCode(6),
+          "Code 6 should be EXTERNREF");
+    }
+
+    @Test
+    @DisplayName("should throw for unknown native type code")
+    void shouldThrowForUnknownCode() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasmValueType.fromNativeTypeCode(999),
+          "Should throw for unknown type code");
+    }
+
+    @Test
+    @DisplayName("should round-trip all value types")
+    void shouldRoundTripAllTypes() {
+      for (WasmValueType type : WasmValueType.values()) {
+        final int code = type.toNativeTypeCode();
+        final WasmValueType roundTripped = WasmValueType.fromNativeTypeCode(code);
+        assertEquals(type, roundTripped, "Round-trip should preserve type: " + type);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Subtyping Tests")
+  class SubtypingTests {
+
+    @Test
+    @DisplayName("types should be subtypes of themselves")
+    void typesShouldBeSubtypesOfThemselves() {
+      for (WasmValueType type : WasmValueType.values()) {
+        assertTrue(type.isSubtypeOf(type), type + " should be subtype of itself");
+      }
+    }
+
+    @Test
+    @DisplayName("EQREF should be subtype of ANYREF")
+    void eqrefShouldBeSubtypeOfAnyref() {
+      assertTrue(
+          WasmValueType.EQREF.isSubtypeOf(WasmValueType.ANYREF),
+          "EQREF should be subtype of ANYREF");
+    }
+
+    @Test
+    @DisplayName("I31REF should be subtype of EQREF and ANYREF")
+    void i31refShouldBeSubtypeOfEqrefAndAnyref() {
+      assertTrue(
+          WasmValueType.I31REF.isSubtypeOf(WasmValueType.EQREF),
+          "I31REF should be subtype of EQREF");
+      assertTrue(
+          WasmValueType.I31REF.isSubtypeOf(WasmValueType.ANYREF),
+          "I31REF should be subtype of ANYREF");
+    }
+
+    @Test
+    @DisplayName("STRUCTREF should be subtype of EQREF and ANYREF")
+    void structrefShouldBeSubtypeOfEqrefAndAnyref() {
+      assertTrue(
+          WasmValueType.STRUCTREF.isSubtypeOf(WasmValueType.EQREF),
+          "STRUCTREF should be subtype of EQREF");
+      assertTrue(
+          WasmValueType.STRUCTREF.isSubtypeOf(WasmValueType.ANYREF),
+          "STRUCTREF should be subtype of ANYREF");
+    }
+
+    @Test
+    @DisplayName("ARRAYREF should be subtype of EQREF and ANYREF")
+    void arrayrefShouldBeSubtypeOfEqrefAndAnyref() {
+      assertTrue(
+          WasmValueType.ARRAYREF.isSubtypeOf(WasmValueType.EQREF),
+          "ARRAYREF should be subtype of EQREF");
+      assertTrue(
+          WasmValueType.ARRAYREF.isSubtypeOf(WasmValueType.ANYREF),
+          "ARRAYREF should be subtype of ANYREF");
+    }
+
+    @Test
+    @DisplayName("NULLREF should be subtype of all reference types")
+    void nullrefShouldBeSubtypeOfAllReferenceTypes() {
+      assertTrue(
+          WasmValueType.NULLREF.isSubtypeOf(WasmValueType.ANYREF),
+          "NULLREF should be subtype of ANYREF");
+      assertTrue(
+          WasmValueType.NULLREF.isSubtypeOf(WasmValueType.FUNCREF),
+          "NULLREF should be subtype of FUNCREF");
+      assertTrue(
+          WasmValueType.NULLREF.isSubtypeOf(WasmValueType.EXTERNREF),
+          "NULLREF should be subtype of EXTERNREF");
+    }
+
+    @Test
+    @DisplayName("NULLFUNCREF should be subtype of FUNCREF")
+    void nullfuncrefShouldBeSubtypeOfFuncref() {
+      assertTrue(
+          WasmValueType.NULLFUNCREF.isSubtypeOf(WasmValueType.FUNCREF),
+          "NULLFUNCREF should be subtype of FUNCREF");
+    }
+
+    @Test
+    @DisplayName("NULLEXTERNREF should be subtype of EXTERNREF")
+    void nullexternrefShouldBeSubtypeOfExternref() {
+      assertTrue(
+          WasmValueType.NULLEXTERNREF.isSubtypeOf(WasmValueType.EXTERNREF),
+          "NULLEXTERNREF should be subtype of EXTERNREF");
+    }
+
+    @Test
+    @DisplayName("numeric types should not be subtypes of each other")
+    void numericTypesShouldNotBeSubtypesOfEachOther() {
+      assertFalse(
+          WasmValueType.I32.isSubtypeOf(WasmValueType.I64), "I32 should not be subtype of I64");
+      assertFalse(
+          WasmValueType.F32.isSubtypeOf(WasmValueType.F64), "F32 should not be subtype of F64");
+      assertFalse(
+          WasmValueType.I32.isSubtypeOf(WasmValueType.F32), "I32 should not be subtype of F32");
+    }
+  }
+}
