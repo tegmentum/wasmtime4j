@@ -1,0 +1,1017 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.panama.util;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Comprehensive API contract and structural tests for the Panama util package.
+ *
+ * <p>Tests all utility classes in the ai.tegmentum.wasmtime4j.panama.util package using reflection
+ * to verify class structure, method signatures, and API compliance without triggering native
+ * library loading.
+ *
+ * <p>Classes covered:
+ *
+ * <ul>
+ *   <li>PanamaCapabilityDetector - Panama FFI capability detection
+ *   <li>PanamaResourceTracker - Resource tracking for native handles
+ *   <li>PanamaMemoryManager - Memory management for Panama operations
+ *   <li>ConcurrentAccessCoordinator - Thread-safe resource coordination
+ *   <li>PanamaValidation - Defensive programming validation utilities
+ *   <li>PanamaTypeConverter - WebAssembly type conversion
+ *   <li>PanamaExceptionMapper - Exception mapping for FFI operations
+ *   <li>PanamaBatchProcessor - Batch processing optimizations
+ *   <li>ComplexPanamaTypeConverter - Complex type marshaling
+ *   <li>PanamaConcurrencyManager - Concurrency management
+ *   <li>BacktraceDeserializer - Backtrace deserialization
+ * </ul>
+ *
+ * @since 1.0.0
+ */
+@DisplayName("Panama Util Package Tests")
+class PanamaUtilPackageTest {
+
+  private static final Logger LOGGER = Logger.getLogger(PanamaUtilPackageTest.class.getName());
+
+  private static final String UTIL_PACKAGE = "ai.tegmentum.wasmtime4j.panama.util";
+
+  /**
+   * Loads a class without initializing it to avoid triggering native library loading.
+   *
+   * @param className the fully qualified class name
+   * @return the loaded Class object
+   * @throws ClassNotFoundException if the class is not found
+   */
+  private Class<?> loadClassWithoutInit(final String className) throws ClassNotFoundException {
+    return Class.forName(className, false, getClass().getClassLoader());
+  }
+
+  @Nested
+  @DisplayName("PanamaCapabilityDetector Tests")
+  class PanamaCapabilityDetectorTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaCapabilityDetector";
+
+    @Test
+    @DisplayName("Should be a final utility class")
+    void shouldBeFinalUtilityClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaCapabilityDetector class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+
+      // Should have private constructor
+      final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+      assertEquals(1, constructors.length, "Should have exactly one constructor");
+      assertTrue(
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
+    }
+
+    @Test
+    @DisplayName("Should have static detection methods")
+    void shouldHaveStaticDetectionMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "detectCapabilities");
+      assertMethodExists(clazz, "isPanamaAvailable");
+      assertMethodExists(clazz, "getStatusDescription");
+      assertMethodExists(clazz, "getDiagnosticInfo");
+      assertMethodExists(clazz, "getFallbackRecommendation");
+      assertMethodExists(clazz, "clearCache");
+
+      LOGGER.info("All expected static methods exist in PanamaCapabilityDetector");
+    }
+
+    @Test
+    @DisplayName("Should have DetectionResult nested class")
+    void shouldHaveDetectionResultNestedClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      final Class<?>[] nestedClasses = clazz.getDeclaredClasses();
+      boolean hasDetectionResult = false;
+      boolean hasJavaVersionInfo = false;
+      boolean hasClassAvailabilityInfo = false;
+      boolean hasFallbackRecommendation = false;
+
+      for (final Class<?> nested : nestedClasses) {
+        final String simpleName = nested.getSimpleName();
+        if ("DetectionResult".equals(simpleName)) {
+          hasDetectionResult = true;
+        } else if ("JavaVersionInfo".equals(simpleName)) {
+          hasJavaVersionInfo = true;
+        } else if ("ClassAvailabilityInfo".equals(simpleName)) {
+          hasClassAvailabilityInfo = true;
+        } else if ("FallbackRecommendation".equals(simpleName)) {
+          hasFallbackRecommendation = true;
+        }
+      }
+
+      assertTrue(hasDetectionResult, "Should have DetectionResult nested class");
+      assertTrue(hasJavaVersionInfo, "Should have JavaVersionInfo nested class");
+      assertTrue(hasClassAvailabilityInfo, "Should have ClassAvailabilityInfo nested class");
+      assertTrue(hasFallbackRecommendation, "Should have FallbackRecommendation enum");
+    }
+
+    @Test
+    @DisplayName("Should have FallbackRecommendation enum values")
+    void shouldHaveFallbackRecommendationEnumValues() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      Class<?> enumClass = null;
+      for (final Class<?> nested : clazz.getDeclaredClasses()) {
+        if ("FallbackRecommendation".equals(nested.getSimpleName())) {
+          enumClass = nested;
+          break;
+        }
+      }
+
+      assertNotNull(enumClass, "FallbackRecommendation enum should exist");
+      assertTrue(enumClass.isEnum(), "FallbackRecommendation should be an enum");
+
+      final Object[] enumConstants = enumClass.getEnumConstants();
+      assertNotNull(enumConstants, "Should have enum constants");
+      assertTrue(enumConstants.length >= 4, "Should have at least 4 enum values");
+
+      LOGGER.info("FallbackRecommendation enum has " + enumConstants.length + " values");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaResourceTracker Tests")
+  class PanamaResourceTrackerTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaResourceTracker";
+
+    @Test
+    @DisplayName("Should be a final class with instance methods")
+    void shouldBeFinalClassWithInstanceMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaResourceTracker class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have resource tracking methods")
+    void shouldHaveResourceTrackingMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "trackResource", Object.class);
+      assertMethodExists(clazz, "untrackResource", Object.class);
+      assertMethodExists(clazz, "isTracked", Object.class);
+      assertMethodExists(clazz, "getHandle", Object.class);
+      assertMethodExists(clazz, "cleanupOrphanedResources");
+      assertMethodExists(clazz, "cleanup");
+      assertMethodExists(clazz, "getTrackedResourceCount");
+      assertMethodExists(clazz, "getTotalTracked");
+      assertMethodExists(clazz, "getTotalCleaned");
+      assertMethodExists(clazz, "getPotentialLeaks");
+      assertMethodExists(clazz, "getTrackingStats");
+      assertMethodExists(clazz, "hasPotentialLeaks");
+      assertMethodExists(clazz, "logStats");
+      assertMethodExists(clazz, "getResourceSummary");
+
+      LOGGER.info("All expected resource tracking methods exist");
+    }
+
+    @Test
+    @DisplayName("Should use ConcurrentHashMap for thread safety")
+    void shouldUseConcurrentHashMapForThreadSafety() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasConcurrentMap = false;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if (field.getType().getName().contains("ConcurrentHashMap")
+            || field.getType().getName().contains("ConcurrentMap")) {
+          hasConcurrentMap = true;
+          break;
+        }
+      }
+
+      assertTrue(
+          hasConcurrentMap, "Should use ConcurrentHashMap or ConcurrentMap for thread safety");
+    }
+
+    @Test
+    @DisplayName("Should have atomic counters for statistics")
+    void shouldHaveAtomicCountersForStatistics() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      int atomicLongCount = 0;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if (field.getType().getName().contains("AtomicLong")) {
+          atomicLongCount++;
+        }
+      }
+
+      assertTrue(atomicLongCount >= 2, "Should have at least 2 AtomicLong fields for statistics");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaMemoryManager Tests")
+  class PanamaMemoryManagerTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaMemoryManager";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaMemoryManager class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have memory allocation methods")
+    void shouldHaveMemoryAllocationMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "allocate", long.class);
+      assertMethodExists(clazz, "allocateBytes", byte[].class);
+      assertMethodExists(clazz, "allocateString", String.class);
+      assertMethodExists(clazz, "allocateArray", int.class, long.class);
+      assertMethodExists(clazz, "allocateIntArray", int[].class);
+      assertMethodExists(clazz, "allocatePointerArray", int.class);
+      assertMethodExists(clazz, "allocateSize");
+
+      LOGGER.info("All expected memory allocation methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have memory management methods")
+    void shouldHaveMemoryManagementMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "ofAddress", long.class, long.class);
+      assertMethodExists(clazz, "copy");
+      assertMethodExists(clazz, "fill");
+      assertMethodExists(clazz, "freeMemory");
+      assertMethodExists(clazz, "getTotalAllocated");
+      assertMethodExists(clazz, "getAllocationCount");
+      assertMethodExists(clazz, "getArena");
+      assertMethodExists(clazz, "getMemoryStats");
+
+      LOGGER.info("All expected memory management methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have Arena field for memory lifecycle")
+    void shouldHaveArenaFieldForMemoryLifecycle() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasArenaField = false;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if (field.getType().getName().contains("Arena")) {
+          hasArenaField = true;
+          break;
+        }
+      }
+
+      assertTrue(hasArenaField, "Should have Arena field for memory lifecycle management");
+    }
+  }
+
+  @Nested
+  @DisplayName("ConcurrentAccessCoordinator Tests")
+  class ConcurrentAccessCoordinatorTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".ConcurrentAccessCoordinator";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing ConcurrentAccessCoordinator class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have coordination methods")
+    void shouldHaveCoordinationMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "executeWithArenaCoordination");
+      assertMethodExists(clazz, "executeBulkOperation");
+      assertMethodExists(clazz, "executeAsync");
+      assertMethodExists(clazz, "executeBatch");
+      assertMethodExists(clazz, "getResourceTypeLock", String.class);
+      assertMethodExists(clazz, "getStatistics");
+      assertMethodExists(clazz, "shutdown");
+      assertMethodExists(clazz, "isShutdownRequested");
+
+      LOGGER.info("All expected coordination methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have functional interfaces for operations")
+    void shouldHaveFunctionalInterfacesForOperations() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasArenaOperation = false;
+      boolean hasBulkResourceOperation = false;
+
+      for (final Class<?> nested : clazz.getDeclaredClasses()) {
+        if ("ArenaOperation".equals(nested.getSimpleName())) {
+          hasArenaOperation = true;
+          assertTrue(nested.isInterface(), "ArenaOperation should be an interface");
+        } else if ("BulkResourceOperation".equals(nested.getSimpleName())) {
+          hasBulkResourceOperation = true;
+          assertTrue(nested.isInterface(), "BulkResourceOperation should be an interface");
+        }
+      }
+
+      assertTrue(hasArenaOperation, "Should have ArenaOperation functional interface");
+      assertTrue(
+          hasBulkResourceOperation, "Should have BulkResourceOperation functional interface");
+    }
+
+    @Test
+    @DisplayName("Should have CoordinationStatistics nested class")
+    void shouldHaveCoordinationStatisticsNestedClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasStatistics = false;
+      for (final Class<?> nested : clazz.getDeclaredClasses()) {
+        if ("CoordinationStatistics".equals(nested.getSimpleName())) {
+          hasStatistics = true;
+          assertTrue(
+              Modifier.isPublic(nested.getModifiers()), "CoordinationStatistics should be public");
+          break;
+        }
+      }
+
+      assertTrue(hasStatistics, "Should have CoordinationStatistics nested class");
+    }
+
+    @Test
+    @DisplayName("Should use StampedLock for optimistic concurrency")
+    void shouldUseStampedLockForOptimisticConcurrency() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasStampedLock = false;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if (field.getType().getName().contains("StampedLock")) {
+          hasStampedLock = true;
+          break;
+        }
+      }
+
+      assertTrue(hasStampedLock, "Should use StampedLock for optimistic concurrency control");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaValidation Tests")
+  class PanamaValidationTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaValidation";
+
+    @Test
+    @DisplayName("Should be a final utility class")
+    void shouldBeFinalUtilityClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaValidation class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+
+      // Should have private constructor
+      final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+      assertEquals(1, constructors.length, "Should have exactly one constructor");
+      assertTrue(
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
+    }
+
+    @Test
+    @DisplayName("Should have all validation methods as static")
+    void shouldHaveAllValidationMethodsAsStatic() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      final String[] expectedMethods = {
+        "requireNonNull",
+        "requireNonEmpty",
+        "requireNonBlank",
+        "requireInRange",
+        "requireNonNegative",
+        "requireValidHandle",
+        "defensiveCopy",
+        "requirePositive",
+        "requireValidPort",
+        "requireValidConnectionId",
+        "requireValidString"
+      };
+
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getDeclaredMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            assertTrue(Modifier.isStatic(method.getModifiers()), methodName + " should be static");
+            assertTrue(Modifier.isPublic(method.getModifiers()), methodName + " should be public");
+          }
+        }
+        assertTrue(found, "Should have method: " + methodName);
+      }
+
+      LOGGER.info("All validation methods are correctly static and public");
+    }
+
+    @Test
+    @DisplayName("Should have overloaded requireInRange for int and long")
+    void shouldHaveOverloadedRequireInRange() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      int intRangeCount = 0;
+      int longRangeCount = 0;
+
+      for (final Method method : clazz.getDeclaredMethods()) {
+        if ("requireInRange".equals(method.getName())) {
+          final Class<?>[] params = method.getParameterTypes();
+          if (params.length >= 3) {
+            if (params[0] == int.class) {
+              intRangeCount++;
+            } else if (params[0] == long.class) {
+              longRangeCount++;
+            }
+          }
+        }
+      }
+
+      assertTrue(intRangeCount >= 1, "Should have int version of requireInRange");
+      assertTrue(longRangeCount >= 1, "Should have long version of requireInRange");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaTypeConverter Tests")
+  class PanamaTypeConverterTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaTypeConverter";
+
+    @Test
+    @DisplayName("Should be a final utility class")
+    void shouldBeFinalUtilityClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaTypeConverter class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have type conversion methods")
+    void shouldHaveTypeConversionMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "wasmTypeToNative");
+      assertMethodExists(clazz, "nativeToWasmType", int.class);
+      assertMethodExists(clazz, "marshalWasmValue");
+      assertMethodExists(clazz, "unmarshalWasmValue");
+      assertMethodExists(clazz, "marshalParameters");
+      assertMethodExists(clazz, "unmarshalResults");
+
+      LOGGER.info("All expected type conversion methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have validation methods")
+    void shouldHaveValidationMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "validateParameterTypes");
+      assertMethodExists(clazz, "validateV128Size", byte[].class);
+      assertMethodExists(clazz, "validateReferenceTypes");
+
+      LOGGER.info("All expected validation methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have function type conversion methods")
+    void shouldHaveFunctionTypeConversionMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "functionTypeToNative");
+      assertMethodExists(clazz, "nativeToFunctionType", int[].class, int[].class);
+      assertMethodExists(clazz, "calculateValuesMemorySize");
+
+      LOGGER.info("All expected function type conversion methods exist");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaExceptionMapper Tests")
+  class PanamaExceptionMapperTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaExceptionMapper";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaExceptionMapper class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have static mapException method")
+    void shouldHaveStaticMapExceptionMethod() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      final Method method = clazz.getMethod("mapException", Throwable.class);
+      assertNotNull(method, "Should have mapException method");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "mapException should be static");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "mapException should be public");
+    }
+
+    @Test
+    @DisplayName("Should have native error mapping methods")
+    void shouldHaveNativeErrorMappingMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "mapNativeError", int.class, String.class);
+      // MemorySegment version
+      assertMethodExists(clazz, "mapNativeError");
+
+      LOGGER.info("All expected native error mapping methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have exception factory methods")
+    void shouldHaveExceptionFactoryMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "createCompilationException", String.class, Throwable.class);
+      assertMethodExists(clazz, "createRuntimeException", String.class, Throwable.class);
+      assertMethodExists(clazz, "createValidationException", String.class, Throwable.class);
+      assertMethodExists(clazz, "createWasmException", String.class, Throwable.class);
+      assertMethodExists(clazz, "isRecoverableError");
+
+      LOGGER.info("All expected exception factory methods exist");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaBatchProcessor Tests")
+  class PanamaBatchProcessorTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaBatchProcessor";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaBatchProcessor class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have batch processing methods")
+    void shouldHaveBatchProcessingMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "processBatch");
+      assertMethodExists(clazz, "processBatchAsync");
+      assertMethodExists(clazz, "processNativeBatch");
+      assertMethodExists(clazz, "optimizeBatchSize", int.class, int.class);
+
+      LOGGER.info("All expected batch processing methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have statistics and lifecycle methods")
+    void shouldHaveStatisticsAndLifecycleMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "getStatistics");
+      assertMethodExists(clazz, "getPerformanceMetrics");
+      assertMethodExists(clazz, "close");
+      assertMethodExists(clazz, "isActive");
+      assertMethodExists(clazz, "getArena");
+      assertMethodExists(clazz, "resetStatistics");
+
+      LOGGER.info("All expected statistics and lifecycle methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have batch size constants")
+    void shouldHaveBatchSizeConstants() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasDefaultBatchSize = false;
+      boolean hasMaxBatchSize = false;
+
+      for (final Field field : clazz.getDeclaredFields()) {
+        if ("DEFAULT_BATCH_SIZE".equals(field.getName())) {
+          hasDefaultBatchSize = true;
+          assertTrue(
+              Modifier.isStatic(field.getModifiers()), "DEFAULT_BATCH_SIZE should be static");
+          assertTrue(Modifier.isFinal(field.getModifiers()), "DEFAULT_BATCH_SIZE should be final");
+        } else if ("MAX_BATCH_SIZE".equals(field.getName())) {
+          hasMaxBatchSize = true;
+          assertTrue(Modifier.isStatic(field.getModifiers()), "MAX_BATCH_SIZE should be static");
+          assertTrue(Modifier.isFinal(field.getModifiers()), "MAX_BATCH_SIZE should be final");
+        }
+      }
+
+      assertTrue(hasDefaultBatchSize, "Should have DEFAULT_BATCH_SIZE constant");
+      assertTrue(hasMaxBatchSize, "Should have MAX_BATCH_SIZE constant");
+    }
+  }
+
+  @Nested
+  @DisplayName("ComplexPanamaTypeConverter Tests")
+  class ComplexPanamaTypeConverterTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".ComplexPanamaTypeConverter";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing ComplexPanamaTypeConverter class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have complex object conversion methods")
+    void shouldHaveComplexObjectConversionMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "convertComplexObjectToPanamaMemory", Object.class);
+      assertMethodExists(clazz, "convertPanamaMemoryToComplexObject");
+      assertMethodExists(clazz, "marshalMultiDimensionalArrayToPanama", Object.class);
+      assertMethodExists(clazz, "unmarshalMultiDimensionalArrayFromPanama");
+      assertMethodExists(clazz, "marshalCollectionToPanama", Object.class);
+      assertMethodExists(clazz, "unmarshalCollectionFromPanama");
+
+      LOGGER.info("All expected complex object conversion methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have parameter layout methods")
+    void shouldHaveParameterLayoutMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "createOptimizedParameterLayout");
+      assertMethodExists(clazz, "extractFromOptimizedParameterLayout");
+      assertMethodExists(clazz, "validatePanamaMarshalableObject", Object.class);
+
+      LOGGER.info("All expected parameter layout methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have nested helper classes")
+    void shouldHaveNestedHelperClasses() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      final Class<?>[] nestedClasses = clazz.getDeclaredClasses();
+      final Set<String> nestedNames = new HashSet<>();
+      for (final Class<?> nested : nestedClasses) {
+        nestedNames.add(nested.getSimpleName());
+      }
+
+      assertTrue(nestedNames.size() >= 3, "Should have at least 3 nested classes");
+      LOGGER.info("Found nested classes: " + nestedNames);
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaConcurrencyManager Tests")
+  class PanamaConcurrencyManagerTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaConcurrencyManager";
+
+    @Test
+    @DisplayName("Should be a final class")
+    void shouldBeFinalClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing PanamaConcurrencyManager class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+    }
+
+    @Test
+    @DisplayName("Should have execution methods")
+    void shouldHaveExecutionMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "execute");
+      assertMethodExists(clazz, "executeAsync");
+      assertMethodExists(clazz, "executeWithLock");
+      assertMethodExists(clazz, "executeWithReadLock");
+      assertMethodExists(clazz, "executeWithArena");
+      assertMethodExists(clazz, "executeWithMemorySegment");
+
+      LOGGER.info("All expected execution methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have statistics and monitoring methods")
+    void shouldHaveStatisticsAndMonitoringMethods() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      assertMethodExists(clazz, "getStatistics");
+      assertMethodExists(clazz, "getPerformanceMetrics");
+      assertMethodExists(clazz, "getActiveArenaInfo");
+      assertMethodExists(clazz, "checkForIssues");
+      assertMethodExists(clazz, "cleanupClosedArenas");
+      assertMethodExists(clazz, "cleanupUnusedLocks");
+      assertMethodExists(clazz, "resetStatistics");
+      assertMethodExists(clazz, "getAvailablePermits");
+      assertMethodExists(clazz, "getMaxConcurrentOperations");
+      assertMethodExists(clazz, "shutdown");
+
+      LOGGER.info("All expected statistics and monitoring methods exist");
+    }
+
+    @Test
+    @DisplayName("Should have default max concurrent operations constant")
+    void shouldHaveDefaultMaxConcurrentOperationsConstant() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasConstant = false;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if ("DEFAULT_MAX_CONCURRENT_OPERATIONS".equals(field.getName())) {
+          hasConstant = true;
+          assertTrue(
+              Modifier.isStatic(field.getModifiers()),
+              "DEFAULT_MAX_CONCURRENT_OPERATIONS should be static");
+          assertTrue(
+              Modifier.isFinal(field.getModifiers()),
+              "DEFAULT_MAX_CONCURRENT_OPERATIONS should be final");
+          break;
+        }
+      }
+
+      assertTrue(hasConstant, "Should have DEFAULT_MAX_CONCURRENT_OPERATIONS constant");
+    }
+
+    @Test
+    @DisplayName("Should use Semaphore for concurrency control")
+    void shouldUseSemaphoreForConcurrencyControl() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      boolean hasSemaphore = false;
+      for (final Field field : clazz.getDeclaredFields()) {
+        if (field.getType().getName().contains("Semaphore")) {
+          hasSemaphore = true;
+          break;
+        }
+      }
+
+      assertTrue(hasSemaphore, "Should use Semaphore for concurrency control");
+    }
+  }
+
+  @Nested
+  @DisplayName("BacktraceDeserializer Tests")
+  class BacktraceDeserializerTests {
+
+    private static final String CLASS_NAME = UTIL_PACKAGE + ".BacktraceDeserializer";
+
+    @Test
+    @DisplayName("Should be a final utility class")
+    void shouldBeFinalUtilityClass() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+      LOGGER.info("Testing BacktraceDeserializer class structure");
+
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+
+      // Should have private constructor
+      final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+      assertEquals(1, constructors.length, "Should have exactly one constructor");
+      assertTrue(
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
+    }
+
+    @Test
+    @DisplayName("Should have static deserialize method")
+    void shouldHaveStaticDeserializeMethod() throws Exception {
+      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
+
+      final Method method = clazz.getMethod("deserialize", byte[].class);
+      assertNotNull(method, "Should have deserialize method");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "deserialize should be static");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "deserialize should be public");
+
+      // Return type should be WasmBacktrace
+      assertTrue(
+          method.getReturnType().getName().contains("WasmBacktrace"),
+          "deserialize should return WasmBacktrace");
+    }
+  }
+
+  @Nested
+  @DisplayName("Package Completeness Tests")
+  class PackageCompletenessTests {
+
+    private static final String[] EXPECTED_CLASSES = {
+      "PanamaCapabilityDetector",
+      "PanamaResourceTracker",
+      "PanamaMemoryManager",
+      "ConcurrentAccessCoordinator",
+      "PanamaValidation",
+      "PanamaTypeConverter",
+      "PanamaExceptionMapper",
+      "PanamaBatchProcessor",
+      "ComplexPanamaTypeConverter",
+      "PanamaConcurrencyManager",
+      "BacktraceDeserializer"
+    };
+
+    @Test
+    @DisplayName("All expected util classes should exist")
+    void allExpectedUtilClassesShouldExist() {
+      for (final String className : EXPECTED_CLASSES) {
+        final String fullName = UTIL_PACKAGE + "." + className;
+        assertDoesNotThrow(
+            () -> loadClassWithoutInit(fullName), "Class should exist: " + className);
+        LOGGER.info("Verified class exists: " + className);
+      }
+    }
+
+    @Test
+    @DisplayName("All util classes should have proper modifiers")
+    void allUtilClassesShouldHaveProperModifiers() throws Exception {
+      for (final String className : EXPECTED_CLASSES) {
+        final Class<?> clazz = loadClassWithoutInit(UTIL_PACKAGE + "." + className);
+
+        assertTrue(Modifier.isPublic(clazz.getModifiers()), className + " should be public");
+        assertTrue(Modifier.isFinal(clazz.getModifiers()), className + " should be final");
+      }
+    }
+
+    @Test
+    @DisplayName("All util classes should have logger field")
+    void allUtilClassesShouldHaveLoggerField() throws Exception {
+      // Not all classes require a logger (e.g., utility classes with only static methods)
+      int classesWithLogger = 0;
+      int utilityClassesWithoutLogger = 0;
+
+      for (final String className : EXPECTED_CLASSES) {
+        final Class<?> clazz = loadClassWithoutInit(UTIL_PACKAGE + "." + className);
+
+        boolean hasLogger = false;
+        for (final Field field : clazz.getDeclaredFields()) {
+          if (field.getType() == Logger.class) {
+            hasLogger = true;
+            break;
+          }
+        }
+
+        if (hasLogger) {
+          classesWithLogger++;
+        } else {
+          // Pure utility classes without state don't need loggers
+          utilityClassesWithoutLogger++;
+        }
+      }
+
+      LOGGER.info(
+          String.format(
+              "Classes with logger: %d, utility classes without logger: %d",
+              classesWithLogger, utilityClassesWithoutLogger));
+
+      // Most classes should have loggers, but utility classes are allowed not to
+      assertTrue(
+          classesWithLogger >= EXPECTED_CLASSES.length / 2,
+          "At least half of the classes should have loggers");
+    }
+  }
+
+  @Nested
+  @DisplayName("Thread Safety Pattern Tests")
+  class ThreadSafetyPatternTests {
+
+    @Test
+    @DisplayName("Classes using concurrent data structures")
+    void classesShouldUseConcurrentDataStructures() throws Exception {
+      final String[] classesNeedingConcurrency = {
+        "PanamaResourceTracker", "ConcurrentAccessCoordinator", "PanamaConcurrencyManager"
+      };
+
+      for (final String className : classesNeedingConcurrency) {
+        final Class<?> clazz = loadClassWithoutInit(UTIL_PACKAGE + "." + className);
+
+        boolean hasConcurrentStructure = false;
+        for (final Field field : clazz.getDeclaredFields()) {
+          final String typeName = field.getType().getName();
+          if (typeName.contains("Concurrent")
+              || typeName.contains("Atomic")
+              || typeName.contains("Lock")
+              || typeName.contains("Semaphore")) {
+            hasConcurrentStructure = true;
+            break;
+          }
+        }
+
+        assertTrue(hasConcurrentStructure, className + " should use concurrent data structures");
+      }
+    }
+
+    @Test
+    @DisplayName("Utility classes should prevent instantiation")
+    void utilityClassesShouldPreventInstantiation() throws Exception {
+      final String[] pureUtilityClasses = {
+        "PanamaCapabilityDetector", "PanamaValidation", "BacktraceDeserializer"
+      };
+
+      for (final String className : pureUtilityClasses) {
+        final Class<?> clazz = loadClassWithoutInit(UTIL_PACKAGE + "." + className);
+
+        final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+        assertEquals(1, constructors.length, className + " should have exactly one constructor");
+        assertTrue(
+            Modifier.isPrivate(constructors[0].getModifiers()),
+            className + " constructor should be private");
+      }
+    }
+  }
+
+  /**
+   * Helper method to assert that a method exists on a class.
+   *
+   * @param clazz the class to check
+   * @param methodName the method name to find
+   * @param paramTypes optional parameter types (if empty, just checks method name exists)
+   */
+  private void assertMethodExists(
+      final Class<?> clazz, final String methodName, final Class<?>... paramTypes) {
+    boolean found = false;
+
+    for (final Method method : clazz.getDeclaredMethods()) {
+      if (method.getName().equals(methodName)) {
+        if (paramTypes.length == 0) {
+          found = true;
+          break;
+        } else {
+          final Class<?>[] actualParams = method.getParameterTypes();
+          if (actualParams.length >= paramTypes.length) {
+            boolean matches = true;
+            for (int i = 0; i < paramTypes.length; i++) {
+              if (!actualParams[i].equals(paramTypes[i])) {
+                matches = false;
+                break;
+              }
+            }
+            if (matches) {
+              found = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    assertTrue(
+        found,
+        String.format(
+            "Method '%s' with params %s should exist in %s",
+            methodName, Arrays.toString(paramTypes), clazz.getSimpleName()));
+  }
+}

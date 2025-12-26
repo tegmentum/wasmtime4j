@@ -219,8 +219,10 @@ class WitPackageTest {
       WitS32 negative = WitS32.of(-100);
       assertEquals(-100, negative.getValue(), "Negative value should match");
 
-      assertEquals(Integer.MAX_VALUE, WitS32.of(Integer.MAX_VALUE).getValue(), "Max value should match");
-      assertEquals(Integer.MIN_VALUE, WitS32.of(Integer.MIN_VALUE).getValue(), "Min value should match");
+      assertEquals(
+          Integer.MAX_VALUE, WitS32.of(Integer.MAX_VALUE).getValue(), "Max value should match");
+      assertEquals(
+          Integer.MIN_VALUE, WitS32.of(Integer.MIN_VALUE).getValue(), "Min value should match");
     }
 
     @Test
@@ -386,8 +388,10 @@ class WitPackageTest {
       WitFloat32 negative = WitFloat32.of(-2.5f);
       assertEquals(-2.5f, negative.getValue(), 0.0001f, "Negative value should match");
 
-      assertEquals(Float.MAX_VALUE, WitFloat32.of(Float.MAX_VALUE).getValue(), "Max value should match");
-      assertEquals(Float.MIN_VALUE, WitFloat32.of(Float.MIN_VALUE).getValue(), "Min value should match");
+      assertEquals(
+          Float.MAX_VALUE, WitFloat32.of(Float.MAX_VALUE).getValue(), "Max value should match");
+      assertEquals(
+          Float.MIN_VALUE, WitFloat32.of(Float.MIN_VALUE).getValue(), "Min value should match");
     }
 
     @Test
@@ -1393,8 +1397,7 @@ class WitPackageTest {
     @DisplayName("WitResult should extend WitValue")
     void witResultShouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitResult.class),
-          "WitResult should extend WitValue");
+          WitValue.class.isAssignableFrom(WitResult.class), "WitResult should extend WitValue");
     }
 
     @Test
@@ -1404,8 +1407,7 @@ class WitPackageTest {
       assertNotNull(method, "ok(WitType, WitValue) method should exist");
       assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "ok method should be static");
+          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "ok method should be static");
     }
 
     @Test
@@ -1415,8 +1417,7 @@ class WitPackageTest {
       assertNotNull(method, "ok(WitType) method should exist");
       assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "ok method should be static");
+          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "ok method should be static");
     }
 
     @Test
@@ -1537,8 +1538,7 @@ class WitPackageTest {
     @DisplayName("WitVariant should extend WitValue")
     void witVariantShouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitVariant.class),
-          "WitVariant should extend WitValue");
+          WitValue.class.isAssignableFrom(WitVariant.class), "WitVariant should extend WitValue");
     }
 
     @Test
@@ -1548,8 +1548,7 @@ class WitPackageTest {
       assertNotNull(method, "of(WitType, String, WitValue) method should exist");
       assertEquals(WitVariant.class, method.getReturnType(), "Return type should be WitVariant");
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "of method should be static");
+          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
     }
 
     @Test
@@ -1559,8 +1558,7 @@ class WitPackageTest {
       assertNotNull(method, "of(WitType, String) method should exist");
       assertEquals(WitVariant.class, method.getReturnType(), "Return type should be WitVariant");
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "of method should be static");
+          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
     }
 
     @Test
@@ -1601,9 +1599,7 @@ class WitPackageTest {
       Method method = WitVariant.class.getMethod("equals", Object.class);
       assertNotNull(method, "equals method should exist");
       assertEquals(
-          WitVariant.class,
-          method.getDeclaringClass(),
-          "equals should be declared in WitVariant");
+          WitVariant.class, method.getDeclaringClass(), "equals should be declared in WitVariant");
     }
 
     @Test
@@ -1648,8 +1644,7 @@ class WitPackageTest {
     @Test
     @DisplayName("WitEnum should extend WitValue")
     void witEnumShouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
+      assertTrue(WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
     }
 
     @Test
@@ -1718,8 +1713,7 @@ class WitPackageTest {
     @DisplayName("WitU8 should be a final class")
     void witU8ShouldBeFinalClass() {
       assertTrue(
-          java.lang.reflect.Modifier.isFinal(WitU8.class.getModifiers()),
-          "WitU8 should be final");
+          java.lang.reflect.Modifier.isFinal(WitU8.class.getModifiers()), "WitU8 should be final");
     }
 
     @Test
@@ -1781,7 +1775,8 @@ class WitPackageTest {
       WitU8 value = WitU8.of((byte) 42);
       assertNotNull(value, "WitU8 should be created");
       assertEquals((byte) 42, value.getValue(), "getValue should return the byte value");
-      assertEquals(42, value.toUnsignedInt(), "toUnsignedInt should return unsigned interpretation");
+      assertEquals(
+          42, value.toUnsignedInt(), "toUnsignedInt should return unsigned interpretation");
     }
 
     @Test
@@ -2222,9 +2217,7 @@ class WitPackageTest {
       Method method = WitFloat64.class.getMethod("equals", Object.class);
       assertNotNull(method, "equals method should exist");
       assertEquals(
-          WitFloat64.class,
-          method.getDeclaringClass(),
-          "equals should be declared in WitFloat64");
+          WitFloat64.class, method.getDeclaringClass(), "equals should be declared in WitFloat64");
     }
 
     @Test

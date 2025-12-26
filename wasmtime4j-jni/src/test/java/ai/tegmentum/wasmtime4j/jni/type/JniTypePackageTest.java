@@ -25,7 +25,6 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,7 @@ class JniTypePackageTest {
     @Test
     @DisplayName("JniFuncType should be a final class")
     void jniFuncTypeShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(JniFuncType.class.getModifiers()), "JniFuncType should be final");
+      assertTrue(Modifier.isFinal(JniFuncType.class.getModifiers()), "JniFuncType should be final");
     }
 
     @Test
@@ -130,8 +128,7 @@ class JniTypePackageTest {
     @Test
     @DisplayName("JniFuncType getKind should return FUNCTION")
     void jniFuncTypeGetKindShouldReturnFunction() {
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
 
       assertEquals(WasmTypeKind.FUNCTION, funcType.getKind(), "Kind should be FUNCTION");
     }
@@ -140,8 +137,7 @@ class JniTypePackageTest {
     @DisplayName("JniFuncType getParams should return immutable list")
     void jniFuncTypeGetParamsShouldReturnImmutableList() {
       JniFuncType funcType =
-          new JniFuncType(
-              Collections.singletonList(WasmValueType.I32), Collections.emptyList());
+          new JniFuncType(Collections.singletonList(WasmValueType.I32), Collections.emptyList());
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -153,8 +149,7 @@ class JniTypePackageTest {
     @DisplayName("JniFuncType getResults should return immutable list")
     void jniFuncTypeGetResultsShouldReturnImmutableList() {
       JniFuncType funcType =
-          new JniFuncType(
-              Collections.emptyList(), Collections.singletonList(WasmValueType.I32));
+          new JniFuncType(Collections.emptyList(), Collections.singletonList(WasmValueType.I32));
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -668,9 +663,7 @@ class JniTypePackageTest {
       JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "memory", globalType);
 
       assertEquals(
-          descriptor1.hashCode(),
-          descriptor2.hashCode(),
-          "Equal objects should have same hash");
+          descriptor1.hashCode(), descriptor2.hashCode(), "Equal objects should have same hash");
     }
 
     @Test
@@ -738,8 +731,7 @@ class JniTypePackageTest {
     @Test
     @DisplayName("JniExportDescriptor should throw for null name")
     void jniExportDescriptorShouldThrowForNullName() {
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       assertThrows(
           IllegalArgumentException.class,
           () -> new JniExportDescriptor(null, funcType),
@@ -758,8 +750,7 @@ class JniTypePackageTest {
     @Test
     @DisplayName("JniExportDescriptor equals should work correctly")
     void jniExportDescriptorEqualsShouldWorkCorrectly() {
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       JniExportDescriptor descriptor1 = new JniExportDescriptor("add", funcType);
       JniExportDescriptor descriptor2 = new JniExportDescriptor("add", funcType);
       JniExportDescriptor descriptor3 = new JniExportDescriptor("sub", funcType);
@@ -771,22 +762,18 @@ class JniTypePackageTest {
     @Test
     @DisplayName("JniExportDescriptor hashCode should be consistent with equals")
     void jniExportDescriptorHashCodeShouldBeConsistent() {
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       JniExportDescriptor descriptor1 = new JniExportDescriptor("add", funcType);
       JniExportDescriptor descriptor2 = new JniExportDescriptor("add", funcType);
 
       assertEquals(
-          descriptor1.hashCode(),
-          descriptor2.hashCode(),
-          "Equal objects should have same hash");
+          descriptor1.hashCode(), descriptor2.hashCode(), "Equal objects should have same hash");
     }
 
     @Test
     @DisplayName("JniExportDescriptor toString should contain relevant info")
     void jniExportDescriptorToStringShouldContainInfo() {
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       JniExportDescriptor descriptor = new JniExportDescriptor("add", funcType);
 
       String str = descriptor.toString();
@@ -875,11 +862,7 @@ class JniTypePackageTest {
     @DisplayName("FuncType with all primitive types should work")
     void funcTypeWithAllPrimitiveTypesShouldWork() {
       List<WasmValueType> params =
-          Arrays.asList(
-              WasmValueType.I32,
-              WasmValueType.I64,
-              WasmValueType.F32,
-              WasmValueType.F64);
+          Arrays.asList(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64);
       List<WasmValueType> results = Collections.singletonList(WasmValueType.I32);
 
       JniFuncType funcType = new JniFuncType(params, results);
@@ -892,8 +875,7 @@ class JniTypePackageTest {
     @DisplayName("ImportDescriptor with different type kinds should work")
     void importDescriptorWithDifferentTypeKindsShouldWork() {
       // Test with FuncType
-      JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       JniImportDescriptor funcImport = new JniImportDescriptor("env", "func", funcType);
       assertEquals(WasmTypeKind.FUNCTION, funcImport.getType().getKind());
 

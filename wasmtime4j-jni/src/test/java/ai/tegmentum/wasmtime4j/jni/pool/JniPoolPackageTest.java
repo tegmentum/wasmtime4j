@@ -16,9 +16,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -178,7 +175,8 @@ class JniPoolPackageTest {
     @DisplayName("JniPoolStatistics toString should contain relevant info")
     void jniPoolStatisticsToStringShouldContainRelevantInfo() {
       JniPoolStatistics stats =
-          new JniPoolStatistics(100, 50, 50, 200, 100, 300, 150, 400, 200, 1000000, 500000, 5, 0, 0);
+          new JniPoolStatistics(
+              100, 50, 50, 200, 100, 300, 150, 400, 200, 1000000, 500000, 5, 0, 0);
 
       String str = stats.toString();
       assertNotNull(str, "toString should not return null");
@@ -242,8 +240,7 @@ class JniPoolPackageTest {
 
     @Test
     @DisplayName("JniPoolingAllocatorConfig should have getTableElements method")
-    void jniPoolingAllocatorConfigShouldHaveGetTableElementsMethod()
-        throws NoSuchMethodException {
+    void jniPoolingAllocatorConfigShouldHaveGetTableElementsMethod() throws NoSuchMethodException {
       Method method = JniPoolingAllocatorConfig.class.getMethod("getTableElements");
       assertNotNull(method, "getTableElements method should exist");
       assertEquals(int.class, method.getReturnType(), "Should return int");
@@ -290,7 +287,8 @@ class JniPoolPackageTest {
     void jniPoolingAllocatorConfigBuilderShouldHavePublicConstructor() {
       Constructor<?>[] constructors = JniPoolingAllocatorConfigBuilder.class.getConstructors();
       assertTrue(
-          constructors.length > 0, "JniPoolingAllocatorConfigBuilder should have public constructor");
+          constructors.length > 0,
+          "JniPoolingAllocatorConfigBuilder should have public constructor");
     }
 
     @Test
@@ -310,8 +308,7 @@ class JniPoolPackageTest {
     @DisplayName("JniPoolingAllocatorConfigBuilder should have maxMemorySize method")
     void jniPoolingAllocatorConfigBuilderShouldHaveMaxMemorySizeMethod()
         throws NoSuchMethodException {
-      Method method =
-          JniPoolingAllocatorConfigBuilder.class.getMethod("maxMemorySize", long.class);
+      Method method = JniPoolingAllocatorConfigBuilder.class.getMethod("maxMemorySize", long.class);
       assertNotNull(method, "maxMemorySize method should exist");
       assertEquals(
           PoolingAllocatorConfigBuilder.class,
@@ -378,8 +375,7 @@ class JniPoolPackageTest {
       Constructor<?> constructor =
           JniPoolingAllocator.class.getConstructor(PoolingAllocatorConfig.class);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test

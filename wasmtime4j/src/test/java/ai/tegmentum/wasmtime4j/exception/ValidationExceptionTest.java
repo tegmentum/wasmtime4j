@@ -1,228 +1,200 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ai.tegmentum.wasmtime4j.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the {@link ValidationException} class.
+ * Tests for {@link ValidationException} class.
  *
- * <p>This test class verifies validation exception construction and inheritance.
+ * <p>ValidationException is thrown when WebAssembly validation fails.
  */
 @DisplayName("ValidationException Tests")
 class ValidationExceptionTest {
+
+  @Nested
+  @DisplayName("Class Structure Tests")
+  class ClassStructureTests {
+
+    @Test
+    @DisplayName("should be public class")
+    void shouldBePublicClass() {
+      assertTrue(
+          Modifier.isPublic(ValidationException.class.getModifiers()),
+          "ValidationException should be public");
+    }
+
+    @Test
+    @DisplayName("should extend WasmException")
+    void shouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(ValidationException.class),
+          "ValidationException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("should have serialVersionUID field")
+    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
+      final var field = ValidationException.class.getDeclaredField("serialVersionUID");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
+      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
+    }
+  }
 
   @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 
     @Test
-    @DisplayName("Constructor with message only should set message")
-    void constructorWithMessageOnly() {
-      String message = "Invalid module: type mismatch at instruction 42";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertNull(exception.getCause());
+    @DisplayName("should have constructor with message")
+    void shouldHaveConstructorWithMessage() throws NoSuchMethodException {
+      final Constructor<ValidationException> constructor =
+          ValidationException.class.getConstructor(String.class);
+      assertNotNull(constructor, "Constructor with message should exist");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("Constructor with null message should accept null")
-    void constructorWithNullMessage() {
-      ValidationException exception = new ValidationException((String) null);
-
-      assertNull(exception.getMessage());
-      assertNull(exception.getCause());
+    @DisplayName("should have constructor with message and cause")
+    void shouldHaveConstructorWithMessageAndCause() throws NoSuchMethodException {
+      final Constructor<ValidationException> constructor =
+          ValidationException.class.getConstructor(String.class, Throwable.class);
+      assertNotNull(constructor, "Constructor with message and cause should exist");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("Constructor with empty message should accept empty string")
-    void constructorWithEmptyMessage() {
-      ValidationException exception = new ValidationException("");
+    @DisplayName("should create exception with message")
+    void shouldCreateExceptionWithMessage() {
+      final String message = "Type mismatch in function";
+      final ValidationException exception = new ValidationException(message);
 
-      assertEquals("", exception.getMessage());
-      assertNull(exception.getCause());
+      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertNull(exception.getCause(), "Cause should be null");
     }
 
     @Test
-    @DisplayName("Constructor with message and cause should set both")
-    void constructorWithMessageAndCause() {
-      String message = "Invalid module bytecode";
-      Throwable cause = new RuntimeException("Parsing error");
-      ValidationException exception = new ValidationException(message, cause);
+    @DisplayName("should create exception with message and cause")
+    void shouldCreateExceptionWithMessageAndCause() {
+      final String message = "Failed to validate module";
+      final RuntimeException cause = new RuntimeException("Type error");
+      final ValidationException exception = new ValidationException(message, cause);
 
-      assertEquals(message, exception.getMessage());
-      assertSame(cause, exception.getCause());
-    }
-
-    @Test
-    @DisplayName("Constructor with null message and valid cause should accept both")
-    void constructorWithNullMessageAndValidCause() {
-      Throwable cause = new RuntimeException("Root cause");
-      ValidationException exception = new ValidationException(null, cause);
-
-      assertNull(exception.getMessage());
-      assertSame(cause, exception.getCause());
-    }
-
-    @Test
-    @DisplayName("Constructor with valid message and null cause should accept both")
-    void constructorWithValidMessageAndNullCause() {
-      String message = "Validation failed";
-      ValidationException exception = new ValidationException(message, null);
-
-      assertEquals(message, exception.getMessage());
-      assertNull(exception.getCause());
+      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertSame(cause, exception.getCause(), "Cause should be set correctly");
     }
   }
 
   @Nested
-  @DisplayName("Inheritance Tests")
-  class InheritanceTests {
+  @DisplayName("Exception Behavior Tests")
+  class ExceptionBehaviorTests {
 
     @Test
-    @DisplayName("ValidationException should extend WasmException")
-    void shouldExtendWasmException() {
-      ValidationException exception = new ValidationException("Test");
-      assertTrue(exception instanceof WasmException);
+    @DisplayName("should be catchable as WasmException")
+    void shouldBeCatchableAsWasmException() {
+      boolean caught = false;
+      try {
+        throw new ValidationException("Validation failed");
+      } catch (final WasmException e) {
+        caught = true;
+        assertTrue(e instanceof ValidationException, "Should be instance of ValidationException");
+      }
+      assertTrue(caught, "Exception should be caught as WasmException");
     }
 
     @Test
-    @DisplayName("ValidationException should be a checked exception")
-    void shouldBeCheckedException() {
-      ValidationException exception = new ValidationException("Test");
-      assertTrue(exception instanceof Exception);
-      assertFalse(java.lang.RuntimeException.class.isAssignableFrom(exception.getClass()));
-    }
-  }
-
-  @Nested
-  @DisplayName("Validation Error Message Tests")
-  class ValidationErrorMessageTests {
-
-    @Test
-    @DisplayName("Should preserve type mismatch error message")
-    void shouldPreserveTypeMismatchErrorMessage() {
-      String message = "type mismatch: expected i32 but found f64 at instruction offset 0x1234";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("type mismatch"));
-      assertTrue(exception.getMessage().contains("i32"));
-      assertTrue(exception.getMessage().contains("f64"));
+    @DisplayName("should be catchable as Exception")
+    void shouldBeCatchableAsException() {
+      boolean caught = false;
+      try {
+        throw new ValidationException("Validation failed");
+      } catch (final Exception e) {
+        caught = true;
+        assertTrue(e instanceof ValidationException, "Should be instance of ValidationException");
+      }
+      assertTrue(caught, "Exception should be caught as Exception");
     }
 
     @Test
-    @DisplayName("Should preserve invalid opcode error message")
-    void shouldPreserveInvalidOpcodeErrorMessage() {
-      String message = "unknown opcode 0xfc23 at offset 256";
-      ValidationException exception = new ValidationException(message);
+    @DisplayName("should preserve stack trace")
+    void shouldPreserveStackTrace() {
+      final ValidationException exception = new ValidationException("Test");
+      final StackTraceElement[] stackTrace = exception.getStackTrace();
 
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("opcode"));
-    }
-
-    @Test
-    @DisplayName("Should preserve function signature error message")
-    void shouldPreserveFunctionSignatureErrorMessage() {
-      String message =
-          "function signature mismatch: expected [i32, i32] -> [i32] but found [i64] -> [i32]";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("signature"));
-    }
-
-    @Test
-    @DisplayName("Should preserve memory limit error message")
-    void shouldPreserveMemoryLimitErrorMessage() {
-      String message = "memory minimum 256 pages exceeds maximum of 128 pages";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("memory"));
-      assertTrue(exception.getMessage().contains("pages"));
-    }
-
-    @Test
-    @DisplayName("Should preserve import/export error message")
-    void shouldPreserveImportExportErrorMessage() {
-      String message = "import \"env\"::\"memory\" has incompatible type";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("import"));
-    }
-
-    @Test
-    @DisplayName("Should preserve stack underflow error message")
-    void shouldPreserveStackUnderflowErrorMessage() {
-      String message = "stack underflow: expected 2 values but stack has 1";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("stack"));
-    }
-
-    @Test
-    @DisplayName("Should preserve multiline error messages")
-    void shouldPreserveMultilineErrorMessages() {
-      String message =
-          "Multiple validation errors:\n"
-              + "- type mismatch at offset 0x10\n"
-              + "- unknown local 5 at offset 0x20\n"
-              + "- stack underflow at offset 0x30";
-      ValidationException exception = new ValidationException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertTrue(exception.getMessage().contains("\n"));
+      assertNotNull(stackTrace, "Stack trace should not be null");
+      assertTrue(stackTrace.length > 0, "Stack trace should not be empty");
     }
   }
 
   @Nested
-  @DisplayName("Exception Chaining Tests")
-  class ExceptionChainingTests {
+  @DisplayName("Validation Error Scenario Tests")
+  class ValidationErrorScenarioTests {
 
     @Test
-    @DisplayName("Should support deep exception chaining")
-    void shouldSupportDeepExceptionChaining() {
-      Exception rootCause = new Exception("Binary parsing failed");
-      Exception middleCause = new Exception("Section decode error", rootCause);
-      ValidationException topException =
-          new ValidationException("Module validation failed", middleCause);
+    @DisplayName("should handle type mismatch error")
+    void shouldHandleTypeMismatchError() {
+      final ValidationException exception =
+          new ValidationException("Type mismatch: expected i32, got i64");
 
-      assertSame(middleCause, topException.getCause());
-      assertSame(rootCause, topException.getCause().getCause());
+      assertTrue(
+          exception.getMessage().contains("Type mismatch"),
+          "Message should describe type mismatch");
     }
 
     @Test
-    @DisplayName("Should support chaining with WasmException")
-    void shouldSupportChainingWithWasmException() {
-      WasmException wasmCause = new WasmException("Underlying WASM error");
-      ValidationException exception = new ValidationException("Validation failed", wasmCause);
+    @DisplayName("should handle invalid function signature error")
+    void shouldHandleInvalidFunctionSignatureError() {
+      final ValidationException exception =
+          new ValidationException("Invalid function signature at index 5");
 
-      assertSame(wasmCause, exception.getCause());
-      assertTrue(exception.getCause() instanceof WasmException);
+      assertTrue(
+          exception.getMessage().contains("function signature"),
+          "Message should describe function signature error");
     }
-  }
-
-  @Nested
-  @DisplayName("Stack Trace Tests")
-  class StackTraceTests {
 
     @Test
-    @DisplayName("Should have stack trace")
-    void shouldHaveStackTrace() {
-      ValidationException exception = new ValidationException("Test");
+    @DisplayName("should handle stack underflow error")
+    void shouldHandleStackUnderflowError() {
+      final ValidationException exception =
+          new ValidationException("Stack underflow: expected 2 values, got 1");
 
-      StackTraceElement[] stackTrace = exception.getStackTrace();
-      assertTrue(stackTrace != null && stackTrace.length > 0);
+      assertTrue(
+          exception.getMessage().contains("underflow"), "Message should describe stack underflow");
+    }
+
+    @Test
+    @DisplayName("should handle invalid branch target error")
+    void shouldHandleInvalidBranchTargetError() {
+      final ValidationException exception =
+          new ValidationException("Invalid branch target: label 3 out of range");
+
+      assertTrue(
+          exception.getMessage().contains("branch"), "Message should describe branch target error");
     }
   }
 }

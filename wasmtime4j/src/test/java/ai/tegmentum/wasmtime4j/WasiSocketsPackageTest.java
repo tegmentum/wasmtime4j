@@ -77,8 +77,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should have exactly two values")
     void shouldHaveExactlyTwoValues() {
-      assertEquals(2, IpAddressFamily.values().length,
-          "IpAddressFamily should have exactly 2 values");
+      assertEquals(
+          2, IpAddressFamily.values().length, "IpAddressFamily should have exactly 2 values");
     }
   }
 
@@ -115,8 +115,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(IpAddress.class.getModifiers()),
-          "IpAddress should be a final class");
+      assertTrue(
+          Modifier.isFinal(IpAddress.class.getModifiers()), "IpAddress should be a final class");
       assertFalse(IpAddress.class.isInterface(), "IpAddress should not be an interface");
     }
 
@@ -174,7 +174,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(Ipv4Address.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(Ipv4Address.class.getModifiers()),
           "Ipv4Address should be a final class");
       assertFalse(Ipv4Address.class.isInterface(), "Ipv4Address should not be an interface");
     }
@@ -206,7 +207,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(Ipv6Address.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(Ipv6Address.class.getModifiers()),
           "Ipv6Address should be a final class");
       assertFalse(Ipv6Address.class.isInterface(), "Ipv6Address should not be an interface");
     }
@@ -238,9 +240,11 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(IpSocketAddress.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(IpSocketAddress.class.getModifiers()),
           "IpSocketAddress should be a final class");
-      assertFalse(IpSocketAddress.class.isInterface(), "IpSocketAddress should not be an interface");
+      assertFalse(
+          IpSocketAddress.class.isInterface(), "IpSocketAddress should not be an interface");
     }
 
     @Test
@@ -249,8 +253,8 @@ class WasiSocketsPackageTest {
       Method method = IpSocketAddress.class.getMethod("ipv4", Ipv4SocketAddress.class);
       assertNotNull(method, "ipv4 factory method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "ipv4 method should be static");
-      assertEquals(IpSocketAddress.class, method.getReturnType(),
-          "Return type should be IpSocketAddress");
+      assertEquals(
+          IpSocketAddress.class, method.getReturnType(), "Return type should be IpSocketAddress");
     }
 
     @Test
@@ -259,8 +263,8 @@ class WasiSocketsPackageTest {
       Method method = IpSocketAddress.class.getMethod("ipv6", Ipv6SocketAddress.class);
       assertNotNull(method, "ipv6 factory method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "ipv6 method should be static");
-      assertEquals(IpSocketAddress.class, method.getReturnType(),
-          "Return type should be IpSocketAddress");
+      assertEquals(
+          IpSocketAddress.class, method.getReturnType(), "Return type should be IpSocketAddress");
     }
 
     @Test
@@ -276,7 +280,9 @@ class WasiSocketsPackageTest {
     void shouldHaveGetIpv4Method() throws NoSuchMethodException {
       Method method = IpSocketAddress.class.getMethod("getIpv4");
       assertNotNull(method, "getIpv4 method should exist");
-      assertEquals(Ipv4SocketAddress.class, method.getReturnType(),
+      assertEquals(
+          Ipv4SocketAddress.class,
+          method.getReturnType(),
           "Return type should be Ipv4SocketAddress");
     }
 
@@ -285,7 +291,9 @@ class WasiSocketsPackageTest {
     void shouldHaveGetIpv6Method() throws NoSuchMethodException {
       Method method = IpSocketAddress.class.getMethod("getIpv6");
       assertNotNull(method, "getIpv6 method should exist");
-      assertEquals(Ipv6SocketAddress.class, method.getReturnType(),
+      assertEquals(
+          Ipv6SocketAddress.class,
+          method.getReturnType(),
           "Return type should be Ipv6SocketAddress");
     }
   }
@@ -301,10 +309,11 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(Ipv4SocketAddress.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(Ipv4SocketAddress.class.getModifiers()),
           "Ipv4SocketAddress should be a final class");
-      assertFalse(Ipv4SocketAddress.class.isInterface(),
-          "Ipv4SocketAddress should not be an interface");
+      assertFalse(
+          Ipv4SocketAddress.class.isInterface(), "Ipv4SocketAddress should not be an interface");
     }
 
     @Test
@@ -320,8 +329,7 @@ class WasiSocketsPackageTest {
     void shouldHaveGetAddressMethod() throws NoSuchMethodException {
       Method method = Ipv4SocketAddress.class.getMethod("getAddress");
       assertNotNull(method, "getAddress method should exist");
-      assertEquals(Ipv4Address.class, method.getReturnType(),
-          "Return type should be Ipv4Address");
+      assertEquals(Ipv4Address.class, method.getReturnType(), "Return type should be Ipv4Address");
     }
   }
 
@@ -336,10 +344,11 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(Ipv6SocketAddress.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(Ipv6SocketAddress.class.getModifiers()),
           "Ipv6SocketAddress should be a final class");
-      assertFalse(Ipv6SocketAddress.class.isInterface(),
-          "Ipv6SocketAddress should not be an interface");
+      assertFalse(
+          Ipv6SocketAddress.class.isInterface(), "Ipv6SocketAddress should not be an interface");
     }
 
     @Test
@@ -355,8 +364,7 @@ class WasiSocketsPackageTest {
     void shouldHaveGetAddressMethod() throws NoSuchMethodException {
       Method method = Ipv6SocketAddress.class.getMethod("getAddress");
       assertNotNull(method, "getAddress method should exist");
-      assertEquals(Ipv6Address.class, method.getReturnType(),
-          "Return type should be Ipv6Address");
+      assertEquals(Ipv6Address.class, method.getReturnType(), "Return type should be Ipv6Address");
     }
 
     @Test
@@ -408,8 +416,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should have startBind method")
     void shouldHaveStartBindMethod() throws NoSuchMethodException {
-      Method method = WasiTcpSocket.class.getMethod("startBind", WasiNetwork.class,
-          IpSocketAddress.class);
+      Method method =
+          WasiTcpSocket.class.getMethod("startBind", WasiNetwork.class, IpSocketAddress.class);
       assertNotNull(method, "startBind method should exist");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
     }
@@ -425,8 +433,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should have startConnect method")
     void shouldHaveStartConnectMethod() throws NoSuchMethodException {
-      Method method = WasiTcpSocket.class.getMethod("startConnect", WasiNetwork.class,
-          IpSocketAddress.class);
+      Method method =
+          WasiTcpSocket.class.getMethod("startConnect", WasiNetwork.class, IpSocketAddress.class);
       assertNotNull(method, "startConnect method should exist");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
     }
@@ -436,7 +444,9 @@ class WasiSocketsPackageTest {
     void shouldHaveFinishConnectMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("finishConnect");
       assertNotNull(method, "finishConnect method should exist");
-      assertEquals(WasiTcpSocket.ConnectionStreams.class, method.getReturnType(),
+      assertEquals(
+          WasiTcpSocket.ConnectionStreams.class,
+          method.getReturnType(),
           "Return type should be ConnectionStreams");
     }
 
@@ -461,7 +471,9 @@ class WasiSocketsPackageTest {
     void shouldHaveAcceptMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("accept");
       assertNotNull(method, "accept method should exist");
-      assertEquals(WasiTcpSocket.AcceptResult.class, method.getReturnType(),
+      assertEquals(
+          WasiTcpSocket.AcceptResult.class,
+          method.getReturnType(),
           "Return type should be AcceptResult");
     }
 
@@ -470,8 +482,8 @@ class WasiSocketsPackageTest {
     void shouldHaveLocalAddressMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("localAddress");
       assertNotNull(method, "localAddress method should exist");
-      assertEquals(IpSocketAddress.class, method.getReturnType(),
-          "Return type should be IpSocketAddress");
+      assertEquals(
+          IpSocketAddress.class, method.getReturnType(), "Return type should be IpSocketAddress");
     }
 
     @Test
@@ -479,8 +491,8 @@ class WasiSocketsPackageTest {
     void shouldHaveRemoteAddressMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("remoteAddress");
       assertNotNull(method, "remoteAddress method should exist");
-      assertEquals(IpSocketAddress.class, method.getReturnType(),
-          "Return type should be IpSocketAddress");
+      assertEquals(
+          IpSocketAddress.class, method.getReturnType(), "Return type should be IpSocketAddress");
     }
 
     @Test
@@ -488,8 +500,8 @@ class WasiSocketsPackageTest {
     void shouldHaveAddressFamilyMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("addressFamily");
       assertNotNull(method, "addressFamily method should exist");
-      assertEquals(IpAddressFamily.class, method.getReturnType(),
-          "Return type should be IpAddressFamily");
+      assertEquals(
+          IpAddressFamily.class, method.getReturnType(), "Return type should be IpAddressFamily");
     }
 
     @Test
@@ -529,8 +541,8 @@ class WasiSocketsPackageTest {
     void shouldHaveSubscribeMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.class.getMethod("subscribe");
       assertNotNull(method, "subscribe method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(),
-          "Return type should be WasiPollable");
+      assertEquals(
+          WasiPollable.class, method.getReturnType(), "Return type should be WasiPollable");
     }
 
     @Test
@@ -552,38 +564,40 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should have all expected methods")
     void shouldHaveAllExpectedMethods() {
-      Set<String> expectedMethods = Set.of(
-          "startBind",
-          "finishBind",
-          "startConnect",
-          "finishConnect",
-          "startListen",
-          "finishListen",
-          "accept",
-          "localAddress",
-          "remoteAddress",
-          "addressFamily",
-          "setListenBacklogSize",
-          "setKeepAliveEnabled",
-          "setKeepAliveIdleTime",
-          "setKeepAliveInterval",
-          "setKeepAliveCount",
-          "setHopLimit",
-          "receiveBufferSize",
-          "setReceiveBufferSize",
-          "sendBufferSize",
-          "setSendBufferSize",
-          "subscribe",
-          "shutdown",
-          "close");
+      Set<String> expectedMethods =
+          Set.of(
+              "startBind",
+              "finishBind",
+              "startConnect",
+              "finishConnect",
+              "startListen",
+              "finishListen",
+              "accept",
+              "localAddress",
+              "remoteAddress",
+              "addressFamily",
+              "setListenBacklogSize",
+              "setKeepAliveEnabled",
+              "setKeepAliveIdleTime",
+              "setKeepAliveInterval",
+              "setKeepAliveCount",
+              "setHopLimit",
+              "receiveBufferSize",
+              "setReceiveBufferSize",
+              "sendBufferSize",
+              "setSendBufferSize",
+              "subscribe",
+              "shutdown",
+              "close");
 
-      Set<String> actualMethods = Arrays.stream(WasiTcpSocket.class.getDeclaredMethods())
-          .map(Method::getName)
-          .collect(Collectors.toSet());
+      Set<String> actualMethods =
+          Arrays.stream(WasiTcpSocket.class.getDeclaredMethods())
+              .map(Method::getName)
+              .collect(Collectors.toSet());
 
       for (String expected : expectedMethods) {
-        assertTrue(actualMethods.contains(expected),
-            "WasiTcpSocket should have method: " + expected);
+        assertTrue(
+            actualMethods.contains(expected), "WasiTcpSocket should have method: " + expected);
       }
     }
   }
@@ -599,8 +613,7 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be an enum")
     void shouldBeAnEnum() {
-      assertTrue(WasiTcpSocket.ShutdownType.class.isEnum(),
-          "ShutdownType should be an enum");
+      assertTrue(WasiTcpSocket.ShutdownType.class.isEnum(), "ShutdownType should be an enum");
     }
 
     @Test
@@ -636,7 +649,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(WasiTcpSocket.ConnectionStreams.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiTcpSocket.ConnectionStreams.class.getModifiers()),
           "ConnectionStreams should be final");
     }
 
@@ -645,8 +659,8 @@ class WasiSocketsPackageTest {
     void shouldHaveGetInputStreamMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.ConnectionStreams.class.getMethod("getInputStream");
       assertNotNull(method, "getInputStream method should exist");
-      assertEquals(WasiInputStream.class, method.getReturnType(),
-          "Return type should be WasiInputStream");
+      assertEquals(
+          WasiInputStream.class, method.getReturnType(), "Return type should be WasiInputStream");
     }
 
     @Test
@@ -654,8 +668,8 @@ class WasiSocketsPackageTest {
     void shouldHaveGetOutputStreamMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.ConnectionStreams.class.getMethod("getOutputStream");
       assertNotNull(method, "getOutputStream method should exist");
-      assertEquals(WasiOutputStream.class, method.getReturnType(),
-          "Return type should be WasiOutputStream");
+      assertEquals(
+          WasiOutputStream.class, method.getReturnType(), "Return type should be WasiOutputStream");
     }
   }
 
@@ -670,7 +684,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(WasiTcpSocket.AcceptResult.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiTcpSocket.AcceptResult.class.getModifiers()),
           "AcceptResult should be final");
     }
 
@@ -679,8 +694,8 @@ class WasiSocketsPackageTest {
     void shouldHaveGetSocketMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.AcceptResult.class.getMethod("getSocket");
       assertNotNull(method, "getSocket method should exist");
-      assertEquals(WasiTcpSocket.class, method.getReturnType(),
-          "Return type should be WasiTcpSocket");
+      assertEquals(
+          WasiTcpSocket.class, method.getReturnType(), "Return type should be WasiTcpSocket");
     }
 
     @Test
@@ -688,8 +703,8 @@ class WasiSocketsPackageTest {
     void shouldHaveGetInputStreamMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.AcceptResult.class.getMethod("getInputStream");
       assertNotNull(method, "getInputStream method should exist");
-      assertEquals(WasiInputStream.class, method.getReturnType(),
-          "Return type should be WasiInputStream");
+      assertEquals(
+          WasiInputStream.class, method.getReturnType(), "Return type should be WasiInputStream");
     }
 
     @Test
@@ -697,8 +712,8 @@ class WasiSocketsPackageTest {
     void shouldHaveGetOutputStreamMethod() throws NoSuchMethodException {
       Method method = WasiTcpSocket.AcceptResult.class.getMethod("getOutputStream");
       assertNotNull(method, "getOutputStream method should exist");
-      assertEquals(WasiOutputStream.class, method.getReturnType(),
-          "Return type should be WasiOutputStream");
+      assertEquals(
+          WasiOutputStream.class, method.getReturnType(), "Return type should be WasiOutputStream");
     }
   }
 
@@ -728,8 +743,7 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(WasiIpNameLookup.class.isInterface(),
-          "WasiIpNameLookup should be an interface");
+      assertTrue(WasiIpNameLookup.class.isInterface(), "WasiIpNameLookup should be an interface");
     }
   }
 
@@ -744,8 +758,8 @@ class WasiSocketsPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(ResolveAddressStream.class.isInterface(),
-          "ResolveAddressStream should be an interface");
+      assertTrue(
+          ResolveAddressStream.class.isInterface(), "ResolveAddressStream should be an interface");
     }
   }
 
@@ -800,8 +814,8 @@ class WasiSocketsPackageTest {
     void shouldHaveSubscribeMethod() throws NoSuchMethodException {
       Method method = WasiInputStream.class.getMethod("subscribe");
       assertNotNull(method, "subscribe method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(),
-          "Return type should be WasiPollable");
+      assertEquals(
+          WasiPollable.class, method.getReturnType(), "Return type should be WasiPollable");
     }
   }
 
@@ -862,7 +876,8 @@ class WasiSocketsPackageTest {
     @DisplayName("WasiTcpSocket should have at least 20 methods")
     void wasiTcpSocketShouldHaveMinimumMethods() {
       int methodCount = WasiTcpSocket.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 20,
+      assertTrue(
+          methodCount >= 20,
           "WasiTcpSocket should have at least 20 methods, found: " + methodCount);
     }
 
@@ -870,7 +885,8 @@ class WasiSocketsPackageTest {
     @DisplayName("WasiInputStream should have at least 4 methods")
     void wasiInputStreamShouldHaveMinimumMethods() {
       int methodCount = WasiInputStream.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 4,
+      assertTrue(
+          methodCount >= 4,
           "WasiInputStream should have at least 4 methods, found: " + methodCount);
     }
   }

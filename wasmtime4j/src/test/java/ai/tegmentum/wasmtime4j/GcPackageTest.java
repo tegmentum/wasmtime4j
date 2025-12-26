@@ -50,8 +50,6 @@ import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -92,8 +90,8 @@ class GcPackageTest {
     void shouldHaveGetReferenceTypeMethod() throws NoSuchMethodException {
       Method method = GcRef.class.getMethod("getReferenceType");
       assertNotNull(method, "getReferenceType method should exist");
-      assertEquals(GcReferenceType.class, method.getReturnType(),
-          "Return type should be GcReferenceType");
+      assertEquals(
+          GcReferenceType.class, method.getReturnType(), "Return type should be GcReferenceType");
     }
 
     @Test
@@ -148,7 +146,8 @@ class GcPackageTest {
     void shouldHaveStructRefConstant() {
       GcReferenceType structRef = GcReferenceType.STRUCT_REF;
       assertNotNull(structRef, "STRUCT_REF constant should exist");
-      assertEquals("structref", structRef.getWasmName(), "STRUCT_REF should have correct wasm name");
+      assertEquals(
+          "structref", structRef.getWasmName(), "STRUCT_REF should have correct wasm name");
     }
 
     @Test
@@ -186,21 +185,24 @@ class GcPackageTest {
     @Test
     @DisplayName("I31_REF should be subtype of EQ_REF")
     void i31RefShouldBeSubtypeOfEqRef() {
-      assertTrue(GcReferenceType.I31_REF.isSubtypeOf(GcReferenceType.EQ_REF),
+      assertTrue(
+          GcReferenceType.I31_REF.isSubtypeOf(GcReferenceType.EQ_REF),
           "I31_REF should be subtype of EQ_REF");
     }
 
     @Test
     @DisplayName("STRUCT_REF should be subtype of EQ_REF")
     void structRefShouldBeSubtypeOfEqRef() {
-      assertTrue(GcReferenceType.STRUCT_REF.isSubtypeOf(GcReferenceType.EQ_REF),
+      assertTrue(
+          GcReferenceType.STRUCT_REF.isSubtypeOf(GcReferenceType.EQ_REF),
           "STRUCT_REF should be subtype of EQ_REF");
     }
 
     @Test
     @DisplayName("EQ_REF should be subtype of ANY_REF")
     void eqRefShouldBeSubtypeOfAnyRef() {
-      assertTrue(GcReferenceType.EQ_REF.isSubtypeOf(GcReferenceType.ANY_REF),
+      assertTrue(
+          GcReferenceType.EQ_REF.isSubtypeOf(GcReferenceType.ANY_REF),
           "EQ_REF should be subtype of ANY_REF");
     }
   }
@@ -223,8 +225,7 @@ class GcPackageTest {
     @Test
     @DisplayName("should implement GcRef")
     void shouldImplementGcRef() {
-      assertTrue(GcRef.class.isAssignableFrom(AnyRef.class),
-          "AnyRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(AnyRef.class), "AnyRef should implement GcRef");
     }
 
     @Test
@@ -404,8 +405,7 @@ class GcPackageTest {
     @Test
     @DisplayName("should implement GcRef")
     void shouldImplementGcRef() {
-      assertTrue(GcRef.class.isAssignableFrom(StructRef.class),
-          "StructRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(StructRef.class), "StructRef should implement GcRef");
     }
 
     @Test
@@ -430,8 +430,8 @@ class GcPackageTest {
     void shouldHaveGetInstanceMethod() throws NoSuchMethodException {
       Method method = StructRef.class.getMethod("getInstance");
       assertNotNull(method, "getInstance method should exist");
-      assertEquals(StructInstance.class, method.getReturnType(),
-          "Return type should be StructInstance");
+      assertEquals(
+          StructInstance.class, method.getReturnType(), "Return type should be StructInstance");
     }
 
     @Test
@@ -500,8 +500,7 @@ class GcPackageTest {
     @Test
     @DisplayName("should implement GcRef")
     void shouldImplementGcRef() {
-      assertTrue(GcRef.class.isAssignableFrom(ArrayRef.class),
-          "ArrayRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(ArrayRef.class), "ArrayRef should implement GcRef");
     }
 
     @Test
@@ -526,8 +525,8 @@ class GcPackageTest {
     void shouldHaveGetInstanceMethod() throws NoSuchMethodException {
       Method method = ArrayRef.class.getMethod("getInstance");
       assertNotNull(method, "getInstance method should exist");
-      assertEquals(ArrayInstance.class, method.getReturnType(),
-          "Return type should be ArrayInstance");
+      assertEquals(
+          ArrayInstance.class, method.getReturnType(), "Return type should be ArrayInstance");
     }
 
     @Test
@@ -646,8 +645,8 @@ class GcPackageTest {
     void shouldHaveGetFieldByIndexMethod() throws NoSuchMethodException {
       Method method = StructType.class.getMethod("getField", int.class);
       assertNotNull(method, "getField(int) method should exist");
-      assertEquals(FieldDefinition.class, method.getReturnType(),
-          "Return type should be FieldDefinition");
+      assertEquals(
+          FieldDefinition.class, method.getReturnType(), "Return type should be FieldDefinition");
     }
 
     @Test
@@ -686,8 +685,8 @@ class GcPackageTest {
     @DisplayName("should have nested Builder class")
     void shouldHaveNestedBuilderClass() {
       Class<?>[] nestedClasses = StructType.class.getDeclaredClasses();
-      boolean hasBuilder = Arrays.stream(nestedClasses)
-          .anyMatch(c -> c.getSimpleName().equals("Builder"));
+      boolean hasBuilder =
+          Arrays.stream(nestedClasses).anyMatch(c -> c.getSimpleName().equals("Builder"));
       assertTrue(hasBuilder, "StructType should have nested Builder class");
     }
   }
@@ -791,8 +790,8 @@ class GcPackageTest {
     @DisplayName("should have nested Builder class")
     void shouldHaveNestedBuilderClass() {
       Class<?>[] nestedClasses = ArrayType.class.getDeclaredClasses();
-      boolean hasBuilder = Arrays.stream(nestedClasses)
-          .anyMatch(c -> c.getSimpleName().equals("Builder"));
+      boolean hasBuilder =
+          Arrays.stream(nestedClasses).anyMatch(c -> c.getSimpleName().equals("Builder"));
       assertTrue(hasBuilder, "ArrayType should have nested Builder class");
     }
   }
@@ -900,8 +899,8 @@ class GcPackageTest {
     @DisplayName("should have nested I31Value class")
     void shouldHaveNestedI31ValueClass() {
       Class<?>[] nestedClasses = I31Type.class.getDeclaredClasses();
-      boolean hasI31Value = Arrays.stream(nestedClasses)
-          .anyMatch(c -> c.getSimpleName().equals("I31Value"));
+      boolean hasI31Value =
+          Arrays.stream(nestedClasses).anyMatch(c -> c.getSimpleName().equals("I31Value"));
       assertTrue(hasI31Value, "I31Type should have nested I31Value class");
     }
   }
@@ -925,8 +924,8 @@ class GcPackageTest {
     void shouldHaveGetReferenceTypeMethod() throws NoSuchMethodException {
       Method method = GcObject.class.getMethod("getReferenceType");
       assertNotNull(method, "getReferenceType method should exist");
-      assertEquals(GcReferenceType.class, method.getReturnType(),
-          "Return type should be GcReferenceType");
+      assertEquals(
+          GcReferenceType.class, method.getReturnType(), "Return type should be GcReferenceType");
     }
   }
 
@@ -941,8 +940,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an abstract class")
     void shouldBeAnAbstractClass() {
-      assertTrue(Modifier.isAbstract(GcValue.class.getModifiers()),
-          "GcValue should be an abstract class");
+      assertTrue(
+          Modifier.isAbstract(GcValue.class.getModifiers()), "GcValue should be an abstract class");
       assertFalse(GcValue.class.isInterface(), "GcValue should not be an interface");
     }
 
@@ -950,8 +949,9 @@ class GcPackageTest {
     @DisplayName("should have Type enum")
     void shouldHaveTypeEnum() {
       Class<?>[] declaredClasses = GcValue.class.getDeclaredClasses();
-      boolean hasTypeEnum = Arrays.stream(declaredClasses)
-          .anyMatch(c -> c.isEnum() && c.getSimpleName().equals("Type"));
+      boolean hasTypeEnum =
+          Arrays.stream(declaredClasses)
+              .anyMatch(c -> c.isEnum() && c.getSimpleName().equals("Type"));
       assertTrue(hasTypeEnum, "GcValue should have a Type enum");
     }
 
@@ -983,7 +983,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a class extending Exception")
     void shouldExtendException() {
-      assertTrue(Exception.class.isAssignableFrom(GcException.class),
+      assertTrue(
+          Exception.class.isAssignableFrom(GcException.class),
           "GcException should extend Exception");
     }
   }
@@ -1044,7 +1045,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(GcRootManager.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(GcRootManager.class.getModifiers()),
           "GcRootManager should be a final class");
       assertFalse(GcRootManager.class.isInterface(), "GcRootManager should not be an interface");
     }
@@ -1055,8 +1057,8 @@ class GcPackageTest {
       Method method = GcRootManager.class.getMethod("getInstance");
       assertNotNull(method, "getInstance method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "getInstance should be static");
-      assertEquals(GcRootManager.class, method.getReturnType(),
-          "Return type should be GcRootManager");
+      assertEquals(
+          GcRootManager.class, method.getReturnType(), "Return type should be GcRootManager");
     }
   }
 
@@ -1071,8 +1073,7 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(GcStats.class.getModifiers()),
-          "GcStats should be a final class");
+      assertTrue(Modifier.isFinal(GcStats.class.getModifiers()), "GcStats should be a final class");
       assertFalse(GcStats.class.isInterface(), "GcStats should not be an interface");
     }
 
@@ -1104,7 +1105,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(GcHeapStats.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(GcHeapStats.class.getModifiers()),
           "GcHeapStats should be a final class");
       assertFalse(GcHeapStats.class.isInterface(), "GcHeapStats should not be an interface");
     }
@@ -1144,10 +1146,11 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(GcCollectionResult.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(GcCollectionResult.class.getModifiers()),
           "GcCollectionResult should be a final class");
-      assertFalse(GcCollectionResult.class.isInterface(),
-          "GcCollectionResult should not be an interface");
+      assertFalse(
+          GcCollectionResult.class.isInterface(), "GcCollectionResult should not be an interface");
     }
 
     @Test
@@ -1185,8 +1188,7 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(Rooted.class.getModifiers()),
-          "Rooted should be a final class");
+      assertTrue(Modifier.isFinal(Rooted.class.getModifiers()), "Rooted should be a final class");
       assertFalse(Rooted.class.isInterface(), "Rooted should not be an interface");
     }
 
@@ -1224,7 +1226,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(OwnedRooted.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(OwnedRooted.class.getModifiers()),
           "OwnedRooted should be a final class");
       assertFalse(OwnedRooted.class.isInterface(), "OwnedRooted should not be an interface");
     }
@@ -1232,7 +1235,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(OwnedRooted.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(OwnedRooted.class),
           "OwnedRooted should implement AutoCloseable");
     }
 
@@ -1263,15 +1267,16 @@ class GcPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(RootScope.class.getModifiers()),
-          "RootScope should be a final class");
+      assertTrue(
+          Modifier.isFinal(RootScope.class.getModifiers()), "RootScope should be a final class");
       assertFalse(RootScope.class.isInterface(), "RootScope should not be an interface");
     }
 
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(RootScope.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(RootScope.class),
           "RootScope should implement AutoCloseable");
     }
 
@@ -1363,7 +1368,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(ObjectLifecycleTracker.class.isInterface(),
+      assertTrue(
+          ObjectLifecycleTracker.class.isInterface(),
           "ObjectLifecycleTracker should be an interface");
     }
   }
@@ -1379,8 +1385,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(MemoryLeakAnalysis.class.isInterface(),
-          "MemoryLeakAnalysis should be an interface");
+      assertTrue(
+          MemoryLeakAnalysis.class.isInterface(), "MemoryLeakAnalysis should be an interface");
     }
   }
 
@@ -1395,7 +1401,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(MemoryCorruptionAnalysis.class.isInterface(),
+      assertTrue(
+          MemoryCorruptionAnalysis.class.isInterface(),
           "MemoryCorruptionAnalysis should be an interface");
     }
   }
@@ -1411,7 +1418,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(ReferenceSafetyResult.class.isInterface(),
+      assertTrue(
+          ReferenceSafetyResult.class.isInterface(),
           "ReferenceSafetyResult should be an interface");
     }
   }
@@ -1427,7 +1435,8 @@ class GcPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(GcInvariantValidation.class.isInterface(),
+      assertTrue(
+          GcInvariantValidation.class.isInterface(),
           "GcInvariantValidation should be an interface");
     }
   }
@@ -1471,15 +1480,15 @@ class GcPackageTest {
     @DisplayName("GcRef should have at least 3 methods")
     void gcRefShouldHaveMinimumMethods() {
       int methodCount = GcRef.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 3,
-          "GcRef should have at least 3 methods, found: " + methodCount);
+      assertTrue(methodCount >= 3, "GcRef should have at least 3 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("GcReferenceType should have multiple values")
     void gcReferenceTypeShouldHaveMultipleValues() {
       GcReferenceType[] values = GcReferenceType.values();
-      assertTrue(values.length >= 5,
+      assertTrue(
+          values.length >= 5,
           "GcReferenceType should have at least 5 values, found: " + values.length);
     }
 
@@ -1487,25 +1496,27 @@ class GcPackageTest {
     @DisplayName("AnyRef should have at least 10 methods")
     void anyRefShouldHaveMinimumMethods() {
       int methodCount = AnyRef.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 10,
-          "AnyRef should have at least 10 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 10, "AnyRef should have at least 10 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("StructType should have at least 10 methods")
     void structTypeShouldHaveMinimumMethods() {
       int methodCount = StructType.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 10,
-          "StructType should have at least 10 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 10, "StructType should have at least 10 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("I31Type should have at least 10 static methods")
     void i31TypeShouldHaveMinimumMethods() {
-      long staticMethodCount = Arrays.stream(I31Type.class.getDeclaredMethods())
-          .filter(m -> Modifier.isStatic(m.getModifiers()))
-          .count();
-      assertTrue(staticMethodCount >= 10,
+      long staticMethodCount =
+          Arrays.stream(I31Type.class.getDeclaredMethods())
+              .filter(m -> Modifier.isStatic(m.getModifiers()))
+              .count();
+      assertTrue(
+          staticMethodCount >= 10,
           "I31Type should have at least 10 static methods, found: " + staticMethodCount);
     }
   }

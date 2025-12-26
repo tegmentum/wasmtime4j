@@ -84,8 +84,7 @@ class JniDebugPackageTest {
     void testCreateJniBreakpointFromNative() {
       LOGGER.info("Testing JniBreakpoint creation using fromNative");
 
-      JniBreakpoint breakpoint =
-          JniBreakpoint.fromNative(123L, "native_func", 42, 3, 0x2000L);
+      JniBreakpoint breakpoint = JniBreakpoint.fromNative(123L, "native_func", 42, 3, 0x2000L);
 
       assertNotNull(breakpoint, "Breakpoint should not be null");
       assertEquals("bp-123", breakpoint.getBreakpointId(), "Breakpoint ID should be bp-123");
@@ -191,8 +190,7 @@ class JniDebugPackageTest {
       // Verify builder() static method exists
       Method builderMethod = JniDebugCapabilities.class.getMethod("builder");
       assertNotNull(builderMethod, "builder() method should exist");
-      assertTrue(
-          Modifier.isStatic(builderMethod.getModifiers()), "builder() should be static");
+      assertTrue(Modifier.isStatic(builderMethod.getModifiers()), "builder() should be static");
 
       // Verify getDefault() static method exists
       Method getDefaultMethod = JniDebugCapabilities.class.getMethod("getDefault");
@@ -238,8 +236,7 @@ class JniDebugPackageTest {
     @DisplayName("JniDebugConfig should be a final class")
     void jniDebugConfigShouldBeFinalClass() {
       assertTrue(
-          Modifier.isFinal(JniDebugConfig.class.getModifiers()),
-          "JniDebugConfig should be final");
+          Modifier.isFinal(JniDebugConfig.class.getModifiers()), "JniDebugConfig should be final");
     }
 
     @Test
@@ -256,8 +253,7 @@ class JniDebugPackageTest {
       // Verify builder() static method exists
       Method builderMethod = JniDebugConfig.class.getMethod("builder");
       assertNotNull(builderMethod, "builder() method should exist");
-      assertTrue(
-          Modifier.isStatic(builderMethod.getModifiers()), "builder() should be static");
+      assertTrue(Modifier.isStatic(builderMethod.getModifiers()), "builder() should be static");
 
       // Verify getDefault() static method exists
       Method getDefaultMethod = JniDebugConfig.class.getMethod("getDefault");
@@ -359,8 +355,15 @@ class JniDebugPackageTest {
     @Test
     @DisplayName("JniStackFrame should have fromNative factory method")
     void jniStackFrameShouldHaveFromNativeMethod() throws NoSuchMethodException {
-      Method fromNative = JniStackFrame.class.getMethod(
-          "fromNative", int.class, String.class, long.class, int.class, int.class, String.class);
+      Method fromNative =
+          JniStackFrame.class.getMethod(
+              "fromNative",
+              int.class,
+              String.class,
+              long.class,
+              int.class,
+              int.class,
+              String.class);
       assertNotNull(fromNative, "fromNative method should exist");
       assertTrue(Modifier.isStatic(fromNative.getModifiers()), "fromNative should be static");
     }
@@ -376,8 +379,8 @@ class JniDebugPackageTest {
     @Test
     @DisplayName("JniStackFrame can be created via constructor")
     void jniStackFrameCanBeCreatedViaConstructor() {
-      JniStackFrame frame = new JniStackFrame(
-          0, "test_func", 0x1000L, 10, 5, "test.wasm", Collections.emptyList());
+      JniStackFrame frame =
+          new JniStackFrame(0, "test_func", 0x1000L, 10, 5, "test.wasm", Collections.emptyList());
       assertNotNull(frame, "Frame should be created via constructor");
       assertEquals("test_func", frame.getFunctionName(), "Function name should match");
     }
@@ -385,7 +388,8 @@ class JniDebugPackageTest {
     @Test
     @DisplayName("JniStackFrame can be created via fromNative")
     void jniStackFrameCanBeCreatedViaFromNative() {
-      JniStackFrame frame = JniStackFrame.fromNative(0, "native_func", 0x2000L, 20, 3, "module.wasm");
+      JniStackFrame frame =
+          JniStackFrame.fromNative(0, "native_func", 0x2000L, 20, 3, "module.wasm");
       assertNotNull(frame, "Frame should be created via fromNative");
       assertEquals("native_func", frame.getFunctionName(), "Function name should match");
       assertEquals(20, frame.getLineNumber(), "Line number should match");
@@ -412,8 +416,7 @@ class JniDebugPackageTest {
     @Test
     @DisplayName("JniVariable should be a final class")
     void jniVariableShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(JniVariable.class.getModifiers()), "JniVariable should be final");
+      assertTrue(Modifier.isFinal(JniVariable.class.getModifiers()), "JniVariable should be final");
     }
 
     @Test
@@ -435,20 +438,28 @@ class JniDebugPackageTest {
     @DisplayName("JniVariable should have static factory methods")
     void jniVariableShouldHaveStaticFactoryMethods() throws NoSuchMethodException {
       // local factory
-      Method local = JniVariable.class.getMethod(
-          "local", String.class, String.class, JniVariableValue.class, int.class);
+      Method local =
+          JniVariable.class.getMethod(
+              "local", String.class, String.class, JniVariableValue.class, int.class);
       assertNotNull(local, "local() factory should exist");
       assertTrue(Modifier.isStatic(local.getModifiers()), "local() should be static");
 
       // parameter factory
-      Method parameter = JniVariable.class.getMethod(
-          "parameter", String.class, String.class, JniVariableValue.class, int.class);
+      Method parameter =
+          JniVariable.class.getMethod(
+              "parameter", String.class, String.class, JniVariableValue.class, int.class);
       assertNotNull(parameter, "parameter() factory should exist");
       assertTrue(Modifier.isStatic(parameter.getModifiers()), "parameter() should be static");
 
       // global factory
-      Method global = JniVariable.class.getMethod(
-          "global", String.class, String.class, JniVariableValue.class, int.class, boolean.class);
+      Method global =
+          JniVariable.class.getMethod(
+              "global",
+              String.class,
+              String.class,
+              JniVariableValue.class,
+              int.class,
+              boolean.class);
       assertNotNull(global, "global() factory should exist");
       assertTrue(Modifier.isStatic(global.getModifiers()), "global() should be static");
     }
@@ -457,8 +468,9 @@ class JniDebugPackageTest {
     @DisplayName("JniVariable can be created via constructor")
     void jniVariableCanBeCreatedViaConstructor() {
       JniVariableValue value = JniVariableValue.i32(42);
-      JniVariable variable = new JniVariable(
-          "x", "i32", value, JniVariable.VariableScope.LOCAL, 0, true, "test variable");
+      JniVariable variable =
+          new JniVariable(
+              "x", "i32", value, JniVariable.VariableScope.LOCAL, 0, true, "test variable");
       assertNotNull(variable, "Variable should be created via constructor");
       assertEquals("x", variable.getName(), "Name should match");
       assertEquals("i32", variable.getVarType(), "Type should match");
@@ -505,7 +517,8 @@ class JniDebugPackageTest {
     void jniVariableValueShouldUseStaticFactoryMethods() throws NoSuchMethodException {
       // Private constructor - uses static factory methods instead
       Constructor<?>[] publicConstructors = JniVariableValue.class.getConstructors();
-      assertEquals(0, publicConstructors.length, "JniVariableValue should have no public constructor");
+      assertEquals(
+          0, publicConstructors.length, "JniVariableValue should have no public constructor");
 
       // Verify static factory methods exist
       Method i32 = JniVariableValue.class.getMethod("i32", int.class);

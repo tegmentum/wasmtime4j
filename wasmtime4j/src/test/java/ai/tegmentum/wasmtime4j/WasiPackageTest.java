@@ -4,7 +4,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,9 +21,6 @@ import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -254,15 +250,16 @@ class WasiPackageTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeAFinalClass() {
-      assertTrue(Modifier.isFinal(WasiRuntimeInfo.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiRuntimeInfo.class.getModifiers()),
           "WasiRuntimeInfo should be final");
     }
 
     @Test
     @DisplayName("should have constructor with runtimeType, version, wasmtimeVersion")
     void shouldHaveConstructor() throws NoSuchMethodException {
-      var constructor = WasiRuntimeInfo.class.getConstructor(
-          WasiRuntimeType.class, String.class, String.class);
+      var constructor =
+          WasiRuntimeInfo.class.getConstructor(WasiRuntimeType.class, String.class, String.class);
       assertNotNull(constructor, "Constructor should exist");
     }
 
@@ -271,8 +268,8 @@ class WasiPackageTest {
     void shouldHaveGetRuntimeTypeMethod() throws NoSuchMethodException {
       Method method = WasiRuntimeInfo.class.getMethod("getRuntimeType");
       assertNotNull(method, "getRuntimeType method should exist");
-      assertEquals(WasiRuntimeType.class, method.getReturnType(),
-          "Return type should be WasiRuntimeType");
+      assertEquals(
+          WasiRuntimeType.class, method.getReturnType(), "Return type should be WasiRuntimeType");
     }
 
     @Test
@@ -296,7 +293,9 @@ class WasiPackageTest {
     void shouldOverrideToString() throws NoSuchMethodException {
       Method method = WasiRuntimeInfo.class.getMethod("toString");
       assertNotNull(method, "toString method should exist");
-      assertEquals(WasiRuntimeInfo.class, method.getDeclaringClass(),
+      assertEquals(
+          WasiRuntimeInfo.class,
+          method.getDeclaringClass(),
           "toString should be declared in WasiRuntimeInfo");
     }
 
@@ -305,7 +304,9 @@ class WasiPackageTest {
     void shouldOverrideEquals() throws NoSuchMethodException {
       Method method = WasiRuntimeInfo.class.getMethod("equals", Object.class);
       assertNotNull(method, "equals method should exist");
-      assertEquals(WasiRuntimeInfo.class, method.getDeclaringClass(),
+      assertEquals(
+          WasiRuntimeInfo.class,
+          method.getDeclaringClass(),
           "equals should be declared in WasiRuntimeInfo");
     }
 
@@ -314,7 +315,9 @@ class WasiPackageTest {
     void shouldOverrideHashCode() throws NoSuchMethodException {
       Method method = WasiRuntimeInfo.class.getMethod("hashCode");
       assertNotNull(method, "hashCode method should exist");
-      assertEquals(WasiRuntimeInfo.class, method.getDeclaringClass(),
+      assertEquals(
+          WasiRuntimeInfo.class,
+          method.getDeclaringClass(),
           "hashCode should be declared in WasiRuntimeInfo");
     }
   }
@@ -340,8 +343,7 @@ class WasiPackageTest {
       Method method = WasiFactory.class.getMethod("createContext");
       assertNotNull(method, "createContext method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "createContext should be static");
-      assertEquals(WasiContext.class, method.getReturnType(),
-          "Return type should be WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "Return type should be WasiContext");
     }
 
     @Test
@@ -350,8 +352,7 @@ class WasiPackageTest {
       Method method = WasiFactory.class.getMethod("createContext", WasiRuntimeType.class);
       assertNotNull(method, "createContext(WasiRuntimeType) method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "createContext should be static");
-      assertEquals(WasiContext.class, method.getReturnType(),
-          "Return type should be WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "Return type should be WasiContext");
     }
 
     @Test
@@ -359,10 +360,10 @@ class WasiPackageTest {
     void shouldHaveGetSelectedRuntimeTypeMethod() throws NoSuchMethodException {
       Method method = WasiFactory.class.getMethod("getSelectedRuntimeType");
       assertNotNull(method, "getSelectedRuntimeType method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()),
-          "getSelectedRuntimeType should be static");
-      assertEquals(WasiRuntimeType.class, method.getReturnType(),
-          "Return type should be WasiRuntimeType");
+      assertTrue(
+          Modifier.isStatic(method.getModifiers()), "getSelectedRuntimeType should be static");
+      assertEquals(
+          WasiRuntimeType.class, method.getReturnType(), "Return type should be WasiRuntimeType");
     }
 
     @Test
@@ -431,7 +432,8 @@ class WasiPackageTest {
     @Test
     @DisplayName("should extend Closeable")
     void shouldExtendCloseable() {
-      assertTrue(Closeable.class.isAssignableFrom(WasiContext.class),
+      assertTrue(
+          Closeable.class.isAssignableFrom(WasiContext.class),
           "WasiContext should extend Closeable");
     }
 
@@ -440,8 +442,8 @@ class WasiPackageTest {
     void shouldHaveCreateComponentMethod() throws NoSuchMethodException {
       Method method = WasiContext.class.getMethod("createComponent", byte[].class);
       assertNotNull(method, "createComponent method should exist");
-      assertEquals(WasiComponent.class, method.getReturnType(),
-          "Return type should be WasiComponent");
+      assertEquals(
+          WasiComponent.class, method.getReturnType(), "Return type should be WasiComponent");
     }
 
     @Test
@@ -449,8 +451,8 @@ class WasiPackageTest {
     void shouldHaveGetRuntimeInfoMethod() throws NoSuchMethodException {
       Method method = WasiContext.class.getMethod("getRuntimeInfo");
       assertNotNull(method, "getRuntimeInfo method should exist");
-      assertEquals(WasiRuntimeInfo.class, method.getReturnType(),
-          "Return type should be WasiRuntimeInfo");
+      assertEquals(
+          WasiRuntimeInfo.class, method.getReturnType(), "Return type should be WasiRuntimeInfo");
     }
 
     @Test
@@ -458,8 +460,8 @@ class WasiPackageTest {
     void shouldHaveGetFilesystemMethod() throws NoSuchMethodException {
       Method method = WasiContext.class.getMethod("getFilesystem");
       assertNotNull(method, "getFilesystem method should exist");
-      assertEquals(WasiFilesystem.class, method.getReturnType(),
-          "Return type should be WasiFilesystem");
+      assertEquals(
+          WasiFilesystem.class, method.getReturnType(), "Return type should be WasiFilesystem");
     }
 
     @Test
@@ -481,20 +483,16 @@ class WasiPackageTest {
     @Test
     @DisplayName("should have all expected methods")
     void shouldHaveAllExpectedMethods() {
-      Set<String> expectedMethods = Set.of(
-          "createComponent",
-          "getRuntimeInfo",
-          "getFilesystem",
-          "isValid",
-          "close");
+      Set<String> expectedMethods =
+          Set.of("createComponent", "getRuntimeInfo", "getFilesystem", "isValid", "close");
 
-      Set<String> actualMethods = Arrays.stream(WasiContext.class.getDeclaredMethods())
-          .map(Method::getName)
-          .collect(Collectors.toSet());
+      Set<String> actualMethods =
+          Arrays.stream(WasiContext.class.getDeclaredMethods())
+              .map(Method::getName)
+              .collect(Collectors.toSet());
 
       for (String expected : expectedMethods) {
-        assertTrue(actualMethods.contains(expected),
-            "WasiContext should have method: " + expected);
+        assertTrue(actualMethods.contains(expected), "WasiContext should have method: " + expected);
       }
     }
   }
@@ -527,8 +525,7 @@ class WasiPackageTest {
       Method method = WasiConfig.class.getMethod("defaultConfig");
       assertNotNull(method, "defaultConfig method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "defaultConfig should be static");
-      assertEquals(WasiConfig.class, method.getReturnType(),
-          "Return type should be WasiConfig");
+      assertEquals(WasiConfig.class, method.getReturnType(), "Return type should be WasiConfig");
     }
 
     @Test
@@ -600,8 +597,7 @@ class WasiPackageTest {
     void shouldHaveGetWasiVersionMethod() throws NoSuchMethodException {
       Method method = WasiConfig.class.getMethod("getWasiVersion");
       assertNotNull(method, "getWasiVersion method should exist");
-      assertEquals(WasiVersion.class, method.getReturnType(),
-          "Return type should be WasiVersion");
+      assertEquals(WasiVersion.class, method.getReturnType(), "Return type should be WasiVersion");
     }
 
     @Test
@@ -630,7 +626,8 @@ class WasiPackageTest {
     @Test
     @DisplayName("should extend Closeable")
     void shouldExtendCloseable() {
-      assertTrue(Closeable.class.isAssignableFrom(WasiComponent.class),
+      assertTrue(
+          Closeable.class.isAssignableFrom(WasiComponent.class),
           "WasiComponent should extend Closeable");
     }
 
@@ -677,8 +674,8 @@ class WasiPackageTest {
     void shouldHaveInstantiateMethodWithoutParams() throws NoSuchMethodException {
       Method method = WasiComponent.class.getMethod("instantiate");
       assertNotNull(method, "instantiate() method should exist");
-      assertEquals(WasiInstance.class, method.getReturnType(),
-          "Return type should be WasiInstance");
+      assertEquals(
+          WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
     }
 
     @Test
@@ -686,8 +683,8 @@ class WasiPackageTest {
     void shouldHaveInstantiateMethodWithConfig() throws NoSuchMethodException {
       Method method = WasiComponent.class.getMethod("instantiate", WasiConfig.class);
       assertNotNull(method, "instantiate(WasiConfig) method should exist");
-      assertEquals(WasiInstance.class, method.getReturnType(),
-          "Return type should be WasiInstance");
+      assertEquals(
+          WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
     }
 
     @Test
@@ -747,7 +744,8 @@ class WasiPackageTest {
     @Test
     @DisplayName("should extend Closeable")
     void shouldExtendCloseable() {
-      assertTrue(Closeable.class.isAssignableFrom(WasiInstance.class),
+      assertTrue(
+          Closeable.class.isAssignableFrom(WasiInstance.class),
           "WasiInstance should extend Closeable");
     }
 
@@ -764,8 +762,8 @@ class WasiPackageTest {
     void shouldHaveGetComponentMethod() throws NoSuchMethodException {
       Method method = WasiInstance.class.getMethod("getComponent");
       assertNotNull(method, "getComponent method should exist");
-      assertEquals(WasiComponent.class, method.getReturnType(),
-          "Return type should be WasiComponent");
+      assertEquals(
+          WasiComponent.class, method.getReturnType(), "Return type should be WasiComponent");
     }
 
     @Test
@@ -773,8 +771,7 @@ class WasiPackageTest {
     void shouldHaveGetConfigMethod() throws NoSuchMethodException {
       Method method = WasiInstance.class.getMethod("getConfig");
       assertNotNull(method, "getConfig method should exist");
-      assertEquals(WasiConfig.class, method.getReturnType(),
-          "Return type should be WasiConfig");
+      assertEquals(WasiConfig.class, method.getReturnType(), "Return type should be WasiConfig");
     }
 
     @Test
@@ -811,8 +808,8 @@ class WasiPackageTest {
     @Test
     @DisplayName("should have call method with timeout")
     void shouldHaveCallMethodWithTimeout() throws NoSuchMethodException {
-      Method method = WasiInstance.class.getMethod("call", String.class, Duration.class,
-          Object[].class);
+      Method method =
+          WasiInstance.class.getMethod("call", String.class, Duration.class, Object[].class);
       assertNotNull(method, "call(String, Duration, Object...) method should exist");
       assertEquals(Object.class, method.getReturnType(), "Return type should be Object");
     }
@@ -822,7 +819,9 @@ class WasiPackageTest {
     void shouldHaveCallAsyncMethod() throws NoSuchMethodException {
       Method method = WasiInstance.class.getMethod("callAsync", String.class, Object[].class);
       assertNotNull(method, "callAsync method should exist");
-      assertEquals(CompletableFuture.class, method.getReturnType(),
+      assertEquals(
+          CompletableFuture.class,
+          method.getReturnType(),
           "Return type should be CompletableFuture");
     }
 
@@ -986,8 +985,9 @@ class WasiPackageTest {
     void shouldHaveOpenFileMethod() throws NoSuchMethodException {
       // Method signature: openFile(String path, WasiOpenFlags flags, WasiRights rights)
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("openFile") && m.getParameterCount() == 3);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("openFile") && m.getParameterCount() == 3);
       assertTrue(found, "openFile method should exist with 3 parameters");
     }
 
@@ -995,8 +995,9 @@ class WasiPackageTest {
     @DisplayName("should have closeFile method")
     void shouldHaveCloseFileMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("closeFile") && m.getParameterCount() == 1);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("closeFile") && m.getParameterCount() == 1);
       assertTrue(found, "closeFile method should exist");
     }
 
@@ -1004,8 +1005,9 @@ class WasiPackageTest {
     @DisplayName("should have readFile method")
     void shouldHaveReadFileMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("readFile") && m.getParameterCount() == 3);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("readFile") && m.getParameterCount() == 3);
       assertTrue(found, "readFile method should exist with 3 parameters");
     }
 
@@ -1013,8 +1015,9 @@ class WasiPackageTest {
     @DisplayName("should have writeFile method")
     void shouldHaveWriteFileMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("writeFile") && m.getParameterCount() == 3);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("writeFile") && m.getParameterCount() == 3);
       assertTrue(found, "writeFile method should exist with 3 parameters");
     }
 
@@ -1022,8 +1025,9 @@ class WasiPackageTest {
     @DisplayName("should have openDirectory method")
     void shouldHaveOpenDirectoryMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("openDirectory") && m.getParameterCount() == 2);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("openDirectory") && m.getParameterCount() == 2);
       assertTrue(found, "openDirectory method should exist with 2 parameters");
     }
 
@@ -1031,8 +1035,9 @@ class WasiPackageTest {
     @DisplayName("should have readDirectory method")
     void shouldHaveReadDirectoryMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("readDirectory") && m.getParameterCount() == 1);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("readDirectory") && m.getParameterCount() == 1);
       assertTrue(found, "readDirectory method should exist");
     }
 
@@ -1040,8 +1045,9 @@ class WasiPackageTest {
     @DisplayName("should have createDirectory method")
     void shouldHaveCreateDirectoryMethod() throws NoSuchMethodException {
       Method[] methods = WasiFilesystem.class.getMethods();
-      boolean found = Arrays.stream(methods)
-          .anyMatch(m -> m.getName().equals("createDirectory") && m.getParameterCount() == 2);
+      boolean found =
+          Arrays.stream(methods)
+              .anyMatch(m -> m.getName().equals("createDirectory") && m.getParameterCount() == 2);
       assertTrue(found, "createDirectory method should exist with 2 parameters");
     }
 
@@ -1119,34 +1125,36 @@ class WasiPackageTest {
     @Test
     @DisplayName("should have all expected filesystem methods")
     void shouldHaveAllExpectedFilesystemMethods() {
-      Set<String> expectedMethods = Set.of(
-          "openFile",
-          "closeFile",
-          "readFile",
-          "writeFile",
-          "openDirectory",
-          "readDirectory",
-          "createDirectory",
-          "removeDirectory",
-          "getFileStats",
-          "setFileStats",
-          "setFilePermissions",
-          "canonicalizePath",
-          "symlinkCreate",
-          "readSymlink",
-          "rename",
-          "unlink",
-          "syncFile",
-          "getCurrentWorkingDirectory",
-          "setCurrentWorkingDirectory");
+      Set<String> expectedMethods =
+          Set.of(
+              "openFile",
+              "closeFile",
+              "readFile",
+              "writeFile",
+              "openDirectory",
+              "readDirectory",
+              "createDirectory",
+              "removeDirectory",
+              "getFileStats",
+              "setFileStats",
+              "setFilePermissions",
+              "canonicalizePath",
+              "symlinkCreate",
+              "readSymlink",
+              "rename",
+              "unlink",
+              "syncFile",
+              "getCurrentWorkingDirectory",
+              "setCurrentWorkingDirectory");
 
-      Set<String> actualMethods = Arrays.stream(WasiFilesystem.class.getDeclaredMethods())
-          .map(Method::getName)
-          .collect(Collectors.toSet());
+      Set<String> actualMethods =
+          Arrays.stream(WasiFilesystem.class.getDeclaredMethods())
+              .map(Method::getName)
+              .collect(Collectors.toSet());
 
       for (String expected : expectedMethods) {
-        assertTrue(actualMethods.contains(expected),
-            "WasiFilesystem should have method: " + expected);
+        assertTrue(
+            actualMethods.contains(expected), "WasiFilesystem should have method: " + expected);
       }
     }
   }
@@ -1163,23 +1171,24 @@ class WasiPackageTest {
     @DisplayName("WasiContext should have at least 5 methods")
     void wasiContextShouldHaveMinimumMethods() {
       int methodCount = WasiContext.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 5,
-          "WasiContext should have at least 5 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 5, "WasiContext should have at least 5 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("WasiConfig should have at least 10 methods")
     void wasiConfigShouldHaveMinimumMethods() {
       int methodCount = WasiConfig.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 10,
-          "WasiConfig should have at least 10 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 10, "WasiConfig should have at least 10 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("WasiComponent should have at least 10 methods")
     void wasiComponentShouldHaveMinimumMethods() {
       int methodCount = WasiComponent.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 10,
+      assertTrue(
+          methodCount >= 10,
           "WasiComponent should have at least 10 methods, found: " + methodCount);
     }
 
@@ -1187,15 +1196,16 @@ class WasiPackageTest {
     @DisplayName("WasiInstance should have at least 20 methods")
     void wasiInstanceShouldHaveMinimumMethods() {
       int methodCount = WasiInstance.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 20,
-          "WasiInstance should have at least 20 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 20, "WasiInstance should have at least 20 methods, found: " + methodCount);
     }
 
     @Test
     @DisplayName("WasiFilesystem should have at least 15 methods")
     void wasiFilesystemShouldHaveMinimumMethods() {
       int methodCount = WasiFilesystem.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 15,
+      assertTrue(
+          methodCount >= 15,
           "WasiFilesystem should have at least 15 methods, found: " + methodCount);
     }
 
@@ -1203,8 +1213,8 @@ class WasiPackageTest {
     @DisplayName("WasiVersion should have at least 10 methods")
     void wasiVersionShouldHaveMinimumMethods() {
       int methodCount = WasiVersion.class.getDeclaredMethods().length;
-      assertTrue(methodCount >= 10,
-          "WasiVersion should have at least 10 methods, found: " + methodCount);
+      assertTrue(
+          methodCount >= 10, "WasiVersion should have at least 10 methods, found: " + methodCount);
     }
   }
 }

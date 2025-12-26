@@ -105,13 +105,15 @@
             </plugin>
 
             <!-- Unpack native libraries from wasmtime4j-native -->
+            <!-- Note: Uses prepare-package phase to ensure wasmtime4j-native is packaged first -->
+            <!-- For reactor builds, use: mvn install -pl wasmtime4j-native && mvn package -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>unpack-native-libraries</id>
-                        <phase>generate-resources</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>unpack-dependencies</goal>
                         </goals>
@@ -122,6 +124,8 @@
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                             <overWriteReleases>true</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
+                            <!-- Skip if artifact not available (for compile-only builds) -->
+                            <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
                         </configuration>
                     </execution>
                 </executions>

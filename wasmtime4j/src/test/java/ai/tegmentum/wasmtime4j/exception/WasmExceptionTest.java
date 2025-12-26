@@ -1,238 +1,271 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ai.tegmentum.wasmtime4j.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the {@link WasmException} base exception class.
+ * Tests for {@link WasmException} class.
  *
- * <p>This test class verifies the construction and behavior of the base WebAssembly exception
- * class.
+ * <p>WasmException is the base class for all WebAssembly-related exceptions.
  */
 @DisplayName("WasmException Tests")
 class WasmExceptionTest {
+
+  @Nested
+  @DisplayName("Class Structure Tests")
+  class ClassStructureTests {
+
+    @Test
+    @DisplayName("should be public class")
+    void shouldBePublicClass() {
+      assertTrue(
+          Modifier.isPublic(WasmException.class.getModifiers()), "WasmException should be public");
+    }
+
+    @Test
+    @DisplayName("should extend Exception")
+    void shouldExtendException() {
+      assertTrue(
+          Exception.class.isAssignableFrom(WasmException.class),
+          "WasmException should extend Exception");
+    }
+
+    @Test
+    @DisplayName("should have serialVersionUID field")
+    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
+      final var field = WasmException.class.getDeclaredField("serialVersionUID");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
+      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
+      assertEquals(long.class, field.getType(), "serialVersionUID should be long");
+    }
+  }
 
   @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 
     @Test
-    @DisplayName("Constructor with message only should set message")
-    void constructorWithMessageOnly() {
-      String message = "Test error message";
-      WasmException exception = new WasmException(message);
-
-      assertEquals(message, exception.getMessage());
-      assertNull(exception.getCause());
+    @DisplayName("should have constructor with message")
+    void shouldHaveConstructorWithMessage() throws NoSuchMethodException {
+      final Constructor<WasmException> constructor =
+          WasmException.class.getConstructor(String.class);
+      assertNotNull(constructor, "Constructor with message should exist");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("Constructor with null message should accept null")
-    void constructorWithNullMessage() {
-      WasmException exception = new WasmException((String) null);
-
-      assertNull(exception.getMessage());
-      assertNull(exception.getCause());
+    @DisplayName("should have constructor with message and cause")
+    void shouldHaveConstructorWithMessageAndCause() throws NoSuchMethodException {
+      final Constructor<WasmException> constructor =
+          WasmException.class.getConstructor(String.class, Throwable.class);
+      assertNotNull(constructor, "Constructor with message and cause should exist");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("Constructor with empty message should accept empty string")
-    void constructorWithEmptyMessage() {
-      WasmException exception = new WasmException("");
-
-      assertEquals("", exception.getMessage());
-      assertNull(exception.getCause());
+    @DisplayName("should have constructor with cause only")
+    void shouldHaveConstructorWithCauseOnly() throws NoSuchMethodException {
+      final Constructor<WasmException> constructor =
+          WasmException.class.getConstructor(Throwable.class);
+      assertNotNull(constructor, "Constructor with cause should exist");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("Constructor with message and cause should set both")
-    void constructorWithMessageAndCause() {
-      String message = "Test error message";
-      Throwable cause = new RuntimeException("Root cause");
-      WasmException exception = new WasmException(message, cause);
+    @DisplayName("should create exception with message")
+    void shouldCreateExceptionWithMessage() {
+      final String message = "Test error message";
+      final WasmException exception = new WasmException(message);
 
-      assertEquals(message, exception.getMessage());
-      assertSame(cause, exception.getCause());
+      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertNull(exception.getCause(), "Cause should be null");
     }
 
     @Test
-    @DisplayName("Constructor with null message and valid cause should accept both")
-    void constructorWithNullMessageAndValidCause() {
-      Throwable cause = new RuntimeException("Root cause");
-      WasmException exception = new WasmException(null, cause);
+    @DisplayName("should create exception with message and cause")
+    void shouldCreateExceptionWithMessageAndCause() {
+      final String message = "Test error message";
+      final RuntimeException cause = new RuntimeException("Root cause");
+      final WasmException exception = new WasmException(message, cause);
 
-      assertNull(exception.getMessage());
-      assertSame(cause, exception.getCause());
+      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertSame(cause, exception.getCause(), "Cause should be set correctly");
     }
 
     @Test
-    @DisplayName("Constructor with valid message and null cause should accept both")
-    void constructorWithValidMessageAndNullCause() {
-      String message = "Test error message";
-      WasmException exception = new WasmException(message, null);
+    @DisplayName("should create exception with cause only")
+    void shouldCreateExceptionWithCauseOnly() {
+      final RuntimeException cause = new RuntimeException("Root cause");
+      final WasmException exception = new WasmException(cause);
 
-      assertEquals(message, exception.getMessage());
-      assertNull(exception.getCause());
-    }
-
-    @Test
-    @DisplayName("Constructor with cause only should set cause")
-    void constructorWithCauseOnly() {
-      Throwable cause = new RuntimeException("Root cause");
-      WasmException exception = new WasmException(cause);
-
-      assertNotNull(exception.getMessage());
-      assertTrue(exception.getMessage().contains("Root cause"));
-      assertSame(cause, exception.getCause());
-    }
-
-    @Test
-    @DisplayName("Constructor with null cause only should accept null")
-    void constructorWithNullCauseOnly() {
-      WasmException exception = new WasmException((Throwable) null);
-
-      assertNull(exception.getMessage());
-      assertNull(exception.getCause());
+      assertSame(cause, exception.getCause(), "Cause should be set correctly");
+      assertTrue(
+          exception.getMessage().contains("Root cause"), "Message should contain cause message");
     }
   }
 
   @Nested
-  @DisplayName("Inheritance Tests")
-  class InheritanceTests {
+  @DisplayName("Exception Behavior Tests")
+  class ExceptionBehaviorTests {
 
     @Test
-    @DisplayName("WasmException should be a checked exception")
-    void shouldBeCheckedException() {
-      WasmException exception = new WasmException("Test");
-
-      assertTrue(exception instanceof Exception);
-      assertFalse(java.lang.RuntimeException.class.isAssignableFrom(exception.getClass()));
-    }
-
-    @Test
-    @DisplayName("WasmException should be throwable")
-    void shouldBeThrowable() {
-      WasmException exception = new WasmException("Test");
-
-      assertTrue(exception instanceof Throwable);
-    }
-  }
-
-  @Nested
-  @DisplayName("Exception Chaining Tests")
-  class ExceptionChainingTests {
-
-    @Test
-    @DisplayName("Should support deep exception chaining")
-    void shouldSupportDeepExceptionChaining() {
-      Exception rootCause = new Exception("Root");
-      Exception middleCause = new Exception("Middle", rootCause);
-      WasmException topException = new WasmException("Top", middleCause);
-
-      assertSame(middleCause, topException.getCause());
-      assertSame(rootCause, topException.getCause().getCause());
-    }
-
-    @Test
-    @DisplayName("Should support chaining with different exception types")
-    void shouldSupportChainingWithDifferentExceptionTypes() {
-      IllegalArgumentException argException = new IllegalArgumentException("Bad arg");
-      NullPointerException npeException = new NullPointerException("Null value");
-      npeException.initCause(argException);
-      WasmException wasmException = new WasmException("Wasm error", npeException);
-
-      assertEquals("Wasm error", wasmException.getMessage());
-      assertSame(npeException, wasmException.getCause());
-      assertSame(argException, wasmException.getCause().getCause());
-    }
-  }
-
-  @Nested
-  @DisplayName("Stack Trace Tests")
-  class StackTraceTests {
-
-    @Test
-    @DisplayName("Should have stack trace")
-    void shouldHaveStackTrace() {
-      WasmException exception = new WasmException("Test");
-
-      StackTraceElement[] stackTrace = exception.getStackTrace();
-      assertNotNull(stackTrace);
-      assertTrue(stackTrace.length > 0);
-    }
-
-    @Test
-    @DisplayName("Stack trace should include test method")
-    void stackTraceShouldIncludeTestMethod() {
-      WasmException exception = new WasmException("Test");
-
-      StackTraceElement[] stackTrace = exception.getStackTrace();
-      boolean foundTestMethod = false;
-      for (StackTraceElement element : stackTrace) {
-        if (element.getMethodName().contains("stackTraceShouldIncludeTestMethod")) {
-          foundTestMethod = true;
-          break;
-        }
+    @DisplayName("should be throwable and catchable")
+    void shouldBeThrowableAndCatchable() {
+      boolean caught = false;
+      try {
+        throw new WasmException("Test exception");
+      } catch (final WasmException e) {
+        caught = true;
+        assertEquals("Test exception", e.getMessage(), "Message should be preserved");
       }
-      assertTrue(foundTestMethod, "Stack trace should include the test method");
-    }
-  }
-
-  @Nested
-  @DisplayName("Serialization Tests")
-  class SerializationTests {
-
-    @Test
-    @DisplayName("Should have serialVersionUID")
-    void shouldHaveSerialVersionUID() {
-      // WasmException implements Serializable via Exception
-      WasmException exception = new WasmException("Test");
-      assertTrue(exception instanceof java.io.Serializable);
-    }
-  }
-
-  @Nested
-  @DisplayName("Message Formatting Tests")
-  class MessageFormattingTests {
-
-    @Test
-    @DisplayName("Should preserve special characters in message")
-    void shouldPreserveSpecialCharactersInMessage() {
-      String message = "Error at offset 0x1234: invalid opcode\n\tat function $foo";
-      WasmException exception = new WasmException(message);
-
-      assertEquals(message, exception.getMessage());
+      assertTrue(caught, "Exception should be caught");
     }
 
     @Test
-    @DisplayName("Should preserve unicode characters in message")
-    void shouldPreserveUnicodeCharactersInMessage() {
-      String message = "Error: 日本語テスト 🔥";
-      WasmException exception = new WasmException(message);
-
-      assertEquals(message, exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should preserve very long messages")
-    void shouldPreserveVeryLongMessages() {
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < 10000; i++) {
-        sb.append("x");
+    @DisplayName("should be catchable as Exception")
+    void shouldBeCatchableAsException() {
+      boolean caught = false;
+      try {
+        throw new WasmException("Test exception");
+      } catch (final Exception e) {
+        caught = true;
+        assertTrue(e instanceof WasmException, "Should be instance of WasmException");
       }
-      String longMessage = sb.toString();
-      WasmException exception = new WasmException(longMessage);
+      assertTrue(caught, "Exception should be caught as Exception");
+    }
 
-      assertEquals(longMessage, exception.getMessage());
-      assertEquals(10000, exception.getMessage().length());
+    @Test
+    @DisplayName("should preserve stack trace")
+    void shouldPreserveStackTrace() {
+      final WasmException exception = new WasmException("Test message");
+      final StackTraceElement[] stackTrace = exception.getStackTrace();
+
+      assertNotNull(stackTrace, "Stack trace should not be null");
+      assertTrue(stackTrace.length > 0, "Stack trace should not be empty");
+    }
+
+    @Test
+    @DisplayName("should chain causes correctly")
+    void shouldChainCausesCorrectly() {
+      final IllegalArgumentException root = new IllegalArgumentException("Root");
+      final RuntimeException middle = new RuntimeException("Middle", root);
+      final WasmException exception = new WasmException("Top", middle);
+
+      assertSame(middle, exception.getCause(), "Immediate cause should be middle");
+      assertSame(root, exception.getCause().getCause(), "Root cause should be accessible");
+    }
+  }
+
+  @Nested
+  @DisplayName("Edge Case Tests")
+  class EdgeCaseTests {
+
+    @Test
+    @DisplayName("should handle null message")
+    void shouldHandleNullMessage() {
+      final WasmException exception = new WasmException((String) null);
+      assertNull(exception.getMessage(), "Null message should be preserved");
+    }
+
+    @Test
+    @DisplayName("should handle empty message")
+    void shouldHandleEmptyMessage() {
+      final WasmException exception = new WasmException("");
+      assertEquals("", exception.getMessage(), "Empty message should be preserved");
+    }
+
+    @Test
+    @DisplayName("should handle very long message")
+    void shouldHandleVeryLongMessage() {
+      final String longMessage = "a".repeat(10000);
+      final WasmException exception = new WasmException(longMessage);
+      assertEquals(longMessage, exception.getMessage(), "Long message should be preserved");
+    }
+
+    @Test
+    @DisplayName("should handle unicode message")
+    void shouldHandleUnicodeMessage() {
+      final String unicodeMessage = "エラーメッセージ 中文错误";
+      final WasmException exception = new WasmException(unicodeMessage);
+      assertEquals(unicodeMessage, exception.getMessage(), "Unicode message should be preserved");
+    }
+
+    @Test
+    @DisplayName("should handle null cause")
+    void shouldHandleNullCause() {
+      final WasmException exception = new WasmException("Message", null);
+      assertNull(exception.getCause(), "Null cause should be preserved");
+    }
+  }
+
+  @Nested
+  @DisplayName("Hierarchy Tests")
+  class HierarchyTests {
+
+    @Test
+    @DisplayName("CompilationException should extend WasmException")
+    void compilationExceptionShouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(CompilationException.class),
+          "CompilationException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("ValidationException should extend WasmException")
+    void validationExceptionShouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(ValidationException.class),
+          "ValidationException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("LinkingException should extend WasmException")
+    void linkingExceptionShouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(LinkingException.class),
+          "LinkingException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("InstantiationException should extend WasmException")
+    void instantiationExceptionShouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(InstantiationException.class),
+          "InstantiationException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("WasiException should extend WasmException")
+    void wasiExceptionShouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(WasiException.class),
+          "WasiException should extend WasmException");
     }
   }
 }

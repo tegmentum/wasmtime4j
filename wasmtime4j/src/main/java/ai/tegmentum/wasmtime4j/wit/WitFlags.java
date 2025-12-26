@@ -186,14 +186,13 @@ public final class WitFlags extends WitValue {
     // Get flag names from flags type kind
     // This is a simplified extraction - in a full implementation,
     // WitType would provide a getFlagNames() method
-    if (flagsType.getKind() == null || !"FLAGS".equals(flagsType.getKind().toString())) {
+    if (flagsType.getKind() == null
+        || flagsType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.FLAGS) {
       throw new IllegalArgumentException("Type must be a flags type");
     }
 
-    // For now, return an empty list as a placeholder
-    // In the full implementation, this would extract from WitType.getKind().getFlags()
-    // This will be enhanced when WitTypeKind is fully implemented
-    return Arrays.asList();
+    // Get flag names from the type kind
+    return flagsType.getKind().getFlags();
   }
 
   @Override

@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,7 +63,8 @@ class WasiAdvancedPackageTest {
       Method method = WasiProcess.class.getMethod("spawn", WasiProcessConfig.class);
 
       assertNotNull(method, "spawn method should exist");
-      assertEquals(WasiProcessId.class, method.getReturnType(), "Return type should be WasiProcessId");
+      assertEquals(
+          WasiProcessId.class, method.getReturnType(), "Return type should be WasiProcessId");
       assertEquals(1, method.getParameterCount(), "spawn should take 1 parameter");
     }
 
@@ -123,7 +123,8 @@ class WasiAdvancedPackageTest {
       Method method = WasiProcess.class.getMethod("getCurrentProcessId");
 
       assertNotNull(method, "getCurrentProcessId method should exist");
-      assertEquals(WasiProcessId.class, method.getReturnType(), "Return type should be WasiProcessId");
+      assertEquals(
+          WasiProcessId.class, method.getReturnType(), "Return type should be WasiProcessId");
     }
 
     @Test
@@ -248,9 +249,7 @@ class WasiAdvancedPackageTest {
       assertNotNull(method, "builder method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "builder should be static");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -295,7 +294,10 @@ class WasiAdvancedPackageTest {
       Method method = WasiProcessConfig.class.getMethod("getResourceLimits");
 
       assertNotNull(method, "getResourceLimits method should exist");
-      assertEquals(WasiResourceLimits.class, method.getReturnType(), "Return type should be WasiResourceLimits");
+      assertEquals(
+          WasiResourceLimits.class,
+          method.getReturnType(),
+          "Return type should be WasiResourceLimits");
     }
 
     @Test
@@ -305,16 +307,13 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "toBuilder method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
     @DisplayName("should build config with program")
     void shouldBuildConfigWithProgram() {
-      WasiProcessConfig config =
-          WasiProcessConfig.builder().setProgram("/bin/echo").build();
+      WasiProcessConfig config = WasiProcessConfig.builder().setProgram("/bin/echo").build();
 
       assertEquals("/bin/echo", config.getProgram(), "Program should match");
     }
@@ -417,10 +416,7 @@ class WasiAdvancedPackageTest {
     @DisplayName("should return immutable arguments list")
     void shouldReturnImmutableArgumentsList() {
       WasiProcessConfig config =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/echo")
-              .addArgument("test")
-              .build();
+          WasiProcessConfig.builder().setProgram("/bin/echo").addArgument("test").build();
 
       List<String> args = config.getArguments();
       assertThrows(
@@ -455,10 +451,7 @@ class WasiAdvancedPackageTest {
               .setWorkingDirectory("/tmp")
               .build();
 
-      WasiProcessConfig modified =
-          original.toBuilder()
-              .addArgument("modified")
-              .build();
+      WasiProcessConfig modified = original.toBuilder().addArgument("modified").build();
 
       assertEquals(2, modified.getArguments().size(), "Should have 2 arguments");
       assertEquals("/bin/echo", modified.getProgram(), "Program should be preserved");
@@ -494,9 +487,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setProgram method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -506,9 +497,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "addArgument method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -518,9 +507,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setArguments method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -532,9 +519,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setEnvironmentVariable method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -544,9 +529,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setEnvironment method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -557,9 +540,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setWorkingDirectory method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -570,9 +551,7 @@ class WasiAdvancedPackageTest {
 
       assertNotNull(method, "setResourceLimits method should exist");
       assertEquals(
-          WasiProcessConfig.Builder.class,
-          method.getReturnType(),
-          "Return type should be Builder");
+          WasiProcessConfig.Builder.class, method.getReturnType(), "Return type should be Builder");
     }
 
     @Test
@@ -675,7 +654,8 @@ class WasiAdvancedPackageTest {
       assertEquals(WasiSignal.SIGHUP, WasiSignal.fromCode(1), "fromCode(1) should return SIGHUP");
       assertEquals(WasiSignal.SIGINT, WasiSignal.fromCode(2), "fromCode(2) should return SIGINT");
       assertEquals(WasiSignal.SIGKILL, WasiSignal.fromCode(9), "fromCode(9) should return SIGKILL");
-      assertEquals(WasiSignal.SIGTERM, WasiSignal.fromCode(15), "fromCode(15) should return SIGTERM");
+      assertEquals(
+          WasiSignal.SIGTERM, WasiSignal.fromCode(15), "fromCode(15) should return SIGTERM");
     }
 
     @Test
@@ -692,7 +672,8 @@ class WasiAdvancedPackageTest {
     void shouldHaveUniqueCodesForAllSignals() {
       Set<Integer> codes = new HashSet<>();
       for (WasiSignal signal : WasiSignal.values()) {
-        assertTrue(codes.add(signal.getCode()), "Signal code " + signal.getCode() + " should be unique");
+        assertTrue(
+            codes.add(signal.getCode()), "Signal code " + signal.getCode() + " should be unique");
       }
     }
   }
@@ -852,8 +833,7 @@ class WasiAdvancedPackageTest {
     @DisplayName("should have openFileAsync method")
     void shouldHaveOpenFileAsyncMethod() throws NoSuchMethodException {
       Method method =
-          WasiPreview2Context.class.getMethod(
-              "openFileAsync", String.class, int.class, long.class);
+          WasiPreview2Context.class.getMethod("openFileAsync", String.class, int.class, long.class);
 
       assertNotNull(method, "openFileAsync method should exist");
       assertEquals(
@@ -893,8 +873,7 @@ class WasiAdvancedPackageTest {
     @Test
     @DisplayName("should have getTimeAsync method")
     void shouldHaveGetTimeAsyncMethod() throws NoSuchMethodException {
-      Method method =
-          WasiPreview2Context.class.getMethod("getTimeAsync", int.class, long.class);
+      Method method = WasiPreview2Context.class.getMethod("getTimeAsync", int.class, long.class);
 
       assertNotNull(method, "getTimeAsync method should exist");
       assertEquals(
@@ -906,8 +885,7 @@ class WasiAdvancedPackageTest {
     @Test
     @DisplayName("should have getRandomBytesAsync method")
     void shouldHaveGetRandomBytesAsyncMethod() throws NoSuchMethodException {
-      Method method =
-          WasiPreview2Context.class.getMethod("getRandomBytesAsync", ByteBuffer.class);
+      Method method = WasiPreview2Context.class.getMethod("getRandomBytesAsync", ByteBuffer.class);
 
       assertNotNull(method, "getRandomBytesAsync method should exist");
       assertEquals(
@@ -919,8 +897,7 @@ class WasiAdvancedPackageTest {
     @Test
     @DisplayName("should have poll method")
     void shouldHavePollMethod() throws NoSuchMethodException {
-      Method method =
-          WasiPreview2Context.class.getMethod("poll", List.class, long.class);
+      Method method = WasiPreview2Context.class.getMethod("poll", List.class, long.class);
 
       assertNotNull(method, "poll method should exist");
       assertEquals(List.class, method.getReturnType(), "Return type should be List");
@@ -1160,8 +1137,7 @@ class WasiAdvancedPackageTest {
     @DisplayName("should be an enum")
     void shouldBeAnEnum() {
       assertTrue(
-          WasiPreview2Stream.WasiStreamType.class.isEnum(),
-          "WasiStreamType should be an enum");
+          WasiPreview2Stream.WasiStreamType.class.isEnum(), "WasiStreamType should be an enum");
     }
 
     @Test
@@ -1219,7 +1195,9 @@ class WasiAdvancedPackageTest {
       assertEquals(0, WasiPreview2Stream.WasiStreamType.INPUT.ordinal(), "INPUT should be 0");
       assertEquals(1, WasiPreview2Stream.WasiStreamType.OUTPUT.ordinal(), "OUTPUT should be 1");
       assertEquals(
-          2, WasiPreview2Stream.WasiStreamType.BIDIRECTIONAL.ordinal(), "BIDIRECTIONAL should be 2");
+          2,
+          WasiPreview2Stream.WasiStreamType.BIDIRECTIONAL.ordinal(),
+          "BIDIRECTIONAL should be 2");
     }
   }
 
@@ -1235,8 +1213,7 @@ class WasiAdvancedPackageTest {
     @DisplayName("should be an enum")
     void shouldBeAnEnum() {
       assertTrue(
-          WasiPreview2Stream.WasiStreamStatus.class.isEnum(),
-          "WasiStreamStatus should be an enum");
+          WasiPreview2Stream.WasiStreamStatus.class.isEnum(), "WasiStreamStatus should be an enum");
     }
 
     @Test
@@ -1397,20 +1374,17 @@ class WasiAdvancedPackageTest {
     void wasiProcessShouldUseWasiProcessId() throws NoSuchMethodException {
       Method spawnMethod = WasiProcess.class.getMethod("spawn", WasiProcessConfig.class);
       Method waitForMethod = WasiProcess.class.getMethod("waitFor", WasiProcessId.class);
-      Method killMethod = WasiProcess.class.getMethod("kill", WasiProcessId.class, WasiSignal.class);
+      Method killMethod =
+          WasiProcess.class.getMethod("kill", WasiProcessId.class, WasiSignal.class);
 
       assertEquals(
-          WasiProcessId.class,
-          spawnMethod.getReturnType(),
-          "spawn should return WasiProcessId");
+          WasiProcessId.class, spawnMethod.getReturnType(), "spawn should return WasiProcessId");
       assertEquals(
           WasiProcessId.class,
           waitForMethod.getParameterTypes()[0],
           "waitFor should take WasiProcessId");
       assertEquals(
-          WasiProcessId.class,
-          killMethod.getParameterTypes()[0],
-          "kill should take WasiProcessId");
+          WasiProcessId.class, killMethod.getParameterTypes()[0], "kill should take WasiProcessId");
     }
 
     @Test
@@ -1427,7 +1401,8 @@ class WasiAdvancedPackageTest {
     @Test
     @DisplayName("WasiProcess should use WasiSignal")
     void wasiProcessShouldUseWasiSignal() throws NoSuchMethodException {
-      Method killMethod = WasiProcess.class.getMethod("kill", WasiProcessId.class, WasiSignal.class);
+      Method killMethod =
+          WasiProcess.class.getMethod("kill", WasiProcessId.class, WasiSignal.class);
 
       assertEquals(
           WasiSignal.class, killMethod.getParameterTypes()[1], "kill should take WasiSignal");
@@ -1467,7 +1442,8 @@ class WasiAdvancedPackageTest {
     void wasiPreview2ContextShouldUseWasiPreview2Stream() throws NoSuchMethodException {
       Method inputMethod = WasiPreview2Context.class.getMethod("openInputStream", long.class);
       Method outputMethod = WasiPreview2Context.class.getMethod("openOutputStream", long.class);
-      Method bidiMethod = WasiPreview2Context.class.getMethod("openBidirectionalStream", long.class);
+      Method bidiMethod =
+          WasiPreview2Context.class.getMethod("openBidirectionalStream", long.class);
 
       assertEquals(
           WasiPreview2Stream.class,

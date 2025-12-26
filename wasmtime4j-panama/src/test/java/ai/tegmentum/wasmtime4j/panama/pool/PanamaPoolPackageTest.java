@@ -205,8 +205,7 @@ class PanamaPoolPackageTest {
     }
 
     @Test
-    @DisplayName(
-        "PanamaPoolingAllocatorConfig should implement PoolingAllocatorConfig interface")
+    @DisplayName("PanamaPoolingAllocatorConfig should implement PoolingAllocatorConfig interface")
     void panamaPoolingAllocatorConfigShouldImplementPoolingAllocatorConfigInterface() {
       assertTrue(
           PoolingAllocatorConfig.class.isAssignableFrom(PanamaPoolingAllocatorConfig.class),
@@ -374,7 +373,8 @@ class PanamaPoolPackageTest {
     }
 
     @Test
-    @DisplayName("PanamaPoolingAllocator should have public constructor with PoolingAllocatorConfig")
+    @DisplayName(
+        "PanamaPoolingAllocator should have public constructor with PoolingAllocatorConfig")
     void panamaPoolingAllocatorShouldHavePublicConstructor() throws NoSuchMethodException {
       Constructor<?> constructor =
           PanamaPoolingAllocator.class.getConstructor(PoolingAllocatorConfig.class);

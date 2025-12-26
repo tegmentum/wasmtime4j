@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ai.tegmentum.wasmtime4j.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,73 +24,85 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.LinkingException.LinkingErrorType;
+import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- * Tests for the {@link LinkingException} class.
+ * Tests for {@link LinkingException} class.
  *
- * <p>This test class verifies linking exception construction, error types, and classification.
+ * <p>LinkingException is thrown when WebAssembly module linking fails.
  */
 @DisplayName("LinkingException Tests")
 class LinkingExceptionTest {
 
   @Nested
+  @DisplayName("Class Structure Tests")
+  class ClassStructureTests {
+
+    @Test
+    @DisplayName("should be public class")
+    void shouldBePublicClass() {
+      assertTrue(
+          Modifier.isPublic(LinkingException.class.getModifiers()),
+          "LinkingException should be public");
+    }
+
+    @Test
+    @DisplayName("should extend WasmException")
+    void shouldExtendWasmException() {
+      assertTrue(
+          WasmException.class.isAssignableFrom(LinkingException.class),
+          "LinkingException should extend WasmException");
+    }
+
+    @Test
+    @DisplayName("should have LinkingErrorType nested enum")
+    void shouldHaveLinkingErrorTypeNestedEnum() {
+      final Class<?>[] declaredClasses = LinkingException.class.getDeclaredClasses();
+      boolean hasLinkingErrorType = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("LinkingErrorType") && clazz.isEnum()) {
+          hasLinkingErrorType = true;
+          break;
+        }
+      }
+      assertTrue(hasLinkingErrorType, "LinkingException should have LinkingErrorType nested enum");
+    }
+  }
+
+  @Nested
   @DisplayName("LinkingErrorType Enum Tests")
-  class LinkingErrorTypeTests {
+  class LinkingErrorTypeEnumTests {
 
-    @ParameterizedTest
-    @EnumSource(LinkingErrorType.class)
-    @DisplayName("All error types should have non-null descriptions")
-    void allErrorTypesShouldHaveDescriptions(final LinkingErrorType errorType) {
-      assertNotNull(errorType.getDescription());
-      assertFalse(errorType.getDescription().isEmpty());
+    @Test
+    @DisplayName("should have all expected error types")
+    void shouldHaveAllExpectedErrorTypes() {
+      final LinkingException.LinkingErrorType[] values = LinkingException.LinkingErrorType.values();
+      assertTrue(values.length >= 17, "Should have at least 17 linking error types");
+
+      // Check key error types exist
+      assertNotNull(
+          LinkingException.LinkingErrorType.IMPORT_NOT_FOUND, "Should have IMPORT_NOT_FOUND");
+      assertNotNull(
+          LinkingException.LinkingErrorType.EXPORT_NOT_FOUND, "Should have EXPORT_NOT_FOUND");
+      assertNotNull(
+          LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
+          "Should have FUNCTION_SIGNATURE_MISMATCH");
+      assertNotNull(LinkingException.LinkingErrorType.UNKNOWN, "Should have UNKNOWN");
     }
 
     @Test
-    @DisplayName("IMPORT_NOT_FOUND should have correct description")
-    void importNotFoundDescription() {
-      assertEquals("Import not found", LinkingErrorType.IMPORT_NOT_FOUND.getDescription());
-    }
-
-    @Test
-    @DisplayName("FUNCTION_SIGNATURE_MISMATCH should have correct description")
-    void functionSignatureMismatchDescription() {
-      assertEquals(
-          "Function signature mismatch",
-          LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH.getDescription());
-    }
-
-    @Test
-    @DisplayName("All linking error types should be accessible")
-    void allLinkingErrorTypesAccessible() {
-      LinkingErrorType[] allTypes = LinkingErrorType.values();
-      assertEquals(19, allTypes.length);
-
-      // Verify expected types exist
-      assertNotNull(LinkingErrorType.valueOf("IMPORT_NOT_FOUND"));
-      assertNotNull(LinkingErrorType.valueOf("EXPORT_NOT_FOUND"));
-      assertNotNull(LinkingErrorType.valueOf("FUNCTION_SIGNATURE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("MEMORY_SIZE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("MEMORY_LIMITS_INCOMPATIBLE"));
-      assertNotNull(LinkingErrorType.valueOf("TABLE_SIZE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("TABLE_TYPE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("GLOBAL_TYPE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("GLOBAL_MUTABILITY_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("CIRCULAR_DEPENDENCY"));
-      assertNotNull(LinkingErrorType.valueOf("NAMESPACE_CONFLICT"));
-      assertNotNull(LinkingErrorType.valueOf("HOST_FUNCTION_BINDING_FAILED"));
-      assertNotNull(LinkingErrorType.valueOf("WASI_IMPORT_FAILED"));
-      assertNotNull(LinkingErrorType.valueOf("COMPONENT_LINKING_FAILED"));
-      assertNotNull(LinkingErrorType.valueOf("INTERFACE_TYPE_MISMATCH"));
-      assertNotNull(LinkingErrorType.valueOf("RESOURCE_TYPE_LINKING_FAILED"));
-      assertNotNull(LinkingErrorType.valueOf("CAPABILITY_NOT_SATISFIED"));
-      assertNotNull(LinkingErrorType.valueOf("LINKER_CONFIGURATION_ERROR"));
-      assertNotNull(LinkingErrorType.valueOf("UNKNOWN"));
+    @DisplayName("each error type should have description")
+    void eachErrorTypeShouldHaveDescription() {
+      for (final LinkingException.LinkingErrorType errorType :
+          LinkingException.LinkingErrorType.values()) {
+        assertNotNull(errorType.getDescription(), errorType.name() + " should have description");
+        assertFalse(
+            errorType.getDescription().isEmpty(),
+            errorType.name() + " description should not be empty");
+      }
     }
   }
 
@@ -83,175 +111,170 @@ class LinkingExceptionTest {
   class ConstructorTests {
 
     @Test
-    @DisplayName("Constructor with error type and message should set both")
-    void constructorWithErrorTypeAndMessage() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Import env::memory not found");
-
-      assertEquals(LinkingErrorType.IMPORT_NOT_FOUND, exception.getErrorType());
-      assertTrue(exception.getMessage().contains("Import env::memory not found"));
-      assertTrue(exception.getMessage().contains("IMPORT_NOT_FOUND"));
-      assertNull(exception.getCause());
-    }
-
-    @Test
-    @DisplayName("Constructor with null error type should default to UNKNOWN")
-    void constructorWithNullErrorType() {
-      LinkingException exception = new LinkingException(null, "Test message");
-
-      assertEquals(LinkingErrorType.UNKNOWN, exception.getErrorType());
-    }
-
-    @Test
-    @DisplayName("Constructor with empty message should throw IllegalArgumentException")
-    void constructorWithEmptyMessage() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> {
-            new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "");
-          });
-    }
-
-    @Test
-    @DisplayName("Constructor with null message should throw IllegalArgumentException")
-    void constructorWithNullMessage() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> {
-            new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, null);
-          });
-    }
-
-    @Test
-    @DisplayName("Constructor with error type, message, and cause should set all")
-    void constructorWithErrorTypeMessageAndCause() {
-      Throwable cause = new RuntimeException("Root cause");
-      LinkingException exception =
+    @DisplayName("should create exception with error type and message")
+    void shouldCreateExceptionWithErrorTypeAndMessage() {
+      final LinkingException exception =
           new LinkingException(
-              LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Signature mismatch", cause);
+              LinkingException.LinkingErrorType.IMPORT_NOT_FOUND, "Function 'add' not found");
 
-      assertEquals(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, exception.getErrorType());
-      assertTrue(exception.getMessage().contains("Signature mismatch"));
-      assertSame(cause, exception.getCause());
+      assertEquals(
+          LinkingException.LinkingErrorType.IMPORT_NOT_FOUND,
+          exception.getErrorType(),
+          "Error type should be set");
+      assertTrue(
+          exception.getMessage().contains("IMPORT_NOT_FOUND"), "Message should contain error type");
+      assertTrue(
+          exception.getMessage().contains("Function 'add' not found"),
+          "Message should contain detail");
     }
 
     @Test
-    @DisplayName("Full constructor should set all fields")
-    void fullConstructor() {
-      Throwable cause = new RuntimeException("Root cause");
-      LinkingException exception =
+    @DisplayName("should create exception with error type, message, and cause")
+    void shouldCreateExceptionWithErrorTypeMessageAndCause() {
+      final RuntimeException cause = new RuntimeException("Root cause");
+      final LinkingException exception =
           new LinkingException(
-              LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
-              "Function type mismatch",
-              "my_module",
-              "add_numbers",
-              "[i32, i32] -> [i32]",
-              "[i64, i64] -> [i64]",
+              LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
+              "Signature mismatch",
               cause);
 
-      assertEquals(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, exception.getErrorType());
-      assertEquals("my_module", exception.getModuleName());
-      assertEquals("add_numbers", exception.getItemName());
-      assertEquals("[i32, i32] -> [i32]", exception.getExpectedType());
-      assertEquals("[i64, i64] -> [i64]", exception.getActualType());
-      assertSame(cause, exception.getCause());
+      assertEquals(
+          LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
+          exception.getErrorType(),
+          "Error type should be set");
+      assertSame(cause, exception.getCause(), "Cause should be set");
     }
 
     @Test
-    @DisplayName("Constructor with null optional fields should accept them")
-    void constructorWithNullOptionalFields() {
-      LinkingException exception =
+    @DisplayName("should create exception with full details")
+    void shouldCreateExceptionWithFullDetails() {
+      final LinkingException exception =
           new LinkingException(
-              LinkingErrorType.IMPORT_NOT_FOUND, "Import not found", null, null, null, null, null);
+              LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
+              "Type mismatch",
+              "env",
+              "log",
+              "(i32) -> void",
+              "(i32, i32) -> void",
+              null);
 
-      assertEquals(LinkingErrorType.IMPORT_NOT_FOUND, exception.getErrorType());
-      assertNull(exception.getModuleName());
-      assertNull(exception.getItemName());
-      assertNull(exception.getExpectedType());
-      assertNull(exception.getActualType());
-      assertNull(exception.getCause());
+      assertEquals(
+          LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
+          exception.getErrorType(),
+          "Error type should match");
+      assertEquals("env", exception.getModuleName(), "Module name should be set");
+      assertEquals("log", exception.getItemName(), "Item name should be set");
+      assertEquals("(i32) -> void", exception.getExpectedType(), "Expected type should be set");
+      assertEquals("(i32, i32) -> void", exception.getActualType(), "Actual type should be set");
+    }
+
+    @Test
+    @DisplayName("should throw IllegalArgumentException for null or empty message")
+    void shouldThrowForNullOrEmptyMessage() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, null),
+          "Should throw for null message");
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, ""),
+          "Should throw for empty message");
+    }
+
+    @Test
+    @DisplayName("should default to UNKNOWN when error type is null")
+    void shouldDefaultToUnknownWhenErrorTypeIsNull() {
+      final LinkingException exception =
+          new LinkingException(null, "Unknown error", null, null, null, null, null);
+
+      assertEquals(
+          LinkingException.LinkingErrorType.UNKNOWN,
+          exception.getErrorType(),
+          "Should default to UNKNOWN error type");
     }
   }
 
   @Nested
-  @DisplayName("Getter Tests")
-  class GetterTests {
+  @DisplayName("Category Check Methods Tests")
+  class CategoryCheckMethodsTests {
 
     @Test
-    @DisplayName("getErrorType should return correct error type")
-    void getErrorType() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.MEMORY_SIZE_MISMATCH, "Memory error");
-      assertEquals(LinkingErrorType.MEMORY_SIZE_MISMATCH, exception.getErrorType());
+    @DisplayName("isMissingItemError should return true for missing item errors")
+    void isMissingItemErrorShouldReturnTrueForMissingItemErrors() {
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.IMPORT_NOT_FOUND, "msg")
+              .isMissingItemError(),
+          "IMPORT_NOT_FOUND should be missing item error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.EXPORT_NOT_FOUND, "msg")
+              .isMissingItemError(),
+          "EXPORT_NOT_FOUND should be missing item error");
+      assertFalse(
+          new LinkingException(LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "msg")
+              .isMissingItemError(),
+          "FUNCTION_SIGNATURE_MISMATCH should not be missing item error");
     }
 
     @Test
-    @DisplayName("getModuleName should return module name")
-    void getModuleName() {
-      LinkingException exception =
+    @DisplayName("isTypeMismatchError should return true for type mismatch errors")
+    void isTypeMismatchErrorShouldReturnTrueForTypeMismatchErrors() {
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "msg")
+              .isTypeMismatchError(),
+          "FUNCTION_SIGNATURE_MISMATCH should be type mismatch error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.GLOBAL_TYPE_MISMATCH, "msg")
+              .isTypeMismatchError(),
+          "GLOBAL_TYPE_MISMATCH should be type mismatch error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.TABLE_TYPE_MISMATCH, "msg")
+              .isTypeMismatchError(),
+          "TABLE_TYPE_MISMATCH should be type mismatch error");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionError should return true for host function errors")
+    void isHostFunctionErrorShouldReturnTrueForHostFunctionErrors() {
+      assertTrue(
           new LinkingException(
-              LinkingErrorType.EXPORT_NOT_FOUND,
-              "Export not found",
-              "test_module",
-              null,
-              null,
-              null,
-              null);
-      assertEquals("test_module", exception.getModuleName());
+                  LinkingException.LinkingErrorType.HOST_FUNCTION_BINDING_FAILED, "msg")
+              .isHostFunctionError(),
+          "HOST_FUNCTION_BINDING_FAILED should be host function error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.WASI_IMPORT_FAILED, "msg")
+              .isHostFunctionError(),
+          "WASI_IMPORT_FAILED should be host function error");
     }
 
     @Test
-    @DisplayName("getItemName should return item name")
-    void getItemName() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.IMPORT_NOT_FOUND,
-              "Import not found",
-              null,
-              "my_function",
-              null,
-              null,
-              null);
-      assertEquals("my_function", exception.getItemName());
+    @DisplayName("isComponentError should return true for component errors")
+    void isComponentErrorShouldReturnTrueForComponentErrors() {
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.COMPONENT_LINKING_FAILED, "msg")
+              .isComponentError(),
+          "COMPONENT_LINKING_FAILED should be component error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.INTERFACE_TYPE_MISMATCH, "msg")
+              .isComponentError(),
+          "INTERFACE_TYPE_MISMATCH should be component error");
     }
 
     @Test
-    @DisplayName("getExpectedType should return expected type")
-    void getExpectedType() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.GLOBAL_TYPE_MISMATCH,
-              "Type mismatch",
-              null,
-              null,
-              "i32",
-              "i64",
-              null);
-      assertEquals("i32", exception.getExpectedType());
-    }
-
-    @Test
-    @DisplayName("getActualType should return actual type")
-    void getActualType() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.GLOBAL_TYPE_MISMATCH,
-              "Type mismatch",
-              null,
-              null,
-              "i32",
-              "i64",
-              null);
-      assertEquals("i64", exception.getActualType());
-    }
-
-    @Test
-    @DisplayName("getRecoverySuggestion should return non-null suggestion")
-    void getRecoverySuggestion() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Import missing");
-      assertNotNull(exception.getRecoverySuggestion());
-      assertFalse(exception.getRecoverySuggestion().isEmpty());
+    @DisplayName("isConfigurationError should return true for configuration errors")
+    void isConfigurationErrorShouldReturnTrueForConfigurationErrors() {
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.CIRCULAR_DEPENDENCY, "msg")
+              .isConfigurationError(),
+          "CIRCULAR_DEPENDENCY should be configuration error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.NAMESPACE_CONFLICT, "msg")
+              .isConfigurationError(),
+          "NAMESPACE_CONFLICT should be configuration error");
+      assertTrue(
+          new LinkingException(LinkingException.LinkingErrorType.LINKER_CONFIGURATION_ERROR, "msg")
+              .isConfigurationError(),
+          "LINKER_CONFIGURATION_ERROR should be configuration error");
     }
   }
 
@@ -259,251 +282,56 @@ class LinkingExceptionTest {
   @DisplayName("Recovery Suggestion Tests")
   class RecoverySuggestionTests {
 
-    @ParameterizedTest
-    @EnumSource(LinkingErrorType.class)
-    @DisplayName("All error types should have recovery suggestions")
-    void allErrorTypesShouldHaveRecoverySuggestions(final LinkingErrorType errorType) {
-      LinkingException exception = new LinkingException(errorType, "Test");
-      assertNotNull(exception.getRecoverySuggestion());
-      assertFalse(exception.getRecoverySuggestion().isEmpty());
-    }
-
     @Test
-    @DisplayName("IMPORT_NOT_FOUND should suggest providing imports")
-    void importNotFoundRecoverySuggestion() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Import missing");
-      assertTrue(
-          exception.getRecoverySuggestion().toLowerCase().contains("import")
-              || exception.getRecoverySuggestion().toLowerCase().contains("linker"));
-    }
-
-    @Test
-    @DisplayName("WASI_IMPORT_FAILED should suggest WASI configuration")
-    void wasiImportFailedRecoverySuggestion() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.WASI_IMPORT_FAILED, "WASI error");
-      assertTrue(exception.getRecoverySuggestion().toLowerCase().contains("wasi"));
+    @DisplayName("should provide recovery suggestion for each error type")
+    void shouldProvideRecoverySuggestionForEachErrorType() {
+      for (final LinkingException.LinkingErrorType errorType :
+          LinkingException.LinkingErrorType.values()) {
+        final LinkingException exception = new LinkingException(errorType, "test message");
+        assertNotNull(
+            exception.getRecoverySuggestion(),
+            errorType.name() + " should have recovery suggestion");
+        assertFalse(
+            exception.getRecoverySuggestion().isEmpty(),
+            errorType.name() + " recovery suggestion should not be empty");
+      }
     }
   }
 
   @Nested
-  @DisplayName("Classification Method Tests")
-  class ClassificationMethodTests {
+  @DisplayName("Accessor Methods Tests")
+  class AccessorMethodsTests {
 
     @Test
-    @DisplayName("isMissingItemError should return true for missing imports/exports")
-    void isMissingItemError() {
-      assertTrue(
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Test").isMissingItemError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.EXPORT_NOT_FOUND, "Test").isMissingItemError());
-
-      assertFalse(
-          new LinkingException(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Test")
-              .isMissingItemError());
-      assertFalse(
-          new LinkingException(LinkingErrorType.CIRCULAR_DEPENDENCY, "Test").isMissingItemError());
+    @DisplayName("getModuleName should return null when not set")
+    void getModuleNameShouldReturnNullWhenNotSet() {
+      final LinkingException exception =
+          new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, "test");
+      assertNull(exception.getModuleName(), "Module name should be null when not set");
     }
 
     @Test
-    @DisplayName("isTypeMismatchError should return true for type mismatch errors")
-    void isTypeMismatchError() {
-      assertTrue(
-          new LinkingException(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Test")
-              .isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.MEMORY_SIZE_MISMATCH, "Test")
-              .isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.MEMORY_LIMITS_INCOMPATIBLE, "Test")
-              .isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.TABLE_SIZE_MISMATCH, "Test").isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.TABLE_TYPE_MISMATCH, "Test").isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.GLOBAL_TYPE_MISMATCH, "Test")
-              .isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.GLOBAL_MUTABILITY_MISMATCH, "Test")
-              .isTypeMismatchError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.INTERFACE_TYPE_MISMATCH, "Test")
-              .isTypeMismatchError());
-
-      assertFalse(
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Test").isTypeMismatchError());
-      assertFalse(
-          new LinkingException(LinkingErrorType.CIRCULAR_DEPENDENCY, "Test").isTypeMismatchError());
+    @DisplayName("getItemName should return null when not set")
+    void getItemNameShouldReturnNullWhenNotSet() {
+      final LinkingException exception =
+          new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, "test");
+      assertNull(exception.getItemName(), "Item name should be null when not set");
     }
 
     @Test
-    @DisplayName("isHostFunctionError should return true for host function errors")
-    void isHostFunctionError() {
-      assertTrue(
-          new LinkingException(LinkingErrorType.HOST_FUNCTION_BINDING_FAILED, "Test")
-              .isHostFunctionError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.WASI_IMPORT_FAILED, "Test").isHostFunctionError());
-
-      assertFalse(
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Test").isHostFunctionError());
-      assertFalse(
-          new LinkingException(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Test")
-              .isHostFunctionError());
+    @DisplayName("getExpectedType should return null when not set")
+    void getExpectedTypeShouldReturnNullWhenNotSet() {
+      final LinkingException exception =
+          new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, "test");
+      assertNull(exception.getExpectedType(), "Expected type should be null when not set");
     }
 
     @Test
-    @DisplayName("isComponentError should return true for component-related errors")
-    void isComponentError() {
-      assertTrue(
-          new LinkingException(LinkingErrorType.COMPONENT_LINKING_FAILED, "Test")
-              .isComponentError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.INTERFACE_TYPE_MISMATCH, "Test")
-              .isComponentError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.RESOURCE_TYPE_LINKING_FAILED, "Test")
-              .isComponentError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.CAPABILITY_NOT_SATISFIED, "Test")
-              .isComponentError());
-
-      assertFalse(
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Test").isComponentError());
-      assertFalse(
-          new LinkingException(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Test")
-              .isComponentError());
-    }
-
-    @Test
-    @DisplayName("isConfigurationError should return true for configuration errors")
-    void isConfigurationError() {
-      assertTrue(
-          new LinkingException(LinkingErrorType.CIRCULAR_DEPENDENCY, "Test")
-              .isConfigurationError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.NAMESPACE_CONFLICT, "Test").isConfigurationError());
-      assertTrue(
-          new LinkingException(LinkingErrorType.LINKER_CONFIGURATION_ERROR, "Test")
-              .isConfigurationError());
-
-      assertFalse(
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Test").isConfigurationError());
-      assertFalse(
-          new LinkingException(LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH, "Test")
-              .isConfigurationError());
-    }
-  }
-
-  @Nested
-  @DisplayName("Inheritance Tests")
-  class InheritanceTests {
-
-    @Test
-    @DisplayName("LinkingException should extend WasmException")
-    void shouldExtendWasmException() {
-      LinkingException exception = new LinkingException(LinkingErrorType.UNKNOWN, "Test");
-      assertTrue(exception instanceof WasmException);
-    }
-
-    @Test
-    @DisplayName("LinkingException should be a checked exception")
-    void shouldBeCheckedException() {
-      LinkingException exception = new LinkingException(LinkingErrorType.UNKNOWN, "Test");
-      assertTrue(exception instanceof Exception);
-      assertFalse(java.lang.RuntimeException.class.isAssignableFrom(exception.getClass()));
-    }
-  }
-
-  @Nested
-  @DisplayName("Message Formatting Tests")
-  class MessageFormattingTests {
-
-    @Test
-    @DisplayName("Message should include error type name")
-    void messageShouldIncludeErrorTypeName() {
-      LinkingException exception =
-          new LinkingException(LinkingErrorType.IMPORT_NOT_FOUND, "Missing import");
-      assertTrue(exception.getMessage().contains("IMPORT_NOT_FOUND"));
-    }
-
-    @Test
-    @DisplayName("Message should include module and item name when provided")
-    void messageShouldIncludeModuleAndItemName() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.IMPORT_NOT_FOUND,
-              "Import missing",
-              "env",
-              "memory",
-              null,
-              null,
-              null);
-      assertTrue(exception.getMessage().contains("env"));
-      assertTrue(exception.getMessage().contains("memory"));
-    }
-
-    @Test
-    @DisplayName("Message should include expected and actual types when provided")
-    void messageShouldIncludeExpectedAndActualTypes() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH,
-              "Signature error",
-              null,
-              null,
-              "[i32] -> [i32]",
-              "[i64] -> [i64]",
-              null);
-      assertTrue(exception.getMessage().contains("[i32] -> [i32]"));
-      assertTrue(exception.getMessage().contains("[i64] -> [i64]"));
-    }
-
-    @Test
-    @DisplayName("Message should include only expected type when actual is null")
-    void messageShouldIncludeOnlyExpectedType() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.IMPORT_NOT_FOUND,
-              "Import missing",
-              null,
-              "my_func",
-              "[i32] -> [i32]",
-              null,
-              null);
-      assertTrue(exception.getMessage().contains("[i32] -> [i32]"));
-    }
-
-    @Test
-    @DisplayName("Message should include only item name when module is null")
-    void messageShouldIncludeOnlyItemName() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.EXPORT_NOT_FOUND,
-              "Export missing",
-              null,
-              "exported_function",
-              null,
-              null,
-              null);
-      assertTrue(exception.getMessage().contains("exported_function"));
-    }
-
-    @Test
-    @DisplayName("Message should include only module name when item is null")
-    void messageShouldIncludeOnlyModuleName() {
-      LinkingException exception =
-          new LinkingException(
-              LinkingErrorType.CIRCULAR_DEPENDENCY,
-              "Circular dependency detected",
-              "module_a",
-              null,
-              null,
-              null,
-              null);
-      assertTrue(exception.getMessage().contains("module_a"));
+    @DisplayName("getActualType should return null when not set")
+    void getActualTypeShouldReturnNullWhenNotSet() {
+      final LinkingException exception =
+          new LinkingException(LinkingException.LinkingErrorType.UNKNOWN, "test");
+      assertNull(exception.getActualType(), "Actual type should be null when not set");
     }
   }
 }

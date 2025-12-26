@@ -59,8 +59,7 @@ class JniAdapterPackageTest {
     @Test
     @DisplayName("WasmMemoryToMemoryAdapter should have constructor with WasmMemory parameter")
     void wasmMemoryToMemoryAdapterShouldHaveConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor =
-          WasmMemoryToMemoryAdapter.class.getConstructor(WasmMemory.class);
+      Constructor<?> constructor = WasmMemoryToMemoryAdapter.class.getConstructor(WasmMemory.class);
       assertNotNull(constructor, "Constructor should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
@@ -265,8 +264,7 @@ class JniAdapterPackageTest {
     @DisplayName("WasmTableToTableAdapter should have public constructor")
     void wasmTableToTableAdapterShouldHavePublicConstructor() {
       Constructor<?>[] constructors = WasmTableToTableAdapter.class.getConstructors();
-      assertTrue(
-          constructors.length > 0, "WasmTableToTableAdapter should have public constructor");
+      assertTrue(constructors.length > 0, "WasmTableToTableAdapter should have public constructor");
     }
 
     @Test

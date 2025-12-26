@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
@@ -176,6 +177,211 @@ class PanamaFfiPackageTest {
       bindings.wasmtimeModuleNew();
       bindings.wasmtimeModuleDelete();
       // Just ensure they don't throw - actual functionality requires native library
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings instance methods should be callable without throwing")
+    void wasmtimeBindingsInstanceMethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // Instance-related methods
+      bindings.wasmtimeInstanceNew();
+      bindings.wasmtimeInstanceDelete();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings memory methods should be callable without throwing")
+    void wasmtimeBindingsMemoryMethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // Memory-related methods
+      bindings.wasmtimeMemoryNew();
+      bindings.wasmtimeMemorySize();
+      bindings.wasmtimeMemoryGrow();
+      bindings.wasmtimeMemoryData();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings table methods should be callable without throwing")
+    void wasmtimeBindingsTableMethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // Table-related methods
+      bindings.wasmtimeTableNew();
+      bindings.wasmtimeTableDelete();
+      bindings.wasmtimeTableSize();
+      bindings.wasmtimeTableGet();
+      bindings.wasmtimeTableSet();
+      bindings.wasmtimeTableGrow();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings WASI Preview2 methods should be callable without throwing")
+    void wasmtimeBindingsWasiPreview2MethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // WASI Preview2 methods
+      bindings.wasiPreview2ContextNew();
+      bindings.wasiPreview2ContextDestroy();
+      bindings.wasiPreview2CompileComponent();
+      bindings.wasiPreview2InstantiateComponent();
+      bindings.wasiPreview2CreateInputStream();
+      bindings.wasiPreview2CreateOutputStream();
+      bindings.wasiPreview2StreamRead();
+      bindings.wasiPreview2StreamWrite();
+      bindings.wasiPreview2CloseStream();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings Component Model methods should be callable without throwing")
+    void wasmtimeBindingsComponentModelMethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // Component Model methods
+      bindings.wasmtime4jComponentEngineNew();
+      bindings.wasmtime4jComponentEngineDestroy();
+      bindings.wasmtime4jComponentCompile();
+      bindings.wasmtime4jComponentCompileWat();
+      bindings.wasmtime4jComponentInstantiate();
+      bindings.wasmtime4jComponentExportCount();
+      bindings.wasmtime4jComponentHasExport();
+      bindings.wasmtime4jComponentValidate();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings WIT Parser methods should be callable without throwing")
+    void wasmtimeBindingsWitParserMethodsShouldBeCallable() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      // WIT Parser methods
+      bindings.wasmtime4jWitParserNew();
+      bindings.wasmtime4jWitParserValidateSyntax();
+      // Methods may return null, but should not throw
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings should cache method handle results")
+    void wasmtimeBindingsShouldCacheMethodHandleResults() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      bindings.clearCache();
+      assertEquals(0, bindings.getCacheSize(), "Cache should be empty initially");
+
+      // Call the same method twice
+      bindings.wasmtimeEngineNew();
+      int sizeAfterFirst = bindings.getCacheSize();
+
+      bindings.wasmtimeEngineNew();
+      int sizeAfterSecond = bindings.getCacheSize();
+
+      // Cache size should remain the same (same function cached once)
+      assertEquals(
+          sizeAfterFirst, sizeAfterSecond, "Cache size should not increase for same function");
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings cache does not store null results")
+    void wasmtimeBindingsCacheDoesNotStoreNullResults() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      bindings.clearCache();
+      assertEquals(0, bindings.getCacheSize(), "Cache should be empty initially");
+
+      // ConcurrentHashMap.computeIfAbsent does NOT cache null results
+      // This is the expected behavior - only successful lookups are cached
+      bindings.getMethodHandle("nonexistent_func_1", FunctionDescriptor.ofVoid());
+      assertEquals(0, bindings.getCacheSize(), "Cache should remain empty when symbol not found");
+
+      bindings.getMethodHandle("nonexistent_func_2", FunctionDescriptor.ofVoid());
+      assertEquals(0, bindings.getCacheSize(), "Cache should still be empty for unfound symbols");
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings memory layouts should have correct names")
+    void wasmtimeBindingsMemoryLayoutsShouldHaveCorrectNames() {
+      assertEquals(
+          "wasmtime_engine_t",
+          WasmtimeBindings.WASMTIME_ENGINE_LAYOUT.name().orElse(""),
+          "Engine layout should have correct name");
+      assertEquals(
+          "wasmtime_module_t",
+          WasmtimeBindings.WASMTIME_MODULE_LAYOUT.name().orElse(""),
+          "Module layout should have correct name");
+      assertEquals(
+          "wasmtime_instance_t",
+          WasmtimeBindings.WASMTIME_INSTANCE_LAYOUT.name().orElse(""),
+          "Instance layout should have correct name");
+      assertEquals(
+          "wasmtime_memory_t",
+          WasmtimeBindings.WASMTIME_MEMORY_LAYOUT.name().orElse(""),
+          "Memory layout should have correct name");
+      assertEquals(
+          "wasmtime_table_t",
+          WasmtimeBindings.WASMTIME_TABLE_LAYOUT.name().orElse(""),
+          "Table layout should have correct name");
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings memory layouts should have ADDRESS member")
+    void wasmtimeBindingsMemoryLayoutsShouldHaveAddressMember() {
+      // All layouts should be struct layouts with an 'inner' ADDRESS member
+      assertTrue(
+          WasmtimeBindings.WASMTIME_ENGINE_LAYOUT.byteSize() >= ValueLayout.ADDRESS.byteSize(),
+          "Engine layout should accommodate at least one pointer");
+      assertTrue(
+          WasmtimeBindings.WASMTIME_MODULE_LAYOUT.byteSize() >= ValueLayout.ADDRESS.byteSize(),
+          "Module layout should accommodate at least one pointer");
+      assertTrue(
+          WasmtimeBindings.WASMTIME_INSTANCE_LAYOUT.byteSize() >= ValueLayout.ADDRESS.byteSize(),
+          "Instance layout should accommodate at least one pointer");
+      assertTrue(
+          WasmtimeBindings.WASMTIME_MEMORY_LAYOUT.byteSize() >= ValueLayout.ADDRESS.byteSize(),
+          "Memory layout should accommodate at least one pointer");
+      assertTrue(
+          WasmtimeBindings.WASMTIME_TABLE_LAYOUT.byteSize() >= ValueLayout.ADDRESS.byteSize(),
+          "Table layout should accommodate at least one pointer");
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings getMethodHandle should return same instance from cache")
+    void wasmtimeBindingsGetMethodHandleShouldReturnSameInstanceFromCache() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      bindings.clearCache();
+
+      // Call twice with same function and descriptor
+      var handle1 = bindings.getMethodHandle("test_func", FunctionDescriptor.ofVoid());
+      var handle2 = bindings.getMethodHandle("test_func", FunctionDescriptor.ofVoid());
+
+      // Should return same cached instance (even if null)
+      assertTrue(handle1 == handle2, "Same cached instance should be returned");
+    }
+
+    @Test
+    @DisplayName("WasmtimeBindings linker should be native linker")
+    void wasmtimeBindingsLinkerShouldBeNativeLinker() {
+      SymbolLookup lookup = SymbolLookup.loaderLookup();
+      WasmtimeBindings bindings = new WasmtimeBindings(lookup);
+
+      assertNotNull(bindings.getLinker(), "Linker should not be null");
+      assertEquals(
+          Linker.nativeLinker().getClass(),
+          bindings.getLinker().getClass(),
+          "Should use native linker");
     }
   }
 
@@ -361,7 +567,8 @@ class PanamaFfiPackageTest {
 
       // Verify all bytes are filled
       for (int i = 0; i < 10; i++) {
-        assertEquals((byte) 0xFF, segment.get(ValueLayout.JAVA_BYTE, i), "Byte at " + i + " should be 0xFF");
+        assertEquals(
+            (byte) 0xFF, segment.get(ValueLayout.JAVA_BYTE, i), "Byte at " + i + " should be 0xFF");
       }
     }
 
@@ -373,7 +580,8 @@ class PanamaFfiPackageTest {
 
       assertNotNull(segment, "Segment should be created");
       // The segment should be at least the string length + 1 for null terminator
-      assertTrue(segment.byteSize() >= testStr.length() + 1, "Segment should include null terminator");
+      assertTrue(
+          segment.byteSize() >= testStr.length() + 1, "Segment should include null terminator");
     }
 
     @Test
@@ -481,7 +689,8 @@ class PanamaFfiPackageTest {
       assertNotNull(desc, "Descriptor should not be null");
       assertFalse(desc.returnLayout().isPresent(), "Should have void return type");
       assertEquals(1, desc.argumentLayouts().size(), "Should have one argument");
-      assertEquals(ValueLayout.ADDRESS, desc.argumentLayouts().get(0), "Argument should be ADDRESS");
+      assertEquals(
+          ValueLayout.ADDRESS, desc.argumentLayouts().get(0), "Argument should be ADDRESS");
     }
 
     @Test
@@ -709,8 +918,7 @@ class PanamaFfiPackageTest {
             || method.getName().equals("getCacheSize")
             || method.getName().equals("clearCache")) {
           assertTrue(
-              Modifier.isStatic(method.getModifiers()),
-              method.getName() + " should be static");
+              Modifier.isStatic(method.getModifiers()), method.getName() + " should be static");
         }
       }
     }

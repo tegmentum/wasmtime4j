@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.execution;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,14 +37,15 @@ import org.junit.jupiter.api.Test;
  * Comprehensive tests for the execution package interfaces and enums.
  *
  * <p>This test class covers:
+ *
  * <ul>
- *   <li>ExecutionContext - Context management interface</li>
- *   <li>ExecutionPolicy - Policy management interface</li>
- *   <li>ExecutionQuotas - Quota management interface</li>
- *   <li>ExecutionRequest - Request definition interface</li>
- *   <li>ExecutionState - State tracking interface</li>
- *   <li>ExecutionStatistics - Statistics interface</li>
- *   <li>ExecutionResult - Result representation interface</li>
+ *   <li>ExecutionContext - Context management interface
+ *   <li>ExecutionPolicy - Policy management interface
+ *   <li>ExecutionQuotas - Quota management interface
+ *   <li>ExecutionRequest - Request definition interface
+ *   <li>ExecutionState - State tracking interface
+ *   <li>ExecutionStatistics - Statistics interface
+ *   <li>ExecutionResult - Result representation interface
  * </ul>
  */
 @DisplayName("Execution Package Tests")
@@ -538,8 +538,7 @@ class ExecutionPackageTest {
       @DisplayName("should be an inner interface")
       void shouldBeInnerInterface() {
         assertTrue(ExecutionQuotas.QuotaUsage.class.isInterface());
-        assertEquals(
-            ExecutionQuotas.class, ExecutionQuotas.QuotaUsage.class.getEnclosingClass());
+        assertEquals(ExecutionQuotas.class, ExecutionQuotas.QuotaUsage.class.getEnclosingClass());
       }
 
       @Test
@@ -724,8 +723,7 @@ class ExecutionPackageTest {
       @DisplayName("should support valueOf")
       void shouldSupportValueOf() {
         assertEquals(
-            ExecutionRequest.RequestPriority.LOW,
-            ExecutionRequest.RequestPriority.valueOf("LOW"));
+            ExecutionRequest.RequestPriority.LOW, ExecutionRequest.RequestPriority.valueOf("LOW"));
         assertEquals(
             ExecutionRequest.RequestPriority.CRITICAL,
             ExecutionRequest.RequestPriority.valueOf("CRITICAL"));
@@ -1538,7 +1536,8 @@ class ExecutionPackageTest {
     private int countPublicAbstractMethods(final Class<?> clazz) {
       int count = 0;
       for (Method method : clazz.getDeclaredMethods()) {
-        if (Modifier.isPublic(method.getModifiers()) && Modifier.isAbstract(method.getModifiers())) {
+        if (Modifier.isPublic(method.getModifiers())
+            && Modifier.isAbstract(method.getModifiers())) {
           count++;
         }
       }
@@ -1646,8 +1645,7 @@ class ExecutionPackageTest {
       @DisplayName("should be an inner interface")
       void shouldBeInnerInterface() {
         assertTrue(
-            ExecutionStatistics.CpuUsage.class.isInterface(),
-            "CpuUsage should be an interface");
+            ExecutionStatistics.CpuUsage.class.isInterface(), "CpuUsage should be an interface");
         assertEquals(
             ExecutionStatistics.class, ExecutionStatistics.CpuUsage.class.getEnclosingClass());
       }
@@ -1889,16 +1887,14 @@ class ExecutionPackageTest {
     @Test
     @DisplayName("should have allowMemoryGrow method")
     void shouldHaveAllowMemoryGrowMethod() throws NoSuchMethodException {
-      Method method =
-          ResourceLimiter.class.getMethod("allowMemoryGrow", long.class, long.class);
+      Method method = ResourceLimiter.class.getMethod("allowMemoryGrow", long.class, long.class);
       assertEquals(boolean.class, method.getReturnType());
     }
 
     @Test
     @DisplayName("should have allowTableGrow method")
     void shouldHaveAllowTableGrowMethod() throws NoSuchMethodException {
-      Method method =
-          ResourceLimiter.class.getMethod("allowTableGrow", long.class, long.class);
+      Method method = ResourceLimiter.class.getMethod("allowTableGrow", long.class, long.class);
       assertEquals(boolean.class, method.getReturnType());
     }
 
@@ -2013,8 +2009,7 @@ class ExecutionPackageTest {
     @DisplayName("should have static fromSync method")
     void shouldHaveStaticFromSyncMethod() throws NoSuchMethodException {
       Method method = ResourceLimiterAsync.class.getMethod("fromSync", ResourceLimiter.class);
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "fromSync should be a static method");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "fromSync should be a static method");
       assertEquals(ResourceLimiterAsync.class, method.getReturnType());
     }
 
@@ -2075,8 +2070,7 @@ class ExecutionPackageTest {
     @DisplayName("should have allowMemoryGrowAsync method")
     void shouldHaveAllowMemoryGrowAsyncMethod() throws NoSuchMethodException {
       Method method =
-          SyncToAsyncLimiterAdapter.class.getMethod(
-              "allowMemoryGrowAsync", long.class, long.class);
+          SyncToAsyncLimiterAdapter.class.getMethod("allowMemoryGrowAsync", long.class, long.class);
       assertEquals(java.util.concurrent.CompletableFuture.class, method.getReturnType());
     }
 

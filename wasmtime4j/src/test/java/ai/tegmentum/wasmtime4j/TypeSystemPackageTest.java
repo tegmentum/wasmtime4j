@@ -11,10 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,14 +56,14 @@ class TypeSystemPackageTest {
     void shouldHaveGetKindMethod() throws NoSuchMethodException {
       Method method = WasmType.class.getMethod("getKind");
       assertNotNull(method, "getKind method should exist");
-      assertEquals(WasmTypeKind.class, method.getReturnType(), "Return type should be WasmTypeKind");
+      assertEquals(
+          WasmTypeKind.class, method.getReturnType(), "Return type should be WasmTypeKind");
     }
 
     @Test
     @DisplayName("should be public")
     void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(WasmType.class.getModifiers()), "WasmType should be public");
+      assertTrue(Modifier.isPublic(WasmType.class.getModifiers()), "WasmType should be public");
     }
   }
 
@@ -142,8 +139,7 @@ class TypeSystemPackageTest {
     @DisplayName("should extend WasmType")
     void shouldExtendWasmType() {
       assertTrue(
-          WasmType.class.isAssignableFrom(GlobalType.class),
-          "GlobalType should extend WasmType");
+          WasmType.class.isAssignableFrom(GlobalType.class), "GlobalType should extend WasmType");
     }
 
     @Test
@@ -190,8 +186,7 @@ class TypeSystemPackageTest {
     @DisplayName("should extend WasmType")
     void shouldExtendWasmType() {
       assertTrue(
-          WasmType.class.isAssignableFrom(TableType.class),
-          "TableType should extend WasmType");
+          WasmType.class.isAssignableFrom(TableType.class), "TableType should extend WasmType");
     }
 
     @Test
@@ -246,8 +241,7 @@ class TypeSystemPackageTest {
     @DisplayName("should extend WasmType")
     void shouldExtendWasmType() {
       assertTrue(
-          WasmType.class.isAssignableFrom(MemoryType.class),
-          "MemoryType should extend WasmType");
+          WasmType.class.isAssignableFrom(MemoryType.class), "MemoryType should extend WasmType");
     }
 
     @Test
@@ -576,7 +570,8 @@ class TypeSystemPackageTest {
     @DisplayName("should have at least 4 basic value types")
     void shouldHaveAtLeast4BasicValueTypes() {
       WasmValueType[] values = WasmValueType.values();
-      assertTrue(values.length >= 4, "Should have at least 4 basic value types (I32, I64, F32, F64)");
+      assertTrue(
+          values.length >= 4, "Should have at least 4 basic value types (I32, I64, F32, F64)");
     }
   }
 
@@ -600,8 +595,7 @@ class TypeSystemPackageTest {
     @DisplayName("TableType should implement WasmType")
     void tableTypeShouldImplementWasmType() {
       assertTrue(
-          WasmType.class.isAssignableFrom(TableType.class),
-          "TableType should implement WasmType");
+          WasmType.class.isAssignableFrom(TableType.class), "TableType should implement WasmType");
     }
 
     @Test
@@ -616,8 +610,7 @@ class TypeSystemPackageTest {
     @DisplayName("FuncType should implement WasmType")
     void funcTypeShouldImplementWasmType() {
       assertTrue(
-          WasmType.class.isAssignableFrom(FuncType.class),
-          "FuncType should implement WasmType");
+          WasmType.class.isAssignableFrom(FuncType.class), "FuncType should implement WasmType");
     }
   }
 
@@ -639,7 +632,8 @@ class TypeSystemPackageTest {
     @DisplayName("should be a final class implementing WasmType")
     void shouldBeAFinalClassImplementingWasmType() {
       assertFalse(FunctionType.class.isInterface(), "FunctionType should not be an interface");
-      assertTrue(Modifier.isFinal(FunctionType.class.getModifiers()), "FunctionType should be final");
+      assertTrue(
+          Modifier.isFinal(FunctionType.class.getModifiers()), "FunctionType should be final");
       assertTrue(
           WasmType.class.isAssignableFrom(FunctionType.class),
           "FunctionType should implement WasmType");
@@ -680,7 +674,8 @@ class TypeSystemPackageTest {
     void shouldHaveGetKindMethod() throws NoSuchMethodException {
       Method method = FunctionType.class.getMethod("getKind");
       assertNotNull(method, "getKind method should exist");
-      assertEquals(WasmTypeKind.class, method.getReturnType(), "Return type should be WasmTypeKind");
+      assertEquals(
+          WasmTypeKind.class, method.getReturnType(), "Return type should be WasmTypeKind");
     }
   }
 

@@ -173,14 +173,13 @@ public final class WitOption extends WitValue {
     // Get inner type from option type kind
     // This is a simplified extraction - in a full implementation,
     // WitType would provide a getInnerType() method
-    if (optionType.getKind() == null || !"OPTION".equals(optionType.getKind().toString())) {
+    if (optionType.getKind() == null
+        || optionType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.OPTION) {
       throw new IllegalArgumentException("Type must be an option type");
     }
 
-    // For now, return a placeholder
-    // In the full implementation, this would extract from WitType.getKind().getInnerType()
-    // This will be enhanced when WitTypeKind is fully implemented
-    return WitType.createString(); // Placeholder
+    // Get the inner type from the option type kind
+    return optionType.getKind().getInnerType().orElse(WitType.createString());
   }
 
   @Override

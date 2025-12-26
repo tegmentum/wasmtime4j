@@ -203,6 +203,24 @@ public abstract class WitTypeKind {
     return Map.of(); // Default implementation for non-variant types
   }
 
+  /**
+   * Gets the flag names (only for flags types).
+   *
+   * @return list of flag names, or empty list for non-flags types
+   */
+  public List<String> getFlags() {
+    return List.of(); // Default implementation for non-flags types
+  }
+
+  /**
+   * Gets the inner type (only for option and list types).
+   *
+   * @return the inner type, or empty for non-option/list types
+   */
+  public Optional<WitType> getInnerType() {
+    return Optional.empty(); // Default implementation for non-option types
+  }
+
   /** Primitive type kind implementation. */
   private static final class PrimitiveTypeKind extends WitTypeKind {
     private final WitPrimitiveType primitive;
@@ -675,8 +693,9 @@ public abstract class WitTypeKind {
       return WitTypeCategory.OPTION;
     }
 
-    public WitType getInnerType() {
-      return innerType;
+    @Override
+    public Optional<WitType> getInnerType() {
+      return Optional.of(innerType);
     }
 
     @Override

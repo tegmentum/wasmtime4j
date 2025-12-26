@@ -11,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -69,8 +67,7 @@ class ComponentModelPackageTest {
     @Test
     @DisplayName("should be public")
     void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(Component.class.getModifiers()), "Component should be public");
+      assertTrue(Modifier.isPublic(Component.class.getModifiers()), "Component should be public");
     }
   }
 
@@ -127,7 +124,9 @@ class ComponentModelPackageTest {
       Method method = ComponentSimple.class.getMethod("getMetadata");
       assertNotNull(method, "getMetadata method should exist");
       assertEquals(
-          ComponentMetadata.class, method.getReturnType(), "Return type should be ComponentMetadata");
+          ComponentMetadata.class,
+          method.getReturnType(),
+          "Return type should be ComponentMetadata");
     }
 
     @Test
@@ -219,7 +218,9 @@ class ComponentModelPackageTest {
       Method method = ComponentEngine.class.getMethod("getRegistry");
       assertNotNull(method, "getRegistry method should exist");
       assertEquals(
-          ComponentRegistry.class, method.getReturnType(), "Return type should be ComponentRegistry");
+          ComponentRegistry.class,
+          method.getReturnType(),
+          "Return type should be ComponentRegistry");
     }
 
     @Test
@@ -303,8 +304,7 @@ class ComponentModelPackageTest {
     @Test
     @DisplayName("should be an interface")
     void shouldBeAnInterface() {
-      assertTrue(
-          ComponentInstance.class.isInterface(), "ComponentInstance should be an interface");
+      assertTrue(ComponentInstance.class.isInterface(), "ComponentInstance should be an interface");
     }
 
     @Test
@@ -490,8 +490,7 @@ class ComponentModelPackageTest {
     @Test
     @DisplayName("should have constructor with name")
     void shouldHaveConstructorWithName() throws NoSuchMethodException {
-      java.lang.reflect.Constructor<?> constructor =
-          ComponentId.class.getConstructor(String.class);
+      java.lang.reflect.Constructor<?> constructor = ComponentId.class.getConstructor(String.class);
       assertNotNull(constructor, "Constructor with name should exist");
     }
 
@@ -574,9 +573,7 @@ class ComponentModelPackageTest {
       Method method = ComponentMetadata.class.getMethod("getVersion");
       assertNotNull(method, "getVersion method should exist");
       assertEquals(
-          ComponentVersion.class,
-          method.getReturnType(),
-          "Return type should be ComponentVersion");
+          ComponentVersion.class, method.getReturnType(), "Return type should be ComponentVersion");
     }
 
     @Test
@@ -702,8 +699,7 @@ class ComponentModelPackageTest {
     @Test
     @DisplayName("should be an enum")
     void shouldBeAnEnum() {
-      assertTrue(
-          ComponentInstanceState.class.isEnum(), "ComponentInstanceState should be an enum");
+      assertTrue(ComponentInstanceState.class.isEnum(), "ComponentInstanceState should be an enum");
     }
 
     @Test
@@ -818,8 +814,7 @@ class ComponentModelPackageTest {
     @Test
     @DisplayName("should exist")
     void shouldExist() {
-      assertNotNull(
-          ComponentRegistryStatistics.class, "ComponentRegistryStatistics should exist");
+      assertNotNull(ComponentRegistryStatistics.class, "ComponentRegistryStatistics should exist");
     }
 
     @Test
