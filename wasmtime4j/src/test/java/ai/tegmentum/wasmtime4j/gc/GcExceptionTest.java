@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.gc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -95,8 +94,7 @@ class GcExceptionTest {
       final GcException exception = new GcException(message);
 
       assertTrue(
-          exception.getMessage().contains(message),
-          "Message should contain the original message");
+          exception.getMessage().contains(message), "Message should contain the original message");
       assertNull(exception.getCause(), "Cause should be null");
     }
 
@@ -108,8 +106,7 @@ class GcExceptionTest {
       final GcException exception = new GcException(message, cause);
 
       assertTrue(
-          exception.getMessage().contains(message),
-          "Message should contain the original message");
+          exception.getMessage().contains(message), "Message should contain the original message");
       assertSame(cause, exception.getCause(), "Cause should be set correctly");
     }
   }

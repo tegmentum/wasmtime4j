@@ -29,7 +29,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
 import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,16 +70,6 @@ class ThrownExceptionTest {
     }
 
     @Override
-    public long getNativeHandle() {
-      return 0;
-    }
-
-    @Override
-    public String toString() {
-      return "StubTag[" + id + "]";
-    }
-
-    @Override
     public boolean equals(final Object obj) {
       if (this == obj) {
         return true;
@@ -89,6 +78,16 @@ class ThrownExceptionTest {
         return false;
       }
       return id.equals(((StubTag) obj).id);
+    }
+
+    @Override
+    public long getNativeHandle() {
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "StubTag[" + id + "]";
     }
 
     @Override
