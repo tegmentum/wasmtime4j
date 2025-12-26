@@ -46,8 +46,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should create directory entry for regular file")
     void shouldCreateDirectoryEntryForRegularFile() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 1024L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("test.txt", true, false, false, 1024L, NOW);
 
       assertNotNull(entry, "Entry should be created");
       assertEquals("test.txt", entry.getName());
@@ -61,8 +61,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should create directory entry for directory")
     void shouldCreateDirectoryEntryForDirectory() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "subdir", false, true, false, 0L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("subdir", false, true, false, 0L, NOW);
 
       assertNotNull(entry, "Entry should be created");
       assertEquals("subdir", entry.getName());
@@ -75,8 +75,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should create directory entry for symbolic link")
     void shouldCreateDirectoryEntryForSymbolicLink() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "link", false, false, true, 100L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("link", false, false, true, 100L, NOW);
 
       assertNotNull(entry, "Entry should be created");
       assertEquals("link", entry.getName());
@@ -88,7 +88,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should throw for null name")
     void shouldThrowForNullName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiDirectoryEntry(null, true, false, false, 0L, NOW),
           "Should throw for null name");
     }
@@ -96,7 +97,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should throw for empty name")
     void shouldThrowForEmptyName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiDirectoryEntry("", true, false, false, 0L, NOW),
           "Should throw for empty name");
     }
@@ -104,7 +106,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("should throw for null lastModifiedTime")
     void shouldThrowForNullLastModifiedTime() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiDirectoryEntry("test.txt", true, false, false, 0L, null),
           "Should throw for null lastModifiedTime");
     }
@@ -114,8 +117,8 @@ class WasiDirectoryEntryTest {
   @DisplayName("Getter Tests")
   class GetterTests {
 
-    private final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-        "example.txt", true, false, false, 2048L, NOW);
+    private final WasiDirectoryEntry entry =
+        new WasiDirectoryEntry("example.txt", true, false, false, 2048L, NOW);
 
     @Test
     @DisplayName("getName should return name")
@@ -161,32 +164,30 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("getWasiFileType should return 4 for regular file")
     void getWasiFileTypeShouldReturnFourForRegularFile() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "file.txt", true, false, false, 0L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("file.txt", true, false, false, 0L, NOW);
       assertEquals(4, entry.getWasiFileType(), "Regular file type should be 4");
     }
 
     @Test
     @DisplayName("getWasiFileType should return 3 for directory")
     void getWasiFileTypeShouldReturnThreeForDirectory() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "dir", false, true, false, 0L, NOW);
+      final WasiDirectoryEntry entry = new WasiDirectoryEntry("dir", false, true, false, 0L, NOW);
       assertEquals(3, entry.getWasiFileType(), "Directory type should be 3");
     }
 
     @Test
     @DisplayName("getWasiFileType should return 7 for symbolic link")
     void getWasiFileTypeShouldReturnSevenForSymbolicLink() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "link", false, false, true, 0L, NOW);
+      final WasiDirectoryEntry entry = new WasiDirectoryEntry("link", false, false, true, 0L, NOW);
       assertEquals(7, entry.getWasiFileType(), "Symbolic link type should be 7");
     }
 
     @Test
     @DisplayName("getWasiFileType should return 0 for unknown")
     void getWasiFileTypeShouldReturnZeroForUnknown() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "unknown", false, false, false, 0L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("unknown", false, false, false, 0L, NOW);
       assertEquals(0, entry.getWasiFileType(), "Unknown type should be 0");
     }
   }
@@ -198,56 +199,56 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("equals should return true for same object")
     void equalsShouldReturnTrueForSameObject() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
       assertEquals(entry, entry);
     }
 
     @Test
     @DisplayName("equals should return true for equal entries")
     void equalsShouldReturnTrueForEqualEntries() {
-      final WasiDirectoryEntry entry1 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
-      final WasiDirectoryEntry entry2 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry1 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry2 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
       assertEquals(entry1, entry2);
     }
 
     @Test
     @DisplayName("equals should return false for different names")
     void equalsShouldReturnFalseForDifferentNames() {
-      final WasiDirectoryEntry entry1 = new WasiDirectoryEntry(
-          "file1.txt", true, false, false, 100L, NOW);
-      final WasiDirectoryEntry entry2 = new WasiDirectoryEntry(
-          "file2.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry1 =
+          new WasiDirectoryEntry("file1.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry2 =
+          new WasiDirectoryEntry("file2.txt", true, false, false, 100L, NOW);
       assertNotEquals(entry1, entry2);
     }
 
     @Test
     @DisplayName("equals should return false for different file types")
     void equalsShouldReturnFalseForDifferentFileTypes() {
-      final WasiDirectoryEntry entry1 = new WasiDirectoryEntry(
-          "test", true, false, false, 100L, NOW);
-      final WasiDirectoryEntry entry2 = new WasiDirectoryEntry(
-          "test", false, true, false, 100L, NOW);
+      final WasiDirectoryEntry entry1 =
+          new WasiDirectoryEntry("test", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry2 =
+          new WasiDirectoryEntry("test", false, true, false, 100L, NOW);
       assertNotEquals(entry1, entry2);
     }
 
     @Test
     @DisplayName("equals should return false for different sizes")
     void equalsShouldReturnFalseForDifferentSizes() {
-      final WasiDirectoryEntry entry1 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
-      final WasiDirectoryEntry entry2 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 200L, NOW);
+      final WasiDirectoryEntry entry1 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry2 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 200L, NOW);
       assertNotEquals(entry1, entry2);
     }
 
     @Test
     @DisplayName("equals should return false for null")
     void equalsShouldReturnFalseForNull() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
       assertNotEquals(null, entry);
     }
   }
@@ -259,8 +260,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("hashCode should be consistent")
     void hashCodeShouldBeConsistent() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
       final int hash1 = entry.hashCode();
       final int hash2 = entry.hashCode();
       assertEquals(hash1, hash2, "hashCode should be consistent");
@@ -269,10 +270,10 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("hashCode should be equal for equal entries")
     void hashCodeShouldBeEqualForEqualEntries() {
-      final WasiDirectoryEntry entry1 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
-      final WasiDirectoryEntry entry2 = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry1 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
+      final WasiDirectoryEntry entry2 =
+          new WasiDirectoryEntry("test.txt", true, false, false, 100L, NOW);
       assertEquals(entry1.hashCode(), entry2.hashCode());
     }
   }
@@ -284,8 +285,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("toString should include name and FILE type")
     void toStringShouldIncludeNameAndFileType() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "test.txt", true, false, false, 1024L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("test.txt", true, false, false, 1024L, NOW);
       final String str = entry.toString();
 
       assertTrue(str.contains("WasiDirectoryEntry"), "Should contain class name");
@@ -297,24 +298,23 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("toString should show DIR type for directories")
     void toStringShouldShowDirTypeForDirectories() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "subdir", false, true, false, 0L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("subdir", false, true, false, 0L, NOW);
       assertTrue(entry.toString().contains("DIR"));
     }
 
     @Test
     @DisplayName("toString should show LINK type for symbolic links")
     void toStringShouldShowLinkTypeForSymbolicLinks() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "link", false, false, true, 0L, NOW);
+      final WasiDirectoryEntry entry = new WasiDirectoryEntry("link", false, false, true, 0L, NOW);
       assertTrue(entry.toString().contains("LINK"));
     }
 
     @Test
     @DisplayName("toString should show UNKNOWN type for unknown entries")
     void toStringShouldShowUnknownTypeForUnknownEntries() {
-      final WasiDirectoryEntry entry = new WasiDirectoryEntry(
-          "unknown", false, false, false, 0L, NOW);
+      final WasiDirectoryEntry entry =
+          new WasiDirectoryEntry("unknown", false, false, false, 0L, NOW);
       assertTrue(entry.toString().contains("UNKNOWN"));
     }
   }
@@ -326,7 +326,8 @@ class WasiDirectoryEntryTest {
     @Test
     @DisplayName("WasiDirectoryEntry should be final class")
     void wasiDirectoryEntryShouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WasiDirectoryEntry.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(WasiDirectoryEntry.class.getModifiers()),
           "WasiDirectoryEntry should be final");
     }
   }

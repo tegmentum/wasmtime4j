@@ -251,35 +251,35 @@ class WasiSubscriptionTest {
     @Test
     @DisplayName("WasiSubscription should be final class")
     void wasiSubscriptionShouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WasiSubscription.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(WasiSubscription.class.getModifiers()),
           "WasiSubscription should be final");
     }
 
     @Test
     @DisplayName("should have getter and setter for all fields")
     void shouldHaveGetterAndSetterForAllFields() throws NoSuchMethodException {
-      assertNotNull(WasiSubscription.class.getMethod("getUserData"),
-          "Should have getUserData method");
-      assertNotNull(WasiSubscription.class.getMethod("setUserData", long.class),
+      assertNotNull(
+          WasiSubscription.class.getMethod("getUserData"), "Should have getUserData method");
+      assertNotNull(
+          WasiSubscription.class.getMethod("setUserData", long.class),
           "Should have setUserData method");
-      assertNotNull(WasiSubscription.class.getMethod("getType"),
-          "Should have getType method");
-      assertNotNull(WasiSubscription.class.getMethod("setType", int.class),
-          "Should have setType method");
-      assertNotNull(WasiSubscription.class.getMethod("getFd"),
-          "Should have getFd method");
-      assertNotNull(WasiSubscription.class.getMethod("setFd", int.class),
-          "Should have setFd method");
-      assertNotNull(WasiSubscription.class.getMethod("getFlags"),
-          "Should have getFlags method");
-      assertNotNull(WasiSubscription.class.getMethod("setFlags", int.class),
-          "Should have setFlags method");
+      assertNotNull(WasiSubscription.class.getMethod("getType"), "Should have getType method");
+      assertNotNull(
+          WasiSubscription.class.getMethod("setType", int.class), "Should have setType method");
+      assertNotNull(WasiSubscription.class.getMethod("getFd"), "Should have getFd method");
+      assertNotNull(
+          WasiSubscription.class.getMethod("setFd", int.class), "Should have setFd method");
+      assertNotNull(WasiSubscription.class.getMethod("getFlags"), "Should have getFlags method");
+      assertNotNull(
+          WasiSubscription.class.getMethod("setFlags", int.class), "Should have setFlags method");
     }
 
     @Test
     @DisplayName("should have setFdReadwrite convenience method")
     void shouldHaveSetFdReadwriteConvenienceMethod() throws NoSuchMethodException {
-      assertNotNull(WasiSubscription.class.getMethod("setFdReadwrite", int.class, int.class),
+      assertNotNull(
+          WasiSubscription.class.getMethod("setFdReadwrite", int.class, int.class),
           "Should have setFdReadwrite method");
     }
   }

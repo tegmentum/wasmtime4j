@@ -443,14 +443,14 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalParameters(values, paramsMemory);
 
       // Verify first parameter
-      final MemorySegment slot0 =
-          paramsMemory.asSlice(0, MemoryLayouts.WASM_VAL.byteSize());
+      final MemorySegment slot0 = paramsMemory.asSlice(0, MemoryLayouts.WASM_VAL.byteSize());
       assertEquals(MemoryLayouts.WASM_I32, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot0));
       assertEquals(1, (Integer) MemoryLayouts.WASM_VAL_I32.get(slot0));
 
       // Verify second parameter
       final MemorySegment slot1 =
-          paramsMemory.asSlice(MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
+          paramsMemory.asSlice(
+              MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
       assertEquals(MemoryLayouts.WASM_I64, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot1));
       assertEquals(2L, (Long) MemoryLayouts.WASM_VAL_I64.get(slot1));
     }
@@ -521,7 +521,8 @@ class PanamaTypeConverterTest {
 
       // Set up second result
       final MemorySegment slot1 =
-          resultsMemory.asSlice(MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
+          resultsMemory.asSlice(
+              MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
       MemoryLayouts.WASM_VAL_KIND.set(slot1, MemoryLayouts.WASM_I64);
       MemoryLayouts.WASM_VAL_I64.set(slot1, 200L);
 
@@ -612,8 +613,7 @@ class PanamaTypeConverterTest {
               PanamaException.class,
               () -> PanamaTypeConverter.validateParameterTypes(params, expectedTypes));
       assertTrue(
-          exception.getMessage().contains("type mismatch"),
-          "Message should mention type mismatch");
+          exception.getMessage().contains("type mismatch"), "Message should mention type mismatch");
     }
 
     @Test
@@ -679,11 +679,9 @@ class PanamaTypeConverterTest {
       final byte[] bytes = new byte[15];
 
       final PanamaException exception =
-          assertThrows(
-              PanamaException.class, () -> PanamaTypeConverter.validateV128Size(bytes));
+          assertThrows(PanamaException.class, () -> PanamaTypeConverter.validateV128Size(bytes));
       assertTrue(
-          exception.getMessage().contains("16 bytes"),
-          "Message should mention required size");
+          exception.getMessage().contains("16 bytes"), "Message should mention required size");
     }
 
     @Test
@@ -692,11 +690,9 @@ class PanamaTypeConverterTest {
       final byte[] bytes = new byte[17];
 
       final PanamaException exception =
-          assertThrows(
-              PanamaException.class, () -> PanamaTypeConverter.validateV128Size(bytes));
+          assertThrows(PanamaException.class, () -> PanamaTypeConverter.validateV128Size(bytes));
       assertTrue(
-          exception.getMessage().contains("16 bytes"),
-          "Message should mention required size");
+          exception.getMessage().contains("16 bytes"), "Message should mention required size");
     }
   }
 
@@ -763,8 +759,7 @@ class PanamaTypeConverterTest {
     @Test
     @DisplayName("nativeToFunctionType should create function type")
     void nativeToFunctionTypeShouldCreateFunctionType() throws PanamaException {
-      final int[] nativeParamTypes =
-          new int[] {MemoryLayouts.WASM_I32, MemoryLayouts.WASM_I64};
+      final int[] nativeParamTypes = new int[] {MemoryLayouts.WASM_I32, MemoryLayouts.WASM_I64};
       final int[] nativeReturnTypes = new int[] {MemoryLayouts.WASM_F64};
 
       final FunctionType result =
@@ -826,10 +821,7 @@ class PanamaTypeConverterTest {
 
       final long size = PanamaTypeConverter.calculateValuesMemorySize(types);
 
-      assertEquals(
-          3 * MemoryLayouts.WASM_VAL.byteSize(),
-          size,
-          "Should calculate correct size");
+      assertEquals(3 * MemoryLayouts.WASM_VAL.byteSize(), size, "Should calculate correct size");
     }
 
     @Test
@@ -862,8 +854,7 @@ class PanamaTypeConverterTest {
           new WasmValue[] {WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f32(3.0f)};
 
       assertDoesNotThrow(
-          () -> PanamaTypeConverter.validateReferenceTypes(values),
-          "Should pass for basic types");
+          () -> PanamaTypeConverter.validateReferenceTypes(values), "Should pass for basic types");
     }
 
     @Test
@@ -961,7 +952,8 @@ class PanamaTypeConverterTest {
       final WasmValue original = WasmValue.v128(v128Bytes);
 
       PanamaTypeConverter.marshalWasmValue(original, valueSlot);
-      final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.V128);
+      final WasmValue result =
+          PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.V128);
 
       assertArrayEquals(original.asV128(), result.asV128(), "V128 value should be preserved");
     }
@@ -1008,7 +1000,8 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.validateParameterTypes(params, funcType.getParamTypes());
 
       // Marshal parameters
-      final long paramsSize = PanamaTypeConverter.calculateValuesMemorySize(funcType.getParamTypes());
+      final long paramsSize =
+          PanamaTypeConverter.calculateValuesMemorySize(funcType.getParamTypes());
       final MemorySegment paramsMemory = arena.allocate(paramsSize);
       PanamaTypeConverter.marshalParameters(params, paramsMemory);
 

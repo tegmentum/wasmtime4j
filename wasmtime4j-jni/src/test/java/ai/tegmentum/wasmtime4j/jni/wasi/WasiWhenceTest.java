@@ -100,9 +100,13 @@ class WasiWhenceTest {
     @Test
     @DisplayName("fromValue with invalid value should throw IllegalArgumentException")
     void fromValueWithInvalidValueShouldThrowIllegalArgumentException() {
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiWhence.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(3),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiWhence.fromValue(3),
           "Should throw for value >= 3");
     }
   }
@@ -117,8 +121,7 @@ class WasiWhenceTest {
       for (final WasiWhence whence : WasiWhence.values()) {
         final int value = whence.getValue();
         final WasiWhence fromValue = WasiWhence.fromValue(value);
-        assertEquals(whence, fromValue,
-            "Round trip should return same enum value for " + whence);
+        assertEquals(whence, fromValue, "Round trip should return same enum value for " + whence);
       }
     }
   }

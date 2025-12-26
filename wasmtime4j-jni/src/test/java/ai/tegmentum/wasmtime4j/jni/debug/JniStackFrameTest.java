@@ -32,9 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniStackFrame}.
- */
+/** Comprehensive tests for {@link JniStackFrame}. */
 @DisplayName("JniStackFrame Tests")
 class JniStackFrameTest {
 
@@ -58,13 +56,13 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Constructor should create stack frame with all fields")
     void constructorShouldCreateStackFrameWithAllFields() {
-      final List<JniVariable> variables = Arrays.asList(
-          JniVariable.local("x", "i32", JniVariableValue.i32(42), 0),
-          JniVariable.local("y", "i64", JniVariableValue.i64(100L), 1)
-      );
+      final List<JniVariable> variables =
+          Arrays.asList(
+              JniVariable.local("x", "i32", JniVariableValue.i32(42), 0),
+              JniVariable.local("y", "i64", JniVariableValue.i64(100L), 1));
 
-      final JniStackFrame frame = new JniStackFrame(
-          5, "testFunction", 0x1000L, 42, 10, "test.wat", variables);
+      final JniStackFrame frame =
+          new JniStackFrame(5, "testFunction", 0x1000L, 42, 10, "test.wat", variables);
 
       assertEquals(5, frame.getFunctionIndex(), "Function index should match");
       assertEquals("testFunction", frame.getFunctionName(), "Function name should match");
@@ -78,8 +76,7 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Constructor should accept null functionName")
     void constructorShouldAcceptNullFunctionName() {
-      final JniStackFrame frame = new JniStackFrame(
-          0, null, 0L, 0, 0, null, null);
+      final JniStackFrame frame = new JniStackFrame(0, null, 0L, 0, 0, null, null);
 
       assertNull(frame.getFunctionName(), "Function name should be null");
     }
@@ -87,8 +84,7 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Constructor should accept null sourceFile")
     void constructorShouldAcceptNullSourceFile() {
-      final JniStackFrame frame = new JniStackFrame(
-          0, "func", 0L, 0, 0, null, null);
+      final JniStackFrame frame = new JniStackFrame(0, "func", 0L, 0, 0, null, null);
 
       assertNull(frame.getSourceFile(), "Source file should be null");
     }
@@ -96,8 +92,7 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Constructor should accept null variables list")
     void constructorShouldAcceptNullVariablesList() {
-      final JniStackFrame frame = new JniStackFrame(
-          0, "func", 0L, 0, 0, null, null);
+      final JniStackFrame frame = new JniStackFrame(0, "func", 0L, 0, 0, null, null);
 
       assertNotNull(frame.getVariables(), "Variables list should not be null");
       assertTrue(frame.getVariables().isEmpty(), "Variables list should be empty");
@@ -109,24 +104,29 @@ class JniStackFrameTest {
       final List<JniVariable> variables = new ArrayList<>();
       variables.add(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0));
 
-      final JniStackFrame frame = new JniStackFrame(
-          0, "func", 0L, 0, 0, null, variables);
+      final JniStackFrame frame = new JniStackFrame(0, "func", 0L, 0, 0, null, variables);
 
       // Modify original list
       variables.add(JniVariable.local("y", "i32", JniVariableValue.i32(2), 1));
 
-      assertEquals(1, frame.getVariables().size(),
-          "Frame should have 1 variable (defensive copy)");
+      assertEquals(1, frame.getVariables().size(), "Frame should have 1 variable (defensive copy)");
     }
 
     @Test
     @DisplayName("getVariables should return unmodifiable list")
     void getVariablesShouldReturnUnmodifiableList() {
-      final JniStackFrame frame = new JniStackFrame(
-          0, "func", 0L, 0, 0, null,
-          Collections.singletonList(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0)));
+      final JniStackFrame frame =
+          new JniStackFrame(
+              0,
+              "func",
+              0L,
+              0,
+              0,
+              null,
+              Collections.singletonList(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0)));
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> frame.getVariables().add(JniVariable.local("y", "i32", JniVariableValue.i32(2), 1)),
           "Should not be able to modify returned list");
     }
@@ -139,8 +139,8 @@ class JniStackFrameTest {
     @Test
     @DisplayName("fromNative should create stack frame with empty variables")
     void fromNativeShouldCreateStackFrameWithEmptyVariables() {
-      final JniStackFrame frame = JniStackFrame.fromNative(
-          10, "nativeFunc", 0x2000L, 100, 5, "native.wat");
+      final JniStackFrame frame =
+          JniStackFrame.fromNative(10, "nativeFunc", 0x2000L, 100, 5, "native.wat");
 
       assertEquals(10, frame.getFunctionIndex(), "Function index should match");
       assertEquals("nativeFunc", frame.getFunctionName(), "Function name should match");
@@ -154,8 +154,7 @@ class JniStackFrameTest {
     @Test
     @DisplayName("fromNative should handle null functionName")
     void fromNativeShouldHandleNullFunctionName() {
-      final JniStackFrame frame = JniStackFrame.fromNative(
-          0, null, 0L, 0, 0, null);
+      final JniStackFrame frame = JniStackFrame.fromNative(0, null, 0L, 0, 0, null);
 
       assertNull(frame.getFunctionName(), "Function name should be null");
     }
@@ -163,18 +162,15 @@ class JniStackFrameTest {
     @Test
     @DisplayName("fromNative should handle large instruction offset")
     void fromNativeShouldHandleLargeInstructionOffset() {
-      final JniStackFrame frame = JniStackFrame.fromNative(
-          0, "func", Long.MAX_VALUE, 0, 0, null);
+      final JniStackFrame frame = JniStackFrame.fromNative(0, "func", Long.MAX_VALUE, 0, 0, null);
 
-      assertEquals(Long.MAX_VALUE, frame.getInstructionOffset(),
-          "Should handle max long offset");
+      assertEquals(Long.MAX_VALUE, frame.getInstructionOffset(), "Should handle max long offset");
     }
 
     @Test
     @DisplayName("fromNative should handle negative function index")
     void fromNativeShouldHandleNegativeFunctionIndex() {
-      final JniStackFrame frame = JniStackFrame.fromNative(
-          -1, "func", 0L, 0, 0, null);
+      final JniStackFrame frame = JniStackFrame.fromNative(-1, "func", 0L, 0, 0, null);
 
       assertEquals(-1, frame.getFunctionIndex(), "Should handle negative function index");
     }
@@ -187,14 +183,15 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Builder should create stack frame with all fields")
     void builderShouldCreateStackFrameWithAllFields() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("builderFunc")
-          .instructionOffset(0x3000L)
-          .lineNumber(50)
-          .columnNumber(8)
-          .sourceFile("builder.wat")
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .functionName("builderFunc")
+              .instructionOffset(0x3000L)
+              .lineNumber(50)
+              .columnNumber(8)
+              .sourceFile("builder.wat")
+              .build();
 
       assertEquals(5, frame.getFunctionIndex(), "Function index should match");
       assertEquals("builderFunc", frame.getFunctionName(), "Function name should match");
@@ -224,10 +221,8 @@ class JniStackFrameTest {
       final JniVariable var1 = JniVariable.local("a", "i32", JniVariableValue.i32(1), 0);
       final JniVariable var2 = JniVariable.local("b", "i32", JniVariableValue.i32(2), 1);
 
-      final JniStackFrame frame = JniStackFrame.builder()
-          .addVariable(var1)
-          .addVariable(var2)
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder().addVariable(var1).addVariable(var2).build();
 
       assertEquals(2, frame.getVariables().size(), "Should have 2 variables");
       assertEquals(var1, frame.getVariables().get(0), "First variable should match");
@@ -237,15 +232,13 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Builder should set variables list")
     void builderShouldSetVariablesList() {
-      final List<JniVariable> vars = Arrays.asList(
-          JniVariable.local("x", "i32", JniVariableValue.i32(10), 0),
-          JniVariable.parameter("y", "i64", JniVariableValue.i64(20L), 0),
-          JniVariable.global("g", "f32", JniVariableValue.f32(3.14f), 0, false)
-      );
+      final List<JniVariable> vars =
+          Arrays.asList(
+              JniVariable.local("x", "i32", JniVariableValue.i32(10), 0),
+              JniVariable.parameter("y", "i64", JniVariableValue.i64(20L), 0),
+              JniVariable.global("g", "f32", JniVariableValue.f32(3.14f), 0, false));
 
-      final JniStackFrame frame = JniStackFrame.builder()
-          .variables(vars)
-          .build();
+      final JniStackFrame frame = JniStackFrame.builder().variables(vars).build();
 
       assertEquals(3, frame.getVariables().size(), "Should have 3 variables");
     }
@@ -262,16 +255,13 @@ class JniStackFrameTest {
       vars.add(JniVariable.local("y", "i32", JniVariableValue.i32(2), 1));
 
       final JniStackFrame frame = builder.build();
-      assertEquals(1, frame.getVariables().size(),
-          "Should have 1 variable (defensive copy)");
+      assertEquals(1, frame.getVariables().size(), "Should have 1 variable (defensive copy)");
     }
 
     @Test
     @DisplayName("Builder variables() should handle null")
     void builderVariablesShouldHandleNull() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .variables(null)
-          .build();
+      final JniStackFrame frame = JniStackFrame.builder().variables(null).build();
 
       assertNotNull(frame.getVariables(), "Variables should not be null");
       assertTrue(frame.getVariables().isEmpty(), "Variables should be empty");
@@ -280,9 +270,8 @@ class JniStackFrameTest {
     @Test
     @DisplayName("Builder should be reusable for multiple builds")
     void builderShouldBeReusableForMultipleBuilds() {
-      final JniStackFrame.Builder builder = JniStackFrame.builder()
-          .functionIndex(1)
-          .functionName("func1");
+      final JniStackFrame.Builder builder =
+          JniStackFrame.builder().functionIndex(1).functionName("func1");
 
       final JniStackFrame frame1 = builder.build();
 
@@ -304,23 +293,19 @@ class JniStackFrameTest {
     @Test
     @DisplayName("toString should include function index and offset")
     void toStringShouldIncludeFunctionIndexAndOffset() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .functionIndex(5)
-          .instructionOffset(0x1000L)
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder().functionIndex(5).instructionOffset(0x1000L).build();
 
       final String str = frame.toString();
       assertTrue(str.contains("functionIndex=5"), "Should contain function index");
-      assertTrue(str.contains("offset=4096") || str.contains("offset=0x1000"),
-          "Should contain offset");
+      assertTrue(
+          str.contains("offset=4096") || str.contains("offset=0x1000"), "Should contain offset");
     }
 
     @Test
     @DisplayName("toString should include function name when set")
     void toStringShouldIncludeFunctionNameWhenSet() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .functionName("myFunction")
-          .build();
+      final JniStackFrame frame = JniStackFrame.builder().functionName("myFunction").build();
 
       final String str = frame.toString();
       assertTrue(str.contains("functionName='myFunction'"), "Should contain function name");
@@ -338,11 +323,8 @@ class JniStackFrameTest {
     @Test
     @DisplayName("toString should include source location when set")
     void toStringShouldIncludeSourceLocationWhenSet() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .sourceFile("test.wat")
-          .lineNumber(42)
-          .columnNumber(10)
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder().sourceFile("test.wat").lineNumber(42).columnNumber(10).build();
 
       final String str = frame.toString();
       assertTrue(str.contains("source='test.wat:42:10'"), "Should contain source location");
@@ -351,10 +333,11 @@ class JniStackFrameTest {
     @Test
     @DisplayName("toString should include variable count when variables exist")
     void toStringShouldIncludeVariableCountWhenVariablesExist() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .addVariable(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0))
-          .addVariable(JniVariable.local("y", "i32", JniVariableValue.i32(2), 1))
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder()
+              .addVariable(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0))
+              .addVariable(JniVariable.local("y", "i32", JniVariableValue.i32(2), 1))
+              .build();
 
       final String str = frame.toString();
       assertTrue(str.contains("vars=2"), "Should contain variable count");
@@ -377,23 +360,25 @@ class JniStackFrameTest {
     @Test
     @DisplayName("equals should return true for same values")
     void equalsShouldReturnTrueForSameValues() {
-      final JniStackFrame frame1 = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("func")
-          .instructionOffset(0x1000L)
-          .lineNumber(10)
-          .columnNumber(5)
-          .sourceFile("test.wat")
-          .build();
+      final JniStackFrame frame1 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .functionName("func")
+              .instructionOffset(0x1000L)
+              .lineNumber(10)
+              .columnNumber(5)
+              .sourceFile("test.wat")
+              .build();
 
-      final JniStackFrame frame2 = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("func")
-          .instructionOffset(0x1000L)
-          .lineNumber(10)
-          .columnNumber(5)
-          .sourceFile("test.wat")
-          .build();
+      final JniStackFrame frame2 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .functionName("func")
+              .instructionOffset(0x1000L)
+              .lineNumber(10)
+              .columnNumber(5)
+              .sourceFile("test.wat")
+              .build();
 
       assertEquals(frame1, frame2, "Frames with same values should be equal");
     }
@@ -401,18 +386,19 @@ class JniStackFrameTest {
     @Test
     @DisplayName("equals should ignore variables")
     void equalsShouldIgnoreVariables() {
-      final JniStackFrame frame1 = JniStackFrame.builder()
-          .functionIndex(5)
-          .addVariable(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0))
-          .build();
+      final JniStackFrame frame1 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .addVariable(JniVariable.local("x", "i32", JniVariableValue.i32(1), 0))
+              .build();
 
-      final JniStackFrame frame2 = JniStackFrame.builder()
-          .functionIndex(5)
-          .addVariable(JniVariable.local("y", "i64", JniVariableValue.i64(2L), 1))
-          .build();
+      final JniStackFrame frame2 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .addVariable(JniVariable.local("y", "i64", JniVariableValue.i64(2L), 1))
+              .build();
 
-      assertEquals(frame1, frame2,
-          "Frames should be equal regardless of variables (by design)");
+      assertEquals(frame1, frame2, "Frames should be equal regardless of variables (by design)");
     }
 
     @Test
@@ -466,33 +452,32 @@ class JniStackFrameTest {
     @Test
     @DisplayName("hashCode should be consistent with equals")
     void hashCodeShouldBeConsistentWithEquals() {
-      final JniStackFrame frame1 = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("func")
-          .instructionOffset(0x1000L)
-          .lineNumber(10)
-          .columnNumber(5)
-          .build();
+      final JniStackFrame frame1 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .functionName("func")
+              .instructionOffset(0x1000L)
+              .lineNumber(10)
+              .columnNumber(5)
+              .build();
 
-      final JniStackFrame frame2 = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("func")
-          .instructionOffset(0x1000L)
-          .lineNumber(10)
-          .columnNumber(5)
-          .build();
+      final JniStackFrame frame2 =
+          JniStackFrame.builder()
+              .functionIndex(5)
+              .functionName("func")
+              .instructionOffset(0x1000L)
+              .lineNumber(10)
+              .columnNumber(5)
+              .build();
 
-      assertEquals(frame1.hashCode(), frame2.hashCode(),
-          "Equal frames should have same hashCode");
+      assertEquals(frame1.hashCode(), frame2.hashCode(), "Equal frames should have same hashCode");
     }
 
     @Test
     @DisplayName("hashCode should be stable across multiple calls")
     void hashCodeShouldBeStableAcrossMultipleCalls() {
-      final JniStackFrame frame = JniStackFrame.builder()
-          .functionIndex(5)
-          .functionName("func")
-          .build();
+      final JniStackFrame frame =
+          JniStackFrame.builder().functionIndex(5).functionName("func").build();
 
       final int hash1 = frame.hashCode();
       final int hash2 = frame.hashCode();

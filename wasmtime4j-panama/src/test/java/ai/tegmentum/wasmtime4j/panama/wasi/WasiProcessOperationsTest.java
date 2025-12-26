@@ -16,23 +16,15 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiProcessOperations}.
- */
+/** Comprehensive tests for {@link WasiProcessOperations}. */
 @DisplayName("WasiProcessOperations Tests")
 class WasiProcessOperationsTest {
 
@@ -56,9 +48,8 @@ class WasiProcessOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(Exception.class,
-          () -> new WasiProcessOperations(null),
-          "Should throw on null context");
+      assertThrows(
+          Exception.class, () -> new WasiProcessOperations(null), "Should throw on null context");
     }
   }
 
@@ -89,7 +80,8 @@ class WasiProcessOperationsTest {
     @DisplayName("ProcessInfo should be final class")
     void processInfoShouldBeFinalClass() {
       assertTrue(
-          java.lang.reflect.Modifier.isFinal(WasiProcessOperations.ProcessInfo.class.getModifiers()),
+          java.lang.reflect.Modifier.isFinal(
+              WasiProcessOperations.ProcessInfo.class.getModifiers()),
           "ProcessInfo should be final");
     }
 
@@ -97,62 +89,78 @@ class WasiProcessOperationsTest {
     @DisplayName("ProcessInfo should be static class")
     void processInfoShouldBeStaticClass() {
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(WasiProcessOperations.ProcessInfo.class.getModifiers()),
+          java.lang.reflect.Modifier.isStatic(
+              WasiProcessOperations.ProcessInfo.class.getModifiers()),
           "ProcessInfo should be static");
     }
 
     @Test
     @DisplayName("ProcessInfo should have public fields")
     void processInfoShouldHavePublicFields() throws NoSuchFieldException {
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("handle"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("handle"),
           "handle field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("process"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("process"),
           "process field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("command"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("command"),
           "command field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("arguments"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("arguments"),
           "arguments field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("environment"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("environment"),
           "environment field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("workingDirectory"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("workingDirectory"),
           "workingDirectory field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("startTime"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("startTime"),
           "startTime field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("nativeProcessId"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("nativeProcessId"),
           "nativeProcessId field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("finished"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("finished"),
           "finished field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("terminated"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("terminated"),
           "terminated field should be public");
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getField("exitCode"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getField("exitCode"),
           "exitCode field should be public");
     }
 
     @Test
     @DisplayName("ProcessInfo should have isAlive method")
     void processInfoShouldHaveIsAliveMethod() throws NoSuchMethodException {
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getMethod("isAlive"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getMethod("isAlive"),
           "isAlive method should exist");
     }
 
     @Test
     @DisplayName("ProcessInfo should have getPid method")
     void processInfoShouldHaveGetPidMethod() throws NoSuchMethodException {
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getMethod("getPid"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getMethod("getPid"),
           "getPid method should exist");
     }
 
     @Test
     @DisplayName("ProcessInfo should have getNativeProcessId method")
     void processInfoShouldHaveGetNativeProcessIdMethod() throws NoSuchMethodException {
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getMethod("getNativeProcessId"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getMethod("getNativeProcessId"),
           "getNativeProcessId method should exist");
     }
 
     @Test
     @DisplayName("ProcessInfo should have toString method")
     void processInfoShouldHaveToStringMethod() throws NoSuchMethodException {
-      assertNotNull(WasiProcessOperations.ProcessInfo.class.getMethod("toString"),
+      assertNotNull(
+          WasiProcessOperations.ProcessInfo.class.getMethod("toString"),
           "toString method should exist");
     }
   }

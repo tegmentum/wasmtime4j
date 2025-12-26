@@ -43,8 +43,12 @@ class JniSimdOperationsTest {
     @Test
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(JniSimdOperations.class.getModifiers()), "JniSimdOperations should be public");
-      assertTrue(Modifier.isFinal(JniSimdOperations.class.getModifiers()), "JniSimdOperations should be final");
+      assertTrue(
+          Modifier.isPublic(JniSimdOperations.class.getModifiers()),
+          "JniSimdOperations should be public");
+      assertTrue(
+          Modifier.isFinal(JniSimdOperations.class.getModifiers()),
+          "JniSimdOperations should be final");
     }
 
     @Test
@@ -78,7 +82,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "add method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "add should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "add should return SimdVector");
     }
 
     @Test
@@ -91,7 +97,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "subtract method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "subtract should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "subtract should return SimdVector");
     }
 
     @Test
@@ -104,7 +112,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "multiply method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "multiply should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "multiply should return SimdVector");
     }
 
     @Test
@@ -117,7 +127,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "divide method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "divide should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "divide should return SimdVector");
     }
   }
 
@@ -135,7 +147,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "and method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "and should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "and should return SimdVector");
     }
 
     @Test
@@ -148,7 +162,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "or method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "or should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "or should return SimdVector");
     }
 
     @Test
@@ -161,16 +177,21 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "xor method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "xor should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "xor should return SimdVector");
     }
 
     @Test
     @DisplayName("should have not method")
     void shouldHaveNotMethod() throws NoSuchMethodException {
-      final Method method = JniSimdOperations.class.getMethod("not", ai.tegmentum.wasmtime4j.simd.SimdVector.class);
+      final Method method =
+          JniSimdOperations.class.getMethod("not", ai.tegmentum.wasmtime4j.simd.SimdVector.class);
       assertNotNull(method, "not method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "not should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "not should return SimdVector");
     }
   }
 
@@ -189,7 +210,9 @@ class JniSimdOperationsTest {
               ai.tegmentum.wasmtime4j.simd.SimdLane.class);
       assertNotNull(method, "load method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.simd.SimdVector.class, method.getReturnType(), "load should return SimdVector");
+          ai.tegmentum.wasmtime4j.simd.SimdVector.class,
+          method.getReturnType(),
+          "load should return SimdVector");
     }
 
     @Test
@@ -223,7 +246,8 @@ class JniSimdOperationsTest {
     void shouldHaveGetSimdCapabilitiesMethod() throws NoSuchMethodException {
       final Method method = JniSimdOperations.class.getMethod("getSimdCapabilities");
       assertNotNull(method, "getSimdCapabilities method should exist");
-      assertEquals(String.class, method.getReturnType(), "getSimdCapabilities should return String");
+      assertEquals(
+          String.class, method.getReturnType(), "getSimdCapabilities should return String");
     }
   }
 }

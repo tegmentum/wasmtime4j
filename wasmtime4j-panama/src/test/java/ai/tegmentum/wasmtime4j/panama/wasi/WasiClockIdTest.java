@@ -90,15 +90,15 @@ class WasiClockIdTest {
     @Test
     @DisplayName("PROCESS_CPUTIME_ID should have value 2")
     void processCputimeIdShouldHaveValue2() {
-      assertEquals(2, WasiClockId.PROCESS_CPUTIME_ID.getValue(),
-          "PROCESS_CPUTIME_ID should have value 2");
+      assertEquals(
+          2, WasiClockId.PROCESS_CPUTIME_ID.getValue(), "PROCESS_CPUTIME_ID should have value 2");
     }
 
     @Test
     @DisplayName("THREAD_CPUTIME_ID should have value 3")
     void threadCputimeIdShouldHaveValue3() {
-      assertEquals(3, WasiClockId.THREAD_CPUTIME_ID.getValue(),
-          "THREAD_CPUTIME_ID should have value 3");
+      assertEquals(
+          3, WasiClockId.THREAD_CPUTIME_ID.getValue(), "THREAD_CPUTIME_ID should have value 3");
     }
   }
 
@@ -111,20 +111,30 @@ class WasiClockIdTest {
     void fromValueShouldReturnCorrectClockId() {
       assertEquals(WasiClockId.REALTIME, WasiClockId.fromValue(0), "Should return REALTIME");
       assertEquals(WasiClockId.MONOTONIC, WasiClockId.fromValue(1), "Should return MONOTONIC");
-      assertEquals(WasiClockId.PROCESS_CPUTIME_ID, WasiClockId.fromValue(2),
+      assertEquals(
+          WasiClockId.PROCESS_CPUTIME_ID,
+          WasiClockId.fromValue(2),
           "Should return PROCESS_CPUTIME_ID");
-      assertEquals(WasiClockId.THREAD_CPUTIME_ID, WasiClockId.fromValue(3),
+      assertEquals(
+          WasiClockId.THREAD_CPUTIME_ID,
+          WasiClockId.fromValue(3),
           "Should return THREAD_CPUTIME_ID");
     }
 
     @Test
     @DisplayName("fromValue should throw for invalid value")
     void fromValueShouldThrowForInvalidValue() {
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(4),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(4),
           "Should throw for value 4");
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(100),
           "Should throw for value 100");
     }
 
@@ -132,7 +142,9 @@ class WasiClockIdTest {
     @DisplayName("Round trip getValue/fromValue should work")
     void roundTripShouldWork() {
       for (WasiClockId clockId : WasiClockId.values()) {
-        assertEquals(clockId, WasiClockId.fromValue(clockId.getValue()),
+        assertEquals(
+            clockId,
+            WasiClockId.fromValue(clockId.getValue()),
             "Round trip should return same clock ID: " + clockId.name());
       }
     }

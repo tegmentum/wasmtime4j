@@ -25,9 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PanamaAsyncRuntimeProvider}.
- */
+/** Comprehensive tests for {@link PanamaAsyncRuntimeProvider}. */
 @DisplayName("PanamaAsyncRuntimeProvider Tests")
 class PanamaAsyncRuntimeProviderTest {
 
@@ -60,8 +58,7 @@ class PanamaAsyncRuntimeProviderTest {
     @Test
     @DisplayName("Default constructor should not throw")
     void defaultConstructorShouldNotThrow() {
-      assertDoesNotThrow(PanamaAsyncRuntimeProvider::new,
-          "Default constructor should not throw");
+      assertDoesNotThrow(PanamaAsyncRuntimeProvider::new, "Default constructor should not throw");
     }
 
     @Test
@@ -84,19 +81,20 @@ class PanamaAsyncRuntimeProviderTest {
       final PanamaAsyncRuntimeProvider provider = new PanamaAsyncRuntimeProvider();
       // create() may return null if native bindings are not available
       // but it should not throw
-      assertDoesNotThrow(provider::create,
-          "create() should not throw");
+      assertDoesNotThrow(provider::create, "create() should not throw");
     }
 
     @Test
     @DisplayName("create() should return PanamaAsyncRuntime or null")
-    void createShouldReturnPanamaAsyncRuntimeOrNull() {
+    void createShouldReturnPanamaAsyncRuntimeOrNull()
+        throws ai.tegmentum.wasmtime4j.exception.WasmException {
       final PanamaAsyncRuntimeProvider provider = new PanamaAsyncRuntimeProvider();
       // The result depends on whether native bindings are available
       // If available, returns PanamaAsyncRuntime; otherwise null
       final var result = provider.create();
       if (result != null) {
-        assertTrue(result instanceof PanamaAsyncRuntime,
+        assertTrue(
+            result instanceof PanamaAsyncRuntime,
             "create() should return PanamaAsyncRuntime if native bindings are available");
       }
       // null is acceptable if native bindings are not available
@@ -125,8 +123,8 @@ class PanamaAsyncRuntimeProviderTest {
     void providerShouldLogCreation() {
       // Just verify that construction completes without error
       // The actual logging is internal behavior
-      assertDoesNotThrow(PanamaAsyncRuntimeProvider::new,
-          "Provider construction should complete without error");
+      assertDoesNotThrow(
+          PanamaAsyncRuntimeProvider::new, "Provider construction should complete without error");
     }
   }
 }

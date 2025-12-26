@@ -43,7 +43,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("PanamaValidation should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(PanamaValidation.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(PanamaValidation.class.getModifiers()),
           "PanamaValidation should be final");
     }
 
@@ -52,7 +53,9 @@ class PanamaValidationTest {
     void constructorShouldThrowAssertionError() throws Exception {
       final var constructor = PanamaValidation.class.getDeclaredConstructor();
       constructor.setAccessible(true);
-      assertThrows(AssertionError.class, constructor::newInstance,
+      assertThrows(
+          AssertionError.class,
+          constructor::newInstance,
           "Constructor should throw AssertionError");
     }
   }
@@ -64,16 +67,19 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonNull should accept non-null object")
     void requireNonNullShouldAcceptNonNullObject() {
-      assertDoesNotThrow(() -> PanamaValidation.requireNonNull("test", "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireNonNull("test", "paramName"),
           "Should accept non-null object");
     }
 
     @Test
     @DisplayName("requireNonNull should throw for null object")
     void requireNonNullShouldThrowForNullObject() {
-      final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-          () -> PanamaValidation.requireNonNull(null, "paramName"),
-          "Should throw for null object");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> PanamaValidation.requireNonNull(null, "paramName"),
+              "Should throw for null object");
       assertTrue(ex.getMessage().contains("paramName"), "Message should contain parameter name");
       assertTrue(ex.getMessage().contains("null"), "Message should indicate null");
     }
@@ -86,14 +92,16 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonEmpty should accept non-empty string")
     void requireNonEmptyShouldAcceptNonEmptyString() {
-      assertDoesNotThrow(() -> PanamaValidation.requireNonEmpty("test", "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireNonEmpty("test", "paramName"),
           "Should accept non-empty string");
     }
 
     @Test
     @DisplayName("requireNonEmpty should throw for null string")
     void requireNonEmptyShouldThrowForNullString() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireNonEmpty((String) null, "paramName"),
           "Should throw for null string");
     }
@@ -101,9 +109,11 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonEmpty should throw for empty string")
     void requireNonEmptyShouldThrowForEmptyString() {
-      final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-          () -> PanamaValidation.requireNonEmpty("", "paramName"),
-          "Should throw for empty string");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> PanamaValidation.requireNonEmpty("", "paramName"),
+              "Should throw for empty string");
       assertTrue(ex.getMessage().contains("empty"), "Message should indicate empty");
     }
   }
@@ -123,7 +133,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonEmpty should throw for null array")
     void requireNonEmptyShouldThrowForNullArray() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireNonEmpty((byte[]) null, "paramName"),
           "Should throw for null array");
     }
@@ -131,7 +142,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonEmpty should throw for empty array")
     void requireNonEmptyShouldThrowForEmptyArray() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireNonEmpty(new byte[0], "paramName"),
           "Should throw for empty array");
     }
@@ -144,14 +156,16 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonBlank should accept non-blank string")
     void requireNonBlankShouldAcceptNonBlankString() {
-      assertDoesNotThrow(() -> PanamaValidation.requireNonBlank("test", "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireNonBlank("test", "paramName"),
           "Should accept non-blank string");
     }
 
     @Test
     @DisplayName("requireNonBlank should throw for null string")
     void requireNonBlankShouldThrowForNullString() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireNonBlank(null, "paramName"),
           "Should throw for null string");
     }
@@ -159,7 +173,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonBlank should throw for whitespace-only string")
     void requireNonBlankShouldThrowForWhitespaceOnlyString() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireNonBlank("   ", "paramName"),
           "Should throw for whitespace-only string");
     }
@@ -172,37 +187,43 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireInRange should accept value in range")
     void requireInRangeShouldAcceptValueInRange() {
-      assertDoesNotThrow(() -> PanamaValidation.requireInRange(5, 1, 10, "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireInRange(5, 1, 10, "paramName"),
           "Should accept value in range");
     }
 
     @Test
     @DisplayName("requireInRange should accept minimum value")
     void requireInRangeShouldAcceptMinimumValue() {
-      assertDoesNotThrow(() -> PanamaValidation.requireInRange(1, 1, 10, "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireInRange(1, 1, 10, "paramName"),
           "Should accept minimum value");
     }
 
     @Test
     @DisplayName("requireInRange should accept maximum value")
     void requireInRangeShouldAcceptMaximumValue() {
-      assertDoesNotThrow(() -> PanamaValidation.requireInRange(10, 1, 10, "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireInRange(10, 1, 10, "paramName"),
           "Should accept maximum value");
     }
 
     @Test
     @DisplayName("requireInRange should throw for value below minimum")
     void requireInRangeShouldThrowForValueBelowMinimum() {
-      final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-          () -> PanamaValidation.requireInRange(0, 1, 10, "paramName"),
-          "Should throw for value below minimum");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> PanamaValidation.requireInRange(0, 1, 10, "paramName"),
+              "Should throw for value below minimum");
       assertTrue(ex.getMessage().contains("0"), "Message should contain actual value");
     }
 
     @Test
     @DisplayName("requireInRange should throw for value above maximum")
     void requireInRangeShouldThrowForValueAboveMaximum() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireInRange(11, 1, 10, "paramName"),
           "Should throw for value above maximum");
     }
@@ -215,14 +236,16 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireInRange should accept long value in range")
     void requireInRangeShouldAcceptLongValueInRange() {
-      assertDoesNotThrow(() -> PanamaValidation.requireInRange(50L, 10L, 100L, "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireInRange(50L, 10L, 100L, "paramName"),
           "Should accept long value in range");
     }
 
     @Test
     @DisplayName("requireInRange should throw for long value out of range")
     void requireInRangeShouldThrowForLongValueOutOfRange() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireInRange(5L, 10L, 100L, "paramName"),
           "Should throw for long value out of range");
     }
@@ -235,23 +258,26 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireNonNegative should accept zero")
     void requireNonNegativeShouldAcceptZero() {
-      assertDoesNotThrow(() -> PanamaValidation.requireNonNegative(0L, "paramName"),
-          "Should accept zero");
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireNonNegative(0L, "paramName"), "Should accept zero");
     }
 
     @Test
     @DisplayName("requireNonNegative should accept positive value")
     void requireNonNegativeShouldAcceptPositiveValue() {
-      assertDoesNotThrow(() -> PanamaValidation.requireNonNegative(100L, "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireNonNegative(100L, "paramName"),
           "Should accept positive value");
     }
 
     @Test
     @DisplayName("requireNonNegative should throw for negative value")
     void requireNonNegativeShouldThrowForNegativeValue() {
-      final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-          () -> PanamaValidation.requireNonNegative(-1L, "paramName"),
-          "Should throw for negative value");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> PanamaValidation.requireNonNegative(-1L, "paramName"),
+              "Should throw for negative value");
       assertTrue(ex.getMessage().contains("non-negative"), "Message should indicate non-negative");
     }
   }
@@ -263,16 +289,19 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidHandle should accept non-zero handle")
     void requireValidHandleShouldAcceptNonZeroHandle() {
-      assertDoesNotThrow(() -> PanamaValidation.requireValidHandle(12345L, "handleName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireValidHandle(12345L, "handleName"),
           "Should accept non-zero handle");
     }
 
     @Test
     @DisplayName("requireValidHandle should throw for zero handle")
     void requireValidHandleShouldThrowForZeroHandle() {
-      final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-          () -> PanamaValidation.requireValidHandle(0L, "handleName"),
-          "Should throw for zero handle");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> PanamaValidation.requireValidHandle(0L, "handleName"),
+              "Should throw for zero handle");
       assertTrue(ex.getMessage().contains("null pointer"), "Message should indicate null pointer");
     }
   }
@@ -284,7 +313,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidHandle should throw for null segment")
     void requireValidHandleShouldThrowForNullSegment() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidHandle((MemorySegment) null, "handleName"),
           "Should throw for null segment");
     }
@@ -292,7 +322,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidHandle should throw for NULL segment")
     void requireValidHandleShouldThrowForNullSegmentValue() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidHandle(MemorySegment.NULL, "handleName"),
           "Should throw for NULL segment");
     }
@@ -305,7 +336,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("defensiveCopy should throw for null array")
     void defensiveCopyShouldThrowForNullArray() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.defensiveCopy(null),
           "Should throw for null array");
     }
@@ -341,7 +373,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requirePositive should throw for zero")
     void requirePositiveShouldThrowForZero() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requirePositive(0, "paramName"),
           "Should throw for zero");
     }
@@ -349,7 +382,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requirePositive should throw for negative")
     void requirePositiveShouldThrowForNegative() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requirePositive(-5, "paramName"),
           "Should throw for negative");
     }
@@ -369,7 +403,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requirePositive should throw for zero long")
     void requirePositiveShouldThrowForZeroLong() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requirePositive(0L, "paramName"),
           "Should throw for zero");
     }
@@ -382,28 +417,27 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidPort should accept valid port")
     void requireValidPortShouldAcceptValidPort() {
-      assertDoesNotThrow(() -> PanamaValidation.requireValidPort(8080),
-          "Should accept valid port");
+      assertDoesNotThrow(() -> PanamaValidation.requireValidPort(8080), "Should accept valid port");
     }
 
     @Test
     @DisplayName("requireValidPort should accept minimum port")
     void requireValidPortShouldAcceptMinimumPort() {
-      assertDoesNotThrow(() -> PanamaValidation.requireValidPort(1),
-          "Should accept minimum port");
+      assertDoesNotThrow(() -> PanamaValidation.requireValidPort(1), "Should accept minimum port");
     }
 
     @Test
     @DisplayName("requireValidPort should accept maximum port")
     void requireValidPortShouldAcceptMaximumPort() {
-      assertDoesNotThrow(() -> PanamaValidation.requireValidPort(65535),
-          "Should accept maximum port");
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireValidPort(65535), "Should accept maximum port");
     }
 
     @Test
     @DisplayName("requireValidPort should throw for zero port")
     void requireValidPortShouldThrowForZeroPort() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidPort(0),
           "Should throw for zero port");
     }
@@ -411,7 +445,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidPort should throw for port above 65535")
     void requireValidPortShouldThrowForPortAbove65535() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidPort(65536),
           "Should throw for port above 65535");
     }
@@ -419,7 +454,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidPort should throw for negative port")
     void requireValidPortShouldThrowForNegativePort() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidPort(-1),
           "Should throw for negative port");
     }
@@ -443,7 +479,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidConnectionId should throw for null map")
     void requireValidConnectionIdShouldThrowForNullMap() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidConnectionId(1L, null),
           "Should throw for null map");
     }
@@ -452,7 +489,8 @@ class PanamaValidationTest {
     @DisplayName("requireValidConnectionId should throw for zero id")
     void requireValidConnectionIdShouldThrowForZeroId() {
       final Map<Long, Object> connections = new HashMap<>();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidConnectionId(0L, connections),
           "Should throw for zero id");
     }
@@ -461,7 +499,8 @@ class PanamaValidationTest {
     @DisplayName("requireValidConnectionId should throw for negative id")
     void requireValidConnectionIdShouldThrowForNegativeId() {
       final Map<Long, Object> connections = new HashMap<>();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidConnectionId(-1L, connections),
           "Should throw for negative id");
     }
@@ -472,7 +511,8 @@ class PanamaValidationTest {
       final Map<Long, Object> connections = new HashMap<>();
       connections.put(1L, "connection");
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidConnectionId(999L, connections),
           "Should throw for non-existent connection");
     }
@@ -485,14 +525,16 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidString should accept non-empty string")
     void requireValidStringShouldAcceptNonEmptyString() {
-      assertDoesNotThrow(() -> PanamaValidation.requireValidString("test", "paramName"),
+      assertDoesNotThrow(
+          () -> PanamaValidation.requireValidString("test", "paramName"),
           "Should accept non-empty string");
     }
 
     @Test
     @DisplayName("requireValidString should throw for null string")
     void requireValidStringShouldThrowForNullString() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidString(null, "paramName"),
           "Should throw for null string");
     }
@@ -500,7 +542,8 @@ class PanamaValidationTest {
     @Test
     @DisplayName("requireValidString should throw for whitespace-only string")
     void requireValidStringShouldThrowForWhitespaceOnlyString() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> PanamaValidation.requireValidString("   ", "paramName"),
           "Should throw for whitespace-only string");
     }

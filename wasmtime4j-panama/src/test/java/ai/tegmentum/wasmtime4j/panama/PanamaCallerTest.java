@@ -22,11 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Caller;
-import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmTable;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -360,19 +355,24 @@ class PanamaCallerTest {
       assertNotNull(dataMethod.getReturnType(), "data() should have a return type");
 
       Method getExportMethod = PanamaCaller.class.getMethod("getExport", String.class);
-      assertEquals(Optional.class, getExportMethod.getReturnType(), "getExport should return Optional");
+      assertEquals(
+          Optional.class, getExportMethod.getReturnType(), "getExport should return Optional");
 
       Method getFunctionMethod = PanamaCaller.class.getMethod("getFunction", String.class);
-      assertEquals(Optional.class, getFunctionMethod.getReturnType(), "getFunction should return Optional");
+      assertEquals(
+          Optional.class, getFunctionMethod.getReturnType(), "getFunction should return Optional");
 
       Method getMemoryMethod = PanamaCaller.class.getMethod("getMemory", String.class);
-      assertEquals(Optional.class, getMemoryMethod.getReturnType(), "getMemory should return Optional");
+      assertEquals(
+          Optional.class, getMemoryMethod.getReturnType(), "getMemory should return Optional");
 
       Method getTableMethod = PanamaCaller.class.getMethod("getTable", String.class);
-      assertEquals(Optional.class, getTableMethod.getReturnType(), "getTable should return Optional");
+      assertEquals(
+          Optional.class, getTableMethod.getReturnType(), "getTable should return Optional");
 
       Method getGlobalMethod = PanamaCaller.class.getMethod("getGlobal", String.class);
-      assertEquals(Optional.class, getGlobalMethod.getReturnType(), "getGlobal should return Optional");
+      assertEquals(
+          Optional.class, getGlobalMethod.getReturnType(), "getGlobal should return Optional");
     }
 
     @Test
@@ -493,8 +493,14 @@ class PanamaCallerTest {
     @DisplayName("Caller interface methods should be public in PanamaCaller")
     void callerInterfaceMethodsShouldBePublic() throws NoSuchMethodException {
       String[] interfaceMethods = {
-        "data", "getExport", "getFunction", "getMemory", "getTable", "getGlobal",
-        "fuelConsumed", "addFuel"
+        "data",
+        "getExport",
+        "getFunction",
+        "getMemory",
+        "getTable",
+        "getGlobal",
+        "fuelConsumed",
+        "addFuel"
       };
 
       for (String methodName : interfaceMethods) {
@@ -502,8 +508,7 @@ class PanamaCallerTest {
             Arrays.stream(PanamaCaller.class.getMethods())
                 .filter(m -> m.getName().equals(methodName))
                 .toArray(Method[]::new);
-        assertTrue(
-            methods.length > 0, "Method " + methodName + " should exist");
+        assertTrue(methods.length > 0, "Method " + methodName + " should exist");
         for (Method method : methods) {
           assertTrue(
               Modifier.isPublic(method.getModifiers()),
@@ -536,9 +541,7 @@ class PanamaCallerTest {
       Constructor<?>[] constructors = PanamaCaller.class.getDeclaredConstructors();
       boolean acceptsMemorySegment =
           Arrays.stream(constructors)
-              .anyMatch(
-                  c ->
-                      Arrays.asList(c.getParameterTypes()).contains(MemorySegment.class));
+              .anyMatch(c -> Arrays.asList(c.getParameterTypes()).contains(MemorySegment.class));
       assertTrue(acceptsMemorySegment, "Constructor should accept MemorySegment parameter");
     }
   }

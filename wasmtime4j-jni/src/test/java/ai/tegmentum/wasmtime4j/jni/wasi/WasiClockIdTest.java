@@ -113,11 +113,17 @@ class WasiClockIdTest {
     @Test
     @DisplayName("fromValue with invalid value should throw IllegalArgumentException")
     void fromValueWithInvalidValueShouldThrowIllegalArgumentException() {
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(4),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(4),
           "Should throw for value >= 4");
-      assertThrows(IllegalArgumentException.class, () -> WasiClockId.fromValue(100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiClockId.fromValue(100),
           "Should throw for large value");
     }
   }
@@ -132,8 +138,7 @@ class WasiClockIdTest {
       for (final WasiClockId clockId : WasiClockId.values()) {
         final int value = clockId.getValue();
         final WasiClockId fromValue = WasiClockId.fromValue(value);
-        assertEquals(clockId, fromValue,
-            "Round trip should return same enum value for " + clockId);
+        assertEquals(clockId, fromValue, "Round trip should return same enum value for " + clockId);
       }
     }
   }

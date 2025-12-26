@@ -65,8 +65,7 @@ public class JniExperimentalPackageTest {
     @DisplayName("Should be a final class implementing ExceptionHandler")
     void shouldBeFinalAndImplementExceptionHandler() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "JniExceptionHandlerImpl");
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "JniExceptionHandlerImpl should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "JniExceptionHandlerImpl should be final");
 
       // Check that it implements ExceptionHandler interface
       boolean implementsExceptionHandler = false;
@@ -77,8 +76,7 @@ public class JniExperimentalPackageTest {
         }
       }
       assertTrue(
-          implementsExceptionHandler,
-          "JniExceptionHandlerImpl should implement ExceptionHandler");
+          implementsExceptionHandler, "JniExceptionHandlerImpl should implement ExceptionHandler");
     }
 
     @Test
@@ -166,8 +164,7 @@ public class JniExperimentalPackageTest {
         }
         if ("getHandlerName".equals(methodName)) {
           hasGetHandlerName = true;
-          assertEquals(
-              String.class, method.getReturnType(), "getHandlerName should return String");
+          assertEquals(String.class, method.getReturnType(), "getHandlerName should return String");
         }
         if ("isEnabled".equals(methodName)) {
           hasIsEnabled = true;

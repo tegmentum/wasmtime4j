@@ -240,8 +240,7 @@ class WitResourceManagerTest {
         limitedManager.createResource("test-type", "resource2");
 
         assertThrows(
-            ResourceException.class,
-            () -> limitedManager.createResource("test-type", "resource3"));
+            ResourceException.class, () -> limitedManager.createResource("test-type", "resource3"));
       }
     }
   }
@@ -666,8 +665,7 @@ class WitResourceManagerTest {
     @Test
     @DisplayName("ResourceDestructor should have destroy method")
     void resourceDestructorShouldHaveDestroyMethod() throws NoSuchMethodException {
-      assertNotNull(
-          WitResourceManager.ResourceDestructor.class.getMethod("destroy", Object.class));
+      assertNotNull(WitResourceManager.ResourceDestructor.class.getMethod("destroy", Object.class));
     }
 
     @Test
@@ -675,8 +673,7 @@ class WitResourceManagerTest {
     void shouldUseLambdaAsResourceDestructor() throws WasmException {
       final AtomicBoolean destroyed = new AtomicBoolean(false);
 
-      final WitResourceManager.ResourceDestructor destructor =
-          resource -> destroyed.set(true);
+      final WitResourceManager.ResourceDestructor destructor = resource -> destroyed.set(true);
 
       final WitResourceManager.ResourceTypeInfo typeInfo =
           new WitResourceManager.ResourceTypeInfo("test-type", String.class, destructor);

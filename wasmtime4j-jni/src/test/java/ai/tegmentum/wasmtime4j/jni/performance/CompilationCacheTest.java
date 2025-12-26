@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link CompilationCache} class.
  *
- * <p>This test class verifies the CompilationCache utility class which provides
- * persistent compilation caching for WebAssembly modules to improve startup performance.
+ * <p>This test class verifies the CompilationCache utility class which provides persistent
+ * compilation caching for WebAssembly modules to improve startup performance.
  */
 @DisplayName("CompilationCache Tests")
 class CompilationCacheTest {
@@ -56,7 +56,8 @@ class CompilationCacheTest {
     @Test
     @DisplayName("CompilationCache should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(CompilationCache.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(CompilationCache.class.getModifiers()),
           "CompilationCache should be final");
     }
   }
@@ -91,8 +92,7 @@ class CompilationCacheTest {
     @DisplayName("getCacheDirectory should contain wasmtime4j")
     void getCacheDirectoryShouldContainWasmtime4j() {
       final String cacheDir = CompilationCache.getCacheDirectory();
-      assertTrue(cacheDir.contains("wasmtime4j"),
-          "Cache directory should contain 'wasmtime4j'");
+      assertTrue(cacheDir.contains("wasmtime4j"), "Cache directory should contain 'wasmtime4j'");
     }
   }
 
@@ -103,7 +103,7 @@ class CompilationCacheTest {
     @Test
     @DisplayName("loadFromCache should return null for non-cached module")
     void loadFromCacheShouldReturnNullForNonCachedModule() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D}; // WASM magic
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D}; // WASM magic
       final byte[] cached = CompilationCache.loadFromCache(wasmBytes, "options");
       assertNull(cached, "Should return null for non-cached module");
     }
@@ -112,7 +112,7 @@ class CompilationCacheTest {
     @DisplayName("loadFromCache should return null when disabled")
     void loadFromCacheShouldReturnNullWhenDisabled() {
       CompilationCache.setEnabled(false);
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D};
       final byte[] cached = CompilationCache.loadFromCache(wasmBytes, "options");
       assertNull(cached, "Should return null when disabled");
     }
@@ -134,7 +134,7 @@ class CompilationCacheTest {
     @Test
     @DisplayName("loadFromCache with compilationTimeNs should work")
     void loadFromCacheWithCompilationTimeNsShouldWork() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D};
       final byte[] cached = CompilationCache.loadFromCache(wasmBytes, "options", 1000000L);
       assertNull(cached, "Should return null for non-cached module");
     }
@@ -148,8 +148,8 @@ class CompilationCacheTest {
     @DisplayName("storeInCache should return false when disabled")
     void storeInCacheShouldReturnFalseWhenDisabled() {
       CompilationCache.setEnabled(false);
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D};
-      final byte[] compiled = new byte[]{0x01, 0x02, 0x03};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D};
+      final byte[] compiled = new byte[] {0x01, 0x02, 0x03};
       final boolean stored = CompilationCache.storeInCache(wasmBytes, compiled, "options");
       assertFalse(stored, "Should return false when disabled");
     }
@@ -157,7 +157,7 @@ class CompilationCacheTest {
     @Test
     @DisplayName("storeInCache should return false for null wasmBytes")
     void storeInCacheShouldReturnFalseForNullWasmBytes() {
-      final byte[] compiled = new byte[]{0x01, 0x02, 0x03};
+      final byte[] compiled = new byte[] {0x01, 0x02, 0x03};
       final boolean stored = CompilationCache.storeInCache(null, compiled, "options");
       assertFalse(stored, "Should return false for null wasmBytes");
     }
@@ -165,7 +165,7 @@ class CompilationCacheTest {
     @Test
     @DisplayName("storeInCache should return false for null compiledModule")
     void storeInCacheShouldReturnFalseForNullCompiledModule() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D};
       final boolean stored = CompilationCache.storeInCache(wasmBytes, null, "options");
       assertFalse(stored, "Should return false for null compiledModule");
     }
@@ -173,9 +173,10 @@ class CompilationCacheTest {
     @Test
     @DisplayName("storeInCache with compilationTimeNs should work")
     void storeInCacheWithCompilationTimeNsShouldWork() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
-      final byte[] compiled = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-      final boolean stored = CompilationCache.storeInCache(wasmBytes, compiled, "options", 5000000L);
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
+      final byte[] compiled = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+      final boolean stored =
+          CompilationCache.storeInCache(wasmBytes, compiled, "options", 5000000L);
       assertTrue(stored, "Should store with compilation time");
     }
   }
@@ -187,8 +188,8 @@ class CompilationCacheTest {
     @Test
     @DisplayName("Stored module should be retrievable")
     void storedModuleShouldBeRetrievable() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
-      final byte[] compiled = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
+      final byte[] compiled = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
       final String options = "test-options";
 
       final boolean stored = CompilationCache.storeInCache(wasmBytes, compiled, options);
@@ -202,9 +203,9 @@ class CompilationCacheTest {
     @Test
     @DisplayName("Different options should produce different cache entries")
     void differentOptionsShouldProduceDifferentCacheEntries() {
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
-      final byte[] compiled1 = new byte[]{0x01, 0x02, 0x03, 0x04};
-      final byte[] compiled2 = new byte[]{0x05, 0x06, 0x07, 0x08};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
+      final byte[] compiled1 = new byte[] {0x01, 0x02, 0x03, 0x04};
+      final byte[] compiled2 = new byte[] {0x05, 0x06, 0x07, 0x08};
 
       CompilationCache.storeInCache(wasmBytes, compiled1, "options1");
       CompilationCache.storeInCache(wasmBytes, compiled2, "options2");
@@ -228,8 +229,7 @@ class CompilationCacheTest {
     void getStatisticsShouldReturnFormattedStringWhenEnabled() {
       final String stats = CompilationCache.getStatistics();
       assertNotNull(stats, "Statistics should not be null");
-      assertTrue(stats.contains("Compilation Cache"),
-          "Statistics should contain header");
+      assertTrue(stats.contains("Compilation Cache"), "Statistics should contain header");
     }
 
     @Test
@@ -243,43 +243,51 @@ class CompilationCacheTest {
     @Test
     @DisplayName("getHitRate should return 0 with no operations")
     void getHitRateShouldReturn0WithNoOperations() {
-      assertEquals(0.0, CompilationCache.getHitRate(), 0.01,
-          "Hit rate should be 0 with no operations");
+      assertEquals(
+          0.0, CompilationCache.getHitRate(), 0.01, "Hit rate should be 0 with no operations");
     }
 
     @Test
     @DisplayName("getAverageCacheLoadTimeNs should return 0 with no hits")
     void getAverageCacheLoadTimeNsShouldReturn0WithNoHits() {
-      assertEquals(0.0, CompilationCache.getAverageCacheLoadTimeNs(), 0.01,
+      assertEquals(
+          0.0,
+          CompilationCache.getAverageCacheLoadTimeNs(),
+          0.01,
           "Average load time should be 0 with no hits");
     }
 
     @Test
     @DisplayName("getAverageCacheStoreTimeNs should return 0 with no stores")
     void getAverageCacheStoreTimeNsShouldReturn0WithNoStores() {
-      assertEquals(0.0, CompilationCache.getAverageCacheStoreTimeNs(), 0.01,
+      assertEquals(
+          0.0,
+          CompilationCache.getAverageCacheStoreTimeNs(),
+          0.01,
           "Average store time should be 0 with no stores");
     }
 
     @Test
     @DisplayName("getTotalCompilationTimeSavedNs should return 0 initially")
     void getTotalCompilationTimeSavedNsShouldReturn0Initially() {
-      assertEquals(0, CompilationCache.getTotalCompilationTimeSavedNs(),
-          "Time saved should be 0 initially");
+      assertEquals(
+          0, CompilationCache.getTotalCompilationTimeSavedNs(), "Time saved should be 0 initially");
     }
 
     @Test
     @DisplayName("getCompilationTimeSavingsPercentage should return 0 with no data")
     void getCompilationTimeSavingsPercentageShouldReturn0WithNoData() {
-      assertEquals(0.0, CompilationCache.getCompilationTimeSavingsPercentage(), 0.01,
+      assertEquals(
+          0.0,
+          CompilationCache.getCompilationTimeSavingsPercentage(),
+          0.01,
           "Savings percentage should be 0 with no data");
     }
 
     @Test
     @DisplayName("getCacheSizeBytes should return non-negative value")
     void getCacheSizeBytesShouldReturnNonNegativeValue() {
-      assertTrue(CompilationCache.getCacheSizeBytes() >= 0,
-          "Cache size should be non-negative");
+      assertTrue(CompilationCache.getCacheSizeBytes() >= 0, "Cache size should be non-negative");
     }
 
     @Test
@@ -287,7 +295,8 @@ class CompilationCacheTest {
     void getPerformanceMetricsShouldReturnFormattedString() {
       final String metrics = CompilationCache.getPerformanceMetrics();
       assertNotNull(metrics, "Performance metrics should not be null");
-      assertTrue(metrics.contains("Cache Performance") || metrics.contains("hit_rate"),
+      assertTrue(
+          metrics.contains("Cache Performance") || metrics.contains("hit_rate"),
           "Should contain performance information");
     }
   }
@@ -306,23 +315,21 @@ class CompilationCacheTest {
     @DisplayName("clear should reset hit rate")
     void clearShouldResetHitRate() {
       // Generate some cache activity
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
-      final byte[] compiled = new byte[]{0x01, 0x02, 0x03, 0x04};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
+      final byte[] compiled = new byte[] {0x01, 0x02, 0x03, 0x04};
       CompilationCache.storeInCache(wasmBytes, compiled, "options");
       CompilationCache.loadFromCache(wasmBytes, "options");
 
       CompilationCache.clear();
 
-      assertEquals(0.0, CompilationCache.getHitRate(), 0.01,
-          "Hit rate should be 0 after clear");
+      assertEquals(0.0, CompilationCache.getHitRate(), 0.01, "Hit rate should be 0 after clear");
     }
 
     @Test
     @DisplayName("clear should not throw when disabled")
     void clearShouldNotThrowWhenDisabled() {
       CompilationCache.setEnabled(false);
-      assertDoesNotThrow(() -> CompilationCache.clear(),
-          "clear should not throw when disabled");
+      assertDoesNotThrow(() -> CompilationCache.clear(), "clear should not throw when disabled");
     }
   }
 
@@ -333,15 +340,16 @@ class CompilationCacheTest {
     @Test
     @DisplayName("performMaintenance should not throw")
     void performMaintenanceShouldNotThrow() {
-      assertDoesNotThrow(() -> CompilationCache.performMaintenance(),
-          "performMaintenance should not throw");
+      assertDoesNotThrow(
+          () -> CompilationCache.performMaintenance(), "performMaintenance should not throw");
     }
 
     @Test
     @DisplayName("performMaintenance should not throw when disabled")
     void performMaintenanceShouldNotThrowWhenDisabled() {
       CompilationCache.setEnabled(false);
-      assertDoesNotThrow(() -> CompilationCache.performMaintenance(),
+      assertDoesNotThrow(
+          () -> CompilationCache.performMaintenance(),
           "performMaintenance should not throw when disabled");
     }
   }
@@ -353,8 +361,8 @@ class CompilationCacheTest {
     @Test
     @DisplayName("incrementGeneration should not throw")
     void incrementGenerationShouldNotThrow() {
-      assertDoesNotThrow(() -> CompilationCache.incrementGeneration(),
-          "incrementGeneration should not throw");
+      assertDoesNotThrow(
+          () -> CompilationCache.incrementGeneration(), "incrementGeneration should not throw");
     }
   }
 
@@ -366,13 +374,14 @@ class CompilationCacheTest {
     @DisplayName("Full cache lifecycle should work")
     void fullCacheLifecycleShouldWork() {
       // Store a module
-      final byte[] wasmBytes = new byte[]{0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
+      final byte[] wasmBytes = new byte[] {0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00};
       final byte[] compiled = new byte[100];
       for (int i = 0; i < compiled.length; i++) {
         compiled[i] = (byte) i;
       }
 
-      assertTrue(CompilationCache.storeInCache(wasmBytes, compiled, "options", 10000000L),
+      assertTrue(
+          CompilationCache.storeInCache(wasmBytes, compiled, "options", 10000000L),
           "Should store successfully");
 
       // Load the module
@@ -382,8 +391,8 @@ class CompilationCacheTest {
 
       // Check statistics
       final String stats = CompilationCache.getStatistics();
-      assertTrue(stats.contains("hit") || stats.contains("Cache"),
-          "Statistics should be available");
+      assertTrue(
+          stats.contains("hit") || stats.contains("Cache"), "Statistics should be available");
 
       // Clear the cache
       CompilationCache.clear();

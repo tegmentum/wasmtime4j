@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirEntry;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileStats;
@@ -134,7 +133,8 @@ class PanamaWasiFilesystemTest {
       assertNotNull(field, "fdCounter field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "fdCounter should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "fdCounter should be private");
-      assertEquals(AtomicInteger.class, field.getType(), "fdCounter should be of type AtomicInteger");
+      assertEquals(
+          AtomicInteger.class, field.getType(), "fdCounter should be of type AtomicInteger");
     }
 
     @Test
@@ -162,9 +162,12 @@ class PanamaWasiFilesystemTest {
     void shouldHaveCurrentWorkingDirectoryField() throws NoSuchFieldException {
       Field field = PanamaWasiFilesystem.class.getDeclaredField("currentWorkingDirectory");
       assertNotNull(field, "currentWorkingDirectory field should exist");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "currentWorkingDirectory should be private");
-      assertTrue(Modifier.isVolatile(field.getModifiers()), "currentWorkingDirectory should be volatile");
-      assertEquals(String.class, field.getType(), "currentWorkingDirectory should be of type String");
+      assertTrue(
+          Modifier.isPrivate(field.getModifiers()), "currentWorkingDirectory should be private");
+      assertTrue(
+          Modifier.isVolatile(field.getModifiers()), "currentWorkingDirectory should be volatile");
+      assertEquals(
+          String.class, field.getType(), "currentWorkingDirectory should be of type String");
     }
 
     @Test
@@ -192,13 +195,9 @@ class PanamaWasiFilesystemTest {
       Constructor<?> constructor = PanamaWasiFilesystem.class.getConstructor(Path.class);
       assertNotNull(constructor, "Path constructor should exist");
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "Path constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "Path constructor should be public");
       assertEquals(1, constructor.getParameterCount(), "Constructor should have 1 parameter");
-      assertEquals(
-          Path.class,
-          constructor.getParameterTypes()[0],
-          "Parameter should be Path");
+      assertEquals(Path.class, constructor.getParameterTypes()[0], "Parameter should be Path");
     }
   }
 
@@ -213,13 +212,12 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have openFile method")
     void shouldHaveOpenFileMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "openFile", String.class, WasiOpenFlags.class, WasiRights.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod(
+              "openFile", String.class, WasiOpenFlags.class, WasiRights.class);
       assertNotNull(method, "openFile method should exist");
       assertEquals(
-          WasiFileHandle.class,
-          method.getReturnType(),
-          "openFile should return WasiFileHandle");
+          WasiFileHandle.class, method.getReturnType(), "openFile should return WasiFileHandle");
       assertEquals(3, method.getParameterCount(), "openFile should have 3 parameters");
       assertTrue(
           Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
@@ -240,8 +238,9 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have readFile method")
     void shouldHaveReadFileMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "readFile", WasiFileHandle.class, ByteBuffer.class, long.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod(
+              "readFile", WasiFileHandle.class, ByteBuffer.class, long.class);
       assertNotNull(method, "readFile method should exist");
       assertEquals(long.class, method.getReturnType(), "readFile should return long");
       assertEquals(3, method.getParameterCount(), "readFile should have 3 parameters");
@@ -250,8 +249,9 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have writeFile method")
     void shouldHaveWriteFileMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "writeFile", WasiFileHandle.class, ByteBuffer.class, long.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod(
+              "writeFile", WasiFileHandle.class, ByteBuffer.class, long.class);
       assertNotNull(method, "writeFile method should exist");
       assertEquals(long.class, method.getReturnType(), "writeFile should return long");
       assertEquals(3, method.getParameterCount(), "writeFile should have 3 parameters");
@@ -277,8 +277,8 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have openDirectory method")
     void shouldHaveOpenDirectoryMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "openDirectory", String.class, WasiRights.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod("openDirectory", String.class, WasiRights.class);
       assertNotNull(method, "openDirectory method should exist");
       assertEquals(
           WasiDirectoryHandle.class,
@@ -299,8 +299,9 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have createDirectory method")
     void shouldHaveCreateDirectoryMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "createDirectory", String.class, WasiPermissions.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod(
+              "createDirectory", String.class, WasiPermissions.class);
       assertNotNull(method, "createDirectory method should exist");
       assertEquals(void.class, method.getReturnType(), "createDirectory should return void");
     }
@@ -328,16 +329,14 @@ class PanamaWasiFilesystemTest {
       Method method = PanamaWasiFilesystem.class.getMethod("getFileStats", String.class);
       assertNotNull(method, "getFileStats method should exist");
       assertEquals(
-          WasiFileStats.class,
-          method.getReturnType(),
-          "getFileStats should return WasiFileStats");
+          WasiFileStats.class, method.getReturnType(), "getFileStats should return WasiFileStats");
     }
 
     @Test
     @DisplayName("should have setFileStats method")
     void shouldHaveSetFileStatsMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "setFileStats", String.class, WasiFileStats.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod("setFileStats", String.class, WasiFileStats.class);
       assertNotNull(method, "setFileStats method should exist");
       assertEquals(void.class, method.getReturnType(), "setFileStats should return void");
     }
@@ -345,8 +344,9 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have setFilePermissions method")
     void shouldHaveSetFilePermissionsMethod() throws NoSuchMethodException {
-      Method method = PanamaWasiFilesystem.class.getMethod(
-          "setFilePermissions", String.class, WasiPermissions.class);
+      Method method =
+          PanamaWasiFilesystem.class.getMethod(
+              "setFilePermissions", String.class, WasiPermissions.class);
       assertNotNull(method, "setFilePermissions method should exist");
       assertEquals(void.class, method.getReturnType(), "setFilePermissions should return void");
     }
@@ -416,9 +416,7 @@ class PanamaWasiFilesystemTest {
       Method method = PanamaWasiFilesystem.class.getMethod("getCurrentWorkingDirectory");
       assertNotNull(method, "getCurrentWorkingDirectory method should exist");
       assertEquals(
-          String.class,
-          method.getReturnType(),
-          "getCurrentWorkingDirectory should return String");
+          String.class, method.getReturnType(), "getCurrentWorkingDirectory should return String");
       assertEquals(
           0, method.getParameterCount(), "getCurrentWorkingDirectory should have no parameters");
     }
@@ -430,9 +428,7 @@ class PanamaWasiFilesystemTest {
           PanamaWasiFilesystem.class.getMethod("setCurrentWorkingDirectory", String.class);
       assertNotNull(method, "setCurrentWorkingDirectory method should exist");
       assertEquals(
-          void.class,
-          method.getReturnType(),
-          "setCurrentWorkingDirectory should return void");
+          void.class, method.getReturnType(), "setCurrentWorkingDirectory should return void");
     }
   }
 
@@ -517,8 +513,7 @@ class PanamaWasiFilesystemTest {
           PanamaWasiFilesystem.class.getDeclaredMethod("validatePathWithinSandbox", Path.class);
       assertNotNull(method, "validatePathWithinSandbox method should exist");
       assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "validatePathWithinSandbox should be private");
+          Modifier.isPrivate(method.getModifiers()), "validatePathWithinSandbox should be private");
       assertTrue(
           Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
           "validatePathWithinSandbox should throw WasmException");
@@ -563,11 +558,9 @@ class PanamaWasiFilesystemTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
             assertFalse(
                 Modifier.isAbstract(implMethod.getModifiers()),
                 "Method " + interfaceMethod.getName() + " should not be abstract");
@@ -627,9 +620,10 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have expected number of public methods")
     void shouldHaveExpectedPublicMethods() {
-      long publicMethodCount = Arrays.stream(PanamaWasiFilesystem.class.getDeclaredMethods())
-          .filter(m -> Modifier.isPublic(m.getModifiers()))
-          .count();
+      long publicMethodCount =
+          Arrays.stream(PanamaWasiFilesystem.class.getDeclaredMethods())
+              .filter(m -> Modifier.isPublic(m.getModifiers()))
+              .count();
       assertTrue(
           publicMethodCount >= 15,
           "PanamaWasiFilesystem should have at least 15 public methods, found: "
@@ -639,9 +633,10 @@ class PanamaWasiFilesystemTest {
     @Test
     @DisplayName("should have expected number of private methods")
     void shouldHaveExpectedPrivateMethods() {
-      long privateMethodCount = Arrays.stream(PanamaWasiFilesystem.class.getDeclaredMethods())
-          .filter(m -> Modifier.isPrivate(m.getModifiers()))
-          .count();
+      long privateMethodCount =
+          Arrays.stream(PanamaWasiFilesystem.class.getDeclaredMethods())
+              .filter(m -> Modifier.isPrivate(m.getModifiers()))
+              .count();
       assertTrue(
           privateMethodCount >= 3,
           "PanamaWasiFilesystem should have at least 3 private helper methods, found: "

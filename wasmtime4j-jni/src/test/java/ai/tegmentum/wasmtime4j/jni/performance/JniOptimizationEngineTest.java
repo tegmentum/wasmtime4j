@@ -35,9 +35,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link JniOptimizationEngine} class.
  *
- * <p>This test class verifies the JniOptimizationEngine singleton class which provides
- * advanced JNI optimization including call batching, thread-local resource pools,
- * and GC-aware scheduling.
+ * <p>This test class verifies the JniOptimizationEngine singleton class which provides advanced JNI
+ * optimization including call batching, thread-local resource pools, and GC-aware scheduling.
  */
 @DisplayName("JniOptimizationEngine Tests")
 class JniOptimizationEngineTest {
@@ -65,7 +64,8 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("JniOptimizationEngine should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(JniOptimizationEngine.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(JniOptimizationEngine.class.getModifiers()),
           "JniOptimizationEngine should be final");
     }
   }
@@ -107,8 +107,7 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("Should have exactly 5 strategies")
     void shouldHaveExactly5Strategies() {
-      assertEquals(5, OptimizationStrategy.values().length,
-          "Should have exactly 5 strategies");
+      assertEquals(5, OptimizationStrategy.values().length, "Should have exactly 5 strategies");
     }
 
     @Test
@@ -155,8 +154,7 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("Should have THREAD_LOCAL value")
     void shouldHaveThreadLocalValue() {
-      assertNotNull(AllocationStrategy.valueOf("THREAD_LOCAL"),
-          "Should have THREAD_LOCAL value");
+      assertNotNull(AllocationStrategy.valueOf("THREAD_LOCAL"), "Should have THREAD_LOCAL value");
     }
 
     @Test
@@ -174,8 +172,8 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("Should have exactly 4 allocation strategies")
     void shouldHaveExactly4AllocationStrategies() {
-      assertEquals(4, AllocationStrategy.values().length,
-          "Should have exactly 4 allocation strategies");
+      assertEquals(
+          4, AllocationStrategy.values().length, "Should have exactly 4 allocation strategies");
     }
 
     @Test
@@ -187,8 +185,8 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("THREAD_LOCAL should be at ordinal 1")
     void threadLocalShouldBeAtOrdinal1() {
-      assertEquals(1, AllocationStrategy.THREAD_LOCAL.ordinal(),
-          "THREAD_LOCAL should be at ordinal 1");
+      assertEquals(
+          1, AllocationStrategy.THREAD_LOCAL.ordinal(), "THREAD_LOCAL should be at ordinal 1");
     }
 
     @Test
@@ -231,7 +229,8 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("isOptimizationEnabled should return true by default")
     void isOptimizationEnabledShouldReturnTrueByDefault() {
-      assertTrue(JniOptimizationEngine.isOptimizationEnabled(),
+      assertTrue(
+          JniOptimizationEngine.isOptimizationEnabled(),
           "Optimization should be enabled by default");
     }
 
@@ -239,12 +238,10 @@ class JniOptimizationEngineTest {
     @DisplayName("setOptimizationEnabled should update state")
     void setOptimizationEnabledShouldUpdateState() {
       JniOptimizationEngine.setOptimizationEnabled(false);
-      assertFalse(JniOptimizationEngine.isOptimizationEnabled(),
-          "Optimization should be disabled");
+      assertFalse(JniOptimizationEngine.isOptimizationEnabled(), "Optimization should be disabled");
 
       JniOptimizationEngine.setOptimizationEnabled(true);
-      assertTrue(JniOptimizationEngine.isOptimizationEnabled(),
-          "Optimization should be enabled");
+      assertTrue(JniOptimizationEngine.isOptimizationEnabled(), "Optimization should be enabled");
     }
   }
 
@@ -255,7 +252,7 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("optimizeCall should execute operation and return result")
     void optimizeCallShouldExecuteOperationAndReturnResult() throws Exception {
-      final String result = engine.optimizeCall("testMethod", new Object[]{}, () -> "test result");
+      final String result = engine.optimizeCall("testMethod", new Object[] {}, () -> "test result");
       assertEquals("test result", result, "Should return operation result");
     }
 
@@ -270,7 +267,7 @@ class JniOptimizationEngineTest {
     @DisplayName("optimizeCall should bypass optimization when disabled")
     void optimizeCallShouldBypassOptimizationWhenDisabled() throws Exception {
       JniOptimizationEngine.setOptimizationEnabled(false);
-      final String result = engine.optimizeCall("testMethod", new Object[]{}, () -> "direct");
+      final String result = engine.optimizeCall("testMethod", new Object[] {}, () -> "direct");
       assertEquals("direct", result, "Should return direct result");
     }
 
@@ -278,13 +275,15 @@ class JniOptimizationEngineTest {
     @DisplayName("optimizeCall should propagate exceptions")
     void optimizeCallShouldPropagateExceptions() {
       try {
-        engine.optimizeCall("testMethod", new Object[]{}, () -> {
-          throw new RuntimeException("Test exception");
-        });
+        engine.optimizeCall(
+            "testMethod",
+            new Object[] {},
+            () -> {
+              throw new RuntimeException("Test exception");
+            });
         assertTrue(false, "Should have thrown exception");
       } catch (Exception e) {
-        assertTrue(e.getMessage().contains("Test exception"),
-            "Should propagate exception");
+        assertTrue(e.getMessage().contains("Test exception"), "Should propagate exception");
       }
     }
   }
@@ -396,16 +395,15 @@ class JniOptimizationEngineTest {
     @DisplayName("optimizeAllocation should return THREAD_LOCAL for small sizes")
     void optimizeAllocationShouldReturnThreadLocalForSmallSizes() {
       final AllocationStrategy strategy = engine.optimizeAllocation(100, "test");
-      assertEquals(AllocationStrategy.THREAD_LOCAL, strategy,
-          "Should return THREAD_LOCAL for small sizes");
+      assertEquals(
+          AllocationStrategy.THREAD_LOCAL, strategy, "Should return THREAD_LOCAL for small sizes");
     }
 
     @Test
     @DisplayName("optimizeAllocation should return POOLED for medium sizes")
     void optimizeAllocationShouldReturnPooledForMediumSizes() {
       final AllocationStrategy strategy = engine.optimizeAllocation(1000, "test");
-      assertEquals(AllocationStrategy.POOLED, strategy,
-          "Should return POOLED for medium sizes");
+      assertEquals(AllocationStrategy.POOLED, strategy, "Should return POOLED for medium sizes");
     }
 
     @Test
@@ -425,15 +423,15 @@ class JniOptimizationEngineTest {
     void getOptimizationStatsShouldReturnFormattedString() {
       final String stats = engine.getOptimizationStats();
       assertNotNull(stats, "Stats should not be null");
-      assertTrue(stats.contains("JNI Optimization"),
-          "Stats should contain header");
+      assertTrue(stats.contains("JNI Optimization"), "Stats should contain header");
     }
 
     @Test
     @DisplayName("getOptimizationStats should include enabled state")
     void getOptimizationStatsShouldIncludeEnabledState() {
       final String stats = engine.getOptimizationStats();
-      assertTrue(stats.contains("enabled") || stats.contains("Optimization"),
+      assertTrue(
+          stats.contains("enabled") || stats.contains("Optimization"),
           "Stats should include enabled state");
     }
   }
@@ -446,13 +444,12 @@ class JniOptimizationEngineTest {
     @DisplayName("reset should clear statistics")
     void resetShouldClearStatistics() throws Exception {
       // Generate some statistics
-      engine.optimizeCall("testMethod", new Object[]{}, () -> "result");
+      engine.optimizeCall("testMethod", new Object[] {}, () -> "result");
 
       engine.reset();
 
       final String stats = engine.getOptimizationStats();
-      assertTrue(stats.contains("0") || stats.contains("calls"),
-          "Stats should be reset");
+      assertTrue(stats.contains("0") || stats.contains("calls"), "Stats should be reset");
     }
 
     @Test
@@ -480,8 +477,9 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("OptimizedOperation should be functional interface")
     void shouldBeFunctionalInterface() {
-      assertTrue(JniOptimizationEngine.OptimizedOperation.class
-              .isAnnotationPresent(FunctionalInterface.class),
+      assertTrue(
+          JniOptimizationEngine.OptimizedOperation.class.isAnnotationPresent(
+              FunctionalInterface.class),
           "OptimizedOperation should be annotated with @FunctionalInterface");
     }
 
@@ -500,7 +498,8 @@ class JniOptimizationEngineTest {
     @Test
     @DisplayName("CriticalSectionToken should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(CriticalSectionToken.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(CriticalSectionToken.class.getModifiers()),
           "CriticalSectionToken should be final");
     }
 
@@ -508,8 +507,7 @@ class JniOptimizationEngineTest {
     @DisplayName("CriticalSectionToken should store section name")
     void shouldStoreSectionName() {
       final CriticalSectionToken token = engine.enterCriticalSection("my_section");
-      assertEquals("my_section", token.getSectionName(),
-          "Should store section name correctly");
+      assertEquals("my_section", token.getSectionName(), "Should store section name correctly");
     }
   }
 
@@ -521,12 +519,11 @@ class JniOptimizationEngineTest {
     @DisplayName("Multiple optimized calls should be tracked")
     void multipleOptimizedCallsShouldBeTracked() throws Exception {
       for (int i = 0; i < 15; i++) {
-        engine.optimizeCall("frequentMethod", new Object[]{1, 2}, () -> "result");
+        engine.optimizeCall("frequentMethod", new Object[] {1, 2}, () -> "result");
       }
 
       final String stats = engine.getOptimizationStats();
-      assertTrue(stats.contains("frequentMethod") || stats.contains("calls"),
-          "Should track calls");
+      assertTrue(stats.contains("frequentMethod") || stats.contains("calls"), "Should track calls");
     }
   }
 }

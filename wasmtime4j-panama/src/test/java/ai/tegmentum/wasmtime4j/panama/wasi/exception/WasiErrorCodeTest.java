@@ -84,8 +84,8 @@ class WasiErrorCodeTest {
     void allErrorCodesShouldHaveDescriptions() {
       for (WasiErrorCode code : WasiErrorCode.values()) {
         assertNotNull(code.getDescription(), "Description should not be null: " + code.name());
-        assertFalse(code.getDescription().isEmpty(),
-            "Description should not be empty: " + code.name());
+        assertFalse(
+            code.getDescription().isEmpty(), "Description should not be empty: " + code.name());
       }
     }
   }
@@ -109,11 +109,11 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("Network errors should be marked correctly")
     void networkErrorsShouldBeMarkedCorrectly() {
-      assertTrue(WasiErrorCode.ECONNREFUSED.isNetworkError(),
-          "ECONNREFUSED should be network error");
+      assertTrue(
+          WasiErrorCode.ECONNREFUSED.isNetworkError(), "ECONNREFUSED should be network error");
       assertTrue(WasiErrorCode.ETIMEDOUT.isNetworkError(), "ETIMEDOUT should be network error");
-      assertTrue(WasiErrorCode.EHOSTUNREACH.isNetworkError(),
-          "EHOSTUNREACH should be network error");
+      assertTrue(
+          WasiErrorCode.EHOSTUNREACH.isNetworkError(), "EHOSTUNREACH should be network error");
       assertTrue(WasiErrorCode.ENETDOWN.isNetworkError(), "ENETDOWN should be network error");
       assertTrue(WasiErrorCode.ECONNRESET.isNetworkError(), "ECONNRESET should be network error");
     }
@@ -129,25 +129,26 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("Resource limit errors should be marked correctly")
     void resourceLimitErrorsShouldBeMarkedCorrectly() {
-      assertTrue(WasiErrorCode.ENOMEM.isResourceLimitError(),
-          "ENOMEM should be resource limit error");
-      assertTrue(WasiErrorCode.EMFILE.isResourceLimitError(),
-          "EMFILE should be resource limit error");
-      assertTrue(WasiErrorCode.ENOBUFS.isResourceLimitError(),
-          "ENOBUFS should be resource limit error");
-      assertTrue(WasiErrorCode.EAGAIN.isResourceLimitError(),
-          "EAGAIN should be resource limit error");
+      assertTrue(
+          WasiErrorCode.ENOMEM.isResourceLimitError(), "ENOMEM should be resource limit error");
+      assertTrue(
+          WasiErrorCode.EMFILE.isResourceLimitError(), "EMFILE should be resource limit error");
+      assertTrue(
+          WasiErrorCode.ENOBUFS.isResourceLimitError(), "ENOBUFS should be resource limit error");
+      assertTrue(
+          WasiErrorCode.EAGAIN.isResourceLimitError(), "EAGAIN should be resource limit error");
     }
 
     @Test
     @DisplayName("SUCCESS should not be any error type")
     void successShouldNotBeAnyErrorType() {
-      assertFalse(WasiErrorCode.SUCCESS.isFileSystemError(),
-          "SUCCESS should not be file system error");
+      assertFalse(
+          WasiErrorCode.SUCCESS.isFileSystemError(), "SUCCESS should not be file system error");
       assertFalse(WasiErrorCode.SUCCESS.isNetworkError(), "SUCCESS should not be network error");
-      assertFalse(WasiErrorCode.SUCCESS.isPermissionError(),
-          "SUCCESS should not be permission error");
-      assertFalse(WasiErrorCode.SUCCESS.isResourceLimitError(),
+      assertFalse(
+          WasiErrorCode.SUCCESS.isPermissionError(), "SUCCESS should not be permission error");
+      assertFalse(
+          WasiErrorCode.SUCCESS.isResourceLimitError(),
           "SUCCESS should not be resource limit error");
     }
   }
@@ -190,7 +191,9 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("fromErrno should throw for unknown errno")
     void fromErrnoShouldThrowForUnknownErrno() {
-      assertThrows(IllegalArgumentException.class, () -> WasiErrorCode.fromErrno(999),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiErrorCode.fromErrno(999),
           "Should throw for unknown errno");
     }
 
@@ -198,7 +201,9 @@ class WasiErrorCodeTest {
     @DisplayName("fromErrno should throw for negative errno")
     void fromErrnoShouldThrowForNegativeErrno() {
       // Note: -1 is used for UNKNOWN, so test with -999
-      assertThrows(IllegalArgumentException.class, () -> WasiErrorCode.fromErrno(-999),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiErrorCode.fromErrno(-999),
           "Should throw for very negative errno");
     }
   }
@@ -210,8 +215,8 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("fromErrnoOrNull should return correct error code")
     void fromErrnoOrNullShouldReturnCorrectErrorCode() {
-      assertEquals(WasiErrorCode.SUCCESS, WasiErrorCode.fromErrnoOrNull(0),
-          "Should return SUCCESS");
+      assertEquals(
+          WasiErrorCode.SUCCESS, WasiErrorCode.fromErrnoOrNull(0), "Should return SUCCESS");
       assertEquals(WasiErrorCode.EPERM, WasiErrorCode.fromErrnoOrNull(1), "Should return EPERM");
     }
 
@@ -229,8 +234,8 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("createGeneric should return UNKNOWN")
     void createGenericShouldReturnUnknown() {
-      assertEquals(WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(999),
-          "Should return UNKNOWN");
+      assertEquals(
+          WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(999), "Should return UNKNOWN");
       assertEquals(WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(-1), "Should return UNKNOWN");
     }
   }
@@ -296,7 +301,9 @@ class WasiErrorCodeTest {
     @Test
     @DisplayName("EWOULDBLOCK and EAGAIN should have same errno")
     void ewouldblockAndEagainShouldHaveSameErrno() {
-      assertEquals(WasiErrorCode.EAGAIN.getErrno(), WasiErrorCode.EWOULDBLOCK.getErrno(),
+      assertEquals(
+          WasiErrorCode.EAGAIN.getErrno(),
+          WasiErrorCode.EWOULDBLOCK.getErrno(),
           "EAGAIN and EWOULDBLOCK should have same errno (POSIX standard)");
     }
   }

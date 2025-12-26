@@ -34,14 +34,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Comprehensive tests for {@link WasiFileSystem}.
- */
+/** Comprehensive tests for {@link WasiFileSystem}. */
 @DisplayName("WasiFileSystem Tests")
 class WasiFileSystemTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private WasiContext testContext;
   private WasiFileSystem fileSystem;
@@ -79,7 +76,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiFileSystem(null),
           "Should throw on null context");
     }
@@ -134,7 +132,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.openFile(null, WasiFileOperation.READ, false, false),
           "Should throw on null path");
     }
@@ -142,7 +141,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on empty path")
     void shouldThrowOnEmptyPath() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.openFile("", WasiFileOperation.READ, false, false),
           "Should throw on empty path");
     }
@@ -150,7 +150,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on null operation")
     void shouldThrowOnNullOperation() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.openFile("test.txt", null, false, false),
           "Should throw on null operation");
     }
@@ -181,7 +182,8 @@ class WasiFileSystemTest {
       writeStringToFile(testFile, "test");
       final int fd = fileSystem.openFile("read2.txt", WasiFileOperation.READ, false, false);
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.readFile(fd, null, 0, 10),
           "Should throw on null buffer");
     }
@@ -194,7 +196,8 @@ class WasiFileSystemTest {
       final int fd = fileSystem.openFile("read3.txt", WasiFileOperation.READ, false, false);
       final byte[] buffer = new byte[100];
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.readFile(fd, buffer, -1, 10),
           "Should throw on negative offset");
     }
@@ -207,7 +210,8 @@ class WasiFileSystemTest {
       final int fd = fileSystem.openFile("read4.txt", WasiFileOperation.READ, false, false);
       final byte[] buffer = new byte[10];
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.readFile(fd, buffer, 5, 10),
           "Should throw on buffer overflow");
     }
@@ -217,7 +221,8 @@ class WasiFileSystemTest {
     void shouldThrowOnInvalidFileDescriptor() {
       final byte[] buffer = new byte[100];
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.readFile(999, buffer, 0, buffer.length),
           "Should throw on invalid file descriptor");
     }
@@ -247,7 +252,8 @@ class WasiFileSystemTest {
       Files.createFile(testFile);
       final int fd = fileSystem.openFile("write2.txt", WasiFileOperation.WRITE, false, false);
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.writeFile(fd, null, 0, 10),
           "Should throw on null buffer");
     }
@@ -260,7 +266,8 @@ class WasiFileSystemTest {
       final int fd = fileSystem.openFile("readonly.txt", WasiFileOperation.READ, false, false);
       final byte[] data = "test".getBytes();
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.writeFile(fd, data, 0, data.length),
           "Should throw when writing to read-only file");
     }
@@ -289,7 +296,8 @@ class WasiFileSystemTest {
       writeStringToFile(testFile, "test");
       final int fd = fileSystem.openFile("seek2.txt", WasiFileOperation.READ, false, false);
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.seekFile(fd, 0, 99),
           "Should throw on invalid whence");
     }
@@ -315,7 +323,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on invalid file descriptor")
     void shouldThrowOnInvalidFileDescriptor() {
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.closeFile(999),
           "Should throw on invalid file descriptor");
     }
@@ -353,7 +362,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> fileSystem.getFileMetadata(null),
           "Should throw on null path");
     }
@@ -394,7 +404,8 @@ class WasiFileSystemTest {
       final Path file = tempDir.resolve("notdir.txt");
       Files.createFile(file);
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.listDirectory("notdir.txt"),
           "Should throw on non-directory path");
     }
@@ -418,7 +429,8 @@ class WasiFileSystemTest {
       final Path dir = tempDir.resolve("existingdir");
       Files.createDirectory(dir);
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.createDirectory("existingdir"),
           "Should throw when directory exists");
     }
@@ -453,7 +465,8 @@ class WasiFileSystemTest {
     @Test
     @DisplayName("Should throw on non-existent path")
     void shouldThrowOnNonExistentPath() {
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> fileSystem.removeFileOrDirectory("nonexistent"),
           "Should throw on non-existent path");
     }
@@ -502,7 +515,7 @@ class WasiFileSystemTest {
   /**
    * Helper method to write string to file - Java 8 compatible alternative to Files.writeString().
    *
-   * @param path    the path to write to
+   * @param path the path to write to
    * @param content the string content to write
    * @throws IOException if writing fails
    */

@@ -69,9 +69,7 @@ class JniWasiExitTest {
     @DisplayName("should implement WasiExit interface")
     void shouldImplementWasiExitInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit();
-      assertTrue(
-          WasiExit.class.isAssignableFrom(clazz),
-          "JniWasiExit should implement WasiExit");
+      assertTrue(WasiExit.class.isAssignableFrom(clazz), "JniWasiExit should implement WasiExit");
     }
   }
 
@@ -93,7 +91,8 @@ class JniWasiExitTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -230,8 +229,7 @@ class JniWasiExitTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

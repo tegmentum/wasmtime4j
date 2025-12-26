@@ -39,16 +39,17 @@ class WasiFileStatTest {
     @Test
     @DisplayName("should create file stat with all fields")
     void shouldCreateFileStatWithAllFields() {
-      final WasiFileStat stat = new WasiFileStat(
-          1L, // device
-          100L, // inode
-          4, // fileType (REGULAR_FILE)
-          2L, // linkCount
-          1024L, // size
-          1000000000L, // accessTime
-          2000000000L, // modificationTime
-          3000000000L // changeTime
-      );
+      final WasiFileStat stat =
+          new WasiFileStat(
+              1L, // device
+              100L, // inode
+              4, // fileType (REGULAR_FILE)
+              2L, // linkCount
+              1024L, // size
+              1000000000L, // accessTime
+              2000000000L, // modificationTime
+              3000000000L // changeTime
+              );
 
       assertNotNull(stat, "WasiFileStat should be created");
     }
@@ -74,16 +75,17 @@ class WasiFileStatTest {
   @DisplayName("Getter Tests")
   class GetterTests {
 
-    private final WasiFileStat stat = new WasiFileStat(
-        123L, // device
-        456L, // inode
-        4, // fileType
-        3L, // linkCount
-        2048L, // size
-        1609459200000000000L, // accessTime (Jan 1, 2021 in nanoseconds)
-        1612137600000000000L, // modificationTime (Feb 1, 2021 in nanoseconds)
-        1614556800000000000L // changeTime (Mar 1, 2021 in nanoseconds)
-    );
+    private final WasiFileStat stat =
+        new WasiFileStat(
+            123L, // device
+            456L, // inode
+            4, // fileType
+            3L, // linkCount
+            2048L, // size
+            1609459200000000000L, // accessTime (Jan 1, 2021 in nanoseconds)
+            1612137600000000000L, // modificationTime (Feb 1, 2021 in nanoseconds)
+            1614556800000000000L // changeTime (Mar 1, 2021 in nanoseconds)
+            );
 
     @Test
     @DisplayName("getDevice should return device ID")
@@ -204,7 +206,8 @@ class WasiFileStatTest {
     @DisplayName("should handle large nanosecond timestamps")
     void shouldHandleLargeNanosecondTimestamps() {
       final long futureTime = 2524608000000000000L; // Year 2050 in nanoseconds
-      final WasiFileStat stat = new WasiFileStat(0L, 0L, 4, 0L, 0L, futureTime, futureTime, futureTime);
+      final WasiFileStat stat =
+          new WasiFileStat(0L, 0L, 4, 0L, 0L, futureTime, futureTime, futureTime);
 
       assertEquals(futureTime, stat.getAccessTime());
       assertEquals(futureTime, stat.getModificationTime());
@@ -231,7 +234,8 @@ class WasiFileStatTest {
     @Test
     @DisplayName("WasiFileStat should be final class")
     void wasiFileStatShouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WasiFileStat.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(WasiFileStat.class.getModifiers()),
           "WasiFileStat should be final");
     }
 
@@ -240,7 +244,8 @@ class WasiFileStatTest {
     void shouldHaveNoSetterMethods() {
       final java.lang.reflect.Method[] methods = WasiFileStat.class.getDeclaredMethods();
       for (final java.lang.reflect.Method method : methods) {
-        assertTrue(!method.getName().startsWith("set"),
+        assertTrue(
+            !method.getName().startsWith("set"),
             "Should not have setter method: " + method.getName());
       }
     }

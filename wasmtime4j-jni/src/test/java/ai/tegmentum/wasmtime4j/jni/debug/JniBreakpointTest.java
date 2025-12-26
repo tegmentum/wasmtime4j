@@ -29,9 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniBreakpoint}.
- */
+/** Comprehensive tests for {@link JniBreakpoint}. */
 @DisplayName("JniBreakpoint Tests")
 class JniBreakpointTest {
 
@@ -164,11 +162,13 @@ class JniBreakpointTest {
 
       for (int i = 0; i < threads.length; i++) {
         final int threadId = i;
-        threads[i] = new Thread(() -> {
-          for (int j = 0; j < iterations; j++) {
-            bp.setEnabled(threadId % 2 == 0);
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  for (int j = 0; j < iterations; j++) {
+                    bp.setEnabled(threadId % 2 == 0);
+                  }
+                });
       }
 
       for (final Thread t : threads) {
@@ -258,11 +258,13 @@ class JniBreakpointTest {
       final Thread[] threads = new Thread[threadsCount];
 
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Thread(() -> {
-          for (int j = 0; j < incrementsPerThread; j++) {
-            bp.incrementHitCount();
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  for (int j = 0; j < incrementsPerThread; j++) {
+                    bp.incrementHitCount();
+                  }
+                });
       }
 
       for (final Thread t : threads) {
@@ -272,7 +274,9 @@ class JniBreakpointTest {
         t.join();
       }
 
-      assertEquals(threadsCount * incrementsPerThread, bp.getHitCount(),
+      assertEquals(
+          threadsCount * incrementsPerThread,
+          bp.getHitCount(),
           "Hit count should be sum of all increments");
     }
   }
@@ -366,16 +370,14 @@ class JniBreakpointTest {
       final JniBreakpoint bp1 = new JniBreakpoint("bp-1", "func1", 10, 5, 0x1000L);
       final JniBreakpoint bp2 = new JniBreakpoint("bp-1", "func2", 20, 3, 0x2000L);
 
-      assertEquals(bp1.hashCode(), bp2.hashCode(),
-          "Equal objects should have same hashCode");
+      assertEquals(bp1.hashCode(), bp2.hashCode(), "Equal objects should have same hashCode");
     }
 
     @Test
     @DisplayName("hashCode should be based on breakpointId")
     void hashCodeShouldBeBasedOnBreakpointId() {
       final JniBreakpoint bp = new JniBreakpoint("bp-1", "func", 1, 1, 0L);
-      assertEquals("bp-1".hashCode(), bp.hashCode(),
-          "hashCode should be based on breakpointId");
+      assertEquals("bp-1".hashCode(), bp.hashCode(), "hashCode should be based on breakpointId");
     }
   }
 }

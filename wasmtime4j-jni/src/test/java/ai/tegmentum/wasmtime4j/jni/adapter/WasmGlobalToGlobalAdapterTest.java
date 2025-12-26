@@ -41,19 +41,13 @@ import org.junit.jupiter.api.Test;
 @DisplayName("WasmGlobalToGlobalAdapter Tests")
 class WasmGlobalToGlobalAdapterTest {
 
-  /**
-   * Creates a mock WasmGlobal for testing.
-   */
+  /** Creates a mock WasmGlobal for testing. */
   private WasmGlobal createMockGlobal(
-      final WasmValueType type,
-      final boolean mutable,
-      final WasmValue initialValue) {
+      final WasmValueType type, final boolean mutable, final WasmValue initialValue) {
     return new TestWasmGlobal(type, mutable, initialValue);
   }
 
-  /**
-   * Test implementation of WasmGlobal.
-   */
+  /** Test implementation of WasmGlobal. */
   private static class TestWasmGlobal implements WasmGlobal {
     private WasmValue value;
     private final WasmValueType type;
@@ -106,16 +100,12 @@ class WasmGlobalToGlobalAdapterTest {
     }
   }
 
-  /**
-   * Creates a mock WasmGlobal that throws on get().
-   */
+  /** Creates a mock WasmGlobal that throws on get(). */
   private WasmGlobal createFailingGlobal() {
     return new FailingWasmGlobal();
   }
 
-  /**
-   * Test implementation of WasmGlobal that throws on access.
-   */
+  /** Test implementation of WasmGlobal that throws on access. */
   private static class FailingWasmGlobal implements WasmGlobal {
     @Override
     public WasmValue get() {
@@ -267,7 +257,8 @@ class WasmGlobalToGlobalAdapterTest {
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
       final WasmException ex = assertThrows(WasmException.class, () -> adapter.getValue());
-      assertTrue(ex.getMessage().contains("Failed to get global value"),
+      assertTrue(
+          ex.getMessage().contains("Failed to get global value"),
           "Exception message should indicate get failure");
     }
   }
@@ -327,8 +318,8 @@ class WasmGlobalToGlobalAdapterTest {
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
       final WasmException ex = assertThrows(WasmException.class, () -> adapter.setValue(100));
-      assertTrue(ex.getMessage().contains("immutable"),
-          "Exception message should mention immutable");
+      assertTrue(
+          ex.getMessage().contains("immutable"), "Exception message should mention immutable");
     }
 
     @Test
@@ -399,8 +390,8 @@ class WasmGlobalToGlobalAdapterTest {
       final WasmGlobal delegate = createMockGlobal(WasmValueType.FUNCREF, false, null);
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
-      assertEquals(Global.GlobalValueType.FUNCREF, adapter.getValueType(),
-          "Type should be FUNCREF");
+      assertEquals(
+          Global.GlobalValueType.FUNCREF, adapter.getValueType(), "Type should be FUNCREF");
     }
 
     @Test
@@ -409,8 +400,8 @@ class WasmGlobalToGlobalAdapterTest {
       final WasmGlobal delegate = createMockGlobal(WasmValueType.EXTERNREF, false, null);
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
-      assertEquals(Global.GlobalValueType.EXTERNREF, adapter.getValueType(),
-          "Type should be EXTERNREF");
+      assertEquals(
+          Global.GlobalValueType.EXTERNREF, adapter.getValueType(), "Type should be EXTERNREF");
     }
 
     @Test
@@ -419,8 +410,8 @@ class WasmGlobalToGlobalAdapterTest {
       final WasmGlobal delegate = createMockGlobal(null, false, WasmValue.i32(0));
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
-      assertEquals(Global.GlobalValueType.I32, adapter.getValueType(),
-          "Type should default to I32");
+      assertEquals(
+          Global.GlobalValueType.I32, adapter.getValueType(), "Type should default to I32");
     }
   }
 
@@ -499,8 +490,8 @@ class WasmGlobalToGlobalAdapterTest {
           createMockGlobal(WasmValueType.EXTERNREF, false, WasmValue.externref("not a number"));
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.getIntValue(),
-          "Should throw for non-numeric value");
+      assertThrows(
+          WasmException.class, () -> adapter.getIntValue(), "Should throw for non-numeric value");
     }
   }
 
@@ -558,8 +549,7 @@ class WasmGlobalToGlobalAdapterTest {
     @Test
     @DisplayName("getDoubleValue should return double value")
     void getDoubleValueShouldReturnDoubleValue() throws WasmException {
-      final WasmGlobal delegate =
-          createMockGlobal(WasmValueType.F64, false, WasmValue.f64(Math.E));
+      final WasmGlobal delegate = createMockGlobal(WasmValueType.F64, false, WasmValue.f64(Math.E));
       final WasmGlobalToGlobalAdapter adapter = new WasmGlobalToGlobalAdapter(delegate);
 
       assertEquals(Math.E, adapter.getDoubleValue(), "Double value should be Math.E");

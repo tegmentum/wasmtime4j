@@ -45,7 +45,9 @@ class JniWasiInputStreamTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiInputStream", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiInputStream",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -144,7 +146,8 @@ class JniWasiInputStreamTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("subscribe");
       assertNotNull(method, "subscribe method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(), "subscribe should return WasiPollable");
+      assertEquals(
+          WasiPollable.class, method.getReturnType(), "subscribe should return WasiPollable");
     }
 
     @Test
@@ -239,8 +242,7 @@ class JniWasiInputStreamTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

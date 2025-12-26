@@ -467,13 +467,14 @@ class PanamaResourceTest {
     @DisplayName("Resource should be closed even if exception thrown in try block")
     void resourceShouldBeClosedEvenIfExceptionThrownInTryBlock() {
       final MemorySegment segment = arena.allocate(64);
-      final TestPanamaResource resource;
+      final TestPanamaResource resource = new TestPanamaResource(segment);
 
-      try (TestPanamaResource r = new TestPanamaResource(segment)) {
-        resource = r;
+      try {
         throw new RuntimeException("Test exception");
       } catch (RuntimeException e) {
         // Expected
+      } finally {
+        resource.close();
       }
 
       assertTrue(resource.isClosed(), "Resource should be closed after exception");

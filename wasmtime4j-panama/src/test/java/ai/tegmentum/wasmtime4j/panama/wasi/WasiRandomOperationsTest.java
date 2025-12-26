@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,9 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiRandomOperations}.
- */
+/** Comprehensive tests for {@link WasiRandomOperations}. */
 @DisplayName("WasiRandomOperations Tests")
 class WasiRandomOperationsTest {
 
@@ -54,7 +51,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(PanamaException.class,
+      assertThrows(
+          PanamaException.class,
           () -> new WasiRandomOperations(null, null),
           "Should throw on null context");
     }

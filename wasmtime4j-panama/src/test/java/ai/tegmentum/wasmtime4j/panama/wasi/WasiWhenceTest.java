@@ -109,11 +109,17 @@ class WasiWhenceTest {
     @Test
     @DisplayName("fromValue should throw for invalid value")
     void fromValueShouldThrowForInvalidValue() {
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(3),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiWhence.fromValue(3),
           "Should throw for value 3");
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiWhence.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiWhence.fromValue(100),
           "Should throw for value 100");
     }
 
@@ -121,7 +127,9 @@ class WasiWhenceTest {
     @DisplayName("Round trip getValue/fromValue should work")
     void roundTripShouldWork() {
       for (WasiWhence whence : WasiWhence.values()) {
-        assertEquals(whence, WasiWhence.fromValue(whence.getValue()),
+        assertEquals(
+            whence,
+            WasiWhence.fromValue(whence.getValue()),
             "Round trip should return same whence: " + whence.name());
       }
     }

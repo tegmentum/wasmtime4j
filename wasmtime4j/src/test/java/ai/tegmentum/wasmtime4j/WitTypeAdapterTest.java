@@ -94,9 +94,11 @@ class WitTypeAdapterTest {
     @Test
     @DisplayName("AdapterType valueOf should work")
     void adapterTypeValueOfShouldWork() {
-      assertEquals(WitTypeAdapter.AdapterType.DIRECT_CONVERSION,
+      assertEquals(
+          WitTypeAdapter.AdapterType.DIRECT_CONVERSION,
           WitTypeAdapter.AdapterType.valueOf("DIRECT_CONVERSION"));
-      assertEquals(WitTypeAdapter.AdapterType.STRUCTURAL_ADAPTATION,
+      assertEquals(
+          WitTypeAdapter.AdapterType.STRUCTURAL_ADAPTATION,
           WitTypeAdapter.AdapterType.valueOf("STRUCTURAL_ADAPTATION"));
     }
   }
@@ -196,10 +198,7 @@ class WitTypeAdapterTest {
     void constructorShouldCreateResultWithAllFields() {
       final WitTypeAdapter.AdapterValidationResult result =
           new WitTypeAdapter.AdapterValidationResult(
-              true,
-              List.of(),
-              List.of("Minor warning"),
-              Optional.of("Suggestion"));
+              true, List.of(), List.of("Minor warning"), Optional.of("Suggestion"));
 
       assertTrue(result.isValid());
       assertTrue(result.getErrors().isEmpty());

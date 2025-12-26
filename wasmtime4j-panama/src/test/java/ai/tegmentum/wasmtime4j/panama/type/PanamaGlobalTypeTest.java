@@ -137,8 +137,7 @@ class PanamaGlobalTypeTest {
     void constructorShouldAcceptAllValueTypes() {
       for (WasmValueType valueType : WasmValueType.values()) {
         final MemorySegment handle = arena.allocate(8);
-        final PanamaGlobalType globalType =
-            new PanamaGlobalType(valueType, false, arena, handle);
+        final PanamaGlobalType globalType = new PanamaGlobalType(valueType, false, arena, handle);
 
         assertEquals(valueType, globalType.getValueType(), "Value type should match");
       }
@@ -409,7 +408,7 @@ class PanamaGlobalTypeTest {
     @DisplayName("All value type and mutability combinations should work")
     void allValueTypeAndMutabilityCombinationsShouldWork() {
       final WasmValueType[] valueTypes = {
-          WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
+        WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
       };
 
       for (WasmValueType valueType : valueTypes) {

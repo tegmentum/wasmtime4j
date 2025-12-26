@@ -47,7 +47,8 @@ class PanamaResourceTest {
     @DisplayName("should be public and abstract")
     void shouldBePublicAndAbstract() {
       assertTrue(
-          Modifier.isPublic(PanamaResource.class.getModifiers()), "PanamaResource should be public");
+          Modifier.isPublic(PanamaResource.class.getModifiers()),
+          "PanamaResource should be public");
       assertTrue(
           Modifier.isAbstract(PanamaResource.class.getModifiers()),
           "PanamaResource should be abstract");
@@ -83,7 +84,9 @@ class PanamaResourceTest {
       assertNotNull(method, "getNativeHandle method should exist");
       assertTrue(Modifier.isFinal(method.getModifiers()), "getNativeHandle should be final");
       assertEquals(
-          MemorySegment.class, method.getReturnType(), "getNativeHandle should return MemorySegment");
+          MemorySegment.class,
+          method.getReturnType(),
+          "getNativeHandle should return MemorySegment");
     }
 
     @Test
@@ -93,7 +96,9 @@ class PanamaResourceTest {
       assertNotNull(method, "getNativeLibrary method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "getNativeLibrary should be static");
       assertEquals(
-          SymbolLookup.class, method.getReturnType(), "getNativeLibrary should return SymbolLookup");
+          SymbolLookup.class,
+          method.getReturnType(),
+          "getNativeLibrary should return SymbolLookup");
     }
 
     @Test
@@ -153,7 +158,8 @@ class PanamaResourceTest {
     void shouldHaveGetResourceTypeAbstractMethod() throws NoSuchMethodException {
       final Method method = PanamaResource.class.getDeclaredMethod("getResourceType");
       assertNotNull(method, "getResourceType method should exist");
-      assertTrue(Modifier.isProtected(method.getModifiers()), "getResourceType should be protected");
+      assertTrue(
+          Modifier.isProtected(method.getModifiers()), "getResourceType should be protected");
       assertTrue(Modifier.isAbstract(method.getModifiers()), "getResourceType should be abstract");
       assertEquals(String.class, method.getReturnType(), "getResourceType should return String");
     }
@@ -166,8 +172,7 @@ class PanamaResourceTest {
     @Test
     @DisplayName("should have nativeHandle protected field")
     void shouldHaveNativeHandleField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaResource.class.getDeclaredField("nativeHandle");
+      final java.lang.reflect.Field field = PanamaResource.class.getDeclaredField("nativeHandle");
       assertNotNull(field, "nativeHandle field should exist");
       assertTrue(Modifier.isProtected(field.getModifiers()), "nativeHandle should be protected");
       assertTrue(Modifier.isFinal(field.getModifiers()), "nativeHandle should be final");

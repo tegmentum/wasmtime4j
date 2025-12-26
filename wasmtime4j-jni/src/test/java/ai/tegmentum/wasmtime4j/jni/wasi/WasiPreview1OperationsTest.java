@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,14 +39,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Comprehensive tests for {@link WasiPreview1Operations}.
- */
+/** Comprehensive tests for {@link WasiPreview1Operations}. */
 @DisplayName("WasiPreview1Operations Tests")
 class WasiPreview1OperationsTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private WasiContext testContext;
   private WasiPreview1Operations operations;
@@ -61,8 +57,8 @@ class WasiPreview1OperationsTest {
 
     final String[] arguments = new String[] {"arg0", "arg1", "arg2"};
 
-    testContext = TestWasiContextFactory.createTestContextWithWorkingDir(
-        tempDir, environment, arguments);
+    testContext =
+        TestWasiContextFactory.createTestContextWithWorkingDir(tempDir, environment, arguments);
 
     operations = new WasiPreview1Operations(testContext);
   }
@@ -102,7 +98,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiPreview1Operations(null),
           "Should throw on null context");
     }
@@ -122,9 +119,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null iovs")
     void shouldThrowOnNullIovs() {
-      assertThrows(JniException.class,
-          () -> operations.fdRead(3, null),
-          "Should throw on null iovs");
+      assertThrows(
+          JniException.class, () -> operations.fdRead(3, null), "Should throw on null iovs");
     }
 
     @Test
@@ -133,9 +129,8 @@ class WasiPreview1OperationsTest {
       final List<ByteBuffer> iovs = new ArrayList<>();
       iovs.add(ByteBuffer.allocate(10));
 
-      assertThrows(WasiException.class,
-          () -> operations.fdRead(-1, iovs),
-          "Should throw on negative fd");
+      assertThrows(
+          WasiException.class, () -> operations.fdRead(-1, iovs), "Should throw on negative fd");
     }
 
     @Test
@@ -148,8 +143,7 @@ class WasiPreview1OperationsTest {
       final List<ByteBuffer> iovs = new ArrayList<>();
 
       // This will throw because of mock setup, but validates the path
-      assertThrows(WasiException.class,
-          () -> operations.fdRead(3, iovs));
+      assertThrows(WasiException.class, () -> operations.fdRead(3, iovs));
     }
   }
 
@@ -160,9 +154,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null iovs")
     void shouldThrowOnNullIovs() {
-      assertThrows(JniException.class,
-          () -> operations.fdWrite(3, null),
-          "Should throw on null iovs");
+      assertThrows(
+          JniException.class, () -> operations.fdWrite(3, null), "Should throw on null iovs");
     }
 
     @Test
@@ -171,9 +164,8 @@ class WasiPreview1OperationsTest {
       final List<ByteBuffer> iovs = new ArrayList<>();
       iovs.add(ByteBuffer.wrap("test".getBytes()));
 
-      assertThrows(WasiException.class,
-          () -> operations.fdWrite(-1, iovs),
-          "Should throw on negative fd");
+      assertThrows(
+          WasiException.class, () -> operations.fdWrite(-1, iovs), "Should throw on negative fd");
     }
   }
 
@@ -184,23 +176,22 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on negative file descriptor")
     void shouldThrowOnNegativeFileDescriptor() {
-      assertThrows(WasiException.class,
-          () -> operations.fdSeek(-1, 0, 0),
-          "Should throw on negative fd");
+      assertThrows(
+          WasiException.class, () -> operations.fdSeek(-1, 0, 0), "Should throw on negative fd");
     }
 
     @Test
     @DisplayName("Should throw on invalid whence")
     void shouldThrowOnInvalidWhence() {
-      assertThrows(WasiException.class,
-          () -> operations.fdSeek(3, 0, 99),
-          "Should throw on invalid whence");
+      assertThrows(
+          WasiException.class, () -> operations.fdSeek(3, 0, 99), "Should throw on invalid whence");
     }
 
     @Test
     @DisplayName("Should throw on negative whence")
     void shouldThrowOnNegativeWhence() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> operations.fdSeek(3, 0, -1),
           "Should throw on negative whence");
     }
@@ -223,9 +214,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on negative file descriptor")
     void shouldThrowOnNegativeFileDescriptor() {
-      assertThrows(WasiException.class,
-          () -> operations.fdClose(-1),
-          "Should throw on negative fd");
+      assertThrows(
+          WasiException.class, () -> operations.fdClose(-1), "Should throw on negative fd");
     }
   }
 
@@ -236,7 +226,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.pathOpen(3, 0, null, 0, 0L, 0L, 0),
           "Should throw on null path");
     }
@@ -244,7 +235,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on empty path")
     void shouldThrowOnEmptyPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.pathOpen(3, 0, "", 0, 0L, 0L, 0),
           "Should throw on empty path");
     }
@@ -252,7 +244,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on negative dirfd")
     void shouldThrowOnNegativeDirfd() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> operations.pathOpen(-1, 0, "test.txt", 0, 0L, 0L, 0),
           "Should throw on negative dirfd");
     }
@@ -265,7 +258,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.pathCreateDirectory(3, null),
           "Should throw on null path");
     }
@@ -273,7 +267,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on empty path")
     void shouldThrowOnEmptyPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.pathCreateDirectory(3, ""),
           "Should throw on empty path");
     }
@@ -281,7 +276,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on negative dirfd")
     void shouldThrowOnNegativeDirfd() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> operations.pathCreateDirectory(-1, "newdir"),
           "Should throw on negative dirfd");
     }
@@ -294,7 +290,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null environ buffer")
     void shouldThrowOnNullEnvironBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.environGet(null, ByteBuffer.allocate(100)),
           "Should throw on null environ");
     }
@@ -302,7 +299,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null environBuf buffer")
     void shouldThrowOnNullEnvironBufBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.environGet(ByteBuffer.allocate(100), null),
           "Should throw on null environBuf");
     }
@@ -342,7 +340,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null argv buffer")
     void shouldThrowOnNullArgvBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.argsGet(null, ByteBuffer.allocate(100)),
           "Should throw on null argv");
     }
@@ -350,7 +349,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null argvBuf buffer")
     void shouldThrowOnNullArgvBufBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.argsGet(ByteBuffer.allocate(100), null),
           "Should throw on null argvBuf");
     }
@@ -392,7 +392,8 @@ class WasiPreview1OperationsTest {
     void shouldThrowOnInvalidClockId() {
       // Clock operations delegate to WasiTimeOperations
       // Invalid clock IDs are validated there
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> operations.clockTimeGet(999, 0),
           "Should throw on invalid clock ID");
     }
@@ -405,9 +406,8 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on invalid clock ID")
     void shouldThrowOnInvalidClockId() {
-      assertThrows(Exception.class,
-          () -> operations.clockResGet(999),
-          "Should throw on invalid clock ID");
+      assertThrows(
+          Exception.class, () -> operations.clockResGet(999), "Should throw on invalid clock ID");
     }
   }
 
@@ -418,16 +418,15 @@ class WasiPreview1OperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
-          () -> operations.randomGet(null),
-          "Should throw on null buffer");
+      assertThrows(
+          JniException.class, () -> operations.randomGet(null), "Should throw on null buffer");
     }
   }
 
   /**
    * Helper method to write string to file - Java 8 compatible alternative to Files.writeString().
    *
-   * @param path    the path to write to
+   * @param path the path to write to
    * @param content the string content to write
    * @throws IOException if writing fails
    */

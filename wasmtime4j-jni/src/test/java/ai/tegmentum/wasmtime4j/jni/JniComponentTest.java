@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,20 +47,16 @@ class JniComponentTest {
     @DisplayName("JniComponent should be public final class")
     void shouldBePublicFinalClass() {
       assertTrue(
-          Modifier.isFinal(JniComponent.class.getModifiers()),
-          "JniComponent should be final");
+          Modifier.isFinal(JniComponent.class.getModifiers()), "JniComponent should be final");
       assertTrue(
-          Modifier.isPublic(JniComponent.class.getModifiers()),
-          "JniComponent should be public");
+          Modifier.isPublic(JniComponent.class.getModifiers()), "JniComponent should be public");
     }
 
     @Test
     @DisplayName("JniComponent should have private constructor")
     void shouldHavePrivateConstructor() throws NoSuchMethodException {
       Constructor<?> constructor = JniComponent.class.getDeclaredConstructor();
-      assertTrue(
-          Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
 
     @Test
@@ -70,11 +65,9 @@ class JniComponentTest {
       Method method = JniComponent.class.getMethod("createComponentEngine");
       assertNotNull(method, "createComponentEngine method should exist");
       assertTrue(
-          Modifier.isStatic(method.getModifiers()),
-          "createComponentEngine should be static");
+          Modifier.isStatic(method.getModifiers()), "createComponentEngine should be static");
       assertTrue(
-          Modifier.isPublic(method.getModifiers()),
-          "createComponentEngine should be public");
+          Modifier.isPublic(method.getModifiers()), "createComponentEngine should be public");
       assertEquals(
           JniComponent.JniComponentEngine.class,
           method.getReturnType(),
@@ -139,7 +132,8 @@ class JniComponentTest {
       assertNotNull(constructor, "Constructor with long parameter should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -147,8 +141,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponentEngine should have loadComponentFromBytes method")
     void shouldHaveLoadComponentFromBytesMethod() throws NoSuchMethodException {
-      Method method = JniComponent.JniComponentEngine.class.getMethod(
-          "loadComponentFromBytes", byte[].class);
+      Method method =
+          JniComponent.JniComponentEngine.class.getMethod("loadComponentFromBytes", byte[].class);
       assertNotNull(method, "loadComponentFromBytes method should exist");
       assertEquals(
           JniComponent.JniComponentHandle.class,
@@ -159,8 +153,9 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponentEngine should have instantiateComponent method")
     void shouldHaveInstantiateComponentMethod() throws NoSuchMethodException {
-      Method method = JniComponent.JniComponentEngine.class.getMethod(
-          "instantiateComponent", JniComponent.JniComponentHandle.class);
+      Method method =
+          JniComponent.JniComponentEngine.class.getMethod(
+              "instantiateComponent", JniComponent.JniComponentHandle.class);
       assertNotNull(method, "instantiateComponent method should exist");
       assertEquals(
           JniComponent.JniComponentInstanceHandle.class,
@@ -198,9 +193,7 @@ class JniComponentTest {
       Method method = JniComponent.JniComponentEngine.class.getDeclaredMethod("doClose");
       assertNotNull(method, "doClose method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
-      assertTrue(
-          Modifier.isProtected(method.getModifiers()),
-          "doClose should be protected");
+      assertTrue(Modifier.isProtected(method.getModifiers()), "doClose should be protected");
     }
 
     @Test
@@ -210,8 +203,7 @@ class JniComponentTest {
       assertNotNull(method, "getResourceType method should exist");
       assertEquals(String.class, method.getReturnType(), "Should return String");
       assertTrue(
-          Modifier.isProtected(method.getModifiers()),
-          "getResourceType should be protected");
+          Modifier.isProtected(method.getModifiers()), "getResourceType should be protected");
     }
   }
 
@@ -249,7 +241,8 @@ class JniComponentTest {
       assertNotNull(constructor, "Constructor with long parameter should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -265,8 +258,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponentHandle should have exportsInterface method")
     void shouldHaveExportsInterfaceMethod() throws NoSuchMethodException {
-      Method method = JniComponent.JniComponentHandle.class.getMethod(
-          "exportsInterface", String.class);
+      Method method =
+          JniComponent.JniComponentHandle.class.getMethod("exportsInterface", String.class);
       assertNotNull(method, "exportsInterface method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
@@ -274,8 +267,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponentHandle should have importsInterface method")
     void shouldHaveImportsInterfaceMethod() throws NoSuchMethodException {
-      Method method = JniComponent.JniComponentHandle.class.getMethod(
-          "importsInterface", String.class);
+      Method method =
+          JniComponent.JniComponentHandle.class.getMethod("importsInterface", String.class);
       assertNotNull(method, "importsInterface method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
@@ -339,7 +332,8 @@ class JniComponentTest {
       assertNotNull(constructor, "Constructor with long parameter should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -387,8 +381,9 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeLoadComponentFromBytes method")
     void shouldHaveNativeLoadComponentFromBytesMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeLoadComponentFromBytes", long.class, byte[].class);
+      Method method =
+          JniComponent.class.getDeclaredMethod(
+              "nativeLoadComponentFromBytes", long.class, byte[].class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(long.class, method.getReturnType(), "Should return long");
@@ -397,8 +392,9 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeInstantiateComponent method")
     void shouldHaveNativeInstantiateComponentMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeInstantiateComponent", long.class, long.class);
+      Method method =
+          JniComponent.class.getDeclaredMethod(
+              "nativeInstantiateComponent", long.class, long.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(long.class, method.getReturnType(), "Should return long");
@@ -407,8 +403,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeDestroyComponentEngine method")
     void shouldHaveNativeDestroyComponentEngineMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeDestroyComponentEngine", long.class);
+      Method method =
+          JniComponent.class.getDeclaredMethod("nativeDestroyComponentEngine", long.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -426,8 +422,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeDestroyComponentInstance method")
     void shouldHaveNativeDestroyComponentInstanceMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeDestroyComponentInstance", long.class);
+      Method method =
+          JniComponent.class.getDeclaredMethod("nativeDestroyComponentInstance", long.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -445,8 +441,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeExportsInterface method")
     void shouldHaveNativeExportsInterfaceMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeExportsInterface", long.class, String.class);
+      Method method =
+          JniComponent.class.getDeclaredMethod("nativeExportsInterface", long.class, String.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
@@ -455,8 +451,8 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeImportsInterface method")
     void shouldHaveNativeImportsInterfaceMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeImportsInterface", long.class, String.class);
+      Method method =
+          JniComponent.class.getDeclaredMethod("nativeImportsInterface", long.class, String.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
@@ -484,9 +480,14 @@ class JniComponentTest {
     @Test
     @DisplayName("JniComponent should have nativeComponentInvokeFunction method")
     void shouldHaveNativeComponentInvokeFunctionMethod() throws NoSuchMethodException {
-      Method method = JniComponent.class.getDeclaredMethod(
-          "nativeComponentInvokeFunction",
-          long.class, long.class, String.class, int[].class, byte[][].class);
+      Method method =
+          JniComponent.class.getDeclaredMethod(
+              "nativeComponentInvokeFunction",
+              long.class,
+              long.class,
+              String.class,
+              int[].class,
+              byte[][].class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(Object[].class, method.getReturnType(), "Should return Object[]");

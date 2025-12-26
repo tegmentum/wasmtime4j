@@ -409,8 +409,7 @@ class PanamaConcurrencyManagerTest {
 
       assertNotNull(stats, "Statistics should not be null");
       assertFalse(stats.isEmpty(), "Statistics should not be empty");
-      assertTrue(
-          stats.contains("Panama Concurrency Manager"), "Should contain manager identifier");
+      assertTrue(stats.contains("Panama Concurrency Manager"), "Should contain manager identifier");
     }
 
     @Test
@@ -496,8 +495,7 @@ class PanamaConcurrencyManagerTest {
     @DisplayName("getMaxConcurrentOperations should return configured value")
     void getMaxConcurrentOperationsShouldReturnConfiguredValue() {
       final PanamaConcurrencyManager customManager = new PanamaConcurrencyManager(4);
-      assertEquals(
-          4, customManager.getMaxConcurrentOperations(), "Should return configured value");
+      assertEquals(4, customManager.getMaxConcurrentOperations(), "Should return configured value");
       customManager.shutdown();
     }
 

@@ -69,7 +69,8 @@ class JniExperimentalFeaturesTest {
     void shouldHaveAllExperimentalEnabledMethod() throws NoSuchMethodException {
       final Method method = JniExperimentalFeatures.class.getMethod("allExperimentalEnabled");
       assertNotNull(method, "allExperimentalEnabled method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "allExperimentalEnabled should be static");
+      assertTrue(
+          Modifier.isStatic(method.getModifiers()), "allExperimentalEnabled should be static");
       assertEquals(
           JniExperimentalFeatures.class,
           method.getReturnType(),
@@ -84,9 +85,7 @@ class JniExperimentalFeaturesTest {
       assertTrue(
           Modifier.isStatic(method.getModifiers()), "isStackSwitchingSupported should be static");
       assertEquals(
-          boolean.class,
-          method.getReturnType(),
-          "isStackSwitchingSupported should return boolean");
+          boolean.class, method.getReturnType(), "isStackSwitchingSupported should return boolean");
     }
 
     @Test
@@ -95,7 +94,8 @@ class JniExperimentalFeaturesTest {
       final Method method = JniExperimentalFeatures.class.getMethod("isCallCcSupported");
       assertNotNull(method, "isCallCcSupported method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "isCallCcSupported should be static");
-      assertEquals(boolean.class, method.getReturnType(), "isCallCcSupported should return boolean");
+      assertEquals(
+          boolean.class, method.getReturnType(), "isCallCcSupported should return boolean");
     }
 
     @Test
@@ -107,7 +107,8 @@ class JniExperimentalFeaturesTest {
               JniExperimentalFeatures.ExperimentalFeatureId.class);
       assertNotNull(method, "isExperimentalFeatureSupported method should exist");
       assertTrue(
-          Modifier.isStatic(method.getModifiers()), "isExperimentalFeatureSupported should be static");
+          Modifier.isStatic(method.getModifiers()),
+          "isExperimentalFeatureSupported should be static");
       assertEquals(
           boolean.class,
           method.getReturnType(),
@@ -124,9 +125,7 @@ class JniExperimentalFeaturesTest {
           Modifier.isStatic(method.getModifiers()),
           "getSupportedExperimentalFeatures should be static");
       assertEquals(
-          Set.class,
-          method.getReturnType(),
-          "getSupportedExperimentalFeatures should return Set");
+          Set.class, method.getReturnType(), "getSupportedExperimentalFeatures should return Set");
     }
   }
 
@@ -151,9 +150,7 @@ class JniExperimentalFeaturesTest {
     void shouldHaveEnableCallCcMethod() throws NoSuchMethodException {
       final Method method =
           JniExperimentalFeatures.class.getMethod(
-              "enableCallCc",
-              int.class,
-              JniExperimentalFeatures.ContinuationStorageStrategy.class);
+              "enableCallCc", int.class, JniExperimentalFeatures.ContinuationStorageStrategy.class);
       assertNotNull(method, "enableCallCc method should exist");
       assertEquals(
           JniExperimentalFeatures.class,

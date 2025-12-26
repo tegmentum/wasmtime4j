@@ -45,7 +45,9 @@ class JniWasiRandomTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.random.JniWasiRandom", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.random.JniWasiRandom",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -71,8 +73,7 @@ class JniWasiRandomTest {
     void shouldImplementWasiRandomInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit();
       assertTrue(
-          WasiRandom.class.isAssignableFrom(clazz),
-          "JniWasiRandom should implement WasiRandom");
+          WasiRandom.class.isAssignableFrom(clazz), "JniWasiRandom should implement WasiRandom");
     }
   }
 
@@ -94,7 +95,8 @@ class JniWasiRandomTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -212,8 +214,7 @@ class JniWasiRandomTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

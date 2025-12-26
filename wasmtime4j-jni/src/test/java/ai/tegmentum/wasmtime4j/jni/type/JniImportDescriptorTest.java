@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
-import ai.tegmentum.wasmtime4j.WasmType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.Arrays;
@@ -36,8 +35,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link JniImportDescriptor} class.
  *
- * <p>This test class verifies the JNI implementation of ImportDescriptor interface
- * for WebAssembly import descriptors.
+ * <p>This test class verifies the JNI implementation of ImportDescriptor interface for WebAssembly
+ * import descriptors.
  */
 @DisplayName("JniImportDescriptor Tests")
 class JniImportDescriptorTest {
@@ -49,14 +48,16 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("JniImportDescriptor should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(JniImportDescriptor.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(JniImportDescriptor.class.getModifiers()),
           "JniImportDescriptor should be final");
     }
 
     @Test
     @DisplayName("JniImportDescriptor should implement ImportDescriptor")
     void shouldImplementImportDescriptor() {
-      assertTrue(ImportDescriptor.class.isAssignableFrom(JniImportDescriptor.class),
+      assertTrue(
+          ImportDescriptor.class.isAssignableFrom(JniImportDescriptor.class),
           "JniImportDescriptor should implement ImportDescriptor");
     }
   }
@@ -68,13 +69,9 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Constructor should create with valid arguments")
     void constructorShouldCreateWithValidArguments() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
-      final JniImportDescriptor descriptor = new JniImportDescriptor(
-          "env", "memory", funcType
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      final JniImportDescriptor descriptor = new JniImportDescriptor("env", "memory", funcType);
       assertNotNull(descriptor, "Descriptor should not be null");
       assertEquals("env", descriptor.getModuleName(), "Module name should be 'env'");
       assertEquals("memory", descriptor.getName(), "Name should be 'memory'");
@@ -84,42 +81,39 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Constructor should throw for null module name")
     void constructorShouldThrowForNullModuleName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniImportDescriptor(null, "test", funcType),
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniImportDescriptor(null, "test", funcType),
           "Should throw for null module name");
     }
 
     @Test
     @DisplayName("Constructor should throw for null name")
     void constructorShouldThrowForNullName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniImportDescriptor("env", null, funcType),
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniImportDescriptor("env", null, funcType),
           "Should throw for null name");
     }
 
     @Test
     @DisplayName("Constructor should throw for null type")
     void constructorShouldThrowForNullType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniImportDescriptor("env", "test", null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniImportDescriptor("env", "test", null),
           "Should throw for null type");
     }
 
     @Test
     @DisplayName("Constructor should accept empty module name")
     void constructorShouldAcceptEmptyModuleName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("", "test", funcType);
       assertEquals("", descriptor.getModuleName(), "Module name should be empty");
     }
@@ -127,10 +121,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Constructor should accept empty name")
     void constructorShouldAcceptEmptyName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "", funcType);
       assertEquals("", descriptor.getName(), "Name should be empty");
     }
@@ -143,13 +135,13 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Should work with FuncType")
     void shouldWorkWithFuncType() {
-      final JniFuncType funcType = new JniFuncType(
-          Arrays.asList(WasmValueType.I32, WasmValueType.I32),
-          Arrays.asList(WasmValueType.I32)
-      );
+      final JniFuncType funcType =
+          new JniFuncType(
+              Arrays.asList(WasmValueType.I32, WasmValueType.I32),
+              Arrays.asList(WasmValueType.I32));
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "add", funcType);
-      assertEquals(WasmTypeKind.FUNCTION, descriptor.getType().getKind(),
-          "Type kind should be FUNCTION");
+      assertEquals(
+          WasmTypeKind.FUNCTION, descriptor.getType().getKind(), "Type kind should be FUNCTION");
     }
 
     @Test
@@ -157,8 +149,8 @@ class JniImportDescriptorTest {
     void shouldWorkWithGlobalType() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "counter", globalType);
-      assertEquals(WasmTypeKind.GLOBAL, descriptor.getType().getKind(),
-          "Type kind should be GLOBAL");
+      assertEquals(
+          WasmTypeKind.GLOBAL, descriptor.getType().getKind(), "Type kind should be GLOBAL");
     }
 
     @Test
@@ -166,8 +158,8 @@ class JniImportDescriptorTest {
     void shouldWorkWithMemoryType() {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "memory", memoryType);
-      assertEquals(WasmTypeKind.MEMORY, descriptor.getType().getKind(),
-          "Type kind should be MEMORY");
+      assertEquals(
+          WasmTypeKind.MEMORY, descriptor.getType().getKind(), "Type kind should be MEMORY");
     }
 
     @Test
@@ -175,8 +167,7 @@ class JniImportDescriptorTest {
     void shouldWorkWithTableType() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, null);
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "table", tableType);
-      assertEquals(WasmTypeKind.TABLE, descriptor.getType().getKind(),
-          "Type kind should be TABLE");
+      assertEquals(WasmTypeKind.TABLE, descriptor.getType().getKind(), "Type kind should be TABLE");
     }
   }
 
@@ -187,10 +178,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Same instance should be equal")
     void sameInstanceShouldBeEqual() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       assertEquals(descriptor, descriptor, "Same instance should be equal");
     }
@@ -198,14 +187,10 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Equal values should be equal")
     void equalValuesShouldBeEqual() {
-      final JniFuncType funcType1 = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Arrays.asList(WasmValueType.I32)
-      );
-      final JniFuncType funcType2 = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Arrays.asList(WasmValueType.I32)
-      );
+      final JniFuncType funcType1 =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I32));
+      final JniFuncType funcType2 =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I32));
       final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "test", funcType1);
       final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "test", funcType2);
       assertEquals(descriptor1, descriptor2, "Equal values should be equal");
@@ -214,10 +199,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Different module name should not be equal")
     void differentModuleNameShouldNotBeEqual() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor1 = new JniImportDescriptor("env1", "test", funcType);
       final JniImportDescriptor descriptor2 = new JniImportDescriptor("env2", "test", funcType);
       assertNotEquals(descriptor1, descriptor2, "Different module name should not be equal");
@@ -226,10 +209,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Different name should not be equal")
     void differentNameShouldNotBeEqual() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "test1", funcType);
       final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "test2", funcType);
       assertNotEquals(descriptor1, descriptor2, "Different name should not be equal");
@@ -238,14 +219,10 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Different type should not be equal")
     void differentTypeShouldNotBeEqual() {
-      final JniFuncType funcType1 = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Collections.emptyList()
-      );
-      final JniFuncType funcType2 = new JniFuncType(
-          Arrays.asList(WasmValueType.I64),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType1 =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Collections.emptyList());
+      final JniFuncType funcType2 =
+          new JniFuncType(Arrays.asList(WasmValueType.I64), Collections.emptyList());
       final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "test", funcType1);
       final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "test", funcType2);
       assertNotEquals(descriptor1, descriptor2, "Different type should not be equal");
@@ -254,10 +231,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Should not be equal to null")
     void shouldNotBeEqualToNull() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       assertFalse(descriptor.equals(null), "Should not be equal to null");
     }
@@ -265,10 +240,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Should not be equal to different type")
     void shouldNotBeEqualToDifferentType() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       assertFalse(descriptor.equals("string"), "Should not be equal to different type");
     }
@@ -281,27 +254,23 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("Equal objects should have equal hashCodes")
     void equalObjectsShouldHaveEqualHashCodes() {
-      final JniFuncType funcType1 = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Arrays.asList(WasmValueType.I64)
-      );
-      final JniFuncType funcType2 = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Arrays.asList(WasmValueType.I64)
-      );
+      final JniFuncType funcType1 =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I64));
+      final JniFuncType funcType2 =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I64));
       final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "test", funcType1);
       final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "test", funcType2);
-      assertEquals(descriptor1.hashCode(), descriptor2.hashCode(),
+      assertEquals(
+          descriptor1.hashCode(),
+          descriptor2.hashCode(),
           "Equal objects should have equal hashCodes");
     }
 
     @Test
     @DisplayName("HashCode should be consistent")
     void hashCodeShouldBeConsistent() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       final int hash1 = descriptor.hashCode();
       final int hash2 = descriptor.hashCode();
@@ -316,10 +285,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("toString should include module name")
     void toStringShouldIncludeModuleName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("myModule", "test", funcType);
       final String str = descriptor.toString();
       assertTrue(str.contains("myModule"), "toString should include module name");
@@ -328,10 +295,8 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("toString should include name")
     void toStringShouldIncludeName() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "myFunction", funcType);
       final String str = descriptor.toString();
       assertTrue(str.contains("myFunction"), "toString should include name");
@@ -340,23 +305,18 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("toString should include type info")
     void toStringShouldIncludeTypeInfo() {
-      final JniFuncType funcType = new JniFuncType(
-          Arrays.asList(WasmValueType.I32),
-          Arrays.asList(WasmValueType.I64)
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I64));
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       final String str = descriptor.toString();
-      assertTrue(str.contains("type") || str.contains("Func"),
-          "toString should include type info");
+      assertTrue(str.contains("type") || str.contains("Func"), "toString should include type info");
     }
 
     @Test
     @DisplayName("toString should include ImportDescriptor")
     void toStringShouldIncludeImportDescriptor() {
-      final JniFuncType funcType = new JniFuncType(
-          Collections.emptyList(),
-          Collections.emptyList()
-      );
+      final JniFuncType funcType =
+          new JniFuncType(Collections.emptyList(), Collections.emptyList());
       final JniImportDescriptor descriptor = new JniImportDescriptor("env", "test", funcType);
       final String str = descriptor.toString();
       assertTrue(str.contains("ImportDescriptor"), "toString should include ImportDescriptor");
@@ -370,16 +330,18 @@ class JniImportDescriptorTest {
     @Test
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniImportDescriptor.fromNative(0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniImportDescriptor.fromNative(0),
           "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniImportDescriptor.fromNative(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniImportDescriptor.fromNative(-1),
           "Should throw for negative handle");
     }
   }
@@ -392,52 +354,46 @@ class JniImportDescriptorTest {
     @DisplayName("Typical WASI memory import should work")
     void typicalWasiMemoryImportShouldWork() {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
-      final JniImportDescriptor descriptor = new JniImportDescriptor(
-          "wasi_snapshot_preview1", "memory", memoryType
-      );
-      assertEquals("wasi_snapshot_preview1", descriptor.getModuleName(),
+      final JniImportDescriptor descriptor =
+          new JniImportDescriptor("wasi_snapshot_preview1", "memory", memoryType);
+      assertEquals(
+          "wasi_snapshot_preview1",
+          descriptor.getModuleName(),
           "Module name should be WASI namespace");
       assertEquals("memory", descriptor.getName(), "Name should be 'memory'");
-      assertEquals(WasmTypeKind.MEMORY, descriptor.getType().getKind(),
-          "Type should be memory");
+      assertEquals(WasmTypeKind.MEMORY, descriptor.getType().getKind(), "Type should be memory");
     }
 
     @Test
     @DisplayName("Typical function import should work")
     void typicalFunctionImportShouldWork() {
-      final JniFuncType funcType = new JniFuncType(
-          Arrays.asList(WasmValueType.I32, WasmValueType.I32),
-          Arrays.asList(WasmValueType.I32)
-      );
-      final JniImportDescriptor descriptor = new JniImportDescriptor(
-          "env", "add", funcType
-      );
+      final JniFuncType funcType =
+          new JniFuncType(
+              Arrays.asList(WasmValueType.I32, WasmValueType.I32),
+              Arrays.asList(WasmValueType.I32));
+      final JniImportDescriptor descriptor = new JniImportDescriptor("env", "add", funcType);
       assertEquals("env", descriptor.getModuleName(), "Module name should be 'env'");
       assertEquals("add", descriptor.getName(), "Name should be 'add'");
-      assertEquals(WasmTypeKind.FUNCTION, descriptor.getType().getKind(),
-          "Type should be function");
+      assertEquals(
+          WasmTypeKind.FUNCTION, descriptor.getType().getKind(), "Type should be function");
     }
 
     @Test
     @DisplayName("Table import should work")
     void tableImportShouldWork() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 10, 100L);
-      final JniImportDescriptor descriptor = new JniImportDescriptor(
-          "env", "__indirect_function_table", tableType
-      );
-      assertEquals(WasmTypeKind.TABLE, descriptor.getType().getKind(),
-          "Type should be table");
+      final JniImportDescriptor descriptor =
+          new JniImportDescriptor("env", "__indirect_function_table", tableType);
+      assertEquals(WasmTypeKind.TABLE, descriptor.getType().getKind(), "Type should be table");
     }
 
     @Test
     @DisplayName("Global import should work")
     void globalImportShouldWork() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, true);
-      final JniImportDescriptor descriptor = new JniImportDescriptor(
-          "env", "__stack_pointer", globalType
-      );
-      assertEquals(WasmTypeKind.GLOBAL, descriptor.getType().getKind(),
-          "Type should be global");
+      final JniImportDescriptor descriptor =
+          new JniImportDescriptor("env", "__stack_pointer", globalType);
+      assertEquals(WasmTypeKind.GLOBAL, descriptor.getType().getKind(), "Type should be global");
     }
   }
 }

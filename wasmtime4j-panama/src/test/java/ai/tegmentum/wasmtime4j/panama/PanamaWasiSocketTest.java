@@ -74,8 +74,7 @@ class PanamaWasiSocketTest {
       Class<?>[] interfaces = PanamaWasiTcpSocket.class.getInterfaces();
       boolean implementsWasiTcpSocket = Arrays.asList(interfaces).contains(WasiTcpSocket.class);
       assertTrue(
-          implementsWasiTcpSocket,
-          "PanamaWasiTcpSocket should implement WasiTcpSocket interface");
+          implementsWasiTcpSocket, "PanamaWasiTcpSocket should implement WasiTcpSocket interface");
     }
 
     @Test
@@ -97,15 +96,9 @@ class PanamaWasiSocketTest {
     void shouldHaveNativeBindingsField() throws NoSuchFieldException {
       Field field = PanamaWasiTcpSocket.class.getDeclaredField("NATIVE_BINDINGS");
       assertNotNull(field, "NATIVE_BINDINGS field should exist");
-      assertTrue(
-          Modifier.isStatic(field.getModifiers()),
-          "NATIVE_BINDINGS should be static");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "NATIVE_BINDINGS should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "NATIVE_BINDINGS should be private");
+      assertTrue(Modifier.isStatic(field.getModifiers()), "NATIVE_BINDINGS should be static");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "NATIVE_BINDINGS should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "NATIVE_BINDINGS should be private");
     }
 
     @Test
@@ -113,16 +106,9 @@ class PanamaWasiSocketTest {
     void shouldHaveAddressBufferSizeConstant() throws NoSuchFieldException {
       Field field = PanamaWasiTcpSocket.class.getDeclaredField("ADDRESS_BUFFER_SIZE");
       assertNotNull(field, "ADDRESS_BUFFER_SIZE field should exist");
-      assertTrue(
-          Modifier.isStatic(field.getModifiers()),
-          "ADDRESS_BUFFER_SIZE should be static");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "ADDRESS_BUFFER_SIZE should be final");
-      assertEquals(
-          int.class,
-          field.getType(),
-          "ADDRESS_BUFFER_SIZE should be int");
+      assertTrue(Modifier.isStatic(field.getModifiers()), "ADDRESS_BUFFER_SIZE should be static");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "ADDRESS_BUFFER_SIZE should be final");
+      assertEquals(int.class, field.getType(), "ADDRESS_BUFFER_SIZE should be int");
     }
 
     @Test
@@ -130,16 +116,9 @@ class PanamaWasiSocketTest {
     void shouldHaveSocketHandleField() throws NoSuchFieldException {
       Field field = PanamaWasiTcpSocket.class.getDeclaredField("socketHandle");
       assertNotNull(field, "socketHandle field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "socketHandle should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "socketHandle should be private");
-      assertEquals(
-          long.class,
-          field.getType(),
-          "socketHandle should be of type long");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "socketHandle should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "socketHandle should be private");
+      assertEquals(long.class, field.getType(), "socketHandle should be of type long");
     }
 
     @Test
@@ -147,12 +126,8 @@ class PanamaWasiSocketTest {
     void shouldHaveAddressFamilyField() throws NoSuchFieldException {
       Field field = PanamaWasiTcpSocket.class.getDeclaredField("addressFamily");
       assertNotNull(field, "addressFamily field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "addressFamily should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "addressFamily should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "addressFamily should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "addressFamily should be private");
       assertEquals(
           WasiAddressFamily.class,
           field.getType(),
@@ -164,13 +139,8 @@ class PanamaWasiSocketTest {
     void shouldHaveClosedField() throws NoSuchFieldException {
       Field field = PanamaWasiTcpSocket.class.getDeclaredField("closed");
       assertNotNull(field, "closed field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "closed should be final");
-      assertEquals(
-          AtomicBoolean.class,
-          field.getType(),
-          "closed should be of type AtomicBoolean");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "closed should be final");
+      assertEquals(AtomicBoolean.class, field.getType(), "closed should be of type AtomicBoolean");
     }
   }
 
@@ -215,8 +185,7 @@ class PanamaWasiSocketTest {
     @Test
     @DisplayName("should have startBind method")
     void shouldHaveStartBindMethod() throws NoSuchMethodException {
-      Method method =
-          PanamaWasiTcpSocket.class.getMethod("startBind", WasiSocketAddress.class);
+      Method method = PanamaWasiTcpSocket.class.getMethod("startBind", WasiSocketAddress.class);
       assertNotNull(method, "startBind method should exist");
       assertEquals(void.class, method.getReturnType(), "startBind should return void");
       assertTrue(
@@ -243,8 +212,7 @@ class PanamaWasiSocketTest {
     @Test
     @DisplayName("should have startConnect method")
     void shouldHaveStartConnectMethod() throws NoSuchMethodException {
-      Method method =
-          PanamaWasiTcpSocket.class.getMethod("startConnect", WasiSocketAddress.class);
+      Method method = PanamaWasiTcpSocket.class.getMethod("startConnect", WasiSocketAddress.class);
       assertNotNull(method, "startConnect method should exist");
       assertEquals(void.class, method.getReturnType(), "startConnect should return void");
       assertTrue(
@@ -291,9 +259,7 @@ class PanamaWasiSocketTest {
       Method method = PanamaWasiTcpSocket.class.getMethod("accept");
       assertNotNull(method, "accept method should exist");
       assertEquals(
-          WasiTcpSocket.class,
-          method.getReturnType(),
-          "accept should return WasiTcpSocket");
+          WasiTcpSocket.class, method.getReturnType(), "accept should return WasiTcpSocket");
       assertTrue(
           Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
           "accept should throw WasmException");
@@ -364,23 +330,20 @@ class PanamaWasiSocketTest {
       assertNotNull(isEnabled, "isKeepAliveEnabled method should exist");
       assertEquals(boolean.class, isEnabled.getReturnType(), "Should return boolean");
 
-      Method setEnabled =
-          PanamaWasiTcpSocket.class.getMethod("setKeepAliveEnabled", boolean.class);
+      Method setEnabled = PanamaWasiTcpSocket.class.getMethod("setKeepAliveEnabled", boolean.class);
       assertNotNull(setEnabled, "setKeepAliveEnabled method should exist");
 
       Method getIdleTime = PanamaWasiTcpSocket.class.getMethod("getKeepAliveIdleTime");
       assertNotNull(getIdleTime, "getKeepAliveIdleTime method should exist");
       assertEquals(long.class, getIdleTime.getReturnType(), "Should return long");
 
-      Method setIdleTime =
-          PanamaWasiTcpSocket.class.getMethod("setKeepAliveIdleTime", long.class);
+      Method setIdleTime = PanamaWasiTcpSocket.class.getMethod("setKeepAliveIdleTime", long.class);
       assertNotNull(setIdleTime, "setKeepAliveIdleTime method should exist");
 
       Method getInterval = PanamaWasiTcpSocket.class.getMethod("getKeepAliveInterval");
       assertNotNull(getInterval, "getKeepAliveInterval method should exist");
 
-      Method setInterval =
-          PanamaWasiTcpSocket.class.getMethod("setKeepAliveInterval", long.class);
+      Method setInterval = PanamaWasiTcpSocket.class.getMethod("setKeepAliveInterval", long.class);
       assertNotNull(setInterval, "setKeepAliveInterval method should exist");
 
       Method getCount = PanamaWasiTcpSocket.class.getMethod("getKeepAliveCount");
@@ -409,8 +372,7 @@ class PanamaWasiSocketTest {
       assertNotNull(getReceive, "getReceiveBufferSize method should exist");
       assertEquals(long.class, getReceive.getReturnType(), "Should return long");
 
-      Method setReceive =
-          PanamaWasiTcpSocket.class.getMethod("setReceiveBufferSize", long.class);
+      Method setReceive = PanamaWasiTcpSocket.class.getMethod("setReceiveBufferSize", long.class);
       assertNotNull(setReceive, "setReceiveBufferSize method should exist");
 
       Method getSend = PanamaWasiTcpSocket.class.getMethod("getSendBufferSize");
@@ -438,8 +400,7 @@ class PanamaWasiSocketTest {
     @DisplayName("should have shutdown method")
     void shouldHaveShutdownMethod() throws NoSuchMethodException {
       Method method =
-          PanamaWasiTcpSocket.class.getMethod(
-              "shutdown", WasiTcpSocket.ShutdownType.class);
+          PanamaWasiTcpSocket.class.getMethod("shutdown", WasiTcpSocket.ShutdownType.class);
       assertNotNull(method, "shutdown method should exist");
       assertEquals(void.class, method.getReturnType(), "shutdown should return void");
     }
@@ -484,8 +445,7 @@ class PanamaWasiSocketTest {
       Class<?>[] interfaces = PanamaWasiUdpSocket.class.getInterfaces();
       boolean implementsWasiUdpSocket = Arrays.asList(interfaces).contains(WasiUdpSocket.class);
       assertTrue(
-          implementsWasiUdpSocket,
-          "PanamaWasiUdpSocket should implement WasiUdpSocket interface");
+          implementsWasiUdpSocket, "PanamaWasiUdpSocket should implement WasiUdpSocket interface");
     }
   }
 
@@ -498,13 +458,8 @@ class PanamaWasiSocketTest {
     void shouldHaveSocketHandleField() throws NoSuchFieldException {
       Field field = PanamaWasiUdpSocket.class.getDeclaredField("socketHandle");
       assertNotNull(field, "socketHandle field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "socketHandle should be final");
-      assertEquals(
-          long.class,
-          field.getType(),
-          "socketHandle should be of type long");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "socketHandle should be final");
+      assertEquals(long.class, field.getType(), "socketHandle should be of type long");
     }
 
     @Test
@@ -512,9 +467,7 @@ class PanamaWasiSocketTest {
     void shouldHaveAddressFamilyField() throws NoSuchFieldException {
       Field field = PanamaWasiUdpSocket.class.getDeclaredField("addressFamily");
       assertNotNull(field, "addressFamily field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "addressFamily should be final");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "addressFamily should be final");
       assertEquals(
           WasiAddressFamily.class,
           field.getType(),
@@ -526,10 +479,7 @@ class PanamaWasiSocketTest {
     void shouldHaveClosedField() throws NoSuchFieldException {
       Field field = PanamaWasiUdpSocket.class.getDeclaredField("closed");
       assertNotNull(field, "closed field should exist");
-      assertEquals(
-          AtomicBoolean.class,
-          field.getType(),
-          "closed should be of type AtomicBoolean");
+      assertEquals(AtomicBoolean.class, field.getType(), "closed should be of type AtomicBoolean");
     }
   }
 
@@ -567,8 +517,7 @@ class PanamaWasiSocketTest {
     @Test
     @DisplayName("should have startBind method")
     void shouldHaveStartBindMethod() throws NoSuchMethodException {
-      Method method =
-          PanamaWasiUdpSocket.class.getMethod("startBind", WasiSocketAddress.class);
+      Method method = PanamaWasiUdpSocket.class.getMethod("startBind", WasiSocketAddress.class);
       assertNotNull(method, "startBind method should exist");
       assertEquals(void.class, method.getReturnType(), "startBind should return void");
     }
@@ -584,8 +533,7 @@ class PanamaWasiSocketTest {
     @Test
     @DisplayName("should have startConnect method")
     void shouldHaveStartConnectMethod() throws NoSuchMethodException {
-      Method method =
-          PanamaWasiUdpSocket.class.getMethod("startConnect", WasiSocketAddress.class);
+      Method method = PanamaWasiUdpSocket.class.getMethod("startConnect", WasiSocketAddress.class);
       assertNotNull(method, "startConnect method should exist");
       assertEquals(void.class, method.getReturnType(), "startConnect should return void");
     }
@@ -659,8 +607,7 @@ class PanamaWasiSocketTest {
       assertNotNull(getReceive, "getReceiveBufferSize method should exist");
       assertEquals(long.class, getReceive.getReturnType(), "Should return long");
 
-      Method setReceive =
-          PanamaWasiUdpSocket.class.getMethod("setReceiveBufferSize", long.class);
+      Method setReceive = PanamaWasiUdpSocket.class.getMethod("setReceiveBufferSize", long.class);
       assertNotNull(setReceive, "setReceiveBufferSize method should exist");
 
       Method getSend = PanamaWasiUdpSocket.class.getMethod("getSendBufferSize");
@@ -708,9 +655,7 @@ class PanamaWasiSocketTest {
       Method method =
           PanamaWasiTcpSocket.class.getDeclaredMethod("formatAddress", WasiSocketAddress.class);
       assertNotNull(method, "formatAddress method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "formatAddress should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "formatAddress should be private");
       assertEquals(String.class, method.getReturnType(), "Should return String");
     }
 
@@ -718,13 +663,11 @@ class PanamaWasiSocketTest {
     @DisplayName("TcpSocket should have private parseAddress method")
     void tcpShouldHaveParseAddressMethod() throws NoSuchMethodException {
       Method method =
-          PanamaWasiTcpSocket.class.getDeclaredMethod(
-              "parseAddress", String.class, int.class);
+          PanamaWasiTcpSocket.class.getDeclaredMethod("parseAddress", String.class, int.class);
       assertNotNull(method, "parseAddress method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "parseAddress should be private");
-      assertEquals(WasiSocketAddress.class, method.getReturnType(), "Should return WasiSocketAddress");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "parseAddress should be private");
+      assertEquals(
+          WasiSocketAddress.class, method.getReturnType(), "Should return WasiSocketAddress");
     }
 
     @Test
@@ -733,9 +676,7 @@ class PanamaWasiSocketTest {
       Method method =
           PanamaWasiUdpSocket.class.getDeclaredMethod("formatAddress", WasiSocketAddress.class);
       assertNotNull(method, "formatAddress method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "formatAddress should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "formatAddress should be private");
       assertEquals(String.class, method.getReturnType(), "Should return String");
     }
 
@@ -743,13 +684,11 @@ class PanamaWasiSocketTest {
     @DisplayName("UdpSocket should have private parseAddress method")
     void udpShouldHaveParseAddressMethod() throws NoSuchMethodException {
       Method method =
-          PanamaWasiUdpSocket.class.getDeclaredMethod(
-              "parseAddress", String.class, int.class);
+          PanamaWasiUdpSocket.class.getDeclaredMethod("parseAddress", String.class, int.class);
       assertNotNull(method, "parseAddress method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "parseAddress should be private");
-      assertEquals(WasiSocketAddress.class, method.getReturnType(), "Should return WasiSocketAddress");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "parseAddress should be private");
+      assertEquals(
+          WasiSocketAddress.class, method.getReturnType(), "Should return WasiSocketAddress");
     }
 
     @Test
@@ -757,9 +696,7 @@ class PanamaWasiSocketTest {
     void tcpShouldHaveEnsureNotClosedMethod() throws NoSuchMethodException {
       Method method = PanamaWasiTcpSocket.class.getDeclaredMethod("ensureNotClosed");
       assertNotNull(method, "ensureNotClosed method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "ensureNotClosed should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
     }
 
     @Test
@@ -767,9 +704,7 @@ class PanamaWasiSocketTest {
     void udpShouldHaveEnsureNotClosedMethod() throws NoSuchMethodException {
       Method method = PanamaWasiUdpSocket.class.getDeclaredMethod("ensureNotClosed");
       assertNotNull(method, "ensureNotClosed method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "ensureNotClosed should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
     }
   }
 
@@ -791,11 +726,9 @@ class PanamaWasiSocketTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
           } catch (NoSuchMethodException e) {
             // May be a default method
           }
@@ -813,11 +746,9 @@ class PanamaWasiSocketTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
           } catch (NoSuchMethodException e) {
             // May be a default method
           }

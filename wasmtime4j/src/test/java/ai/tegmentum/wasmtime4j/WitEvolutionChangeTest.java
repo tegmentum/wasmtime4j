@@ -57,15 +57,13 @@ class WitEvolutionChangeTest {
     @Test
     @DisplayName("ChangeType should be public enum")
     void changeTypeShouldBePublicEnum() {
-      assertTrue(
-          WitEvolutionChange.ChangeType.class.isEnum(), "ChangeType should be an enum");
+      assertTrue(WitEvolutionChange.ChangeType.class.isEnum(), "ChangeType should be an enum");
     }
 
     @Test
     @DisplayName("ChangeImpact should be public enum")
     void changeImpactShouldBePublicEnum() {
-      assertTrue(
-          WitEvolutionChange.ChangeImpact.class.isEnum(), "ChangeImpact should be an enum");
+      assertTrue(WitEvolutionChange.ChangeImpact.class.isEnum(), "ChangeImpact should be an enum");
     }
   }
 
@@ -259,7 +257,8 @@ class WitEvolutionChangeTest {
     @DisplayName("typeModified with breaking=true should create high impact change")
     void typeModifiedWithBreakingShouldCreateHighImpactChange() {
       final var change =
-          WitEvolutionChange.typeModified("config", "record config { a: s32 }", "record config { a: string }", true);
+          WitEvolutionChange.typeModified(
+              "config", "record config { a: s32 }", "record config { a: string }", true);
 
       assertEquals(WitEvolutionChange.ChangeType.TYPE_MODIFIED, change.getType());
       assertEquals(WitEvolutionChange.ChangeImpact.HIGH, change.getImpact());
@@ -270,7 +269,8 @@ class WitEvolutionChangeTest {
     @DisplayName("typeModified with breaking=false should create medium impact change")
     void typeModifiedWithoutBreakingShouldCreateMediumImpactChange() {
       final var change =
-          WitEvolutionChange.typeModified("config", "record config { a: s32 }", "record config { a: s32, b: s32 }", false);
+          WitEvolutionChange.typeModified(
+              "config", "record config { a: s32 }", "record config { a: s32, b: s32 }", false);
 
       assertEquals(WitEvolutionChange.ChangeType.TYPE_MODIFIED, change.getType());
       assertEquals(WitEvolutionChange.ChangeImpact.MEDIUM, change.getImpact());

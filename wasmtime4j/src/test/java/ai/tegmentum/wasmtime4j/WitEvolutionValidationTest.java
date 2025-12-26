@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -469,7 +468,8 @@ class WitEvolutionValidationTest {
               List.of(violation1, violation2, violation3), List.of(), metrics);
 
       final var typeSafetyViolations =
-          validation.getViolationsByType(WitEvolutionValidation.ViolationType.TYPE_SAFETY_VIOLATION);
+          validation.getViolationsByType(
+              WitEvolutionValidation.ViolationType.TYPE_SAFETY_VIOLATION);
 
       assertEquals(2, typeSafetyViolations.size());
     }
@@ -523,10 +523,10 @@ class WitEvolutionValidationTest {
     @Test
     @DisplayName("getViolations should return unmodifiable list")
     void getViolationsShouldReturnUnmodifiableList() {
-      final var validation =
-          WitEvolutionValidation.success(List.of(), createMockMetrics());
+      final var validation = WitEvolutionValidation.success(List.of(), createMockMetrics());
 
-      final List<WitEvolutionValidation.ConstraintViolation> violations = validation.getViolations();
+      final List<WitEvolutionValidation.ConstraintViolation> violations =
+          validation.getViolations();
 
       try {
         violations.add(
@@ -545,8 +545,7 @@ class WitEvolutionValidationTest {
     @Test
     @DisplayName("getIssues should return unmodifiable list")
     void getIssuesShouldReturnUnmodifiableList() {
-      final var validation =
-          WitEvolutionValidation.success(List.of(), createMockMetrics());
+      final var validation = WitEvolutionValidation.success(List.of(), createMockMetrics());
 
       final List<WitEvolutionValidation.CompatibilityIssue> issues = validation.getIssues();
 
@@ -568,8 +567,7 @@ class WitEvolutionValidationTest {
     @Test
     @DisplayName("getWarnings should return unmodifiable list")
     void getWarningsShouldReturnUnmodifiableList() {
-      final var validation =
-          WitEvolutionValidation.success(List.of(), createMockMetrics());
+      final var validation = WitEvolutionValidation.success(List.of(), createMockMetrics());
 
       final List<WitEvolutionValidation.EvolutionWarning> warnings = validation.getWarnings();
 
@@ -589,8 +587,7 @@ class WitEvolutionValidationTest {
     @Test
     @DisplayName("getRecommendations should return unmodifiable list")
     void getRecommendationsShouldReturnUnmodifiableList() {
-      final var validation =
-          WitEvolutionValidation.success(List.of("rec1"), createMockMetrics());
+      final var validation = WitEvolutionValidation.success(List.of("rec1"), createMockMetrics());
 
       final List<String> recommendations = validation.getRecommendations();
 
@@ -610,8 +607,7 @@ class WitEvolutionValidationTest {
     @Test
     @DisplayName("toString should return formatted string")
     void toStringShouldReturnFormattedString() {
-      final var validation =
-          WitEvolutionValidation.success(List.of("rec"), createMockMetrics());
+      final var validation = WitEvolutionValidation.success(List.of("rec"), createMockMetrics());
 
       final String str = validation.toString();
 

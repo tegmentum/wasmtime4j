@@ -64,11 +64,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should create exception with all parameters")
     void shouldCreateExceptionWithAllParameters() {
-      final WasiException exception = new WasiException(
-          "Test error",
-          WasiErrorCode.ENOENT,
-          "open",
-          "/path/to/file");
+      final WasiException exception =
+          new WasiException("Test error", WasiErrorCode.ENOENT, "open", "/path/to/file");
 
       assertNotNull(exception.getMessage(), "Message should not be null");
       assertTrue(exception.getMessage().contains("Test error"), "Should contain base message");
@@ -80,11 +77,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Message should include operation and resource")
     void messageShouldIncludeOperationAndResource() {
-      final WasiException exception = new WasiException(
-          "File error",
-          WasiErrorCode.EIO,
-          "read",
-          "/tmp/data.txt");
+      final WasiException exception =
+          new WasiException("File error", WasiErrorCode.EIO, "read", "/tmp/data.txt");
 
       final String message = exception.getMessage();
       assertTrue(message.contains("read"), "Message should contain operation");
@@ -95,25 +89,19 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should handle null message")
     void shouldHandleNullMessage() {
-      final WasiException exception = new WasiException(
-          null,
-          WasiErrorCode.ENOENT,
-          "stat",
-          "/file");
+      final WasiException exception =
+          new WasiException(null, WasiErrorCode.ENOENT, "stat", "/file");
 
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertTrue(exception.getMessage().contains("No such file"),
-          "Should use error code description");
+      assertTrue(
+          exception.getMessage().contains("No such file"), "Should use error code description");
     }
 
     @Test
     @DisplayName("Should handle null operation and resource")
     void shouldHandleNullOperationAndResource() {
-      final WasiException exception = new WasiException(
-          "Error occurred",
-          WasiErrorCode.EIO,
-          null,
-          null);
+      final WasiException exception =
+          new WasiException("Error occurred", WasiErrorCode.EIO, null, null);
 
       assertNull(exception.getOperation(), "Operation should be null");
       assertNull(exception.getResource(), "Resource should be null");
@@ -129,12 +117,8 @@ class WasiExceptionTest {
     @DisplayName("Should preserve cause")
     void shouldPreserveCause() {
       final RuntimeException cause = new RuntimeException("Underlying error");
-      final WasiException exception = new WasiException(
-          "WASI error",
-          WasiErrorCode.EIO,
-          "write",
-          "/output",
-          cause);
+      final WasiException exception =
+          new WasiException("WASI error", WasiErrorCode.EIO, "write", "/output", cause);
 
       assertSame(cause, exception.getCause(), "Cause should be preserved");
     }
@@ -142,12 +126,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should handle null cause")
     void shouldHandleNullCause() {
-      final WasiException exception = new WasiException(
-          "Error",
-          WasiErrorCode.EACCES,
-          "open",
-          "/file",
-          null);
+      final WasiException exception =
+          new WasiException("Error", WasiErrorCode.EACCES, "open", "/file", null);
 
       assertNull(exception.getCause(), "Cause should be null");
     }
@@ -160,9 +140,7 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should create exception with message and error code")
     void shouldCreateExceptionWithMessageAndErrorCode() {
-      final WasiException exception = new WasiException(
-          "Simple error",
-          WasiErrorCode.EINVAL);
+      final WasiException exception = new WasiException("Simple error", WasiErrorCode.EINVAL);
 
       assertEquals(WasiErrorCode.EINVAL, exception.getErrorCode(), "Error code should match");
       assertNull(exception.getOperation(), "Operation should be null");
@@ -177,13 +155,12 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should create exception from error code and operation")
     void shouldCreateExceptionFromErrorCodeAndOperation() {
-      final WasiException exception = new WasiException(
-          WasiErrorCode.EPERM,
-          "chmod");
+      final WasiException exception = new WasiException(WasiErrorCode.EPERM, "chmod");
 
       assertEquals(WasiErrorCode.EPERM, exception.getErrorCode(), "Error code should match");
       assertEquals("chmod", exception.getOperation(), "Operation should match");
-      assertTrue(exception.getMessage().contains("Operation not permitted"),
+      assertTrue(
+          exception.getMessage().contains("Operation not permitted"),
           "Message should contain error description");
     }
   }
@@ -195,10 +172,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Should create exception from error code, operation, and resource")
     void shouldCreateExceptionFromErrorCodeOperationAndResource() {
-      final WasiException exception = new WasiException(
-          WasiErrorCode.ENOSPC,
-          "write",
-          "/disk/full");
+      final WasiException exception =
+          new WasiException(WasiErrorCode.ENOSPC, "write", "/disk/full");
 
       assertEquals(WasiErrorCode.ENOSPC, exception.getErrorCode(), "Error code should match");
       assertEquals("write", exception.getOperation(), "Operation should match");
@@ -216,8 +191,8 @@ class WasiExceptionTest {
       final WasiException exception = new WasiException("Simple error message");
 
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertTrue(exception.getMessage().contains("Simple error message"),
-          "Should contain the message");
+      assertTrue(
+          exception.getMessage().contains("Simple error message"), "Should contain the message");
     }
   }
 
@@ -228,10 +203,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isFileSystemError should delegate to error code")
     void isFileSystemErrorShouldDelegateToErrorCode() {
-      final WasiException fsException = new WasiException(
-          "FS error", WasiErrorCode.ENOENT);
-      final WasiException netException = new WasiException(
-          "Net error", WasiErrorCode.ECONNREFUSED);
+      final WasiException fsException = new WasiException("FS error", WasiErrorCode.ENOENT);
+      final WasiException netException = new WasiException("Net error", WasiErrorCode.ECONNREFUSED);
 
       assertTrue(fsException.isFileSystemError(), "Should be file system error");
       assertFalse(netException.isFileSystemError(), "Should not be file system error");
@@ -240,10 +213,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isNetworkError should delegate to error code")
     void isNetworkErrorShouldDelegateToErrorCode() {
-      final WasiException netException = new WasiException(
-          "Net error", WasiErrorCode.ETIMEDOUT);
-      final WasiException fsException = new WasiException(
-          "FS error", WasiErrorCode.ENOENT);
+      final WasiException netException = new WasiException("Net error", WasiErrorCode.ETIMEDOUT);
+      final WasiException fsException = new WasiException("FS error", WasiErrorCode.ENOENT);
 
       assertTrue(netException.isNetworkError(), "Should be network error");
       assertFalse(fsException.isNetworkError(), "Should not be network error");
@@ -252,10 +223,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isPermissionError should delegate to error code")
     void isPermissionErrorShouldDelegateToErrorCode() {
-      final WasiException permException = new WasiException(
-          "Perm error", WasiErrorCode.EPERM);
-      final WasiException ioException = new WasiException(
-          "IO error", WasiErrorCode.EIO);
+      final WasiException permException = new WasiException("Perm error", WasiErrorCode.EPERM);
+      final WasiException ioException = new WasiException("IO error", WasiErrorCode.EIO);
 
       assertTrue(permException.isPermissionError(), "Should be permission error");
       assertFalse(ioException.isPermissionError(), "Should not be permission error");
@@ -264,10 +233,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isResourceLimitError should delegate to error code")
     void isResourceLimitErrorShouldDelegateToErrorCode() {
-      final WasiException memException = new WasiException(
-          "Memory error", WasiErrorCode.ENOMEM);
-      final WasiException ioException = new WasiException(
-          "IO error", WasiErrorCode.EIO);
+      final WasiException memException = new WasiException("Memory error", WasiErrorCode.ENOMEM);
+      final WasiException ioException = new WasiException("IO error", WasiErrorCode.EIO);
 
       assertTrue(memException.isResourceLimitError(), "Should be resource limit error");
       assertFalse(ioException.isResourceLimitError(), "Should not be resource limit error");
@@ -276,10 +243,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("isRetryable should delegate to error code")
     void isRetryableShouldDelegateToErrorCode() {
-      final WasiException retryable = new WasiException(
-          "Retry error", WasiErrorCode.EAGAIN);
-      final WasiException notRetryable = new WasiException(
-          "No retry", WasiErrorCode.EINVAL);
+      final WasiException retryable = new WasiException("Retry error", WasiErrorCode.EAGAIN);
+      final WasiException notRetryable = new WasiException("No retry", WasiErrorCode.EINVAL);
 
       assertTrue(retryable.isRetryable(), "Should be retryable");
       assertFalse(notRetryable.isRetryable(), "Should not be retryable");
@@ -314,11 +279,8 @@ class WasiExceptionTest {
     @Test
     @DisplayName("Full message format should be correct")
     void fullMessageFormatShouldBeCorrect() {
-      final WasiException exception = new WasiException(
-          "Custom message",
-          WasiErrorCode.EACCES,
-          "write",
-          "/secret/file");
+      final WasiException exception =
+          new WasiException("Custom message", WasiErrorCode.EACCES, "write", "/secret/file");
 
       final String message = exception.getMessage();
       assertTrue(message.contains("Custom message"), "Should contain custom message");

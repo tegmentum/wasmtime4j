@@ -28,9 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiRandomOperations}.
- */
+/** Comprehensive tests for {@link WasiRandomOperations}. */
 @DisplayName("WasiRandomOperations Tests")
 class WasiRandomOperationsTest {
 
@@ -63,9 +61,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
-          () -> new WasiRandomOperations(null),
-          "Should throw on null context");
+      assertThrows(
+          JniException.class, () -> new WasiRandomOperations(null), "Should throw on null context");
     }
 
     @Test
@@ -83,7 +80,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytes(null),
           "Should throw on null buffer");
     }
@@ -93,7 +91,8 @@ class WasiRandomOperationsTest {
     void shouldThrowOnReadOnlyBuffer() {
       final ByteBuffer buffer = ByteBuffer.allocate(100).asReadOnlyBuffer();
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytes(buffer),
           "Should throw on read-only buffer");
     }
@@ -125,7 +124,8 @@ class WasiRandomOperationsTest {
       // MAX_BUFFER_SIZE is 1MB (1024 * 1024)
       final ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024 + 1);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytes(buffer),
           "Should throw on buffer > 1MB");
     }
@@ -138,7 +138,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Should throw on negative length")
     void shouldThrowOnNegativeLength() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.generateRandomBytes(-1),
           "Should throw on negative length");
     }
@@ -155,7 +156,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Should throw on length too large")
     void shouldThrowOnLengthTooLarge() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.generateRandomBytes(1024 * 1024 + 1),
           "Should throw on length > 1MB");
     }
@@ -168,11 +170,13 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Should throw on non-positive bound")
     void shouldThrowOnNonPositiveBound() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.generateRandomInt(0),
           "Should throw on zero bound");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.generateRandomInt(-1),
           "Should throw on negative bound");
     }
@@ -182,8 +186,7 @@ class WasiRandomOperationsTest {
     void boundOfOneShouldBeValid() {
       // Bound of 1 is valid - should return 0
       // Will throw due to native call failure, but validation passes
-      assertThrows(Exception.class,
-          () -> randomOperations.generateRandomInt(1));
+      assertThrows(Exception.class, () -> randomOperations.generateRandomInt(1));
     }
   }
 
@@ -194,7 +197,8 @@ class WasiRandomOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytesFallback(null),
           "Should throw on null buffer");
     }
@@ -204,7 +208,8 @@ class WasiRandomOperationsTest {
     void shouldThrowOnReadOnlyBuffer() {
       final ByteBuffer buffer = ByteBuffer.allocate(100).asReadOnlyBuffer();
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytesFallback(buffer),
           "Should throw on read-only buffer");
     }
@@ -315,8 +320,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
 
       // Will throw from native, but validation should pass
-      assertThrows(Exception.class,
-          () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
     }
 
     @Test
@@ -324,7 +328,8 @@ class WasiRandomOperationsTest {
     void shouldRejectBufferLargerThan1Mb() {
       final ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024 + 1);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> randomOperations.getRandomBytes(buffer),
           "Should reject > 1MB buffer");
     }
@@ -335,8 +340,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1);
 
       // Will throw from native, but validation passes
-      assertThrows(Exception.class,
-          () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
     }
   }
 
@@ -350,8 +354,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(100);
 
       // Will throw from native, but should attempt correct path
-      assertThrows(Exception.class,
-          () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
     }
 
     @Test
@@ -360,8 +363,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 
       // Will throw from native, but should attempt correct path
-      assertThrows(Exception.class,
-          () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
     }
   }
 }

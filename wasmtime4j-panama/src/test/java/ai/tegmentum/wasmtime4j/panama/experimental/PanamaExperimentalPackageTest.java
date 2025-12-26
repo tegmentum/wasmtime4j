@@ -65,8 +65,7 @@ public class PanamaExperimentalPackageTest {
     @DisplayName("Should be a final class implementing ExceptionHandler")
     void shouldBeFinalAndImplementExceptionHandler() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaExceptionHandler");
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "PanamaExceptionHandler should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "PanamaExceptionHandler should be final");
 
       // Check that it implements ExceptionHandler interface
       boolean implementsExceptionHandler = false;
@@ -191,8 +190,9 @@ public class PanamaExperimentalPackageTest {
         }
       }
 
-      assertTrue(createCount >= 2, "Should have at least 2 create factory methods (found: "
-          + createCount + ")");
+      assertTrue(
+          createCount >= 2,
+          "Should have at least 2 create factory methods (found: " + createCount + ")");
     }
 
     @Test

@@ -20,13 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -43,8 +41,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for {@link PanamaComponentInstance}.
  *
- * <p>These tests verify class structure, method signatures, and field definitions using
- * reflection. This approach allows testing without requiring native library loading.
+ * <p>These tests verify class structure, method signatures, and field definitions using reflection.
+ * This approach allows testing without requiring native library loading.
  */
 @DisplayName("PanamaComponentInstance Tests")
 class PanamaComponentInstanceTest {
@@ -92,7 +90,8 @@ class PanamaComponentInstanceTest {
     void shouldHaveNativeBindingsField() throws NoSuchFieldException {
       Field field = PanamaComponentInstance.class.getDeclaredField("NATIVE_BINDINGS");
       assertNotNull(field, "NATIVE_BINDINGS field should exist");
-      assertEquals(NativeFunctionBindings.class, field.getType(), "Should be NativeFunctionBindings type");
+      assertEquals(
+          NativeFunctionBindings.class, field.getType(), "Should be NativeFunctionBindings type");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isStatic(field.getModifiers()), "Should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
@@ -123,7 +122,8 @@ class PanamaComponentInstanceTest {
     void shouldHaveComponentField() throws NoSuchFieldException {
       Field field = PanamaComponentInstance.class.getDeclaredField("component");
       assertNotNull(field, "component field should exist");
-      assertEquals(PanamaComponentSimple.class, field.getType(), "Should be PanamaComponentSimple type");
+      assertEquals(
+          PanamaComponentSimple.class, field.getType(), "Should be PanamaComponentSimple type");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
     }
@@ -218,14 +218,18 @@ class PanamaComponentInstanceTest {
     void getStateShouldExist() throws NoSuchMethodException {
       Method method = PanamaComponentInstance.class.getMethod("getState");
       assertNotNull(method, "getState method should exist");
-      assertEquals(ComponentInstanceState.class, method.getReturnType(), "Should return ComponentInstanceState");
+      assertEquals(
+          ComponentInstanceState.class,
+          method.getReturnType(),
+          "Should return ComponentInstanceState");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 
     @Test
     @DisplayName("invoke should exist with String and varargs Object")
     void invokeShouldExist() throws NoSuchMethodException {
-      Method method = PanamaComponentInstance.class.getMethod("invoke", String.class, Object[].class);
+      Method method =
+          PanamaComponentInstance.class.getMethod("invoke", String.class, Object[].class);
       assertNotNull(method, "invoke method should exist");
       assertEquals(Object.class, method.getReturnType(), "Should return Object");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
@@ -282,7 +286,10 @@ class PanamaComponentInstanceTest {
     void getConfigShouldExist() throws NoSuchMethodException {
       Method method = PanamaComponentInstance.class.getMethod("getConfig");
       assertNotNull(method, "getConfig method should exist");
-      assertEquals(ComponentInstanceConfig.class, method.getReturnType(), "Should return ComponentInstanceConfig");
+      assertEquals(
+          ComponentInstanceConfig.class,
+          method.getReturnType(),
+          "Should return ComponentInstanceConfig");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 
@@ -292,7 +299,9 @@ class PanamaComponentInstanceTest {
       Method method = PanamaComponentInstance.class.getMethod("getResourceUsage");
       assertNotNull(method, "getResourceUsage method should exist");
       assertEquals(
-          ComponentResourceUsage.class, method.getReturnType(), "Should return ComponentResourceUsage");
+          ComponentResourceUsage.class,
+          method.getReturnType(),
+          "Should return ComponentResourceUsage");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 

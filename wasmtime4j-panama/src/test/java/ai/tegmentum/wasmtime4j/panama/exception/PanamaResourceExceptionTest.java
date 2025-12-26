@@ -41,14 +41,16 @@ class PanamaResourceExceptionTest {
     @Test
     @DisplayName("PanamaResourceException should extend PanamaException")
     void shouldExtendPanamaException() {
-      assertTrue(PanamaException.class.isAssignableFrom(PanamaResourceException.class),
+      assertTrue(
+          PanamaException.class.isAssignableFrom(PanamaResourceException.class),
           "PanamaResourceException should extend PanamaException");
     }
 
     @Test
     @DisplayName("PanamaResourceException should be final")
     void shouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(PanamaResourceException.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(PanamaResourceException.class.getModifiers()),
           "PanamaResourceException should be final");
     }
 
@@ -57,9 +59,11 @@ class PanamaResourceExceptionTest {
     void shouldHaveSerialVersionUID() throws NoSuchFieldException {
       final var field = PanamaResourceException.class.getDeclaredField("serialVersionUID");
       assertNotNull(field, "Should have serialVersionUID field");
-      assertTrue(java.lang.reflect.Modifier.isStatic(field.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isStatic(field.getModifiers()),
           "serialVersionUID should be static");
-      assertTrue(java.lang.reflect.Modifier.isFinal(field.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(field.getModifiers()),
           "serialVersionUID should be final");
     }
   }
@@ -71,7 +75,8 @@ class PanamaResourceExceptionTest {
     @Test
     @DisplayName("Constructor should accept message")
     void constructorShouldAcceptMessage() {
-      final PanamaResourceException exception = new PanamaResourceException("Resource allocation failed");
+      final PanamaResourceException exception =
+          new PanamaResourceException("Resource allocation failed");
       assertEquals("Resource allocation failed", exception.getMessage(), "Message should match");
     }
 
@@ -139,21 +144,20 @@ class PanamaResourceExceptionTest {
       final PanamaResourceException exception =
           new PanamaResourceException("Memory allocation failed", -1);
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertTrue(exception.getMessage().contains("Memory allocation failed"),
+      assertTrue(
+          exception.getMessage().contains("Memory allocation failed"),
           "Message should contain original message");
-      assertTrue(exception.getMessage().contains("-1"),
-          "Message should contain error code");
-      assertTrue(exception.getMessage().contains("native error code"),
+      assertTrue(exception.getMessage().contains("-1"), "Message should contain error code");
+      assertTrue(
+          exception.getMessage().contains("native error code"),
           "Message should contain 'native error code'");
     }
 
     @Test
     @DisplayName("Constructor should include zero error code")
     void constructorShouldIncludeZeroErrorCode() {
-      final PanamaResourceException exception =
-          new PanamaResourceException("Operation failed", 0);
-      assertTrue(exception.getMessage().contains("0"),
-          "Message should contain error code 0");
+      final PanamaResourceException exception = new PanamaResourceException("Operation failed", 0);
+      assertTrue(exception.getMessage().contains("0"), "Message should contain error code 0");
     }
 
     @Test
@@ -161,8 +165,8 @@ class PanamaResourceExceptionTest {
     void constructorShouldIncludePositiveErrorCode() {
       final PanamaResourceException exception =
           new PanamaResourceException("Operation failed", 12345);
-      assertTrue(exception.getMessage().contains("12345"),
-          "Message should contain positive error code");
+      assertTrue(
+          exception.getMessage().contains("12345"), "Message should contain positive error code");
     }
 
     @Test
@@ -170,15 +174,15 @@ class PanamaResourceExceptionTest {
     void constructorShouldIncludeLargeNegativeErrorCode() {
       final PanamaResourceException exception =
           new PanamaResourceException("Operation failed", Integer.MIN_VALUE);
-      assertTrue(exception.getMessage().contains(String.valueOf(Integer.MIN_VALUE)),
+      assertTrue(
+          exception.getMessage().contains(String.valueOf(Integer.MIN_VALUE)),
           "Message should contain MIN_VALUE error code");
     }
 
     @Test
     @DisplayName("Constructor should have null cause with error code")
     void constructorShouldHaveNullCauseWithErrorCode() {
-      final PanamaResourceException exception =
-          new PanamaResourceException("Test", 1);
+      final PanamaResourceException exception = new PanamaResourceException("Test", 1);
       assertNull(exception.getCause(), "Cause should be null");
     }
   }
@@ -195,10 +199,10 @@ class PanamaResourceExceptionTest {
           new PanamaResourceException("Resource failed", cause, -42);
 
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertTrue(exception.getMessage().contains("Resource failed"),
+      assertTrue(
+          exception.getMessage().contains("Resource failed"),
           "Message should contain original message");
-      assertTrue(exception.getMessage().contains("-42"),
-          "Message should contain error code");
+      assertTrue(exception.getMessage().contains("-42"), "Message should contain error code");
       assertSame(cause, exception.getCause(), "Cause should match");
     }
 
@@ -208,10 +212,10 @@ class PanamaResourceExceptionTest {
       final PanamaResourceException exception =
           new PanamaResourceException("Resource failed", null, -42);
 
-      assertTrue(exception.getMessage().contains("Resource failed"),
+      assertTrue(
+          exception.getMessage().contains("Resource failed"),
           "Message should contain original message");
-      assertTrue(exception.getMessage().contains("-42"),
-          "Message should contain error code");
+      assertTrue(exception.getMessage().contains("-42"), "Message should contain error code");
       assertNull(exception.getCause(), "Cause should be null");
     }
 
@@ -219,11 +223,9 @@ class PanamaResourceExceptionTest {
     @DisplayName("Constructor should handle null message with cause and error code")
     void constructorShouldHandleNullMessageWithCauseAndErrorCode() {
       final RuntimeException cause = new RuntimeException("Root cause");
-      final PanamaResourceException exception =
-          new PanamaResourceException(null, cause, 100);
+      final PanamaResourceException exception = new PanamaResourceException(null, cause, 100);
 
-      assertTrue(exception.getMessage().contains("100"),
-          "Message should contain error code");
+      assertTrue(exception.getMessage().contains("100"), "Message should contain error code");
       assertSame(cause, exception.getCause(), "Cause should match");
     }
   }
@@ -238,8 +240,8 @@ class PanamaResourceExceptionTest {
       try {
         throw new PanamaResourceException("Resource error");
       } catch (PanamaException e) {
-        assertTrue(e instanceof PanamaResourceException,
-            "Should be instanceof PanamaResourceException");
+        assertTrue(
+            e instanceof PanamaResourceException, "Should be instanceof PanamaResourceException");
       }
     }
 
@@ -249,8 +251,8 @@ class PanamaResourceExceptionTest {
       try {
         throw new PanamaResourceException("Resource error");
       } catch (Exception e) {
-        assertTrue(e instanceof PanamaResourceException,
-            "Should be instanceof PanamaResourceException");
+        assertTrue(
+            e instanceof PanamaResourceException, "Should be instanceof PanamaResourceException");
       }
     }
 
@@ -260,8 +262,8 @@ class PanamaResourceExceptionTest {
       try {
         throw new PanamaResourceException("Resource error");
       } catch (Throwable t) {
-        assertTrue(t instanceof PanamaResourceException,
-            "Should be instanceof PanamaResourceException");
+        assertTrue(
+            t instanceof PanamaResourceException, "Should be instanceof PanamaResourceException");
       }
     }
   }
@@ -275,8 +277,7 @@ class PanamaResourceExceptionTest {
     void toStringShouldIncludeClassName() {
       final PanamaResourceException exception = new PanamaResourceException("Test message");
       final String str = exception.toString();
-      assertTrue(str.contains("PanamaResourceException"),
-          "toString should include class name");
+      assertTrue(str.contains("PanamaResourceException"), "toString should include class name");
     }
 
     @Test
@@ -308,10 +309,9 @@ class PanamaResourceExceptionTest {
         throw new PanamaResourceException("Native memory allocation failed", -1);
       } catch (PanamaResourceException e) {
         caught = true;
-        assertTrue(e.getMessage().contains("allocation"),
-            "Message should describe allocation issue");
-        assertTrue(e.getMessage().contains("-1"),
-            "Message should include error code");
+        assertTrue(
+            e.getMessage().contains("allocation"), "Message should describe allocation issue");
+        assertTrue(e.getMessage().contains("-1"), "Message should include error code");
       }
       assertTrue(caught, "Exception should be caught");
     }
@@ -322,8 +322,8 @@ class PanamaResourceExceptionTest {
       try {
         throw new PanamaResourceException("Native resource deallocation failed");
       } catch (PanamaResourceException e) {
-        assertTrue(e.getMessage().contains("deallocation"),
-            "Message should describe deallocation issue");
+        assertTrue(
+            e.getMessage().contains("deallocation"), "Message should describe deallocation issue");
       }
     }
 
@@ -333,8 +333,8 @@ class PanamaResourceExceptionTest {
       try {
         throw new PanamaResourceException("Native resource accessed after being freed");
       } catch (PanamaResourceException e) {
-        assertTrue(e.getMessage().contains("freed"),
-            "Message should describe use-after-free issue");
+        assertTrue(
+            e.getMessage().contains("freed"), "Message should describe use-after-free issue");
       }
     }
 
@@ -348,8 +348,7 @@ class PanamaResourceExceptionTest {
         throw new PanamaResourceException("Failed to allocate", nativeError, -12);
       } catch (PanamaResourceException e) {
         assertNotNull(e.getCause(), "Should have cause");
-        assertTrue(e.getMessage().contains("-12"),
-            "Should include native error code");
+        assertTrue(e.getMessage().contains("-12"), "Should include native error code");
       }
     }
 

@@ -107,8 +107,8 @@ class WasiRightsTest {
     @Test
     @DisplayName("SOCK_SHUTDOWN should have last bit position")
     void sockShutdownShouldHaveLastBitPosition() {
-      assertEquals(1L << 28, WasiRights.SOCK_SHUTDOWN.getValue(),
-          "SOCK_SHUTDOWN should have value 1 << 28");
+      assertEquals(
+          1L << 28, WasiRights.SOCK_SHUTDOWN.getValue(), "SOCK_SHUTDOWN should have value 1 << 28");
     }
 
     @Test
@@ -117,7 +117,8 @@ class WasiRightsTest {
       for (WasiRights right : WasiRights.values()) {
         final long value = right.getValue();
         assertTrue(value > 0, "Right value should be positive: " + right.name());
-        assertTrue((value & (value - 1)) == 0,
+        assertTrue(
+            (value & (value - 1)) == 0,
             "Right value should be power of 2 for bitwise operations: " + right.name());
       }
     }
@@ -136,7 +137,9 @@ class WasiRightsTest {
     @Test
     @DisplayName("combine with single right should return right value")
     void combineWithSingleRightShouldReturnRightValue() {
-      assertEquals(WasiRights.FD_READ.getValue(), WasiRights.combine(WasiRights.FD_READ),
+      assertEquals(
+          WasiRights.FD_READ.getValue(),
+          WasiRights.combine(WasiRights.FD_READ),
           "combine(FD_READ) should return FD_READ value");
     }
 
@@ -144,7 +147,9 @@ class WasiRightsTest {
     @DisplayName("combine with multiple rights should return OR of values")
     void combineWithMultipleRightsShouldReturnOrOfValues() {
       // FD_READ (2) | FD_WRITE (64) = 66
-      assertEquals(66L, WasiRights.combine(WasiRights.FD_READ, WasiRights.FD_WRITE),
+      assertEquals(
+          66L,
+          WasiRights.combine(WasiRights.FD_READ, WasiRights.FD_WRITE),
           "combine(FD_READ, FD_WRITE) should return 66");
     }
 
@@ -162,8 +167,8 @@ class WasiRightsTest {
       final long allRights = WasiRights.combine(WasiRights.values());
       assertTrue(allRights > 0, "Combined rights should be positive");
       for (WasiRights right : WasiRights.values()) {
-        assertTrue(WasiRights.contains(allRights, right),
-            "Combined mask should contain: " + right.name());
+        assertTrue(
+            WasiRights.contains(allRights, right), "Combined mask should contain: " + right.name());
       }
     }
   }
@@ -176,7 +181,8 @@ class WasiRightsTest {
     @DisplayName("contains should return true when right is present")
     void containsShouldReturnTrueWhenRightIsPresent() {
       final long mask = WasiRights.FD_READ.getValue();
-      assertTrue(WasiRights.contains(mask, WasiRights.FD_READ),
+      assertTrue(
+          WasiRights.contains(mask, WasiRights.FD_READ),
           "contains should return true when right is in mask");
     }
 
@@ -184,22 +190,24 @@ class WasiRightsTest {
     @DisplayName("contains should return false when right is not present")
     void containsShouldReturnFalseWhenRightIsNotPresent() {
       final long mask = WasiRights.FD_READ.getValue();
-      assertFalse(WasiRights.contains(mask, WasiRights.FD_WRITE),
+      assertFalse(
+          WasiRights.contains(mask, WasiRights.FD_WRITE),
           "contains should return false when right is not in mask");
     }
 
     @Test
     @DisplayName("contains should return false when mask is zero")
     void containsShouldReturnFalseWhenMaskIsZero() {
-      assertFalse(WasiRights.contains(0L, WasiRights.FD_READ),
+      assertFalse(
+          WasiRights.contains(0L, WasiRights.FD_READ),
           "contains should return false when mask is zero");
     }
 
     @Test
     @DisplayName("contains should work with combined rights")
     void containsShouldWorkWithCombinedRights() {
-      final long mask = WasiRights.combine(WasiRights.FD_READ, WasiRights.FD_WRITE,
-          WasiRights.FD_SEEK);
+      final long mask =
+          WasiRights.combine(WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.FD_SEEK);
       assertTrue(WasiRights.contains(mask, WasiRights.FD_READ), "Should find FD_READ");
       assertTrue(WasiRights.contains(mask, WasiRights.FD_WRITE), "Should find FD_WRITE");
       assertTrue(WasiRights.contains(mask, WasiRights.FD_SEEK), "Should find FD_SEEK");
@@ -218,7 +226,9 @@ class WasiRightsTest {
       final WasiRights[] rights = WasiRights.values();
       for (int i = 0; i < rights.length; i++) {
         for (int j = i + 1; j < rights.length; j++) {
-          assertEquals(0L, rights[i].getValue() & rights[j].getValue(),
+          assertEquals(
+              0L,
+              rights[i].getValue() & rights[j].getValue(),
               "Rights should not overlap: " + rights[i].name() + " and " + rights[j].name());
         }
       }
@@ -297,12 +307,12 @@ class WasiRightsTest {
     @Test
     @DisplayName("Read-only file rights should work")
     void readOnlyFileRightsShouldWork() {
-      final long readOnly = WasiRights.combine(
-          WasiRights.FD_READ,
-          WasiRights.FD_SEEK,
-          WasiRights.FD_TELL,
-          WasiRights.FD_FILESTAT_GET
-      );
+      final long readOnly =
+          WasiRights.combine(
+              WasiRights.FD_READ,
+              WasiRights.FD_SEEK,
+              WasiRights.FD_TELL,
+              WasiRights.FD_FILESTAT_GET);
       assertTrue(WasiRights.contains(readOnly, WasiRights.FD_READ));
       assertTrue(WasiRights.contains(readOnly, WasiRights.FD_SEEK));
       assertFalse(WasiRights.contains(readOnly, WasiRights.FD_WRITE));
@@ -311,13 +321,13 @@ class WasiRightsTest {
     @Test
     @DisplayName("Write file rights should work")
     void writeFileRightsShouldWork() {
-      final long writeRights = WasiRights.combine(
-          WasiRights.FD_WRITE,
-          WasiRights.FD_SEEK,
-          WasiRights.FD_TELL,
-          WasiRights.FD_DATASYNC,
-          WasiRights.FD_SYNC
-      );
+      final long writeRights =
+          WasiRights.combine(
+              WasiRights.FD_WRITE,
+              WasiRights.FD_SEEK,
+              WasiRights.FD_TELL,
+              WasiRights.FD_DATASYNC,
+              WasiRights.FD_SYNC);
       assertTrue(WasiRights.contains(writeRights, WasiRights.FD_WRITE));
       assertTrue(WasiRights.contains(writeRights, WasiRights.FD_SYNC));
       assertFalse(WasiRights.contains(writeRights, WasiRights.FD_READ));
@@ -326,11 +336,9 @@ class WasiRightsTest {
     @Test
     @DisplayName("Directory listing rights should work")
     void directoryListingRightsShouldWork() {
-      final long dirRights = WasiRights.combine(
-          WasiRights.FD_READDIR,
-          WasiRights.PATH_OPEN,
-          WasiRights.PATH_FILESTAT_GET
-      );
+      final long dirRights =
+          WasiRights.combine(
+              WasiRights.FD_READDIR, WasiRights.PATH_OPEN, WasiRights.PATH_FILESTAT_GET);
       assertTrue(WasiRights.contains(dirRights, WasiRights.FD_READDIR));
       assertTrue(WasiRights.contains(dirRights, WasiRights.PATH_OPEN));
       assertFalse(WasiRights.contains(dirRights, WasiRights.PATH_UNLINK_FILE));
@@ -374,11 +382,13 @@ class WasiRightsTest {
     @Test
     @DisplayName("Round trip combine/contains should work")
     void roundTripCombineContainsShouldWork() {
-      final WasiRights[] testRights = {WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.PATH_OPEN};
+      final WasiRights[] testRights = {
+        WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.PATH_OPEN
+      };
       final long mask = WasiRights.combine(testRights);
       for (WasiRights right : testRights) {
-        assertTrue(WasiRights.contains(mask, right),
-            "Should find right after combining: " + right.name());
+        assertTrue(
+            WasiRights.contains(mask, right), "Should find right after combining: " + right.name());
       }
     }
   }

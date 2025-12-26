@@ -50,13 +50,16 @@ class JniExnRefTest {
     @Test
     @DisplayName("should implement ExnRef interface")
     void shouldImplementExnRefInterface() {
-      assertTrue(ExnRef.class.isAssignableFrom(JniExnRef.class), "JniExnRef should implement ExnRef");
+      assertTrue(
+          ExnRef.class.isAssignableFrom(JniExnRef.class), "JniExnRef should implement ExnRef");
     }
 
     @Test
     @DisplayName("should extend JniResource")
     void shouldExtendJniResource() {
-      assertTrue(JniResource.class.isAssignableFrom(JniExnRef.class), "JniExnRef should extend JniResource");
+      assertTrue(
+          JniResource.class.isAssignableFrom(JniExnRef.class),
+          "JniExnRef should extend JniResource");
     }
   }
 
@@ -67,9 +70,11 @@ class JniExnRefTest {
     @Test
     @DisplayName("should have getTag method")
     void shouldHaveGetTagMethod() throws NoSuchMethodException {
-      final Method method = JniExnRef.class.getMethod("getTag", ai.tegmentum.wasmtime4j.Store.class);
+      final Method method =
+          JniExnRef.class.getMethod("getTag", ai.tegmentum.wasmtime4j.Store.class);
       assertNotNull(method, "getTag method should exist");
-      assertEquals(ai.tegmentum.wasmtime4j.Tag.class, method.getReturnType(), "getTag should return Tag");
+      assertEquals(
+          ai.tegmentum.wasmtime4j.Tag.class, method.getReturnType(), "getTag should return Tag");
     }
 
     @Test

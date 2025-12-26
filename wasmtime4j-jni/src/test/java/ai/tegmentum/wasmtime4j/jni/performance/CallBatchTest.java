@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link CallBatch} class.
  *
- * <p>This test class verifies the CallBatch class which batches multiple native calls together
- * to reduce JNI overhead through asynchronous batch execution.
+ * <p>This test class verifies the CallBatch class which batches multiple native calls together to
+ * reduce JNI overhead through asynchronous batch execution.
  */
 @DisplayName("CallBatch Tests")
 class CallBatchTest {
@@ -62,29 +62,30 @@ class CallBatchTest {
     @Test
     @DisplayName("CallBatch should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(CallBatch.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(CallBatch.class),
           "CallBatch should implement AutoCloseable");
     }
 
     @Test
     @DisplayName("CallBatch should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(CallBatch.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(CallBatch.class.getModifiers()),
           "CallBatch should be final");
     }
 
     @Test
     @DisplayName("DEFAULT_MAX_BATCH_SIZE should be 32")
     void defaultMaxBatchSizeShouldBe32() {
-      assertEquals(32, CallBatch.DEFAULT_MAX_BATCH_SIZE,
-          "DEFAULT_MAX_BATCH_SIZE should be 32");
+      assertEquals(32, CallBatch.DEFAULT_MAX_BATCH_SIZE, "DEFAULT_MAX_BATCH_SIZE should be 32");
     }
 
     @Test
     @DisplayName("DEFAULT_BATCH_TIMEOUT_MS should be 100")
     void defaultBatchTimeoutMsShouldBe100() {
-      assertEquals(100, CallBatch.DEFAULT_BATCH_TIMEOUT_MS,
-          "DEFAULT_BATCH_TIMEOUT_MS should be 100");
+      assertEquals(
+          100, CallBatch.DEFAULT_BATCH_TIMEOUT_MS, "DEFAULT_BATCH_TIMEOUT_MS should be 100");
     }
   }
 
@@ -95,78 +96,70 @@ class CallBatchTest {
     @Test
     @DisplayName("Should have FUNCTION_CALL value")
     void shouldHaveFunctionCallValue() {
-      assertNotNull(BatchOperationType.valueOf("FUNCTION_CALL"),
-          "Should have FUNCTION_CALL value");
+      assertNotNull(BatchOperationType.valueOf("FUNCTION_CALL"), "Should have FUNCTION_CALL value");
     }
 
     @Test
     @DisplayName("Should have MEMORY_READ value")
     void shouldHaveMemoryReadValue() {
-      assertNotNull(BatchOperationType.valueOf("MEMORY_READ"),
-          "Should have MEMORY_READ value");
+      assertNotNull(BatchOperationType.valueOf("MEMORY_READ"), "Should have MEMORY_READ value");
     }
 
     @Test
     @DisplayName("Should have MEMORY_WRITE value")
     void shouldHaveMemoryWriteValue() {
-      assertNotNull(BatchOperationType.valueOf("MEMORY_WRITE"),
-          "Should have MEMORY_WRITE value");
+      assertNotNull(BatchOperationType.valueOf("MEMORY_WRITE"), "Should have MEMORY_WRITE value");
     }
 
     @Test
     @DisplayName("Should have GLOBAL_GET value")
     void shouldHaveGlobalGetValue() {
-      assertNotNull(BatchOperationType.valueOf("GLOBAL_GET"),
-          "Should have GLOBAL_GET value");
+      assertNotNull(BatchOperationType.valueOf("GLOBAL_GET"), "Should have GLOBAL_GET value");
     }
 
     @Test
     @DisplayName("Should have GLOBAL_SET value")
     void shouldHaveGlobalSetValue() {
-      assertNotNull(BatchOperationType.valueOf("GLOBAL_SET"),
-          "Should have GLOBAL_SET value");
+      assertNotNull(BatchOperationType.valueOf("GLOBAL_SET"), "Should have GLOBAL_SET value");
     }
 
     @Test
     @DisplayName("Should have exactly 5 operation types")
     void shouldHaveExactly5OperationTypes() {
-      assertEquals(5, BatchOperationType.values().length,
-          "Should have exactly 5 operation types");
+      assertEquals(5, BatchOperationType.values().length, "Should have exactly 5 operation types");
     }
 
     @Test
     @DisplayName("FUNCTION_CALL should be at ordinal 0")
     void functionCallShouldBeAtOrdinal0() {
-      assertEquals(0, BatchOperationType.FUNCTION_CALL.ordinal(),
-          "FUNCTION_CALL should be at ordinal 0");
+      assertEquals(
+          0, BatchOperationType.FUNCTION_CALL.ordinal(), "FUNCTION_CALL should be at ordinal 0");
     }
 
     @Test
     @DisplayName("MEMORY_READ should be at ordinal 1")
     void memoryReadShouldBeAtOrdinal1() {
-      assertEquals(1, BatchOperationType.MEMORY_READ.ordinal(),
-          "MEMORY_READ should be at ordinal 1");
+      assertEquals(
+          1, BatchOperationType.MEMORY_READ.ordinal(), "MEMORY_READ should be at ordinal 1");
     }
 
     @Test
     @DisplayName("MEMORY_WRITE should be at ordinal 2")
     void memoryWriteShouldBeAtOrdinal2() {
-      assertEquals(2, BatchOperationType.MEMORY_WRITE.ordinal(),
-          "MEMORY_WRITE should be at ordinal 2");
+      assertEquals(
+          2, BatchOperationType.MEMORY_WRITE.ordinal(), "MEMORY_WRITE should be at ordinal 2");
     }
 
     @Test
     @DisplayName("GLOBAL_GET should be at ordinal 3")
     void globalGetShouldBeAtOrdinal3() {
-      assertEquals(3, BatchOperationType.GLOBAL_GET.ordinal(),
-          "GLOBAL_GET should be at ordinal 3");
+      assertEquals(3, BatchOperationType.GLOBAL_GET.ordinal(), "GLOBAL_GET should be at ordinal 3");
     }
 
     @Test
     @DisplayName("GLOBAL_SET should be at ordinal 4")
     void globalSetShouldBeAtOrdinal4() {
-      assertEquals(4, BatchOperationType.GLOBAL_SET.ordinal(),
-          "GLOBAL_SET should be at ordinal 4");
+      assertEquals(4, BatchOperationType.GLOBAL_SET.ordinal(), "GLOBAL_SET should be at ordinal 4");
     }
   }
 
@@ -179,9 +172,13 @@ class CallBatchTest {
     void defaultConstructorShouldCreateBatchWithDefaultConfiguration() {
       final CallBatch defaultBatch = new CallBatch();
       try {
-        assertEquals(CallBatch.DEFAULT_MAX_BATCH_SIZE, defaultBatch.getMaxBatchSize(),
+        assertEquals(
+            CallBatch.DEFAULT_MAX_BATCH_SIZE,
+            defaultBatch.getMaxBatchSize(),
             "Should use default max batch size");
-        assertEquals(CallBatch.DEFAULT_BATCH_TIMEOUT_MS, defaultBatch.getBatchTimeoutMs(),
+        assertEquals(
+            CallBatch.DEFAULT_BATCH_TIMEOUT_MS,
+            defaultBatch.getBatchTimeoutMs(),
             "Should use default batch timeout");
         assertTrue(defaultBatch.isEmpty(), "New batch should be empty");
         assertFalse(defaultBatch.isExecuted(), "New batch should not be executed");
@@ -206,16 +203,22 @@ class CallBatchTest {
     @Test
     @DisplayName("Constructor should throw for non-positive maxBatchSize")
     void constructorShouldThrowForNonPositiveMaxBatchSize() {
-      assertThrows(IllegalArgumentException.class, () -> new CallBatch(0, 100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new CallBatch(0, 100),
           "Should throw for maxBatchSize = 0");
-      assertThrows(IllegalArgumentException.class, () -> new CallBatch(-1, 100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new CallBatch(-1, 100),
           "Should throw for negative maxBatchSize");
     }
 
     @Test
     @DisplayName("Constructor should throw for negative batchTimeoutMs")
     void constructorShouldThrowForNegativeBatchTimeoutMs() {
-      assertThrows(IllegalArgumentException.class, () -> new CallBatch(10, -1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new CallBatch(10, -1),
           "Should throw for negative batchTimeoutMs");
     }
 
@@ -236,8 +239,7 @@ class CallBatchTest {
       final CallBatch batch1 = new CallBatch();
       final CallBatch batch2 = new CallBatch();
       try {
-        assertTrue(batch1.getBatchId() != batch2.getBatchId(),
-            "Each batch should have unique ID");
+        assertTrue(batch1.getBatchId() != batch2.getBatchId(), "Each batch should have unique ID");
       } finally {
         batch1.close();
         batch2.close();
@@ -252,7 +254,7 @@ class CallBatchTest {
     @Test
     @DisplayName("addFunctionCall should return CompletableFuture")
     void addFunctionCallShouldReturnCompletableFuture() {
-      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[]{}, "test");
+      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[] {}, "test");
       assertNotNull(future, "Should return non-null future");
       assertFalse(future.isDone(), "Future should not be done yet");
     }
@@ -261,33 +263,34 @@ class CallBatchTest {
     @DisplayName("addFunctionCall should increment size")
     void addFunctionCallShouldIncrementSize() {
       assertEquals(0, batch.size(), "Initial size should be 0");
-      batch.addFunctionCall(1L, new Object[]{}, "test1");
+      batch.addFunctionCall(1L, new Object[] {}, "test1");
       assertEquals(1, batch.size(), "Size should be 1 after first add");
-      batch.addFunctionCall(2L, new Object[]{}, "test2");
+      batch.addFunctionCall(2L, new Object[] {}, "test2");
       assertEquals(2, batch.size(), "Size should be 2 after second add");
     }
 
     @Test
     @DisplayName("addFunctionCall should throw for zero function handle")
     void addFunctionCallShouldThrowForZeroFunctionHandle() {
-      assertThrows(IllegalArgumentException.class,
-          () -> batch.addFunctionCall(0L, new Object[]{}, "test"),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> batch.addFunctionCall(0L, new Object[] {}, "test"),
           "Should throw for zero function handle");
     }
 
     @Test
     @DisplayName("addFunctionCall should accept null parameters")
     void addFunctionCallShouldAcceptNullParameters() {
-      assertDoesNotThrow(() -> batch.addFunctionCall(1L, null, "test"),
-          "Should accept null parameters");
+      assertDoesNotThrow(
+          () -> batch.addFunctionCall(1L, null, "test"), "Should accept null parameters");
       assertEquals(1, batch.size(), "Size should be 1");
     }
 
     @Test
     @DisplayName("addFunctionCall should accept null debug info")
     void addFunctionCallShouldAcceptNullDebugInfo() {
-      assertDoesNotThrow(() -> batch.addFunctionCall(1L, new Object[]{}, null),
-          "Should accept null debug info");
+      assertDoesNotThrow(
+          () -> batch.addFunctionCall(1L, new Object[] {}, null), "Should accept null debug info");
       assertEquals(1, batch.size(), "Size should be 1");
     }
 
@@ -296,10 +299,11 @@ class CallBatchTest {
     void addFunctionCallShouldThrowWhenBatchIsFull() {
       final CallBatch smallBatch = new CallBatch(2, 100);
       try {
-        smallBatch.addFunctionCall(1L, new Object[]{}, "op1");
-        smallBatch.addFunctionCall(2L, new Object[]{}, "op2");
-        assertThrows(IllegalStateException.class,
-            () -> smallBatch.addFunctionCall(3L, new Object[]{}, "op3"),
+        smallBatch.addFunctionCall(1L, new Object[] {}, "op1");
+        smallBatch.addFunctionCall(2L, new Object[] {}, "op2");
+        assertThrows(
+            IllegalStateException.class,
+            () -> smallBatch.addFunctionCall(3L, new Object[] {}, "op3"),
             "Should throw when batch is full");
       } finally {
         smallBatch.close();
@@ -310,8 +314,9 @@ class CallBatchTest {
     @DisplayName("addFunctionCall should throw when batch is executed")
     void addFunctionCallShouldThrowWhenBatchIsExecuted() {
       batch.execute();
-      assertThrows(IllegalStateException.class,
-          () -> batch.addFunctionCall(1L, new Object[]{}, "test"),
+      assertThrows(
+          IllegalStateException.class,
+          () -> batch.addFunctionCall(1L, new Object[] {}, "test"),
           "Should throw when batch is executed");
     }
 
@@ -319,8 +324,9 @@ class CallBatchTest {
     @DisplayName("addFunctionCall should throw when batch is closed")
     void addFunctionCallShouldThrowWhenBatchIsClosed() {
       batch.close();
-      assertThrows(IllegalStateException.class,
-          () -> batch.addFunctionCall(1L, new Object[]{}, "test"),
+      assertThrows(
+          IllegalStateException.class,
+          () -> batch.addFunctionCall(1L, new Object[] {}, "test"),
           "Should throw when batch is closed");
     }
   }
@@ -346,7 +352,8 @@ class CallBatchTest {
     @Test
     @DisplayName("addMemoryRead should throw for zero memory handle")
     void addMemoryReadShouldThrowForZeroMemoryHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> batch.addMemoryRead(0L, 0, 100),
           "Should throw for zero memory handle");
     }
@@ -354,7 +361,8 @@ class CallBatchTest {
     @Test
     @DisplayName("addMemoryRead should throw for negative offset")
     void addMemoryReadShouldThrowForNegativeOffset() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> batch.addMemoryRead(1L, -1, 100),
           "Should throw for negative offset");
     }
@@ -362,10 +370,12 @@ class CallBatchTest {
     @Test
     @DisplayName("addMemoryRead should throw for non-positive length")
     void addMemoryReadShouldThrowForNonPositiveLength() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> batch.addMemoryRead(1L, 0, 0),
           "Should throw for length = 0");
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> batch.addMemoryRead(1L, 0, -1),
           "Should throw for negative length");
     }
@@ -374,7 +384,8 @@ class CallBatchTest {
     @DisplayName("addMemoryRead should throw when batch is executed")
     void addMemoryReadShouldThrowWhenBatchIsExecuted() {
       batch.execute();
-      assertThrows(IllegalStateException.class,
+      assertThrows(
+          IllegalStateException.class,
           () -> batch.addMemoryRead(1L, 0, 100),
           "Should throw when batch is executed");
     }
@@ -383,7 +394,8 @@ class CallBatchTest {
     @DisplayName("addMemoryRead should throw when batch is closed")
     void addMemoryReadShouldThrowWhenBatchIsClosed() {
       batch.close();
-      assertThrows(IllegalStateException.class,
+      assertThrows(
+          IllegalStateException.class,
           () -> batch.addMemoryRead(1L, 0, 100),
           "Should throw when batch is closed");
     }
@@ -404,8 +416,8 @@ class CallBatchTest {
     @Test
     @DisplayName("execute should complete all pending futures")
     void executeShouldCompleteAllPendingFutures() throws Exception {
-      final CompletableFuture<?> future1 = batch.addFunctionCall(1L, new Object[]{}, "op1");
-      final CompletableFuture<?> future2 = batch.addFunctionCall(2L, new Object[]{}, "op2");
+      final CompletableFuture<?> future1 = batch.addFunctionCall(1L, new Object[] {}, "op1");
+      final CompletableFuture<?> future2 = batch.addFunctionCall(2L, new Object[] {}, "op2");
 
       assertFalse(future1.isDone(), "Future1 should not be done before execute");
       assertFalse(future2.isDone(), "Future2 should not be done before execute");
@@ -420,8 +432,7 @@ class CallBatchTest {
     @DisplayName("execute should succeed on empty batch")
     void executeShouldSucceedOnEmptyBatch() {
       assertTrue(batch.isEmpty(), "Batch should be empty");
-      assertDoesNotThrow(() -> batch.execute(),
-          "Execute should succeed on empty batch");
+      assertDoesNotThrow(() -> batch.execute(), "Execute should succeed on empty batch");
       assertTrue(batch.isExecuted(), "Batch should be marked as executed");
     }
 
@@ -429,16 +440,15 @@ class CallBatchTest {
     @DisplayName("execute should throw when already executed")
     void executeShouldThrowWhenAlreadyExecuted() {
       batch.execute();
-      assertThrows(IllegalStateException.class, () -> batch.execute(),
-          "Should throw when already executed");
+      assertThrows(
+          IllegalStateException.class, () -> batch.execute(), "Should throw when already executed");
     }
 
     @Test
     @DisplayName("execute should throw when closed")
     void executeShouldThrowWhenClosed() {
       batch.close();
-      assertThrows(IllegalStateException.class, () -> batch.execute(),
-          "Should throw when closed");
+      assertThrows(IllegalStateException.class, () -> batch.execute(), "Should throw when closed");
     }
   }
 
@@ -457,33 +467,33 @@ class CallBatchTest {
     @Test
     @DisplayName("close should cancel pending operations")
     void closeShouldCancelPendingOperations() {
-      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[]{}, "test");
+      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[] {}, "test");
       batch.close();
 
-      assertTrue(future.isCompletedExceptionally(),
+      assertTrue(
+          future.isCompletedExceptionally(),
           "Future should be completed exceptionally after close");
-      assertThrows(ExecutionException.class, () -> future.get(),
-          "Getting future should throw");
+      assertThrows(ExecutionException.class, () -> future.get(), "Getting future should throw");
     }
 
     @Test
     @DisplayName("close should be idempotent")
     void closeShouldBeIdempotent() {
       batch.close();
-      assertDoesNotThrow(() -> batch.close(),
-          "Calling close twice should not throw");
+      assertDoesNotThrow(() -> batch.close(), "Calling close twice should not throw");
       assertTrue(batch.isClosed(), "Batch should still be closed");
     }
 
     @Test
     @DisplayName("close should not cancel already executed operations")
     void closeShouldNotCancelAlreadyExecutedOperations() throws Exception {
-      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[]{}, "test");
+      final CompletableFuture<?> future = batch.addFunctionCall(1L, new Object[] {}, "test");
       batch.execute();
       batch.close();
 
       assertTrue(future.isDone(), "Future should be done");
-      assertFalse(future.isCompletedExceptionally(),
+      assertFalse(
+          future.isCompletedExceptionally(),
           "Executed future should not be exceptionally completed");
     }
   }
@@ -501,7 +511,7 @@ class CallBatchTest {
     @Test
     @DisplayName("isEmpty should return false after adding operation")
     void isEmptyShouldReturnFalseAfterAddingOperation() {
-      batch.addFunctionCall(1L, new Object[]{}, "test");
+      batch.addFunctionCall(1L, new Object[] {}, "test");
       assertFalse(batch.isEmpty(), "Batch should not be empty after adding operation");
     }
 
@@ -509,9 +519,9 @@ class CallBatchTest {
     @DisplayName("size should return correct count")
     void sizeShouldReturnCorrectCount() {
       assertEquals(0, batch.size(), "Initial size should be 0");
-      batch.addFunctionCall(1L, new Object[]{}, "op1");
+      batch.addFunctionCall(1L, new Object[] {}, "op1");
       assertEquals(1, batch.size(), "Size should be 1");
-      batch.addFunctionCall(2L, new Object[]{}, "op2");
+      batch.addFunctionCall(2L, new Object[] {}, "op2");
       assertEquals(2, batch.size(), "Size should be 2");
       batch.addMemoryRead(3L, 0, 100);
       assertEquals(3, batch.size(), "Size should be 3");
@@ -531,8 +541,7 @@ class CallBatchTest {
     @Test
     @DisplayName("shouldAutoExecute should return false for empty batch")
     void shouldAutoExecuteShouldReturnFalseForEmptyBatch() {
-      assertFalse(batch.shouldAutoExecute(),
-          "Empty batch should not auto execute");
+      assertFalse(batch.shouldAutoExecute(), "Empty batch should not auto execute");
     }
 
     @Test
@@ -540,9 +549,9 @@ class CallBatchTest {
     void shouldAutoExecuteShouldReturnTrueWhenBatchIsFull() {
       final CallBatch smallBatch = new CallBatch(2, 10000);
       try {
-        smallBatch.addFunctionCall(1L, new Object[]{}, "op1");
+        smallBatch.addFunctionCall(1L, new Object[] {}, "op1");
         assertFalse(smallBatch.shouldAutoExecute(), "Should not auto execute when not full");
-        smallBatch.addFunctionCall(2L, new Object[]{}, "op2");
+        smallBatch.addFunctionCall(2L, new Object[] {}, "op2");
         assertTrue(smallBatch.shouldAutoExecute(), "Should auto execute when full");
       } finally {
         smallBatch.close();
@@ -608,11 +617,12 @@ class CallBatchTest {
     void shouldWorkWithTryWithResources() {
       CompletableFuture<?> future;
       try (CallBatch trwBatch = new CallBatch()) {
-        future = trwBatch.addFunctionCall(1L, new Object[]{}, "test");
+        future = trwBatch.addFunctionCall(1L, new Object[] {}, "test");
         assertFalse(trwBatch.isClosed(), "Should not be closed in try block");
       }
       // After try block, batch should be closed and future should be completed exceptionally
-      assertTrue(future.isCompletedExceptionally(),
+      assertTrue(
+          future.isCompletedExceptionally(),
           "Future should be completed exceptionally after close");
     }
 
@@ -621,12 +631,13 @@ class CallBatchTest {
     void executedBatchShouldWorkWithTryWithResources() throws Exception {
       CompletableFuture<?> future;
       try (CallBatch trwBatch = new CallBatch()) {
-        future = trwBatch.addFunctionCall(1L, new Object[]{}, "test");
+        future = trwBatch.addFunctionCall(1L, new Object[] {}, "test");
         trwBatch.execute();
         assertTrue(future.isDone(), "Future should be done after execute");
       }
       // After try block, batch should be closed but future should not be exceptionally completed
-      assertFalse(future.isCompletedExceptionally(),
+      assertFalse(
+          future.isCompletedExceptionally(),
           "Executed future should not be exceptionally completed");
     }
   }

@@ -58,7 +58,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("OptimizedMarshalling should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(OptimizedMarshalling.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(OptimizedMarshalling.class.getModifiers()),
           "OptimizedMarshalling should be final");
     }
   }
@@ -94,8 +95,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("Should have exactly 4 marshalling strategies")
     void shouldHaveExactly4MarshallingStrategies() {
-      assertEquals(4, MarshallingStrategy.values().length,
-          "Should have exactly 4 marshalling strategies");
+      assertEquals(
+          4, MarshallingStrategy.values().length, "Should have exactly 4 marshalling strategies");
     }
 
     @Test
@@ -130,7 +131,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should throw for null parameters")
     void marshalParametersShouldThrowForNullParameters() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.marshalParameters(null),
           "Should throw for null parameters");
     }
@@ -146,7 +148,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal single I32 value")
     void marshalParametersShouldMarshalSingleI32Value() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.i32(42)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i32(42)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -155,7 +157,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal single I64 value")
     void marshalParametersShouldMarshalSingleI64Value() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.i64(123456789L)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i64(123456789L)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -164,7 +166,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal single F32 value")
     void marshalParametersShouldMarshalSingleF32Value() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.f32(3.14f)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.f32(3.14f)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -173,7 +175,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal single F64 value")
     void marshalParametersShouldMarshalSingleF64Value() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.f64(3.14159265359)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.f64(3.14159265359)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -182,11 +184,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal multiple I32 values")
     void marshalParametersShouldMarshalMultipleI32Values() {
-      final WasmValue[] params = new WasmValue[]{
-          WasmValue.i32(1),
-          WasmValue.i32(2),
-          WasmValue.i32(3)
-      };
+      final WasmValue[] params =
+          new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -195,12 +194,10 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should marshal mixed type values")
     void marshalParametersShouldMarshalMixedTypeValues() {
-      final WasmValue[] params = new WasmValue[]{
-          WasmValue.i32(42),
-          WasmValue.i64(123L),
-          WasmValue.f32(1.5f),
-          WasmValue.f64(2.5)
-      };
+      final WasmValue[] params =
+          new WasmValue[] {
+            WasmValue.i32(42), WasmValue.i64(123L), WasmValue.f32(1.5f), WasmValue.f64(2.5)
+          };
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -224,7 +221,7 @@ class OptimizedMarshallingTest {
       for (int i = 0; i < 16; i++) {
         v128Data[i] = (byte) i;
       }
-      final WasmValue[] params = new WasmValue[]{WasmValue.v128(v128Data)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.v128(v128Data)};
       final Object[] result = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(result, "Result should not be null");
     }
@@ -232,7 +229,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParameters should cache marshalling plan for reuse")
     void marshalParametersShouldCacheMarshallingPlanForReuse() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.i32(42), WasmValue.i64(100L)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i32(42), WasmValue.i64(100L)};
 
       // First call creates the plan
       final Object[] result1 = OptimizedMarshalling.marshalParameters(params);
@@ -251,7 +248,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParametersBatch should throw for null parameter sets")
     void marshalParametersBatchShouldThrowForNullParameterSets() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.marshalParametersBatch((WasmValue[][]) null),
           "Should throw for null parameter sets");
     }
@@ -267,7 +265,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParametersBatch should marshal single set")
     void marshalParametersBatchShouldMarshalSingleSet() {
-      final WasmValue[] params = new WasmValue[]{WasmValue.i32(42)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i32(42)};
       final Object[][] result = OptimizedMarshalling.marshalParametersBatch(params);
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Result should have 1 set");
@@ -276,11 +274,12 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalParametersBatch should marshal multiple sets")
     void marshalParametersBatchShouldMarshalMultipleSets() {
-      final WasmValue[] params1 = new WasmValue[]{WasmValue.i32(1)};
-      final WasmValue[] params2 = new WasmValue[]{WasmValue.i32(2)};
-      final WasmValue[] params3 = new WasmValue[]{WasmValue.i32(3)};
+      final WasmValue[] params1 = new WasmValue[] {WasmValue.i32(1)};
+      final WasmValue[] params2 = new WasmValue[] {WasmValue.i32(2)};
+      final WasmValue[] params3 = new WasmValue[] {WasmValue.i32(3)};
 
-      final Object[][] result = OptimizedMarshalling.marshalParametersBatch(params1, params2, params3);
+      final Object[][] result =
+          OptimizedMarshalling.marshalParametersBatch(params1, params2, params3);
       assertNotNull(result, "Result should not be null");
       assertEquals(3, result.length, "Result should have 3 sets");
     }
@@ -309,7 +308,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalMultiValueResults should handle single value")
     void marshalMultiValueResultsShouldHandleSingleValue() {
-      final WasmValue[] values = new WasmValue[]{WasmValue.i32(42)};
+      final WasmValue[] values = new WasmValue[] {WasmValue.i32(42)};
       final Object[] result = OptimizedMarshalling.marshalMultiValueResults(values);
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Result should have 1 element");
@@ -319,7 +318,7 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalMultiValueResults should handle dual values optimally")
     void marshalMultiValueResultsShouldHandleDualValuesOptimally() {
-      final WasmValue[] values = new WasmValue[]{WasmValue.i32(10), WasmValue.i64(20L)};
+      final WasmValue[] values = new WasmValue[] {WasmValue.i32(10), WasmValue.i64(20L)};
       final Object[] result = OptimizedMarshalling.marshalMultiValueResults(values);
       assertNotNull(result, "Result should not be null");
       assertEquals(2, result.length, "Result should have 2 elements");
@@ -330,11 +329,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("marshalMultiValueResults should handle more than 2 values")
     void marshalMultiValueResultsShouldHandleMoreThan2Values() {
-      final WasmValue[] values = new WasmValue[]{
-          WasmValue.i32(1),
-          WasmValue.i32(2),
-          WasmValue.i32(3)
-      };
+      final WasmValue[] values =
+          new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)};
       final Object[] result = OptimizedMarshalling.marshalMultiValueResults(values);
       assertNotNull(result, "Result should not be null");
       assertTrue(result.length >= 1, "Result should have at least 1 element");
@@ -348,8 +344,9 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should throw for null native results")
     void unmarshalResultsShouldThrowForNullNativeResults() {
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I32};
-      assertThrows(IllegalArgumentException.class,
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I32};
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.unmarshalResults(null, types),
           "Should throw for null native results");
     }
@@ -357,8 +354,9 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should throw for null expected types")
     void unmarshalResultsShouldThrowForNullExpectedTypes() {
-      final Object[] results = new Object[]{42};
-      assertThrows(IllegalArgumentException.class,
+      final Object[] results = new Object[] {42};
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.unmarshalResults(results, null),
           "Should throw for null expected types");
     }
@@ -366,9 +364,10 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should throw for count mismatch")
     void unmarshalResultsShouldThrowForCountMismatch() {
-      final Object[] results = new Object[]{42, 100L};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I32};
-      assertThrows(IllegalArgumentException.class,
+      final Object[] results = new Object[] {42, 100L};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I32};
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.unmarshalResults(results, types),
           "Should throw for count mismatch");
     }
@@ -376,8 +375,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should unmarshal I32")
     void unmarshalResultsShouldUnmarshalI32() {
-      final Object[] results = new Object[]{42};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I32};
+      final Object[] results = new Object[] {42};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I32};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -388,8 +387,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should unmarshal I64")
     void unmarshalResultsShouldUnmarshalI64() {
-      final Object[] results = new Object[]{123456789L};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I64};
+      final Object[] results = new Object[] {123456789L};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I64};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -400,8 +399,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should unmarshal F32")
     void unmarshalResultsShouldUnmarshalF32() {
-      final Object[] results = new Object[]{3.14f};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.F32};
+      final Object[] results = new Object[] {3.14f};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.F32};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -412,8 +411,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should unmarshal F64")
     void unmarshalResultsShouldUnmarshalF64() {
-      final Object[] results = new Object[]{3.14159265359};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.F64};
+      final Object[] results = new Object[] {3.14159265359};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.F64};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -428,8 +427,8 @@ class OptimizedMarshallingTest {
       for (int i = 0; i < 16; i++) {
         v128Data[i] = (byte) i;
       }
-      final Object[] results = new Object[]{v128Data};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.V128};
+      final Object[] results = new Object[] {v128Data};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.V128};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -441,8 +440,8 @@ class OptimizedMarshallingTest {
     @DisplayName("unmarshalResults should unmarshal EXTERNREF")
     void unmarshalResultsShouldUnmarshalExternref() {
       final Object refValue = "test-reference";
-      final Object[] results = new Object[]{refValue};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.EXTERNREF};
+      final Object[] results = new Object[] {refValue};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.EXTERNREF};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -453,8 +452,8 @@ class OptimizedMarshallingTest {
     @DisplayName("unmarshalResults should unmarshal FUNCREF")
     void unmarshalResultsShouldUnmarshalFuncref() {
       final Object funcValue = new Object();
-      final Object[] results = new Object[]{funcValue};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.FUNCREF};
+      final Object[] results = new Object[] {funcValue};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.FUNCREF};
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(1, wasmValues.length, "Should have 1 value");
@@ -464,9 +463,10 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should throw for null result element")
     void unmarshalResultsShouldThrowForNullResultElement() {
-      final Object[] results = new Object[]{null};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I32};
-      assertThrows(IllegalArgumentException.class,
+      final Object[] results = new Object[] {null};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I32};
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.unmarshalResults(results, types),
           "Should throw for null result element");
     }
@@ -474,9 +474,10 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should throw for type mismatch")
     void unmarshalResultsShouldThrowForTypeMismatch() {
-      final Object[] results = new Object[]{"string-not-int"};
-      final WasmValueType[] types = new WasmValueType[]{WasmValueType.I32};
-      assertThrows(IllegalArgumentException.class,
+      final Object[] results = new Object[] {"string-not-int"};
+      final WasmValueType[] types = new WasmValueType[] {WasmValueType.I32};
+      assertThrows(
+          IllegalArgumentException.class,
           () -> OptimizedMarshalling.unmarshalResults(results, types),
           "Should throw for type mismatch");
     }
@@ -484,10 +485,11 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("unmarshalResults should unmarshal multiple values")
     void unmarshalResultsShouldUnmarshalMultipleValues() {
-      final Object[] results = new Object[]{10, 20L, 3.0f, 4.0};
-      final WasmValueType[] types = new WasmValueType[]{
-          WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
-      };
+      final Object[] results = new Object[] {10, 20L, 3.0f, 4.0};
+      final WasmValueType[] types =
+          new WasmValueType[] {
+            WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
+          };
       final WasmValue[] wasmValues = OptimizedMarshalling.unmarshalResults(results, types);
       assertNotNull(wasmValues, "Result should not be null");
       assertEquals(4, wasmValues.length, "Should have 4 values");
@@ -507,15 +509,15 @@ class OptimizedMarshallingTest {
     void getStatisticsShouldReturnFormattedString() {
       final String stats = OptimizedMarshalling.getStatistics();
       assertNotNull(stats, "Statistics should not be null");
-      assertTrue(stats.contains("Optimized Marshalling"),
-          "Statistics should contain header");
+      assertTrue(stats.contains("Optimized Marshalling"), "Statistics should contain header");
     }
 
     @Test
     @DisplayName("getStatistics should include cache size")
     void getStatisticsShouldIncludeCacheSize() {
       final String stats = OptimizedMarshalling.getStatistics();
-      assertTrue(stats.contains("Cached marshalling plans") || stats.contains("cache"),
+      assertTrue(
+          stats.contains("Cached marshalling plans") || stats.contains("cache"),
           "Statistics should include cache information");
     }
 
@@ -523,11 +525,12 @@ class OptimizedMarshallingTest {
     @DisplayName("getStatistics should include strategy usage")
     void getStatisticsShouldIncludeStrategyUsage() {
       // Generate some statistics first
-      final WasmValue[] params = new WasmValue[]{WasmValue.i32(42)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i32(42)};
       OptimizedMarshalling.marshalParameters(params);
 
       final String stats = OptimizedMarshalling.getStatistics();
-      assertTrue(stats.contains("Strategy usage") || stats.contains("DIRECT"),
+      assertTrue(
+          stats.contains("Strategy usage") || stats.contains("DIRECT"),
           "Statistics should include strategy usage");
     }
   }
@@ -539,15 +542,14 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("reset should not throw")
     void resetShouldNotThrow() {
-      assertDoesNotThrow(() -> OptimizedMarshalling.reset(),
-          "reset should not throw");
+      assertDoesNotThrow(() -> OptimizedMarshalling.reset(), "reset should not throw");
     }
 
     @Test
     @DisplayName("reset should clear marshalling cache")
     void resetShouldClearMarshallingCache() {
       // Generate some cache entries
-      final WasmValue[] params = new WasmValue[]{WasmValue.i32(42)};
+      final WasmValue[] params = new WasmValue[] {WasmValue.i32(42)};
       OptimizedMarshalling.marshalParameters(params);
 
       // Reset
@@ -555,8 +557,8 @@ class OptimizedMarshallingTest {
 
       // Verify cache is cleared by checking statistics
       final String stats = OptimizedMarshalling.getStatistics();
-      assertTrue(stats.contains("0") || stats.contains("cleared"),
-          "Cache should be cleared after reset");
+      assertTrue(
+          stats.contains("0") || stats.contains("cleared"), "Cache should be cleared after reset");
     }
   }
 
@@ -573,19 +575,19 @@ class OptimizedMarshallingTest {
       final boolean[] errors = new boolean[1];
 
       for (int t = 0; t < threadCount; t++) {
-        threads[t] = new Thread(() -> {
-          try {
-            for (int i = 0; i < operationsPerThread; i++) {
-              final WasmValue[] params = new WasmValue[]{
-                  WasmValue.i32(i),
-                  WasmValue.i64((long) i)
-              };
-              OptimizedMarshalling.marshalParameters(params);
-            }
-          } catch (Exception e) {
-            errors[0] = true;
-          }
-        });
+        threads[t] =
+            new Thread(
+                () -> {
+                  try {
+                    for (int i = 0; i < operationsPerThread; i++) {
+                      final WasmValue[] params =
+                          new WasmValue[] {WasmValue.i32(i), WasmValue.i64((long) i)};
+                      OptimizedMarshalling.marshalParameters(params);
+                    }
+                  } catch (Exception e) {
+                    errors[0] = true;
+                  }
+                });
       }
 
       for (final Thread thread : threads) {
@@ -608,12 +610,10 @@ class OptimizedMarshallingTest {
     @DisplayName("Full marshalling round-trip should work")
     void fullMarshallingRoundTripShouldWork() {
       // Marshal parameters
-      final WasmValue[] params = new WasmValue[]{
-          WasmValue.i32(42),
-          WasmValue.i64(123L),
-          WasmValue.f32(3.14f),
-          WasmValue.f64(2.71828)
-      };
+      final WasmValue[] params =
+          new WasmValue[] {
+            WasmValue.i32(42), WasmValue.i64(123L), WasmValue.f32(3.14f), WasmValue.f64(2.71828)
+          };
       final Object[] marshalled = OptimizedMarshalling.marshalParameters(params);
       assertNotNull(marshalled, "Marshalled parameters should not be null");
 
@@ -622,10 +622,11 @@ class OptimizedMarshallingTest {
       assertNotNull(multiValueResult, "Multi-value results should not be null");
 
       // Unmarshal results
-      final Object[] nativeResults = new Object[]{100, 200L, 1.5f, 2.5};
-      final WasmValueType[] expectedTypes = new WasmValueType[]{
-          WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
-      };
+      final Object[] nativeResults = new Object[] {100, 200L, 1.5f, 2.5};
+      final WasmValueType[] expectedTypes =
+          new WasmValueType[] {
+            WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
+          };
       final WasmValue[] unmarshalledResults =
           OptimizedMarshalling.unmarshalResults(nativeResults, expectedTypes);
       assertNotNull(unmarshalledResults, "Unmarshalled results should not be null");
@@ -635,11 +636,10 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("Batch marshalling should work with various parameter sets")
     void batchMarshallingShouldWorkWithVariousParameterSets() {
-      final WasmValue[] set1 = new WasmValue[]{WasmValue.i32(1)};
-      final WasmValue[] set2 = new WasmValue[]{WasmValue.i64(2L), WasmValue.f32(3.0f)};
-      final WasmValue[] set3 = new WasmValue[]{
-          WasmValue.f64(4.0), WasmValue.i32(5), WasmValue.i64(6L)
-      };
+      final WasmValue[] set1 = new WasmValue[] {WasmValue.i32(1)};
+      final WasmValue[] set2 = new WasmValue[] {WasmValue.i64(2L), WasmValue.f32(3.0f)};
+      final WasmValue[] set3 =
+          new WasmValue[] {WasmValue.f64(4.0), WasmValue.i32(5), WasmValue.i64(6L)};
 
       final Object[][] results = OptimizedMarshalling.marshalParametersBatch(set1, set2, set3);
       assertNotNull(results, "Batch results should not be null");
@@ -652,11 +652,8 @@ class OptimizedMarshallingTest {
     @Test
     @DisplayName("Marshalling plan caching should improve performance")
     void marshallingPlanCachingShouldImprovePerformance() {
-      final WasmValue[] params = new WasmValue[]{
-          WasmValue.i32(1),
-          WasmValue.i32(2),
-          WasmValue.i32(3)
-      };
+      final WasmValue[] params =
+          new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3)};
 
       // First call creates the plan
       final long start1 = System.nanoTime();

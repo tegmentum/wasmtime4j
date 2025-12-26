@@ -72,8 +72,7 @@ class JniRuntimeFactoryTest {
       assertEquals(1, constructors.length, "Should have exactly 1 constructor");
 
       Constructor<?> constructor = constructors[0];
-      assertTrue(
-          Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
 
     @Test
@@ -185,10 +184,8 @@ class JniRuntimeFactoryTest {
     void getWasmtimeVersionShouldBePublicStatic() throws Exception {
       Method method = JniRuntimeFactory.class.getMethod("getWasmtimeVersion");
       assertNotNull(method, "getWasmtimeVersion method should exist");
-      assertTrue(
-          Modifier.isPublic(method.getModifiers()), "getWasmtimeVersion should be public");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "getWasmtimeVersion should be static");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "getWasmtimeVersion should be public");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "getWasmtimeVersion should be static");
       assertEquals(String.class, method.getReturnType(), "Return type should be String");
       assertEquals(0, method.getParameterCount(), "getWasmtimeVersion should have no parameters");
     }
@@ -225,13 +222,10 @@ class JniRuntimeFactoryTest {
     void validateEnvironmentShouldBePublicStatic() throws Exception {
       Method method = JniRuntimeFactory.class.getMethod("validateEnvironment");
       assertNotNull(method, "validateEnvironment method should exist");
-      assertTrue(
-          Modifier.isPublic(method.getModifiers()), "validateEnvironment should be public");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "validateEnvironment should be static");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "validateEnvironment should be public");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "validateEnvironment should be static");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
-      assertEquals(
-          0, method.getParameterCount(), "validateEnvironment should have no parameters");
+      assertEquals(0, method.getParameterCount(), "validateEnvironment should have no parameters");
     }
 
     @Test
@@ -279,14 +273,10 @@ class JniRuntimeFactoryTest {
       assertNotNull(method, "getMajorJavaVersion method should exist");
       assertTrue(
           Modifier.isPrivate(method.getModifiers()), "getMajorJavaVersion should be private");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "getMajorJavaVersion should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "getMajorJavaVersion should be static");
       assertEquals(int.class, method.getReturnType(), "Return type should be int");
       assertEquals(1, method.getParameterCount(), "getMajorJavaVersion should have 1 parameter");
-      assertEquals(
-          String.class,
-          method.getParameterTypes()[0],
-          "Parameter should be String");
+      assertEquals(String.class, method.getParameterTypes()[0], "Parameter should be String");
     }
 
     @Test
@@ -403,11 +393,9 @@ class JniRuntimeFactoryTest {
         Method method = JniRuntimeFactory.class.getMethod(methodName);
         assertNotNull(method, "Method " + methodName + " should exist");
         assertTrue(
-            Modifier.isPublic(method.getModifiers()),
-            "Method " + methodName + " should be public");
+            Modifier.isPublic(method.getModifiers()), "Method " + methodName + " should be public");
         assertTrue(
-            Modifier.isStatic(method.getModifiers()),
-            "Method " + methodName + " should be static");
+            Modifier.isStatic(method.getModifiers()), "Method " + methodName + " should be static");
       }
     }
   }
@@ -431,9 +419,7 @@ class JniRuntimeFactoryTest {
     @DisplayName("getFactoryInfo should include availability status")
     void getFactoryInfoShouldIncludeAvailabilityStatus() {
       String info = JniRuntimeFactory.getFactoryInfo();
-      assertTrue(
-          info.contains("Available"),
-          "Factory info should contain availability status");
+      assertTrue(info.contains("Available"), "Factory info should contain availability status");
     }
 
     @Test
@@ -460,17 +446,13 @@ class JniRuntimeFactoryTest {
       int publicStaticCount = 0;
 
       for (Method method : allMethods) {
-        if (Modifier.isPublic(method.getModifiers())
-            && Modifier.isStatic(method.getModifiers())) {
+        if (Modifier.isPublic(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
           publicStaticCount++;
         }
       }
 
       // 9 public static methods expected
-      assertEquals(
-          9,
-          publicStaticCount,
-          "JniRuntimeFactory should have 9 public static methods");
+      assertEquals(9, publicStaticCount, "JniRuntimeFactory should have 9 public static methods");
     }
 
     @Test

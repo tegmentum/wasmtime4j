@@ -31,9 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PanamaDebugCapabilities}.
- */
+/** Comprehensive tests for {@link PanamaDebugCapabilities}. */
 @DisplayName("PanamaDebugCapabilities Tests")
 class PanamaDebugCapabilitiesTest {
 
@@ -113,18 +111,19 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should create capabilities with all custom values")
     void builderShouldCreateCapabilitiesWithAllCustomValues() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(false)
-          .memoryInspectionSupported(false)
-          .profilingSupported(false)
-          .sourceMapSupported(false)
-          .dwarfSupported(false)
-          .maxBreakpoints(256)
-          .supportedFormats(Collections.singletonList("Custom"))
-          .debuggerVersion("2.0.0")
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(false)
+              .memoryInspectionSupported(false)
+              .profilingSupported(false)
+              .sourceMapSupported(false)
+              .dwarfSupported(false)
+              .maxBreakpoints(256)
+              .supportedFormats(Collections.singletonList("Custom"))
+              .debuggerVersion("2.0.0")
+              .build();
 
       assertFalse(caps.supportsBreakpoints(), "Breakpoints should not be supported");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should not be supported");
@@ -158,15 +157,16 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should allow enabling individual features")
     void builderShouldAllowEnablingIndividualFeatures() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(false)
-          .profilingSupported(true)
-          .sourceMapSupported(false)
-          .dwarfSupported(true)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(false)
+              .profilingSupported(true)
+              .sourceMapSupported(false)
+              .dwarfSupported(true)
+              .build();
 
       assertTrue(caps.supportsBreakpoints(), "Breakpoints should be enabled");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should be disabled");
@@ -183,23 +183,21 @@ class PanamaDebugCapabilitiesTest {
       final List<String> formats = new ArrayList<>();
       formats.add("DWARF");
 
-      final PanamaDebugCapabilities.Builder builder = PanamaDebugCapabilities.builder()
-          .supportedFormats(formats);
+      final PanamaDebugCapabilities.Builder builder =
+          PanamaDebugCapabilities.builder().supportedFormats(formats);
 
       // Modify original list
       formats.add("SourceMap");
 
       final PanamaDebugCapabilities caps = builder.build();
-      assertEquals(1, caps.getSupportedFormats().size(),
-          "Should have 1 format (defensive copy)");
+      assertEquals(1, caps.getSupportedFormats().size(), "Should have 1 format (defensive copy)");
     }
 
     @Test
     @DisplayName("Builder supportedFormats should handle null")
     void builderSupportedFormatsShouldHandleNull() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .supportedFormats(null)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().supportedFormats(null).build();
 
       assertNotNull(caps.getSupportedFormats(), "Formats should not be null");
       assertTrue(caps.getSupportedFormats().isEmpty(), "Formats should be empty");
@@ -208,18 +206,19 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should allow chaining all methods")
     void builderShouldAllowChainingAllMethods() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(true)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(true)
-          .profilingSupported(true)
-          .sourceMapSupported(true)
-          .dwarfSupported(true)
-          .maxBreakpoints(512)
-          .supportedFormats(Arrays.asList("A", "B", "C"))
-          .debuggerVersion("3.0.0")
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(true)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(true)
+              .profilingSupported(true)
+              .sourceMapSupported(true)
+              .dwarfSupported(true)
+              .maxBreakpoints(512)
+              .supportedFormats(Arrays.asList("A", "B", "C"))
+              .debuggerVersion("3.0.0")
+              .build();
 
       assertNotNull(caps, "Chained builder should produce capabilities");
     }
@@ -234,7 +233,8 @@ class PanamaDebugCapabilitiesTest {
     void getSupportedFormatsShouldReturnUnmodifiableList() {
       final PanamaDebugCapabilities caps = PanamaDebugCapabilities.getDefault();
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> caps.getSupportedFormats().add("NewFormat"),
           "Should not be able to modify returned list");
     }
@@ -242,9 +242,8 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("getSupportedFormats should return empty list when none set")
     void getSupportedFormatsShouldReturnEmptyListWhenNoneSet() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .supportedFormats(Collections.emptyList())
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().supportedFormats(Collections.emptyList()).build();
 
       assertTrue(caps.getSupportedFormats().isEmpty(), "Should return empty list");
     }
@@ -252,9 +251,10 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("getSupportedFormats should preserve order")
     void getSupportedFormatsShouldPreserveOrder() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .supportedFormats(Arrays.asList("First", "Second", "Third"))
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .supportedFormats(Arrays.asList("First", "Second", "Third"))
+              .build();
 
       final List<String> formats = caps.getSupportedFormats();
       assertEquals("First", formats.get(0), "First element should match");
@@ -270,18 +270,19 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("toString should include all capability flags")
     void toStringShouldIncludeAllCapabilityFlags() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(true)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(true)
-          .profilingSupported(true)
-          .sourceMapSupported(true)
-          .dwarfSupported(true)
-          .maxBreakpoints(1024)
-          .supportedFormats(Arrays.asList("DWARF", "SourceMap"))
-          .debuggerVersion("1.0.0")
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(true)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(true)
+              .profilingSupported(true)
+              .sourceMapSupported(true)
+              .dwarfSupported(true)
+              .maxBreakpoints(1024)
+              .supportedFormats(Arrays.asList("DWARF", "SourceMap"))
+              .debuggerVersion("1.0.0")
+              .build();
 
       final String str = caps.toString();
 
@@ -300,10 +301,11 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("toString should show disabled features as false")
     void toStringShouldShowDisabledFeaturesAsFalse() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .build();
 
       final String str = caps.toString();
 
@@ -319,9 +321,8 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle zero max breakpoints")
     void shouldHandleZeroMaxBreakpoints() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .maxBreakpoints(0)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().maxBreakpoints(0).build();
 
       assertEquals(0, caps.getMaxBreakpoints(), "Should handle zero max breakpoints");
     }
@@ -329,9 +330,8 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle negative max breakpoints")
     void shouldHandleNegativeMaxBreakpoints() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .maxBreakpoints(-1)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().maxBreakpoints(-1).build();
 
       assertEquals(-1, caps.getMaxBreakpoints(), "Should handle negative max breakpoints");
     }
@@ -339,9 +339,8 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle empty debugger version")
     void shouldHandleEmptyDebuggerVersion() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .debuggerVersion("")
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().debuggerVersion("").build();
 
       assertEquals("", caps.getDebuggerVersion(), "Should handle empty version");
     }
@@ -349,9 +348,8 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle null debugger version")
     void shouldHandleNullDebuggerVersion() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .debuggerVersion(null)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder().debuggerVersion(null).build();
 
       assertEquals(null, caps.getDebuggerVersion(), "Should handle null version");
     }
@@ -359,15 +357,16 @@ class PanamaDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle all features disabled")
     void shouldHandleAllFeaturesDisabled() {
-      final PanamaDebugCapabilities caps = PanamaDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(false)
-          .memoryInspectionSupported(false)
-          .profilingSupported(false)
-          .sourceMapSupported(false)
-          .dwarfSupported(false)
-          .build();
+      final PanamaDebugCapabilities caps =
+          PanamaDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(false)
+              .memoryInspectionSupported(false)
+              .profilingSupported(false)
+              .sourceMapSupported(false)
+              .dwarfSupported(false)
+              .build();
 
       assertFalse(caps.supportsBreakpoints(), "Breakpoints should be disabled");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should be disabled");

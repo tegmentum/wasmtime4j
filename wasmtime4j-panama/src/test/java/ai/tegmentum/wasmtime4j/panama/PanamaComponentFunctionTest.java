@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for {@link PanamaComponentFunction}.
  *
- * <p>These tests verify class structure, method signatures, and field definitions using
- * reflection. This approach allows testing without requiring native library loading.
+ * <p>These tests verify class structure, method signatures, and field definitions using reflection.
+ * This approach allows testing without requiring native library loading.
  */
 @DisplayName("PanamaComponentFunction Tests")
 class PanamaComponentFunctionTest {
@@ -170,7 +170,8 @@ class PanamaComponentFunctionTest {
     void getInstanceShouldExist() throws NoSuchMethodException {
       Method method = PanamaComponentFunction.class.getMethod("getInstance");
       assertNotNull(method, "getInstance method should exist");
-      assertEquals(ComponentInstance.class, method.getReturnType(), "Should return ComponentInstance");
+      assertEquals(
+          ComponentInstance.class, method.getReturnType(), "Should return ComponentInstance");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
   }

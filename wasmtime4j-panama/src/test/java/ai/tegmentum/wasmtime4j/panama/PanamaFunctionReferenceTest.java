@@ -17,11 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.FunctionReference;
@@ -196,10 +192,8 @@ class PanamaFunctionReferenceTest {
     void shouldHaveGetRegistryStatsMethod() throws NoSuchMethodException {
       final Method method = PanamaFunctionReference.class.getDeclaredMethod("getRegistryStats");
       assertNotNull(method, "getRegistryStats method should exist");
-      assertEquals(
-          long[].class, method.getReturnType(), "getRegistryStats should return long[]");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "getRegistryStats should be static");
+      assertEquals(long[].class, method.getReturnType(), "getRegistryStats should return long[]");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "getRegistryStats should be static");
     }
 
     @Test
@@ -355,11 +349,9 @@ class PanamaFunctionReferenceTest {
           PanamaFunctionReference.class.getDeclaredField("FUNCTION_REFERENCE_REGISTRY");
       assertNotNull(field, "FUNCTION_REFERENCE_REGISTRY field should exist");
       assertTrue(
-          Modifier.isStatic(field.getModifiers()),
-          "FUNCTION_REFERENCE_REGISTRY should be static");
+          Modifier.isStatic(field.getModifiers()), "FUNCTION_REFERENCE_REGISTRY should be static");
       assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "FUNCTION_REFERENCE_REGISTRY should be final");
+          Modifier.isFinal(field.getModifiers()), "FUNCTION_REFERENCE_REGISTRY should be final");
       assertTrue(
           Modifier.isPrivate(field.getModifiers()),
           "FUNCTION_REFERENCE_REGISTRY should be private");
@@ -372,14 +364,11 @@ class PanamaFunctionReferenceTest {
           PanamaFunctionReference.class.getDeclaredField("NEXT_FUNCTION_REFERENCE_ID");
       assertNotNull(field, "NEXT_FUNCTION_REFERENCE_ID field should exist");
       assertTrue(
-          Modifier.isStatic(field.getModifiers()),
-          "NEXT_FUNCTION_REFERENCE_ID should be static");
+          Modifier.isStatic(field.getModifiers()), "NEXT_FUNCTION_REFERENCE_ID should be static");
       assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "NEXT_FUNCTION_REFERENCE_ID should be final");
+          Modifier.isFinal(field.getModifiers()), "NEXT_FUNCTION_REFERENCE_ID should be final");
       assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "NEXT_FUNCTION_REFERENCE_ID should be private");
+          Modifier.isPrivate(field.getModifiers()), "NEXT_FUNCTION_REFERENCE_ID should be private");
     }
 
     @Test
@@ -400,8 +389,7 @@ class PanamaFunctionReferenceTest {
           PanamaFunctionReference.class.getDeclaredField("functionReferenceId");
       assertNotNull(field, "functionReferenceId field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "functionReferenceId should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()), "functionReferenceId should be private");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "functionReferenceId should be private");
       assertEquals(long.class, field.getType(), "functionReferenceId should be long type");
     }
 

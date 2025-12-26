@@ -36,15 +36,16 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for JNI Provider classes.
  *
- * <p>This test class verifies the structure and interface compliance of the JNI
- * ServiceLoader providers without loading native libraries.
+ * <p>This test class verifies the structure and interface compliance of the JNI ServiceLoader
+ * providers without loading native libraries.
  *
  * <p>Classes tested:
+ *
  * <ul>
- *   <li>{@link JniAsyncRuntimeProvider}</li>
- *   <li>{@link JniCallerContextProvider}</li>
- *   <li>{@link JniModuleCacheProvider}</li>
- *   <li>{@link JniProfilerProvider}</li>
+ *   <li>{@link JniAsyncRuntimeProvider}
+ *   <li>{@link JniCallerContextProvider}
+ *   <li>{@link JniModuleCacheProvider}
+ *   <li>{@link JniProfilerProvider}
  * </ul>
  */
 @DisplayName("JNI Provider Classes Tests")
@@ -82,8 +83,8 @@ class JniProviderClassesTest {
       @DisplayName("JniAsyncRuntimeProvider should implement AsyncRuntimeProvider")
       void shouldImplementAsyncRuntimeProvider() {
         assertTrue(
-            AsyncRuntimeFactory.AsyncRuntimeProvider.class
-                .isAssignableFrom(JniAsyncRuntimeProvider.class),
+            AsyncRuntimeFactory.AsyncRuntimeProvider.class.isAssignableFrom(
+                JniAsyncRuntimeProvider.class),
             "JniAsyncRuntimeProvider should implement AsyncRuntimeFactory.AsyncRuntimeProvider");
       }
     }
@@ -301,8 +302,8 @@ class JniProviderClassesTest {
       @DisplayName("JniModuleCacheProvider should implement ModuleCacheProvider")
       void shouldImplementModuleCacheProvider() {
         assertTrue(
-            ModuleCacheFactory.ModuleCacheProvider.class
-                .isAssignableFrom(JniModuleCacheProvider.class),
+            ModuleCacheFactory.ModuleCacheProvider.class.isAssignableFrom(
+                JniModuleCacheProvider.class),
             "JniModuleCacheProvider should implement ModuleCacheFactory.ModuleCacheProvider");
       }
     }
@@ -336,10 +337,11 @@ class JniProviderClassesTest {
       @Test
       @DisplayName("Should have create method with Engine and ModuleCacheConfig parameters")
       void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method = JniModuleCacheProvider.class.getMethod(
-            "create",
-            ai.tegmentum.wasmtime4j.Engine.class,
-            ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
+        Method method =
+            JniModuleCacheProvider.class.getMethod(
+                "create",
+                ai.tegmentum.wasmtime4j.Engine.class,
+                ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
         assertNotNull(method, "create method should exist");
         assertEquals(
             ai.tegmentum.wasmtime4j.cache.ModuleCache.class,
@@ -351,16 +353,15 @@ class JniProviderClassesTest {
       @Test
       @DisplayName("create method should have correct parameter types")
       void createMethodShouldHaveCorrectParameters() throws NoSuchMethodException {
-        Method method = JniModuleCacheProvider.class.getMethod(
-            "create",
-            ai.tegmentum.wasmtime4j.Engine.class,
-            ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
+        Method method =
+            JniModuleCacheProvider.class.getMethod(
+                "create",
+                ai.tegmentum.wasmtime4j.Engine.class,
+                ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
         Class<?>[] paramTypes = method.getParameterTypes();
         assertEquals(2, paramTypes.length, "create should have 2 parameters");
         assertEquals(
-            ai.tegmentum.wasmtime4j.Engine.class,
-            paramTypes[0],
-            "First param should be Engine");
+            ai.tegmentum.wasmtime4j.Engine.class, paramTypes[0], "First param should be Engine");
         assertEquals(
             ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class,
             paramTypes[1],
@@ -571,8 +572,10 @@ class JniProviderClassesTest {
     @Test
     @DisplayName("All providers should be instantiable")
     void allProvidersShouldBeInstantiable() throws Exception {
-      assertNotNull(new JniAsyncRuntimeProvider(), "JniAsyncRuntimeProvider should be instantiable");
-      assertNotNull(new JniCallerContextProvider(), "JniCallerContextProvider should be instantiable");
+      assertNotNull(
+          new JniAsyncRuntimeProvider(), "JniAsyncRuntimeProvider should be instantiable");
+      assertNotNull(
+          new JniCallerContextProvider(), "JniCallerContextProvider should be instantiable");
       assertNotNull(new JniModuleCacheProvider(), "JniModuleCacheProvider should be instantiable");
       assertNotNull(new JniProfilerProvider(), "JniProfilerProvider should be instantiable");
     }
@@ -694,23 +697,19 @@ class JniProviderClassesTest {
 
       // JniAsyncRuntimeProvider
       assertProviderFollowsServiceLoaderPattern(
-          JniAsyncRuntimeProvider.class,
-          AsyncRuntimeFactory.AsyncRuntimeProvider.class);
+          JniAsyncRuntimeProvider.class, AsyncRuntimeFactory.AsyncRuntimeProvider.class);
 
       // JniCallerContextProvider
       assertProviderFollowsServiceLoaderPattern(
-          JniCallerContextProvider.class,
-          CallerContextProvider.class);
+          JniCallerContextProvider.class, CallerContextProvider.class);
 
       // JniModuleCacheProvider
       assertProviderFollowsServiceLoaderPattern(
-          JniModuleCacheProvider.class,
-          ModuleCacheFactory.ModuleCacheProvider.class);
+          JniModuleCacheProvider.class, ModuleCacheFactory.ModuleCacheProvider.class);
 
       // JniProfilerProvider
       assertProviderFollowsServiceLoaderPattern(
-          JniProfilerProvider.class,
-          ProfilerFactory.ProfilerProvider.class);
+          JniProfilerProvider.class, ProfilerFactory.ProfilerProvider.class);
     }
 
     private void assertProviderFollowsServiceLoaderPattern(

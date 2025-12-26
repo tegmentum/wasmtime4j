@@ -455,16 +455,14 @@ class ConcurrentAccessCoordinatorTest {
     void fullCoordinationLifecycleShouldWorkCorrectly() throws Exception {
       // Arena coordination
       try (Arena arena = Arena.ofConfined()) {
-        final String arenaResult =
-            coordinator.executeWithArenaCoordination(arena, a -> "arena");
+        final String arenaResult = coordinator.executeWithArenaCoordination(arena, a -> "arena");
         assertEquals("arena", arenaResult, "Arena result should match");
       }
 
       // Bulk operation
       try (Arena arena = Arena.ofConfined()) {
         final MemorySegment[] resources = {arena.allocate(64)};
-        final Integer bulkResult =
-            coordinator.executeBulkOperation(resources, r -> r.length);
+        final Integer bulkResult = coordinator.executeBulkOperation(resources, r -> r.length);
         assertEquals(1, bulkResult, "Bulk result should match");
       }
 

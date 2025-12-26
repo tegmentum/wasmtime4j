@@ -397,7 +397,8 @@ class PanamaExportDescriptorTest {
     @DisplayName("Should work with table type export")
     void shouldWorkWithTableTypeExport() {
       final WasmType tableType = createTableType();
-      final PanamaExportDescriptor descriptor = new PanamaExportDescriptor("__indirect_function_table", tableType);
+      final PanamaExportDescriptor descriptor =
+          new PanamaExportDescriptor("__indirect_function_table", tableType);
 
       assertEquals(WasmTypeKind.TABLE, descriptor.getType().getKind());
     }
@@ -406,7 +407,8 @@ class PanamaExportDescriptorTest {
     @DisplayName("Should work with global type export")
     void shouldWorkWithGlobalTypeExport() {
       final WasmType globalType = createGlobalType();
-      final PanamaExportDescriptor descriptor = new PanamaExportDescriptor("__stack_pointer", globalType);
+      final PanamaExportDescriptor descriptor =
+          new PanamaExportDescriptor("__stack_pointer", globalType);
 
       assertEquals(WasmTypeKind.GLOBAL, descriptor.getType().getKind());
     }
@@ -422,8 +424,7 @@ class PanamaExportDescriptorTest {
       final WasmType type = createTestType();
 
       // Using Unicode characters: 世界 (Chinese for "world")
-      final PanamaExportDescriptor descriptor =
-          new PanamaExportDescriptor("世界", type);
+      final PanamaExportDescriptor descriptor = new PanamaExportDescriptor("世界", type);
 
       assertEquals("世界", descriptor.getName());
     }

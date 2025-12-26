@@ -47,7 +47,8 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("should be final class")
     void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WasiContextBuilder.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiContextBuilder.class.getModifiers()),
           "WasiContextBuilder should be final");
     }
 
@@ -57,48 +58,58 @@ class WasiContextBuilderTest {
       final Method method = WasiContextBuilder.class.getMethod("builder");
       assertNotNull(method, "Should have builder method");
       assertTrue(Modifier.isStatic(method.getModifiers()), "builder should be static");
-      assertEquals(WasiContextBuilder.class, method.getReturnType(),
+      assertEquals(
+          WasiContextBuilder.class,
+          method.getReturnType(),
           "builder should return WasiContextBuilder");
     }
 
     @Test
     @DisplayName("should have withEnvironment methods")
     void shouldHaveWithEnvironmentMethods() throws NoSuchMethodException {
-      assertNotNull(WasiContextBuilder.class.getMethod("withEnvironment", String.class, String.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withEnvironment", String.class, String.class),
           "Should have withEnvironment(String, String)");
-      assertNotNull(WasiContextBuilder.class.getMethod("withEnvironment", Map.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withEnvironment", Map.class),
           "Should have withEnvironment(Map)");
     }
 
     @Test
     @DisplayName("should have withInheritedEnvironment method")
     void shouldHaveWithInheritedEnvironmentMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContextBuilder.class.getMethod("withInheritedEnvironment"),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withInheritedEnvironment"),
           "Should have withInheritedEnvironment");
     }
 
     @Test
     @DisplayName("should have withArgument methods")
     void shouldHaveWithArgumentMethods() throws NoSuchMethodException {
-      assertNotNull(WasiContextBuilder.class.getMethod("withArgument", String.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withArgument", String.class),
           "Should have withArgument");
-      assertNotNull(WasiContextBuilder.class.getMethod("withArguments", String[].class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withArguments", String[].class),
           "Should have withArguments");
     }
 
     @Test
     @DisplayName("should have withPreopenDirectory methods")
     void shouldHaveWithPreopenDirectoryMethods() throws NoSuchMethodException {
-      assertNotNull(WasiContextBuilder.class.getMethod("withPreopenDirectory", String.class, String.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withPreopenDirectory", String.class, String.class),
           "Should have withPreopenDirectory(String, String)");
-      assertNotNull(WasiContextBuilder.class.getMethod("withPreopenDirectory", String.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withPreopenDirectory", String.class),
           "Should have withPreopenDirectory(String)");
     }
 
     @Test
     @DisplayName("should have withWorkingDirectory method")
     void shouldHaveWithWorkingDirectoryMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContextBuilder.class.getMethod("withWorkingDirectory", String.class),
+      assertNotNull(
+          WasiContextBuilder.class.getMethod("withWorkingDirectory", String.class),
           "Should have withWorkingDirectory");
     }
 
@@ -147,7 +158,8 @@ class WasiContextBuilderTest {
     @DisplayName("withEnvironment should throw for null name")
     void withEnvironmentShouldThrowForNullName() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withEnvironment(null, "value"),
           "Should throw for null name");
     }
@@ -156,7 +168,8 @@ class WasiContextBuilderTest {
     @DisplayName("withEnvironment should throw for empty name")
     void withEnvironmentShouldThrowForEmptyName() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withEnvironment("", "value"),
           "Should throw for empty name");
     }
@@ -165,7 +178,8 @@ class WasiContextBuilderTest {
     @DisplayName("withEnvironment should throw for null value")
     void withEnvironmentShouldThrowForNullValue() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withEnvironment("KEY", null),
           "Should throw for null value");
     }
@@ -174,7 +188,8 @@ class WasiContextBuilderTest {
     @DisplayName("withEnvironment map should throw for null map")
     void withEnvironmentMapShouldThrowForNullMap() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withEnvironment((Map<String, String>) null),
           "Should throw for null map");
     }
@@ -182,9 +197,10 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("getEnvironment should return copy of environment")
     void getEnvironmentShouldReturnCopyOfEnvironment() {
-      final WasiContextBuilder builder = WasiContextBuilder.builder()
-          .withEnvironment("KEY1", "value1")
-          .withEnvironment("KEY2", "value2");
+      final WasiContextBuilder builder =
+          WasiContextBuilder.builder()
+              .withEnvironment("KEY1", "value1")
+              .withEnvironment("KEY2", "value2");
 
       final Map<String, String> env = builder.getEnvironment();
       assertEquals(2, env.size());
@@ -195,8 +211,8 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("addEnvironmentVariable should be alias for withEnvironment")
     void addEnvironmentVariableShouldBeAliasForWithEnvironment() {
-      final WasiContextBuilder builder = WasiContextBuilder.builder()
-          .addEnvironmentVariable("KEY", "value");
+      final WasiContextBuilder builder =
+          WasiContextBuilder.builder().addEnvironmentVariable("KEY", "value");
 
       final Map<String, String> env = builder.getEnvironment();
       assertEquals(1, env.size());
@@ -220,7 +236,8 @@ class WasiContextBuilderTest {
     @DisplayName("withArgument should throw for null argument")
     void withArgumentShouldThrowForNullArgument() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withArgument(null),
           "Should throw for null argument");
     }
@@ -228,8 +245,8 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("withArguments should add multiple arguments")
     void withArgumentsShouldAddMultipleArguments() {
-      final WasiContextBuilder builder = WasiContextBuilder.builder()
-          .withArguments("--verbose", "--debug", "file.txt");
+      final WasiContextBuilder builder =
+          WasiContextBuilder.builder().withArguments("--verbose", "--debug", "file.txt");
 
       final List<String> args = builder.getArguments();
       assertEquals(3, args.size());
@@ -242,7 +259,8 @@ class WasiContextBuilderTest {
     @DisplayName("withArguments should throw for null array")
     void withArgumentsShouldThrowForNullArray() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withArguments((String[]) null),
           "Should throw for null array");
     }
@@ -264,8 +282,7 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("withWorkingDirectory should update working directory")
     void withWorkingDirectoryShouldUpdateWorkingDirectory() {
-      final WasiContextBuilder builder = WasiContextBuilder.builder()
-          .withWorkingDirectory("/app");
+      final WasiContextBuilder builder = WasiContextBuilder.builder().withWorkingDirectory("/app");
 
       assertEquals(Paths.get("/app"), builder.getWorkingDirectory());
     }
@@ -274,7 +291,8 @@ class WasiContextBuilderTest {
     @DisplayName("withWorkingDirectory should throw for null")
     void withWorkingDirectoryShouldThrowForNull() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withWorkingDirectory(null),
           "Should throw for null directory");
     }
@@ -283,7 +301,8 @@ class WasiContextBuilderTest {
     @DisplayName("withWorkingDirectory should throw for empty string")
     void withWorkingDirectoryShouldThrowForEmptyString() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withWorkingDirectory(""),
           "Should throw for empty directory");
     }
@@ -297,7 +316,8 @@ class WasiContextBuilderTest {
     @DisplayName("getPreopenedDirectories should return empty map by default")
     void getPreopenedDirectoriesShouldReturnEmptyMapByDefault() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertTrue(builder.getPreopenedDirectories().isEmpty(),
+      assertTrue(
+          builder.getPreopenedDirectories().isEmpty(),
           "Should have no preopened directories by default");
     }
 
@@ -305,7 +325,8 @@ class WasiContextBuilderTest {
     @DisplayName("withPreopenDirectory should throw for null guest dir")
     void withPreopenDirectoryShouldThrowForNullGuestDir() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withPreopenDirectory(null, "/tmp"),
           "Should throw for null guest dir");
     }
@@ -314,7 +335,8 @@ class WasiContextBuilderTest {
     @DisplayName("withPreopenDirectory should throw for null host dir")
     void withPreopenDirectoryShouldThrowForNullHostDir() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withPreopenDirectory("/guest", null),
           "Should throw for null host dir");
     }
@@ -322,8 +344,8 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("addPreopenedDirectory should work with Path and String")
     void addPreopenedDirectoryShouldWorkWithPathAndString() throws NoSuchMethodException {
-      final Method method = WasiContextBuilder.class.getMethod(
-          "addPreopenedDirectory", Path.class, String.class);
+      final Method method =
+          WasiContextBuilder.class.getMethod("addPreopenedDirectory", Path.class, String.class);
       assertNotNull(method, "Should have addPreopenedDirectory(Path, String)");
     }
   }
@@ -348,12 +370,13 @@ class WasiContextBuilderTest {
     @Test
     @DisplayName("should support method chaining")
     void shouldSupportMethodChaining() {
-      final WasiContextBuilder builder = WasiContextBuilder.builder()
-          .withEnvironment("HOME", "/home/user")
-          .withEnvironment("PATH", "/usr/bin")
-          .withArgument("--verbose")
-          .withArgument("--debug")
-          .withWorkingDirectory("/app");
+      final WasiContextBuilder builder =
+          WasiContextBuilder.builder()
+              .withEnvironment("HOME", "/home/user")
+              .withEnvironment("PATH", "/usr/bin")
+              .withArgument("--verbose")
+              .withArgument("--debug")
+              .withWorkingDirectory("/app");
 
       assertNotNull(builder);
       assertEquals(2, builder.getEnvironment().size());

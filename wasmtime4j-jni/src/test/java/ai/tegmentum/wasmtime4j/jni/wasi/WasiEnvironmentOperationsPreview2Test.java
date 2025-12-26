@@ -32,9 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiEnvironmentOperationsPreview2}.
- */
+/** Comprehensive tests for {@link WasiEnvironmentOperationsPreview2}. */
 @DisplayName("WasiEnvironmentOperationsPreview2 Tests")
 class WasiEnvironmentOperationsPreview2Test {
 
@@ -64,7 +62,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("WasiEnvironmentOperationsPreview2 should be final class")
     void shouldBeFinalClass() {
       assertTrue(
-          java.lang.reflect.Modifier.isFinal(WasiEnvironmentOperationsPreview2.class.getModifiers()),
+          java.lang.reflect.Modifier.isFinal(
+              WasiEnvironmentOperationsPreview2.class.getModifiers()),
           "WasiEnvironmentOperationsPreview2 should be final");
     }
   }
@@ -76,7 +75,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiEnvironmentOperationsPreview2(null, executorService),
           "Should throw on null context");
     }
@@ -84,7 +84,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiEnvironmentOperationsPreview2(testContext, null),
           "Should throw on null executor");
     }
@@ -106,7 +107,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get environment")
     void shouldAttemptToGetEnvironment() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getEnvironment(),
           "Should attempt to get environment");
     }
@@ -136,7 +138,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on null name")
     void shouldThrowOnNullName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.getEnvironmentVariable(null),
           "Should throw on null name");
     }
@@ -144,7 +147,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on empty name")
     void shouldThrowOnEmptyName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.getEnvironmentVariable(""),
           "Should throw on empty name");
     }
@@ -152,7 +156,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on name containing equals")
     void shouldThrowOnNameContainingEquals() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getEnvironmentVariable("FOO=BAR"),
           "Should throw on name containing =");
     }
@@ -160,7 +165,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on name containing null character")
     void shouldThrowOnNameContainingNullCharacter() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getEnvironmentVariable("FOO\0BAR"),
           "Should throw on name containing null");
     }
@@ -173,7 +179,8 @@ class WasiEnvironmentOperationsPreview2Test {
         longName.append("A");
       }
 
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getEnvironmentVariable(longName.toString()),
           "Should throw on name > 32KB");
     }
@@ -186,7 +193,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on null name")
     void shouldThrowOnNullName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.getEnvironmentVariableAsync(null),
           "Should throw on null name");
     }
@@ -194,7 +202,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on empty name")
     void shouldThrowOnEmptyName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.getEnvironmentVariableAsync(""),
           "Should throw on empty name");
     }
@@ -219,7 +228,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get arguments")
     void shouldAttemptToGetArguments() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getArguments(),
           "Should attempt to get arguments");
     }
@@ -250,7 +260,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get program name")
     void shouldAttemptToGetProgramName() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getProgramName(),
           "Should attempt to get program name");
     }
@@ -264,7 +275,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get program arguments")
     void shouldAttemptToGetProgramArguments() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getProgramArguments(),
           "Should attempt to get program arguments");
     }
@@ -277,7 +289,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on null name")
     void shouldThrowOnNullName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.hasEnvironmentVariable(null),
           "Should throw on null name");
     }
@@ -285,7 +298,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @Test
     @DisplayName("Should throw on empty name")
     void shouldThrowOnEmptyName() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> envOperations.hasEnvironmentVariable(""),
           "Should throw on empty name");
     }
@@ -299,7 +313,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get count")
     void shouldAttemptToGetCount() {
       // Will throw due to native call failure in getEnvironment()
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getEnvironmentVariableCount(),
           "Should attempt to get count");
     }
@@ -313,7 +328,8 @@ class WasiEnvironmentOperationsPreview2Test {
     @DisplayName("Should attempt to get count")
     void shouldAttemptToGetCount() {
       // Will throw due to native call failure in getArguments()
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> envOperations.getArgumentCount(),
           "Should attempt to get count");
     }

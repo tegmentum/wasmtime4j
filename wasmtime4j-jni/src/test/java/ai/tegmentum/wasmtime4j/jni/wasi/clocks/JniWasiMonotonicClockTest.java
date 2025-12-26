@@ -45,7 +45,9 @@ class JniWasiMonotonicClockTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiMonotonicClock", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiMonotonicClock",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -94,7 +96,8 @@ class JniWasiMonotonicClockTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -142,7 +145,10 @@ class JniWasiMonotonicClockTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("subscribeInstant", long.class);
       assertNotNull(method, "subscribeInstant method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(), "subscribeInstant should return WasiPollable");
+      assertEquals(
+          WasiPollable.class,
+          method.getReturnType(),
+          "subscribeInstant should return WasiPollable");
     }
 
     @Test
@@ -151,7 +157,10 @@ class JniWasiMonotonicClockTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("subscribeDuration", long.class);
       assertNotNull(method, "subscribeDuration method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(), "subscribeDuration should return WasiPollable");
+      assertEquals(
+          WasiPollable.class,
+          method.getReturnType(),
+          "subscribeDuration should return WasiPollable");
     }
   }
 
@@ -230,8 +239,7 @@ class JniWasiMonotonicClockTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

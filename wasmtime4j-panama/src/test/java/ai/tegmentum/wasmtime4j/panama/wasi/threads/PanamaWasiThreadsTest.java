@@ -42,8 +42,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for Panama WASI-Threads implementation classes.
  *
- * <p>Tests verify class structure, method signatures, field definitions, and API contracts
- * using reflection to avoid triggering native library loading.
+ * <p>Tests verify class structure, method signatures, field definitions, and API contracts using
+ * reflection to avoid triggering native library loading.
  */
 @DisplayName("Panama WASI-Threads Implementation Tests")
 class PanamaWasiThreadsTest {
@@ -127,8 +127,9 @@ class PanamaWasiThreadsTest {
       @Test
       @DisplayName("addToLinker method should exist with correct parameters")
       void addToLinkerMethodShouldExist() throws NoSuchMethodException {
-        Method method = PanamaWasiThreadsProvider.class.getMethod(
-            "addToLinker", Linker.class, Store.class, Module.class);
+        Method method =
+            PanamaWasiThreadsProvider.class.getMethod(
+                "addToLinker", Linker.class, Store.class, Module.class);
         assertNotNull(method, "addToLinker method should exist");
         assertEquals(void.class, method.getReturnType(), "Should return void");
       }
@@ -209,7 +210,8 @@ class PanamaWasiThreadsTest {
             boolean found = false;
             for (Method implMethod : PanamaWasiThreadsProvider.class.getMethods()) {
               if (implMethod.getName().equals(interfaceMethod.getName())
-                  && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                  && arrayEquals(
+                      implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
                 found = true;
                 break;
               }
@@ -407,7 +409,8 @@ class PanamaWasiThreadsTest {
       @Test
       @DisplayName("Should have validateConfiguration private method")
       void shouldHaveValidateConfigurationMethod() throws NoSuchMethodException {
-        Method method = PanamaWasiThreadsContextBuilder.class.getDeclaredMethod("validateConfiguration");
+        Method method =
+            PanamaWasiThreadsContextBuilder.class.getDeclaredMethod("validateConfiguration");
         assertNotNull(method, "validateConfiguration method should exist");
         assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
         assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -416,8 +419,9 @@ class PanamaWasiThreadsTest {
       @Test
       @DisplayName("Should have getNativeSegment private method")
       void shouldHaveGetNativeSegmentMethod() throws NoSuchMethodException {
-        Method method = PanamaWasiThreadsContextBuilder.class.getDeclaredMethod(
-            "getNativeSegment", Object.class, String.class);
+        Method method =
+            PanamaWasiThreadsContextBuilder.class.getDeclaredMethod(
+                "getNativeSegment", Object.class, String.class);
         assertNotNull(method, "getNativeSegment method should exist");
         assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
         assertEquals(MemorySegment.class, method.getReturnType(), "Should return MemorySegment");
@@ -436,7 +440,8 @@ class PanamaWasiThreadsTest {
             boolean found = false;
             for (Method implMethod : PanamaWasiThreadsContextBuilder.class.getMethods()) {
               if (implMethod.getName().equals(interfaceMethod.getName())
-                  && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                  && arrayEquals(
+                      implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
                 found = true;
                 break;
               }
@@ -514,13 +519,15 @@ class PanamaWasiThreadsTest {
       @Test
       @DisplayName("Should have package-private constructor with MemorySegment, Arena, and boolean")
       void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-        var constructor = PanamaWasiThreadsContext.class.getDeclaredConstructor(
-            MemorySegment.class, Arena.class, boolean.class);
+        var constructor =
+            PanamaWasiThreadsContext.class.getDeclaredConstructor(
+                MemorySegment.class, Arena.class, boolean.class);
         assertNotNull(constructor, "Constructor should exist");
         // Package-private: not public, not private, not protected
         int modifiers = constructor.getModifiers();
         assertTrue(
-            !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+            !Modifier.isPublic(modifiers)
+                && !Modifier.isPrivate(modifiers)
                 && !Modifier.isProtected(modifiers),
             "Constructor should be package-private");
       }
@@ -582,13 +589,15 @@ class PanamaWasiThreadsTest {
       @Test
       @DisplayName("onThreadCompleted method should exist with int parameter")
       void onThreadCompletedMethodShouldExist() throws NoSuchMethodException {
-        Method method = PanamaWasiThreadsContext.class.getDeclaredMethod("onThreadCompleted", int.class);
+        Method method =
+            PanamaWasiThreadsContext.class.getDeclaredMethod("onThreadCompleted", int.class);
         assertNotNull(method, "onThreadCompleted method should exist");
         assertEquals(void.class, method.getReturnType(), "Should return void");
         // Package-private
         int modifiers = method.getModifiers();
         assertTrue(
-            !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+            !Modifier.isPublic(modifiers)
+                && !Modifier.isPrivate(modifiers)
                 && !Modifier.isProtected(modifiers),
             "onThreadCompleted should be package-private");
       }
@@ -739,7 +748,8 @@ class PanamaWasiThreadsTest {
             boolean found = false;
             for (Method implMethod : PanamaWasiThreadsContext.class.getMethods()) {
               if (implMethod.getName().equals(interfaceMethod.getName())
-                  && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                  && arrayEquals(
+                      implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
                 found = true;
                 break;
               }
@@ -799,7 +809,8 @@ class PanamaWasiThreadsTest {
     void contextShouldUseMemorySegment() throws NoSuchFieldException {
       Field field = PanamaWasiThreadsContext.class.getDeclaredField("nativeContext");
       assertEquals(
-          MemorySegment.class, field.getType(),
+          MemorySegment.class,
+          field.getType(),
           "Should use MemorySegment for native handle (Panama pattern)");
     }
 
@@ -808,17 +819,18 @@ class PanamaWasiThreadsTest {
     void contextShouldUseArena() throws NoSuchFieldException {
       Field field = PanamaWasiThreadsContext.class.getDeclaredField("arena");
       assertEquals(
-          Arena.class, field.getType(),
-          "Should use Arena for memory management (Panama pattern)");
+          Arena.class, field.getType(), "Should use Arena for memory management (Panama pattern)");
     }
 
     @Test
     @DisplayName("Builder should return MemorySegment from getNativeSegment")
     void builderShouldReturnMemorySegment() throws NoSuchMethodException {
-      Method method = PanamaWasiThreadsContextBuilder.class.getDeclaredMethod(
-          "getNativeSegment", Object.class, String.class);
+      Method method =
+          PanamaWasiThreadsContextBuilder.class.getDeclaredMethod(
+              "getNativeSegment", Object.class, String.class);
       assertEquals(
-          MemorySegment.class, method.getReturnType(),
+          MemorySegment.class,
+          method.getReturnType(),
           "getNativeSegment should return MemorySegment");
     }
   }

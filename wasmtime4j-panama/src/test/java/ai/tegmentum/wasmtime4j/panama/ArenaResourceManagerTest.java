@@ -135,7 +135,8 @@ class ArenaResourceManagerTest {
     @Test
     @DisplayName("should have allocate method with size and alignment")
     void shouldHaveAllocateWithSizeAndAlignmentMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("allocate", long.class, long.class);
+      final Method method =
+          ArenaResourceManager.class.getMethod("allocate", long.class, long.class);
       assertNotNull(method, "allocate(long, long) method should exist");
       assertEquals(
           ArenaResourceManager.ManagedMemorySegment.class,
@@ -202,7 +203,8 @@ class ArenaResourceManagerTest {
       final Method method =
           ArenaResourceManager.class.getMethod("unregisterManagedResource", Object.class);
       assertNotNull(method, "unregisterManagedResource method should exist");
-      assertEquals(void.class, method.getReturnType(), "unregisterManagedResource should return void");
+      assertEquals(
+          void.class, method.getReturnType(), "unregisterManagedResource should return void");
     }
   }
 
@@ -285,8 +287,10 @@ class ArenaResourceManagerTest {
       for (final Class<?> clazz : declaredClasses) {
         if (clazz.getSimpleName().equals("ManagedMemorySegment")) {
           found = true;
-          assertTrue(Modifier.isPublic(clazz.getModifiers()), "ManagedMemorySegment should be public");
-          assertTrue(Modifier.isFinal(clazz.getModifiers()), "ManagedMemorySegment should be final");
+          assertTrue(
+              Modifier.isPublic(clazz.getModifiers()), "ManagedMemorySegment should be public");
+          assertTrue(
+              Modifier.isFinal(clazz.getModifiers()), "ManagedMemorySegment should be final");
           assertTrue(
               Modifier.isStatic(clazz.getModifiers()), "ManagedMemorySegment should be static");
           break;
@@ -303,8 +307,10 @@ class ArenaResourceManagerTest {
       for (final Class<?> clazz : declaredClasses) {
         if (clazz.getSimpleName().equals("ManagedNativeResource")) {
           found = true;
-          assertTrue(Modifier.isPublic(clazz.getModifiers()), "ManagedNativeResource should be public");
-          assertTrue(Modifier.isFinal(clazz.getModifiers()), "ManagedNativeResource should be final");
+          assertTrue(
+              Modifier.isPublic(clazz.getModifiers()), "ManagedNativeResource should be public");
+          assertTrue(
+              Modifier.isFinal(clazz.getModifiers()), "ManagedNativeResource should be final");
           assertTrue(
               Modifier.isStatic(clazz.getModifiers()), "ManagedNativeResource should be static");
           assertTrue(

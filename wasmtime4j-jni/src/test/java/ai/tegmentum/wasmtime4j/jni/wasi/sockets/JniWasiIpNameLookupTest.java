@@ -27,9 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniWasiIpNameLookup}.
- */
+/** Comprehensive tests for {@link JniWasiIpNameLookup}. */
 @DisplayName("JniWasiIpNameLookup Tests")
 class JniWasiIpNameLookupTest {
 
@@ -61,7 +59,8 @@ class JniWasiIpNameLookupTest {
     @Test
     @DisplayName("Constructor should throw on zero context handle")
     void constructorShouldThrowOnZeroContextHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new JniWasiIpNameLookup(0L),
           "Constructor should throw IllegalArgumentException on zero context handle");
     }
@@ -74,16 +73,17 @@ class JniWasiIpNameLookupTest {
     @Test
     @DisplayName("resolveAddresses with network and name should exist")
     void resolveAddressesWithNetworkAndNameShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniWasiIpNameLookup.class.getMethod("resolveAddresses",
-              WasiNetwork.class, String.class),
+      assertNotNull(
+          JniWasiIpNameLookup.class.getMethod("resolveAddresses", WasiNetwork.class, String.class),
           "resolveAddresses(WasiNetwork, String) method should exist");
     }
 
     @Test
     @DisplayName("resolveAddresses with network, name, and family should exist")
     void resolveAddressesWithNetworkNameAndFamilyShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniWasiIpNameLookup.class.getMethod("resolveAddresses",
-              WasiNetwork.class, String.class, IpAddressFamily.class),
+      assertNotNull(
+          JniWasiIpNameLookup.class.getMethod(
+              "resolveAddresses", WasiNetwork.class, String.class, IpAddressFamily.class),
           "resolveAddresses(WasiNetwork, String, IpAddressFamily) method should exist");
     }
   }
@@ -121,7 +121,8 @@ class JniWasiIpNameLookupTest {
     @Test
     @DisplayName("Class should have contextHandle field")
     void classShouldHaveContextHandleField() throws NoSuchFieldException {
-      assertNotNull(JniWasiIpNameLookup.class.getDeclaredField("contextHandle"),
+      assertNotNull(
+          JniWasiIpNameLookup.class.getDeclaredField("contextHandle"),
           "contextHandle field should exist");
     }
   }

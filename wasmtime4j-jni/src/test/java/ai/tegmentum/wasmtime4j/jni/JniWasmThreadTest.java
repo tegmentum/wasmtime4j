@@ -93,7 +93,8 @@ class JniWasmThreadTest {
     void shouldHaveGetStateMethod() throws NoSuchMethodException {
       final Method method = JniWasmThread.class.getMethod("getState");
       assertNotNull(method, "getState method should exist");
-      assertEquals(WasmThreadState.class, method.getReturnType(), "getState should return WasmThreadState");
+      assertEquals(
+          WasmThreadState.class, method.getReturnType(), "getState should return WasmThreadState");
     }
 
     @Test
@@ -144,7 +145,8 @@ class JniWasmThreadTest {
     void shouldHaveJoinMethodWithTimeout() throws NoSuchMethodException {
       final Method method = JniWasmThread.class.getMethod("join", long.class);
       assertNotNull(method, "join method with timeout should exist");
-      assertEquals(boolean.class, method.getReturnType(), "join with timeout should return boolean");
+      assertEquals(
+          boolean.class, method.getReturnType(), "join with timeout should return boolean");
     }
   }
 
@@ -158,7 +160,9 @@ class JniWasmThreadTest {
       final Method method = JniWasmThread.class.getMethod("terminate");
       assertNotNull(method, "terminate method should exist");
       assertEquals(
-          CompletableFuture.class, method.getReturnType(), "terminate should return CompletableFuture");
+          CompletableFuture.class,
+          method.getReturnType(),
+          "terminate should return CompletableFuture");
     }
 
     @Test
@@ -196,7 +200,8 @@ class JniWasmThreadTest {
     void shouldHaveGetSharedMemoryMethod() throws NoSuchMethodException {
       final Method method = JniWasmThread.class.getMethod("getSharedMemory");
       assertNotNull(method, "getSharedMemory method should exist");
-      assertEquals(WasmMemory.class, method.getReturnType(), "getSharedMemory should return WasmMemory");
+      assertEquals(
+          WasmMemory.class, method.getReturnType(), "getSharedMemory should return WasmMemory");
     }
 
     @Test

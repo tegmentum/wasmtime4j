@@ -265,7 +265,8 @@ class JniWasiComponentTest {
     void shouldHaveInstantiateMethodNoParams() throws Exception {
       Method method = JniWasiComponent.class.getMethod("instantiate");
       assertNotNull(method, "instantiate() method should exist");
-      assertEquals(WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
+      assertEquals(
+          WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
       assertTrue(Modifier.isPublic(method.getModifiers()), "instantiate should be public");
     }
 
@@ -274,7 +275,8 @@ class JniWasiComponentTest {
     void shouldHaveInstantiateMethodWithConfig() throws Exception {
       Method method = JniWasiComponent.class.getMethod("instantiate", WasiConfig.class);
       assertNotNull(method, "instantiate(WasiConfig) method should exist");
-      assertEquals(WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
+      assertEquals(
+          WasiInstance.class, method.getReturnType(), "Return type should be WasiInstance");
       assertTrue(Modifier.isPublic(method.getModifiers()), "instantiate should be public");
     }
 
@@ -412,7 +414,9 @@ class JniWasiComponentTest {
       assertNotNull(method, "extractStats method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "extractStats should be private");
       assertEquals(
-          WasiComponentStats.class, method.getReturnType(), "Return type should be WasiComponentStats");
+          WasiComponentStats.class,
+          method.getReturnType(),
+          "Return type should be WasiComponentStats");
     }
 
     @Test
@@ -505,8 +509,7 @@ class JniWasiComponentTest {
               JniWasiComponent.class.getMethod(
                   interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           assertNotNull(
-              implMethod,
-              "Implementation for " + interfaceMethod.getName() + " should exist");
+              implMethod, "Implementation for " + interfaceMethod.getName() + " should exist");
         } catch (NoSuchMethodException e) {
           throw new AssertionError(
               "Missing implementation for interface method: " + interfaceMethod.getName());

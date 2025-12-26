@@ -52,7 +52,8 @@ class JniInstancePreTest {
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
       assertTrue(
-          Modifier.isPublic(JniInstancePre.class.getModifiers()), "JniInstancePre should be public");
+          Modifier.isPublic(JniInstancePre.class.getModifiers()),
+          "JniInstancePre should be public");
       assertTrue(
           Modifier.isFinal(JniInstancePre.class.getModifiers()), "JniInstancePre should be final");
     }

@@ -64,7 +64,8 @@ class PanamaResourceTrackerTest {
     @Test
     @DisplayName("PanamaResourceTracker should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(PanamaResourceTracker.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(PanamaResourceTracker.class.getModifiers()),
           "PanamaResourceTracker should be final");
     }
   }
@@ -91,7 +92,8 @@ class PanamaResourceTrackerTest {
     @DisplayName("trackResource should throw for null resource")
     void trackResourceShouldThrowForNullResource() {
       final MemorySegment segment = arena.allocate(64);
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> tracker.trackResource(null, segment),
           "Should throw for null resource");
     }
@@ -100,7 +102,8 @@ class PanamaResourceTrackerTest {
     @DisplayName("trackResource should throw for null handle")
     void trackResourceShouldThrowForNullHandle() {
       final Object resource = new Object();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> tracker.trackResource(resource, null),
           "Should throw for null handle");
     }
@@ -147,8 +150,8 @@ class PanamaResourceTrackerTest {
     @Test
     @DisplayName("untrackResource should return false for untracked resource")
     void untrackResourceShouldReturnFalseForUntrackedResource() {
-      assertFalse(tracker.untrackResource(new Object()),
-          "Should return false for untracked resource");
+      assertFalse(
+          tracker.untrackResource(new Object()), "Should return false for untracked resource");
     }
 
     @Test
@@ -226,8 +229,8 @@ class PanamaResourceTrackerTest {
       final MemorySegment segment = arena.allocate(64);
 
       tracker.trackResource(resource, segment);
-      assertEquals(segment, tracker.getHandle(resource),
-          "Should return handle for tracked resource");
+      assertEquals(
+          segment, tracker.getHandle(resource), "Should return handle for tracked resource");
     }
   }
 
@@ -244,8 +247,7 @@ class PanamaResourceTrackerTest {
       tracker.trackResource(resource, segment);
 
       // Resource is still referenced, so no orphans
-      assertEquals(0, tracker.cleanupOrphanedResources(),
-          "Should return 0 when no orphans exist");
+      assertEquals(0, tracker.cleanupOrphanedResources(), "Should return 0 when no orphans exist");
     }
   }
 
@@ -266,8 +268,8 @@ class PanamaResourceTrackerTest {
 
       tracker.cleanup();
 
-      assertEquals(0, tracker.getTrackedResourceCount(),
-          "Should have 0 tracked resources after cleanup");
+      assertEquals(
+          0, tracker.getTrackedResourceCount(), "Should have 0 tracked resources after cleanup");
     }
   }
 
@@ -299,10 +301,8 @@ class PanamaResourceTrackerTest {
       tracker.trackResource(resource2, segment2);
       tracker.untrackResource(resource1);
 
-      assertEquals(2, tracker.getTotalTracked(),
-          "Total tracked should be 2 (cumulative)");
-      assertEquals(1, tracker.getTrackedResourceCount(),
-          "Current count should be 1");
+      assertEquals(2, tracker.getTotalTracked(), "Total tracked should be 2 (cumulative)");
+      assertEquals(1, tracker.getTrackedResourceCount(), "Current count should be 1");
     }
 
     @Test
@@ -447,18 +447,20 @@ class PanamaResourceTrackerTest {
 
       for (int i = 0; i < threadCount; i++) {
         final int threadIndex = i;
-        threads[i] = new Thread(() -> {
-          try (Arena localArena = Arena.ofConfined()) {
-            for (int j = 0; j < operationsPerThread; j++) {
-              final Object resource = new Object();
-              final MemorySegment segment = localArena.allocate(64);
-              tracker.trackResource(resource, segment);
-              tracker.isTracked(resource);
-              tracker.getHandle(resource);
-              tracker.untrackResource(resource);
-            }
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  try (Arena localArena = Arena.ofConfined()) {
+                    for (int j = 0; j < operationsPerThread; j++) {
+                      final Object resource = new Object();
+                      final MemorySegment segment = localArena.allocate(64);
+                      tracker.trackResource(resource, segment);
+                      tracker.isTracked(resource);
+                      tracker.getHandle(resource);
+                      tracker.untrackResource(resource);
+                    }
+                  }
+                });
       }
 
       // Start all threads
@@ -472,11 +474,15 @@ class PanamaResourceTrackerTest {
       }
 
       // Verify consistency
-      assertEquals(0, tracker.getTrackedResourceCount(),
-          "Should have 0 tracked after all untracked");
-      assertEquals(threadCount * operationsPerThread, tracker.getTotalTracked(),
+      assertEquals(
+          0, tracker.getTrackedResourceCount(), "Should have 0 tracked after all untracked");
+      assertEquals(
+          threadCount * operationsPerThread,
+          tracker.getTotalTracked(),
           "Total tracked should match");
-      assertEquals(threadCount * operationsPerThread, tracker.getTotalCleaned(),
+      assertEquals(
+          threadCount * operationsPerThread,
+          tracker.getTotalCleaned(),
           "Total cleaned should match");
     }
   }

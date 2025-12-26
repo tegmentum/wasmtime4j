@@ -48,18 +48,19 @@ class WitEvolutionMetricsTest {
     void shouldCreateMetricsWithAllFields() {
       final Instant start = Instant.now().minusSeconds(10);
       final Instant end = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(10),
-          5,
-          3,
-          2,
-          8,
-          0.85,
-          1024L,
-          start,
-          end,
-          true,
-          Map.of("key", "value"));
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(10),
+              5,
+              3,
+              2,
+              8,
+              0.85,
+              1024L,
+              start,
+              end,
+              true,
+              Map.of("key", "value"));
 
       assertEquals(Duration.ofSeconds(10), metrics.getEvolutionDuration());
       assertEquals(5, metrics.getTypesAnalyzed());
@@ -78,18 +79,9 @@ class WitEvolutionMetricsTest {
     @DisplayName("should clamp negative values to zero")
     void shouldClampNegativeValuesToZero() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(1),
-          -5,
-          -3,
-          -2,
-          -8,
-          -0.5,
-          -100L,
-          now,
-          now,
-          false,
-          Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), -5, -3, -2, -8, -0.5, -100L, now, now, false, Map.of());
 
       assertEquals(0, metrics.getTypesAnalyzed());
       assertEquals(0, metrics.getFunctionsAnalyzed());
@@ -103,8 +95,9 @@ class WitEvolutionMetricsTest {
     @DisplayName("should clamp compatibility score to 1.0")
     void shouldClampCompatibilityScoreToOne() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 0, 0, 0, 0, 1.5, 0, now, now, false, Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 0, 0, 0, 0, 1.5, 0, now, now, false, Map.of());
 
       assertEquals(1.0, metrics.getCompatibilityScore(), 0.001);
     }
@@ -113,30 +106,38 @@ class WitEvolutionMetricsTest {
     @DisplayName("should throw on null duration")
     void shouldThrowOnNullDuration() {
       final Instant now = Instant.now();
-      assertThrows(NullPointerException.class, () ->
-          new WitEvolutionMetrics(null, 0, 0, 0, 0, 0.0, 0, now, now, false, Map.of()));
+      assertThrows(
+          NullPointerException.class,
+          () -> new WitEvolutionMetrics(null, 0, 0, 0, 0, 0.0, 0, now, now, false, Map.of()));
     }
 
     @Test
     @DisplayName("should throw on null start time")
     void shouldThrowOnNullStartTime() {
-      assertThrows(NullPointerException.class, () ->
-          new WitEvolutionMetrics(Duration.ZERO, 0, 0, 0, 0, 0.0, 0, null, Instant.now(), false, Map.of()));
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              new WitEvolutionMetrics(
+                  Duration.ZERO, 0, 0, 0, 0, 0.0, 0, null, Instant.now(), false, Map.of()));
     }
 
     @Test
     @DisplayName("should throw on null end time")
     void shouldThrowOnNullEndTime() {
-      assertThrows(NullPointerException.class, () ->
-          new WitEvolutionMetrics(Duration.ZERO, 0, 0, 0, 0, 0.0, 0, Instant.now(), null, false, Map.of()));
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              new WitEvolutionMetrics(
+                  Duration.ZERO, 0, 0, 0, 0, 0.0, 0, Instant.now(), null, false, Map.of()));
     }
 
     @Test
     @DisplayName("should throw on null detailed metrics")
     void shouldThrowOnNullDetailedMetrics() {
       final Instant now = Instant.now();
-      assertThrows(NullPointerException.class, () ->
-          new WitEvolutionMetrics(Duration.ZERO, 0, 0, 0, 0, 0.0, 0, now, now, false, null));
+      assertThrows(
+          NullPointerException.class,
+          () -> new WitEvolutionMetrics(Duration.ZERO, 0, 0, 0, 0, 0.0, 0, now, now, false, null));
     }
   }
 
@@ -163,8 +164,8 @@ class WitEvolutionMetricsTest {
     @Test
     @DisplayName("success should create successful metrics")
     void successShouldCreateSuccessfulMetrics() {
-      final WitEvolutionMetrics metrics = WitEvolutionMetrics.success(
-          Duration.ofMillis(100), 10, 5, 3, 0.95);
+      final WitEvolutionMetrics metrics =
+          WitEvolutionMetrics.success(Duration.ofMillis(100), 10, 5, 3, 0.95);
 
       assertEquals(Duration.ofMillis(100), metrics.getEvolutionDuration());
       assertEquals(10, metrics.getTypesAnalyzed());
@@ -185,8 +186,19 @@ class WitEvolutionMetricsTest {
     @DisplayName("getEvolutionThroughput should calculate items per second")
     void getEvolutionThroughputShouldCalculateItemsPerSecond() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(2), 10, 10, 0, 0, 0.0, 0, now.minusSeconds(2), now, true, Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(2),
+              10,
+              10,
+              0,
+              0,
+              0.0,
+              0,
+              now.minusSeconds(2),
+              now,
+              true,
+              Map.of());
 
       assertEquals(10.0, metrics.getEvolutionThroughput(), 0.001);
     }
@@ -203,8 +215,9 @@ class WitEvolutionMetricsTest {
     @DisplayName("getAdapterCreationRate should calculate adapters per second")
     void getAdapterCreationRateShouldCalculateAdaptersPerSecond() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(2), 0, 0, 10, 0, 0.0, 0, now.minusSeconds(2), now, true, Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(2), 0, 0, 10, 0, 0.0, 0, now.minusSeconds(2), now, true, Map.of());
 
       assertEquals(5.0, metrics.getAdapterCreationRate(), 0.001);
     }
@@ -213,8 +226,9 @@ class WitEvolutionMetricsTest {
     @DisplayName("getValidationEfficiency should calculate checks per second")
     void getValidationEfficiencyShouldCalculateChecksPerSecond() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(2), 0, 0, 0, 20, 0.0, 0, now.minusSeconds(2), now, true, Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(2), 0, 0, 0, 20, 0.0, 0, now.minusSeconds(2), now, true, Map.of());
 
       assertEquals(10.0, metrics.getValidationEfficiency(), 0.001);
     }
@@ -228,8 +242,19 @@ class WitEvolutionMetricsTest {
     @DisplayName("getMemoryPerItem should calculate memory per item")
     void getMemoryPerItemShouldCalculateMemoryPerItem() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 5, 5, 0, 0, 0.0, 1000L, now.minusSeconds(1), now, true, Map.of());
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1),
+              5,
+              5,
+              0,
+              0,
+              0.0,
+              1000L,
+              now.minusSeconds(1),
+              now,
+              true,
+              Map.of());
 
       assertEquals(100L, metrics.getMemoryPerItem());
     }
@@ -251,9 +276,19 @@ class WitEvolutionMetricsTest {
     @DisplayName("getDetailedMetric should return typed value")
     void getDetailedMetricShouldReturnTypedValue() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 0, 0, 0, 0, 0.0, 0, now, now, true,
-          Map.of("count", 42, "name", "test"));
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1),
+              0,
+              0,
+              0,
+              0,
+              0.0,
+              0,
+              now,
+              now,
+              true,
+              Map.of("count", 42, "name", "test"));
 
       final Optional<Integer> count = metrics.getDetailedMetric("count", Integer.class);
       assertTrue(count.isPresent());
@@ -276,9 +311,9 @@ class WitEvolutionMetricsTest {
     @DisplayName("getDetailedMetric should return empty for wrong type")
     void getDetailedMetricShouldReturnEmptyForWrongType() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 0, 0, 0, 0, 0.0, 0, now, now, true,
-          Map.of("count", 42));
+      final WitEvolutionMetrics metrics =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 0, 0, 0, 0, 0.0, 0, now, now, true, Map.of("count", 42));
 
       assertTrue(metrics.getDetailedMetric("count", String.class).isEmpty());
     }
@@ -294,19 +329,20 @@ class WitEvolutionMetricsTest {
       final Instant start = Instant.now().minusSeconds(5);
       final Instant end = Instant.now();
 
-      final WitEvolutionMetrics metrics = WitEvolutionMetrics.builder()
-          .evolutionDuration(Duration.ofSeconds(5))
-          .typesAnalyzed(10)
-          .functionsAnalyzed(5)
-          .adaptersCreated(3)
-          .validationChecks(15)
-          .compatibilityScore(0.9)
-          .memoryUsed(2048L)
-          .startTime(start)
-          .endTime(end)
-          .successful(true)
-          .detailedMetric("key", "value")
-          .build();
+      final WitEvolutionMetrics metrics =
+          WitEvolutionMetrics.builder()
+              .evolutionDuration(Duration.ofSeconds(5))
+              .typesAnalyzed(10)
+              .functionsAnalyzed(5)
+              .adaptersCreated(3)
+              .validationChecks(15)
+              .compatibilityScore(0.9)
+              .memoryUsed(2048L)
+              .startTime(start)
+              .endTime(end)
+              .successful(true)
+              .detailedMetric("key", "value")
+              .build();
 
       assertEquals(Duration.ofSeconds(5), metrics.getEvolutionDuration());
       assertEquals(10, metrics.getTypesAnalyzed());
@@ -332,11 +368,12 @@ class WitEvolutionMetricsTest {
     @Test
     @DisplayName("builder should clamp values")
     void builderShouldClampValues() {
-      final WitEvolutionMetrics metrics = WitEvolutionMetrics.builder()
-          .typesAnalyzed(-5)
-          .compatibilityScore(1.5)
-          .memoryUsed(-100L)
-          .build();
+      final WitEvolutionMetrics metrics =
+          WitEvolutionMetrics.builder()
+              .typesAnalyzed(-5)
+              .compatibilityScore(1.5)
+              .memoryUsed(-100L)
+              .build();
 
       assertEquals(0, metrics.getTypesAnalyzed());
       assertEquals(1.0, metrics.getCompatibilityScore(), 0.001);
@@ -354,10 +391,12 @@ class WitEvolutionMetricsTest {
       final Instant start = Instant.parse("2025-01-01T00:00:00Z");
       final Instant end = Instant.parse("2025-01-01T00:00:01Z");
 
-      final WitEvolutionMetrics metrics1 = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, start, end, true, Map.of());
-      final WitEvolutionMetrics metrics2 = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, start, end, true, Map.of());
+      final WitEvolutionMetrics metrics1 =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, start, end, true, Map.of());
+      final WitEvolutionMetrics metrics2 =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, start, end, true, Map.of());
 
       assertEquals(metrics1, metrics2);
       assertEquals(metrics1.hashCode(), metrics2.hashCode());
@@ -367,10 +406,12 @@ class WitEvolutionMetricsTest {
     @DisplayName("different metrics should not be equal")
     void differentMetricsShouldNotBeEqual() {
       final Instant now = Instant.now();
-      final WitEvolutionMetrics metrics1 = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, now, now, true, Map.of());
-      final WitEvolutionMetrics metrics2 = new WitEvolutionMetrics(
-          Duration.ofSeconds(1), 10, 3, 2, 8, 0.9, 1024L, now, now, true, Map.of());
+      final WitEvolutionMetrics metrics1 =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 5, 3, 2, 8, 0.9, 1024L, now, now, true, Map.of());
+      final WitEvolutionMetrics metrics2 =
+          new WitEvolutionMetrics(
+              Duration.ofSeconds(1), 10, 3, 2, 8, 0.9, 1024L, now, now, true, Map.of());
 
       assertNotEquals(metrics1, metrics2);
     }
@@ -383,8 +424,8 @@ class WitEvolutionMetricsTest {
     @Test
     @DisplayName("toString should contain key fields")
     void toStringShouldContainKeyFields() {
-      final WitEvolutionMetrics metrics = WitEvolutionMetrics.success(
-          Duration.ofMillis(100), 10, 5, 3, 0.95);
+      final WitEvolutionMetrics metrics =
+          WitEvolutionMetrics.success(Duration.ofMillis(100), 10, 5, 3, 0.95);
 
       final String str = metrics.toString();
       assertTrue(str.contains("evolutionDuration"));

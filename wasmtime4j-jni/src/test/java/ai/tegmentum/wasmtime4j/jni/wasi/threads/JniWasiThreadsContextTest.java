@@ -32,9 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniWasiThreadsContext}.
- */
+/** Comprehensive tests for {@link JniWasiThreadsContext}. */
 @DisplayName("JniWasiThreadsContext Tests")
 class JniWasiThreadsContextTest {
 
@@ -88,7 +86,8 @@ class JniWasiThreadsContextTest {
       // Package-private: not public, not private, not protected
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -147,7 +146,8 @@ class JniWasiThreadsContextTest {
       // Package-private
       int modifiers = method.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "onThreadCompleted should be package-private");
     }
@@ -250,8 +250,9 @@ class JniWasiThreadsContextTest {
     @Test
     @DisplayName("Should have nativeCreate native method")
     void shouldHaveNativeCreateMethod() throws NoSuchMethodException {
-      Method method = JniWasiThreadsContext.class.getDeclaredMethod(
-          "nativeCreate", long.class, long.class, long.class);
+      Method method =
+          JniWasiThreadsContext.class.getDeclaredMethod(
+              "nativeCreate", long.class, long.class, long.class);
       assertNotNull(method, "nativeCreate method should exist");
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
@@ -261,8 +262,9 @@ class JniWasiThreadsContextTest {
     @Test
     @DisplayName("Should have nativeAddToLinker native method")
     void shouldHaveNativeAddToLinkerMethod() throws NoSuchMethodException {
-      Method method = JniWasiThreadsContext.class.getDeclaredMethod(
-          "nativeAddToLinker", long.class, long.class, long.class);
+      Method method =
+          JniWasiThreadsContext.class.getDeclaredMethod(
+              "nativeAddToLinker", long.class, long.class, long.class);
       assertNotNull(method, "nativeAddToLinker method should exist");
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
@@ -303,7 +305,8 @@ class JniWasiThreadsContextTest {
           boolean found = false;
           for (Method implMethod : JniWasiThreadsContext.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }

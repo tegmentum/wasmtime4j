@@ -17,9 +17,7 @@
 package ai.tegmentum.wasmtime4j.jni.wasi.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiEnvironment;
@@ -50,7 +48,9 @@ class JniWasiEnvironmentTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.cli.JniWasiEnvironment", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.cli.JniWasiEnvironment",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -99,7 +99,8 @@ class JniWasiEnvironmentTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -125,7 +126,8 @@ class JniWasiEnvironmentTest {
 
     @Test
     @DisplayName("should have getEnvironmentVariables method")
-    void shouldHaveGetEnvironmentVariablesMethod() throws ClassNotFoundException, NoSuchMethodException {
+    void shouldHaveGetEnvironmentVariablesMethod()
+        throws ClassNotFoundException, NoSuchMethodException {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("getEnvironmentVariables");
       assertNotNull(method, "getEnvironmentVariables method should exist");
@@ -265,8 +267,7 @@ class JniWasiEnvironmentTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

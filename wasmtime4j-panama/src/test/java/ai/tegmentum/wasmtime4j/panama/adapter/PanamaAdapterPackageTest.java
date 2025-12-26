@@ -338,8 +338,7 @@ public class PanamaAdapterPackageTest {
     @DisplayName("Should be a final class implementing Table")
     void shouldBeFinalAndImplementTable() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "WasmTableToTableAdapter");
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "WasmTableToTableAdapter should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "WasmTableToTableAdapter should be final");
 
       // Check that it implements Table interface
       boolean implementsTable = false;

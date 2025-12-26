@@ -42,8 +42,8 @@ class JniWasiLinkerTest {
     @Test
     @DisplayName("should be public class")
     void shouldBePublicClass() {
-      assertTrue(Modifier.isPublic(JniWasiLinker.class.getModifiers()),
-          "JniWasiLinker should be public");
+      assertTrue(
+          Modifier.isPublic(JniWasiLinker.class.getModifiers()), "JniWasiLinker should be public");
     }
 
     @Test
@@ -80,15 +80,15 @@ class JniWasiLinkerTest {
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(JniWasiLinker.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(JniWasiLinker.class),
           "JniWasiLinker should implement AutoCloseable");
     }
 
     @Test
     @DisplayName("should have close method")
     void shouldHaveCloseMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiLinker.class.getMethod("close"),
-          "Should have close method");
+      assertNotNull(JniWasiLinker.class.getMethod("close"), "Should have close method");
     }
   }
 
@@ -99,15 +99,14 @@ class JniWasiLinkerTest {
     @Test
     @DisplayName("should have getNativeHandle method")
     void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiLinker.class.getMethod("getNativeHandle"),
-          "Should have getNativeHandle method");
+      assertNotNull(
+          JniWasiLinker.class.getMethod("getNativeHandle"), "Should have getNativeHandle method");
     }
 
     @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiLinker.class.getMethod("isValid"),
-          "Should have isValid method");
+      assertNotNull(JniWasiLinker.class.getMethod("isValid"), "Should have isValid method");
     }
   }
 
@@ -125,7 +124,8 @@ class JniWasiLinkerTest {
           break;
         }
       }
-      assertTrue(hasEngineGetter || !hasEngineGetter,
+      assertTrue(
+          hasEngineGetter || !hasEngineGetter,
           "JniWasiLinker may have getEngine method for engine access");
     }
   }

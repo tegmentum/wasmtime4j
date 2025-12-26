@@ -305,11 +305,9 @@ class PanamaMemoryTypeTest {
     @Test
     @DisplayName("equals should return true for equal memory types")
     void equalsShouldReturnTrueForEqualMemoryTypes() {
-      final PanamaMemoryType type1 =
-          new PanamaMemoryType(1L, 10L, true, true, arena, validHandle);
+      final PanamaMemoryType type1 = new PanamaMemoryType(1L, 10L, true, true, arena, validHandle);
       final MemorySegment otherHandle = arena.allocate(8);
-      final PanamaMemoryType type2 =
-          new PanamaMemoryType(1L, 10L, true, true, arena, otherHandle);
+      final PanamaMemoryType type2 = new PanamaMemoryType(1L, 10L, true, true, arena, otherHandle);
 
       assertEquals(type1, type2, "Equal memory types should be equal");
     }
@@ -400,11 +398,9 @@ class PanamaMemoryTypeTest {
     @Test
     @DisplayName("equal objects should have equal hash codes")
     void equalObjectsShouldHaveEqualHashCodes() {
-      final PanamaMemoryType type1 =
-          new PanamaMemoryType(1L, 10L, true, true, arena, validHandle);
+      final PanamaMemoryType type1 = new PanamaMemoryType(1L, 10L, true, true, arena, validHandle);
       final MemorySegment otherHandle = arena.allocate(8);
-      final PanamaMemoryType type2 =
-          new PanamaMemoryType(1L, 10L, true, true, arena, otherHandle);
+      final PanamaMemoryType type2 = new PanamaMemoryType(1L, 10L, true, true, arena, otherHandle);
 
       assertEquals(
           type1.hashCode(), type2.hashCode(), "Equal objects should have equal hash codes");
@@ -481,18 +477,15 @@ class PanamaMemoryTypeTest {
 
       // 64-bit memory
       final MemorySegment handle2 = arena.allocate(8);
-      final PanamaMemoryType mem64 =
-          new PanamaMemoryType(1L, null, true, false, arena, handle2);
+      final PanamaMemoryType mem64 = new PanamaMemoryType(1L, null, true, false, arena, handle2);
 
       // Shared memory
       final MemorySegment handle3 = arena.allocate(8);
-      final PanamaMemoryType shared =
-          new PanamaMemoryType(1L, null, false, true, arena, handle3);
+      final PanamaMemoryType shared = new PanamaMemoryType(1L, null, false, true, arena, handle3);
 
       // Bounded memory
       final MemorySegment handle4 = arena.allocate(8);
-      final PanamaMemoryType bounded =
-          new PanamaMemoryType(1L, 10L, false, false, arena, handle4);
+      final PanamaMemoryType bounded = new PanamaMemoryType(1L, 10L, false, false, arena, handle4);
 
       assertNotEquals(basic, mem64, "Different configs should not be equal");
       assertNotEquals(basic, shared, "Different configs should not be equal");

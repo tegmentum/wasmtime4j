@@ -536,14 +536,14 @@ class JniExternImplementationsTest {
   @DisplayName("Cross-Implementation Consistency Tests")
   class CrossImplementationConsistencyTests {
 
-    private static final String[] EXTERN_IMPL_CLASSES = {
+    private final String[] externImplClasses = {
       "JniExternFunc", "JniExternGlobal", "JniExternMemory", "JniExternTable"
     };
 
     @Test
     @DisplayName("All JniExtern implementations should be in same package")
     void allShouldBeInSamePackage() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         assertEquals(
             JNI_PACKAGE, clazz.getPackage().getName(), className + " should be in " + JNI_PACKAGE);
@@ -553,7 +553,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should implement Extern")
     void allShouldImplementExtern() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         assertTrue(
             Extern.class.isAssignableFrom(clazz), className + " should implement Extern interface");
@@ -563,7 +563,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should be final")
     void allShouldBeFinal() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         assertTrue(Modifier.isFinal(clazz.getModifiers()), className + " should be final");
       }
@@ -572,7 +572,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should be package-private")
     void allShouldBePackagePrivate() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         int modifiers = clazz.getModifiers();
         assertFalse(Modifier.isPublic(modifiers), className + " should not be public");
@@ -584,7 +584,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should have nativeHandle field")
     void allShouldHaveNativeHandleField() throws Exception {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Field field = clazz.getDeclaredField("nativeHandle");
         assertNotNull(field, className + " should have nativeHandle field");
@@ -595,7 +595,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should have store field")
     void allShouldHaveStoreField() throws Exception {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Field field = clazz.getDeclaredField("store");
         assertNotNull(field, className + " should have store field");
@@ -606,7 +606,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should have getType method")
     void allShouldHaveGetTypeMethod() throws Exception {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Method method = clazz.getMethod("getType");
         assertNotNull(method, className + " should have getType method");
@@ -620,21 +620,19 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should have getNativeHandle method")
     void allShouldHaveGetNativeHandleMethod() throws Exception {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Method method = clazz.getDeclaredMethod("getNativeHandle");
         assertNotNull(method, className + " should have getNativeHandle method");
         assertEquals(
-            long.class,
-            method.getReturnType(),
-            className + ".getNativeHandle should return long");
+            long.class, method.getReturnType(), className + ".getNativeHandle should return long");
       }
     }
 
     @Test
     @DisplayName("All JniExtern implementations should have exactly 2 fields")
     void allShouldHaveExactlyTwoFields() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Field[] fields = clazz.getDeclaredFields();
         assertEquals(2, fields.length, className + " should have exactly 2 fields");
@@ -644,7 +642,7 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should have exactly 1 constructor")
     void allShouldHaveExactlyOneConstructor() throws ClassNotFoundException {
-      for (String className : EXTERN_IMPL_CLASSES) {
+      for (String className : externImplClasses) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);
         Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         assertEquals(1, constructors.length, className + " should have exactly 1 constructor");
@@ -727,8 +725,7 @@ class JniExternImplementationsTest {
       Class<?> clazz = Class.forName(JNI_PACKAGE + ".JniExternGlobal");
       Method method = clazz.getMethod("asGlobal");
 
-      assertEquals(
-          WasmGlobal.class, method.getReturnType(), "asGlobal should return WasmGlobal");
+      assertEquals(WasmGlobal.class, method.getReturnType(), "asGlobal should return WasmGlobal");
       assertTrue(Modifier.isPublic(method.getModifiers()), "asGlobal should be public");
     }
 
@@ -738,8 +735,7 @@ class JniExternImplementationsTest {
       Class<?> clazz = Class.forName(JNI_PACKAGE + ".JniExternMemory");
       Method method = clazz.getMethod("asMemory");
 
-      assertEquals(
-          WasmMemory.class, method.getReturnType(), "asMemory should return WasmMemory");
+      assertEquals(WasmMemory.class, method.getReturnType(), "asMemory should return WasmMemory");
       assertTrue(Modifier.isPublic(method.getModifiers()), "asMemory should be public");
     }
 
@@ -773,7 +769,9 @@ class JniExternImplementationsTest {
     @Test
     @DisplayName("All JniExtern implementations should override Extern methods")
     void allShouldOverrideExternMethods() throws Exception {
-      String[] classNames = {"JniExternFunc", "JniExternGlobal", "JniExternMemory", "JniExternTable"};
+      String[] classNames = {
+        "JniExternFunc", "JniExternGlobal", "JniExternMemory", "JniExternTable"
+      };
 
       for (String className : classNames) {
         Class<?> clazz = Class.forName(JNI_PACKAGE + "." + className);

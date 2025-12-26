@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,8 +35,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link NativeObjectPool} class.
  *
- * <p>This test class verifies the NativeObjectPool class which provides memory pooling
- * for frequently allocated native objects to reduce GC pressure.
+ * <p>This test class verifies the NativeObjectPool class which provides memory pooling for
+ * frequently allocated native objects to reduce GC pressure.
  */
 @DisplayName("NativeObjectPool Tests")
 class NativeObjectPoolTest {
@@ -48,14 +47,15 @@ class NativeObjectPoolTest {
   @BeforeEach
   void setUp() {
     creationCounter.set(0);
-    pool = NativeObjectPool.getPool(
-        byte[].class,
-        () -> {
-          creationCounter.incrementAndGet();
-          return new byte[1024];
-        },
-        8,
-        2);
+    pool =
+        NativeObjectPool.getPool(
+            byte[].class,
+            () -> {
+              creationCounter.incrementAndGet();
+              return new byte[1024];
+            },
+            8,
+            2);
   }
 
   @AfterEach
@@ -73,22 +73,22 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("NativeObjectPool should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(NativeObjectPool.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(NativeObjectPool.class.getModifiers()),
           "NativeObjectPool should be final");
     }
 
     @Test
     @DisplayName("DEFAULT_MAX_POOL_SIZE should be 32")
     void defaultMaxPoolSizeShouldBe32() {
-      assertEquals(32, NativeObjectPool.DEFAULT_MAX_POOL_SIZE,
-          "DEFAULT_MAX_POOL_SIZE should be 32");
+      assertEquals(
+          32, NativeObjectPool.DEFAULT_MAX_POOL_SIZE, "DEFAULT_MAX_POOL_SIZE should be 32");
     }
 
     @Test
     @DisplayName("DEFAULT_MIN_POOL_SIZE should be 4")
     void defaultMinPoolSizeShouldBe4() {
-      assertEquals(4, NativeObjectPool.DEFAULT_MIN_POOL_SIZE,
-          "DEFAULT_MIN_POOL_SIZE should be 4");
+      assertEquals(4, NativeObjectPool.DEFAULT_MIN_POOL_SIZE, "DEFAULT_MIN_POOL_SIZE should be 4");
     }
   }
 
@@ -99,18 +99,16 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("ObjectFactory should be functional interface")
     void shouldBeFunctionalInterface() {
-      assertTrue(NativeObjectPool.ObjectFactory.class.isAnnotationPresent(FunctionalInterface.class),
+      assertTrue(
+          NativeObjectPool.ObjectFactory.class.isAnnotationPresent(FunctionalInterface.class),
           "ObjectFactory should be annotated with @FunctionalInterface");
     }
 
     @Test
     @DisplayName("ObjectFactory should work with lambda")
     void shouldWorkWithLambda() {
-      final NativeObjectPool<String> stringPool = NativeObjectPool.getPool(
-          String.class,
-          () -> "test",
-          4,
-          1);
+      final NativeObjectPool<String> stringPool =
+          NativeObjectPool.getPool(String.class, () -> "test", 4, 1);
       try {
         final String borrowed = stringPool.borrow();
         assertNotNull(borrowed, "Should create object using lambda");
@@ -128,7 +126,8 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("getPool should throw for null objectType")
     void getPoolShouldThrowForNullObjectType() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(null, () -> new byte[10], 8, 2),
           "Should throw for null objectType");
     }
@@ -136,10 +135,10 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("getPool should return same instance for same type")
     void getPoolShouldReturnSameInstanceForSameType() {
-      final NativeObjectPool<Integer> pool1 = NativeObjectPool.getPool(
-          Integer.class, () -> 42, 8, 2);
-      final NativeObjectPool<Integer> pool2 = NativeObjectPool.getPool(
-          Integer.class, () -> 43, 16, 4);
+      final NativeObjectPool<Integer> pool1 =
+          NativeObjectPool.getPool(Integer.class, () -> 42, 8, 2);
+      final NativeObjectPool<Integer> pool2 =
+          NativeObjectPool.getPool(Integer.class, () -> 43, 16, 4);
 
       // Should return the same pool instance (existing pool)
       assertEquals(pool1, pool2, "Should return same pool for same type");
@@ -149,10 +148,11 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("getPool with 3 parameters should use default minPoolSize")
     void getPoolWith3ParametersShouldUseDefaultMinPoolSize() {
-      final NativeObjectPool<Long> longPool = NativeObjectPool.getPool(
-          Long.class, () -> 100L, 16);
+      final NativeObjectPool<Long> longPool = NativeObjectPool.getPool(Long.class, () -> 100L, 16);
       try {
-        assertEquals(NativeObjectPool.DEFAULT_MIN_POOL_SIZE, longPool.getMinPoolSize(),
+        assertEquals(
+            NativeObjectPool.DEFAULT_MIN_POOL_SIZE,
+            longPool.getMinPoolSize(),
             "Should use default min pool size");
       } finally {
         longPool.close();
@@ -168,10 +168,12 @@ class NativeObjectPoolTest {
     @DisplayName("Should throw for non-positive maxPoolSize")
     void shouldThrowForNonPositiveMaxPoolSize() {
       NativeObjectPool.clearAllPools();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(Short.class, () -> (short) 1, 0, 0),
           "Should throw for maxPoolSize = 0");
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(Short.class, () -> (short) 1, -1, 0),
           "Should throw for negative maxPoolSize");
     }
@@ -180,7 +182,8 @@ class NativeObjectPoolTest {
     @DisplayName("Should throw for negative minPoolSize")
     void shouldThrowForNegativeMinPoolSize() {
       NativeObjectPool.clearAllPools();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(Float.class, () -> 1.0f, 8, -1),
           "Should throw for negative minPoolSize");
     }
@@ -189,7 +192,8 @@ class NativeObjectPoolTest {
     @DisplayName("Should throw if minPoolSize exceeds maxPoolSize")
     void shouldThrowIfMinPoolSizeExceedsMaxPoolSize() {
       NativeObjectPool.clearAllPools();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(Double.class, () -> 1.0, 4, 8),
           "Should throw if minPoolSize > maxPoolSize");
     }
@@ -198,7 +202,8 @@ class NativeObjectPoolTest {
     @DisplayName("Should throw for null factory")
     void shouldThrowForNullFactory() {
       NativeObjectPool.clearAllPools();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> NativeObjectPool.getPool(Boolean.class, null, 8, 2),
           "Should throw for null factory");
     }
@@ -252,8 +257,8 @@ class NativeObjectPoolTest {
     @DisplayName("borrow should throw when pool is closed")
     void borrowShouldThrowWhenPoolIsClosed() {
       pool.close();
-      assertThrows(IllegalStateException.class, () -> pool.borrow(),
-          "Should throw when pool is closed");
+      assertThrows(
+          IllegalStateException.class, () -> pool.borrow(), "Should throw when pool is closed");
     }
   }
 
@@ -264,7 +269,9 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("returnObject should throw for null")
     void returnObjectShouldThrowForNull() {
-      assertThrows(IllegalArgumentException.class, () -> pool.returnObject(null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> pool.returnObject(null),
           "Should throw for null object");
     }
 
@@ -292,7 +299,8 @@ class NativeObjectPoolTest {
       final byte[] obj = pool.borrow();
       final int availableAfterBorrow = pool.getAvailableCount();
       pool.returnObject(obj);
-      assertTrue(pool.getAvailableCount() >= availableAfterBorrow,
+      assertTrue(
+          pool.getAvailableCount() >= availableAfterBorrow,
           "Available count should increase after return");
     }
 
@@ -301,8 +309,8 @@ class NativeObjectPoolTest {
     void returnObjectShouldNotThrowWhenPoolIsClosed() {
       final byte[] obj = pool.borrow();
       pool.close();
-      assertDoesNotThrow(() -> pool.returnObject(obj),
-          "Return should not throw when pool is closed");
+      assertDoesNotThrow(
+          () -> pool.returnObject(obj), "Return should not throw when pool is closed");
     }
   }
 
@@ -349,8 +357,7 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("getHitRate should return 100 for no borrows")
     void getHitRateShouldReturn100ForNoBorrows() {
-      assertEquals(100.0, pool.getHitRate(), 0.01,
-          "Hit rate should be 100% for no borrows");
+      assertEquals(100.0, pool.getHitRate(), 0.01, "Hit rate should be 100% for no borrows");
     }
 
     @Test
@@ -366,43 +373,48 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("getAverageBorrowTimeNs should return 0 for no borrows")
     void getAverageBorrowTimeNsShouldReturn0ForNoBorrows() {
-      assertEquals(0.0, pool.getAverageBorrowTimeNs(), 0.01,
+      assertEquals(
+          0.0,
+          pool.getAverageBorrowTimeNs(),
+          0.01,
           "Average borrow time should be 0 for no borrows");
     }
 
     @Test
     @DisplayName("getAverageReturnTimeNs should return 0 for no returns")
     void getAverageReturnTimeNsShouldReturn0ForNoReturns() {
-      assertEquals(0.0, pool.getAverageReturnTimeNs(), 0.01,
+      assertEquals(
+          0.0,
+          pool.getAverageReturnTimeNs(),
+          0.01,
           "Average return time should be 0 for no returns");
     }
 
     @Test
     @DisplayName("getMissRate should return 0 for no borrows")
     void getMissRateShouldReturn0ForNoBorrows() {
-      assertEquals(0.0, pool.getMissRate(), 0.01,
-          "Miss rate should be 0 for no borrows");
+      assertEquals(0.0, pool.getMissRate(), 0.01, "Miss rate should be 0 for no borrows");
     }
 
     @Test
     @DisplayName("getContentionRate should return 0 for no borrows")
     void getContentionRateShouldReturn0ForNoBorrows() {
-      assertEquals(0.0, pool.getContentionRate(), 0.01,
-          "Contention rate should be 0 for no borrows");
+      assertEquals(
+          0.0, pool.getContentionRate(), 0.01, "Contention rate should be 0 for no borrows");
     }
 
     @Test
     @DisplayName("getOptimalSize should return value >= minPoolSize")
     void getOptimalSizeShouldReturnValueGeMinPoolSize() {
-      assertTrue(pool.getOptimalSize() >= pool.getMinPoolSize(),
+      assertTrue(
+          pool.getOptimalSize() >= pool.getMinPoolSize(),
           "Optimal size should be >= min pool size");
     }
 
     @Test
     @DisplayName("getPrewarmCount should track prewarmed objects")
     void getPrewarmCountShouldTrackPrewarmedObjects() {
-      assertTrue(pool.getPrewarmCount() >= 0,
-          "Prewarm count should be non-negative");
+      assertTrue(pool.getPrewarmCount() >= 0, "Prewarm count should be non-negative");
     }
 
     @Test
@@ -471,8 +483,7 @@ class NativeObjectPoolTest {
     @DisplayName("close should be idempotent")
     void closeShouldBeIdempotent() {
       pool.close();
-      assertDoesNotThrow(() -> pool.close(),
-          "Calling close twice should not throw");
+      assertDoesNotThrow(() -> pool.close(), "Calling close twice should not throw");
     }
   }
 
@@ -483,10 +494,10 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("setPrewarmingEnabled should not throw")
     void setPrewarmingEnabledShouldNotThrow() {
-      assertDoesNotThrow(() -> pool.setPrewarmingEnabled(false),
-          "Disabling prewarming should not throw");
-      assertDoesNotThrow(() -> pool.setPrewarmingEnabled(true),
-          "Enabling prewarming should not throw");
+      assertDoesNotThrow(
+          () -> pool.setPrewarmingEnabled(false), "Disabling prewarming should not throw");
+      assertDoesNotThrow(
+          () -> pool.setPrewarmingEnabled(true), "Enabling prewarming should not throw");
     }
   }
 
@@ -503,8 +514,7 @@ class NativeObjectPoolTest {
         pool.returnObject(obj);
       }
 
-      assertDoesNotThrow(() -> pool.optimize(),
-          "optimize() should not throw");
+      assertDoesNotThrow(() -> pool.optimize(), "optimize() should not throw");
     }
   }
 
@@ -523,10 +533,9 @@ class NativeObjectPoolTest {
     @Test
     @DisplayName("clearAllPools should close all pools")
     void clearAllPoolsShouldCloseAllPools() {
-      final NativeObjectPool<Integer> intPool = NativeObjectPool.getPool(
-          Integer.class, () -> 1, 4, 1);
-      final NativeObjectPool<Long> longPool = NativeObjectPool.getPool(
-          Long.class, () -> 1L, 4, 1);
+      final NativeObjectPool<Integer> intPool =
+          NativeObjectPool.getPool(Integer.class, () -> 1, 4, 1);
+      final NativeObjectPool<Long> longPool = NativeObjectPool.getPool(Long.class, () -> 1L, 4, 1);
 
       NativeObjectPool.clearAllPools();
 

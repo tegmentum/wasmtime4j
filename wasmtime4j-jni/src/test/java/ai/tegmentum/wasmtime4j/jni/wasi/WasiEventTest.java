@@ -201,7 +201,8 @@ class WasiEventTest {
     @Test
     @DisplayName("WasiEvent should be final class")
     void wasiEventShouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WasiEvent.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(WasiEvent.class.getModifiers()),
           "WasiEvent should be final");
     }
 
@@ -210,7 +211,8 @@ class WasiEventTest {
     void shouldHaveNoSetterMethods() {
       final java.lang.reflect.Method[] methods = WasiEvent.class.getDeclaredMethods();
       for (final java.lang.reflect.Method method : methods) {
-        assertFalse(method.getName().startsWith("set"),
+        assertFalse(
+            method.getName().startsWith("set"),
             "Should not have setter method: " + method.getName());
       }
     }

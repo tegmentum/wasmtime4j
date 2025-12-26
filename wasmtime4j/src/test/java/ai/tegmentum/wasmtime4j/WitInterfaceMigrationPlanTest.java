@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link WitInterfaceMigrationPlan} interface.
  *
- * <p>WitInterfaceMigrationPlan provides migration planning capabilities for WIT interface evolution.
+ * <p>WitInterfaceMigrationPlan provides migration planning capabilities for WIT interface
+ * evolution.
  */
 @DisplayName("WitInterfaceMigrationPlan Tests")
 class WitInterfaceMigrationPlanTest {
@@ -150,11 +151,14 @@ class WitInterfaceMigrationPlanTest {
     @Test
     @DisplayName("MigrationStrategy valueOf should work")
     void migrationStrategyValueOfShouldWork() {
-      assertEquals(WitInterfaceMigrationPlan.MigrationStrategy.BIG_BANG,
+      assertEquals(
+          WitInterfaceMigrationPlan.MigrationStrategy.BIG_BANG,
           WitInterfaceMigrationPlan.MigrationStrategy.valueOf("BIG_BANG"));
-      assertEquals(WitInterfaceMigrationPlan.MigrationStrategy.PHASED,
+      assertEquals(
+          WitInterfaceMigrationPlan.MigrationStrategy.PHASED,
           WitInterfaceMigrationPlan.MigrationStrategy.valueOf("PHASED"));
-      assertEquals(WitInterfaceMigrationPlan.MigrationStrategy.BLUE_GREEN,
+      assertEquals(
+          WitInterfaceMigrationPlan.MigrationStrategy.BLUE_GREEN,
           WitInterfaceMigrationPlan.MigrationStrategy.valueOf("BLUE_GREEN"));
     }
 
@@ -202,11 +206,14 @@ class WitInterfaceMigrationPlanTest {
     @Test
     @DisplayName("StepType valueOf should work")
     void stepTypeValueOfShouldWork() {
-      assertEquals(WitInterfaceMigrationPlan.StepType.VALIDATION,
+      assertEquals(
+          WitInterfaceMigrationPlan.StepType.VALIDATION,
           WitInterfaceMigrationPlan.StepType.valueOf("VALIDATION"));
-      assertEquals(WitInterfaceMigrationPlan.StepType.BACKUP,
+      assertEquals(
+          WitInterfaceMigrationPlan.StepType.BACKUP,
           WitInterfaceMigrationPlan.StepType.valueOf("BACKUP"));
-      assertEquals(WitInterfaceMigrationPlan.StepType.TRANSFORMATION,
+      assertEquals(
+          WitInterfaceMigrationPlan.StepType.TRANSFORMATION,
           WitInterfaceMigrationPlan.StepType.valueOf("TRANSFORMATION"));
     }
 

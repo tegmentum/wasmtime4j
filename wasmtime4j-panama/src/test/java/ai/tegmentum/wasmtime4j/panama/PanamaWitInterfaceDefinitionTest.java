@@ -384,8 +384,7 @@ class PanamaWitInterfaceDefinitionTest {
 
       assertNotNull(instance, "Instance should be created");
       assertTrue(
-          instance instanceof WitInterfaceDefinition,
-          "Instance should be WitInterfaceDefinition");
+          instance instanceof WitInterfaceDefinition, "Instance should be WitInterfaceDefinition");
     }
 
     @Test
@@ -513,8 +512,7 @@ class PanamaWitInterfaceDefinitionTest {
           (WitInterfaceDefinition) constructor.newInstance("test", "1.0.0", "test:pkg", witText);
 
       assertFalse(instance.getFunctionNames().isEmpty(), "Should parse functions from WIT text");
-      assertTrue(
-          instance.getFunctionNames().contains("add"), "Should parse 'add' function name");
+      assertTrue(instance.getFunctionNames().contains("add"), "Should parse 'add' function name");
       assertTrue(
           instance.getFunctionNames().contains("multiply"),
           "Should parse 'multiply' function name");

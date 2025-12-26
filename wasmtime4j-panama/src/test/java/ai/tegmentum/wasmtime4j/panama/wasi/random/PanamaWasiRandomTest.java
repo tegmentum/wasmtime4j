@@ -74,8 +74,7 @@ class PanamaWasiRandomTest {
     void shouldImplementWasiRandomInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit();
       assertTrue(
-          WasiRandom.class.isAssignableFrom(clazz),
-          "PanamaWasiRandom should implement WasiRandom");
+          WasiRandom.class.isAssignableFrom(clazz), "PanamaWasiRandom should implement WasiRandom");
     }
   }
 
@@ -199,8 +198,7 @@ class PanamaWasiRandomTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

@@ -195,8 +195,7 @@ class ComponentEventConfigTest {
     @Test
     @DisplayName("builder should set max queue size")
     void builderShouldSetMaxQueueSize() {
-      final ComponentEventConfig config =
-          ComponentEventConfig.builder().maxQueueSize(2000).build();
+      final ComponentEventConfig config = ComponentEventConfig.builder().maxQueueSize(2000).build();
 
       assertEquals(2000, config.getMaxQueueSize(), "Max queue size should be 2000");
     }

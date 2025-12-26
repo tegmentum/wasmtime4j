@@ -83,8 +83,7 @@ class JniWasiOperationsTest {
           WasiAdvancedFileOperations.class.getDeclaredConstructor(
               WasiContext.class, WasiFileSystem.class);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
@@ -201,24 +200,24 @@ class JniWasiOperationsTest {
               "copyFileAsync", String.class, String.class, boolean.class);
       assertNotNull(copyAsync, "copyFileAsync method should exist");
       assertTrue(Modifier.isPublic(copyAsync.getModifiers()), "Should be public");
-      assertEquals(CompletableFuture.class, copyAsync.getReturnType(),
-          "Should return CompletableFuture");
+      assertEquals(
+          CompletableFuture.class, copyAsync.getReturnType(), "Should return CompletableFuture");
 
       // moveFileAsync
       final Method moveAsync =
           WasiAdvancedFileOperations.class.getDeclaredMethod(
               "moveFileAsync", String.class, String.class, boolean.class);
       assertNotNull(moveAsync, "moveFileAsync method should exist");
-      assertEquals(CompletableFuture.class, moveAsync.getReturnType(),
-          "Should return CompletableFuture");
+      assertEquals(
+          CompletableFuture.class, moveAsync.getReturnType(), "Should return CompletableFuture");
 
       // deleteDirectoryTreeAsync
       final Method deleteAsync =
           WasiAdvancedFileOperations.class.getDeclaredMethod(
               "deleteDirectoryTreeAsync", String.class);
       assertNotNull(deleteAsync, "deleteDirectoryTreeAsync method should exist");
-      assertEquals(CompletableFuture.class, deleteAsync.getReturnType(),
-          "Should return CompletableFuture");
+      assertEquals(
+          CompletableFuture.class, deleteAsync.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -253,8 +252,7 @@ class JniWasiOperationsTest {
       final Constructor<?> constructor =
           WasiAdvancedNetworking.class.getDeclaredConstructor(WasiContext.class);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
@@ -401,12 +399,9 @@ class JniWasiOperationsTest {
       final Class<?> innerClass =
           Class.forName(WasiAdvancedNetworking.class.getName() + "$NetworkInterface");
       assertNotNull(innerClass, "NetworkInterface inner class should exist");
-      assertTrue(
-          Modifier.isPublic(innerClass.getModifiers()), "Should be public");
-      assertTrue(
-          Modifier.isStatic(innerClass.getModifiers()), "Should be static");
-      assertTrue(
-          Modifier.isFinal(innerClass.getModifiers()), "Should be final");
+      assertTrue(Modifier.isPublic(innerClass.getModifiers()), "Should be public");
+      assertTrue(Modifier.isStatic(innerClass.getModifiers()), "Should be static");
+      assertTrue(Modifier.isFinal(innerClass.getModifiers()), "Should be final");
     }
 
     @Test
@@ -493,9 +488,7 @@ class JniWasiOperationsTest {
       }
 
       for (final String expected : expectedMethods) {
-        assertTrue(
-            methodNames.contains(expected),
-            "Builder should have " + expected + " method");
+        assertTrue(methodNames.contains(expected), "Builder should have " + expected + " method");
       }
     }
 
@@ -604,8 +597,7 @@ class JniWasiOperationsTest {
       final Constructor<?> constructor =
           WasiProcessOperations.class.getDeclaredConstructor(WasiContext.class);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
@@ -649,8 +641,7 @@ class JniWasiOperationsTest {
       assertTrue(Modifier.isFinal(handleGen.getModifiers()), "Should be final");
 
       // childProcesses
-      final Field childProcesses =
-          WasiProcessOperations.class.getDeclaredField("childProcesses");
+      final Field childProcesses = WasiProcessOperations.class.getDeclaredField("childProcesses");
       assertNotNull(childProcesses, "childProcesses field should exist");
       assertTrue(Modifier.isPrivate(childProcesses.getModifiers()), "Should be private");
       assertTrue(Modifier.isFinal(childProcesses.getModifiers()), "Should be final");
@@ -682,8 +673,7 @@ class JniWasiOperationsTest {
     @DisplayName("Should have waitForProcess method")
     void shouldHaveWaitForProcessMethod() throws Exception {
       final Method method =
-          WasiProcessOperations.class.getDeclaredMethod(
-              "waitForProcess", long.class, int.class);
+          WasiProcessOperations.class.getDeclaredMethod("waitForProcess", long.class, int.class);
       assertNotNull(method, "waitForProcess method should exist");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
       assertEquals(
@@ -694,8 +684,7 @@ class JniWasiOperationsTest {
     @DisplayName("Should have terminateProcess method")
     void shouldHaveTerminateProcessMethod() throws Exception {
       final Method method =
-          WasiProcessOperations.class.getDeclaredMethod(
-              "terminateProcess", long.class, int.class);
+          WasiProcessOperations.class.getDeclaredMethod("terminateProcess", long.class, int.class);
       assertNotNull(method, "terminateProcess method should exist");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -730,8 +719,7 @@ class JniWasiOperationsTest {
     @Test
     @DisplayName("Should have raiseSignal method")
     void shouldHaveRaiseSignalMethod() throws Exception {
-      final Method method =
-          WasiProcessOperations.class.getDeclaredMethod("raiseSignal", int.class);
+      final Method method = WasiProcessOperations.class.getDeclaredMethod("raiseSignal", int.class);
       assertNotNull(method, "raiseSignal method should exist");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -747,8 +735,7 @@ class JniWasiOperationsTest {
       assertTrue(Modifier.isPublic(getInfo.getModifiers()), "Should be public");
 
       // getAllChildProcesses
-      final Method getAll =
-          WasiProcessOperations.class.getDeclaredMethod("getAllChildProcesses");
+      final Method getAll = WasiProcessOperations.class.getDeclaredMethod("getAllChildProcesses");
       assertNotNull(getAll, "getAllChildProcesses method should exist");
       assertTrue(Modifier.isPublic(getAll.getModifiers()), "Should be public");
       assertEquals(List.class, getAll.getReturnType(), "Should return List");
@@ -839,8 +826,7 @@ class JniWasiOperationsTest {
       final Constructor<?> constructor =
           WasiSecurityPolicyEngine.class.getDeclaredConstructor(policyClass);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
@@ -948,8 +934,7 @@ class JniWasiOperationsTest {
     void securityPolicyShouldHaveBuilder() throws Exception {
       final Class<?> policyClass =
           Class.forName(WasiSecurityPolicyEngine.class.getName() + "$SecurityPolicy");
-      final Class<?> builderClass =
-          Class.forName(policyClass.getName() + "$Builder");
+      final Class<?> builderClass = Class.forName(policyClass.getName() + "$Builder");
       assertNotNull(builderClass, "Builder inner class should exist");
       assertTrue(Modifier.isPublic(builderClass.getModifiers()), "Builder should be public");
       assertTrue(Modifier.isStatic(builderClass.getModifiers()), "Builder should be static");
@@ -987,19 +972,20 @@ class JniWasiOperationsTest {
       final Class<?> builderClass = Class.forName(policyClass.getName() + "$Builder");
 
       // Check for builder methods
-      final Set<String> expectedMethods = new HashSet<>(Arrays.asList(
-          "addAllowedDirectory",
-          "addAllowedOperation",
-          "addAllowedEnvironmentVariable",
-          "allowNetworkAccess",
-          "addAllowedHost",
-          "addAllowedPort",
-          "addAllowedProtocol",
-          "setMaxFileSize",
-          "allowSymbolicLinks",
-          "allowExecute",
-          "build"
-      ));
+      final Set<String> expectedMethods =
+          new HashSet<>(
+              Arrays.asList(
+                  "addAllowedDirectory",
+                  "addAllowedOperation",
+                  "addAllowedEnvironmentVariable",
+                  "allowNetworkAccess",
+                  "addAllowedHost",
+                  "addAllowedPort",
+                  "addAllowedProtocol",
+                  "setMaxFileSize",
+                  "allowSymbolicLinks",
+                  "allowExecute",
+                  "build"));
 
       final Method[] methods = builderClass.getDeclaredMethods();
       final Set<String> methodNames = new HashSet<>();
@@ -1008,9 +994,7 @@ class JniWasiOperationsTest {
       }
 
       for (final String expected : expectedMethods) {
-        assertTrue(
-            methodNames.contains(expected),
-            "Builder should have " + expected + " method");
+        assertTrue(methodNames.contains(expected), "Builder should have " + expected + " method");
       }
     }
 
@@ -1081,12 +1065,9 @@ class JniWasiOperationsTest {
       final Class<?> auditLoggerClass =
           Class.forName(WasiSecurityPolicyEngine.class.getName() + "$SecurityAuditLogger");
       assertNotNull(auditLoggerClass, "SecurityAuditLogger inner class should exist");
-      assertTrue(
-          Modifier.isPrivate(auditLoggerClass.getModifiers()), "Should be private");
-      assertTrue(
-          Modifier.isStatic(auditLoggerClass.getModifiers()), "Should be static");
-      assertTrue(
-          Modifier.isFinal(auditLoggerClass.getModifiers()), "Should be final");
+      assertTrue(Modifier.isPrivate(auditLoggerClass.getModifiers()), "Should be private");
+      assertTrue(Modifier.isStatic(auditLoggerClass.getModifiers()), "Should be static");
+      assertTrue(Modifier.isFinal(auditLoggerClass.getModifiers()), "Should be final");
 
       // ResourceUsageTracker
       final Class<?> resourceTrackerClass =

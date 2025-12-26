@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama.ffi;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -337,7 +336,9 @@ class MemorySegmentManagerTest {
     @DisplayName("allocate should throw for negative size")
     void allocateShouldThrowForNegativeSize() {
       assertThrows(
-          IllegalArgumentException.class, () -> manager.allocate(-1), "Should throw for negative size");
+          IllegalArgumentException.class,
+          () -> manager.allocate(-1),
+          "Should throw for negative size");
     }
 
     @Test
@@ -567,7 +568,8 @@ class MemorySegmentManagerTest {
         // Create from byte array
         final byte[] data = {1, 2, 3, 4, 5};
         final MemorySegment fromArray = testManager.fromByteArray(data);
-        assertArrayEquals(data, testManager.toByteArray(fromArray), "Byte array conversion should work");
+        assertArrayEquals(
+            data, testManager.toByteArray(fromArray), "Byte array conversion should work");
 
         // Create from string
         final String str = "Test String";

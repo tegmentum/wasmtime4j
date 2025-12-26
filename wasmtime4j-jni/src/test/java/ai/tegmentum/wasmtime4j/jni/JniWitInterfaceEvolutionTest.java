@@ -129,7 +129,8 @@ class JniWitInterfaceEvolutionTest {
     void shouldHaveValidateEvolutionStrategyMethod() throws NoSuchMethodException {
       final Method method =
           JniWitInterfaceEvolution.class.getMethod(
-              "validateEvolutionStrategy", ai.tegmentum.wasmtime4j.InterfaceEvolutionStrategy.class);
+              "validateEvolutionStrategy",
+              ai.tegmentum.wasmtime4j.InterfaceEvolutionStrategy.class);
       assertNotNull(method, "validateEvolutionStrategy method should exist");
     }
   }
@@ -187,7 +188,8 @@ class JniWitInterfaceEvolutionTest {
     @Test
     @DisplayName("should have getInterfaceVersions method")
     void shouldHaveGetInterfaceVersionsMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceEvolution.class.getMethod("getInterfaceVersions", String.class);
+      final Method method =
+          JniWitInterfaceEvolution.class.getMethod("getInterfaceVersions", String.class);
       assertNotNull(method, "getInterfaceVersions method should exist");
       assertEquals(List.class, method.getReturnType(), "getInterfaceVersions should return List");
     }
@@ -197,15 +199,19 @@ class JniWitInterfaceEvolutionTest {
     void shouldHaveFindCompatibleVersionMethod() throws NoSuchMethodException {
       final Method method =
           JniWitInterfaceEvolution.class.getMethod(
-              "findCompatibleVersion", String.class, ai.tegmentum.wasmtime4j.CompatibilityRequirements.class);
+              "findCompatibleVersion",
+              String.class,
+              ai.tegmentum.wasmtime4j.CompatibilityRequirements.class);
       assertNotNull(method, "findCompatibleVersion method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "findCompatibleVersion should return Optional");
+      assertEquals(
+          Optional.class, method.getReturnType(), "findCompatibleVersion should return Optional");
     }
 
     @Test
     @DisplayName("should have getEvolutionHistory method")
     void shouldHaveGetEvolutionHistoryMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceEvolution.class.getMethod("getEvolutionHistory", String.class);
+      final Method method =
+          JniWitInterfaceEvolution.class.getMethod("getEvolutionHistory", String.class);
       assertNotNull(method, "getEvolutionHistory method should exist");
     }
   }

@@ -112,24 +112,31 @@ class WasiOpenFlagsTest {
     @Test
     @DisplayName("combine with single flag should return flag value")
     void combineWithSingleFlagShouldReturnFlagValue() {
-      assertEquals(1, WasiOpenFlags.combine(WasiOpenFlags.CREAT),
-          "combine(CREAT) should return 1");
-      assertEquals(4, WasiOpenFlags.combine(WasiOpenFlags.EXCL),
-          "combine(EXCL) should return 4");
+      assertEquals(1, WasiOpenFlags.combine(WasiOpenFlags.CREAT), "combine(CREAT) should return 1");
+      assertEquals(4, WasiOpenFlags.combine(WasiOpenFlags.EXCL), "combine(EXCL) should return 4");
     }
 
     @Test
     @DisplayName("combine with multiple flags should return OR of values")
     void combineWithMultipleFlagsShouldReturnOrOfValues() {
       // CREAT (1) | EXCL (4) = 5
-      assertEquals(5, WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.EXCL),
+      assertEquals(
+          5,
+          WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.EXCL),
           "combine(CREAT, EXCL) should return 5");
       // CREAT (1) | TRUNC (8) = 9
-      assertEquals(9, WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.TRUNC),
+      assertEquals(
+          9,
+          WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.TRUNC),
           "combine(CREAT, TRUNC) should return 9");
       // All flags: 1 | 2 | 4 | 8 = 15
-      assertEquals(15, WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.DIRECTORY,
-          WasiOpenFlags.EXCL, WasiOpenFlags.TRUNC),
+      assertEquals(
+          15,
+          WasiOpenFlags.combine(
+              WasiOpenFlags.CREAT,
+              WasiOpenFlags.DIRECTORY,
+              WasiOpenFlags.EXCL,
+              WasiOpenFlags.TRUNC),
           "combine(all) should return 15");
     }
 
@@ -150,7 +157,8 @@ class WasiOpenFlagsTest {
     @DisplayName("contains should return true when flag is present")
     void containsShouldReturnTrueWhenFlagIsPresent() {
       final int mask = WasiOpenFlags.CREAT.getValue();
-      assertTrue(WasiOpenFlags.contains(mask, WasiOpenFlags.CREAT),
+      assertTrue(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.CREAT),
           "contains should return true when flag is in mask");
     }
 
@@ -158,14 +166,16 @@ class WasiOpenFlagsTest {
     @DisplayName("contains should return false when flag is not present")
     void containsShouldReturnFalseWhenFlagIsNotPresent() {
       final int mask = WasiOpenFlags.CREAT.getValue();
-      assertFalse(WasiOpenFlags.contains(mask, WasiOpenFlags.EXCL),
+      assertFalse(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.EXCL),
           "contains should return false when flag is not in mask");
     }
 
     @Test
     @DisplayName("contains should return false when mask is zero")
     void containsShouldReturnFalseWhenMaskIsZero() {
-      assertFalse(WasiOpenFlags.contains(0, WasiOpenFlags.CREAT),
+      assertFalse(
+          WasiOpenFlags.contains(0, WasiOpenFlags.CREAT),
           "contains should return false when mask is zero");
     }
 
@@ -173,13 +183,15 @@ class WasiOpenFlagsTest {
     @DisplayName("contains should work with combined flags")
     void containsShouldWorkWithCombinedFlags() {
       final int mask = WasiOpenFlags.combine(WasiOpenFlags.CREAT, WasiOpenFlags.EXCL);
-      assertTrue(WasiOpenFlags.contains(mask, WasiOpenFlags.CREAT),
-          "Should find CREAT in combined mask");
-      assertTrue(WasiOpenFlags.contains(mask, WasiOpenFlags.EXCL),
-          "Should find EXCL in combined mask");
-      assertFalse(WasiOpenFlags.contains(mask, WasiOpenFlags.TRUNC),
+      assertTrue(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.CREAT), "Should find CREAT in combined mask");
+      assertTrue(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.EXCL), "Should find EXCL in combined mask");
+      assertFalse(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.TRUNC),
           "Should not find TRUNC in combined mask");
-      assertFalse(WasiOpenFlags.contains(mask, WasiOpenFlags.DIRECTORY),
+      assertFalse(
+          WasiOpenFlags.contains(mask, WasiOpenFlags.DIRECTORY),
           "Should not find DIRECTORY in combined mask");
     }
   }
@@ -194,7 +206,8 @@ class WasiOpenFlagsTest {
       for (WasiOpenFlags flag : WasiOpenFlags.values()) {
         final int value = flag.getValue();
         assertTrue(value > 0, "Flag value should be positive: " + flag.name());
-        assertTrue((value & (value - 1)) == 0,
+        assertTrue(
+            (value & (value - 1)) == 0,
             "Flag value should be power of 2 for bitwise operations: " + flag.name());
       }
     }
@@ -205,7 +218,9 @@ class WasiOpenFlagsTest {
       final WasiOpenFlags[] flags = WasiOpenFlags.values();
       for (int i = 0; i < flags.length; i++) {
         for (int j = i + 1; j < flags.length; j++) {
-          assertEquals(0, flags[i].getValue() & flags[j].getValue(),
+          assertEquals(
+              0,
+              flags[i].getValue() & flags[j].getValue(),
               "Flags should not overlap: " + flags[i].name() + " and " + flags[j].name());
         }
       }
@@ -216,8 +231,8 @@ class WasiOpenFlagsTest {
     void allFlagsCombinedShouldHaveAllBitsSet() {
       final int combined = WasiOpenFlags.combine(WasiOpenFlags.values());
       for (WasiOpenFlags flag : WasiOpenFlags.values()) {
-        assertTrue(WasiOpenFlags.contains(combined, flag),
-            "Combined mask should contain: " + flag.name());
+        assertTrue(
+            WasiOpenFlags.contains(combined, flag), "Combined mask should contain: " + flag.name());
       }
     }
   }

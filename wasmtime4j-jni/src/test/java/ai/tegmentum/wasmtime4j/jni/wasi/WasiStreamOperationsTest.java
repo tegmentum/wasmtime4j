@@ -35,9 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiStreamOperations}.
- */
+/** Comprehensive tests for {@link WasiStreamOperations}. */
 @DisplayName("WasiStreamOperations Tests")
 class WasiStreamOperationsTest {
 
@@ -82,7 +80,8 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiStreamOperations(null, executorService),
           "Should throw on null context");
     }
@@ -90,7 +89,8 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiStreamOperations(testContext, null),
           "Should throw on null executor");
     }
@@ -112,7 +112,8 @@ class WasiStreamOperationsTest {
     @DisplayName("Should attempt to open input stream")
     void shouldAttemptToOpenInputStream() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.openInputStream(1L),
           "Should attempt to open input stream");
     }
@@ -126,7 +127,8 @@ class WasiStreamOperationsTest {
     @DisplayName("Should attempt to open output stream")
     void shouldAttemptToOpenOutputStream() {
       // Will throw due to native call failure
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.openOutputStream(1L),
           "Should attempt to open output stream");
     }
@@ -139,15 +141,15 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
-          () -> streamOperations.read(1L, null),
-          "Should throw on null buffer");
+      assertThrows(
+          JniException.class, () -> streamOperations.read(1L, null), "Should throw on null buffer");
     }
 
     @Test
     @DisplayName("Should throw on invalid stream handle")
     void shouldThrowOnInvalidStreamHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.read(999L, ByteBuffer.allocate(100)),
           "Should throw on invalid stream handle");
     }
@@ -159,7 +161,8 @@ class WasiStreamOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(10);
       buffer.position(10); // No remaining space
 
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.read(1L, buffer),
           "Should throw on invalid stream (not return 0 for invalid stream)");
     }
@@ -172,7 +175,8 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> streamOperations.write(1L, null),
           "Should throw on null buffer");
     }
@@ -180,7 +184,8 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Should throw on invalid stream handle")
     void shouldThrowOnInvalidStreamHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.write(999L, ByteBuffer.wrap("test".getBytes())),
           "Should throw on invalid stream handle");
     }
@@ -193,7 +198,8 @@ class WasiStreamOperationsTest {
     @Test
     @DisplayName("Should throw on invalid stream handle")
     void shouldThrowOnInvalidStreamHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> streamOperations.flush(999L),
           "Should throw on invalid stream handle");
     }

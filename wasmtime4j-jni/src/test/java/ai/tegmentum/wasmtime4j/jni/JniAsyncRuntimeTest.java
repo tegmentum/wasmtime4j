@@ -45,9 +45,11 @@ class JniAsyncRuntimeTest {
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
       assertTrue(
-          Modifier.isPublic(JniAsyncRuntime.class.getModifiers()), "JniAsyncRuntime should be public");
+          Modifier.isPublic(JniAsyncRuntime.class.getModifiers()),
+          "JniAsyncRuntime should be public");
       assertTrue(
-          Modifier.isFinal(JniAsyncRuntime.class.getModifiers()), "JniAsyncRuntime should be final");
+          Modifier.isFinal(JniAsyncRuntime.class.getModifiers()),
+          "JniAsyncRuntime should be final");
     }
 
     @Test

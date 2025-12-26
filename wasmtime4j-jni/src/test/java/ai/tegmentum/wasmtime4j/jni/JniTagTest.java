@@ -56,7 +56,8 @@ class JniTagTest {
     @Test
     @DisplayName("should extend JniResource")
     void shouldExtendJniResource() {
-      assertTrue(JniResource.class.isAssignableFrom(JniTag.class), "JniTag should extend JniResource");
+      assertTrue(
+          JniResource.class.isAssignableFrom(JniTag.class), "JniTag should extend JniResource");
     }
   }
 
@@ -69,13 +70,17 @@ class JniTagTest {
     void shouldHaveGetTypeMethod() throws NoSuchMethodException {
       final Method method = JniTag.class.getMethod("getType", ai.tegmentum.wasmtime4j.Store.class);
       assertNotNull(method, "getType method should exist");
-      assertEquals(ai.tegmentum.wasmtime4j.TagType.class, method.getReturnType(), "getType should return TagType");
+      assertEquals(
+          ai.tegmentum.wasmtime4j.TagType.class,
+          method.getReturnType(),
+          "getType should return TagType");
     }
 
     @Test
     @DisplayName("should have equals method with Tag and Store parameters")
     void shouldHaveEqualsMethodWithTagAndStore() throws NoSuchMethodException {
-      final Method method = JniTag.class.getMethod("equals", Tag.class, ai.tegmentum.wasmtime4j.Store.class);
+      final Method method =
+          JniTag.class.getMethod("equals", Tag.class, ai.tegmentum.wasmtime4j.Store.class);
       assertNotNull(method, "equals method should exist");
       assertEquals(boolean.class, method.getReturnType(), "equals should return boolean");
     }

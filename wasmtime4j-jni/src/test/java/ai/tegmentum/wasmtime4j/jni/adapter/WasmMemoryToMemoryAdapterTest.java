@@ -27,7 +27,6 @@ import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,16 +41,12 @@ class WasmMemoryToMemoryAdapterTest {
 
   private static final int PAGE_SIZE = 65536; // 64KB
 
-  /**
-   * Creates a mock WasmMemory backed by a byte array for testing.
-   */
+  /** Creates a mock WasmMemory backed by a byte array for testing. */
   private WasmMemory createMockMemory(final int initialPages, final int maxPages) {
     return new TestWasmMemory(initialPages, maxPages);
   }
 
-  /**
-   * Test implementation of WasmMemory backed by a byte array.
-   */
+  /** Test implementation of WasmMemory backed by a byte array. */
   private static class TestWasmMemory implements WasmMemory {
     private int pages;
     private final int maxPagesLimit;
@@ -113,8 +108,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public void readBytes(final int offset, final byte[] dest, final int destOffset,
-        final int length) {
+    public void readBytes(
+        final int offset, final byte[] dest, final int destOffset, final int length) {
       if (offset < 0 || offset + length > data.length) {
         throw new IndexOutOfBoundsException("Read out of bounds");
       }
@@ -122,8 +117,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public void writeBytes(final int offset, final byte[] src, final int srcOffset,
-        final int length) {
+    public void writeBytes(
+        final int offset, final byte[] src, final int srcOffset, final int length) {
       if (offset < 0 || offset + length > data.length) {
         throw new IndexOutOfBoundsException("Write out of bounds");
       }
@@ -141,8 +136,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public void init(final int destOffset, final int dataSegmentIndex,
-        final int srcOffset, final int length) {
+    public void init(
+        final int destOffset, final int dataSegmentIndex, final int srcOffset, final int length) {
       throw new UnsupportedOperationException("init not supported in test");
     }
 
@@ -162,8 +157,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public long atomicCompareAndSwapLong(final int offset, final long expected,
-        final long newValue) {
+    public long atomicCompareAndSwapLong(
+        final int offset, final long expected, final long newValue) {
       throw new UnsupportedOperationException("Atomic ops not supported in test");
     }
 
@@ -233,16 +228,12 @@ class WasmMemoryToMemoryAdapterTest {
     }
   }
 
-  /**
-   * Creates a mock WasmMemory that throws on getSize().
-   */
+  /** Creates a mock WasmMemory that throws on getSize(). */
   private WasmMemory createFailingMemory() {
     return new FailingWasmMemory();
   }
 
-  /**
-   * Test implementation of WasmMemory that throws on all operations.
-   */
+  /** Test implementation of WasmMemory that throws on all operations. */
   private static class FailingWasmMemory implements WasmMemory {
 
     @Override
@@ -281,14 +272,14 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public void readBytes(final int offset, final byte[] dest, final int destOffset,
-        final int length) {
+    public void readBytes(
+        final int offset, final byte[] dest, final int destOffset, final int length) {
       throw new RuntimeException("Memory access failed");
     }
 
     @Override
-    public void writeBytes(final int offset, final byte[] src, final int srcOffset,
-        final int length) {
+    public void writeBytes(
+        final int offset, final byte[] src, final int srcOffset, final int length) {
       throw new RuntimeException("Memory access failed");
     }
 
@@ -303,8 +294,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public void init(final int destOffset, final int dataSegmentIndex,
-        final int srcOffset, final int length) {
+    public void init(
+        final int destOffset, final int dataSegmentIndex, final int srcOffset, final int length) {
       throw new RuntimeException("Memory access failed");
     }
 
@@ -324,8 +315,8 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public long atomicCompareAndSwapLong(final int offset, final long expected,
-        final long newValue) {
+    public long atomicCompareAndSwapLong(
+        final int offset, final long expected, final long newValue) {
       throw new RuntimeException("Memory access failed");
     }
 
@@ -474,8 +465,7 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(2, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertEquals(2L * PAGE_SIZE, adapter.getSizeInBytes(),
-          "Size in bytes should be 2 * 64KB");
+      assertEquals(2L * PAGE_SIZE, adapter.getSizeInBytes(), "Size in bytes should be 2 * 64KB");
     }
 
     @Test
@@ -484,8 +474,8 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertEquals(PAGE_SIZE, adapter.getSizeInBytes(),
-          "Size in bytes should be 64KB for single page");
+      assertEquals(
+          PAGE_SIZE, adapter.getSizeInBytes(), "Size in bytes should be 64KB for single page");
     }
   }
 
@@ -523,7 +513,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 100);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.grow((long) Integer.MAX_VALUE + 1),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.grow((long) Integer.MAX_VALUE + 1),
           "Should throw for delta exceeding Integer.MAX_VALUE");
     }
   }
@@ -557,7 +549,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.read(0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.read(0, null),
           "Should throw on null buffer");
     }
 
@@ -567,7 +561,8 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> adapter.read(-1, ByteBuffer.allocate(10)),
           "Should throw on negative offset");
     }
@@ -578,7 +573,8 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 1);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> adapter.read(PAGE_SIZE + 1, ByteBuffer.allocate(10)),
           "Should throw on out of bounds read");
     }
@@ -594,7 +590,7 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      final ByteBuffer buffer = ByteBuffer.wrap(new byte[]{0x58, 0x59, 0x5A});
+      final ByteBuffer buffer = ByteBuffer.wrap(new byte[] {0x58, 0x59, 0x5A});
       final int bytesWritten = adapter.write(0, buffer);
 
       assertEquals(3, bytesWritten, "Should write 3 bytes");
@@ -609,7 +605,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.write(0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.write(0, null),
           "Should throw on null buffer");
     }
 
@@ -619,7 +617,8 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> adapter.write(-1, ByteBuffer.wrap(new byte[10])),
           "Should throw on negative offset");
     }
@@ -645,7 +644,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.readByte(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.readByte(-1),
           "Should throw on negative offset");
     }
   }
@@ -671,7 +672,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.writeByte(-1, (byte) 0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.writeByte(-1, (byte) 0),
           "Should throw on negative offset");
     }
   }
@@ -696,7 +699,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.readInt32(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.readInt32(-1),
           "Should throw on negative offset");
     }
 
@@ -706,7 +711,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 1);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.readInt32(PAGE_SIZE - 2),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.readInt32(PAGE_SIZE - 2),
           "Should throw on out of bounds");
     }
   }
@@ -732,7 +739,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.writeInt32(-1, 0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.writeInt32(-1, 0),
           "Should throw on negative offset");
     }
   }
@@ -757,7 +766,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.readInt64(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.readInt64(-1),
           "Should throw on negative offset");
     }
   }
@@ -783,7 +794,9 @@ class WasmMemoryToMemoryAdapterTest {
       final WasmMemory delegate = createMockMemory(1, 10);
       final WasmMemoryToMemoryAdapter adapter = new WasmMemoryToMemoryAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.writeInt64(-1, 0L),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.writeInt64(-1, 0L),
           "Should throw on negative offset");
     }
   }

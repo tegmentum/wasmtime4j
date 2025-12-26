@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,11 +25,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
@@ -70,10 +65,8 @@ class PanamaComponentTest {
       assertFalse(
           Modifier.isPublic(modifiers),
           "PanamaComponent should not be public (should be package-private)");
-      assertFalse(
-          Modifier.isProtected(modifiers), "PanamaComponent should not be protected");
-      assertFalse(
-          Modifier.isPrivate(modifiers), "PanamaComponent should not be private");
+      assertFalse(Modifier.isProtected(modifiers), "PanamaComponent should not be protected");
+      assertFalse(Modifier.isPrivate(modifiers), "PanamaComponent should not be private");
     }
 
     @Test
@@ -266,8 +259,7 @@ class PanamaComponentTest {
       Class<?> handleClass = getComponentHandleClass();
       boolean hasMethod =
           Arrays.stream(handleClass.getDeclaredMethods())
-              .anyMatch(
-                  m -> m.getName().equals("getSize") && m.getReturnType().equals(long.class));
+              .anyMatch(m -> m.getName().equals("getSize") && m.getReturnType().equals(long.class));
       assertTrue(hasMethod, "Should have getSize method returning long");
     }
 
@@ -422,8 +414,7 @@ class PanamaComponentTest {
         assertEquals(
             PanamaComponent.class,
             nestedClass.getEnclosingClass(),
-            nestedClass.getSimpleName()
-                + " should have PanamaComponent as its enclosing class");
+            nestedClass.getSimpleName() + " should have PanamaComponent as its enclosing class");
       }
     }
 
@@ -493,9 +484,7 @@ class PanamaComponentTest {
               "createComponentEngine", ArenaResourceManager.class);
       int modifiers = method.getModifiers();
       // Should be either package-private (no modifier) or public
-      assertTrue(
-          !Modifier.isPrivate(modifiers),
-          "createComponentEngine should not be private");
+      assertTrue(!Modifier.isPrivate(modifiers), "createComponentEngine should not be private");
     }
 
     @Test
@@ -503,8 +492,7 @@ class PanamaComponentTest {
     void nestedClassMethodsShouldNotThrowCheckedExceptions() {
       for (Class<?> nestedClass : PanamaComponent.class.getDeclaredClasses()) {
         for (Method method : nestedClass.getDeclaredMethods()) {
-          if (Modifier.isPublic(method.getModifiers())
-              && !method.getName().equals("close")) {
+          if (Modifier.isPublic(method.getModifiers()) && !method.getName().equals("close")) {
             // close() is allowed to throw Exception
             for (Class<?> exceptionType : method.getExceptionTypes()) {
               if (!RuntimeException.class.isAssignableFrom(exceptionType)
@@ -638,10 +626,7 @@ class PanamaComponentTest {
         if (AutoCloseable.class.isAssignableFrom(nestedClass)) {
           boolean hasClose =
               Arrays.stream(nestedClass.getDeclaredMethods())
-                  .anyMatch(
-                      m ->
-                          m.getName().equals("close")
-                              && m.getParameterCount() == 0);
+                  .anyMatch(m -> m.getName().equals("close") && m.getParameterCount() == 0);
           assertTrue(
               hasClose,
               nestedClass.getSimpleName()

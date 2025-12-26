@@ -72,8 +72,7 @@ class JniWasiStdioTest {
     void shouldImplementWasiStdioInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit();
       assertTrue(
-          WasiStdio.class.isAssignableFrom(clazz),
-          "JniWasiStdio should implement WasiStdio");
+          WasiStdio.class.isAssignableFrom(clazz), "JniWasiStdio should implement WasiStdio");
     }
   }
 
@@ -95,7 +94,8 @@ class JniWasiStdioTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -125,7 +125,8 @@ class JniWasiStdioTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("getStdin");
       assertNotNull(method, "getStdin method should exist");
-      assertEquals(WasiInputStream.class, method.getReturnType(), "getStdin should return WasiInputStream");
+      assertEquals(
+          WasiInputStream.class, method.getReturnType(), "getStdin should return WasiInputStream");
     }
 
     @Test
@@ -134,7 +135,10 @@ class JniWasiStdioTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("getStdout");
       assertNotNull(method, "getStdout method should exist");
-      assertEquals(WasiOutputStream.class, method.getReturnType(), "getStdout should return WasiOutputStream");
+      assertEquals(
+          WasiOutputStream.class,
+          method.getReturnType(),
+          "getStdout should return WasiOutputStream");
     }
 
     @Test
@@ -143,7 +147,10 @@ class JniWasiStdioTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("getStderr");
       assertNotNull(method, "getStderr method should exist");
-      assertEquals(WasiOutputStream.class, method.getReturnType(), "getStderr should return WasiOutputStream");
+      assertEquals(
+          WasiOutputStream.class,
+          method.getReturnType(),
+          "getStderr should return WasiOutputStream");
     }
   }
 
@@ -241,8 +248,7 @@ class JniWasiStdioTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

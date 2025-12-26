@@ -28,9 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniVariableValue}.
- */
+/** Comprehensive tests for {@link JniVariableValue}. */
 @DisplayName("JniVariableValue Tests")
 class JniVariableValueTest {
 
@@ -49,8 +47,8 @@ class JniVariableValueTest {
     @Test
     @DisplayName("JniVariableValue should have no public constructors")
     void shouldHaveNoPublicConstructors() {
-      assertEquals(0, JniVariableValue.class.getConstructors().length,
-          "Should have no public constructors");
+      assertEquals(
+          0, JniVariableValue.class.getConstructors().length, "Should have no public constructors");
     }
   }
 
@@ -92,8 +90,7 @@ class JniVariableValueTest {
     @DisplayName("asI32 should throw for non-I32 type")
     void asI32ShouldThrowForNonI32Type() {
       final JniVariableValue value = JniVariableValue.i64(42L);
-      assertThrows(IllegalStateException.class, value::asI32,
-          "Should throw for non-I32 type");
+      assertThrows(IllegalStateException.class, value::asI32, "Should throw for non-I32 type");
     }
   }
 
@@ -128,8 +125,7 @@ class JniVariableValueTest {
     @DisplayName("asI64 should throw for non-I64 type")
     void asI64ShouldThrowForNonI64Type() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asI64,
-          "Should throw for non-I64 type");
+      assertThrows(IllegalStateException.class, value::asI64, "Should throw for non-I64 type");
     }
   }
 
@@ -178,8 +174,7 @@ class JniVariableValueTest {
     @DisplayName("asF32 should throw for non-F32 type")
     void asF32ShouldThrowForNonF32Type() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asF32,
-          "Should throw for non-F32 type");
+      assertThrows(IllegalStateException.class, value::asF32, "Should throw for non-F32 type");
     }
   }
 
@@ -207,8 +202,7 @@ class JniVariableValueTest {
     @DisplayName("asF64 should throw for non-F64 type")
     void asF64ShouldThrowForNonF64Type() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asF64,
-          "Should throw for non-F64 type");
+      assertThrows(IllegalStateException.class, value::asF64, "Should throw for non-F64 type");
     }
   }
 
@@ -232,16 +226,22 @@ class JniVariableValueTest {
     @Test
     @DisplayName("v128 should throw for null bytes")
     void v128ShouldThrowForNullBytes() {
-      assertThrows(IllegalArgumentException.class, () -> JniVariableValue.v128(null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniVariableValue.v128(null),
           "Should throw for null bytes");
     }
 
     @Test
     @DisplayName("v128 should throw for wrong length bytes")
     void v128ShouldThrowForWrongLengthBytes() {
-      assertThrows(IllegalArgumentException.class, () -> JniVariableValue.v128(new byte[15]),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniVariableValue.v128(new byte[15]),
           "Should throw for 15 bytes");
-      assertThrows(IllegalArgumentException.class, () -> JniVariableValue.v128(new byte[17]),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniVariableValue.v128(new byte[17]),
           "Should throw for 17 bytes");
     }
 
@@ -266,15 +266,15 @@ class JniVariableValueTest {
       final byte[] retrieved = value.asV128();
       retrieved[0] = 100;
 
-      assertEquals(42, value.asV128()[0], "Value should not change when retrieved copy is modified");
+      assertEquals(
+          42, value.asV128()[0], "Value should not change when retrieved copy is modified");
     }
 
     @Test
     @DisplayName("asV128 should throw for non-V128 type")
     void asV128ShouldThrowForNonV128Type() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asV128,
-          "Should throw for non-V128 type");
+      assertThrows(IllegalStateException.class, value::asV128, "Should throw for non-V128 type");
     }
   }
 
@@ -306,8 +306,8 @@ class JniVariableValueTest {
     @DisplayName("asFuncRef should throw for non-FUNCREF type")
     void asFuncRefShouldThrowForNonFuncRefType() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asFuncRef,
-          "Should throw for non-FUNCREF type");
+      assertThrows(
+          IllegalStateException.class, value::asFuncRef, "Should throw for non-FUNCREF type");
     }
   }
 
@@ -320,8 +320,8 @@ class JniVariableValueTest {
     void externRefShouldCreateExternRefValue() {
       final JniVariableValue value = JniVariableValue.externRef(0x12345678L);
 
-      assertEquals(JniVariableValue.ValueType.EXTERNREF, value.getType(),
-          "Type should be EXTERNREF");
+      assertEquals(
+          JniVariableValue.ValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
       assertEquals(0x12345678L, value.asExternRef().longValue(), "Value should match");
       assertFalse(value.isNull(), "Should not be null");
     }
@@ -331,8 +331,8 @@ class JniVariableValueTest {
     void externRefShouldHandleNullReference() {
       final JniVariableValue value = JniVariableValue.externRef(null);
 
-      assertEquals(JniVariableValue.ValueType.EXTERNREF, value.getType(),
-          "Type should be EXTERNREF");
+      assertEquals(
+          JniVariableValue.ValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
       assertNull(value.asExternRef(), "Value should be null");
       assertTrue(value.isNull(), "Should be null");
     }
@@ -341,8 +341,8 @@ class JniVariableValueTest {
     @DisplayName("asExternRef should throw for non-EXTERNREF type")
     void asExternRefShouldThrowForNonExternRefType() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asExternRef,
-          "Should throw for non-EXTERNREF type");
+      assertThrows(
+          IllegalStateException.class, value::asExternRef, "Should throw for non-EXTERNREF type");
     }
   }
 
@@ -364,16 +364,16 @@ class JniVariableValueTest {
     @DisplayName("getMemoryAddress should throw for non-MEMORY type")
     void getMemoryAddressShouldThrowForNonMemoryType() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::getMemoryAddress,
-          "Should throw for non-MEMORY type");
+      assertThrows(
+          IllegalStateException.class, value::getMemoryAddress, "Should throw for non-MEMORY type");
     }
 
     @Test
     @DisplayName("getMemorySize should throw for non-MEMORY type")
     void getMemorySizeShouldThrowForNonMemoryType() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::getMemorySize,
-          "Should throw for non-MEMORY type");
+      assertThrows(
+          IllegalStateException.class, value::getMemorySize, "Should throw for non-MEMORY type");
     }
   }
 
@@ -395,8 +395,8 @@ class JniVariableValueTest {
     @DisplayName("asComplex should throw for non-COMPLEX type")
     void asComplexShouldThrowForNonComplexType() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      assertThrows(IllegalStateException.class, value::asComplex,
-          "Should throw for non-COMPLEX type");
+      assertThrows(
+          IllegalStateException.class, value::asComplex, "Should throw for non-COMPLEX type");
     }
   }
 
@@ -497,13 +497,9 @@ class JniVariableValueTest {
     @Test
     @DisplayName("equals should handle memory arrays correctly")
     void equalsShouldHandleMemoryArraysCorrectly() {
-      assertEquals(
-          JniVariableValue.memory(100L, 200L),
-          JniVariableValue.memory(100L, 200L));
+      assertEquals(JniVariableValue.memory(100L, 200L), JniVariableValue.memory(100L, 200L));
 
-      assertNotEquals(
-          JniVariableValue.memory(100L, 200L),
-          JniVariableValue.memory(100L, 300L));
+      assertNotEquals(JniVariableValue.memory(100L, 200L), JniVariableValue.memory(100L, 300L));
     }
 
     @Test

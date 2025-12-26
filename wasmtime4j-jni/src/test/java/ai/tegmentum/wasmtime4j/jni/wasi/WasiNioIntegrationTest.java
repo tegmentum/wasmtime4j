@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -42,14 +41,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Comprehensive tests for {@link WasiNioIntegration}.
- */
+/** Comprehensive tests for {@link WasiNioIntegration}. */
 @DisplayName("WasiNioIntegration Tests")
 class WasiNioIntegrationTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private WasiNioIntegration nioIntegration;
 
@@ -103,7 +99,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiNioIntegration(true, true, null),
           "Should throw on null executor");
     }
@@ -130,7 +127,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.bulkRead(null, 0, 100),
           "Should throw on null channel");
     }
@@ -142,7 +140,8 @@ class WasiNioIntegrationTest {
       writeStringToFile(testFile, "test");
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.bulkRead(channel, -1, 100),
             "Should throw on negative position");
       }
@@ -155,7 +154,8 @@ class WasiNioIntegrationTest {
       writeStringToFile(testFile, "test");
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.bulkRead(channel, 0, 0),
             "Should throw on zero buffer size");
       }
@@ -185,7 +185,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.bulkWrite(null, 0, ByteBuffer.allocate(10)),
           "Should throw on null channel");
     }
@@ -197,7 +198,8 @@ class WasiNioIntegrationTest {
       Files.createFile(testFile);
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.WRITE)) {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.bulkWrite(channel, 0, null),
             "Should throw on null data");
       }
@@ -215,10 +217,8 @@ class WasiNioIntegrationTest {
       writeStringToFile(testFile, "0123456789ABCDEF");
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
-        final ByteBuffer[] buffers = new ByteBuffer[] {
-            ByteBuffer.allocate(5),
-            ByteBuffer.allocate(5)
-        };
+        final ByteBuffer[] buffers =
+            new ByteBuffer[] {ByteBuffer.allocate(5), ByteBuffer.allocate(5)};
 
         final long bytesRead = nioIntegration.vectoredRead(channel, buffers, 0);
 
@@ -233,7 +233,8 @@ class WasiNioIntegrationTest {
       writeStringToFile(testFile, "test");
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.vectoredRead(channel, null, 0),
             "Should throw on null buffers");
       }
@@ -251,10 +252,10 @@ class WasiNioIntegrationTest {
       Files.createFile(testFile);
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.WRITE)) {
-        final ByteBuffer[] buffers = new ByteBuffer[] {
-            ByteBuffer.wrap("Hello".getBytes()),
-            ByteBuffer.wrap("World".getBytes())
-        };
+        final ByteBuffer[] buffers =
+            new ByteBuffer[] {
+              ByteBuffer.wrap("Hello".getBytes()), ByteBuffer.wrap("World".getBytes())
+            };
 
         final long bytesWritten = nioIntegration.vectoredWrite(channel, buffers, 0);
 
@@ -273,8 +274,7 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("asyncread.txt");
       writeStringToFile(testFile, "Async Hello!");
 
-      final CompletableFuture<ByteBuffer> future =
-          nioIntegration.asyncRead(testFile, 0, 100);
+      final CompletableFuture<ByteBuffer> future = nioIntegration.asyncRead(testFile, 0, 100);
 
       final ByteBuffer buffer = future.get(5, TimeUnit.SECONDS);
       assertNotNull(buffer, "Buffer should not be null");
@@ -284,7 +284,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.asyncRead(null, 0, 100),
           "Should throw on null path");
     }
@@ -300,8 +301,7 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("asyncwrite.txt");
 
       final ByteBuffer data = ByteBuffer.wrap("Async Write!".getBytes());
-      final CompletableFuture<Integer> future =
-          nioIntegration.asyncWrite(testFile, 0, data);
+      final CompletableFuture<Integer> future = nioIntegration.asyncWrite(testFile, 0, data);
 
       final Integer written = future.get(5, TimeUnit.SECONDS);
       assertEquals(12, written, "Should write all bytes");
@@ -311,7 +311,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.asyncWrite(null, 0, ByteBuffer.allocate(10)),
           "Should throw on null path");
     }
@@ -319,7 +320,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.asyncWrite(tempDir.resolve("test.txt"), 0, null),
           "Should throw on null data");
     }
@@ -338,7 +340,7 @@ class WasiNioIntegrationTest {
       Files.createFile(targetFile);
 
       try (final FileChannel source = FileChannel.open(sourceFile, StandardOpenOption.READ);
-           final FileChannel target = FileChannel.open(targetFile, StandardOpenOption.WRITE)) {
+          final FileChannel target = FileChannel.open(targetFile, StandardOpenOption.WRITE)) {
 
         final long transferred = nioIntegration.transferFile(source, 0, 14, target);
 
@@ -355,7 +357,8 @@ class WasiNioIntegrationTest {
       Files.createFile(targetFile);
 
       try (final FileChannel target = FileChannel.open(targetFile, StandardOpenOption.WRITE)) {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.transferFile(null, 0, 10, target),
             "Should throw on null source");
       }
@@ -372,8 +375,8 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("lock.txt");
       writeStringToFile(testFile, "Lock Test");
 
-      try (final FileChannel channel = FileChannel.open(testFile,
-          StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+      try (final FileChannel channel =
+          FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
 
         final FileLock lock = nioIntegration.lockFile(channel, 0, 10, false);
 
@@ -403,7 +406,8 @@ class WasiNioIntegrationTest {
     @Test
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> nioIntegration.lockFile(null, 0, 10, false),
           "Should throw on null channel");
     }
@@ -414,9 +418,10 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("locksize.txt");
       writeStringToFile(testFile, "test");
 
-      try (final FileChannel channel = FileChannel.open(testFile,
-          StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-        assertThrows(IllegalArgumentException.class,
+      try (final FileChannel channel =
+          FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+        assertThrows(
+            IllegalArgumentException.class,
             () -> nioIntegration.lockFile(channel, 0, 0, false),
             "Should throw on zero size");
       }
@@ -433,8 +438,8 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("trylock.txt");
       writeStringToFile(testFile, "TryLock Test");
 
-      try (final FileChannel channel = FileChannel.open(testFile,
-          StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+      try (final FileChannel channel =
+          FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
 
         final FileLock lock = nioIntegration.tryLockFile(channel, 0, 10, false);
 
@@ -449,10 +454,10 @@ class WasiNioIntegrationTest {
       final Path testFile = tempDir.resolve("trylock2.txt");
       writeStringToFile(testFile, "TryLock Test 2");
 
-      try (final FileChannel channel1 = FileChannel.open(testFile,
-              StandardOpenOption.READ, StandardOpenOption.WRITE);
-           final FileChannel channel2 = FileChannel.open(testFile,
-               StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+      try (final FileChannel channel1 =
+              FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE);
+          final FileChannel channel2 =
+              FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
 
         final FileLock lock1 = channel1.lock(0, 10, false);
 
@@ -490,7 +495,7 @@ class WasiNioIntegrationTest {
   /**
    * Helper method to write string to file - Java 8 compatible alternative to Files.writeString().
    *
-   * @param path    the path to write to
+   * @param path the path to write to
    * @param content the string content to write
    * @throws IOException if writing fails
    */

@@ -46,7 +46,9 @@ class JniWasiOutputStreamTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiOutputStream", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiOutputStream",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -123,7 +125,8 @@ class JniWasiOutputStreamTest {
 
     @Test
     @DisplayName("should have blockingWriteAndFlush method")
-    void shouldHaveBlockingWriteAndFlushMethod() throws ClassNotFoundException, NoSuchMethodException {
+    void shouldHaveBlockingWriteAndFlushMethod()
+        throws ClassNotFoundException, NoSuchMethodException {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("blockingWriteAndFlush", byte[].class);
       assertNotNull(method, "blockingWriteAndFlush method should exist");
@@ -159,11 +162,13 @@ class JniWasiOutputStreamTest {
 
     @Test
     @DisplayName("should have blockingWriteZeroesAndFlush method")
-    void shouldHaveBlockingWriteZeroesAndFlushMethod() throws ClassNotFoundException, NoSuchMethodException {
+    void shouldHaveBlockingWriteZeroesAndFlushMethod()
+        throws ClassNotFoundException, NoSuchMethodException {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("blockingWriteZeroesAndFlush", long.class);
       assertNotNull(method, "blockingWriteZeroesAndFlush method should exist");
-      assertEquals(void.class, method.getReturnType(), "blockingWriteZeroesAndFlush should return void");
+      assertEquals(
+          void.class, method.getReturnType(), "blockingWriteZeroesAndFlush should return void");
     }
 
     @Test
@@ -190,7 +195,8 @@ class JniWasiOutputStreamTest {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("subscribe");
       assertNotNull(method, "subscribe method should exist");
-      assertEquals(WasiPollable.class, method.getReturnType(), "subscribe should return WasiPollable");
+      assertEquals(
+          WasiPollable.class, method.getReturnType(), "subscribe should return WasiPollable");
     }
 
     @Test
@@ -268,8 +274,7 @@ class JniWasiOutputStreamTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }
@@ -300,11 +305,15 @@ class JniWasiOutputStreamTest {
 
     @Test
     @DisplayName("should have getAvailableOperations method")
-    void shouldHaveGetAvailableOperationsMethod() throws ClassNotFoundException, NoSuchMethodException {
+    void shouldHaveGetAvailableOperationsMethod()
+        throws ClassNotFoundException, NoSuchMethodException {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("getAvailableOperations");
       assertNotNull(method, "getAvailableOperations method should exist");
-      assertEquals(java.util.List.class, method.getReturnType(), "getAvailableOperations should return List");
+      assertEquals(
+          java.util.List.class,
+          method.getReturnType(),
+          "getAvailableOperations should return List");
     }
 
     @Test

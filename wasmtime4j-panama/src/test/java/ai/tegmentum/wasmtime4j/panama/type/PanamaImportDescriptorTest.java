@@ -114,8 +114,7 @@ class PanamaImportDescriptorTest {
     void constructorShouldAcceptValidParameters() {
       final WasmType type = createTestType();
 
-      final PanamaImportDescriptor descriptor =
-          new PanamaImportDescriptor("env", "memory", type);
+      final PanamaImportDescriptor descriptor = new PanamaImportDescriptor("env", "memory", type);
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertEquals("env", descriptor.getModuleName(), "Module name should match");
@@ -183,7 +182,8 @@ class PanamaImportDescriptorTest {
     @DisplayName("getModuleName should return correct module name")
     void getModuleNameShouldReturnCorrectModuleName() {
       final WasmType type = createTestType();
-      final PanamaImportDescriptor descriptor = new PanamaImportDescriptor("wasi", "fd_write", type);
+      final PanamaImportDescriptor descriptor =
+          new PanamaImportDescriptor("wasi", "fd_write", type);
 
       assertEquals("wasi", descriptor.getModuleName(), "Module name should match");
     }
@@ -445,8 +445,7 @@ class PanamaImportDescriptorTest {
       final WasmType type = createTestType();
 
       // Using Unicode characters: Hello (ASCII) and 世界 (Chinese for "world")
-      final PanamaImportDescriptor descriptor =
-          new PanamaImportDescriptor("Hello", "世界", type);
+      final PanamaImportDescriptor descriptor = new PanamaImportDescriptor("Hello", "世界", type);
 
       assertEquals("Hello", descriptor.getModuleName());
       assertEquals("世界", descriptor.getName());
@@ -470,10 +469,8 @@ class PanamaImportDescriptorTest {
       final WasmType type1 = createTestType();
       final WasmType type2 = createMemoryType();
 
-      final PanamaImportDescriptor descriptor1 =
-          new PanamaImportDescriptor("mod1", "func1", type1);
-      final PanamaImportDescriptor descriptor2 =
-          new PanamaImportDescriptor("mod2", "func2", type2);
+      final PanamaImportDescriptor descriptor1 = new PanamaImportDescriptor("mod1", "func1", type1);
+      final PanamaImportDescriptor descriptor2 = new PanamaImportDescriptor("mod2", "func2", type2);
 
       assertNotEquals(descriptor1.getModuleName(), descriptor2.getModuleName());
       assertNotEquals(descriptor1.getName(), descriptor2.getName());

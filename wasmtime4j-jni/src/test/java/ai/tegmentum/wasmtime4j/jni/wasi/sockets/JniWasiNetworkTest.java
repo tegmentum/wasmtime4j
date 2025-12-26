@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi.sockets;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,9 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniWasiNetwork}.
- */
+/** Comprehensive tests for {@link JniWasiNetwork}. */
 @DisplayName("JniWasiNetwork Tests")
 class JniWasiNetworkTest {
 
@@ -60,7 +57,8 @@ class JniWasiNetworkTest {
     @Test
     @DisplayName("create should throw on zero context handle")
     void createShouldThrowOnZeroContextHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> JniWasiNetwork.create(0L),
           "create should throw IllegalArgumentException on zero context handle");
     }
@@ -73,7 +71,8 @@ class JniWasiNetworkTest {
     @Test
     @DisplayName("getNetworkHandle method should exist")
     void getNetworkHandleMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniWasiNetwork.class.getMethod("getNetworkHandle"),
+      assertNotNull(
+          JniWasiNetwork.class.getMethod("getNetworkHandle"),
           "getNetworkHandle method should exist");
     }
   }
@@ -85,8 +84,7 @@ class JniWasiNetworkTest {
     @Test
     @DisplayName("close method should exist")
     void closeMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniWasiNetwork.class.getMethod("close"),
-          "close method should exist");
+      assertNotNull(JniWasiNetwork.class.getMethod("close"), "close method should exist");
     }
   }
 
@@ -110,22 +108,23 @@ class JniWasiNetworkTest {
     @Test
     @DisplayName("Class should have contextHandle field")
     void classShouldHaveContextHandleField() throws NoSuchFieldException {
-      assertNotNull(JniWasiNetwork.class.getDeclaredField("contextHandle"),
+      assertNotNull(
+          JniWasiNetwork.class.getDeclaredField("contextHandle"),
           "contextHandle field should exist");
     }
 
     @Test
     @DisplayName("Class should have networkHandle field")
     void classShouldHaveNetworkHandleField() throws NoSuchFieldException {
-      assertNotNull(JniWasiNetwork.class.getDeclaredField("networkHandle"),
+      assertNotNull(
+          JniWasiNetwork.class.getDeclaredField("networkHandle"),
           "networkHandle field should exist");
     }
 
     @Test
     @DisplayName("Class should have closed field")
     void classShouldHaveClosedField() throws NoSuchFieldException {
-      assertNotNull(JniWasiNetwork.class.getDeclaredField("closed"),
-          "closed field should exist");
+      assertNotNull(JniWasiNetwork.class.getDeclaredField("closed"), "closed field should exist");
     }
   }
 }

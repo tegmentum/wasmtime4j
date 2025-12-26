@@ -43,14 +43,16 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("WasiPermissionException should be final")
     void shouldBeFinal() {
-      assertTrue(Modifier.isFinal(WasiPermissionException.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiPermissionException.class.getModifiers()),
           "WasiPermissionException should be final");
     }
 
     @Test
     @DisplayName("WasiPermissionException should extend WasiException")
     void shouldExtendWasiException() {
-      assertTrue(WasiException.class.isAssignableFrom(WasiPermissionException.class),
+      assertTrue(
+          WasiException.class.isAssignableFrom(WasiPermissionException.class),
           "WasiPermissionException should extend WasiException");
     }
   }
@@ -64,15 +66,16 @@ class WasiPermissionExceptionTest {
     void allViolationTypesShouldHaveDescriptions() {
       for (PermissionViolationType type : PermissionViolationType.values()) {
         assertNotNull(type.getDescription(), "Description should not be null: " + type.name());
-        assertFalse(type.getDescription().isEmpty(),
-            "Description should not be empty: " + type.name());
+        assertFalse(
+            type.getDescription().isEmpty(), "Description should not be empty: " + type.name());
       }
     }
 
     @Test
     @DisplayName("toString should return description")
     void toStringShouldReturnDescription() {
-      assertEquals("File system access denied",
+      assertEquals(
+          "File system access denied",
           PermissionViolationType.FILE_SYSTEM_ACCESS.toString(),
           "toString should return description");
     }
@@ -99,71 +102,79 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("Should create exception with message, violation type, operation, and resource")
     void shouldCreateExceptionWithFullParameters() {
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Access denied",
-          PermissionViolationType.FILE_SYSTEM_ACCESS,
-          "open",
-          "/secret/file");
+      final WasiPermissionException exception =
+          new WasiPermissionException(
+              "Access denied", PermissionViolationType.FILE_SYSTEM_ACCESS, "open", "/secret/file");
 
-      assertEquals(PermissionViolationType.FILE_SYSTEM_ACCESS, exception.getViolationType(),
+      assertEquals(
+          PermissionViolationType.FILE_SYSTEM_ACCESS,
+          exception.getViolationType(),
           "Violation type should match");
-      assertEquals("/secret/file", exception.getAttemptedResource(),
-          "Attempted resource should match");
+      assertEquals(
+          "/secret/file", exception.getAttemptedResource(), "Attempted resource should match");
       assertNull(exception.getViolatedPolicy(), "Violated policy should be null");
-      assertEquals(WasiErrorCode.EPERM, exception.getErrorCode(),
-          "Error code should be EPERM");
+      assertEquals(WasiErrorCode.EPERM, exception.getErrorCode(), "Error code should be EPERM");
     }
 
     @Test
     @DisplayName("Should create exception with violated policy")
     void shouldCreateExceptionWithViolatedPolicy() {
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Policy violation",
-          PermissionViolationType.SECURITY_POLICY_VIOLATION,
-          "execute",
-          "/bin/shell",
-          "no-shell-execution");
+      final WasiPermissionException exception =
+          new WasiPermissionException(
+              "Policy violation",
+              PermissionViolationType.SECURITY_POLICY_VIOLATION,
+              "execute",
+              "/bin/shell",
+              "no-shell-execution");
 
-      assertEquals("no-shell-execution", exception.getViolatedPolicy(),
-          "Violated policy should match");
+      assertEquals(
+          "no-shell-execution", exception.getViolatedPolicy(), "Violated policy should match");
     }
 
     @Test
     @DisplayName("Should create exception with access denied code")
     void shouldCreateExceptionWithAccessDeniedCode() {
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Access denied",
-          PermissionViolationType.FILE_SYSTEM_ACCESS,
-          "read",
-          "/protected",
-          true);
+      final WasiPermissionException exception =
+          new WasiPermissionException(
+              "Access denied",
+              PermissionViolationType.FILE_SYSTEM_ACCESS,
+              "read",
+              "/protected",
+              true);
 
-      assertEquals(WasiErrorCode.EACCES, exception.getErrorCode(),
+      assertEquals(
+          WasiErrorCode.EACCES,
+          exception.getErrorCode(),
           "Error code should be EACCES when useAccessDeniedCode is true");
     }
 
     @Test
     @DisplayName("Should create exception with EPERM code when useAccessDeniedCode is false")
     void shouldCreateExceptionWithEpermCodeWhenFalse() {
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Operation denied",
-          PermissionViolationType.DANGEROUS_OPERATION,
-          "exec",
-          "/malware",
-          false);
+      final WasiPermissionException exception =
+          new WasiPermissionException(
+              "Operation denied",
+              PermissionViolationType.DANGEROUS_OPERATION,
+              "exec",
+              "/malware",
+              false);
 
-      assertEquals(WasiErrorCode.EPERM, exception.getErrorCode(),
+      assertEquals(
+          WasiErrorCode.EPERM,
+          exception.getErrorCode(),
           "Error code should be EPERM when useAccessDeniedCode is false");
     }
 
     @Test
     @DisplayName("Should create exception with message only")
     void shouldCreateExceptionWithMessageOnly() {
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Simple permission error");
+      final WasiPermissionException exception =
+          new WasiPermissionException("Simple permission error");
 
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertEquals(PermissionViolationType.UNKNOWN, exception.getViolationType(),
+      assertEquals(
+          PermissionViolationType.UNKNOWN,
+          exception.getViolationType(),
           "Violation type should be UNKNOWN");
     }
 
@@ -171,8 +182,8 @@ class WasiPermissionExceptionTest {
     @DisplayName("Should create exception with message and cause")
     void shouldCreateExceptionWithMessageAndCause() {
       final RuntimeException cause = new RuntimeException("Original error");
-      final WasiPermissionException exception = new WasiPermissionException(
-          "Permission failed", cause);
+      final WasiPermissionException exception =
+          new WasiPermissionException("Permission failed", cause);
 
       assertNotNull(exception.getCause(), "Cause should be preserved");
     }
@@ -185,43 +196,61 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("isFileSystemViolation should return true for FS violations")
     void isFileSystemViolationShouldReturnTrueForFsViolations() {
-      assertTrue(new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS,
-          "op", "res").isFileSystemViolation(), "Should detect FILE_SYSTEM_ACCESS");
+      assertTrue(
+          new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS, "op", "res")
+              .isFileSystemViolation(),
+          "Should detect FILE_SYSTEM_ACCESS");
 
-      assertTrue(new WasiPermissionException("Sandbox", PermissionViolationType.SANDBOX_ESCAPE,
-          "op", "res").isFileSystemViolation(), "Should detect SANDBOX_ESCAPE");
+      assertTrue(
+          new WasiPermissionException(
+                  "Sandbox", PermissionViolationType.SANDBOX_ESCAPE, "op", "res")
+              .isFileSystemViolation(),
+          "Should detect SANDBOX_ESCAPE");
 
-      assertTrue(new WasiPermissionException("Path", PermissionViolationType.PATH_TRAVERSAL,
-          "op", "res").isFileSystemViolation(), "Should detect PATH_TRAVERSAL");
+      assertTrue(
+          new WasiPermissionException("Path", PermissionViolationType.PATH_TRAVERSAL, "op", "res")
+              .isFileSystemViolation(),
+          "Should detect PATH_TRAVERSAL");
     }
 
     @Test
     @DisplayName("isFileSystemViolation should return false for non-FS violations")
     void isFileSystemViolationShouldReturnFalseForNonFsViolations() {
-      assertFalse(new WasiPermissionException("Env", PermissionViolationType.ENVIRONMENT_ACCESS,
-          "op", "res").isFileSystemViolation(), "ENVIRONMENT_ACCESS is not FS violation");
+      assertFalse(
+          new WasiPermissionException(
+                  "Env", PermissionViolationType.ENVIRONMENT_ACCESS, "op", "res")
+              .isFileSystemViolation(),
+          "ENVIRONMENT_ACCESS is not FS violation");
     }
 
     @Test
     @DisplayName("isDangerousOperationViolation should detect dangerous operations")
     void isDangerousOperationViolationShouldDetectDangerousOperations() {
-      assertTrue(new WasiPermissionException("Danger",
-          PermissionViolationType.DANGEROUS_OPERATION,
-          "op", "res").isDangerousOperationViolation(), "Should detect DANGEROUS_OPERATION");
+      assertTrue(
+          new WasiPermissionException(
+                  "Danger", PermissionViolationType.DANGEROUS_OPERATION, "op", "res")
+              .isDangerousOperationViolation(),
+          "Should detect DANGEROUS_OPERATION");
 
-      assertFalse(new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS,
-          "op", "res").isDangerousOperationViolation(), "FS is not dangerous operation");
+      assertFalse(
+          new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS, "op", "res")
+              .isDangerousOperationViolation(),
+          "FS is not dangerous operation");
     }
 
     @Test
     @DisplayName("isResourceLimitViolation should detect resource limit violations")
     void isResourceLimitViolationShouldDetectResourceLimitViolations() {
-      assertTrue(new WasiPermissionException("Limit",
-          PermissionViolationType.RESOURCE_LIMIT_EXCEEDED,
-          "op", "res").isResourceLimitViolation(), "Should detect RESOURCE_LIMIT_EXCEEDED");
+      assertTrue(
+          new WasiPermissionException(
+                  "Limit", PermissionViolationType.RESOURCE_LIMIT_EXCEEDED, "op", "res")
+              .isResourceLimitViolation(),
+          "Should detect RESOURCE_LIMIT_EXCEEDED");
 
-      assertFalse(new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS,
-          "op", "res").isResourceLimitViolation(), "FS is not resource limit violation");
+      assertFalse(
+          new WasiPermissionException("FS", PermissionViolationType.FILE_SYSTEM_ACCESS, "op", "res")
+              .isResourceLimitViolation(),
+          "FS is not resource limit violation");
     }
   }
 
@@ -232,8 +261,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("fileSystemAccessDenied should create correct exception")
     void fileSystemAccessDeniedShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.fileSystemAccessDenied(
-          "read", "/protected/file");
+      final WasiPermissionException exception =
+          WasiPermissionException.fileSystemAccessDenied("read", "/protected/file");
 
       assertEquals(PermissionViolationType.FILE_SYSTEM_ACCESS, exception.getViolationType());
       assertEquals(WasiErrorCode.EACCES, exception.getErrorCode());
@@ -243,8 +272,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("sandboxEscape should create correct exception")
     void sandboxEscapeShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.sandboxEscape(
-          "stat", "../../etc/passwd");
+      final WasiPermissionException exception =
+          WasiPermissionException.sandboxEscape("stat", "../../etc/passwd");
 
       assertEquals(PermissionViolationType.SANDBOX_ESCAPE, exception.getViolationType());
       assertEquals(WasiErrorCode.EPERM, exception.getErrorCode());
@@ -254,8 +283,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("pathTraversal should create correct exception")
     void pathTraversalShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.pathTraversal(
-          "open", "../../../etc/shadow");
+      final WasiPermissionException exception =
+          WasiPermissionException.pathTraversal("open", "../../../etc/shadow");
 
       assertEquals(PermissionViolationType.PATH_TRAVERSAL, exception.getViolationType());
       assertTrue(exception.getMessage().contains("Path traversal"));
@@ -264,8 +293,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("environmentAccessDenied should create correct exception")
     void environmentAccessDeniedShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.environmentAccessDenied(
-          "getenv", "AWS_SECRET_KEY");
+      final WasiPermissionException exception =
+          WasiPermissionException.environmentAccessDenied("getenv", "AWS_SECRET_KEY");
 
       assertEquals(PermissionViolationType.ENVIRONMENT_ACCESS, exception.getViolationType());
       assertEquals(WasiErrorCode.EACCES, exception.getErrorCode());
@@ -275,8 +304,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("dangerousOperation should create correct exception")
     void dangerousOperationShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.dangerousOperation(
-          "exec", "/bin/rm");
+      final WasiPermissionException exception =
+          WasiPermissionException.dangerousOperation("exec", "/bin/rm");
 
       assertEquals(PermissionViolationType.DANGEROUS_OPERATION, exception.getViolationType());
       assertEquals(WasiErrorCode.EPERM, exception.getErrorCode());
@@ -286,8 +315,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("resourceLimitExceeded should create correct exception")
     void resourceLimitExceededShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.resourceLimitExceeded(
-          "alloc", "memory", "1GB");
+      final WasiPermissionException exception =
+          WasiPermissionException.resourceLimitExceeded("alloc", "memory", "1GB");
 
       assertEquals(PermissionViolationType.RESOURCE_LIMIT_EXCEEDED, exception.getViolationType());
       assertTrue(exception.getMessage().contains("memory"));
@@ -297,8 +326,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("capabilityNotGranted should create correct exception")
     void capabilityNotGrantedShouldCreateCorrectException() {
-      final WasiPermissionException exception = WasiPermissionException.capabilityNotGranted(
-          "socket", "network");
+      final WasiPermissionException exception =
+          WasiPermissionException.capabilityNotGranted("socket", "network");
 
       assertEquals(PermissionViolationType.CAPABILITY_NOT_GRANTED, exception.getViolationType());
       assertTrue(exception.getMessage().contains("network"));
@@ -315,7 +344,9 @@ class WasiPermissionExceptionTest {
       try {
         throw WasiPermissionException.sandboxEscape("stat", "/etc/passwd");
       } catch (WasiPermissionException e) {
-        assertEquals(PermissionViolationType.SANDBOX_ESCAPE, e.getViolationType(),
+        assertEquals(
+            PermissionViolationType.SANDBOX_ESCAPE,
+            e.getViolationType(),
             "Should catch with correct violation type");
       }
     }
@@ -326,8 +357,8 @@ class WasiPermissionExceptionTest {
       try {
         throw WasiPermissionException.fileSystemAccessDenied("write", "/secret");
       } catch (WasiException e) {
-        assertTrue(e instanceof WasiPermissionException,
-            "Should be instance of WasiPermissionException");
+        assertTrue(
+            e instanceof WasiPermissionException, "Should be instance of WasiPermissionException");
         assertTrue(e.isPermissionError(), "Should be permission error");
       }
     }
@@ -335,8 +366,8 @@ class WasiPermissionExceptionTest {
     @Test
     @DisplayName("Exception chain should work correctly")
     void exceptionChainShouldWorkCorrectly() {
-      final WasiPermissionException exception = WasiPermissionException.dangerousOperation(
-          "exec", "/bin/malware");
+      final WasiPermissionException exception =
+          WasiPermissionException.dangerousOperation("exec", "/bin/malware");
 
       // Check that it's properly categorized
       assertTrue(exception.isDangerousOperationViolation());
@@ -351,13 +382,13 @@ class WasiPermissionExceptionTest {
     @DisplayName("All factory methods should produce valid exceptions")
     void allFactoryMethodsShouldProduceValidExceptions() {
       final WasiPermissionException[] exceptions = {
-          WasiPermissionException.fileSystemAccessDenied("op", "res"),
-          WasiPermissionException.sandboxEscape("op", "res"),
-          WasiPermissionException.pathTraversal("op", "res"),
-          WasiPermissionException.environmentAccessDenied("op", "var"),
-          WasiPermissionException.dangerousOperation("op", "res"),
-          WasiPermissionException.resourceLimitExceeded("op", "type", "limit"),
-          WasiPermissionException.capabilityNotGranted("op", "cap")
+        WasiPermissionException.fileSystemAccessDenied("op", "res"),
+        WasiPermissionException.sandboxEscape("op", "res"),
+        WasiPermissionException.pathTraversal("op", "res"),
+        WasiPermissionException.environmentAccessDenied("op", "var"),
+        WasiPermissionException.dangerousOperation("op", "res"),
+        WasiPermissionException.resourceLimitExceeded("op", "type", "limit"),
+        WasiPermissionException.capabilityNotGranted("op", "cap")
       };
 
       for (WasiPermissionException e : exceptions) {

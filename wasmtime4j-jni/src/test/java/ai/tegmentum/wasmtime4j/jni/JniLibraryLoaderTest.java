@@ -55,7 +55,8 @@ class JniLibraryLoaderTest {
     void shouldHavePrivateConstructor() {
       final Constructor<?>[] constructors = JniLibraryLoader.class.getDeclaredConstructors();
       assertEquals(1, constructors.length, "Should have exactly one constructor");
-      assertTrue(Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
+      assertTrue(
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
     }
   }
 

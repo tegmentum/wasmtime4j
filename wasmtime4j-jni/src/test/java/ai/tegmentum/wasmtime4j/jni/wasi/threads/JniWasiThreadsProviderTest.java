@@ -34,9 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniWasiThreadsProvider}.
- */
+/** Comprehensive tests for {@link JniWasiThreadsProvider}. */
 @DisplayName("JniWasiThreadsProvider Tests")
 class JniWasiThreadsProviderTest {
 
@@ -115,8 +113,9 @@ class JniWasiThreadsProviderTest {
     @Test
     @DisplayName("addToLinker method should exist with correct parameters")
     void addToLinkerMethodShouldExist() throws NoSuchMethodException {
-      Method method = JniWasiThreadsProvider.class.getMethod(
-          "addToLinker", Linker.class, Store.class, Module.class);
+      Method method =
+          JniWasiThreadsProvider.class.getMethod(
+              "addToLinker", Linker.class, Store.class, Module.class);
       assertNotNull(method, "addToLinker method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
@@ -176,7 +175,8 @@ class JniWasiThreadsProviderTest {
           boolean found = false;
           for (Method implMethod : JniWasiThreadsProvider.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }

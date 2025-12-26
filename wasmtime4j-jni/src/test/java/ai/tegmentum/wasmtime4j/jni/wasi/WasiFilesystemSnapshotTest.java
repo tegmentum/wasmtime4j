@@ -44,9 +44,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiFilesystemSnapshot}.
- */
+/** Comprehensive tests for {@link WasiFilesystemSnapshot}. */
 @DisplayName("WasiFilesystemSnapshot Tests")
 class WasiFilesystemSnapshotTest {
 
@@ -91,7 +89,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null context")
     void shouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiFilesystemSnapshot(null, executorService),
           "Should throw on null context");
     }
@@ -99,7 +98,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null executor")
     void shouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiFilesystemSnapshot(testContext, null),
           "Should throw on null executor");
     }
@@ -122,7 +122,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null root path")
     void shouldThrowOnNullRootPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.createFullSnapshotAsync(null, SnapshotOptions.defaultOptions()),
           "Should throw on null root path");
     }
@@ -130,7 +131,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on empty root path")
     void shouldThrowOnEmptyRootPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.createFullSnapshotAsync("", SnapshotOptions.defaultOptions()),
           "Should throw on empty root path");
     }
@@ -138,7 +140,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null options")
     void shouldThrowOnNullOptions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.createFullSnapshotAsync("/tmp", null),
           "Should throw on null options");
     }
@@ -163,25 +166,30 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null root path")
     void shouldThrowOnNullRootPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.createIncrementalSnapshotAsync(
-              null, 1L, SnapshotOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () ->
+              snapshotHandler.createIncrementalSnapshotAsync(
+                  null, 1L, SnapshotOptions.defaultOptions()),
           "Should throw on null root path");
     }
 
     @Test
     @DisplayName("Should throw on empty root path")
     void shouldThrowOnEmptyRootPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.createIncrementalSnapshotAsync(
-              "", 1L, SnapshotOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () ->
+              snapshotHandler.createIncrementalSnapshotAsync(
+                  "", 1L, SnapshotOptions.defaultOptions()),
           "Should throw on empty root path");
     }
 
     @Test
     @DisplayName("Should throw on null options")
     void shouldThrowOnNullOptions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.createIncrementalSnapshotAsync("/tmp", 1L, null),
           "Should throw on null options");
     }
@@ -189,9 +197,11 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on non-existent base snapshot")
     void shouldThrowOnNonExistentBaseSnapshot() {
-      assertThrows(WasiException.class,
-          () -> snapshotHandler.createIncrementalSnapshotAsync(
-              "/tmp", 999L, SnapshotOptions.defaultOptions()),
+      assertThrows(
+          WasiException.class,
+          () ->
+              snapshotHandler.createIncrementalSnapshotAsync(
+                  "/tmp", 999L, SnapshotOptions.defaultOptions()),
           "Should throw on non-existent base snapshot");
     }
   }
@@ -203,25 +213,29 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null root path")
     void shouldThrowOnNullRootPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.createDifferentialSnapshotAsync(
-              null, SnapshotOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () ->
+              snapshotHandler.createDifferentialSnapshotAsync(
+                  null, SnapshotOptions.defaultOptions()),
           "Should throw on null root path");
     }
 
     @Test
     @DisplayName("Should throw on empty root path")
     void shouldThrowOnEmptyRootPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.createDifferentialSnapshotAsync(
-              "", SnapshotOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () ->
+              snapshotHandler.createDifferentialSnapshotAsync("", SnapshotOptions.defaultOptions()),
           "Should throw on empty root path");
     }
 
     @Test
     @DisplayName("Should throw on null options")
     void shouldThrowOnNullOptions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.createDifferentialSnapshotAsync("/tmp", null),
           "Should throw on null options");
     }
@@ -229,9 +243,11 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw when no full snapshot exists")
     void shouldThrowWhenNoFullSnapshotExists() {
-      assertThrows(WasiException.class,
-          () -> snapshotHandler.createDifferentialSnapshotAsync(
-              "/tmp", SnapshotOptions.defaultOptions()),
+      assertThrows(
+          WasiException.class,
+          () ->
+              snapshotHandler.createDifferentialSnapshotAsync(
+                  "/tmp", SnapshotOptions.defaultOptions()),
           "Should throw when no full snapshot exists");
     }
   }
@@ -243,25 +259,26 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on null target path")
     void shouldThrowOnNullTargetPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.restoreFromSnapshotAsync(
-              1L, null, RestoreOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () -> snapshotHandler.restoreFromSnapshotAsync(1L, null, RestoreOptions.defaultOptions()),
           "Should throw on null target path");
     }
 
     @Test
     @DisplayName("Should throw on empty target path")
     void shouldThrowOnEmptyTargetPath() {
-      assertThrows(JniException.class,
-          () -> snapshotHandler.restoreFromSnapshotAsync(
-              1L, "", RestoreOptions.defaultOptions()),
+      assertThrows(
+          JniException.class,
+          () -> snapshotHandler.restoreFromSnapshotAsync(1L, "", RestoreOptions.defaultOptions()),
           "Should throw on empty target path");
     }
 
     @Test
     @DisplayName("Should throw on null options")
     void shouldThrowOnNullOptions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> snapshotHandler.restoreFromSnapshotAsync(1L, "/tmp", null),
           "Should throw on null options");
     }
@@ -269,9 +286,11 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on non-existent snapshot")
     void shouldThrowOnNonExistentSnapshot() {
-      assertThrows(WasiException.class,
-          () -> snapshotHandler.restoreFromSnapshotAsync(
-              999L, "/tmp", RestoreOptions.defaultOptions()),
+      assertThrows(
+          WasiException.class,
+          () ->
+              snapshotHandler.restoreFromSnapshotAsync(
+                  999L, "/tmp", RestoreOptions.defaultOptions()),
           "Should throw on non-existent snapshot");
     }
   }
@@ -283,7 +302,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on non-existent snapshot")
     void shouldThrowOnNonExistentSnapshot() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> snapshotHandler.verifySnapshotAsync(999L),
           "Should throw on non-existent snapshot");
     }
@@ -310,7 +330,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on non-existent snapshot")
     void shouldThrowOnNonExistentSnapshot() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> snapshotHandler.getSnapshotMetadata(999L),
           "Should throw on non-existent snapshot");
     }
@@ -323,7 +344,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should throw on non-existent snapshot")
     void shouldThrowOnNonExistentSnapshot() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> snapshotHandler.deleteSnapshot(999L),
           "Should throw on non-existent snapshot");
     }
@@ -445,8 +467,8 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should create with all fields")
     void shouldCreateWithAllFields() {
-      final SnapshotMetadata metadata = new SnapshotMetadata(
-          1L, "/tmp", SnapshotType.FULL, Instant.now(), false, 6, false, null);
+      final SnapshotMetadata metadata =
+          new SnapshotMetadata(1L, "/tmp", SnapshotType.FULL, Instant.now(), false, 6, false, null);
 
       final SnapshotInfo info = new SnapshotInfo(1L, "/tmp", SnapshotType.FULL, 1024L, metadata);
 
@@ -467,8 +489,8 @@ class WasiFilesystemSnapshotTest {
     @DisplayName("Should create with all fields")
     void shouldCreateWithAllFields() {
       final Instant now = Instant.now();
-      final SnapshotMetadata metadata = new SnapshotMetadata(
-          1L, "/tmp", SnapshotType.INCREMENTAL, now, true, 9, true, 0L);
+      final SnapshotMetadata metadata =
+          new SnapshotMetadata(1L, "/tmp", SnapshotType.INCREMENTAL, now, true, 9, true, 0L);
 
       assertEquals(1L, metadata.handle, "Handle should match");
       assertEquals("/tmp", metadata.rootPath, "Root path should match");
@@ -488,8 +510,7 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should create with all fields")
     void shouldCreateWithAllFields() {
-      final SnapshotVerificationResult result = new SnapshotVerificationResult(
-          true, 100, 2, 3, 1);
+      final SnapshotVerificationResult result = new SnapshotVerificationResult(true, 100, 2, 3, 1);
 
       assertTrue(result.isValid, "Should be valid");
       assertEquals(100, result.checkedFiles, "Checked files should match");
@@ -501,8 +522,7 @@ class WasiFilesystemSnapshotTest {
     @Test
     @DisplayName("Should create for invalid snapshot")
     void shouldCreateForInvalidSnapshot() {
-      final SnapshotVerificationResult result = new SnapshotVerificationResult(
-          false, 50, 10, 5, 3);
+      final SnapshotVerificationResult result = new SnapshotVerificationResult(false, 50, 10, 5, 3);
 
       assertFalse(result.isValid, "Should be invalid");
       assertEquals(50, result.checkedFiles, "Checked files should match");
@@ -535,7 +555,8 @@ class WasiFilesystemSnapshotTest {
       final DeduplicationStatistics stats = new DeduplicationStatistics();
 
       assertEquals(0, stats.duplicateBlocksFound, "Duplicate blocks should be 0");
-      assertEquals(0, stats.bytesDeduplicatedCompressionStatistics, "Bytes deduplicated should be 0");
+      assertEquals(
+          0, stats.bytesDeduplicatedCompressionStatistics, "Bytes deduplicated should be 0");
       assertEquals(0.0, stats.deduplicationRatio, 0.001, "Deduplication ratio should be 0");
     }
   }

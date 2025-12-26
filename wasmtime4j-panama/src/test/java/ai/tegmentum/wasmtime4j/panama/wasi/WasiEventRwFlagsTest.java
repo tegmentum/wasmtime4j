@@ -77,7 +77,9 @@ class WasiEventRwFlagsTest {
     @Test
     @DisplayName("FD_READWRITE_HANGUP should have value 1")
     void fdReadwriteHangupShouldHaveValue1() {
-      assertEquals(1, WasiEventRwFlags.FD_READWRITE_HANGUP.getValue(),
+      assertEquals(
+          1,
+          WasiEventRwFlags.FD_READWRITE_HANGUP.getValue(),
           "FD_READWRITE_HANGUP should have value 1");
     }
   }
@@ -95,7 +97,9 @@ class WasiEventRwFlagsTest {
     @Test
     @DisplayName("combine with single flag should return flag value")
     void combineWithSingleFlagShouldReturnFlagValue() {
-      assertEquals(1, WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertEquals(
+          1,
+          WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP),
           "combine() with single flag should return flag value");
     }
 
@@ -104,9 +108,10 @@ class WasiEventRwFlagsTest {
     void combineWithDuplicateFlagsShouldReturnSameValue() {
       // Combining same flag multiple times should give same result (bitwise OR)
       final int expected = WasiEventRwFlags.FD_READWRITE_HANGUP.getValue();
-      assertEquals(expected,
-          WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP,
-              WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertEquals(
+          expected,
+          WasiEventRwFlags.combine(
+              WasiEventRwFlags.FD_READWRITE_HANGUP, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Combining same flag twice should be idempotent");
     }
   }
@@ -119,14 +124,16 @@ class WasiEventRwFlagsTest {
     @DisplayName("contains should return true when flag is present")
     void containsShouldReturnTrueWhenFlagIsPresent() {
       final int mask = WasiEventRwFlags.FD_READWRITE_HANGUP.getValue();
-      assertTrue(WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "contains should return true when flag is in mask");
     }
 
     @Test
     @DisplayName("contains should return false when mask is zero")
     void containsShouldReturnFalseWhenMaskIsZero() {
-      assertFalse(WasiEventRwFlags.contains(0, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertFalse(
+          WasiEventRwFlags.contains(0, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "contains should return false when mask is zero");
     }
 
@@ -134,7 +141,8 @@ class WasiEventRwFlagsTest {
     @DisplayName("contains should work with combined flags")
     void containsShouldWorkWithCombinedFlags() {
       final int mask = WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP);
-      assertTrue(WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "contains should find flag in combined mask");
     }
   }
@@ -149,7 +157,8 @@ class WasiEventRwFlagsTest {
       for (WasiEventRwFlags flag : WasiEventRwFlags.values()) {
         final int value = flag.getValue();
         assertTrue(value > 0, "Flag value should be positive: " + flag.name());
-        assertTrue((value & (value - 1)) == 0,
+        assertTrue(
+            (value & (value - 1)) == 0,
             "Flag value should be power of 2 for bitwise operations: " + flag.name());
       }
     }
@@ -168,11 +177,14 @@ class WasiEventRwFlagsTest {
     void containsShouldUseBitwiseAnd() {
       final int flag = WasiEventRwFlags.FD_READWRITE_HANGUP.getValue();
       // Test that contains uses bitwise AND by checking different mask values
-      assertTrue(WasiEventRwFlags.contains(flag, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(flag, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Flag & Flag should be non-zero");
-      assertTrue(WasiEventRwFlags.contains(3, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(3, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "(3 & 1) should be non-zero");
-      assertFalse(WasiEventRwFlags.contains(2, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertFalse(
+          WasiEventRwFlags.contains(2, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "(2 & 1) should be zero");
     }
   }
@@ -212,7 +224,8 @@ class WasiEventRwFlagsTest {
     @DisplayName("Round trip combine/contains should work")
     void roundTripCombineContainsShouldWork() {
       final int mask = WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP);
-      assertTrue(WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Should find flag after combining");
     }
   }

@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for {@link PanamaComponentTypedFunc}.
  *
- * <p>These tests verify class structure, method signatures, and field definitions using
- * reflection. This approach allows testing without requiring native library loading.
+ * <p>These tests verify class structure, method signatures, and field definitions using reflection.
+ * This approach allows testing without requiring native library loading.
  */
 @DisplayName("PanamaComponentTypedFunc Tests")
 class PanamaComponentTypedFuncTest {
@@ -583,12 +583,10 @@ class PanamaComponentTypedFuncTest {
     @DisplayName("toString should contain class name")
     void toStringShouldContainClassName() {
       StubComponentFunc stubFunc = new StubComponentFunc();
-      PanamaComponentTypedFunc typedFunc =
-          new PanamaComponentTypedFunc(stubFunc, "s32->s32");
+      PanamaComponentTypedFunc typedFunc = new PanamaComponentTypedFunc(stubFunc, "s32->s32");
 
       String result = typedFunc.toString();
-      assertTrue(
-          result.contains("PanamaComponentTypedFunc"), "toString should contain class name");
+      assertTrue(result.contains("PanamaComponentTypedFunc"), "toString should contain class name");
     }
 
     @Test
@@ -608,9 +606,7 @@ class PanamaComponentTypedFuncTest {
     }
   }
 
-  /**
-   * Stub implementation of ComponentFunc for testing constructor behavior.
-   */
+  /** Stub implementation of ComponentFunc for testing constructor behavior. */
   private static class StubComponentFunc implements ComponentFunc {
 
     @Override

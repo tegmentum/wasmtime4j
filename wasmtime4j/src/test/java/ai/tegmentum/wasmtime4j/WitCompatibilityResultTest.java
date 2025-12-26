@@ -62,8 +62,7 @@ class WitCompatibilityResultTest {
       final Set<String> satisfied = Set.of("import1", "import2");
       final Set<String> unsatisfied = Set.of("import3");
 
-      final var result =
-          new WitCompatibilityResult(true, "Compatible", satisfied, unsatisfied);
+      final var result = new WitCompatibilityResult(true, "Compatible", satisfied, unsatisfied);
 
       assertTrue(result.isCompatible(), "Should be compatible");
       assertEquals("Compatible", result.getDetails(), "Details should match");
@@ -113,7 +112,8 @@ class WitCompatibilityResultTest {
     void incompatibleFactoryShouldCreateIncompatibleResult() {
       final Set<String> unsatisfied = Set.of("wasi:cli/missing@0.2.0");
 
-      final var result = WitCompatibilityResult.incompatible("Missing required import", unsatisfied);
+      final var result =
+          WitCompatibilityResult.incompatible("Missing required import", unsatisfied);
 
       assertFalse(result.isCompatible(), "Should not be compatible");
       assertEquals("Missing required import", result.getDetails(), "Details should match");
@@ -148,8 +148,7 @@ class WitCompatibilityResultTest {
     @Test
     @DisplayName("getSatisfiedImports should return unmodifiable set")
     void getSatisfiedImportsShouldReturnUnmodifiableSet() {
-      final var result =
-          WitCompatibilityResult.compatible("ok", Set.of("wasi:cli/stdio@0.2.0"));
+      final var result = WitCompatibilityResult.compatible("ok", Set.of("wasi:cli/stdio@0.2.0"));
 
       final Set<String> imports = result.getSatisfiedImports();
       assertNotNull(imports, "Satisfied imports should not be null");
@@ -188,7 +187,8 @@ class WitCompatibilityResultTest {
     @Test
     @DisplayName("should return true when there are unsatisfied imports")
     void shouldReturnTrueWhenThereAreUnsatisfiedImports() {
-      final var result = WitCompatibilityResult.incompatible("fail", Set.of("missing1", "missing2"));
+      final var result =
+          WitCompatibilityResult.incompatible("fail", Set.of("missing1", "missing2"));
 
       assertTrue(result.hasUnsatisfiedImports(), "Should return true with unsatisfied imports");
     }
@@ -198,7 +198,8 @@ class WitCompatibilityResultTest {
     void shouldReturnFalseWhenThereAreNoUnsatisfiedImports() {
       final var result = WitCompatibilityResult.compatible("ok", Set.of("satisfied"));
 
-      assertFalse(result.hasUnsatisfiedImports(), "Should return false without unsatisfied imports");
+      assertFalse(
+          result.hasUnsatisfiedImports(), "Should return false without unsatisfied imports");
     }
   }
 

@@ -70,8 +70,7 @@ class PanamaWasiClockRandomTest {
     @DisplayName("PanamaWasiMonotonicClock should implement WasiMonotonicClock interface")
     void shouldImplementWasiMonotonicClockInterface() {
       Class<?>[] interfaces = PanamaWasiMonotonicClock.class.getInterfaces();
-      boolean implementsInterface =
-          Arrays.asList(interfaces).contains(WasiMonotonicClock.class);
+      boolean implementsInterface = Arrays.asList(interfaces).contains(WasiMonotonicClock.class);
       assertTrue(
           implementsInterface,
           "PanamaWasiMonotonicClock should implement WasiMonotonicClock interface");
@@ -116,8 +115,7 @@ class PanamaWasiClockRandomTest {
       Constructor<?> constructor = PanamaWasiMonotonicClock.class.getConstructor();
       assertNotNull(constructor, "No-arg constructor should exist");
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "No-arg constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "No-arg constructor should be public");
       assertEquals(0, constructor.getParameterCount(), "Constructor should have no parameters");
     }
   }
@@ -151,10 +149,7 @@ class PanamaWasiClockRandomTest {
       assertNotNull(method, "subscribeInstant method should exist");
       assertEquals(long.class, method.getReturnType(), "subscribeInstant should return long");
       assertEquals(1, method.getParameterCount(), "subscribeInstant should have 1 parameter");
-      assertEquals(
-          long.class,
-          method.getParameterTypes()[0],
-          "Parameter should be long (when)");
+      assertEquals(long.class, method.getParameterTypes()[0], "Parameter should be long (when)");
     }
 
     @Test
@@ -165,9 +160,7 @@ class PanamaWasiClockRandomTest {
       assertEquals(long.class, method.getReturnType(), "subscribeDuration should return long");
       assertEquals(1, method.getParameterCount(), "subscribeDuration should have 1 parameter");
       assertEquals(
-          long.class,
-          method.getParameterTypes()[0],
-          "Parameter should be long (duration)");
+          long.class, method.getParameterTypes()[0], "Parameter should be long (duration)");
     }
   }
 
@@ -201,8 +194,7 @@ class PanamaWasiClockRandomTest {
       Class<?>[] interfaces = PanamaWasiWallClock.class.getInterfaces();
       boolean implementsInterface = Arrays.asList(interfaces).contains(WasiWallClock.class);
       assertTrue(
-          implementsInterface,
-          "PanamaWasiWallClock should implement WasiWallClock interface");
+          implementsInterface, "PanamaWasiWallClock should implement WasiWallClock interface");
     }
 
     @Test
@@ -240,8 +232,7 @@ class PanamaWasiClockRandomTest {
       Constructor<?> constructor = PanamaWasiWallClock.class.getConstructor();
       assertNotNull(constructor, "No-arg constructor should exist");
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "No-arg constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "No-arg constructor should be public");
       assertEquals(0, constructor.getParameterCount(), "Constructor should have no parameters");
     }
   }
@@ -256,9 +247,7 @@ class PanamaWasiClockRandomTest {
       Method method = PanamaWasiWallClock.class.getMethod("now");
       assertNotNull(method, "now method should exist");
       assertEquals(
-          WasiWallClock.Datetime.class,
-          method.getReturnType(),
-          "now should return Datetime");
+          WasiWallClock.Datetime.class, method.getReturnType(), "now should return Datetime");
       assertEquals(0, method.getParameterCount(), "now should have no parameters");
     }
 
@@ -304,9 +293,7 @@ class PanamaWasiClockRandomTest {
     void shouldImplementWasiRandomInterface() {
       Class<?>[] interfaces = PanamaWasiRandom.class.getInterfaces();
       boolean implementsInterface = Arrays.asList(interfaces).contains(WasiRandom.class);
-      assertTrue(
-          implementsInterface,
-          "PanamaWasiRandom should implement WasiRandom interface");
+      assertTrue(implementsInterface, "PanamaWasiRandom should implement WasiRandom interface");
     }
 
     @Test
@@ -344,8 +331,7 @@ class PanamaWasiClockRandomTest {
       Constructor<?> constructor = PanamaWasiRandom.class.getConstructor();
       assertNotNull(constructor, "No-arg constructor should exist");
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "No-arg constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "No-arg constructor should be public");
       assertEquals(0, constructor.getParameterCount(), "Constructor should have no parameters");
     }
   }
@@ -361,10 +347,7 @@ class PanamaWasiClockRandomTest {
       assertNotNull(method, "getRandomBytes method should exist");
       assertEquals(byte[].class, method.getReturnType(), "getRandomBytes should return byte[]");
       assertEquals(1, method.getParameterCount(), "getRandomBytes should have 1 parameter");
-      assertEquals(
-          int.class,
-          method.getParameterTypes()[0],
-          "Parameter should be int (length)");
+      assertEquals(int.class, method.getParameterTypes()[0], "Parameter should be int (length)");
     }
 
     @Test
@@ -395,11 +378,9 @@ class PanamaWasiClockRandomTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
           } catch (NoSuchMethodException e) {
             // May be a default method
           }
@@ -417,11 +398,9 @@ class PanamaWasiClockRandomTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
           } catch (NoSuchMethodException e) {
             // May be a default method
           }
@@ -439,11 +418,9 @@ class PanamaWasiClockRandomTest {
         if (Modifier.isAbstract(interfaceMethod.getModifiers())) {
           try {
             Method implMethod =
-                implClass.getMethod(
-                    interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+                implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
           } catch (NoSuchMethodException e) {
             // May be a default method
           }
@@ -517,15 +494,16 @@ class PanamaWasiClockRandomTest {
     @DisplayName("All classes should have singleton-style NATIVE_BINDINGS field")
     void allClassesShouldHaveNativeBindings() {
       try {
-        Field monotonic = PanamaWasiMonotonicClock.class.getDeclaredField("NATIVE_BINDINGS");
-        Field wall = PanamaWasiWallClock.class.getDeclaredField("NATIVE_BINDINGS");
-        Field random = PanamaWasiRandom.class.getDeclaredField("NATIVE_BINDINGS");
-
         // All should be static final
+        final Field monotonic = PanamaWasiMonotonicClock.class.getDeclaredField("NATIVE_BINDINGS");
         assertTrue(Modifier.isStatic(monotonic.getModifiers()));
         assertTrue(Modifier.isFinal(monotonic.getModifiers()));
+
+        final Field wall = PanamaWasiWallClock.class.getDeclaredField("NATIVE_BINDINGS");
         assertTrue(Modifier.isStatic(wall.getModifiers()));
         assertTrue(Modifier.isFinal(wall.getModifiers()));
+
+        final Field random = PanamaWasiRandom.class.getDeclaredField("NATIVE_BINDINGS");
         assertTrue(Modifier.isStatic(random.getModifiers()));
         assertTrue(Modifier.isFinal(random.getModifiers()));
       } catch (NoSuchFieldException e) {
@@ -561,20 +539,22 @@ class PanamaWasiClockRandomTest {
     @Test
     @DisplayName("Monotonic clock methods should return correct types")
     void monotonicClockMethodsShouldReturnCorrectTypes() throws NoSuchMethodException {
-      Method now = PanamaWasiMonotonicClock.class.getMethod("now");
-      Method resolution = PanamaWasiMonotonicClock.class.getMethod("resolution");
-      Method subscribeInstant =
-          PanamaWasiMonotonicClock.class.getMethod("subscribeInstant", long.class);
-      Method subscribeDuration =
-          PanamaWasiMonotonicClock.class.getMethod("subscribeDuration", long.class);
-
+      final Method now = PanamaWasiMonotonicClock.class.getMethod("now");
       assertEquals(long.class, now.getReturnType(), "now should return long (nanoseconds)");
+
+      final Method resolution = PanamaWasiMonotonicClock.class.getMethod("resolution");
       assertEquals(
           long.class, resolution.getReturnType(), "resolution should return long (nanoseconds)");
+
+      final Method subscribeInstant =
+          PanamaWasiMonotonicClock.class.getMethod("subscribeInstant", long.class);
       assertEquals(
           long.class,
           subscribeInstant.getReturnType(),
           "subscribeInstant should return long (pollable handle)");
+
+      final Method subscribeDuration =
+          PanamaWasiMonotonicClock.class.getMethod("subscribeDuration", long.class);
       assertEquals(
           long.class,
           subscribeDuration.getReturnType(),
@@ -587,10 +567,7 @@ class PanamaWasiClockRandomTest {
       Method now = PanamaWasiWallClock.class.getMethod("now");
       Method resolution = PanamaWasiWallClock.class.getMethod("resolution");
 
-      assertEquals(
-          WasiWallClock.Datetime.class,
-          now.getReturnType(),
-          "now should return Datetime");
+      assertEquals(WasiWallClock.Datetime.class, now.getReturnType(), "now should return Datetime");
       assertEquals(
           WasiWallClock.Datetime.class,
           resolution.getReturnType(),
@@ -604,13 +581,8 @@ class PanamaWasiClockRandomTest {
       Method getRandomU64 = PanamaWasiRandom.class.getMethod("getRandomU64");
 
       assertEquals(
-          byte[].class,
-          getRandomBytes.getReturnType(),
-          "getRandomBytes should return byte[]");
-      assertEquals(
-          long.class,
-          getRandomU64.getReturnType(),
-          "getRandomU64 should return long");
+          byte[].class, getRandomBytes.getReturnType(), "getRandomBytes should return byte[]");
+      assertEquals(long.class, getRandomU64.getReturnType(), "getRandomU64 should return long");
     }
   }
 }

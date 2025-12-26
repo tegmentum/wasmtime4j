@@ -105,10 +105,10 @@ class JniLibraryExceptionTest {
     @DisplayName("Should handle typical library loading error messages")
     void shouldHandleTypicalLibraryLoadingMessages() {
       final String[] messages = {
-          "Unable to load native library: libwasmtime4j.so",
-          "Library libwasmtime4j.dylib not found in java.library.path",
-          "UnsatisfiedLinkError: no wasmtime4j in java.library.path",
-          "Failed to initialize native runtime"
+        "Unable to load native library: libwasmtime4j.so",
+        "Library libwasmtime4j.dylib not found in java.library.path",
+        "UnsatisfiedLinkError: no wasmtime4j in java.library.path",
+        "Failed to initialize native runtime"
       };
 
       for (String message : messages) {
@@ -137,8 +137,7 @@ class JniLibraryExceptionTest {
     @Test
     @DisplayName("Should handle null cause")
     void shouldHandleNullCause() {
-      final JniLibraryException exception =
-          new JniLibraryException("Library load failed", null);
+      final JniLibraryException exception = new JniLibraryException("Library load failed", null);
 
       assertEquals("Library load failed", exception.getMessage(), "Message should match");
       assertNull(exception.getCause(), "Cause should be null");
@@ -153,7 +152,8 @@ class JniLibraryExceptionTest {
           new JniLibraryException("Failed to load native library", linkError);
 
       assertSame(linkError, exception.getCause(), "Cause should be the UnsatisfiedLinkError");
-      assertTrue(exception.getCause() instanceof UnsatisfiedLinkError,
+      assertTrue(
+          exception.getCause() instanceof UnsatisfiedLinkError,
           "Cause should be UnsatisfiedLinkError");
     }
 
@@ -165,8 +165,7 @@ class JniLibraryExceptionTest {
       final JniLibraryException exception =
           new JniLibraryException("Security violation during library load", securityException);
 
-      assertSame(securityException, exception.getCause(),
-          "Cause should be the SecurityException");
+      assertSame(securityException, exception.getCause(), "Cause should be the SecurityException");
     }
 
     @Test
@@ -175,8 +174,7 @@ class JniLibraryExceptionTest {
       final Exception root = new IllegalStateException("File corrupted");
       final UnsatisfiedLinkError middle = new UnsatisfiedLinkError("Library format invalid");
       middle.initCause(root);
-      final JniLibraryException exception =
-          new JniLibraryException("Cannot load library", middle);
+      final JniLibraryException exception = new JniLibraryException("Cannot load library", middle);
 
       assertSame(middle, exception.getCause(), "Direct cause should match");
       assertSame(root, exception.getCause().getCause(), "Root cause should be preserved");
@@ -205,8 +203,7 @@ class JniLibraryExceptionTest {
       final JniLibraryException exception = new JniLibraryException("Test error");
       final String str = exception.toString();
 
-      assertFalse(str.contains("native error code"),
-          "Should not mention native error code");
+      assertFalse(str.contains("native error code"), "Should not mention native error code");
     }
   }
 
@@ -217,8 +214,7 @@ class JniLibraryExceptionTest {
     @Test
     @DisplayName("Should be serializable")
     void shouldBeSerializable() throws Exception {
-      final JniLibraryException original =
-          new JniLibraryException("Serialization test");
+      final JniLibraryException original = new JniLibraryException("Serialization test");
 
       final ByteArrayOutputStream baos = new ByteArrayOutputStream();
       final ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -230,17 +226,15 @@ class JniLibraryExceptionTest {
       final JniLibraryException deserialized = (JniLibraryException) ois.readObject();
       ois.close();
 
-      assertEquals(original.getMessage(), deserialized.getMessage(),
-          "Message should survive serialization");
+      assertEquals(
+          original.getMessage(), deserialized.getMessage(), "Message should survive serialization");
     }
 
     @Test
     @DisplayName("Should serialize with cause")
     void shouldSerializeWithCause() throws Exception {
-      final UnsatisfiedLinkError cause =
-          new UnsatisfiedLinkError("Library not found");
-      final JniLibraryException original =
-          new JniLibraryException("Failed to load library", cause);
+      final UnsatisfiedLinkError cause = new UnsatisfiedLinkError("Library not found");
+      final JniLibraryException original = new JniLibraryException("Failed to load library", cause);
 
       final ByteArrayOutputStream baos = new ByteArrayOutputStream();
       final ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -253,8 +247,8 @@ class JniLibraryExceptionTest {
       ois.close();
 
       assertNotNull(deserialized.getCause(), "Cause should survive serialization");
-      assertEquals("Library not found", deserialized.getCause().getMessage(),
-          "Cause message should match");
+      assertEquals(
+          "Library not found", deserialized.getCause().getMessage(), "Cause message should match");
     }
   }
 
@@ -268,8 +262,7 @@ class JniLibraryExceptionTest {
       try {
         throw new JniLibraryException("Test library exception");
       } catch (JniLibraryException e) {
-        assertEquals("Test library exception", e.getMessage(),
-            "Should catch with correct message");
+        assertEquals("Test library exception", e.getMessage(), "Should catch with correct message");
       }
     }
 
@@ -279,8 +272,7 @@ class JniLibraryExceptionTest {
       try {
         throw new JniLibraryException("Library not found");
       } catch (JniException e) {
-        assertTrue(e instanceof JniLibraryException,
-            "Should be instance of JniLibraryException");
+        assertTrue(e instanceof JniLibraryException, "Should be instance of JniLibraryException");
       }
     }
 
@@ -290,24 +282,22 @@ class JniLibraryExceptionTest {
       try {
         throw new JniLibraryException("Runtime library error");
       } catch (RuntimeException e) {
-        assertTrue(e instanceof JniLibraryException,
-            "Should be instance of JniLibraryException");
+        assertTrue(e instanceof JniLibraryException, "Should be instance of JniLibraryException");
       }
     }
 
     @Test
     @DisplayName("Should be distinguishable from JniResourceException")
     void shouldBeDistinguishableFromJniResourceException() {
-      final JniLibraryException libraryException =
-          new JniLibraryException("Library error");
-      final JniResourceException resourceException =
-          new JniResourceException("Resource error");
+      final JniLibraryException libraryException = new JniLibraryException("Library error");
+      final JniResourceException resourceException = new JniResourceException("Resource error");
 
-      assertTrue(libraryException instanceof JniException,
-          "Library exception should be JniException");
-      assertTrue(resourceException instanceof JniException,
-          "Resource exception should be JniException");
-      assertFalse(libraryException.getClass().equals(resourceException.getClass()),
+      assertTrue(
+          libraryException instanceof JniException, "Library exception should be JniException");
+      assertTrue(
+          resourceException instanceof JniException, "Resource exception should be JniException");
+      assertFalse(
+          libraryException.getClass().equals(resourceException.getClass()),
           "Different exception types should be distinguishable");
     }
 
@@ -322,15 +312,17 @@ class JniLibraryExceptionTest {
         // Simulate loading failure
         throw new UnsatisfiedLinkError("Cannot load library: " + libraryPath);
       } catch (UnsatisfiedLinkError e) {
-        exception = new JniLibraryException(
-            "Failed to load Wasmtime native library from " + libraryPath, e);
+        exception =
+            new JniLibraryException(
+                "Failed to load Wasmtime native library from " + libraryPath, e);
       }
 
       assertNotNull(exception, "Exception should be created");
-      assertTrue(exception.getMessage().contains(libraryPath),
-          "Message should contain library path");
+      assertTrue(
+          exception.getMessage().contains(libraryPath), "Message should contain library path");
       assertNotNull(exception.getCause(), "Cause should be present");
-      assertTrue(exception.getCause() instanceof UnsatisfiedLinkError,
+      assertTrue(
+          exception.getCause() instanceof UnsatisfiedLinkError,
           "Cause should be UnsatisfiedLinkError");
     }
   }

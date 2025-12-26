@@ -66,9 +66,7 @@ class PanamaExternTest {
     @DisplayName("PanamaExternFunc should have package-private visibility")
     void shouldHavePackagePrivateVisibility() {
       int modifiers = PanamaExternFunc.class.getModifiers();
-      assertFalse(
-          Modifier.isPublic(modifiers),
-          "PanamaExternFunc should not be public");
+      assertFalse(Modifier.isPublic(modifiers), "PanamaExternFunc should not be public");
     }
 
     @Test
@@ -92,7 +90,8 @@ class PanamaExternTest {
     void shouldHaveAsFunctionMethod() throws NoSuchMethodException {
       Method method = PanamaExternFunc.class.getMethod("asFunction");
       assertNotNull(method, "asFunction method should exist");
-      assertEquals(WasmFunction.class, method.getReturnType(), "Return type should be WasmFunction");
+      assertEquals(
+          WasmFunction.class, method.getReturnType(), "Return type should be WasmFunction");
     }
 
     @Test
@@ -123,8 +122,7 @@ class PanamaExternTest {
       Constructor<?>[] constructors = PanamaExternFunc.class.getDeclaredConstructors();
       for (Constructor<?> constructor : constructors) {
         assertFalse(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should not be public");
+            Modifier.isPublic(constructor.getModifiers()), "Constructor should not be public");
       }
     }
   }
@@ -149,9 +147,7 @@ class PanamaExternTest {
     @DisplayName("PanamaExternGlobal should have package-private visibility")
     void shouldHavePackagePrivateVisibility() {
       int modifiers = PanamaExternGlobal.class.getModifiers();
-      assertFalse(
-          Modifier.isPublic(modifiers),
-          "PanamaExternGlobal should not be public");
+      assertFalse(Modifier.isPublic(modifiers), "PanamaExternGlobal should not be public");
     }
 
     @Test
@@ -219,8 +215,7 @@ class PanamaExternTest {
                         && Arrays.asList(paramTypes).contains(PanamaStore.class);
                   });
       assertTrue(
-          hasCorrectConstructor,
-          "Should have constructor accepting MemorySegment and PanamaStore");
+          hasCorrectConstructor, "Should have constructor accepting MemorySegment and PanamaStore");
     }
   }
 
@@ -244,9 +239,7 @@ class PanamaExternTest {
     @DisplayName("PanamaExternMemory should have package-private visibility")
     void shouldHavePackagePrivateVisibility() {
       int modifiers = PanamaExternMemory.class.getModifiers();
-      assertFalse(
-          Modifier.isPublic(modifiers),
-          "PanamaExternMemory should not be public");
+      assertFalse(Modifier.isPublic(modifiers), "PanamaExternMemory should not be public");
     }
 
     @Test
@@ -314,8 +307,7 @@ class PanamaExternTest {
                         && Arrays.asList(paramTypes).contains(PanamaStore.class);
                   });
       assertTrue(
-          hasCorrectConstructor,
-          "Should have constructor accepting MemorySegment and PanamaStore");
+          hasCorrectConstructor, "Should have constructor accepting MemorySegment and PanamaStore");
     }
   }
 
@@ -339,9 +331,7 @@ class PanamaExternTest {
     @DisplayName("PanamaExternTable should have package-private visibility")
     void shouldHavePackagePrivateVisibility() {
       int modifiers = PanamaExternTable.class.getModifiers();
-      assertFalse(
-          Modifier.isPublic(modifiers),
-          "PanamaExternTable should not be public");
+      assertFalse(Modifier.isPublic(modifiers), "PanamaExternTable should not be public");
     }
 
     @Test
@@ -409,8 +399,7 @@ class PanamaExternTest {
                         && Arrays.asList(paramTypes).contains(PanamaStore.class);
                   });
       assertTrue(
-          hasCorrectConstructor,
-          "Should have constructor accepting MemorySegment and PanamaStore");
+          hasCorrectConstructor, "Should have constructor accepting MemorySegment and PanamaStore");
     }
   }
 
@@ -482,9 +471,7 @@ class PanamaExternTest {
         boolean hasMethod =
             Arrays.stream(externClass.getDeclaredMethods())
                 .anyMatch(m -> m.getName().equals("getNativeHandle"));
-        assertTrue(
-            hasMethod,
-            externClass.getSimpleName() + " should have getNativeHandle method");
+        assertTrue(hasMethod, externClass.getSimpleName() + " should have getNativeHandle method");
       }
     }
   }
@@ -512,7 +499,10 @@ class PanamaExternTest {
           if (!field.isSynthetic()) {
             assertTrue(
                 Modifier.isPrivate(field.getModifiers()),
-                "Field " + field.getName() + " in " + externClass.getSimpleName()
+                "Field "
+                    + field.getName()
+                    + " in "
+                    + externClass.getSimpleName()
                     + " should be private");
           }
         }
@@ -534,7 +524,10 @@ class PanamaExternTest {
           if (!field.isSynthetic()) {
             assertTrue(
                 Modifier.isFinal(field.getModifiers()),
-                "Field " + field.getName() + " in " + externClass.getSimpleName()
+                "Field "
+                    + field.getName()
+                    + " in "
+                    + externClass.getSimpleName()
                     + " should be final");
           }
         }
@@ -599,50 +592,37 @@ class PanamaExternTest {
     @Test
     @DisplayName("getType methods should all return ExternType")
     void getTypeMethodsShouldReturnExternType() throws NoSuchMethodException {
-      assertEquals(
-          ExternType.class,
-          PanamaExternFunc.class.getMethod("getType").getReturnType());
-      assertEquals(
-          ExternType.class,
-          PanamaExternGlobal.class.getMethod("getType").getReturnType());
-      assertEquals(
-          ExternType.class,
-          PanamaExternMemory.class.getMethod("getType").getReturnType());
-      assertEquals(
-          ExternType.class,
-          PanamaExternTable.class.getMethod("getType").getReturnType());
+      assertEquals(ExternType.class, PanamaExternFunc.class.getMethod("getType").getReturnType());
+      assertEquals(ExternType.class, PanamaExternGlobal.class.getMethod("getType").getReturnType());
+      assertEquals(ExternType.class, PanamaExternMemory.class.getMethod("getType").getReturnType());
+      assertEquals(ExternType.class, PanamaExternTable.class.getMethod("getType").getReturnType());
     }
 
     @Test
     @DisplayName("asFunction should return WasmFunction")
     void asFunctionShouldReturnWasmFunction() throws NoSuchMethodException {
       assertEquals(
-          WasmFunction.class,
-          PanamaExternFunc.class.getMethod("asFunction").getReturnType());
+          WasmFunction.class, PanamaExternFunc.class.getMethod("asFunction").getReturnType());
     }
 
     @Test
     @DisplayName("asGlobal should return WasmGlobal")
     void asGlobalShouldReturnWasmGlobal() throws NoSuchMethodException {
       assertEquals(
-          WasmGlobal.class,
-          PanamaExternGlobal.class.getMethod("asGlobal").getReturnType());
+          WasmGlobal.class, PanamaExternGlobal.class.getMethod("asGlobal").getReturnType());
     }
 
     @Test
     @DisplayName("asMemory should return WasmMemory")
     void asMemoryShouldReturnWasmMemory() throws NoSuchMethodException {
       assertEquals(
-          WasmMemory.class,
-          PanamaExternMemory.class.getMethod("asMemory").getReturnType());
+          WasmMemory.class, PanamaExternMemory.class.getMethod("asMemory").getReturnType());
     }
 
     @Test
     @DisplayName("asTable should return WasmTable")
     void asTableShouldReturnWasmTable() throws NoSuchMethodException {
-      assertEquals(
-          WasmTable.class,
-          PanamaExternTable.class.getMethod("asTable").getReturnType());
+      assertEquals(WasmTable.class, PanamaExternTable.class.getMethod("asTable").getReturnType());
     }
   }
 }

@@ -26,9 +26,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniPoolStatistics}.
- */
+/** Comprehensive tests for {@link JniPoolStatistics}. */
 @DisplayName("JniPoolStatistics Tests")
 class JniPoolStatisticsTest {
 
@@ -82,8 +80,8 @@ class JniPoolStatisticsTest {
       final JniPoolStatistics stats = new JniPoolStatistics();
 
       assertEquals(Duration.ZERO, stats.getPoolWarmingTime(), "poolWarmingTime should be zero");
-      assertEquals(Duration.ZERO, stats.getAverageAllocationTime(),
-          "averageAllocationTime should be zero");
+      assertEquals(
+          Duration.ZERO, stats.getAverageAllocationTime(), "averageAllocationTime should be zero");
     }
   }
 
@@ -94,22 +92,23 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("Full constructor should set all values correctly")
     void fullConstructorShouldSetAllValuesCorrectly() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          100L,  // instancesAllocated
-          80L,   // instancesReused
-          20L,   // instancesCreated
-          50L,   // memoryPoolsAllocated
-          40L,   // memoryPoolsReused
-          30L,   // stackPoolsAllocated
-          25L,   // stackPoolsReused
-          15L,   // tablePoolsAllocated
-          10L,   // tablePoolsReused
-          1024L * 1024 * 100, // peakMemoryUsage (100MB)
-          1024L * 1024 * 50,  // currentMemoryUsage (50MB)
-          5L,    // allocationFailures
-          1_000_000_000L, // poolWarmingTimeNanos (1 second)
-          100_000L  // averageAllocationTimeNanos (100 microseconds)
-      );
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              100L, // instancesAllocated
+              80L, // instancesReused
+              20L, // instancesCreated
+              50L, // memoryPoolsAllocated
+              40L, // memoryPoolsReused
+              30L, // stackPoolsAllocated
+              25L, // stackPoolsReused
+              15L, // tablePoolsAllocated
+              10L, // tablePoolsReused
+              1024L * 1024 * 100, // peakMemoryUsage (100MB)
+              1024L * 1024 * 50, // currentMemoryUsage (50MB)
+              5L, // allocationFailures
+              1_000_000_000L, // poolWarmingTimeNanos (1 second)
+              100_000L // averageAllocationTimeNanos (100 microseconds)
+              );
 
       assertEquals(100L, stats.getInstancesAllocated(), "instancesAllocated should match");
       assertEquals(80L, stats.getInstancesReused(), "instancesReused should match");
@@ -121,23 +120,39 @@ class JniPoolStatisticsTest {
       assertEquals(15L, stats.getTablePoolsAllocated(), "tablePoolsAllocated should match");
       assertEquals(10L, stats.getTablePoolsReused(), "tablePoolsReused should match");
       assertEquals(1024L * 1024 * 100, stats.getPeakMemoryUsage(), "peakMemoryUsage should match");
-      assertEquals(1024L * 1024 * 50, stats.getCurrentMemoryUsage(),
-          "currentMemoryUsage should match");
+      assertEquals(
+          1024L * 1024 * 50, stats.getCurrentMemoryUsage(), "currentMemoryUsage should match");
       assertEquals(5L, stats.getAllocationFailures(), "allocationFailures should match");
     }
 
     @Test
     @DisplayName("Full constructor should convert nanoseconds to Duration")
     void fullConstructorShouldConvertNanosecondsToDuration() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          2_500_000_000L, // 2.5 seconds
-          500_000L  // 0.5 milliseconds
-      );
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              2_500_000_000L, // 2.5 seconds
+              500_000L // 0.5 milliseconds
+              );
 
-      assertEquals(Duration.ofNanos(2_500_000_000L), stats.getPoolWarmingTime(),
+      assertEquals(
+          Duration.ofNanos(2_500_000_000L),
+          stats.getPoolWarmingTime(),
           "poolWarmingTime should be 2.5 seconds");
-      assertEquals(Duration.ofNanos(500_000L), stats.getAverageAllocationTime(),
+      assertEquals(
+          Duration.ofNanos(500_000L),
+          stats.getAverageAllocationTime(),
           "averageAllocationTime should be 500 microseconds");
     }
   }
@@ -149,8 +164,8 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("getReuseRatio should return correct ratio")
     void getReuseRatioShouldReturnCorrectRatio() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          100L, 80L, 20L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(100L, 80L, 20L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
       // Reuse ratio = instancesReused / instancesAllocated = 80/100 = 0.8
       assertEquals(0.8, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.8");
@@ -162,18 +177,18 @@ class JniPoolStatisticsTest {
       final JniPoolStatistics stats = new JniPoolStatistics();
 
       // When instancesAllocated is 0, ratio should be 0.0
-      assertEquals(0.0, stats.getReuseRatio(), 0.001,
-          "Reuse ratio should be 0.0 when no allocations");
+      assertEquals(
+          0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0 when no allocations");
     }
 
     @Test
     @DisplayName("getReuseRatio should return 1.0 when all reused")
     void getReuseRatioShouldReturnOneWhenAllReused() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          100L, 100L, 0L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(100L, 100L, 0L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-      assertEquals(1.0, stats.getReuseRatio(), 0.001,
-          "Reuse ratio should be 1.0 when all are reused");
+      assertEquals(
+          1.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 1.0 when all are reused");
     }
   }
 
@@ -184,15 +199,25 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("getMemoryUtilization should return correct ratio")
     void getMemoryUtilizationShouldReturnCorrectRatio() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          0, 0, 0, 0, 0, 0, 0, 0, 0,
-          1024L * 1024 * 100,  // peak 100MB
-          1024L * 1024 * 50,   // current 50MB
-          0, 0, 0);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1024L * 1024 * 100, // peak 100MB
+              1024L * 1024 * 50, // current 50MB
+              0,
+              0,
+              0);
 
       // Memory utilization = current / peak = 50MB / 100MB = 0.5
-      assertEquals(0.5, stats.getMemoryUtilization(), 0.001,
-          "Memory utilization should be 0.5");
+      assertEquals(0.5, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.5");
     }
 
     @Test
@@ -200,20 +225,37 @@ class JniPoolStatisticsTest {
     void getMemoryUtilizationShouldReturnZeroWhenNoPeakMemory() {
       final JniPoolStatistics stats = new JniPoolStatistics();
 
-      assertEquals(0.0, stats.getMemoryUtilization(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getMemoryUtilization(),
+          0.001,
           "Memory utilization should be 0.0 when no peak memory");
     }
 
     @Test
     @DisplayName("getMemoryUtilization should return 1.0 when at peak")
     void getMemoryUtilizationShouldReturnOneWhenAtPeak() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          0, 0, 0, 0, 0, 0, 0, 0, 0,
-          1024L * 1024 * 100,  // peak 100MB
-          1024L * 1024 * 100,  // current 100MB
-          0, 0, 0);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1024L * 1024 * 100, // peak 100MB
+              1024L * 1024 * 100, // current 100MB
+              0,
+              0,
+              0);
 
-      assertEquals(1.0, stats.getMemoryUtilization(), 0.001,
+      assertEquals(
+          1.0,
+          stats.getMemoryUtilization(),
+          0.001,
           "Memory utilization should be 1.0 when at peak");
     }
   }
@@ -225,10 +267,22 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("toString should include all statistics")
     void toStringShouldIncludeAllStatistics() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          100L, 80L, 20L, 50L, 40L, 30L, 25L, 15L, 10L,
-          1024L * 1024 * 100, 1024L * 1024 * 50, 5L,
-          1_000_000_000L, 100_000L);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              100L,
+              80L,
+              20L,
+              50L,
+              40L,
+              30L,
+              25L,
+              15L,
+              10L,
+              1024L * 1024 * 100,
+              1024L * 1024 * 50,
+              5L,
+              1_000_000_000L,
+              100_000L);
 
       final String str = stats.toString();
 
@@ -254,14 +308,26 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("Should handle maximum long values")
     void shouldHandleMaximumLongValues() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE,
-          Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE,
-          Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE,
-          Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE,
-          Long.MAX_VALUE, Long.MAX_VALUE);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE,
+              Long.MAX_VALUE);
 
-      assertEquals(Long.MAX_VALUE, stats.getInstancesAllocated(),
+      assertEquals(
+          Long.MAX_VALUE,
+          stats.getInstancesAllocated(),
           "Should handle max long for instancesAllocated");
       assertNotNull(stats.getPoolWarmingTime(), "poolWarmingTime should not be null");
     }
@@ -269,8 +335,8 @@ class JniPoolStatisticsTest {
     @Test
     @DisplayName("Should handle zero values in all fields")
     void shouldHandleZeroValuesInAllFields() {
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
 
       assertEquals(0L, stats.getInstancesAllocated(), "Should handle zero");
       assertEquals(Duration.ZERO, stats.getPoolWarmingTime(), "Should handle zero duration");
@@ -282,8 +348,8 @@ class JniPoolStatisticsTest {
     @DisplayName("Should handle negative nanosecond values")
     void shouldHandleNegativeNanosecondValues() {
       // Negative values would result in negative Duration, which is valid
-      final JniPoolStatistics stats = new JniPoolStatistics(
-          0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, -1000L, -1000L);
+      final JniPoolStatistics stats =
+          new JniPoolStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, -1000L, -1000L);
 
       assertNotNull(stats.getPoolWarmingTime(), "Should handle negative nanoseconds");
       assertTrue(stats.getPoolWarmingTime().isNegative(), "Duration should be negative");

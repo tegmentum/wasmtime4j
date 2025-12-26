@@ -107,16 +107,16 @@ class WitTypeValidatorTest {
     @DisplayName("validateTypeCompatibility should throw on null source type")
     void validateTypeCompatibilityShouldThrowOnNullSourceType() {
       final WitType targetType = WitType.primitive(WitPrimitiveType.S32);
-      assertThrows(NullPointerException.class, () ->
-          validator.validateTypeCompatibility(null, targetType));
+      assertThrows(
+          NullPointerException.class, () -> validator.validateTypeCompatibility(null, targetType));
     }
 
     @Test
     @DisplayName("validateTypeCompatibility should throw on null target type")
     void validateTypeCompatibilityShouldThrowOnNullTargetType() {
       final WitType sourceType = WitType.primitive(WitPrimitiveType.S32);
-      assertThrows(NullPointerException.class, () ->
-          validator.validateTypeCompatibility(sourceType, null));
+      assertThrows(
+          NullPointerException.class, () -> validator.validateTypeCompatibility(sourceType, null));
     }
 
     @Test
@@ -136,7 +136,7 @@ class WitTypeValidatorTest {
     @DisplayName("validateTypeCompatibility should detect incompatible types")
     void validateTypeCompatibilityShouldDetectIncompatibleTypes() {
       final WitType sourceType = WitType.primitive(WitPrimitiveType.S32);
-      final WitType targetType = WitType.primitive(WitPrimitiveType.F64);
+      final WitType targetType = WitType.primitive(WitPrimitiveType.FLOAT64);
 
       final WitTypeValidator.WitTypeCompatibilityResult result =
           validator.validateTypeCompatibility(sourceType, targetType);
@@ -290,22 +290,25 @@ class WitTypeValidatorTest {
     @Test
     @DisplayName("WitTypeValidationResult should be final")
     void witTypeValidationResultShouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(
-          WitTypeValidator.WitTypeValidationResult.class.getModifiers()));
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(
+              WitTypeValidator.WitTypeValidationResult.class.getModifiers()));
     }
 
     @Test
     @DisplayName("WitInterfaceValidationResult should be final")
     void witInterfaceValidationResultShouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(
-          WitTypeValidator.WitInterfaceValidationResult.class.getModifiers()));
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(
+              WitTypeValidator.WitInterfaceValidationResult.class.getModifiers()));
     }
 
     @Test
     @DisplayName("WitTypeCompatibilityResult should be final")
     void witTypeCompatibilityResultShouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(
-          WitTypeValidator.WitTypeCompatibilityResult.class.getModifiers()));
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(
+              WitTypeValidator.WitTypeCompatibilityResult.class.getModifiers()));
     }
   }
 
@@ -353,8 +356,18 @@ class WitTypeValidatorTest {
     }
 
     @Override
+    public java.util.Set<String> getDependencies() {
+      return java.util.Set.of();
+    }
+
+    @Override
+    public String getWitText() {
+      return "interface " + name + " {}";
+    }
+
+    @Override
     public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
-      return WitCompatibilityResult.compatible();
+      return WitCompatibilityResult.compatible("Compatible", java.util.Set.of());
     }
   }
 }

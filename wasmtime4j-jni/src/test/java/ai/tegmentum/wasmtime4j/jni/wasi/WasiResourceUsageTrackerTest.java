@@ -33,9 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiResourceUsageTracker}.
- */
+/** Comprehensive tests for {@link WasiResourceUsageTracker}. */
 @DisplayName("WasiResourceUsageTracker Tests")
 class WasiResourceUsageTrackerTest {
 
@@ -68,7 +66,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null resource limits")
     void shouldThrowOnNullResourceLimits() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiResourceUsageTracker(null),
           "Should throw on null resource limits");
     }
@@ -85,7 +84,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should create tracker with detailed tracking")
     void shouldCreateTrackerWithDetailedTracking() {
-      final WasiResourceUsageTracker newTracker = new WasiResourceUsageTracker(unlimitedLimits, true);
+      final WasiResourceUsageTracker newTracker =
+          new WasiResourceUsageTracker(unlimitedLimits, true);
 
       assertNotNull(newTracker, "Tracker should be created");
       assertTrue(newTracker.isDetailedTrackingEnabled(), "Detailed tracking should be enabled");
@@ -99,7 +99,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.registerContext(null),
           "Should throw on null context ID");
     }
@@ -107,7 +108,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.registerContext(""),
           "Should throw on empty context ID");
     }
@@ -128,7 +130,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.unregisterContext(null),
           "Should throw on null context ID");
     }
@@ -136,7 +139,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.unregisterContext(""),
           "Should throw on empty context ID");
     }
@@ -167,7 +171,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryAllocation(null, 100),
           "Should throw on null context ID");
     }
@@ -175,7 +180,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryAllocation("", 100),
           "Should throw on empty context ID");
     }
@@ -185,7 +191,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeBytes() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryAllocation("ctx1", -1),
           "Should throw on negative bytes");
     }
@@ -193,7 +200,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw for unknown context")
     void shouldThrowForUnknownContext() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> tracker.recordMemoryAllocation("unknown", 100),
           "Should throw for unknown context");
     }
@@ -222,15 +230,15 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on memory limit exceeded")
     void shouldThrowOnMemoryLimitExceeded() {
-      final WasiResourceLimits memoryLimits = WasiResourceLimits.builder()
-          .withMaxMemoryBytes(1000L)
-          .build();
+      final WasiResourceLimits memoryLimits =
+          WasiResourceLimits.builder().withMaxMemoryBytes(1000L).build();
 
       final WasiResourceUsageTracker limitedTracker =
           new WasiResourceUsageTracker(memoryLimits, false);
       limitedTracker.registerContext("ctx1");
 
-      assertThrows(IllegalStateException.class,
+      assertThrows(
+          IllegalStateException.class,
           () -> limitedTracker.recordMemoryAllocation("ctx1", 2000),
           "Should throw on memory limit exceeded");
     }
@@ -243,7 +251,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryDeallocation(null, 100),
           "Should throw on null context ID");
     }
@@ -251,7 +260,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryDeallocation("", 100),
           "Should throw on empty context ID");
     }
@@ -261,7 +271,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeBytes() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordMemoryDeallocation("ctx1", -1),
           "Should throw on negative bytes");
     }
@@ -285,7 +296,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordFileSystemOperation(null, WasiFileOperation.READ, 100, 1000),
           "Should throw on null context ID");
     }
@@ -293,7 +305,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordFileSystemOperation("", WasiFileOperation.READ, 100, 1000),
           "Should throw on empty context ID");
     }
@@ -303,7 +316,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNullOperation() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordFileSystemOperation("ctx1", null, 100, 1000),
           "Should throw on null operation");
     }
@@ -313,7 +327,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeBytes() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordFileSystemOperation("ctx1", WasiFileOperation.READ, -1, 1000),
           "Should throw on negative bytes");
     }
@@ -323,7 +338,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeDuration() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordFileSystemOperation("ctx1", WasiFileOperation.READ, 100, -1),
           "Should throw on negative duration");
     }
@@ -378,7 +394,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordCpuTime(null, 1000),
           "Should throw on null context ID");
     }
@@ -386,7 +403,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordCpuTime("", 1000),
           "Should throw on empty context ID");
     }
@@ -396,7 +414,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeCpuTime() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordCpuTime("ctx1", -1),
           "Should throw on negative CPU time");
     }
@@ -414,15 +433,15 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on CPU time limit exceeded")
     void shouldThrowOnCpuTimeLimitExceeded() {
-      final WasiResourceLimits cpuLimits = WasiResourceLimits.builder()
-          .withMaxCpuTime(Duration.ofMillis(1))
-          .build();
+      final WasiResourceLimits cpuLimits =
+          WasiResourceLimits.builder().withMaxCpuTime(Duration.ofMillis(1)).build();
 
       final WasiResourceUsageTracker limitedTracker =
           new WasiResourceUsageTracker(cpuLimits, false);
       limitedTracker.registerContext("ctx1");
 
-      assertThrows(IllegalStateException.class,
+      assertThrows(
+          IllegalStateException.class,
           () -> limitedTracker.recordCpuTime("ctx1", 10_000_000_000L), // 10 seconds
           "Should throw on CPU time limit exceeded");
     }
@@ -435,7 +454,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordExecutionTime(null, 1000),
           "Should throw on null context ID");
     }
@@ -443,7 +463,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordExecutionTime("", 1000),
           "Should throw on empty context ID");
     }
@@ -453,7 +474,8 @@ class WasiResourceUsageTrackerTest {
     void shouldThrowOnNegativeExecutionTime() {
       tracker.registerContext("ctx1");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.recordExecutionTime("ctx1", -1),
           "Should throw on negative execution time");
     }
@@ -476,7 +498,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.getContextUsage(null),
           "Should throw on null context ID");
     }
@@ -484,7 +507,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> tracker.getContextUsage(""),
           "Should throw on empty context ID");
     }
@@ -492,7 +516,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should throw for unknown context")
     void shouldThrowForUnknownContext() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> tracker.getContextUsage("unknown"),
           "Should throw for unknown context");
     }
@@ -629,9 +654,8 @@ class WasiResourceUsageTrackerTest {
     @Test
     @DisplayName("Should calculate total limit violations")
     void shouldCalculateTotalLimitViolations() {
-      final WasiResourceLimits memoryLimits = WasiResourceLimits.builder()
-          .withMaxMemoryBytes(100L)
-          .build();
+      final WasiResourceLimits memoryLimits =
+          WasiResourceLimits.builder().withMaxMemoryBytes(100L).build();
 
       final WasiResourceUsageTracker limitedTracker =
           new WasiResourceUsageTracker(memoryLimits, false);

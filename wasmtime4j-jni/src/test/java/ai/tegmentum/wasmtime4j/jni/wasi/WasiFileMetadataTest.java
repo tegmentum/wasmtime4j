@@ -27,16 +27,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiFileMetadata}.
- */
+/** Comprehensive tests for {@link WasiFileMetadata}. */
 @DisplayName("WasiFileMetadata Tests")
 class WasiFileMetadataTest {
 
   private static final long TEST_SIZE = 1024L;
   private static final FileTime TEST_MODIFIED_TIME = FileTime.from(Instant.now());
   private static final FileTime TEST_ACCESS_TIME = FileTime.from(Instant.now().minusSeconds(60));
-  private static final FileTime TEST_CREATION_TIME = FileTime.from(Instant.now().minusSeconds(3600));
+  private static final FileTime TEST_CREATION_TIME =
+      FileTime.from(Instant.now().minusSeconds(3600));
 
   @Nested
   @DisplayName("Class Structure Tests")
@@ -58,17 +57,23 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Constructor should create metadata with all fields")
     void constructorShouldCreateMetadataWithAllFields() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          TEST_SIZE,
-          TEST_MODIFIED_TIME,
-          TEST_ACCESS_TIME,
-          TEST_CREATION_TIME,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              TEST_SIZE,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              true,
+              true,
+              false);
 
       assertNotNull(metadata, "Metadata should not be null");
       assertEquals(TEST_SIZE, metadata.getSize(), "Size should match");
-      assertEquals(TEST_MODIFIED_TIME, metadata.getLastModifiedTime(), "Modified time should match");
+      assertEquals(
+          TEST_MODIFIED_TIME, metadata.getLastModifiedTime(), "Modified time should match");
       assertEquals(TEST_ACCESS_TIME, metadata.getLastAccessTime(), "Access time should match");
       assertEquals(TEST_CREATION_TIME, metadata.getCreationTime(), "Creation time should match");
       assertTrue(metadata.isRegularFile(), "Should be regular file");
@@ -82,13 +87,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Constructor should create directory metadata")
     void constructorShouldCreateDirectoryMetadata() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L,
-          TEST_MODIFIED_TIME,
-          TEST_ACCESS_TIME,
-          TEST_CREATION_TIME,
-          false, true, false,
-          true, true, true);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              0L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              false,
+              true,
+              false,
+              true,
+              true,
+              true);
 
       assertFalse(metadata.isRegularFile(), "Should not be regular file");
       assertTrue(metadata.isDirectory(), "Should be directory");
@@ -98,13 +108,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Constructor should create symbolic link metadata")
     void constructorShouldCreateSymbolicLinkMetadata() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L,
-          TEST_MODIFIED_TIME,
-          TEST_ACCESS_TIME,
-          TEST_CREATION_TIME,
-          false, false, true,
-          true, false, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              0L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              false,
+              false,
+              true,
+              true,
+              false,
+              false);
 
       assertFalse(metadata.isRegularFile(), "Should not be regular file");
       assertFalse(metadata.isDirectory(), "Should not be directory");
@@ -150,8 +165,8 @@ class WasiFileMetadataTest {
     void shouldReturnLastModifiedTime() {
       final WasiFileMetadata metadata = createTestMetadata(0L);
 
-      assertEquals(TEST_MODIFIED_TIME, metadata.getLastModifiedTime(),
-          "Last modified time should match");
+      assertEquals(
+          TEST_MODIFIED_TIME, metadata.getLastModifiedTime(), "Last modified time should match");
     }
 
     @Test
@@ -159,8 +174,7 @@ class WasiFileMetadataTest {
     void shouldReturnLastAccessTime() {
       final WasiFileMetadata metadata = createTestMetadata(0L);
 
-      assertEquals(TEST_ACCESS_TIME, metadata.getLastAccessTime(),
-          "Last access time should match");
+      assertEquals(TEST_ACCESS_TIME, metadata.getLastAccessTime(), "Last access time should match");
     }
 
     @Test
@@ -168,8 +182,7 @@ class WasiFileMetadataTest {
     void shouldReturnCreationTime() {
       final WasiFileMetadata metadata = createTestMetadata(0L);
 
-      assertEquals(TEST_CREATION_TIME, metadata.getCreationTime(),
-          "Creation time should match");
+      assertEquals(TEST_CREATION_TIME, metadata.getCreationTime(), "Creation time should match");
     }
   }
 
@@ -182,13 +195,11 @@ class WasiFileMetadataTest {
     void shouldReturnLastModifiedTimeInSeconds() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(instant.getEpochSecond(), metadata.getLastModifiedTimeSeconds(),
-          "Seconds should match");
+      assertEquals(
+          instant.getEpochSecond(), metadata.getLastModifiedTimeSeconds(), "Seconds should match");
     }
 
     @Test
@@ -196,13 +207,11 @@ class WasiFileMetadataTest {
     void shouldReturnLastAccessTimeInSeconds() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(instant.getEpochSecond(), metadata.getLastAccessTimeSeconds(),
-          "Seconds should match");
+      assertEquals(
+          instant.getEpochSecond(), metadata.getLastAccessTimeSeconds(), "Seconds should match");
     }
 
     @Test
@@ -210,13 +219,11 @@ class WasiFileMetadataTest {
     void shouldReturnCreationTimeInSeconds() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(instant.getEpochSecond(), metadata.getCreationTimeSeconds(),
-          "Seconds should match");
+      assertEquals(
+          instant.getEpochSecond(), metadata.getCreationTimeSeconds(), "Seconds should match");
     }
   }
 
@@ -229,13 +236,10 @@ class WasiFileMetadataTest {
     void shouldReturnLastModifiedTimeNanos() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00.123456789Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(123456789, metadata.getLastModifiedTimeNanos(),
-          "Nanos should match");
+      assertEquals(123456789, metadata.getLastModifiedTimeNanos(), "Nanos should match");
     }
 
     @Test
@@ -243,13 +247,10 @@ class WasiFileMetadataTest {
     void shouldReturnLastAccessTimeNanos() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00.987654321Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(987654321, metadata.getLastAccessTimeNanos(),
-          "Nanos should match");
+      assertEquals(987654321, metadata.getLastAccessTimeNanos(), "Nanos should match");
     }
 
     @Test
@@ -257,13 +258,10 @@ class WasiFileMetadataTest {
     void shouldReturnCreationTimeNanos() {
       final Instant instant = Instant.parse("2025-01-15T10:30:00.555555555Z");
       final FileTime time = FileTime.from(instant);
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, time, time, time,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(0L, time, time, time, true, false, false, true, true, false);
 
-      assertEquals(555555555, metadata.getCreationTimeNanos(),
-          "Nanos should match");
+      assertEquals(555555555, metadata.getCreationTimeNanos(), "Nanos should match");
     }
   }
 
@@ -274,10 +272,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Regular file should be identifiable")
     void regularFileShouldBeIdentifiable() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1000L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          true, true, true);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1000L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true);
 
       assertTrue(metadata.isRegularFile(), "Should be regular file");
       assertFalse(metadata.isDirectory(), "Should not be directory");
@@ -287,10 +293,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Directory should be identifiable")
     void directoryShouldBeIdentifiable() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          false, true, false,
-          true, true, true);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              0L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              false,
+              true,
+              false,
+              true,
+              true,
+              true);
 
       assertFalse(metadata.isRegularFile(), "Should not be regular file");
       assertTrue(metadata.isDirectory(), "Should be directory");
@@ -300,10 +314,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Symbolic link should be identifiable")
     void symbolicLinkShouldBeIdentifiable() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          0L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          false, false, true,
-          true, false, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              0L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              false,
+              false,
+              true,
+              true,
+              false,
+              false);
 
       assertFalse(metadata.isRegularFile(), "Should not be regular file");
       assertFalse(metadata.isDirectory(), "Should not be directory");
@@ -318,10 +340,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Should detect readable file")
     void shouldDetectReadableFile() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1000L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          true, false, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1000L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              true,
+              false,
+              false);
 
       assertTrue(metadata.isReadable(), "Should be readable");
       assertFalse(metadata.isWritable(), "Should not be writable");
@@ -331,10 +361,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Should detect writable file")
     void shouldDetectWritableFile() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1000L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          false, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1000L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false);
 
       assertFalse(metadata.isReadable(), "Should not be readable");
       assertTrue(metadata.isWritable(), "Should be writable");
@@ -344,10 +382,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Should detect executable file")
     void shouldDetectExecutableFile() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1000L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          false, false, true);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1000L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              false,
+              false,
+              true);
 
       assertFalse(metadata.isReadable(), "Should not be readable");
       assertFalse(metadata.isWritable(), "Should not be writable");
@@ -357,10 +403,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("Should detect all permissions")
     void shouldDetectAllPermissions() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1000L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          true, true, true);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1000L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true);
 
       assertTrue(metadata.isReadable(), "Should be readable");
       assertTrue(metadata.isWritable(), "Should be writable");
@@ -375,10 +429,18 @@ class WasiFileMetadataTest {
     @Test
     @DisplayName("toString should contain all fields")
     void toStringShouldContainAllFields() {
-      final WasiFileMetadata metadata = new WasiFileMetadata(
-          1024L, TEST_MODIFIED_TIME, TEST_ACCESS_TIME, TEST_CREATION_TIME,
-          true, false, false,
-          true, true, false);
+      final WasiFileMetadata metadata =
+          new WasiFileMetadata(
+              1024L,
+              TEST_MODIFIED_TIME,
+              TEST_ACCESS_TIME,
+              TEST_CREATION_TIME,
+              true,
+              false,
+              false,
+              true,
+              true,
+              false);
 
       final String str = metadata.toString();
 
@@ -399,7 +461,11 @@ class WasiFileMetadataTest {
         TEST_MODIFIED_TIME,
         TEST_ACCESS_TIME,
         TEST_CREATION_TIME,
-        true, false, false,
-        true, true, false);
+        true,
+        false,
+        false,
+        true,
+        true,
+        false);
   }
 }

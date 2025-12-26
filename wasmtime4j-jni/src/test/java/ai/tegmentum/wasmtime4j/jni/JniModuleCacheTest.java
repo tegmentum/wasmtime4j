@@ -43,8 +43,11 @@ class JniModuleCacheTest {
     @Test
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(JniModuleCache.class.getModifiers()), "JniModuleCache should be public");
-      assertTrue(Modifier.isFinal(JniModuleCache.class.getModifiers()), "JniModuleCache should be final");
+      assertTrue(
+          Modifier.isPublic(JniModuleCache.class.getModifiers()),
+          "JniModuleCache should be public");
+      assertTrue(
+          Modifier.isFinal(JniModuleCache.class.getModifiers()), "JniModuleCache should be final");
     }
 
     @Test
@@ -76,7 +79,9 @@ class JniModuleCacheTest {
       final Method method = JniModuleCache.class.getMethod("getOrCompile", byte[].class);
       assertNotNull(method, "getOrCompile method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.Module.class, method.getReturnType(), "getOrCompile should return Module");
+          ai.tegmentum.wasmtime4j.Module.class,
+          method.getReturnType(),
+          "getOrCompile should return Module");
     }
 
     @Test
@@ -167,7 +172,10 @@ class JniModuleCacheTest {
     void shouldHaveGetEngineMethod() throws NoSuchMethodException {
       final Method method = JniModuleCache.class.getMethod("getEngine");
       assertNotNull(method, "getEngine method should exist");
-      assertEquals(ai.tegmentum.wasmtime4j.Engine.class, method.getReturnType(), "getEngine should return Engine");
+      assertEquals(
+          ai.tegmentum.wasmtime4j.Engine.class,
+          method.getReturnType(),
+          "getEngine should return Engine");
     }
 
     @Test

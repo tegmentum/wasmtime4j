@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -200,8 +199,7 @@ class PanamaInstancePreTest {
           MemorySegment.class,
           method.getReturnType(),
           "getNativeInstancePre should return MemorySegment");
-      assertTrue(
-          Modifier.isPublic(method.getModifiers()), "getNativeInstancePre should be public");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "getNativeInstancePre should be public");
     }
 
     @Test
@@ -292,8 +290,7 @@ class PanamaInstancePreTest {
     @Test
     @DisplayName("Should have LOGGER static field")
     void shouldHaveLoggerField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaInstancePre.class.getDeclaredField("LOGGER");
+      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("LOGGER");
       assertNotNull(field, "LOGGER field should exist");
       assertTrue(Modifier.isStatic(field.getModifiers()), "LOGGER should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "LOGGER should be final");
@@ -320,16 +317,13 @@ class PanamaInstancePreTest {
       assertTrue(Modifier.isFinal(field.getModifiers()), "nativeInstancePre should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "nativeInstancePre should be private");
       assertEquals(
-          MemorySegment.class,
-          field.getType(),
-          "nativeInstancePre should be MemorySegment type");
+          MemorySegment.class, field.getType(), "nativeInstancePre should be MemorySegment type");
     }
 
     @Test
     @DisplayName("Should have module field")
     void shouldHaveModuleField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaInstancePre.class.getDeclaredField("module");
+      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("module");
       assertNotNull(field, "module field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "module should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "module should be private");
@@ -339,8 +333,7 @@ class PanamaInstancePreTest {
     @Test
     @DisplayName("Should have engine field")
     void shouldHaveEngineField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaInstancePre.class.getDeclaredField("engine");
+      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("engine");
       assertNotNull(field, "engine field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "engine should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "engine should be private");
@@ -355,17 +348,13 @@ class PanamaInstancePreTest {
       assertNotNull(field, "creationTime field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "creationTime should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "creationTime should be private");
-      assertEquals(
-          java.time.Instant.class,
-          field.getType(),
-          "creationTime should be Instant type");
+      assertEquals(java.time.Instant.class, field.getType(), "creationTime should be Instant type");
     }
 
     @Test
     @DisplayName("Should have closed field using AtomicBoolean")
     void shouldHaveClosedField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaInstancePre.class.getDeclaredField("closed");
+      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("closed");
       assertNotNull(field, "closed field should exist");
       assertTrue(Modifier.isFinal(field.getModifiers()), "closed should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
@@ -395,8 +384,7 @@ class PanamaInstancePreTest {
 
       for (final String methodName : interfaceMethods) {
         assertTrue(
-            classMethods.contains(methodName),
-            "PanamaInstancePre should implement " + methodName);
+            classMethods.contains(methodName), "PanamaInstancePre should implement " + methodName);
       }
     }
   }
@@ -408,8 +396,7 @@ class PanamaInstancePreTest {
     @Test
     @DisplayName("closed field should use AtomicBoolean for thread safety")
     void closedFieldShouldUseAtomicBoolean() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          PanamaInstancePre.class.getDeclaredField("closed");
+      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("closed");
       assertEquals(
           java.util.concurrent.atomic.AtomicBoolean.class,
           field.getType(),
@@ -426,8 +413,7 @@ class PanamaInstancePreTest {
     void shouldHaveEnsureNotClosedMethod() throws NoSuchMethodException {
       final Method method = PanamaInstancePre.class.getDeclaredMethod("ensureNotClosed");
       assertNotNull(method, "ensureNotClosed method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
       assertEquals(void.class, method.getReturnType(), "ensureNotClosed should return void");
     }
   }

@@ -42,21 +42,24 @@ class PanamaExceptionTest {
     @Test
     @DisplayName("PanamaException should extend Exception")
     void shouldExtendException() {
-      assertTrue(Exception.class.isAssignableFrom(PanamaException.class),
+      assertTrue(
+          Exception.class.isAssignableFrom(PanamaException.class),
           "PanamaException should extend Exception");
     }
 
     @Test
     @DisplayName("PanamaException should not be final")
     void shouldNotBeFinal() {
-      assertFalse(java.lang.reflect.Modifier.isFinal(PanamaException.class.getModifiers()),
+      assertFalse(
+          java.lang.reflect.Modifier.isFinal(PanamaException.class.getModifiers()),
           "PanamaException should not be final (to allow subclasses)");
     }
 
     @Test
     @DisplayName("PanamaException should be a checked exception")
     void shouldBeCheckedException() {
-      assertFalse(RuntimeException.class.isAssignableFrom(PanamaException.class),
+      assertFalse(
+          RuntimeException.class.isAssignableFrom(PanamaException.class),
           "PanamaException should not extend RuntimeException");
     }
 
@@ -65,9 +68,11 @@ class PanamaExceptionTest {
     void shouldHaveSerialVersionUID() throws NoSuchFieldException {
       final var field = PanamaException.class.getDeclaredField("serialVersionUID");
       assertNotNull(field, "Should have serialVersionUID field");
-      assertTrue(java.lang.reflect.Modifier.isStatic(field.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isStatic(field.getModifiers()),
           "serialVersionUID should be static");
-      assertTrue(java.lang.reflect.Modifier.isFinal(field.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(field.getModifiers()),
           "serialVersionUID should be final");
     }
   }
@@ -162,7 +167,8 @@ class PanamaExceptionTest {
       final RuntimeException cause = new RuntimeException("Root cause");
       final PanamaException exception = new PanamaException(cause);
       assertNotNull(exception.getMessage(), "Message should not be null");
-      assertTrue(exception.getMessage().contains("RuntimeException")
+      assertTrue(
+          exception.getMessage().contains("RuntimeException")
               || exception.getMessage().contains("Root cause"),
           "Message should contain cause info");
     }

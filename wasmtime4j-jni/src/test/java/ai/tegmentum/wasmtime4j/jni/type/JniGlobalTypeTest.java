@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link JniGlobalType} class.
  *
- * <p>This test class verifies the JNI implementation of GlobalType interface
- * for WebAssembly global types.
+ * <p>This test class verifies the JNI implementation of GlobalType interface for WebAssembly global
+ * types.
  */
 @DisplayName("JniGlobalType Tests")
 class JniGlobalTypeTest {
@@ -46,14 +46,16 @@ class JniGlobalTypeTest {
     @Test
     @DisplayName("JniGlobalType should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(JniGlobalType.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(JniGlobalType.class.getModifiers()),
           "JniGlobalType should be final");
     }
 
     @Test
     @DisplayName("JniGlobalType should implement GlobalType")
     void shouldImplementGlobalType() {
-      assertTrue(GlobalType.class.isAssignableFrom(JniGlobalType.class),
+      assertTrue(
+          GlobalType.class.isAssignableFrom(JniGlobalType.class),
           "JniGlobalType should implement GlobalType");
     }
   }
@@ -111,21 +113,24 @@ class JniGlobalTypeTest {
     @DisplayName("Constructor should create FUNCREF global")
     void constructorShouldCreateFuncrefGlobal() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.FUNCREF, false);
-      assertEquals(WasmValueType.FUNCREF, globalType.getValueType(), "Value type should be FUNCREF");
+      assertEquals(
+          WasmValueType.FUNCREF, globalType.getValueType(), "Value type should be FUNCREF");
     }
 
     @Test
     @DisplayName("Constructor should create EXTERNREF global")
     void constructorShouldCreateExternrefGlobal() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.EXTERNREF, true);
-      assertEquals(WasmValueType.EXTERNREF, globalType.getValueType(), "Value type should be EXTERNREF");
+      assertEquals(
+          WasmValueType.EXTERNREF, globalType.getValueType(), "Value type should be EXTERNREF");
     }
 
     @Test
     @DisplayName("Constructor should throw for null value type")
     void constructorShouldThrowForNullValueType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniGlobalType(null, false),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniGlobalType(null, false),
           "Should throw for null value type");
     }
   }
@@ -138,8 +143,7 @@ class JniGlobalTypeTest {
     @DisplayName("getKind should return GLOBAL")
     void getKindShouldReturnGlobal() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
-      assertEquals(WasmTypeKind.GLOBAL, globalType.getKind(),
-          "Kind should be GLOBAL");
+      assertEquals(WasmTypeKind.GLOBAL, globalType.getKind(), "Kind should be GLOBAL");
     }
   }
 
@@ -202,7 +206,9 @@ class JniGlobalTypeTest {
     void equalObjectsShouldHaveEqualHashCodes() {
       final JniGlobalType globalType1 = new JniGlobalType(WasmValueType.F64, true);
       final JniGlobalType globalType2 = new JniGlobalType(WasmValueType.F64, true);
-      assertEquals(globalType1.hashCode(), globalType2.hashCode(),
+      assertEquals(
+          globalType1.hashCode(),
+          globalType2.hashCode(),
           "Equal objects should have equal hashCodes");
     }
 
@@ -225,8 +231,7 @@ class JniGlobalTypeTest {
     void toStringShouldIncludeValueType() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.F32, false);
       final String str = globalType.toString();
-      assertTrue(str.contains("F32") || str.contains("f32"),
-          "toString should include value type");
+      assertTrue(str.contains("F32") || str.contains("f32"), "toString should include value type");
     }
 
     @Test
@@ -234,8 +239,8 @@ class JniGlobalTypeTest {
     void toStringShouldIncludeMutability() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, true);
       final String str = globalType.toString();
-      assertTrue(str.contains("mutable") || str.contains("true"),
-          "toString should include mutability");
+      assertTrue(
+          str.contains("mutable") || str.contains("true"), "toString should include mutability");
     }
 
     @Test
@@ -254,16 +259,18 @@ class JniGlobalTypeTest {
     @Test
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniGlobalType.fromNative(0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniGlobalType.fromNative(0),
           "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniGlobalType.fromNative(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniGlobalType.fromNative(-1),
           "Should throw for negative handle");
     }
   }
@@ -302,7 +309,8 @@ class JniGlobalTypeTest {
 
       // SIMD global
       final JniGlobalType simdGlobal = new JniGlobalType(WasmValueType.V128, false);
-      assertEquals(WasmValueType.V128, simdGlobal.getValueType(), "SIMD global should have V128 type");
+      assertEquals(
+          WasmValueType.V128, simdGlobal.getValueType(), "SIMD global should have V128 type");
     }
   }
 }

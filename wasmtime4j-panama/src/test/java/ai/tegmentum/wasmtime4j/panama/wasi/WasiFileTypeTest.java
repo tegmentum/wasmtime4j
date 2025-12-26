@@ -90,8 +90,8 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("CHARACTER_DEVICE should have value 2")
     void characterDeviceShouldHaveValue2() {
-      assertEquals(2, WasiFileType.CHARACTER_DEVICE.getValue(),
-          "CHARACTER_DEVICE should have value 2");
+      assertEquals(
+          2, WasiFileType.CHARACTER_DEVICE.getValue(), "CHARACTER_DEVICE should have value 2");
     }
 
     @Test
@@ -133,29 +133,37 @@ class WasiFileTypeTest {
     @DisplayName("fromValue should return correct file type for valid values")
     void fromValueShouldReturnCorrectFileType() {
       assertEquals(WasiFileType.UNKNOWN, WasiFileType.fromValue(0), "Should return UNKNOWN");
-      assertEquals(WasiFileType.BLOCK_DEVICE, WasiFileType.fromValue(1),
-          "Should return BLOCK_DEVICE");
-      assertEquals(WasiFileType.CHARACTER_DEVICE, WasiFileType.fromValue(2),
+      assertEquals(
+          WasiFileType.BLOCK_DEVICE, WasiFileType.fromValue(1), "Should return BLOCK_DEVICE");
+      assertEquals(
+          WasiFileType.CHARACTER_DEVICE,
+          WasiFileType.fromValue(2),
           "Should return CHARACTER_DEVICE");
       assertEquals(WasiFileType.DIRECTORY, WasiFileType.fromValue(3), "Should return DIRECTORY");
-      assertEquals(WasiFileType.REGULAR_FILE, WasiFileType.fromValue(4),
-          "Should return REGULAR_FILE");
-      assertEquals(WasiFileType.SOCKET_DGRAM, WasiFileType.fromValue(5),
-          "Should return SOCKET_DGRAM");
-      assertEquals(WasiFileType.SOCKET_STREAM, WasiFileType.fromValue(6),
-          "Should return SOCKET_STREAM");
-      assertEquals(WasiFileType.SYMBOLIC_LINK, WasiFileType.fromValue(7),
-          "Should return SYMBOLIC_LINK");
+      assertEquals(
+          WasiFileType.REGULAR_FILE, WasiFileType.fromValue(4), "Should return REGULAR_FILE");
+      assertEquals(
+          WasiFileType.SOCKET_DGRAM, WasiFileType.fromValue(5), "Should return SOCKET_DGRAM");
+      assertEquals(
+          WasiFileType.SOCKET_STREAM, WasiFileType.fromValue(6), "Should return SOCKET_STREAM");
+      assertEquals(
+          WasiFileType.SYMBOLIC_LINK, WasiFileType.fromValue(7), "Should return SYMBOLIC_LINK");
     }
 
     @Test
     @DisplayName("fromValue should throw for invalid value")
     void fromValueShouldThrowForInvalidValue() {
-      assertThrows(IllegalArgumentException.class, () -> WasiFileType.fromValue(8),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiFileType.fromValue(8),
           "Should throw for value 8");
-      assertThrows(IllegalArgumentException.class, () -> WasiFileType.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiFileType.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiFileType.fromValue(100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiFileType.fromValue(100),
           "Should throw for value 100");
     }
 
@@ -163,7 +171,9 @@ class WasiFileTypeTest {
     @DisplayName("Round trip getValue/fromValue should work")
     void roundTripShouldWork() {
       for (WasiFileType type : WasiFileType.values()) {
-        assertEquals(type, WasiFileType.fromValue(type.getValue()),
+        assertEquals(
+            type,
+            WasiFileType.fromValue(type.getValue()),
             "Round trip should return same type: " + type.name());
       }
     }
@@ -176,38 +186,40 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("isRegularFile should return true only for REGULAR_FILE")
     void isRegularFileShouldReturnTrueOnlyForRegularFile() {
-      assertTrue(WasiFileType.REGULAR_FILE.isRegularFile(),
-          "REGULAR_FILE.isRegularFile() should be true");
-      assertFalse(WasiFileType.DIRECTORY.isRegularFile(),
-          "DIRECTORY.isRegularFile() should be false");
-      assertFalse(WasiFileType.SYMBOLIC_LINK.isRegularFile(),
+      assertTrue(
+          WasiFileType.REGULAR_FILE.isRegularFile(), "REGULAR_FILE.isRegularFile() should be true");
+      assertFalse(
+          WasiFileType.DIRECTORY.isRegularFile(), "DIRECTORY.isRegularFile() should be false");
+      assertFalse(
+          WasiFileType.SYMBOLIC_LINK.isRegularFile(),
           "SYMBOLIC_LINK.isRegularFile() should be false");
-      assertFalse(WasiFileType.UNKNOWN.isRegularFile(),
-          "UNKNOWN.isRegularFile() should be false");
+      assertFalse(WasiFileType.UNKNOWN.isRegularFile(), "UNKNOWN.isRegularFile() should be false");
     }
 
     @Test
     @DisplayName("isDirectory should return true only for DIRECTORY")
     void isDirectoryShouldReturnTrueOnlyForDirectory() {
       assertTrue(WasiFileType.DIRECTORY.isDirectory(), "DIRECTORY.isDirectory() should be true");
-      assertFalse(WasiFileType.REGULAR_FILE.isDirectory(),
-          "REGULAR_FILE.isDirectory() should be false");
-      assertFalse(WasiFileType.SYMBOLIC_LINK.isDirectory(),
-          "SYMBOLIC_LINK.isDirectory() should be false");
+      assertFalse(
+          WasiFileType.REGULAR_FILE.isDirectory(), "REGULAR_FILE.isDirectory() should be false");
+      assertFalse(
+          WasiFileType.SYMBOLIC_LINK.isDirectory(), "SYMBOLIC_LINK.isDirectory() should be false");
       assertFalse(WasiFileType.UNKNOWN.isDirectory(), "UNKNOWN.isDirectory() should be false");
     }
 
     @Test
     @DisplayName("isSymbolicLink should return true only for SYMBOLIC_LINK")
     void isSymbolicLinkShouldReturnTrueOnlyForSymbolicLink() {
-      assertTrue(WasiFileType.SYMBOLIC_LINK.isSymbolicLink(),
+      assertTrue(
+          WasiFileType.SYMBOLIC_LINK.isSymbolicLink(),
           "SYMBOLIC_LINK.isSymbolicLink() should be true");
-      assertFalse(WasiFileType.REGULAR_FILE.isSymbolicLink(),
+      assertFalse(
+          WasiFileType.REGULAR_FILE.isSymbolicLink(),
           "REGULAR_FILE.isSymbolicLink() should be false");
-      assertFalse(WasiFileType.DIRECTORY.isSymbolicLink(),
-          "DIRECTORY.isSymbolicLink() should be false");
-      assertFalse(WasiFileType.UNKNOWN.isSymbolicLink(),
-          "UNKNOWN.isSymbolicLink() should be false");
+      assertFalse(
+          WasiFileType.DIRECTORY.isSymbolicLink(), "DIRECTORY.isSymbolicLink() should be false");
+      assertFalse(
+          WasiFileType.UNKNOWN.isSymbolicLink(), "UNKNOWN.isSymbolicLink() should be false");
     }
 
     @Test

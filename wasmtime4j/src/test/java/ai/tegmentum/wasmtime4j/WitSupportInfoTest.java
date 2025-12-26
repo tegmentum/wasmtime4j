@@ -42,12 +42,9 @@ class WitSupportInfoTest {
     @Test
     @DisplayName("should create with all fields")
     void shouldCreateWithAllFields() {
-      final WitSupportInfo info = new WitSupportInfo(
-          true,
-          "2.0",
-          Set.of("interfaces", "types"),
-          List.of("u32", "string"),
-          15);
+      final WitSupportInfo info =
+          new WitSupportInfo(
+              true, "2.0", Set.of("interfaces", "types"), List.of("u32", "string"), 15);
 
       assertTrue(info.isSupported());
       assertEquals("2.0", info.getVersion());
@@ -140,7 +137,7 @@ class WitSupportInfoTest {
     void getSupportedFeaturesShouldReturnImmutableSet() {
       final WitSupportInfo info = WitSupportInfo.basic();
       final Set<String> features = info.getSupportedFeatures();
-      
+
       assertNotNull(features);
       assertEquals(3, features.size());
     }
@@ -150,7 +147,7 @@ class WitSupportInfoTest {
     void getSupportedTypesShouldReturnImmutableList() {
       final WitSupportInfo info = WitSupportInfo.basic();
       final List<String> types = info.getSupportedTypes();
-      
+
       assertNotNull(types);
       assertTrue(types.size() > 0);
     }

@@ -27,9 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniExceptionMapper}.
- */
+/** Comprehensive tests for {@link JniExceptionMapper}. */
 @DisplayName("JniExceptionMapper Tests")
 class JniExceptionMapperTest {
 
@@ -95,8 +93,8 @@ class JniExceptionMapperTest {
     @DisplayName("Should map NATIVE_ERROR_MEMORY to JniResourceException")
     void shouldMapMemoryError() {
       final JniException ex = JniExceptionMapper.mapNativeError(-7, "out of bounds");
-      assertTrue(ex instanceof JniResourceException,
-          "Should be JniResourceException for memory errors");
+      assertTrue(
+          ex instanceof JniResourceException, "Should be JniResourceException for memory errors");
       assertTrue(ex.getMessage().contains("Memory access error"), "Should indicate memory error");
     }
 
@@ -104,8 +102,8 @@ class JniExceptionMapperTest {
     @DisplayName("Should map NATIVE_ERROR_RESOURCE to JniResourceException")
     void shouldMapResourceError() {
       final JniException ex = JniExceptionMapper.mapNativeError(-11, "resource exhausted");
-      assertTrue(ex instanceof JniResourceException,
-          "Should be JniResourceException for resource errors");
+      assertTrue(
+          ex instanceof JniResourceException, "Should be JniResourceException for resource errors");
     }
 
     @Test
@@ -113,8 +111,7 @@ class JniExceptionMapperTest {
     void shouldHandleUnknownErrorCode() {
       final JniException ex = JniExceptionMapper.mapNativeError(-999, "unknown");
       assertNotNull(ex, "Exception should not be null");
-      assertTrue(ex.getMessage().contains("Unknown native error"),
-          "Should indicate unknown error");
+      assertTrue(ex.getMessage().contains("Unknown native error"), "Should indicate unknown error");
       assertTrue(ex.getMessage().contains("-999"), "Should include error code");
     }
 
@@ -123,8 +120,7 @@ class JniExceptionMapperTest {
     void shouldHandleNullMessage() {
       final JniException ex = JniExceptionMapper.mapNativeError(-1, null);
       assertNotNull(ex, "Exception should not be null");
-      assertTrue(ex.getMessage().contains("Unknown native error"),
-          "Should have default message");
+      assertTrue(ex.getMessage().contains("Unknown native error"), "Should have default message");
     }
 
     @Test
@@ -157,8 +153,8 @@ class JniExceptionMapperTest {
       final RuntimeException cause = new RuntimeException("error");
       final JniException ex = JniExceptionMapper.wrapNativeException(null, cause);
 
-      assertTrue(ex.getMessage().contains("Native operation failed"),
-          "Should have generic message");
+      assertTrue(
+          ex.getMessage().contains("Native operation failed"), "Should have generic message");
     }
   }
 
@@ -169,7 +165,8 @@ class JniExceptionMapperTest {
     @Test
     @DisplayName("Should throw on zero handle")
     void shouldThrowOnZeroHandle() {
-      assertThrows(JniResourceException.class,
+      assertThrows(
+          JniResourceException.class,
           () -> JniExceptionMapper.validateNativeHandle(0, "Engine"),
           "Should throw on zero handle");
     }
@@ -187,8 +184,7 @@ class JniExceptionMapperTest {
       try {
         JniExceptionMapper.validateNativeHandle(0, "Module");
       } catch (JniResourceException ex) {
-        assertTrue(ex.getMessage().contains("Module"),
-            "Should include resource type");
+        assertTrue(ex.getMessage().contains("Module"), "Should include resource type");
       }
     }
   }
@@ -200,7 +196,8 @@ class JniExceptionMapperTest {
     @Test
     @DisplayName("Should throw on false result")
     void shouldThrowOnFalseResult() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> JniExceptionMapper.validateNativeResult(false, "invoke function"),
           "Should throw on false result");
     }
@@ -261,10 +258,8 @@ class JniExceptionMapperTest {
     @DisplayName("Should create cleanup exception with resource type")
     void shouldCreateCleanupExceptionWithResourceType() {
       final JniResourceException ex = JniExceptionMapper.createCleanupException("Store", null);
-      assertTrue(ex.getMessage().contains("cleanup"),
-          "Should indicate cleanup");
-      assertTrue(ex.getMessage().contains("Store"),
-          "Should include resource type");
+      assertTrue(ex.getMessage().contains("cleanup"), "Should indicate cleanup");
+      assertTrue(ex.getMessage().contains("Store"), "Should include resource type");
     }
 
     @Test
@@ -299,8 +294,7 @@ class JniExceptionMapperTest {
     @DisplayName("Should handle null state")
     void shouldHandleNullState() {
       final JniException ex = JniExceptionMapper.createInvalidStateException("Module", null);
-      assertTrue(ex.getMessage().contains("invalid state"),
-          "Should use default state");
+      assertTrue(ex.getMessage().contains("invalid state"), "Should use default state");
     }
   }
 
@@ -321,8 +315,8 @@ class JniExceptionMapperTest {
     void shouldMapIllegalArgumentException() {
       final IllegalArgumentException cause = new IllegalArgumentException("bad arg");
       final JniException result = JniExceptionMapper.mapException(cause);
-      assertTrue(result.getMessage().contains("Invalid parameter"),
-          "Should indicate invalid parameter");
+      assertTrue(
+          result.getMessage().contains("Invalid parameter"), "Should indicate invalid parameter");
     }
 
     @Test
@@ -330,8 +324,7 @@ class JniExceptionMapperTest {
     void shouldMapIllegalStateException() {
       final IllegalStateException cause = new IllegalStateException("bad state");
       final JniException result = JniExceptionMapper.mapException(cause);
-      assertTrue(result instanceof JniResourceException,
-          "Should be JniResourceException");
+      assertTrue(result instanceof JniResourceException, "Should be JniResourceException");
     }
 
     @Test
@@ -339,8 +332,8 @@ class JniExceptionMapperTest {
     void shouldMapIndexOutOfBoundsException() {
       final IndexOutOfBoundsException cause = new IndexOutOfBoundsException("10");
       final JniException result = JniExceptionMapper.mapException(cause);
-      assertTrue(result.getMessage().contains("Index out of bounds"),
-          "Should indicate index error");
+      assertTrue(
+          result.getMessage().contains("Index out of bounds"), "Should indicate index error");
     }
 
     @Test
@@ -348,16 +341,15 @@ class JniExceptionMapperTest {
     void shouldMapNullPointerException() {
       final NullPointerException cause = new NullPointerException("param was null");
       final JniException result = JniExceptionMapper.mapException(cause);
-      assertTrue(result.getMessage().contains("Null pointer error"),
-          "Should indicate null pointer");
+      assertTrue(
+          result.getMessage().contains("Null pointer error"), "Should indicate null pointer");
     }
 
     @Test
     @DisplayName("Should map null exception")
     void shouldMapNullException() {
       final JniException result = JniExceptionMapper.mapException(null);
-      assertTrue(result.getMessage().contains("Unknown error"),
-          "Should indicate unknown error");
+      assertTrue(result.getMessage().contains("Unknown error"), "Should indicate unknown error");
     }
   }
 

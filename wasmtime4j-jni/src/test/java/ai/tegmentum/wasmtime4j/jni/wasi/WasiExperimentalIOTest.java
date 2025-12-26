@@ -39,9 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiExperimentalIO}.
- */
+/** Comprehensive tests for {@link WasiExperimentalIO}. */
 @DisplayName("WasiExperimentalIO Tests")
 class WasiExperimentalIOTest {
 
@@ -86,7 +84,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiExperimentalIO(null, executorService),
           "Should throw on null context");
     }
@@ -94,7 +93,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiExperimentalIO(testContext, null),
           "Should throw on null executor");
     }
@@ -117,7 +117,8 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullBuffer() {
       final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncReadFileAsync(1L, 0L, null, callback),
           "Should throw on null buffer");
     }
@@ -127,7 +128,8 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullCallback() {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncReadFileAsync(1L, 0L, buffer, null),
           "Should throw on null callback");
     }
@@ -138,7 +140,8 @@ class WasiExperimentalIOTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
       final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncReadFileAsync(1L, -1L, buffer, callback),
           "Should throw on negative offset");
     }
@@ -147,10 +150,11 @@ class WasiExperimentalIOTest {
     @DisplayName("Should complete immediately with empty buffer")
     void shouldCompleteImmediatelyWithEmptyBuffer() throws Exception {
       final ByteBuffer buffer = ByteBuffer.allocate(0);
-      final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {
-        assertEquals(0, result.bytesTransferred, "Bytes transferred should be 0");
-        assertTrue(result.completed, "Should be completed");
-      };
+      final Consumer<WasiExperimentalIO.AsyncIOResult> callback =
+          result -> {
+            assertEquals(0, result.bytesTransferred, "Bytes transferred should be 0");
+            assertTrue(result.completed, "Should be completed");
+          };
 
       final CompletableFuture<Long> future =
           experimentalIO.asyncReadFileAsync(1L, 0L, buffer, callback);
@@ -168,7 +172,8 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullBuffer() {
       final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncWriteFileAsync(1L, 0L, null, callback),
           "Should throw on null buffer");
     }
@@ -178,7 +183,8 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullCallback() {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncWriteFileAsync(1L, 0L, buffer, null),
           "Should throw on null callback");
     }
@@ -189,7 +195,8 @@ class WasiExperimentalIOTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
       final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.asyncWriteFileAsync(1L, -1L, buffer, callback),
           "Should throw on negative offset");
     }
@@ -198,10 +205,11 @@ class WasiExperimentalIOTest {
     @DisplayName("Should complete immediately with empty buffer")
     void shouldCompleteImmediatelyWithEmptyBuffer() throws Exception {
       final ByteBuffer buffer = ByteBuffer.allocate(0);
-      final Consumer<WasiExperimentalIO.AsyncIOResult> callback = result -> {
-        assertEquals(0, result.bytesTransferred, "Bytes transferred should be 0");
-        assertTrue(result.completed, "Should be completed");
-      };
+      final Consumer<WasiExperimentalIO.AsyncIOResult> callback =
+          result -> {
+            assertEquals(0, result.bytesTransferred, "Bytes transferred should be 0");
+            assertTrue(result.completed, "Should be completed");
+          };
 
       final CompletableFuture<Long> future =
           experimentalIO.asyncWriteFileAsync(1L, 0L, buffer, callback);
@@ -217,44 +225,52 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on negative offset")
     void shouldThrowOnNegativeOffset() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.createMemoryMappingAsync(
-              1L, -1L, 1024L,
-              WasiExperimentalIO.MemoryProtection.READ_ONLY,
-              WasiExperimentalIO.MappingFlags.PRIVATE),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createMemoryMappingAsync(
+                  1L,
+                  -1L,
+                  1024L,
+                  WasiExperimentalIO.MemoryProtection.READ_ONLY,
+                  WasiExperimentalIO.MappingFlags.PRIVATE),
           "Should throw on negative offset");
     }
 
     @Test
     @DisplayName("Should throw on zero length")
     void shouldThrowOnZeroLength() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.createMemoryMappingAsync(
-              1L, 0L, 0L,
-              WasiExperimentalIO.MemoryProtection.READ_ONLY,
-              WasiExperimentalIO.MappingFlags.PRIVATE),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createMemoryMappingAsync(
+                  1L,
+                  0L,
+                  0L,
+                  WasiExperimentalIO.MemoryProtection.READ_ONLY,
+                  WasiExperimentalIO.MappingFlags.PRIVATE),
           "Should throw on zero length");
     }
 
     @Test
     @DisplayName("Should throw on null protection")
     void shouldThrowOnNullProtection() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.createMemoryMappingAsync(
-              1L, 0L, 1024L,
-              null,
-              WasiExperimentalIO.MappingFlags.PRIVATE),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createMemoryMappingAsync(
+                  1L, 0L, 1024L, null, WasiExperimentalIO.MappingFlags.PRIVATE),
           "Should throw on null protection");
     }
 
     @Test
     @DisplayName("Should throw on null flags")
     void shouldThrowOnNullFlags() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.createMemoryMappingAsync(
-              1L, 0L, 1024L,
-              WasiExperimentalIO.MemoryProtection.READ_ONLY,
-              null),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createMemoryMappingAsync(
+                  1L, 0L, 1024L, WasiExperimentalIO.MemoryProtection.READ_ONLY, null),
           "Should throw on null flags");
     }
 
@@ -263,21 +279,28 @@ class WasiExperimentalIOTest {
     void shouldThrowOnTooLargeMapping() {
       final long tooLarge = 3L * 1024L * 1024L * 1024L; // 3GB
 
-      assertThrows(WasiException.class,
-          () -> experimentalIO.createMemoryMappingAsync(
-              1L, 0L, tooLarge,
-              WasiExperimentalIO.MemoryProtection.READ_ONLY,
-              WasiExperimentalIO.MappingFlags.PRIVATE),
+      assertThrows(
+          WasiException.class,
+          () ->
+              experimentalIO.createMemoryMappingAsync(
+                  1L,
+                  0L,
+                  tooLarge,
+                  WasiExperimentalIO.MemoryProtection.READ_ONLY,
+                  WasiExperimentalIO.MappingFlags.PRIVATE),
           "Should throw on mapping too large");
     }
 
     @Test
     @DisplayName("Should return CompletableFuture")
     void shouldReturnCompletableFuture() {
-      final CompletableFuture<Long> future = experimentalIO.createMemoryMappingAsync(
-          1L, 0L, 1024L,
-          WasiExperimentalIO.MemoryProtection.READ_ONLY,
-          WasiExperimentalIO.MappingFlags.PRIVATE);
+      final CompletableFuture<Long> future =
+          experimentalIO.createMemoryMappingAsync(
+              1L,
+              0L,
+              1024L,
+              WasiExperimentalIO.MemoryProtection.READ_ONLY,
+              WasiExperimentalIO.MappingFlags.PRIVATE);
 
       assertNotNull(future, "Future should not be null");
       // Cancel to cleanup
@@ -292,43 +315,40 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on negative offset")
     void shouldThrowOnNegativeOffset() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.acquireFileLockAsync(
-              1L, -1L, 100L,
-              WasiExperimentalIO.FileLockType.EXCLUSIVE,
-              false),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.acquireFileLockAsync(
+                  1L, -1L, 100L, WasiExperimentalIO.FileLockType.EXCLUSIVE, false),
           "Should throw on negative offset");
     }
 
     @Test
     @DisplayName("Should throw on negative length")
     void shouldThrowOnNegativeLength() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.acquireFileLockAsync(
-              1L, 0L, -1L,
-              WasiExperimentalIO.FileLockType.EXCLUSIVE,
-              false),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.acquireFileLockAsync(
+                  1L, 0L, -1L, WasiExperimentalIO.FileLockType.EXCLUSIVE, false),
           "Should throw on negative length");
     }
 
     @Test
     @DisplayName("Should throw on null lock type")
     void shouldThrowOnNullLockType() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.acquireFileLockAsync(
-              1L, 0L, 100L,
-              null,
-              false),
+      assertThrows(
+          JniException.class,
+          () -> experimentalIO.acquireFileLockAsync(1L, 0L, 100L, null, false),
           "Should throw on null lock type");
     }
 
     @Test
     @DisplayName("Should return CompletableFuture")
     void shouldReturnCompletableFuture() {
-      final CompletableFuture<Long> future = experimentalIO.acquireFileLockAsync(
-          1L, 0L, 100L,
-          WasiExperimentalIO.FileLockType.EXCLUSIVE,
-          false);
+      final CompletableFuture<Long> future =
+          experimentalIO.acquireFileLockAsync(
+              1L, 0L, 100L, WasiExperimentalIO.FileLockType.EXCLUSIVE, false);
 
       assertNotNull(future, "Future should not be null");
       // Cancel to cleanup
@@ -345,11 +365,11 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullPath() {
       final Consumer<WasiExperimentalIO.FileSystemEvent> callback = event -> {};
 
-      assertThrows(JniException.class,
-          () -> experimentalIO.createDirectoryWatcherAsync(
-              null, true,
-              WasiExperimentalIO.FileSystemEventMask.ALL,
-              callback),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createDirectoryWatcherAsync(
+                  null, true, WasiExperimentalIO.FileSystemEventMask.ALL, callback),
           "Should throw on null path");
     }
 
@@ -358,11 +378,11 @@ class WasiExperimentalIOTest {
     void shouldThrowOnEmptyPath() {
       final Consumer<WasiExperimentalIO.FileSystemEvent> callback = event -> {};
 
-      assertThrows(JniException.class,
-          () -> experimentalIO.createDirectoryWatcherAsync(
-              "", true,
-              WasiExperimentalIO.FileSystemEventMask.ALL,
-              callback),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createDirectoryWatcherAsync(
+                  "", true, WasiExperimentalIO.FileSystemEventMask.ALL, callback),
           "Should throw on empty path");
     }
 
@@ -371,22 +391,20 @@ class WasiExperimentalIOTest {
     void shouldThrowOnNullEventMask() {
       final Consumer<WasiExperimentalIO.FileSystemEvent> callback = event -> {};
 
-      assertThrows(JniException.class,
-          () -> experimentalIO.createDirectoryWatcherAsync(
-              "/tmp", true,
-              null,
-              callback),
+      assertThrows(
+          JniException.class,
+          () -> experimentalIO.createDirectoryWatcherAsync("/tmp", true, null, callback),
           "Should throw on null event mask");
     }
 
     @Test
     @DisplayName("Should throw on null callback")
     void shouldThrowOnNullCallback() {
-      assertThrows(JniException.class,
-          () -> experimentalIO.createDirectoryWatcherAsync(
-              "/tmp", true,
-              WasiExperimentalIO.FileSystemEventMask.ALL,
-              null),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalIO.createDirectoryWatcherAsync(
+                  "/tmp", true, WasiExperimentalIO.FileSystemEventMask.ALL, null),
           "Should throw on null callback");
     }
 
@@ -395,10 +413,9 @@ class WasiExperimentalIOTest {
     void shouldReturnCompletableFuture() {
       final Consumer<WasiExperimentalIO.FileSystemEvent> callback = event -> {};
 
-      final CompletableFuture<Long> future = experimentalIO.createDirectoryWatcherAsync(
-          "/tmp", true,
-          WasiExperimentalIO.FileSystemEventMask.ALL,
-          callback);
+      final CompletableFuture<Long> future =
+          experimentalIO.createDirectoryWatcherAsync(
+              "/tmp", true, WasiExperimentalIO.FileSystemEventMask.ALL, callback);
 
       assertNotNull(future, "Future should not be null");
       // Cancel to cleanup
@@ -413,7 +430,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on null buffers")
     void shouldThrowOnNullBuffers() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.vectoredReadAsync(1L, 0L, null),
           "Should throw on null buffers");
     }
@@ -424,7 +442,8 @@ class WasiExperimentalIOTest {
       final List<ByteBuffer> buffers = new ArrayList<>();
       buffers.add(ByteBuffer.allocate(1024));
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.vectoredReadAsync(1L, -1L, buffers),
           "Should throw on negative offset");
     }
@@ -434,8 +453,7 @@ class WasiExperimentalIOTest {
     void shouldCompleteImmediatelyWithEmptyBufferList() throws Exception {
       final List<ByteBuffer> buffers = new ArrayList<>();
 
-      final CompletableFuture<Integer> future =
-          experimentalIO.vectoredReadAsync(1L, 0L, buffers);
+      final CompletableFuture<Integer> future = experimentalIO.vectoredReadAsync(1L, 0L, buffers);
 
       assertNotNull(future, "Future should not be null");
       assertEquals(0, future.get(5, TimeUnit.SECONDS), "Should return 0 for empty list");
@@ -449,7 +467,8 @@ class WasiExperimentalIOTest {
         buffers.add(ByteBuffer.allocate(1));
       }
 
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalIO.vectoredReadAsync(1L, 0L, buffers),
           "Should throw on too many buffers");
     }
@@ -462,7 +481,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on null buffers")
     void shouldThrowOnNullBuffers() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.vectoredWriteAsync(1L, 0L, null),
           "Should throw on null buffers");
     }
@@ -473,7 +493,8 @@ class WasiExperimentalIOTest {
       final List<ByteBuffer> buffers = new ArrayList<>();
       buffers.add(ByteBuffer.allocate(1024));
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalIO.vectoredWriteAsync(1L, -1L, buffers),
           "Should throw on negative offset");
     }
@@ -483,8 +504,7 @@ class WasiExperimentalIOTest {
     void shouldCompleteImmediatelyWithEmptyBufferList() throws Exception {
       final List<ByteBuffer> buffers = new ArrayList<>();
 
-      final CompletableFuture<Integer> future =
-          experimentalIO.vectoredWriteAsync(1L, 0L, buffers);
+      final CompletableFuture<Integer> future = experimentalIO.vectoredWriteAsync(1L, 0L, buffers);
 
       assertNotNull(future, "Future should not be null");
       assertEquals(0, future.get(5, TimeUnit.SECONDS), "Should return 0 for empty list");
@@ -498,7 +518,8 @@ class WasiExperimentalIOTest {
         buffers.add(ByteBuffer.allocate(1));
       }
 
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalIO.vectoredWriteAsync(1L, 0L, buffers),
           "Should throw on too many buffers");
     }
@@ -511,7 +532,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on invalid lock handle")
     void shouldThrowOnInvalidLockHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalIO.releaseFileLock(999L),
           "Should throw on invalid lock handle");
     }
@@ -524,7 +546,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should throw on invalid mapping handle")
     void shouldThrowOnInvalidMappingHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalIO.unmapMemoryMapping(999L),
           "Should throw on invalid mapping handle");
     }
@@ -582,7 +605,8 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should support valueOf")
     void shouldSupportValueOf() {
-      assertEquals(WasiExperimentalIO.IOOperationType.READ,
+      assertEquals(
+          WasiExperimentalIO.IOOperationType.READ,
           WasiExperimentalIO.IOOperationType.valueOf("READ"),
           "valueOf should work for READ");
     }
@@ -601,7 +625,8 @@ class WasiExperimentalIOTest {
       assertNotNull(WasiExperimentalIO.MemoryProtection.READ_ONLY, "READ_ONLY should exist");
       assertNotNull(WasiExperimentalIO.MemoryProtection.READ_WRITE, "READ_WRITE should exist");
       assertNotNull(WasiExperimentalIO.MemoryProtection.EXECUTE_READ, "EXECUTE_READ should exist");
-      assertNotNull(WasiExperimentalIO.MemoryProtection.EXECUTE_READ_WRITE,
+      assertNotNull(
+          WasiExperimentalIO.MemoryProtection.EXECUTE_READ_WRITE,
           "EXECUTE_READ_WRITE should exist");
     }
   }
@@ -613,8 +638,7 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should have expected values")
     void shouldHaveExpectedValues() {
-      final WasiExperimentalIO.FileLockType[] values =
-          WasiExperimentalIO.FileLockType.values();
+      final WasiExperimentalIO.FileLockType[] values = WasiExperimentalIO.FileLockType.values();
       assertEquals(3, values.length, "Should have 3 values");
       assertNotNull(WasiExperimentalIO.FileLockType.SHARED, "SHARED should exist");
       assertNotNull(WasiExperimentalIO.FileLockType.EXCLUSIVE, "EXCLUSIVE should exist");
@@ -637,7 +661,8 @@ class WasiExperimentalIOTest {
       assertNotNull(WasiExperimentalIO.FileSystemEventType.DELETED, "DELETED should exist");
       assertNotNull(WasiExperimentalIO.FileSystemEventType.RENAMED, "RENAMED should exist");
       assertNotNull(WasiExperimentalIO.FileSystemEventType.MOVED, "MOVED should exist");
-      assertNotNull(WasiExperimentalIO.FileSystemEventType.ATTRIBUTE_CHANGED,
+      assertNotNull(
+          WasiExperimentalIO.FileSystemEventType.ATTRIBUTE_CHANGED,
           "ATTRIBUTE_CHANGED should exist");
     }
   }
@@ -712,8 +737,9 @@ class WasiExperimentalIOTest {
     @Test
     @DisplayName("Should create result with error")
     void shouldCreateResultWithError() {
-      final WasiException error = new WasiException("Test error",
-          ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode.EIO);
+      final WasiException error =
+          new WasiException(
+              "Test error", ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode.EIO);
       final WasiExperimentalIO.AsyncIOResult result =
           new WasiExperimentalIO.AsyncIOResult(0, error, false);
 
@@ -737,7 +763,9 @@ class WasiExperimentalIOTest {
               null,
               System.currentTimeMillis());
 
-      assertEquals(WasiExperimentalIO.FileSystemEventType.CREATED, event.eventType,
+      assertEquals(
+          WasiExperimentalIO.FileSystemEventType.CREATED,
+          event.eventType,
           "Event type should match");
       assertEquals("/path/to/file", event.path, "Path should match");
       assertFalse(event.oldPath != null, "Old path should be null");
@@ -754,7 +782,9 @@ class WasiExperimentalIOTest {
               "/old/path",
               System.currentTimeMillis());
 
-      assertEquals(WasiExperimentalIO.FileSystemEventType.RENAMED, event.eventType,
+      assertEquals(
+          WasiExperimentalIO.FileSystemEventType.RENAMED,
+          event.eventType,
           "Event type should match");
       assertEquals("/new/path", event.path, "New path should match");
       assertEquals("/old/path", event.oldPath, "Old path should match");

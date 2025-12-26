@@ -29,15 +29,12 @@ import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextIsolationValidator.IsolationS
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiContextIsolationValidator}.
- */
+/** Comprehensive tests for {@link WasiContextIsolationValidator}. */
 @DisplayName("WasiContextIsolationValidator Tests")
 class WasiContextIsolationValidatorTest {
 
@@ -49,13 +46,13 @@ class WasiContextIsolationValidatorTest {
   void setUp() {
     validator = new WasiContextIsolationValidator(true);
 
-    testContext1 = TestWasiContextFactory.createTestContext(
-        1L,
-        Collections.singletonMap("preopened", Paths.get("/tmp/context1")));
+    testContext1 =
+        TestWasiContextFactory.createTestContext(
+            1L, Collections.singletonMap("preopened", Paths.get("/tmp/context1")));
 
-    testContext2 = TestWasiContextFactory.createTestContext(
-        2L,
-        Collections.singletonMap("preopened", Paths.get("/tmp/context2")));
+    testContext2 =
+        TestWasiContextFactory.createTestContext(
+            2L, Collections.singletonMap("preopened", Paths.get("/tmp/context2")));
   }
 
   @Nested
@@ -86,8 +83,7 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Constructor should accept strict mode parameter")
     void constructorShouldAcceptStrictModeParameter() {
-      final WasiContextIsolationValidator strictValidator =
-          new WasiContextIsolationValidator(true);
+      final WasiContextIsolationValidator strictValidator = new WasiContextIsolationValidator(true);
       final WasiContextIsolationValidator permissiveValidator =
           new WasiContextIsolationValidator(false);
 
@@ -103,7 +99,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.registerContext(null, testContext1, IsolationLevel.STANDARD),
           "Should throw on null context ID");
     }
@@ -111,7 +108,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.registerContext("", testContext1, IsolationLevel.STANDARD),
           "Should throw on empty context ID");
     }
@@ -119,7 +117,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context")
     void shouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.registerContext("ctx1", null, IsolationLevel.STANDARD),
           "Should throw on null context");
     }
@@ -127,7 +126,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null isolation level")
     void shouldThrowOnNullIsolationLevel() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.registerContext("ctx1", testContext1, null),
           "Should throw on null isolation level");
     }
@@ -145,7 +145,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnDuplicateContextId() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.registerContext("ctx1", testContext2, IsolationLevel.STANDARD),
           "Should throw on duplicate context ID");
     }
@@ -167,7 +168,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.unregisterContext(null),
           "Should throw on null context ID");
     }
@@ -175,7 +177,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.unregisterContext(""),
           "Should throw on empty context ID");
     }
@@ -216,7 +219,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess(null, Paths.get("/tmp"), WasiFileOperation.READ),
           "Should throw on null context ID");
     }
@@ -224,7 +228,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess("", Paths.get("/tmp"), WasiFileOperation.READ),
           "Should throw on empty context ID");
     }
@@ -234,7 +239,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNullPath() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess("ctx1", null, WasiFileOperation.READ),
           "Should throw on null path");
     }
@@ -244,7 +250,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNullOperation() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess("ctx1", Paths.get("/tmp"), null),
           "Should throw on null operation");
     }
@@ -252,7 +259,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw for unknown context ID")
     void shouldThrowForUnknownContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess("unknown", Paths.get("/tmp"), WasiFileOperation.READ),
           "Should throw for unknown context ID");
     }
@@ -276,7 +284,8 @@ class WasiContextIsolationValidatorTest {
 
       final Path disallowedPath = Paths.get("/tmp/other/file.txt");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validatePathAccess("ctx1", disallowedPath, WasiFileOperation.READ),
           "Should deny access outside preopened directory");
     }
@@ -289,7 +298,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess(null, "resource1", "file"),
           "Should throw on null context ID");
     }
@@ -297,7 +307,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("", "resource1", "file"),
           "Should throw on empty context ID");
     }
@@ -307,7 +318,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNullResourceId() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("ctx1", null, "file"),
           "Should throw on null resource ID");
     }
@@ -317,7 +329,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnEmptyResourceId() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("ctx1", "", "file"),
           "Should throw on empty resource ID");
     }
@@ -327,7 +340,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNullResourceType() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("ctx1", "resource1", null),
           "Should throw on null resource type");
     }
@@ -337,7 +351,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnEmptyResourceType() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("ctx1", "resource1", ""),
           "Should throw on empty resource type");
     }
@@ -362,7 +377,8 @@ class WasiContextIsolationValidatorTest {
       validator.validateResourceAccess("ctx1", "resource1", "file");
 
       // Second context should be denied
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateResourceAccess("ctx2", "resource1", "file"),
           "Should deny second context access in strict mode");
     }
@@ -375,7 +391,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateMemoryAccess(null, 0, 100),
           "Should throw on null context ID");
     }
@@ -383,7 +400,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateMemoryAccess("", 0, 100),
           "Should throw on empty context ID");
     }
@@ -393,7 +411,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNegativeMemoryAddress() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateMemoryAccess("ctx1", -1, 100),
           "Should throw on negative memory address");
     }
@@ -403,11 +422,13 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNonPositiveSize() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateMemoryAccess("ctx1", 0, 0),
           "Should throw on zero size");
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateMemoryAccess("ctx1", 0, -1),
           "Should throw on negative size");
     }
@@ -430,7 +451,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on null source context ID")
     void shouldThrowOnNullSourceContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication(null, "ctx2", "message"),
           "Should throw on null source context ID");
     }
@@ -438,7 +460,8 @@ class WasiContextIsolationValidatorTest {
     @Test
     @DisplayName("Should throw on empty source context ID")
     void shouldThrowOnEmptySourceContextId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("", "ctx2", "message"),
           "Should throw on empty source context ID");
     }
@@ -448,7 +471,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnNullTargetContextId() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("ctx1", null, "message"),
           "Should throw on null target context ID");
     }
@@ -458,7 +482,8 @@ class WasiContextIsolationValidatorTest {
     void shouldThrowOnEmptyTargetContextId() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("ctx1", "", "message"),
           "Should throw on empty target context ID");
     }
@@ -469,7 +494,8 @@ class WasiContextIsolationValidatorTest {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
       validator.registerContext("ctx2", testContext2, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("ctx1", "ctx2", null),
           "Should throw on null communication type");
     }
@@ -480,7 +506,8 @@ class WasiContextIsolationValidatorTest {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
       validator.registerContext("ctx2", testContext2, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("ctx1", "ctx2", ""),
           "Should throw on empty communication type");
     }
@@ -491,7 +518,8 @@ class WasiContextIsolationValidatorTest {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STRICT);
       validator.registerContext("ctx2", testContext2, IsolationLevel.STANDARD);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> validator.validateCrossContextCommunication("ctx1", "ctx2", "message"),
           "Should deny communication when source is strict");
     }
@@ -588,7 +616,8 @@ class WasiContextIsolationValidatorTest {
       assertEquals(2, validator.getActiveContextCount(), "Should have 2 active contexts");
 
       validator.unregisterContext("ctx1");
-      assertEquals(1, validator.getActiveContextCount(), "Should have 1 active context after unregister");
+      assertEquals(
+          1, validator.getActiveContextCount(), "Should have 1 active context after unregister");
     }
   }
 }

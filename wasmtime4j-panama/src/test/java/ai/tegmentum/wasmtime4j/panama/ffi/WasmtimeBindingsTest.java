@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.panama.ffi;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -27,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
-import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
@@ -224,7 +222,8 @@ class WasmtimeBindingsTest {
       // Second call with same function
       bindings.getMethodHandle("test_function", descriptor);
 
-      assertEquals(cacheSize, bindings.getCacheSize(), "Cache size should not change on second call");
+      assertEquals(
+          cacheSize, bindings.getCacheSize(), "Cache size should not change on second call");
     }
 
     @Test

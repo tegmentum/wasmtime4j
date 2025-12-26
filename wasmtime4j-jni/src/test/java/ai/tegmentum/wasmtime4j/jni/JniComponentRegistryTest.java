@@ -88,8 +88,7 @@ class JniComponentRegistryTest {
       Constructor<?> constructor =
           JniComponentRegistry.class.getDeclaredConstructor(JniComponentEngine.class);
       assertNotNull(constructor, "Constructor should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
   }
 
@@ -202,8 +201,7 @@ class JniComponentRegistryTest {
     @Test
     @DisplayName("search method should exist and return List")
     void searchMethodShouldExist() throws NoSuchMethodException {
-      Method method =
-          JniComponentRegistry.class.getMethod("search", ComponentSearchCriteria.class);
+      Method method = JniComponentRegistry.class.getMethod("search", ComponentSearchCriteria.class);
       assertNotNull(method, "search method should exist");
       assertEquals(List.class, method.getReturnType(), "Should return List");
     }
@@ -325,11 +323,7 @@ class JniComponentRegistryTest {
     void shouldHaveHasCircularDependencyDfsMethod() throws NoSuchMethodException {
       Method method =
           JniComponentRegistry.class.getDeclaredMethod(
-              "hasCircularDependencyDFS",
-              ComponentSimple.class,
-              Set.class,
-              Set.class,
-              Set.class);
+              "hasCircularDependencyDFS", ComponentSimple.class, Set.class, Set.class, Set.class);
       assertNotNull(method, "hasCircularDependencyDFS method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");

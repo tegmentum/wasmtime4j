@@ -21,13 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentSimple;
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -44,8 +42,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for {@link JniComponentInstanceImpl}.
  *
- * <p>These tests use reflection to verify the class structure, method signatures,
- * and expected behavior without requiring native library loading.
+ * <p>These tests use reflection to verify the class structure, method signatures, and expected
+ * behavior without requiring native library loading.
  */
 @DisplayName("JniComponentInstanceImpl Tests")
 class JniComponentInstanceImplTest {
@@ -122,8 +120,7 @@ class JniComponentInstanceImplTest {
       Field field = JniComponentInstanceImpl.class.getDeclaredField("config");
       assertNotNull(field, "config field should exist");
       assertEquals(
-          ComponentInstanceConfig.class, field.getType(),
-          "Should be ComponentInstanceConfig type");
+          ComponentInstanceConfig.class, field.getType(), "Should be ComponentInstanceConfig type");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
     }
@@ -166,13 +163,14 @@ class JniComponentInstanceImplTest {
       Class<?>[] paramTypes = constructor.getParameterTypes();
       assertEquals(3, paramTypes.length, "Should have 3 parameters");
       assertEquals(
-          JniComponent.JniComponentInstanceHandle.class, paramTypes[0],
+          JniComponent.JniComponentInstanceHandle.class,
+          paramTypes[0],
           "First param should be JniComponentInstanceHandle");
       assertEquals(
-          JniComponentImpl.class, paramTypes[1],
-          "Second param should be JniComponentImpl");
+          JniComponentImpl.class, paramTypes[1], "Second param should be JniComponentImpl");
       assertEquals(
-          ComponentInstanceConfig.class, paramTypes[2],
+          ComponentInstanceConfig.class,
+          paramTypes[2],
           "Third param should be ComponentInstanceConfig");
     }
   }
@@ -205,7 +203,8 @@ class JniComponentInstanceImplTest {
       Method method = JniComponentInstanceImpl.class.getMethod("getState");
       assertNotNull(method, "getState method should exist");
       assertEquals(
-          ComponentInstanceState.class, method.getReturnType(),
+          ComponentInstanceState.class,
+          method.getReturnType(),
           "Should return ComponentInstanceState");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
@@ -216,7 +215,8 @@ class JniComponentInstanceImplTest {
       Method method = JniComponentInstanceImpl.class.getMethod("getResourceUsage");
       assertNotNull(method, "getResourceUsage method should exist");
       assertEquals(
-          ComponentResourceUsage.class, method.getReturnType(),
+          ComponentResourceUsage.class,
+          method.getReturnType(),
           "Should return ComponentResourceUsage");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
@@ -344,7 +344,8 @@ class JniComponentInstanceImplTest {
       Method method = JniComponentInstanceImpl.class.getMethod("getNativeInstance");
       assertNotNull(method, "getNativeInstance method should exist");
       assertEquals(
-          JniComponent.JniComponentInstanceHandle.class, method.getReturnType(),
+          JniComponent.JniComponentInstanceHandle.class,
+          method.getReturnType(),
           "Should return JniComponentInstanceHandle");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
@@ -355,7 +356,8 @@ class JniComponentInstanceImplTest {
       Method method = JniComponentInstanceImpl.class.getMethod("getConfig");
       assertNotNull(method, "getConfig method should exist");
       assertEquals(
-          ComponentInstanceConfig.class, method.getReturnType(),
+          ComponentInstanceConfig.class,
+          method.getReturnType(),
           "Should return ComponentInstanceConfig");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
@@ -455,8 +457,8 @@ class JniComponentInstanceImplTest {
     @DisplayName("getFunc should return Optional")
     void getFuncShouldReturnCorrectType() throws NoSuchMethodException {
       Method method = JniComponentInstanceImpl.class.getMethod("getFunc", String.class);
-      assertTrue(Optional.class.isAssignableFrom(method.getReturnType()),
-          "Should return an Optional");
+      assertTrue(
+          Optional.class.isAssignableFrom(method.getReturnType()), "Should return an Optional");
     }
   }
 
@@ -468,8 +470,11 @@ class JniComponentInstanceImplTest {
     @DisplayName("Should have exactly 5 declared fields")
     void shouldHaveExactlyFiveDeclaredFields() {
       Field[] fields = JniComponentInstanceImpl.class.getDeclaredFields();
-      assertEquals(5, fields.length, "Should have 5 declared fields: LOGGER, nativeInstance, "
-          + "component, config, instanceId");
+      assertEquals(
+          5,
+          fields.length,
+          "Should have 5 declared fields: LOGGER, nativeInstance, "
+              + "component, config, instanceId");
     }
 
     @Test
@@ -478,8 +483,8 @@ class JniComponentInstanceImplTest {
       String[] instanceFields = {"nativeInstance", "component", "config", "instanceId"};
       for (String fieldName : instanceFields) {
         Field field = JniComponentInstanceImpl.class.getDeclaredField(fieldName);
-        assertFalse(Modifier.isStatic(field.getModifiers()),
-            fieldName + " should be instance field");
+        assertFalse(
+            Modifier.isStatic(field.getModifiers()), fieldName + " should be instance field");
       }
     }
   }

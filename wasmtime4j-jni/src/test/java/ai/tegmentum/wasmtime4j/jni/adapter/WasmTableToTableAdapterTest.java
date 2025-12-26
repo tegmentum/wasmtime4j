@@ -44,19 +44,13 @@ import org.junit.jupiter.api.Test;
 @DisplayName("WasmTableToTableAdapter Tests")
 class WasmTableToTableAdapterTest {
 
-  /**
-   * Creates a mock WasmTable for testing.
-   */
+  /** Creates a mock WasmTable for testing. */
   private WasmTable createMockTable(
-      final WasmValueType elementType,
-      final int initialSize,
-      final int maxSize) {
+      final WasmValueType elementType, final int initialSize, final int maxSize) {
     return new TestWasmTable(elementType, initialSize, maxSize);
   }
 
-  /**
-   * Test implementation of WasmTable backed by an array.
-   */
+  /** Test implementation of WasmTable backed by an array. */
   private static class TestWasmTable implements WasmTable {
     private Object[] elements;
     private int size;
@@ -143,8 +137,7 @@ class WasmTableToTableAdapterTest {
     }
 
     @Override
-    public void copy(final int dst, final WasmTable srcTable, final int srcIndex,
-        final int count) {
+    public void copy(final int dst, final WasmTable srcTable, final int srcIndex, final int count) {
       if (dst < 0 || srcIndex < 0 || dst + count > size) {
         throw new IndexOutOfBoundsException("Cross-table copy out of bounds");
       }
@@ -154,8 +147,11 @@ class WasmTableToTableAdapterTest {
     }
 
     @Override
-    public void init(final int destOffset, final int elementSegmentIndex,
-        final int srcOffset, final int length) {
+    public void init(
+        final int destOffset,
+        final int elementSegmentIndex,
+        final int srcOffset,
+        final int length) {
       throw new UnsupportedOperationException("init not supported in test");
     }
 
@@ -188,16 +184,12 @@ class WasmTableToTableAdapterTest {
     }
   }
 
-  /**
-   * Creates a mock WasmTable that throws on getSize().
-   */
+  /** Creates a mock WasmTable that throws on getSize(). */
   private WasmTable createFailingTable() {
     return new FailingWasmTable();
   }
 
-  /**
-   * Test implementation of WasmTable that throws on all operations.
-   */
+  /** Test implementation of WasmTable that throws on all operations. */
   private static class FailingWasmTable implements WasmTable {
 
     @Override
@@ -246,14 +238,16 @@ class WasmTableToTableAdapterTest {
     }
 
     @Override
-    public void copy(final int dst, final WasmTable srcTable, final int srcIndex,
-        final int count) {
+    public void copy(final int dst, final WasmTable srcTable, final int srcIndex, final int count) {
       throw new RuntimeException("Table access failed");
     }
 
     @Override
-    public void init(final int destOffset, final int elementSegmentIndex,
-        final int srcOffset, final int length) {
+    public void init(
+        final int destOffset,
+        final int elementSegmentIndex,
+        final int srcOffset,
+        final int length) {
       throw new RuntimeException("Table access failed");
     }
 
@@ -385,7 +379,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.grow((long) Integer.MAX_VALUE + 1, null),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.grow((long) Integer.MAX_VALUE + 1, null),
           "Should throw for delta exceeding Integer.MAX_VALUE");
     }
   }
@@ -419,8 +415,8 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.get(-1),
-          "Should throw on negative index");
+      assertThrows(
+          IllegalArgumentException.class, () -> adapter.get(-1), "Should throw on negative index");
     }
 
     @Test
@@ -429,8 +425,8 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.get(10),
-          "Should throw on out of bounds index");
+      assertThrows(
+          WasmException.class, () -> adapter.get(10), "Should throw on out of bounds index");
     }
 
     @Test
@@ -439,7 +435,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.get((long) Integer.MAX_VALUE + 1),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.get((long) Integer.MAX_VALUE + 1),
           "Should throw for index exceeding Integer.MAX_VALUE");
     }
   }
@@ -465,7 +463,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.set(-1, "value"),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.set(-1, "value"),
           "Should throw on negative index");
     }
 
@@ -475,7 +475,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.set(10, "value"),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.set(10, "value"),
           "Should throw on out of bounds index");
     }
   }
@@ -490,7 +492,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertEquals(Table.TableElementType.FUNCREF, adapter.getElementType(),
+      assertEquals(
+          Table.TableElementType.FUNCREF,
+          adapter.getElementType(),
           "Element type should be FUNCREF");
     }
 
@@ -500,7 +504,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.EXTERNREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertEquals(Table.TableElementType.EXTERNREF, adapter.getElementType(),
+      assertEquals(
+          Table.TableElementType.EXTERNREF,
+          adapter.getElementType(),
           "Element type should be EXTERNREF");
     }
 
@@ -510,7 +516,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(null, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertEquals(Table.TableElementType.EXTERNREF, adapter.getElementType(),
+      assertEquals(
+          Table.TableElementType.EXTERNREF,
+          adapter.getElementType(),
           "Element type should default to EXTERNREF");
     }
 
@@ -520,7 +528,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.I32, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertEquals(Table.TableElementType.EXTERNREF, adapter.getElementType(),
+      assertEquals(
+          Table.TableElementType.EXTERNREF,
+          adapter.getElementType(),
           "Element type should default to EXTERNREF for non-ref types");
     }
   }
@@ -585,7 +595,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.fill(-1, null, 5),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.fill(-1, null, 5),
           "Should throw on negative dstIndex");
     }
 
@@ -595,7 +607,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.fill(0, null, -1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.fill(0, null, -1),
           "Should throw on negative length");
     }
 
@@ -605,7 +619,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(WasmException.class, () -> adapter.fill(8, null, 5),
+      assertThrows(
+          WasmException.class,
+          () -> adapter.fill(8, null, 5),
           "Should throw on out of bounds fill");
     }
   }
@@ -636,7 +652,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.copy(0, null, 0, 5),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.copy(0, null, 0, 5),
           "Should throw on null srcTable");
     }
 
@@ -646,7 +664,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.copy(-1, adapter, 0, 5),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.copy(-1, adapter, 0, 5),
           "Should throw on negative dstIndex");
     }
 
@@ -656,7 +676,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.copy(0, adapter, -1, 5),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.copy(0, adapter, -1, 5),
           "Should throw on negative srcIndex");
     }
 
@@ -666,7 +688,9 @@ class WasmTableToTableAdapterTest {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 10, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      assertThrows(IllegalArgumentException.class, () -> adapter.copy(0, adapter, 0, -1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> adapter.copy(0, adapter, 0, -1),
           "Should throw on negative length");
     }
 
@@ -733,7 +757,9 @@ class WasmTableToTableAdapterTest {
       // This grow will fail because it exceeds max size
       final CompletableFuture<Long> future = adapter.growAsync(20, null);
 
-      assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS),
+      assertThrows(
+          ExecutionException.class,
+          () -> future.get(5, TimeUnit.SECONDS),
           "Should propagate exception");
     }
   }

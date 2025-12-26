@@ -41,8 +41,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link ComplexPanamaTypeConverter} class.
  *
- * <p>This test class verifies the complex type conversion utilities for Panama Foreign Function
- * API including multi-dimensional arrays, collections, and POJOs.
+ * <p>This test class verifies the complex type conversion utilities for Panama Foreign Function API
+ * including multi-dimensional arrays, collections, and POJOs.
  */
 @DisplayName("ComplexPanamaTypeConverter Tests")
 class ComplexPanamaTypeConverterTest {
@@ -85,8 +85,7 @@ class ComplexPanamaTypeConverterTest {
     @Test
     @DisplayName("Constructor with arenaManager should create converter")
     void constructorWithArenaManagerShouldCreateConverter() {
-      final ComplexPanamaTypeConverter testConverter =
-          new ComplexPanamaTypeConverter(arenaManager);
+      final ComplexPanamaTypeConverter testConverter = new ComplexPanamaTypeConverter(arenaManager);
 
       assertNotNull(testConverter, "Converter should be created");
     }
@@ -413,8 +412,7 @@ class ComplexPanamaTypeConverterTest {
     @Test
     @DisplayName("createOptimizedParameterLayout should create layout for multiple objects")
     void createOptimizedParameterLayoutShouldCreateLayoutForMultipleObjects() throws WasmException {
-      final MemorySegment result =
-          converter.createOptimizedParameterLayout("string", 42, 3.14);
+      final MemorySegment result = converter.createOptimizedParameterLayout("string", 42, 3.14);
 
       assertNotNull(result, "Result should not be null");
       assertTrue(result.byteSize() > 0, "Segment should have size > 0");
@@ -468,9 +466,7 @@ class ComplexPanamaTypeConverterTest {
     void extractFromOptimizedParameterLayoutShouldThrowForNullSegment() {
       assertThrows(
           Exception.class,
-          () ->
-              converter.extractFromOptimizedParameterLayout(
-                  null, String.class),
+          () -> converter.extractFromOptimizedParameterLayout(null, String.class),
           "Should throw for null segment");
     }
 
@@ -504,8 +500,7 @@ class ComplexPanamaTypeConverterTest {
       final int[] array = new int[] {1, 2, 3};
 
       assertDoesNotThrow(
-          () -> converter.validatePanamaMarshalableObject(array),
-          "Should pass for array");
+          () -> converter.validatePanamaMarshalableObject(array), "Should pass for array");
     }
 
     @Test
@@ -514,8 +509,7 @@ class ComplexPanamaTypeConverterTest {
       final List<String> list = Arrays.asList("a", "b", "c");
 
       assertDoesNotThrow(
-          () -> converter.validatePanamaMarshalableObject(list),
-          "Should pass for list");
+          () -> converter.validatePanamaMarshalableObject(list), "Should pass for list");
     }
 
     @Test
@@ -664,10 +658,11 @@ class ComplexPanamaTypeConverterTest {
     @Test
     @DisplayName("Nested array should be handled")
     void nestedArrayShouldBeHandled() throws WasmException {
-      final int[][][] nestedArray = new int[][][] {
-          {{1, 2}, {3, 4}},
-          {{5, 6}, {7, 8}}
-      };
+      final int[][][] nestedArray =
+          new int[][][] {
+            {{1, 2}, {3, 4}},
+            {{5, 6}, {7, 8}}
+          };
 
       final MemorySegment result = converter.marshalMultiDimensionalArrayToPanama(nestedArray);
 
@@ -732,7 +727,8 @@ class ComplexPanamaTypeConverterTest {
       final MemorySegment mapSegment = converter.marshalCollectionToPanama(map);
 
       // Unmarshal
-      final Object unmarshaledList = converter.unmarshalCollectionFromPanama(listSegment, List.class);
+      final Object unmarshaledList =
+          converter.unmarshalCollectionFromPanama(listSegment, List.class);
       final Object unmarshaledMap = converter.unmarshalCollectionFromPanama(mapSegment, Map.class);
 
       // Verify
@@ -746,8 +742,7 @@ class ComplexPanamaTypeConverterTest {
     @DisplayName("Full lifecycle with optimized parameter layout should work")
     void fullLifecycleWithOptimizedParameterLayoutShouldWork() throws WasmException {
       // Create optimized layout with multiple types
-      final MemorySegment layout =
-          converter.createOptimizedParameterLayout("test", 42, 3.14, true);
+      final MemorySegment layout = converter.createOptimizedParameterLayout("test", 42, 3.14, true);
 
       assertNotNull(layout, "Layout should not be null");
       assertTrue(layout.byteSize() > 0, "Layout should have positive size");

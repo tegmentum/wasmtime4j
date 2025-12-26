@@ -106,8 +106,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
+      assertEquals(ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
       assertEquals(0, descriptor.argumentLayouts().size(), "Should have no arguments");
     }
 
@@ -139,9 +138,7 @@ class FunctionDescriptorsTest {
       assertEquals(
           ValueLayout.ADDRESS, descriptor.argumentLayouts().get(0), "First arg should be ADDRESS");
       assertEquals(
-          ValueLayout.ADDRESS,
-          descriptor.argumentLayouts().get(1),
-          "Second arg should be ADDRESS");
+          ValueLayout.ADDRESS, descriptor.argumentLayouts().get(1), "Second arg should be ADDRESS");
       assertEquals(
           ValueLayout.JAVA_LONG,
           descriptor.argumentLayouts().get(2),
@@ -203,9 +200,7 @@ class FunctionDescriptorsTest {
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
       assertEquals(
-          ValueLayout.JAVA_BOOLEAN,
-          descriptor.returnLayout().get(),
-          "Should return JAVA_BOOLEAN");
+          ValueLayout.JAVA_BOOLEAN, descriptor.returnLayout().get(), "Should return JAVA_BOOLEAN");
       assertEquals(3, descriptor.argumentLayouts().size(), "Should have 3 arguments");
     }
 
@@ -243,8 +238,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
+      assertEquals(ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
       assertEquals(2, descriptor.argumentLayouts().size(), "Should have 2 arguments");
       assertEquals(
           ValueLayout.JAVA_INT,
@@ -263,8 +257,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.JAVA_INT, descriptor.returnLayout().get(), "Should return JAVA_INT");
+      assertEquals(ValueLayout.JAVA_INT, descriptor.returnLayout().get(), "Should return JAVA_INT");
       assertEquals(1, descriptor.argumentLayouts().size(), "Should have 1 argument");
     }
 
@@ -276,9 +269,7 @@ class FunctionDescriptorsTest {
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
       assertEquals(
-          ValueLayout.JAVA_BOOLEAN,
-          descriptor.returnLayout().get(),
-          "Should return JAVA_BOOLEAN");
+          ValueLayout.JAVA_BOOLEAN, descriptor.returnLayout().get(), "Should return JAVA_BOOLEAN");
       assertEquals(2, descriptor.argumentLayouts().size(), "Should have 2 arguments");
     }
 
@@ -289,8 +280,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
+      assertEquals(ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
       assertEquals(1, descriptor.argumentLayouts().size(), "Should have 1 argument");
     }
   }
@@ -306,8 +296,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
+      assertEquals(ValueLayout.ADDRESS, descriptor.returnLayout().get(), "Should return ADDRESS");
       assertEquals(5, descriptor.argumentLayouts().size(), "Should have 5 arguments");
     }
   }
@@ -348,8 +337,7 @@ class FunctionDescriptorsTest {
 
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
-      assertEquals(
-          ValueLayout.JAVA_INT, descriptor.returnLayout().get(), "Should return JAVA_INT");
+      assertEquals(ValueLayout.JAVA_INT, descriptor.returnLayout().get(), "Should return JAVA_INT");
       assertEquals(1, descriptor.argumentLayouts().size(), "Should have 1 argument");
     }
 
@@ -361,9 +349,7 @@ class FunctionDescriptorsTest {
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
       assertEquals(
-          ValueLayout.JAVA_BOOLEAN,
-          descriptor.returnLayout().get(),
-          "Should return JAVA_BOOLEAN");
+          ValueLayout.JAVA_BOOLEAN, descriptor.returnLayout().get(), "Should return JAVA_BOOLEAN");
       assertEquals(3, descriptor.argumentLayouts().size(), "Should have 3 arguments");
     }
 
@@ -375,9 +361,7 @@ class FunctionDescriptorsTest {
       assertNotNull(descriptor, "Descriptor should not be null");
       assertTrue(descriptor.returnLayout().isPresent(), "Should have return layout");
       assertEquals(
-          ValueLayout.JAVA_BOOLEAN,
-          descriptor.returnLayout().get(),
-          "Should return JAVA_BOOLEAN");
+          ValueLayout.JAVA_BOOLEAN, descriptor.returnLayout().get(), "Should return JAVA_BOOLEAN");
       assertEquals(3, descriptor.argumentLayouts().size(), "Should have 3 arguments");
     }
   }
@@ -418,8 +402,7 @@ class FunctionDescriptorsTest {
     @DisplayName("clearCache should be idempotent")
     void clearCacheShouldBeIdempotent() {
       FunctionDescriptors.clearCache();
-      assertDoesNotThrow(
-          FunctionDescriptors::clearCache, "Multiple clears should not throw");
+      assertDoesNotThrow(FunctionDescriptors::clearCache, "Multiple clears should not throw");
       assertEquals(0, FunctionDescriptors.getCacheSize(), "Cache should remain empty");
     }
 
@@ -476,12 +459,9 @@ class FunctionDescriptorsTest {
     @DisplayName("All memory descriptors should be accessible")
     void allMemoryDescriptorsShouldBeAccessible() {
       assertDoesNotThrow(FunctionDescriptors::wasmtimeMemoryNew, "wasmtimeMemoryNew should work");
-      assertDoesNotThrow(
-          FunctionDescriptors::wasmtimeMemorySize, "wasmtimeMemorySize should work");
-      assertDoesNotThrow(
-          FunctionDescriptors::wasmtimeMemoryGrow, "wasmtimeMemoryGrow should work");
-      assertDoesNotThrow(
-          FunctionDescriptors::wasmtimeMemoryData, "wasmtimeMemoryData should work");
+      assertDoesNotThrow(FunctionDescriptors::wasmtimeMemorySize, "wasmtimeMemorySize should work");
+      assertDoesNotThrow(FunctionDescriptors::wasmtimeMemoryGrow, "wasmtimeMemoryGrow should work");
+      assertDoesNotThrow(FunctionDescriptors::wasmtimeMemoryData, "wasmtimeMemoryData should work");
     }
 
     @Test

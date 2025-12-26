@@ -85,8 +85,7 @@ public class JniExecutionPackageTest {
         superClass = superClass.getSuperclass();
       }
 
-      assertTrue(
-          implementsResourceLimiter, "JniResourceLimiter should implement ResourceLimiter");
+      assertTrue(implementsResourceLimiter, "JniResourceLimiter should implement ResourceLimiter");
     }
 
     @Test

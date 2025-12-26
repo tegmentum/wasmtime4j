@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
  * Comprehensive package-level tests for the JNI factory package.
  *
  * <p>This test class verifies the API contracts, class structure, and method signatures of all
- * factory-related classes in the jni.factory package using reflection-based testing to avoid
- * native library loading.
+ * factory-related classes in the jni.factory package using reflection-based testing to avoid native
+ * library loading.
  *
  * @since 1.0.0
  */
@@ -91,8 +91,7 @@ public class JniFactoryPackageTest {
       for (final Method method : clazz.getDeclaredMethods()) {
         if ("createRuntime".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
           hasCreateRuntime = true;
-          assertEquals(
-              0, method.getParameterCount(), "createRuntime should have no parameters");
+          assertEquals(0, method.getParameterCount(), "createRuntime should have no parameters");
           break;
         }
       }
@@ -129,9 +128,7 @@ public class JniFactoryPackageTest {
             && Modifier.isStatic(method.getModifiers())) {
           hasGetImplementationName = true;
           assertEquals(
-              String.class,
-              method.getReturnType(),
-              "getImplementationName should return String");
+              String.class, method.getReturnType(), "getImplementationName should return String");
           break;
         }
       }
@@ -165,11 +162,9 @@ public class JniFactoryPackageTest {
       boolean hasGetFactoryInfo = false;
 
       for (final Method method : clazz.getDeclaredMethods()) {
-        if ("getFactoryInfo".equals(method.getName())
-            && Modifier.isStatic(method.getModifiers())) {
+        if ("getFactoryInfo".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
           hasGetFactoryInfo = true;
-          assertEquals(
-              String.class, method.getReturnType(), "getFactoryInfo should return String");
+          assertEquals(String.class, method.getReturnType(), "getFactoryInfo should return String");
           break;
         }
       }

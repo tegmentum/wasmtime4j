@@ -87,8 +87,8 @@ class WasiOpenFlagsTest {
     void valuesShouldBePowersOfTwo() {
       for (final WasiOpenFlags flag : WasiOpenFlags.values()) {
         final int value = flag.getValue();
-        assertTrue(value > 0 && (value & (value - 1)) == 0,
-            flag.name() + " value should be a power of 2");
+        assertTrue(
+            value > 0 && (value & (value - 1)) == 0, flag.name() + " value should be a power of 2");
       }
     }
   }
@@ -122,11 +122,12 @@ class WasiOpenFlagsTest {
     @Test
     @DisplayName("combine with all flags should OR all values")
     void combineWithAllFlagsShouldOrAllValues() {
-      final int combined = WasiOpenFlags.combine(
-          WasiOpenFlags.CREAT,
-          WasiOpenFlags.DIRECTORY,
-          WasiOpenFlags.EXCL,
-          WasiOpenFlags.TRUNC);
+      final int combined =
+          WasiOpenFlags.combine(
+              WasiOpenFlags.CREAT,
+              WasiOpenFlags.DIRECTORY,
+              WasiOpenFlags.EXCL,
+              WasiOpenFlags.TRUNC);
       assertEquals(15, combined, "All flags combined should be 15");
     }
   }
@@ -163,8 +164,8 @@ class WasiOpenFlagsTest {
     void containsShouldWorkWithAllFlagsMask() {
       final int allFlags = 15; // All flags combined
       for (final WasiOpenFlags flag : WasiOpenFlags.values()) {
-        assertTrue(WasiOpenFlags.contains(allFlags, flag),
-            "All flags mask should contain " + flag.name());
+        assertTrue(
+            WasiOpenFlags.contains(allFlags, flag), "All flags mask should contain " + flag.name());
       }
     }
   }
@@ -178,8 +179,7 @@ class WasiOpenFlagsTest {
     void combineAndContainsShouldRoundTripCorrectly() {
       for (final WasiOpenFlags flag : WasiOpenFlags.values()) {
         final int mask = WasiOpenFlags.combine(flag);
-        assertTrue(WasiOpenFlags.contains(mask, flag),
-            "Round trip should work for " + flag.name());
+        assertTrue(WasiOpenFlags.contains(mask, flag), "Round trip should work for " + flag.name());
       }
     }
   }

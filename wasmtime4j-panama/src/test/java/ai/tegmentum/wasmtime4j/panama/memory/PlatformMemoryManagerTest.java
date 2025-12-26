@@ -16,9 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.memory;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,9 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PlatformMemoryManager}.
- */
+/** Comprehensive tests for {@link PlatformMemoryManager}. */
 @DisplayName("PlatformMemoryManager Tests")
 class PlatformMemoryManagerTest {
 
@@ -81,25 +77,27 @@ class PlatformMemoryManagerTest {
     @DisplayName("Config should have default values")
     void configShouldHaveDefaultValues() {
       final PlatformMemoryManager.Config config = new PlatformMemoryManager.Config();
-      assertTrue(config.enableHugePages,
-          "enableHugePages should be true by default");
-      assertEquals(-1, config.numaNode,
-          "numaNode should be -1 (automatic) by default");
-      assertEquals(64 * 1024 * 1024, config.initialPoolSizeBytes,
+      assertTrue(config.enableHugePages, "enableHugePages should be true by default");
+      assertEquals(-1, config.numaNode, "numaNode should be -1 (automatic) by default");
+      assertEquals(
+          64 * 1024 * 1024,
+          config.initialPoolSizeBytes,
           "initialPoolSizeBytes should be 64MB by default");
-      assertEquals(2L * 1024 * 1024 * 1024, config.maxPoolSizeBytes,
+      assertEquals(
+          2L * 1024 * 1024 * 1024,
+          config.maxPoolSizeBytes,
           "maxPoolSizeBytes should be 2GB by default");
-      assertTrue(config.enableCompression,
-          "enableCompression should be true by default");
-      assertTrue(config.enableDeduplication,
-          "enableDeduplication should be true by default");
-      assertEquals(4 * 1024 * 1024, config.prefetchBufferSizeBytes,
+      assertTrue(config.enableCompression, "enableCompression should be true by default");
+      assertTrue(config.enableDeduplication, "enableDeduplication should be true by default");
+      assertEquals(
+          4 * 1024 * 1024,
+          config.prefetchBufferSizeBytes,
           "prefetchBufferSizeBytes should be 4MB by default");
-      assertTrue(config.enableLeakDetection,
-          "enableLeakDetection should be true by default");
-      assertEquals(64, config.alignmentBytes,
-          "alignmentBytes should be 64 by default");
-      assertEquals(PlatformMemoryManager.Config.PageSize.DEFAULT, config.pageSize,
+      assertTrue(config.enableLeakDetection, "enableLeakDetection should be true by default");
+      assertEquals(64, config.alignmentBytes, "alignmentBytes should be 64 by default");
+      assertEquals(
+          PlatformMemoryManager.Config.PageSize.DEFAULT,
+          config.pageSize,
           "pageSize should be DEFAULT by default");
     }
   }
@@ -111,35 +109,39 @@ class PlatformMemoryManagerTest {
     @Test
     @DisplayName("PageSize should have DEFAULT value with getValue 0")
     void pageSizeDefaultShouldHaveValue0() {
-      assertEquals(0, PlatformMemoryManager.Config.PageSize.DEFAULT.getValue(),
+      assertEquals(
+          0,
+          PlatformMemoryManager.Config.PageSize.DEFAULT.getValue(),
           "DEFAULT should have value 0");
     }
 
     @Test
     @DisplayName("PageSize should have SMALL value with getValue 1")
     void pageSizeSmallShouldHaveValue1() {
-      assertEquals(1, PlatformMemoryManager.Config.PageSize.SMALL.getValue(),
-          "SMALL should have value 1");
+      assertEquals(
+          1, PlatformMemoryManager.Config.PageSize.SMALL.getValue(), "SMALL should have value 1");
     }
 
     @Test
     @DisplayName("PageSize should have LARGE value with getValue 2")
     void pageSizeLargeShouldHaveValue2() {
-      assertEquals(2, PlatformMemoryManager.Config.PageSize.LARGE.getValue(),
-          "LARGE should have value 2");
+      assertEquals(
+          2, PlatformMemoryManager.Config.PageSize.LARGE.getValue(), "LARGE should have value 2");
     }
 
     @Test
     @DisplayName("PageSize should have HUGE value with getValue 3")
     void pageSizeHugeShouldHaveValue3() {
-      assertEquals(3, PlatformMemoryManager.Config.PageSize.HUGE.getValue(),
-          "HUGE should have value 3");
+      assertEquals(
+          3, PlatformMemoryManager.Config.PageSize.HUGE.getValue(), "HUGE should have value 3");
     }
 
     @Test
     @DisplayName("PageSize should have 4 values")
     void pageSizeShouldHave4Values() {
-      assertEquals(4, PlatformMemoryManager.Config.PageSize.values().length,
+      assertEquals(
+          4,
+          PlatformMemoryManager.Config.PageSize.values().length,
           "PageSize should have 4 values");
     }
   }
@@ -267,7 +269,8 @@ class PlatformMemoryManagerTest {
     @Test
     @DisplayName("Constructor should throw on null config")
     void constructorShouldThrowOnNullConfig() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new PlatformMemoryManager(null),
           "Constructor should throw IllegalArgumentException on null config");
     }
@@ -369,8 +372,8 @@ class PlatformMemoryManagerTest {
     @Test
     @DisplayName("isClosed method should exist")
     void isClosedMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(PlatformMemoryManager.class.getMethod("isClosed"),
-          "isClosed method should exist");
+      assertNotNull(
+          PlatformMemoryManager.class.getMethod("isClosed"), "isClosed method should exist");
     }
   }
 
@@ -381,8 +384,7 @@ class PlatformMemoryManagerTest {
     @Test
     @DisplayName("close method should exist")
     void closeMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(PlatformMemoryManager.class.getMethod("close"),
-          "close method should exist");
+      assertNotNull(PlatformMemoryManager.class.getMethod("close"), "close method should exist");
     }
   }
 
@@ -493,17 +495,15 @@ class PlatformMemoryManagerTest {
     @DisplayName("deallocate should have correct signature")
     void deallocateShouldHaveCorrectSignature() throws NoSuchMethodException {
       assertNotNull(
-          PlatformMemoryManager.class.getMethod("deallocate",
-              java.lang.foreign.MemorySegment.class),
+          PlatformMemoryManager.class.getMethod(
+              "deallocate", java.lang.foreign.MemorySegment.class),
           "deallocate(MemorySegment) should exist");
     }
 
     @Test
     @DisplayName("getStats should have correct signature")
     void getStatsShouldHaveCorrectSignature() throws NoSuchMethodException {
-      assertNotNull(
-          PlatformMemoryManager.class.getMethod("getStats"),
-          "getStats() should exist");
+      assertNotNull(PlatformMemoryManager.class.getMethod("getStats"), "getStats() should exist");
     }
 
     @Test
@@ -518,8 +518,8 @@ class PlatformMemoryManagerTest {
     @DisplayName("prefetchMemory should have correct signature")
     void prefetchMemoryShouldHaveCorrectSignature() throws NoSuchMethodException {
       assertNotNull(
-          PlatformMemoryManager.class.getMethod("prefetchMemory",
-              java.lang.foreign.MemorySegment.class, long.class),
+          PlatformMemoryManager.class.getMethod(
+              "prefetchMemory", java.lang.foreign.MemorySegment.class, long.class),
           "prefetchMemory(MemorySegment, long) should exist");
     }
 

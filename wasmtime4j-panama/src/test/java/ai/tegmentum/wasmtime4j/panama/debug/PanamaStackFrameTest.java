@@ -27,9 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PanamaStackFrame}.
- */
+/** Comprehensive tests for {@link PanamaStackFrame}. */
 @DisplayName("PanamaStackFrame Tests")
 class PanamaStackFrameTest {
 
@@ -53,17 +51,18 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("Builder should create stack frame with all fields")
     void builderShouldCreateStackFrameWithAllFields() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("testFunction")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .moduleName("testModule")
-          .instructionOffset(0x1000L)
-          .lineNumber(42)
-          .columnNumber(10)
-          .sourceFile("test.wat")
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("testFunction")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .moduleName("testModule")
+              .instructionOffset(0x1000L)
+              .lineNumber(42)
+              .columnNumber(10)
+              .sourceFile("test.wat")
+              .build();
 
       assertEquals(0, frame.getFrameIndex(), "Frame index should match");
       assertEquals("testFunction", frame.getFunctionName(), "Function name should match");
@@ -95,17 +94,18 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("Builder should allow chaining all methods")
     void builderShouldAllowChainingAllMethods() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(1)
-          .functionName("func")
-          .functionIndex(2)
-          .moduleIndex(3)
-          .moduleName("mod")
-          .instructionOffset(100L)
-          .lineNumber(10)
-          .columnNumber(5)
-          .sourceFile("file.wat")
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .frameIndex(1)
+              .functionName("func")
+              .functionIndex(2)
+              .moduleIndex(3)
+              .moduleName("mod")
+              .instructionOffset(100L)
+              .lineNumber(10)
+              .columnNumber(5)
+              .sourceFile("file.wat")
+              .build();
 
       assertNotNull(frame, "Chained builder should produce frame");
     }
@@ -113,9 +113,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("Builder should be reusable for multiple builds")
     void builderShouldBeReusableForMultipleBuilds() {
-      final PanamaStackFrame.Builder builder = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func1");
+      final PanamaStackFrame.Builder builder =
+          PanamaStackFrame.builder().frameIndex(0).functionName("func1");
 
       final PanamaStackFrame frame1 = builder.build();
 
@@ -137,10 +136,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("hasSourceInfo should return true when source file and line are set")
     void hasSourceInfoShouldReturnTrueWhenSourceFileAndLineAreSet() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .sourceFile("test.wat")
-          .lineNumber(10)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().sourceFile("test.wat").lineNumber(10).build();
 
       assertTrue(frame.hasSourceInfo(), "Should have source info");
     }
@@ -148,9 +145,7 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("hasSourceInfo should return false when source file is null")
     void hasSourceInfoShouldReturnFalseWhenSourceFileIsNull() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .lineNumber(10)
-          .build();
+      final PanamaStackFrame frame = PanamaStackFrame.builder().lineNumber(10).build();
 
       assertFalse(frame.hasSourceInfo(), "Should not have source info without file");
     }
@@ -158,10 +153,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("hasSourceInfo should return false when line number is negative")
     void hasSourceInfoShouldReturnFalseWhenLineNumberIsNegative() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .sourceFile("test.wat")
-          .lineNumber(-1)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().sourceFile("test.wat").lineNumber(-1).build();
 
       assertFalse(frame.hasSourceInfo(), "Should not have source info with negative line");
     }
@@ -169,10 +162,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("hasSourceInfo should return true when line number is zero")
     void hasSourceInfoShouldReturnTrueWhenLineNumberIsZero() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .sourceFile("test.wat")
-          .lineNumber(0)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().sourceFile("test.wat").lineNumber(0).build();
 
       assertTrue(frame.hasSourceInfo(), "Should have source info with line 0");
     }
@@ -185,11 +176,12 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("toString should include frame index and function name")
     void toStringShouldIncludeFrameIndexAndFunctionName() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("myFunction")
-          .instructionOffset(0x100L)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("myFunction")
+              .instructionOffset(0x100L)
+              .build();
 
       final String str = frame.toString();
       assertTrue(str.contains("#0"), "Should contain frame index");
@@ -200,10 +192,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("toString should show function index when name is null")
     void toStringShouldShowFunctionIndexWhenNameIsNull() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(1)
-          .functionIndex(42)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().frameIndex(1).functionIndex(42).build();
 
       final String str = frame.toString();
       assertTrue(str.contains("#1"), "Should contain frame index");
@@ -213,14 +203,15 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("toString should include source info when available")
     void toStringShouldIncludeSourceInfoWhenAvailable() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .instructionOffset(100L)
-          .sourceFile("test.wat")
-          .lineNumber(42)
-          .columnNumber(10)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .instructionOffset(100L)
+              .sourceFile("test.wat")
+              .lineNumber(42)
+              .columnNumber(10)
+              .build();
 
       final String str = frame.toString();
       assertTrue(str.contains("test.wat"), "Should contain source file");
@@ -231,10 +222,8 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("toString should not include source info when not available")
     void toStringShouldNotIncludeSourceInfoWhenNotAvailable() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().frameIndex(0).functionName("func").build();
 
       final String str = frame.toString();
       assertFalse(str.contains("("), "Should not contain source info parentheses");
@@ -243,14 +232,15 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("toString should handle line without column")
     void toStringShouldHandleLineWithoutColumn() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .instructionOffset(100L)
-          .sourceFile("test.wat")
-          .lineNumber(42)
-          .columnNumber(-1)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .instructionOffset(100L)
+              .sourceFile("test.wat")
+              .lineNumber(42)
+              .columnNumber(-1)
+              .build();
 
       final String str = frame.toString();
       assertTrue(str.contains("test.wat:42"), "Should contain file and line");
@@ -266,21 +256,23 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("equals should return true for same values")
     void equalsShouldReturnTrueForSameValues() {
-      final PanamaStackFrame frame1 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .build();
+      final PanamaStackFrame frame1 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .build();
 
-      final PanamaStackFrame frame2 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .build();
+      final PanamaStackFrame frame2 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .build();
 
       assertEquals(frame1, frame2, "Frames with same values should be equal");
     }
@@ -288,28 +280,29 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("equals should ignore non-key fields")
     void equalsShouldIgnoreNonKeyFields() {
-      final PanamaStackFrame frame1 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .sourceFile("file1.wat")
-          .lineNumber(10)
-          .build();
+      final PanamaStackFrame frame1 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .sourceFile("file1.wat")
+              .lineNumber(10)
+              .build();
 
-      final PanamaStackFrame frame2 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .sourceFile("file2.wat")
-          .lineNumber(20)
-          .build();
+      final PanamaStackFrame frame2 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .sourceFile("file2.wat")
+              .lineNumber(20)
+              .build();
 
-      assertEquals(frame1, frame2,
-          "Frames should be equal regardless of source info (by design)");
+      assertEquals(frame1, frame2, "Frames should be equal regardless of source info (by design)");
     }
 
     @Test
@@ -336,8 +329,7 @@ class PanamaStackFrameTest {
       final PanamaStackFrame frame1 = PanamaStackFrame.builder().functionIndex(1).build();
       final PanamaStackFrame frame2 = PanamaStackFrame.builder().functionIndex(2).build();
 
-      assertNotEquals(frame1, frame2,
-          "Frames with different function indices should not be equal");
+      assertNotEquals(frame1, frame2, "Frames with different function indices should not be equal");
     }
 
     @Test
@@ -382,33 +374,32 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("hashCode should be consistent with equals")
     void hashCodeShouldBeConsistentWithEquals() {
-      final PanamaStackFrame frame1 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .build();
+      final PanamaStackFrame frame1 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .build();
 
-      final PanamaStackFrame frame2 = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .functionIndex(5)
-          .moduleIndex(1)
-          .instructionOffset(0x1000L)
-          .build();
+      final PanamaStackFrame frame2 =
+          PanamaStackFrame.builder()
+              .frameIndex(0)
+              .functionName("func")
+              .functionIndex(5)
+              .moduleIndex(1)
+              .instructionOffset(0x1000L)
+              .build();
 
-      assertEquals(frame1.hashCode(), frame2.hashCode(),
-          "Equal frames should have same hashCode");
+      assertEquals(frame1.hashCode(), frame2.hashCode(), "Equal frames should have same hashCode");
     }
 
     @Test
     @DisplayName("hashCode should be stable across multiple calls")
     void hashCodeShouldBeStableAcrossMultipleCalls() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(0)
-          .functionName("func")
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().frameIndex(0).functionName("func").build();
 
       final int hash1 = frame.hashCode();
       final int hash2 = frame.hashCode();
@@ -426,9 +417,7 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("Should handle negative frame index")
     void shouldHandleNegativeFrameIndex() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .frameIndex(-1)
-          .build();
+      final PanamaStackFrame frame = PanamaStackFrame.builder().frameIndex(-1).build();
 
       assertEquals(-1, frame.getFrameIndex(), "Should handle negative frame index");
     }
@@ -436,23 +425,22 @@ class PanamaStackFrameTest {
     @Test
     @DisplayName("Should handle maximum instruction offset")
     void shouldHandleMaximumInstructionOffset() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .instructionOffset(Long.MAX_VALUE)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder().instructionOffset(Long.MAX_VALUE).build();
 
-      assertEquals(Long.MAX_VALUE, frame.getInstructionOffset(),
-          "Should handle max long offset");
+      assertEquals(Long.MAX_VALUE, frame.getInstructionOffset(), "Should handle max long offset");
     }
 
     @Test
     @DisplayName("Should handle empty strings")
     void shouldHandleEmptyStrings() {
-      final PanamaStackFrame frame = PanamaStackFrame.builder()
-          .functionName("")
-          .moduleName("")
-          .sourceFile("")
-          .lineNumber(0)
-          .build();
+      final PanamaStackFrame frame =
+          PanamaStackFrame.builder()
+              .functionName("")
+              .moduleName("")
+              .sourceFile("")
+              .lineNumber(0)
+              .build();
 
       assertEquals("", frame.getFunctionName(), "Should handle empty function name");
       assertEquals("", frame.getModuleName(), "Should handle empty module name");

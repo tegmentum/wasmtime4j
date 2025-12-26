@@ -33,9 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link ComplexJniTypeConverter}.
- */
+/** Comprehensive tests for {@link ComplexJniTypeConverter}. */
 @DisplayName("ComplexJniTypeConverter Tests")
 class ComplexJniTypeConverterTest {
 
@@ -83,7 +81,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Constructor should throw on null configuration")
     void constructorShouldThrowOnNullConfiguration() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> new ComplexJniTypeConverter(null),
           "Should throw on null configuration");
     }
@@ -135,7 +134,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null array")
     void shouldThrowOnNullArray() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.marshalMultiDimensionalArray(null),
           "Should throw on null array");
     }
@@ -143,7 +143,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on non-array object")
     void shouldThrowOnNonArrayObject() {
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> converter.marshalMultiDimensionalArray("not an array"),
           "Should throw on non-array object");
     }
@@ -281,7 +282,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null collection")
     void shouldThrowOnNullCollection() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.marshalCollection(null),
           "Should throw on null collection");
     }
@@ -289,7 +291,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on unsupported collection type")
     void shouldThrowOnUnsupportedCollectionType() {
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> converter.marshalCollection("not a collection"),
           "Should throw on unsupported collection type");
     }
@@ -345,7 +348,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null object")
     void shouldThrowOnNullObject() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.estimateMarshalingOverhead(null),
           "Should throw on null object");
     }
@@ -377,7 +381,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null object")
     void shouldThrowOnNullObject() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.validateMarshalableObject(null),
           "Should throw on null object");
     }
@@ -385,7 +390,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on enum type")
     void shouldThrowOnEnumType() {
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> converter.validateMarshalableObject(TestEnum.VALUE1),
           "Should throw on enum type");
     }
@@ -398,7 +404,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null WasmValues")
     void shouldThrowOnNullWasmValues() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> converter.unmarshalMultiDimensionalArray(null, int[].class),
           "Should throw on null WasmValues");
     }
@@ -408,7 +415,8 @@ class ComplexJniTypeConverterTest {
     void shouldThrowOnNullArrayType() {
       final WasmValue[] wasmValues = new WasmValue[4];
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> converter.unmarshalMultiDimensionalArray(wasmValues, null),
           "Should throw on null array type");
     }
@@ -418,7 +426,8 @@ class ComplexJniTypeConverterTest {
     void shouldThrowOnInvalidArrayFormat() {
       final WasmValue[] wasmValues = new WasmValue[2]; // Should be 4
 
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> converter.unmarshalMultiDimensionalArray(wasmValues, int[].class),
           "Should throw on invalid format");
     }
@@ -431,7 +440,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null WasmValues")
     void shouldThrowOnNullWasmValues() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> converter.unmarshalCollection(null, List.class),
           "Should throw on null WasmValues");
     }
@@ -441,7 +451,8 @@ class ComplexJniTypeConverterTest {
     void shouldThrowOnNullCollectionType() {
       final WasmValue[] wasmValues = new WasmValue[2];
 
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> converter.unmarshalCollection(wasmValues, null),
           "Should throw on null collection type");
     }
@@ -449,11 +460,10 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on unsupported collection type")
     void shouldThrowOnUnsupportedCollectionType() {
-      final WasmValue[] wasmValues = new WasmValue[] {
-          WasmValue.i32(0)
-      };
+      final WasmValue[] wasmValues = new WasmValue[] {WasmValue.i32(0)};
 
-      assertThrows(WasmException.class,
+      assertThrows(
+          WasmException.class,
           () -> converter.unmarshalCollection(wasmValues, String.class),
           "Should throw on unsupported collection type");
     }
@@ -466,7 +476,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null object")
     void shouldThrowOnNullObject() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.convertComplexObjectToWasm(null),
           "Should throw on null object");
     }
@@ -492,7 +503,8 @@ class ComplexJniTypeConverterTest {
     @Test
     @DisplayName("Should throw on null WasmValues")
     void shouldThrowOnNullWasmValues() {
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.convertWasmToComplexObject(null, String.class),
           "Should throw on null WasmValues");
     }
@@ -502,7 +514,8 @@ class ComplexJniTypeConverterTest {
     void shouldThrowOnNullExpectedType() {
       final WasmValue[] wasmValues = new WasmValue[] {WasmValue.i32(0)};
 
-      assertThrows(NullPointerException.class,
+      assertThrows(
+          NullPointerException.class,
           () -> converter.convertWasmToComplexObject(wasmValues, null),
           "Should throw on null expected type");
     }

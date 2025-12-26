@@ -100,9 +100,13 @@ class WasiEventTypeTest {
     @Test
     @DisplayName("fromValue with invalid value should throw IllegalArgumentException")
     void fromValueWithInvalidValueShouldThrowIllegalArgumentException() {
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiEventType.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(3),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiEventType.fromValue(3),
           "Should throw for value >= 3");
     }
   }
@@ -117,8 +121,8 @@ class WasiEventTypeTest {
       for (final WasiEventType eventType : WasiEventType.values()) {
         final int value = eventType.getValue();
         final WasiEventType fromValue = WasiEventType.fromValue(value);
-        assertEquals(eventType, fromValue,
-            "Round trip should return same enum value for " + eventType);
+        assertEquals(
+            eventType, fromValue, "Round trip should return same enum value for " + eventType);
       }
     }
   }

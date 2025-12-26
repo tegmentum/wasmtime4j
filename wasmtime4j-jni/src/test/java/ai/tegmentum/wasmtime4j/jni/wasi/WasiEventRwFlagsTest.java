@@ -81,9 +81,9 @@ class WasiEventRwFlagsTest {
     @Test
     @DisplayName("combine with same flag multiple times should still be the same value")
     void combineWithSameFlagMultipleTimesShouldBeIdempotent() {
-      final int combined = WasiEventRwFlags.combine(
-          WasiEventRwFlags.FD_READWRITE_HANGUP,
-          WasiEventRwFlags.FD_READWRITE_HANGUP);
+      final int combined =
+          WasiEventRwFlags.combine(
+              WasiEventRwFlags.FD_READWRITE_HANGUP, WasiEventRwFlags.FD_READWRITE_HANGUP);
       assertEquals(1, combined, "OR of same flag should be idempotent");
     }
   }
@@ -131,8 +131,8 @@ class WasiEventRwFlagsTest {
     void combineAndContainsShouldRoundTripCorrectly() {
       for (final WasiEventRwFlags flag : WasiEventRwFlags.values()) {
         final int mask = WasiEventRwFlags.combine(flag);
-        assertTrue(WasiEventRwFlags.contains(mask, flag),
-            "Round trip should work for " + flag.name());
+        assertTrue(
+            WasiEventRwFlags.contains(mask, flag), "Round trip should work for " + flag.name());
       }
     }
   }
@@ -148,12 +148,14 @@ class WasiEventRwFlagsTest {
 
       // Set flag
       flags |= WasiEventRwFlags.FD_READWRITE_HANGUP.getValue();
-      assertTrue(WasiEventRwFlags.contains(flags, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(flags, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Flag should be set");
 
       // Clear flag
       flags &= ~WasiEventRwFlags.FD_READWRITE_HANGUP.getValue();
-      assertFalse(WasiEventRwFlags.contains(flags, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertFalse(
+          WasiEventRwFlags.contains(flags, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Flag should be cleared");
     }
 
@@ -163,7 +165,8 @@ class WasiEventRwFlagsTest {
       // Simulating a poll result with hangup
       final int pollFlags = 1;
 
-      assertTrue(WasiEventRwFlags.contains(pollFlags, WasiEventRwFlags.FD_READWRITE_HANGUP),
+      assertTrue(
+          WasiEventRwFlags.contains(pollFlags, WasiEventRwFlags.FD_READWRITE_HANGUP),
           "Should detect hangup from poll flags");
     }
   }

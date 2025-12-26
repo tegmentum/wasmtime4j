@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -87,8 +86,7 @@ class JniWasmThreadLocalStorageTest {
       Field field = JniWasmThreadLocalStorage.class.getDeclaredField("nativeThreadHandle");
       assertNotNull(field, "nativeThreadHandle field should exist");
       assertEquals(long.class, field.getType(), "nativeThreadHandle should be long");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()), "nativeThreadHandle should be private");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "nativeThreadHandle should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "nativeThreadHandle should be final");
     }
 
@@ -114,11 +112,9 @@ class JniWasmThreadLocalStorageTest {
     @Test
     @DisplayName("should have public constructor with long parameter")
     void shouldHavePublicConstructor() throws Exception {
-      Constructor<?> constructor =
-          JniWasmThreadLocalStorage.class.getConstructor(long.class);
+      Constructor<?> constructor = JniWasmThreadLocalStorage.class.getConstructor(long.class);
       assertNotNull(constructor, "Constructor with long parameter should exist");
-      assertTrue(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
@@ -129,10 +125,7 @@ class JniWasmThreadLocalStorageTest {
 
       Constructor<?> constructor = constructors[0];
       assertEquals(1, constructor.getParameterCount(), "Constructor should have 1 parameter");
-      assertEquals(
-          long.class,
-          constructor.getParameterTypes()[0],
-          "Parameter should be long");
+      assertEquals(long.class, constructor.getParameterTypes()[0], "Parameter should be long");
     }
   }
 
@@ -147,8 +140,7 @@ class JniWasmThreadLocalStorageTest {
     @Test
     @DisplayName("should have putInt method with correct signature")
     void shouldHavePutIntMethod() throws Exception {
-      Method method =
-          JniWasmThreadLocalStorage.class.getMethod("putInt", String.class, int.class);
+      Method method = JniWasmThreadLocalStorage.class.getMethod("putInt", String.class, int.class);
       assertNotNull(method, "putInt method should exist");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
       assertTrue(Modifier.isPublic(method.getModifiers()), "putInt should be public");
@@ -393,8 +385,7 @@ class JniWasmThreadLocalStorageTest {
     void shouldHaveEnsureNotClosedMethod() throws Exception {
       Method method = JniWasmThreadLocalStorage.class.getDeclaredMethod("ensureNotClosed");
       assertNotNull(method, "ensureNotClosed method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
     }
 
@@ -415,8 +406,7 @@ class JniWasmThreadLocalStorageTest {
           JniWasmThreadLocalStorage.class.getDeclaredMethod(
               "validateNotNull", Object.class, String.class);
       assertNotNull(method, "validateNotNull method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "validateNotNull should be private");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "validateNotNull should be private");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
     }
   }
@@ -523,8 +513,7 @@ class JniWasmThreadLocalStorageTest {
     @Test
     @DisplayName("should have nativeClear native method")
     void shouldHaveNativeClearMethod() throws Exception {
-      Method method =
-          JniWasmThreadLocalStorage.class.getDeclaredMethod("nativeClear", long.class);
+      Method method = JniWasmThreadLocalStorage.class.getDeclaredMethod("nativeClear", long.class);
       assertNotNull(method, "nativeClear method should exist");
       assertTrue(Modifier.isNative(method.getModifiers()), "nativeClear should be native");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
@@ -533,8 +522,7 @@ class JniWasmThreadLocalStorageTest {
     @Test
     @DisplayName("should have nativeSize native method")
     void shouldHaveNativeSizeMethod() throws Exception {
-      Method method =
-          JniWasmThreadLocalStorage.class.getDeclaredMethod("nativeSize", long.class);
+      Method method = JniWasmThreadLocalStorage.class.getDeclaredMethod("nativeSize", long.class);
       assertNotNull(method, "nativeSize method should exist");
       assertTrue(Modifier.isNative(method.getModifiers()), "nativeSize should be native");
       assertEquals(int.class, method.getReturnType(), "Return type should be int");
@@ -546,8 +534,7 @@ class JniWasmThreadLocalStorageTest {
       Method method =
           JniWasmThreadLocalStorage.class.getDeclaredMethod("nativeGetMemoryUsage", long.class);
       assertNotNull(method, "nativeGetMemoryUsage method should exist");
-      assertTrue(
-          Modifier.isNative(method.getModifiers()), "nativeGetMemoryUsage should be native");
+      assertTrue(Modifier.isNative(method.getModifiers()), "nativeGetMemoryUsage should be native");
       assertEquals(long.class, method.getReturnType(), "Return type should be long");
     }
   }
@@ -571,8 +558,7 @@ class JniWasmThreadLocalStorageTest {
               JniWasmThreadLocalStorage.class.getMethod(
                   interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           assertNotNull(
-              implMethod,
-              "Implementation for " + interfaceMethod.getName() + " should exist");
+              implMethod, "Implementation for " + interfaceMethod.getName() + " should exist");
         } catch (NoSuchMethodException e) {
           throw new AssertionError(
               "Missing implementation for interface method: " + interfaceMethod.getName());
@@ -597,28 +583,32 @@ class JniWasmThreadLocalStorageTest {
         Method putMethod =
             JniWasmThreadLocalStorage.class.getDeclaredMethod(
                 pair[0], String.class, getSecondParam(pair[0]));
-        Method getMethod =
-            JniWasmThreadLocalStorage.class.getDeclaredMethod(pair[1], String.class);
+        Method getMethod = JniWasmThreadLocalStorage.class.getDeclaredMethod(pair[1], String.class);
 
         assertNotNull(putMethod, pair[0] + " method should exist");
         assertNotNull(getMethod, pair[1] + " method should exist");
-        assertTrue(
-            Modifier.isPublic(putMethod.getModifiers()), pair[0] + " should be public");
-        assertTrue(
-            Modifier.isPublic(getMethod.getModifiers()), pair[1] + " should be public");
+        assertTrue(Modifier.isPublic(putMethod.getModifiers()), pair[0] + " should be public");
+        assertTrue(Modifier.isPublic(getMethod.getModifiers()), pair[1] + " should be public");
       }
     }
 
     private Class<?> getSecondParam(final String methodName) {
-      return switch (methodName) {
-        case "putInt" -> int.class;
-        case "putLong" -> long.class;
-        case "putFloat" -> float.class;
-        case "putDouble" -> double.class;
-        case "putBytes" -> byte[].class;
-        case "putString" -> String.class;
-        default -> throw new IllegalArgumentException("Unknown method: " + methodName);
-      };
+      switch (methodName) {
+        case "putInt":
+          return int.class;
+        case "putLong":
+          return long.class;
+        case "putFloat":
+          return float.class;
+        case "putDouble":
+          return double.class;
+        case "putBytes":
+          return byte[].class;
+        case "putString":
+          return String.class;
+        default:
+          throw new IllegalArgumentException("Unknown method: " + methodName);
+      }
     }
   }
 

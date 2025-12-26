@@ -40,15 +40,16 @@ class WasiFileHandleTest {
     @Test
     @DisplayName("should be public class")
     void shouldBePublicClass() {
-      assertTrue(Modifier.isPublic(WasiFileHandle.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(WasiFileHandle.class.getModifiers()),
           "WasiFileHandle should be public");
     }
 
     @Test
     @DisplayName("should be final class")
     void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WasiFileHandle.class.getModifiers()),
-          "WasiFileHandle should be final");
+      assertTrue(
+          Modifier.isFinal(WasiFileHandle.class.getModifiers()), "WasiFileHandle should be final");
     }
   }
 
@@ -85,8 +86,7 @@ class WasiFileHandleTest {
           break;
         }
       }
-      assertTrue(hasReadMethod || !hasReadMethod,
-          "WasiFileHandle may have read method");
+      assertTrue(hasReadMethod || !hasReadMethod, "WasiFileHandle may have read method");
     }
 
     @Test
@@ -99,8 +99,7 @@ class WasiFileHandleTest {
           break;
         }
       }
-      assertTrue(hasWriteMethod || !hasWriteMethod,
-          "WasiFileHandle may have write method");
+      assertTrue(hasWriteMethod || !hasWriteMethod, "WasiFileHandle may have write method");
     }
 
     @Test
@@ -113,8 +112,7 @@ class WasiFileHandleTest {
           break;
         }
       }
-      assertTrue(hasSeekMethod || !hasSeekMethod,
-          "WasiFileHandle may have seek method");
+      assertTrue(hasSeekMethod || !hasSeekMethod, "WasiFileHandle may have seek method");
     }
   }
 
@@ -125,15 +123,15 @@ class WasiFileHandleTest {
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(WasiFileHandle.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(WasiFileHandle.class),
           "WasiFileHandle should implement AutoCloseable");
     }
 
     @Test
     @DisplayName("should have close method")
     void shouldHaveCloseMethod() throws NoSuchMethodException {
-      assertNotNull(WasiFileHandle.class.getMethod("close"),
-          "Should have close method");
+      assertNotNull(WasiFileHandle.class.getMethod("close"), "Should have close method");
     }
   }
 
@@ -151,8 +149,7 @@ class WasiFileHandleTest {
           break;
         }
       }
-      assertTrue(hasStatMethod || !hasStatMethod,
-          "WasiFileHandle may have stat method");
+      assertTrue(hasStatMethod || !hasStatMethod, "WasiFileHandle may have stat method");
     }
   }
 

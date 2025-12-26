@@ -29,9 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiTimeOperations}.
- */
+/** Comprehensive tests for {@link WasiTimeOperations}. */
 @DisplayName("WasiTimeOperations Tests")
 class WasiTimeOperationsTest {
 
@@ -61,10 +59,10 @@ class WasiTimeOperationsTest {
     void shouldDefineClockIdConstants() {
       assertEquals(0, WasiTimeOperations.WASI_CLOCK_REALTIME, "REALTIME should be 0");
       assertEquals(1, WasiTimeOperations.WASI_CLOCK_MONOTONIC, "MONOTONIC should be 1");
-      assertEquals(2, WasiTimeOperations.WASI_CLOCK_PROCESS_CPUTIME_ID,
-          "PROCESS_CPUTIME_ID should be 2");
-      assertEquals(3, WasiTimeOperations.WASI_CLOCK_THREAD_CPUTIME_ID,
-          "THREAD_CPUTIME_ID should be 3");
+      assertEquals(
+          2, WasiTimeOperations.WASI_CLOCK_PROCESS_CPUTIME_ID, "PROCESS_CPUTIME_ID should be 2");
+      assertEquals(
+          3, WasiTimeOperations.WASI_CLOCK_THREAD_CPUTIME_ID, "THREAD_CPUTIME_ID should be 3");
     }
   }
 
@@ -75,9 +73,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
-          () -> new WasiTimeOperations(null),
-          "Should throw on null context");
+      assertThrows(
+          JniException.class, () -> new WasiTimeOperations(null), "Should throw on null context");
     }
 
     @Test
@@ -95,7 +92,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on invalid clock ID (negative)")
     void shouldThrowOnNegativeClockId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> timeOperations.getClockResolution(-1),
           "Should throw on negative clock ID");
     }
@@ -103,7 +101,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on invalid clock ID (too large)")
     void shouldThrowOnTooLargeClockId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> timeOperations.getClockResolution(999),
           "Should throw on clock ID > 3");
     }
@@ -111,7 +110,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on clock ID 4")
     void shouldThrowOnClockIdFour() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> timeOperations.getClockResolution(4),
           "Should throw on clock ID 4");
     }
@@ -124,7 +124,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on invalid clock ID")
     void shouldThrowOnInvalidClockId() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> timeOperations.getCurrentTime(100, 0),
           "Should throw on invalid clock ID");
     }
@@ -132,7 +133,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on negative precision")
     void shouldThrowOnNegativePrecision() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME, -1),
           "Should throw on negative precision");
     }
@@ -142,7 +144,8 @@ class WasiTimeOperationsTest {
     void shouldAcceptZeroPrecision() {
       // Zero means maximum precision - validation should pass
       // Will throw from native call, but validation passes
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME, 0));
     }
 
@@ -150,7 +153,8 @@ class WasiTimeOperationsTest {
     @DisplayName("Overloaded method should use zero precision")
     void overloadedMethodShouldUseZeroPrecision() {
       // Single-arg version uses precision=0
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME));
     }
   }
@@ -163,29 +167,25 @@ class WasiTimeOperationsTest {
     @DisplayName("getRealtime should use CLOCK_REALTIME")
     void getRealtimeShouldUseClockRealtime() {
       // Will throw from native, but validates it calls with correct clock ID
-      assertThrows(Exception.class,
-          () -> timeOperations.getRealtime());
+      assertThrows(Exception.class, () -> timeOperations.getRealtime());
     }
 
     @Test
     @DisplayName("getMonotonicTime should use CLOCK_MONOTONIC")
     void getMonotonicTimeShouldUseClockMonotonic() {
-      assertThrows(Exception.class,
-          () -> timeOperations.getMonotonicTime());
+      assertThrows(Exception.class, () -> timeOperations.getMonotonicTime());
     }
 
     @Test
     @DisplayName("getProcessCpuTime should use CLOCK_PROCESS_CPUTIME_ID")
     void getProcessCpuTimeShouldUseClockProcessCputimeId() {
-      assertThrows(Exception.class,
-          () -> timeOperations.getProcessCpuTime());
+      assertThrows(Exception.class, () -> timeOperations.getProcessCpuTime());
     }
 
     @Test
     @DisplayName("getThreadCpuTime should use CLOCK_THREAD_CPUTIME_ID")
     void getThreadCpuTimeShouldUseClockThreadCputimeId() {
-      assertThrows(Exception.class,
-          () -> timeOperations.getThreadCpuTime());
+      assertThrows(Exception.class, () -> timeOperations.getThreadCpuTime());
     }
   }
 
@@ -196,8 +196,7 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should convert nanoseconds to seconds")
     void shouldConvertNanosecondsToSeconds() {
-      final long result = WasiTimeOperations.convertTime(
-          1_000_000_000L, TimeUnit.SECONDS);
+      final long result = WasiTimeOperations.convertTime(1_000_000_000L, TimeUnit.SECONDS);
 
       assertEquals(1L, result, "1 billion nanoseconds should be 1 second");
     }
@@ -205,8 +204,7 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should convert nanoseconds to milliseconds")
     void shouldConvertNanosecondsToMilliseconds() {
-      final long result = WasiTimeOperations.convertTime(
-          5_000_000L, TimeUnit.MILLISECONDS);
+      final long result = WasiTimeOperations.convertTime(5_000_000L, TimeUnit.MILLISECONDS);
 
       assertEquals(5L, result, "5 million nanoseconds should be 5 milliseconds");
     }
@@ -214,8 +212,7 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should convert nanoseconds to microseconds")
     void shouldConvertNanosecondsToMicroseconds() {
-      final long result = WasiTimeOperations.convertTime(
-          5_000L, TimeUnit.MICROSECONDS);
+      final long result = WasiTimeOperations.convertTime(5_000L, TimeUnit.MICROSECONDS);
 
       assertEquals(5L, result, "5 thousand nanoseconds should be 5 microseconds");
     }
@@ -223,8 +220,7 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should handle nanoseconds to nanoseconds identity")
     void shouldHandleNanosecondsToNanosecondsIdentity() {
-      final long result = WasiTimeOperations.convertTime(
-          123456789L, TimeUnit.NANOSECONDS);
+      final long result = WasiTimeOperations.convertTime(123456789L, TimeUnit.NANOSECONDS);
 
       assertEquals(123456789L, result, "Nanoseconds to nanoseconds should be identity");
     }
@@ -232,7 +228,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should throw on null time unit")
     void shouldThrowOnNullTimeUnit() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> WasiTimeOperations.convertTime(1000L, null),
           "Should throw on null time unit");
     }
@@ -263,14 +260,16 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return true for CLOCK_REALTIME")
     void shouldReturnTrueForClockRealtime() {
-      assertTrue(WasiTimeOperations.isClockSupported(WasiTimeOperations.WASI_CLOCK_REALTIME),
+      assertTrue(
+          WasiTimeOperations.isClockSupported(WasiTimeOperations.WASI_CLOCK_REALTIME),
           "CLOCK_REALTIME should be supported");
     }
 
     @Test
     @DisplayName("Should return true for CLOCK_MONOTONIC")
     void shouldReturnTrueForClockMonotonic() {
-      assertTrue(WasiTimeOperations.isClockSupported(WasiTimeOperations.WASI_CLOCK_MONOTONIC),
+      assertTrue(
+          WasiTimeOperations.isClockSupported(WasiTimeOperations.WASI_CLOCK_MONOTONIC),
           "CLOCK_MONOTONIC should be supported");
     }
 
@@ -293,22 +292,21 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return false for negative clock ID")
     void shouldReturnFalseForNegativeClockId() {
-      assertFalse(WasiTimeOperations.isClockSupported(-1),
-          "Negative clock ID should not be supported");
+      assertFalse(
+          WasiTimeOperations.isClockSupported(-1), "Negative clock ID should not be supported");
     }
 
     @Test
     @DisplayName("Should return false for clock ID 4")
     void shouldReturnFalseForClockIdFour() {
-      assertFalse(WasiTimeOperations.isClockSupported(4),
-          "Clock ID 4 should not be supported");
+      assertFalse(WasiTimeOperations.isClockSupported(4), "Clock ID 4 should not be supported");
     }
 
     @Test
     @DisplayName("Should return false for large clock ID")
     void shouldReturnFalseForLargeClockId() {
-      assertFalse(WasiTimeOperations.isClockSupported(100),
-          "Large clock ID should not be supported");
+      assertFalse(
+          WasiTimeOperations.isClockSupported(100), "Large clock ID should not be supported");
     }
   }
 
@@ -319,7 +317,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return REALTIME for clock ID 0")
     void shouldReturnRealtimeForClockId0() {
-      assertEquals("REALTIME",
+      assertEquals(
+          "REALTIME",
           WasiTimeOperations.getClockName(WasiTimeOperations.WASI_CLOCK_REALTIME),
           "Should return REALTIME");
     }
@@ -327,7 +326,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return MONOTONIC for clock ID 1")
     void shouldReturnMonotonicForClockId1() {
-      assertEquals("MONOTONIC",
+      assertEquals(
+          "MONOTONIC",
           WasiTimeOperations.getClockName(WasiTimeOperations.WASI_CLOCK_MONOTONIC),
           "Should return MONOTONIC");
     }
@@ -335,7 +335,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return PROCESS_CPUTIME for clock ID 2")
     void shouldReturnProcessCputimeForClockId2() {
-      assertEquals("PROCESS_CPUTIME",
+      assertEquals(
+          "PROCESS_CPUTIME",
           WasiTimeOperations.getClockName(WasiTimeOperations.WASI_CLOCK_PROCESS_CPUTIME_ID),
           "Should return PROCESS_CPUTIME");
     }
@@ -343,7 +344,8 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should return THREAD_CPUTIME for clock ID 3")
     void shouldReturnThreadCputimeForClockId3() {
-      assertEquals("THREAD_CPUTIME",
+      assertEquals(
+          "THREAD_CPUTIME",
           WasiTimeOperations.getClockName(WasiTimeOperations.WASI_CLOCK_THREAD_CPUTIME_ID),
           "Should return THREAD_CPUTIME");
     }
@@ -375,7 +377,8 @@ class WasiTimeOperationsTest {
       // These should all pass validation (but fail on native call)
       for (int clockId = 0; clockId <= 3; clockId++) {
         final int finalClockId = clockId;
-        assertThrows(Exception.class,
+        assertThrows(
+            Exception.class,
             () -> timeOperations.getClockResolution(finalClockId),
             "Clock ID " + clockId + " should pass validation");
       }
@@ -385,12 +388,9 @@ class WasiTimeOperationsTest {
     @DisplayName("Should fail validation for unsupported clock IDs")
     void shouldFailValidationForUnsupportedClockIds() {
       // These should fail validation before native call
-      assertThrows(JniException.class,
-          () -> timeOperations.getClockResolution(-1));
-      assertThrows(JniException.class,
-          () -> timeOperations.getClockResolution(4));
-      assertThrows(JniException.class,
-          () -> timeOperations.getClockResolution(Integer.MAX_VALUE));
+      assertThrows(JniException.class, () -> timeOperations.getClockResolution(-1));
+      assertThrows(JniException.class, () -> timeOperations.getClockResolution(4));
+      assertThrows(JniException.class, () -> timeOperations.getClockResolution(Integer.MAX_VALUE));
     }
   }
 }

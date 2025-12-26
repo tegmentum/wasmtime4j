@@ -109,11 +109,17 @@ class WasiEventTypeTest {
     @Test
     @DisplayName("fromValue should throw for invalid value")
     void fromValueShouldThrowForInvalidValue() {
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(3),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiEventType.fromValue(3),
           "Should throw for value 3");
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiEventType.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(100),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiEventType.fromValue(100),
           "Should throw for value 100");
     }
 
@@ -121,7 +127,9 @@ class WasiEventTypeTest {
     @DisplayName("Round trip getValue/fromValue should work")
     void roundTripShouldWork() {
       for (WasiEventType eventType : WasiEventType.values()) {
-        assertEquals(eventType, WasiEventType.fromValue(eventType.getValue()),
+        assertEquals(
+            eventType,
+            WasiEventType.fromValue(eventType.getValue()),
             "Round trip should return same event type: " + eventType.name());
       }
     }

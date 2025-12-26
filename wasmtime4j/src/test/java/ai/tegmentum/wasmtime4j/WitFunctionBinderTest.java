@@ -113,29 +113,31 @@ class WitFunctionBinderTest {
     @Test
     @DisplayName("bindFunction should throw on null function name")
     void bindFunctionShouldThrowOnNullFunctionName() {
-      assertThrows(NullPointerException.class, () ->
-          binder.bindFunction(null, null, new Object(), "method"));
+      assertThrows(
+          NullPointerException.class,
+          () -> binder.bindFunction(null, null, new Object(), "method"));
     }
 
     @Test
     @DisplayName("bindFunction should throw on null function definition")
     void bindFunctionShouldThrowOnNullFunctionDefinition() {
-      assertThrows(NullPointerException.class, () ->
-          binder.bindFunction("test", null, new Object(), "method"));
+      assertThrows(
+          NullPointerException.class,
+          () -> binder.bindFunction("test", null, new Object(), "method"));
     }
 
     @Test
     @DisplayName("bindFunction should throw on null implementation")
     void bindFunctionShouldThrowOnNullImplementation() {
-      assertThrows(NullPointerException.class, () ->
-          binder.bindFunction("test", null, null, "method"));
+      assertThrows(
+          NullPointerException.class, () -> binder.bindFunction("test", null, null, "method"));
     }
 
     @Test
     @DisplayName("bindFunction should throw on null method name")
     void bindFunctionShouldThrowOnNullMethodName() {
-      assertThrows(NullPointerException.class, () ->
-          binder.bindFunction("test", null, new Object(), null));
+      assertThrows(
+          NullPointerException.class, () -> binder.bindFunction("test", null, new Object(), null));
     }
   }
 
@@ -146,25 +148,29 @@ class WitFunctionBinderTest {
     @Test
     @DisplayName("registerTypeAdapter should throw on null java type")
     void registerTypeAdapterShouldThrowOnNullJavaType() {
-      assertThrows(NullPointerException.class, () ->
-          binder.registerTypeAdapter(null, new WitFunctionBinder.TypeAdapter<Object>() {
-            @Override
-            public Object toWit(final Object value) {
-              return value;
-            }
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              binder.registerTypeAdapter(
+                  null,
+                  new WitFunctionBinder.TypeAdapter<Object>() {
+                    @Override
+                    public Object toWit(final Object value) {
+                      return value;
+                    }
 
-            @Override
-            public Object fromWit(final Object value) {
-              return value;
-            }
-          }));
+                    @Override
+                    public Object fromWit(final Object value) {
+                      return value;
+                    }
+                  }));
     }
 
     @Test
     @DisplayName("registerTypeAdapter should throw on null adapter")
     void registerTypeAdapterShouldThrowOnNullAdapter() {
-      assertThrows(NullPointerException.class, () ->
-          binder.registerTypeAdapter(String.class, null));
+      assertThrows(
+          NullPointerException.class, () -> binder.registerTypeAdapter(String.class, null));
     }
 
     @Test

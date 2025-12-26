@@ -78,13 +78,11 @@ public final class TestWasiContextFactory {
    * @return a test WasiContext instance with the specified configuration
    */
   public static WasiContext createTestContext(
-      final long nativeHandle,
-      final Map<String, Path> preopenedDirectories) {
+      final long nativeHandle, final Map<String, Path> preopenedDirectories) {
     try {
-      final WasiContextBuilder builder = createTestBuilder(
-          Paths.get(System.getProperty("java.io.tmpdir")),
-          null,
-          preopenedDirectories);
+      final WasiContextBuilder builder =
+          createTestBuilder(
+              Paths.get(System.getProperty("java.io.tmpdir")), null, preopenedDirectories);
 
       final Constructor<WasiContext> constructor =
           WasiContext.class.getDeclaredConstructor(long.class, WasiContextBuilder.class);
@@ -99,8 +97,8 @@ public final class TestWasiContextFactory {
   /**
    * Creates a test WasiContext with a custom working directory.
    *
-   * <p>This is useful for tests that need to resolve paths relative to a specific directory,
-   * such as a temp directory.
+   * <p>This is useful for tests that need to resolve paths relative to a specific directory, such
+   * as a temp directory.
    *
    * @param workingDirectory the working directory for path resolution
    * @return a test WasiContext instance
@@ -122,9 +120,10 @@ public final class TestWasiContextFactory {
       final Map<String, String> environment,
       final String[] arguments) {
     try {
-      final WasiContextBuilder builder = new WasiContextBuilder()
-          .withWorkingDirectory(workingDirectory.toString())
-          .withPreopenDirectory(".", workingDirectory.toString());
+      final WasiContextBuilder builder =
+          new WasiContextBuilder()
+              .withWorkingDirectory(workingDirectory.toString())
+              .withPreopenDirectory(".", workingDirectory.toString());
 
       if (environment != null) {
         environment.forEach(builder::withEnvironment);
@@ -150,8 +149,7 @@ public final class TestWasiContextFactory {
    * @return a configured WasiContextBuilder for testing
    */
   public static WasiContextBuilder createTestBuilder() {
-    return new WasiContextBuilder()
-        .withWorkingDirectory(System.getProperty("java.io.tmpdir"));
+    return new WasiContextBuilder().withWorkingDirectory(System.getProperty("java.io.tmpdir"));
   }
 
   /**
@@ -166,15 +164,16 @@ public final class TestWasiContextFactory {
       final Path workingDirectory,
       final Map<String, String> environment,
       final Map<String, Path> preopenedDirectories) {
-    final WasiContextBuilder builder = new WasiContextBuilder()
-        .withWorkingDirectory(workingDirectory.toString());
+    final WasiContextBuilder builder =
+        new WasiContextBuilder().withWorkingDirectory(workingDirectory.toString());
 
     if (environment != null) {
       environment.forEach(builder::withEnvironment);
     }
 
     if (preopenedDirectories != null) {
-      preopenedDirectories.forEach((name, path) -> builder.withPreopenDirectory(name, path.toString()));
+      preopenedDirectories.forEach(
+          (name, path) -> builder.withPreopenDirectory(name, path.toString()));
     }
 
     return builder;

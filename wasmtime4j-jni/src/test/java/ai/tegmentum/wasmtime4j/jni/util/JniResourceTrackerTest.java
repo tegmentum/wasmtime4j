@@ -28,9 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniResourceTracker}.
- */
+/** Comprehensive tests for {@link JniResourceTracker}. */
 @DisplayName("JniResourceTracker Tests")
 class JniResourceTrackerTest {
 
@@ -60,7 +58,9 @@ class JniResourceTrackerTest {
     void privateConstructorShouldThrowAssertionError() throws Exception {
       final Constructor<?> constructor = JniResourceTracker.class.getDeclaredConstructor();
       constructor.setAccessible(true);
-      assertThrows(InvocationTargetException.class, constructor::newInstance,
+      assertThrows(
+          InvocationTargetException.class,
+          constructor::newInstance,
           "Constructor should throw when invoked");
     }
   }
@@ -78,7 +78,8 @@ class JniResourceTrackerTest {
 
       JniResourceTracker.trackResource(testObject, 12345L, "Engine", () -> cleanupCalled.set(true));
 
-      assertTrue(JniResourceTracker.getTrackedResourceCount() >= initialCount,
+      assertTrue(
+          JniResourceTracker.getTrackedResourceCount() >= initialCount,
           "Tracked count should not decrease");
     }
 
@@ -87,11 +88,11 @@ class JniResourceTrackerTest {
     void shouldNotTrackNullObject() {
       final int initialCount = JniResourceTracker.getTrackedResourceCount();
 
-      JniResourceTracker.trackResource(null, 12345L, "Engine", () -> {
-      });
+      JniResourceTracker.trackResource(null, 12345L, "Engine", () -> {});
 
       // Count should not increase
-      assertTrue(JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
+      assertTrue(
+          JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
           "Count should not change for null object");
     }
 
@@ -101,11 +102,11 @@ class JniResourceTrackerTest {
       final int initialCount = JniResourceTracker.getTrackedResourceCount();
       final Object testObject = new Object();
 
-      JniResourceTracker.trackResource(testObject, 0L, "Engine", () -> {
-      });
+      JniResourceTracker.trackResource(testObject, 0L, "Engine", () -> {});
 
       // Count should not increase
-      assertTrue(JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
+      assertTrue(
+          JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
           "Count should not change for zero handle");
     }
 
@@ -118,7 +119,8 @@ class JniResourceTrackerTest {
       JniResourceTracker.trackResource(testObject, 12345L, "Engine", null);
 
       // Count should not increase
-      assertTrue(JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
+      assertTrue(
+          JniResourceTracker.getTrackedResourceCount() <= initialCount + 1,
           "Count should not change for null action");
     }
   }
@@ -139,8 +141,7 @@ class JniResourceTrackerTest {
     @DisplayName("Should handle untracking tracked object")
     void shouldHandleUntrackingTrackedObject() {
       final Object testObject = new Object();
-      JniResourceTracker.trackResource(testObject, 11111L, "Store", () -> {
-      });
+      JniResourceTracker.trackResource(testObject, 11111L, "Store", () -> {});
 
       // This is expected to return false as per the current implementation
       // which relies on phantom reference mechanism
@@ -169,13 +170,11 @@ class JniResourceTrackerTest {
 
       // Create a new object and track it
       final Object obj1 = new Object();
-      JniResourceTracker.trackResource(obj1, 22221L, "Engine", () -> {
-      });
+      JniResourceTracker.trackResource(obj1, 22221L, "Engine", () -> {});
 
       final int afterCount = JniResourceTracker.getTrackedResourceCount();
 
-      assertTrue(afterCount >= initialCount,
-          "Count should increase or stay same after tracking");
+      assertTrue(afterCount >= initialCount, "Count should increase or stay same after tracking");
     }
   }
 
@@ -189,8 +188,7 @@ class JniResourceTrackerTest {
       final String stats = JniResourceTracker.getTrackingStats();
 
       assertNotNull(stats, "Stats should not be null");
-      assertTrue(stats.contains("JNI Resource Tracker Statistics"),
-          "Should contain header");
+      assertTrue(stats.contains("JNI Resource Tracker Statistics"), "Should contain header");
       assertTrue(stats.contains("Tracked resources:"), "Should contain tracked resources");
       assertTrue(stats.contains("Cleanup thread active:"), "Should contain thread status");
       assertTrue(stats.contains("Shutdown requested:"), "Should contain shutdown status");
@@ -202,10 +200,8 @@ class JniResourceTrackerTest {
       // Track some resources
       final Object obj1 = new Object();
       final Object obj2 = new Object();
-      JniResourceTracker.trackResource(obj1, 33331L, "Engine", () -> {
-      });
-      JniResourceTracker.trackResource(obj2, 33332L, "Module", () -> {
-      });
+      JniResourceTracker.trackResource(obj1, 33331L, "Engine", () -> {});
+      JniResourceTracker.trackResource(obj2, 33332L, "Module", () -> {});
 
       final String stats = JniResourceTracker.getTrackingStats();
 
@@ -223,13 +219,11 @@ class JniResourceTrackerTest {
     void cleanupThreadShouldBeAlive() {
       // Just tracking a resource ensures the thread is started
       final Object obj = new Object();
-      JniResourceTracker.trackResource(obj, 44441L, "Test", () -> {
-      });
+      JniResourceTracker.trackResource(obj, 44441L, "Test", () -> {});
 
       final String stats = JniResourceTracker.getTrackingStats();
 
-      assertTrue(stats.contains("Cleanup thread active: true"),
-          "Cleanup thread should be active");
+      assertTrue(stats.contains("Cleanup thread active: true"), "Cleanup thread should be active");
     }
   }
 
@@ -278,14 +272,15 @@ class JniResourceTrackerTest {
 
       for (int t = 0; t < threadCount; t++) {
         final int threadIndex = t;
-        threads[t] = new Thread(() -> {
-          for (int i = 0; i < resourcesPerThread; i++) {
-            final Object obj = new Object();
-            final long handle = (threadIndex * 10000L) + i + 1;
-            JniResourceTracker.trackResource(obj, handle, "Thread" + threadIndex, () -> {
-            });
-          }
-        });
+        threads[t] =
+            new Thread(
+                () -> {
+                  for (int i = 0; i < resourcesPerThread; i++) {
+                    final Object obj = new Object();
+                    final long handle = (threadIndex * 10000L) + i + 1;
+                    JniResourceTracker.trackResource(obj, handle, "Thread" + threadIndex, () -> {});
+                  }
+                });
       }
 
       // Start all threads
@@ -299,7 +294,8 @@ class JniResourceTrackerTest {
       }
 
       // Verify no exception was thrown and tracking count is reasonable
-      assertTrue(JniResourceTracker.getTrackedResourceCount() >= 0,
+      assertTrue(
+          JniResourceTracker.getTrackedResourceCount() >= 0,
           "Should have non-negative tracked count");
     }
   }
@@ -338,13 +334,16 @@ class JniResourceTrackerTest {
       final Object obj = new Object();
 
       // Track with a cleanup action that throws
-      JniResourceTracker.trackResource(obj, 66663L, "ThrowTest", () -> {
-        throw new RuntimeException("Cleanup failed");
-      });
+      JniResourceTracker.trackResource(
+          obj,
+          66663L,
+          "ThrowTest",
+          () -> {
+            throw new RuntimeException("Cleanup failed");
+          });
 
       // Just verifying it doesn't break the tracker
-      assertNotNull(JniResourceTracker.getTrackingStats(),
-          "Tracker should still work");
+      assertNotNull(JniResourceTracker.getTrackingStats(), "Tracker should still work");
     }
 
     @Test
@@ -354,8 +353,8 @@ class JniResourceTrackerTest {
       final AtomicBoolean cleanupCalled = new AtomicBoolean(false);
 
       // Negative values are technically valid handles
-      JniResourceTracker.trackResource(obj, -12345L, "NegativeHandle",
-          () -> cleanupCalled.set(true));
+      JniResourceTracker.trackResource(
+          obj, -12345L, "NegativeHandle", () -> cleanupCalled.set(true));
 
       assertTrue(true, "Should handle negative handle value");
     }
@@ -366,8 +365,8 @@ class JniResourceTrackerTest {
       final Object obj = new Object();
       final AtomicBoolean cleanupCalled = new AtomicBoolean(false);
 
-      JniResourceTracker.trackResource(obj, Long.MAX_VALUE, "MaxHandle",
-          () -> cleanupCalled.set(true));
+      JniResourceTracker.trackResource(
+          obj, Long.MAX_VALUE, "MaxHandle", () -> cleanupCalled.set(true));
 
       assertTrue(true, "Should handle Long.MAX_VALUE handle");
     }

@@ -29,8 +29,6 @@ import ai.tegmentum.wasmtime4j.jni.wasi.WasiNetworkOperations.UdpDatagram;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
@@ -39,9 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiNetworkOperations}.
- */
+/** Comprehensive tests for {@link WasiNetworkOperations}. */
 @DisplayName("WasiNetworkOperations Tests")
 class WasiNetworkOperationsTest {
 
@@ -93,7 +89,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiNetworkOperations(null, executorService),
           "Should throw on null context");
     }
@@ -101,7 +98,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiNetworkOperations(testContext, null),
           "Should throw on null executor");
     }
@@ -122,7 +120,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid address family")
     void shouldThrowOnInvalidAddressFamily() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createTcpSocket(99),
           "Should throw on invalid address family");
     }
@@ -131,14 +130,16 @@ class WasiNetworkOperationsTest {
     @DisplayName("Should accept AF_INET")
     void shouldAcceptAfInet() {
       // Will throw due to native call, but validation passes
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createTcpSocket(WasiNetworkOperations.AF_INET));
     }
 
     @Test
     @DisplayName("Should accept AF_INET6")
     void shouldAcceptAfInet6() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createTcpSocket(WasiNetworkOperations.AF_INET6));
     }
   }
@@ -150,7 +151,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null address")
     void shouldThrowOnNullAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.bindTcp(1L, null, 8080),
           "Should throw on null address");
     }
@@ -158,7 +160,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on empty address")
     void shouldThrowOnEmptyAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.bindTcp(1L, "", 8080),
           "Should throw on empty address");
     }
@@ -166,7 +169,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid port (negative)")
     void shouldThrowOnNegativePort() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.bindTcp(1L, "127.0.0.1", -1),
           "Should throw on negative port");
     }
@@ -174,7 +178,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid port (too large)")
     void shouldThrowOnPortTooLarge() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.bindTcp(1L, "127.0.0.1", 65536),
           "Should throw on port > 65535");
     }
@@ -182,7 +187,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.bindTcp(999L, "127.0.0.1", 8080),
           "Should throw on invalid socket handle");
     }
@@ -195,7 +201,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on negative backlog")
     void shouldThrowOnNegativeBacklog() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.listenTcp(1L, -1),
           "Should throw on negative backlog");
     }
@@ -203,7 +210,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on backlog too large")
     void shouldThrowOnBacklogTooLarge() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.listenTcp(1L, 1025),
           "Should throw on backlog > 1024");
     }
@@ -211,7 +219,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.listenTcp(999L, 10),
           "Should throw on invalid socket handle");
     }
@@ -224,7 +233,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null address")
     void shouldThrowOnNullAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.connectTcp(1L, null, 8080),
           "Should throw on null address");
     }
@@ -232,7 +242,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on empty address")
     void shouldThrowOnEmptyAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.connectTcp(1L, "", 8080),
           "Should throw on empty address");
     }
@@ -240,7 +251,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid port")
     void shouldThrowOnInvalidPort() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.connectTcp(1L, "localhost", -1),
           "Should throw on invalid port");
     }
@@ -248,7 +260,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.connectTcp(999L, "localhost", 8080),
           "Should throw on invalid socket handle");
     }
@@ -261,7 +274,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.sendTcp(1L, null),
           "Should throw on null data");
     }
@@ -269,7 +283,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.sendTcp(999L, ByteBuffer.allocate(10)),
           "Should throw on invalid socket handle");
     }
@@ -282,7 +297,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.receiveTcp(1L, null),
           "Should throw on null buffer");
     }
@@ -290,7 +306,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.receiveTcp(999L, ByteBuffer.allocate(100)),
           "Should throw on invalid socket handle");
     }
@@ -303,7 +320,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid address family")
     void shouldThrowOnInvalidAddressFamily() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createUdpSocket(99),
           "Should throw on invalid address family");
     }
@@ -311,14 +329,16 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should accept AF_INET")
     void shouldAcceptAfInet() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createUdpSocket(WasiNetworkOperations.AF_INET));
     }
 
     @Test
     @DisplayName("Should accept AF_INET6")
     void shouldAcceptAfInet6() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.createUdpSocket(WasiNetworkOperations.AF_INET6));
     }
   }
@@ -330,7 +350,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.sendUdp(1L, null, "localhost", 8080),
           "Should throw on null data");
     }
@@ -338,7 +359,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null address")
     void shouldThrowOnNullAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.sendUdp(1L, ByteBuffer.allocate(10), null, 8080),
           "Should throw on null address");
     }
@@ -346,7 +368,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on empty address")
     void shouldThrowOnEmptyAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.sendUdp(1L, ByteBuffer.allocate(10), "", 8080),
           "Should throw on empty address");
     }
@@ -354,7 +377,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid port")
     void shouldThrowOnInvalidPort() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.sendUdp(1L, ByteBuffer.allocate(10), "localhost", -1),
           "Should throw on invalid port");
     }
@@ -362,7 +386,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.sendUdp(999L, ByteBuffer.allocate(10), "localhost", 8080),
           "Should throw on invalid socket handle");
     }
@@ -375,7 +400,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> networkOperations.receiveUdp(1L, null),
           "Should throw on null buffer");
     }
@@ -383,7 +409,8 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on invalid socket handle")
     void shouldThrowOnInvalidSocketHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> networkOperations.receiveUdp(999L, ByteBuffer.allocate(100)),
           "Should throw on invalid socket handle");
     }
@@ -396,45 +423,48 @@ class WasiNetworkOperationsTest {
     @Test
     @DisplayName("Should throw on null method")
     void shouldThrowOnNullMethod() {
-      assertThrows(JniException.class,
-          () -> networkOperations.httpRequest(null, "http://example.com",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () ->
+              networkOperations.httpRequest(
+                  null, "http://example.com", Collections.emptyMap(), null),
           "Should throw on null method");
     }
 
     @Test
     @DisplayName("Should throw on empty method")
     void shouldThrowOnEmptyMethod() {
-      assertThrows(JniException.class,
-          () -> networkOperations.httpRequest("", "http://example.com",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () ->
+              networkOperations.httpRequest("", "http://example.com", Collections.emptyMap(), null),
           "Should throw on empty method");
     }
 
     @Test
     @DisplayName("Should throw on null URI")
     void shouldThrowOnNullUri() {
-      assertThrows(JniException.class,
-          () -> networkOperations.httpRequest("GET", null,
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () -> networkOperations.httpRequest("GET", null, Collections.emptyMap(), null),
           "Should throw on null URI");
     }
 
     @Test
     @DisplayName("Should throw on empty URI")
     void shouldThrowOnEmptyUri() {
-      assertThrows(JniException.class,
-          () -> networkOperations.httpRequest("GET", "",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () -> networkOperations.httpRequest("GET", "", Collections.emptyMap(), null),
           "Should throw on empty URI");
     }
 
     @Test
     @DisplayName("Should throw on null headers")
     void shouldThrowOnNullHeaders() {
-      assertThrows(JniException.class,
-          () -> networkOperations.httpRequest("GET", "http://example.com",
-              null, null),
+      assertThrows(
+          JniException.class,
+          () -> networkOperations.httpRequest("GET", "http://example.com", null, null),
           "Should throw on null headers");
     }
   }
@@ -483,7 +513,8 @@ class WasiNetworkOperationsTest {
 
       assertEquals(1L, info.handle, "Handle should match");
       assertEquals(SocketType.TCP, info.type, "Type should be TCP");
-      assertEquals(WasiNetworkOperations.AF_INET, info.addressFamily, "Address family should match");
+      assertEquals(
+          WasiNetworkOperations.AF_INET, info.addressFamily, "Address family should match");
       assertEquals(SocketState.CREATED, info.state, "Initial state should be CREATED");
       assertTrue(info.createdAt > 0, "Created timestamp should be positive");
     }

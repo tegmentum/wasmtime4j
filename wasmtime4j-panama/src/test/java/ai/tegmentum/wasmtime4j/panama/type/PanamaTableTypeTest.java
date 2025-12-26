@@ -93,7 +93,8 @@ class PanamaTableTypeTest {
           new PanamaTableType(WasmValueType.FUNCREF, 1L, 10L, arena, validHandle);
 
       assertNotNull(tableType, "TableType should be created");
-      assertEquals(WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
+      assertEquals(
+          WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
       assertEquals(1L, tableType.getMinimum(), "Minimum should be 1");
       assertEquals(Optional.of(10L), tableType.getMaximum(), "Maximum should be 10");
     }
@@ -104,7 +105,8 @@ class PanamaTableTypeTest {
       final PanamaTableType tableType =
           new PanamaTableType(WasmValueType.EXTERNREF, 0L, null, arena, validHandle);
 
-      assertEquals(WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
+      assertEquals(
+          WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
     }
 
     @Test
@@ -457,7 +459,8 @@ class PanamaTableTypeTest {
             new PanamaTableType(WasmValueType.FUNCREF, 1L, 100L, testArena, handle);
 
         // Verify all getters work
-        assertEquals(WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
+        assertEquals(
+            WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
         assertEquals(1L, tableType.getMinimum(), "Minimum should be 1");
         assertEquals(Optional.of(100L), tableType.getMaximum(), "Maximum should be 100");
         assertEquals(WasmTypeKind.TABLE, tableType.getKind(), "Kind should be TABLE");
@@ -515,7 +518,7 @@ class PanamaTableTypeTest {
 
       // Non-reference types should fail
       final WasmValueType[] nonRefTypes = {
-          WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
+        WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
       };
 
       for (WasmValueType type : nonRefTypes) {

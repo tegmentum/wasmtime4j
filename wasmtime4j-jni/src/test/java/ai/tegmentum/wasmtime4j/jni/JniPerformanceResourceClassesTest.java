@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,7 +31,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,15 +42,16 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for JNI Performance and Resource classes.
  *
- * <p>This test class verifies the structure and interface compliance of JNI
- * performance and resource management classes without loading native libraries.
+ * <p>This test class verifies the structure and interface compliance of JNI performance and
+ * resource management classes without loading native libraries.
  *
  * <p>Classes tested:
+ *
  * <ul>
- *   <li>{@link JniPoolingAllocator}</li>
- *   <li>{@link JniResourceLimiter}</li>
- *   <li>{@link NativeMethodBindings}</li>
- *   <li>{@link PlatformMemoryManager}</li>
+ *   <li>{@link JniPoolingAllocator}
+ *   <li>{@link JniResourceLimiter}
+ *   <li>{@link NativeMethodBindings}
+ *   <li>{@link PlatformMemoryManager}
  * </ul>
  */
 @DisplayName("JNI Performance and Resource Classes Tests")
@@ -243,18 +242,17 @@ class JniPerformanceResourceClassesTest {
           }
         }
 
-        assertTrue(nativeMethods.contains("nativeCreateWithConfig"),
-            "Should have nativeCreateWithConfig");
-        assertTrue(nativeMethods.contains("nativeAllocateInstance"),
-            "Should have nativeAllocateInstance");
-        assertTrue(nativeMethods.contains("nativeReuseInstance"),
-            "Should have nativeReuseInstance");
-        assertTrue(nativeMethods.contains("nativeReleaseInstance"),
-            "Should have nativeReleaseInstance");
-        assertTrue(nativeMethods.contains("nativeGetStatistics"),
-            "Should have nativeGetStatistics");
-        assertTrue(nativeMethods.contains("nativeDestroy"),
-            "Should have nativeDestroy");
+        assertTrue(
+            nativeMethods.contains("nativeCreateWithConfig"), "Should have nativeCreateWithConfig");
+        assertTrue(
+            nativeMethods.contains("nativeAllocateInstance"), "Should have nativeAllocateInstance");
+        assertTrue(
+            nativeMethods.contains("nativeReuseInstance"), "Should have nativeReuseInstance");
+        assertTrue(
+            nativeMethods.contains("nativeReleaseInstance"), "Should have nativeReleaseInstance");
+        assertTrue(
+            nativeMethods.contains("nativeGetStatistics"), "Should have nativeGetStatistics");
+        assertTrue(nativeMethods.contains("nativeDestroy"), "Should have nativeDestroy");
       }
     }
 
@@ -346,11 +344,14 @@ class JniPerformanceResourceClassesTest {
       @Test
       @DisplayName("Should have create static factory method")
       void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("create",
-            ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.class);
+        Method method =
+            JniResourceLimiter.class.getMethod(
+                "create", ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.class);
         assertNotNull(method, "create method should exist");
         assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
-        assertEquals(JniResourceLimiter.class, method.getReturnType(),
+        assertEquals(
+            JniResourceLimiter.class,
+            method.getReturnType(),
             "create should return JniResourceLimiter");
       }
 
@@ -360,7 +361,9 @@ class JniPerformanceResourceClassesTest {
         Method method = JniResourceLimiter.class.getMethod("createDefault");
         assertNotNull(method, "createDefault method should exist");
         assertTrue(Modifier.isStatic(method.getModifiers()), "createDefault should be static");
-        assertEquals(JniResourceLimiter.class, method.getReturnType(),
+        assertEquals(
+            JniResourceLimiter.class,
+            method.getReturnType(),
             "createDefault should return JniResourceLimiter");
       }
 
@@ -397,17 +400,18 @@ class JniPerformanceResourceClassesTest {
       @Test
       @DisplayName("Should have allowMemoryGrow method")
       void shouldHaveAllowMemoryGrowMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("allowMemoryGrow",
-            long.class, long.class);
+        Method method =
+            JniResourceLimiter.class.getMethod("allowMemoryGrow", long.class, long.class);
         assertNotNull(method, "allowMemoryGrow method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "allowMemoryGrow should return boolean");
+        assertEquals(
+            boolean.class, method.getReturnType(), "allowMemoryGrow should return boolean");
       }
 
       @Test
       @DisplayName("Should have allowTableGrow method")
       void shouldHaveAllowTableGrowMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("allowTableGrow",
-            long.class, long.class);
+        Method method =
+            JniResourceLimiter.class.getMethod("allowTableGrow", long.class, long.class);
         assertNotNull(method, "allowTableGrow method should exist");
         assertEquals(boolean.class, method.getReturnType(), "allowTableGrow should return boolean");
       }
@@ -444,12 +448,13 @@ class JniPerformanceResourceClassesTest {
         }
 
         assertTrue(nativeMethods.contains("nativeCreate"), "Should have nativeCreate");
-        assertTrue(nativeMethods.contains("nativeCreateDefault"), "Should have nativeCreateDefault");
+        assertTrue(
+            nativeMethods.contains("nativeCreateDefault"), "Should have nativeCreateDefault");
         assertTrue(nativeMethods.contains("nativeFree"), "Should have nativeFree");
-        assertTrue(nativeMethods.contains("nativeAllowMemoryGrow"),
-            "Should have nativeAllowMemoryGrow");
-        assertTrue(nativeMethods.contains("nativeAllowTableGrow"),
-            "Should have nativeAllowTableGrow");
+        assertTrue(
+            nativeMethods.contains("nativeAllowMemoryGrow"), "Should have nativeAllowMemoryGrow");
+        assertTrue(
+            nativeMethods.contains("nativeAllowTableGrow"), "Should have nativeAllowTableGrow");
       }
     }
 
@@ -501,8 +506,7 @@ class JniPerformanceResourceClassesTest {
       void shouldHavePrivateConstructor() throws NoSuchMethodException {
         Constructor<?> constructor = NativeMethodBindings.class.getDeclaredConstructor();
         assertNotNull(constructor, "Constructor should exist");
-        assertTrue(Modifier.isPrivate(constructor.getModifiers()),
-            "Constructor should be private");
+        assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
       }
     }
 
@@ -565,10 +569,10 @@ class JniPerformanceResourceClassesTest {
       void shouldHaveGetNativeLibraryVersionMethod() throws NoSuchMethodException {
         Method method = NativeMethodBindings.class.getMethod("getNativeLibraryVersion");
         assertNotNull(method, "getNativeLibraryVersion method should exist");
-        assertTrue(Modifier.isStatic(method.getModifiers()),
-            "getNativeLibraryVersion should be static");
-        assertEquals(String.class, method.getReturnType(),
-            "getNativeLibraryVersion should return String");
+        assertTrue(
+            Modifier.isStatic(method.getModifiers()), "getNativeLibraryVersion should be static");
+        assertEquals(
+            String.class, method.getReturnType(), "getNativeLibraryVersion should return String");
       }
 
       @Test
@@ -595,12 +599,13 @@ class JniPerformanceResourceClassesTest {
           }
         }
 
-        assertTrue(nativeMethods.contains("nativeGetWasmtimeVersion"),
+        assertTrue(
+            nativeMethods.contains("nativeGetWasmtimeVersion"),
             "Should have nativeGetWasmtimeVersion");
-        assertTrue(nativeMethods.contains("nativeCreateRuntime"),
-            "Should have nativeCreateRuntime");
-        assertTrue(nativeMethods.contains("nativeDestroyRuntime"),
-            "Should have nativeDestroyRuntime");
+        assertTrue(
+            nativeMethods.contains("nativeCreateRuntime"), "Should have nativeCreateRuntime");
+        assertTrue(
+            nativeMethods.contains("nativeDestroyRuntime"), "Should have nativeDestroyRuntime");
       }
     }
 
@@ -785,8 +790,8 @@ class JniPerformanceResourceClassesTest {
       @Test
       @DisplayName("Should have constructor with Config parameter")
       void shouldHaveConfigConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor = PlatformMemoryManager.class.getDeclaredConstructor(
-            PlatformMemoryManager.Config.class);
+        Constructor<?> constructor =
+            PlatformMemoryManager.class.getDeclaredConstructor(PlatformMemoryManager.Config.class);
         assertNotNull(constructor, "Config constructor should exist");
         assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
       }
@@ -839,8 +844,8 @@ class JniPerformanceResourceClassesTest {
       @Test
       @DisplayName("Should have prefetchMemory method")
       void shouldHavePrefetchMemoryMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("prefetchMemory",
-            long.class, long.class);
+        Method method =
+            PlatformMemoryManager.class.getMethod("prefetchMemory", long.class, long.class);
         assertNotNull(method, "prefetchMemory method should exist");
         assertEquals(void.class, method.getReturnType(), "prefetchMemory should return void");
       }
@@ -926,26 +931,34 @@ class JniPerformanceResourceClassesTest {
     @Test
     @DisplayName("All performance classes should be final")
     void allPerformanceClassesShouldBeFinal() {
-      assertTrue(Modifier.isFinal(JniPoolingAllocator.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniPoolingAllocator.class.getModifiers()),
           "JniPoolingAllocator should be final");
-      assertTrue(Modifier.isFinal(JniResourceLimiter.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniResourceLimiter.class.getModifiers()),
           "JniResourceLimiter should be final");
-      assertTrue(Modifier.isFinal(NativeMethodBindings.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be final");
-      assertTrue(Modifier.isFinal(PlatformMemoryManager.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(PlatformMemoryManager.class.getModifiers()),
           "PlatformMemoryManager should be final");
     }
 
     @Test
     @DisplayName("All performance classes should be public")
     void allPerformanceClassesShouldBePublic() {
-      assertTrue(Modifier.isPublic(JniPoolingAllocator.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniPoolingAllocator.class.getModifiers()),
           "JniPoolingAllocator should be public");
-      assertTrue(Modifier.isPublic(JniResourceLimiter.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniResourceLimiter.class.getModifiers()),
           "JniResourceLimiter should be public");
-      assertTrue(Modifier.isPublic(NativeMethodBindings.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be public");
-      assertTrue(Modifier.isPublic(PlatformMemoryManager.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(PlatformMemoryManager.class.getModifiers()),
           "PlatformMemoryManager should be public");
     }
 
@@ -953,10 +966,10 @@ class JniPerformanceResourceClassesTest {
     @DisplayName("All classes should have LOGGER field")
     void allClassesShouldHaveLoggerField() throws NoSuchFieldException {
       Field[] loggerFields = {
-          JniPoolingAllocator.class.getDeclaredField("LOGGER"),
-          JniResourceLimiter.class.getDeclaredField("LOGGER"),
-          NativeMethodBindings.class.getDeclaredField("LOGGER"),
-          PlatformMemoryManager.class.getDeclaredField("LOGGER")
+        JniPoolingAllocator.class.getDeclaredField("LOGGER"),
+        JniResourceLimiter.class.getDeclaredField("LOGGER"),
+        NativeMethodBindings.class.getDeclaredField("LOGGER"),
+        PlatformMemoryManager.class.getDeclaredField("LOGGER")
       };
 
       for (Field field : loggerFields) {

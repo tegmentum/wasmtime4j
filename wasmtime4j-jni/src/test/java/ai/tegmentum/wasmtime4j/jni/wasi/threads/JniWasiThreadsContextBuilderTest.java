@@ -34,9 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniWasiThreadsContextBuilder}.
- */
+/** Comprehensive tests for {@link JniWasiThreadsContextBuilder}. */
 @DisplayName("JniWasiThreadsContextBuilder Tests")
 class JniWasiThreadsContextBuilderTest {
 
@@ -195,8 +193,9 @@ class JniWasiThreadsContextBuilderTest {
     @Test
     @DisplayName("Should have getNativeHandle private method")
     void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
-      Method method = JniWasiThreadsContextBuilder.class.getDeclaredMethod(
-          "getNativeHandle", Object.class, String.class);
+      Method method =
+          JniWasiThreadsContextBuilder.class.getDeclaredMethod(
+              "getNativeHandle", Object.class, String.class);
       assertNotNull(method, "getNativeHandle method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(long.class, method.getReturnType(), "Should return long");
@@ -241,7 +240,8 @@ class JniWasiThreadsContextBuilderTest {
           boolean found = false;
           for (Method implMethod : JniWasiThreadsContextBuilder.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }

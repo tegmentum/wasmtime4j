@@ -32,9 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PanamaPerformanceMonitor}.
- */
+/** Comprehensive tests for {@link PanamaPerformanceMonitor}. */
 @DisplayName("PanamaPerformanceMonitor Tests")
 class PanamaPerformanceMonitorTest {
 
@@ -71,7 +69,9 @@ class PanamaPerformanceMonitorTest {
     @Test
     @DisplayName("SIMPLE_PANAMA_OPERATION_TARGET_NS should be 50 nanoseconds")
     void simpleOperationTargetShouldBe50Ns() {
-      assertEquals(50L, PanamaPerformanceMonitor.SIMPLE_PANAMA_OPERATION_TARGET_NS,
+      assertEquals(
+          50L,
+          PanamaPerformanceMonitor.SIMPLE_PANAMA_OPERATION_TARGET_NS,
           "SIMPLE_PANAMA_OPERATION_TARGET_NS should be 50");
     }
   }
@@ -83,19 +83,20 @@ class PanamaPerformanceMonitorTest {
     @Test
     @DisplayName("isEnabled should return true by default")
     void isEnabledShouldReturnTrueByDefault() {
-      assertTrue(PanamaPerformanceMonitor.isEnabled(),
-          "Monitoring should be enabled by default");
+      assertTrue(PanamaPerformanceMonitor.isEnabled(), "Monitoring should be enabled by default");
     }
 
     @Test
     @DisplayName("setEnabled should toggle monitoring state")
     void setEnabledShouldToggleMonitoringState() {
       PanamaPerformanceMonitor.setEnabled(false);
-      assertFalse(PanamaPerformanceMonitor.isEnabled(),
+      assertFalse(
+          PanamaPerformanceMonitor.isEnabled(),
           "Monitoring should be disabled after setEnabled(false)");
 
       PanamaPerformanceMonitor.setEnabled(true);
-      assertTrue(PanamaPerformanceMonitor.isEnabled(),
+      assertTrue(
+          PanamaPerformanceMonitor.isEnabled(),
           "Monitoring should be enabled after setEnabled(true)");
     }
   }
@@ -109,8 +110,7 @@ class PanamaPerformanceMonitorTest {
     void startOperationShouldReturnZeroWhenDisabled() {
       PanamaPerformanceMonitor.setEnabled(false);
       final long startTime = PanamaPerformanceMonitor.startOperation("test_category", "details");
-      assertEquals(0L, startTime,
-          "startOperation should return 0 when monitoring is disabled");
+      assertEquals(0L, startTime, "startOperation should return 0 when monitoring is disabled");
     }
 
     @Test
@@ -118,14 +118,16 @@ class PanamaPerformanceMonitorTest {
     void startOperationShouldReturnPositiveValueWhenEnabled() {
       final long startTime = PanamaPerformanceMonitor.startOperation("test_category", "details");
       // In low overhead mode, may return -1 for unsampled operations or positive for sampled
-      assertTrue(startTime != 0 || !PanamaPerformanceMonitor.isEnabled(),
+      assertTrue(
+          startTime != 0 || !PanamaPerformanceMonitor.isEnabled(),
           "startOperation should return non-zero when monitoring is enabled");
     }
 
     @Test
     @DisplayName("startOperation should work without details")
     void startOperationShouldWorkWithoutDetails() {
-      assertDoesNotThrow(() -> PanamaPerformanceMonitor.startOperation("test_category"),
+      assertDoesNotThrow(
+          () -> PanamaPerformanceMonitor.startOperation("test_category"),
           "startOperation should accept null details");
     }
   }
@@ -137,14 +139,16 @@ class PanamaPerformanceMonitorTest {
     @Test
     @DisplayName("endOperation should handle zero start time gracefully")
     void endOperationShouldHandleZeroStartTimeGracefully() {
-      assertDoesNotThrow(() -> PanamaPerformanceMonitor.endOperation("test_category", 0L),
+      assertDoesNotThrow(
+          () -> PanamaPerformanceMonitor.endOperation("test_category", 0L),
           "endOperation should handle zero start time gracefully");
     }
 
     @Test
     @DisplayName("endOperation should handle negative start time gracefully")
     void endOperationShouldHandleNegativeStartTimeGracefully() {
-      assertDoesNotThrow(() -> PanamaPerformanceMonitor.endOperation("test_category", -1L),
+      assertDoesNotThrow(
+          () -> PanamaPerformanceMonitor.endOperation("test_category", -1L),
           "endOperation should handle negative start time (sampling marker) gracefully");
     }
 
@@ -279,7 +283,10 @@ class PanamaPerformanceMonitorTest {
     @DisplayName("getAverageFfiOverhead should return 0 when no calls made")
     void getAverageFfiOverheadShouldReturnZeroWhenNoCallsMade() {
       PanamaPerformanceMonitor.reset();
-      assertEquals(0.0, PanamaPerformanceMonitor.getAverageFfiOverhead(), 0.001,
+      assertEquals(
+          0.0,
+          PanamaPerformanceMonitor.getAverageFfiOverhead(),
+          0.001,
           "getAverageFfiOverhead should return 0 when no FFI calls made");
     }
 
@@ -306,7 +313,8 @@ class PanamaPerformanceMonitorTest {
     @DisplayName("meetsPerformanceTarget should return true when no operations")
     void meetsPerformanceTargetShouldReturnTrueWhenNoOperations() {
       PanamaPerformanceMonitor.reset();
-      assertTrue(PanamaPerformanceMonitor.meetsPerformanceTarget(),
+      assertTrue(
+          PanamaPerformanceMonitor.meetsPerformanceTarget(),
           "meetsPerformanceTarget should return true when overhead is 0");
     }
   }
@@ -320,8 +328,8 @@ class PanamaPerformanceMonitorTest {
     void getStatisticsShouldReturnDisabledMessageWhenMonitoringOff() {
       PanamaPerformanceMonitor.setEnabled(false);
       final String stats = PanamaPerformanceMonitor.getStatistics();
-      assertTrue(stats.contains("disabled"),
-          "getStatistics should indicate monitoring is disabled");
+      assertTrue(
+          stats.contains("disabled"), "getStatistics should indicate monitoring is disabled");
     }
 
     @Test
@@ -344,7 +352,8 @@ class PanamaPerformanceMonitorTest {
     @DisplayName("getStatistics should include JVM memory information")
     void getStatisticsShouldIncludeJvmMemoryInformation() {
       final String stats = PanamaPerformanceMonitor.getStatistics();
-      assertTrue(stats.contains("JVM Memory") || stats.contains("Heap"),
+      assertTrue(
+          stats.contains("JVM Memory") || stats.contains("Heap"),
           "Statistics should include JVM memory info");
     }
   }
@@ -364,7 +373,10 @@ class PanamaPerformanceMonitorTest {
       PanamaPerformanceMonitor.reset();
 
       // Verify reset
-      assertEquals(0.0, PanamaPerformanceMonitor.getAverageFfiOverhead(), 0.001,
+      assertEquals(
+          0.0,
+          PanamaPerformanceMonitor.getAverageFfiOverhead(),
+          0.001,
           "FFI overhead should be 0 after reset");
     }
   }
@@ -378,10 +390,9 @@ class PanamaPerformanceMonitorTest {
     void getPanamaMetricsShouldReturnFormattedMetricsString() {
       final String metrics = PanamaPerformanceMonitor.getPanamaMetrics();
       assertNotNull(metrics, "getPanamaMetrics should not return null");
-      assertTrue(metrics.contains("Panama Performance"),
-          "Metrics should include 'Panama Performance'");
-      assertTrue(metrics.contains("ffi_calls"),
-          "Metrics should include 'ffi_calls'");
+      assertTrue(
+          metrics.contains("Panama Performance"), "Metrics should include 'Panama Performance'");
+      assertTrue(metrics.contains("ffi_calls"), "Metrics should include 'ffi_calls'");
     }
   }
 
@@ -394,8 +405,7 @@ class PanamaPerformanceMonitorTest {
     void getActiveArenaStatsShouldReturnNoActiveArenasWhenEmpty() {
       PanamaPerformanceMonitor.reset();
       final String stats = PanamaPerformanceMonitor.getActiveArenaStats();
-      assertTrue(stats.contains("No active arenas"),
-          "Should indicate no active arenas");
+      assertTrue(stats.contains("No active arenas"), "Should indicate no active arenas");
     }
 
     @Test
@@ -418,7 +428,8 @@ class PanamaPerformanceMonitorTest {
     @DisplayName("getPerformanceIssues should return null when disabled")
     void getPerformanceIssuesShouldReturnNullWhenDisabled() {
       PanamaPerformanceMonitor.setEnabled(false);
-      assertNull(PanamaPerformanceMonitor.getPerformanceIssues(),
+      assertNull(
+          PanamaPerformanceMonitor.getPerformanceIssues(),
           "getPerformanceIssues should return null when monitoring is disabled");
     }
 
@@ -446,21 +457,28 @@ class PanamaPerformanceMonitorTest {
     @Test
     @DisplayName("monitor should propagate exceptions as RuntimeException")
     void monitorShouldPropagateExceptionsAsRuntimeException() {
-      assertThrows(RuntimeException.class, () ->
-              PanamaPerformanceMonitor.monitor("test", () -> {
-                throw new Exception("Test exception");
-              }),
+      assertThrows(
+          RuntimeException.class,
+          () ->
+              PanamaPerformanceMonitor.monitor(
+                  "test",
+                  () -> {
+                    throw new Exception("Test exception");
+                  }),
           "monitor should propagate exceptions as RuntimeException");
     }
 
     @Test
     @DisplayName("monitor should record operation timing")
     void monitorShouldRecordOperationTiming() {
-      assertDoesNotThrow(() ->
-              PanamaPerformanceMonitor.monitor("timing_test", () -> {
-                Thread.sleep(1); // Small delay
-                return "done";
-              }),
+      assertDoesNotThrow(
+          () ->
+              PanamaPerformanceMonitor.monitor(
+                  "timing_test",
+                  () -> {
+                    Thread.sleep(1); // Small delay
+                    return "done";
+                  }),
           "monitor should record operation timing without error");
     }
   }
@@ -489,15 +507,17 @@ class PanamaPerformanceMonitorTest {
       PanamaPerformanceMonitor.setEnabled(false);
 
       // All these should be no-ops when disabled
-      assertDoesNotThrow(() -> {
-        PanamaPerformanceMonitor.startOperation("test");
-        PanamaPerformanceMonitor.endOperation("test", 1000L);
-        PanamaPerformanceMonitor.recordArenaAllocation(null, 1024L);
-        PanamaPerformanceMonitor.recordArenaDeallocation(null);
-        PanamaPerformanceMonitor.recordMemorySegmentAllocation(null, null);
-        PanamaPerformanceMonitor.recordMethodHandleCall("test");
-        PanamaPerformanceMonitor.recordZeroCopyOperation();
-      }, "All monitoring operations should be safe when disabled");
+      assertDoesNotThrow(
+          () -> {
+            PanamaPerformanceMonitor.startOperation("test");
+            PanamaPerformanceMonitor.endOperation("test", 1000L);
+            PanamaPerformanceMonitor.recordArenaAllocation(null, 1024L);
+            PanamaPerformanceMonitor.recordArenaDeallocation(null);
+            PanamaPerformanceMonitor.recordMemorySegmentAllocation(null, null);
+            PanamaPerformanceMonitor.recordMethodHandleCall("test");
+            PanamaPerformanceMonitor.recordZeroCopyOperation();
+          },
+          "All monitoring operations should be safe when disabled");
     }
   }
 

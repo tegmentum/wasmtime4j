@@ -132,9 +132,13 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("fromValue with invalid value should throw IllegalArgumentException")
     void fromValueWithInvalidValueShouldThrowIllegalArgumentException() {
-      assertThrows(IllegalArgumentException.class, () -> WasiFileType.fromValue(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiFileType.fromValue(-1),
           "Should throw for negative value");
-      assertThrows(IllegalArgumentException.class, () -> WasiFileType.fromValue(8),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiFileType.fromValue(8),
           "Should throw for value >= 8");
     }
   }
@@ -181,8 +185,8 @@ class WasiFileTypeTest {
       for (final WasiFileType fileType : WasiFileType.values()) {
         final int value = fileType.getValue();
         final WasiFileType fromValue = WasiFileType.fromValue(value);
-        assertEquals(fileType, fromValue,
-            "Round trip should return same enum value for " + fileType);
+        assertEquals(
+            fileType, fromValue, "Round trip should return same enum value for " + fileType);
       }
     }
   }

@@ -487,7 +487,8 @@ class PanamaFuncTypeTest {
 
         // Create function type with various param/result types
         final List<WasmValueType> params =
-            Arrays.asList(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64);
+            Arrays.asList(
+                WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64);
         final List<WasmValueType> results = Arrays.asList(WasmValueType.I32, WasmValueType.I64);
 
         final PanamaFuncType funcType = new PanamaFuncType(params, results, testArena, handle);
@@ -512,8 +513,7 @@ class PanamaFuncTypeTest {
     void differentFunctionSignaturesShouldBeDistinguishable() {
       // void -> void
       final PanamaFuncType voidToVoid =
-          new PanamaFuncType(
-              Collections.emptyList(), Collections.emptyList(), arena, validHandle);
+          new PanamaFuncType(Collections.emptyList(), Collections.emptyList(), arena, validHandle);
 
       // i32 -> i32
       final MemorySegment handle2 = arena.allocate(8);

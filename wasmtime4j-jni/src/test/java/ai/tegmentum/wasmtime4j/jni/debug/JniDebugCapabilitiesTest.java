@@ -31,9 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniDebugCapabilities}.
- */
+/** Comprehensive tests for {@link JniDebugCapabilities}. */
 @DisplayName("JniDebugCapabilities Tests")
 class JniDebugCapabilitiesTest {
 
@@ -113,18 +111,19 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should create capabilities with all custom values")
     void builderShouldCreateCapabilitiesWithAllCustomValues() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(false)
-          .memoryInspectionSupported(false)
-          .profilingSupported(false)
-          .sourceMapSupported(false)
-          .dwarfSupported(false)
-          .maxBreakpoints(256)
-          .supportedFormats(Collections.singletonList("Custom"))
-          .debuggerVersion("2.0.0")
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(false)
+              .memoryInspectionSupported(false)
+              .profilingSupported(false)
+              .sourceMapSupported(false)
+              .dwarfSupported(false)
+              .maxBreakpoints(256)
+              .supportedFormats(Collections.singletonList("Custom"))
+              .debuggerVersion("2.0.0")
+              .build();
 
       assertFalse(caps.supportsBreakpoints(), "Breakpoints should not be supported");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should not be supported");
@@ -158,15 +157,16 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should allow enabling individual features")
     void builderShouldAllowEnablingIndividualFeatures() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(false)
-          .profilingSupported(true)
-          .sourceMapSupported(false)
-          .dwarfSupported(true)
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(false)
+              .profilingSupported(true)
+              .sourceMapSupported(false)
+              .dwarfSupported(true)
+              .build();
 
       assertTrue(caps.supportsBreakpoints(), "Breakpoints should be enabled");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should be disabled");
@@ -183,23 +183,21 @@ class JniDebugCapabilitiesTest {
       final List<String> formats = new ArrayList<>();
       formats.add("DWARF");
 
-      final JniDebugCapabilities.Builder builder = JniDebugCapabilities.builder()
-          .supportedFormats(formats);
+      final JniDebugCapabilities.Builder builder =
+          JniDebugCapabilities.builder().supportedFormats(formats);
 
       // Modify original list
       formats.add("SourceMap");
 
       final JniDebugCapabilities caps = builder.build();
-      assertEquals(1, caps.getSupportedFormats().size(),
-          "Should have 1 format (defensive copy)");
+      assertEquals(1, caps.getSupportedFormats().size(), "Should have 1 format (defensive copy)");
     }
 
     @Test
     @DisplayName("Builder supportedFormats should handle null")
     void builderSupportedFormatsShouldHandleNull() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .supportedFormats(null)
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder().supportedFormats(null).build();
 
       assertNotNull(caps.getSupportedFormats(), "Formats should not be null");
       assertTrue(caps.getSupportedFormats().isEmpty(), "Formats should be empty");
@@ -208,18 +206,19 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Builder should allow chaining all methods")
     void builderShouldAllowChainingAllMethods() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(true)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(true)
-          .profilingSupported(true)
-          .sourceMapSupported(true)
-          .dwarfSupported(true)
-          .maxBreakpoints(512)
-          .supportedFormats(Arrays.asList("A", "B", "C"))
-          .debuggerVersion("3.0.0")
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(true)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(true)
+              .profilingSupported(true)
+              .sourceMapSupported(true)
+              .dwarfSupported(true)
+              .maxBreakpoints(512)
+              .supportedFormats(Arrays.asList("A", "B", "C"))
+              .debuggerVersion("3.0.0")
+              .build();
 
       assertNotNull(caps, "Chained builder should produce capabilities");
     }
@@ -234,7 +233,8 @@ class JniDebugCapabilitiesTest {
     void getSupportedFormatsShouldReturnUnmodifiableList() {
       final JniDebugCapabilities caps = JniDebugCapabilities.getDefault();
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> caps.getSupportedFormats().add("NewFormat"),
           "Should not be able to modify returned list");
     }
@@ -242,9 +242,8 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("getSupportedFormats should return empty list when none set")
     void getSupportedFormatsShouldReturnEmptyListWhenNoneSet() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .supportedFormats(Collections.emptyList())
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder().supportedFormats(Collections.emptyList()).build();
 
       assertTrue(caps.getSupportedFormats().isEmpty(), "Should return empty list");
     }
@@ -252,9 +251,10 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("getSupportedFormats should preserve order")
     void getSupportedFormatsShouldPreserveOrder() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .supportedFormats(Arrays.asList("First", "Second", "Third"))
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .supportedFormats(Arrays.asList("First", "Second", "Third"))
+              .build();
 
       final List<String> formats = caps.getSupportedFormats();
       assertEquals("First", formats.get(0), "First element should match");
@@ -270,18 +270,19 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("toString should include all capability flags")
     void toStringShouldIncludeAllCapabilityFlags() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(true)
-          .stepDebuggingSupported(true)
-          .variableInspectionSupported(true)
-          .memoryInspectionSupported(true)
-          .profilingSupported(true)
-          .sourceMapSupported(true)
-          .dwarfSupported(true)
-          .maxBreakpoints(1024)
-          .supportedFormats(Arrays.asList("DWARF", "SourceMap"))
-          .debuggerVersion("1.0.0")
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(true)
+              .stepDebuggingSupported(true)
+              .variableInspectionSupported(true)
+              .memoryInspectionSupported(true)
+              .profilingSupported(true)
+              .sourceMapSupported(true)
+              .dwarfSupported(true)
+              .maxBreakpoints(1024)
+              .supportedFormats(Arrays.asList("DWARF", "SourceMap"))
+              .debuggerVersion("1.0.0")
+              .build();
 
       final String str = caps.toString();
 
@@ -300,10 +301,11 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("toString should show disabled features as false")
     void toStringShouldShowDisabledFeaturesAsFalse() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .build();
 
       final String str = caps.toString();
 
@@ -319,9 +321,7 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle zero max breakpoints")
     void shouldHandleZeroMaxBreakpoints() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .maxBreakpoints(0)
-          .build();
+      final JniDebugCapabilities caps = JniDebugCapabilities.builder().maxBreakpoints(0).build();
 
       assertEquals(0, caps.getMaxBreakpoints(), "Should handle zero max breakpoints");
     }
@@ -329,9 +329,7 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle negative max breakpoints")
     void shouldHandleNegativeMaxBreakpoints() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .maxBreakpoints(-1)
-          .build();
+      final JniDebugCapabilities caps = JniDebugCapabilities.builder().maxBreakpoints(-1).build();
 
       assertEquals(-1, caps.getMaxBreakpoints(), "Should handle negative max breakpoints");
     }
@@ -339,9 +337,7 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle empty debugger version")
     void shouldHandleEmptyDebuggerVersion() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .debuggerVersion("")
-          .build();
+      final JniDebugCapabilities caps = JniDebugCapabilities.builder().debuggerVersion("").build();
 
       assertEquals("", caps.getDebuggerVersion(), "Should handle empty version");
     }
@@ -349,9 +345,8 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle null debugger version")
     void shouldHandleNullDebuggerVersion() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .debuggerVersion(null)
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder().debuggerVersion(null).build();
 
       // Note: The builder doesn't prevent null, so we just verify it's stored
       assertEquals(null, caps.getDebuggerVersion(), "Should handle null version");
@@ -360,15 +355,16 @@ class JniDebugCapabilitiesTest {
     @Test
     @DisplayName("Should handle all features disabled")
     void shouldHandleAllFeaturesDisabled() {
-      final JniDebugCapabilities caps = JniDebugCapabilities.builder()
-          .breakpointsSupported(false)
-          .stepDebuggingSupported(false)
-          .variableInspectionSupported(false)
-          .memoryInspectionSupported(false)
-          .profilingSupported(false)
-          .sourceMapSupported(false)
-          .dwarfSupported(false)
-          .build();
+      final JniDebugCapabilities caps =
+          JniDebugCapabilities.builder()
+              .breakpointsSupported(false)
+              .stepDebuggingSupported(false)
+              .variableInspectionSupported(false)
+              .memoryInspectionSupported(false)
+              .profilingSupported(false)
+              .sourceMapSupported(false)
+              .dwarfSupported(false)
+              .build();
 
       assertFalse(caps.supportsBreakpoints(), "Breakpoints should be disabled");
       assertFalse(caps.supportsStepDebugging(), "Step debugging should be disabled");

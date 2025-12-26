@@ -48,7 +48,8 @@ class BacktraceDeserializerTest {
     @Test
     @DisplayName("BacktraceDeserializer should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(BacktraceDeserializer.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(BacktraceDeserializer.class.getModifiers()),
           "BacktraceDeserializer should be final");
     }
 
@@ -56,7 +57,8 @@ class BacktraceDeserializerTest {
     @DisplayName("BacktraceDeserializer should have private constructor")
     void shouldHavePrivateConstructor() throws Exception {
       final var constructor = BacktraceDeserializer.class.getDeclaredConstructor();
-      assertTrue(java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
           "Constructor should be private");
     }
   }
@@ -68,7 +70,8 @@ class BacktraceDeserializerTest {
     @Test
     @DisplayName("deserialize should throw for null data")
     void deserializeShouldThrowForNullData() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> BacktraceDeserializer.deserialize(null),
           "Should throw for null data");
     }
@@ -76,7 +79,8 @@ class BacktraceDeserializerTest {
     @Test
     @DisplayName("deserialize should throw for empty data")
     void deserializeShouldThrowForEmptyData() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> BacktraceDeserializer.deserialize(new byte[0]),
           "Should throw for empty data");
     }
@@ -84,7 +88,8 @@ class BacktraceDeserializerTest {
     @Test
     @DisplayName("deserialize should throw for data too short")
     void deserializeShouldThrowForDataTooShort() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> BacktraceDeserializer.deserialize(new byte[] {1, 2, 3, 4}),
           "Should throw for data too short (less than 5 bytes)");
     }
@@ -352,9 +357,12 @@ class BacktraceDeserializerTest {
       assertEquals(3, backtrace.getFrames().size(), "Should have 3 frames");
       assertTrue(backtrace.isForceCapture(), "ForceCapture should be true");
 
-      assertEquals(10, backtrace.getFrames().get(0).getFuncIndex(), "First frame index should be 10");
-      assertEquals(20, backtrace.getFrames().get(1).getFuncIndex(), "Second frame index should be 20");
-      assertEquals(30, backtrace.getFrames().get(2).getFuncIndex(), "Third frame index should be 30");
+      assertEquals(
+          10, backtrace.getFrames().get(0).getFuncIndex(), "First frame index should be 10");
+      assertEquals(
+          20, backtrace.getFrames().get(1).getFuncIndex(), "Second frame index should be 20");
+      assertEquals(
+          30, backtrace.getFrames().get(2).getFuncIndex(), "Third frame index should be 30");
     }
   }
 
@@ -400,9 +408,13 @@ class BacktraceDeserializerTest {
       final FrameInfo frame = backtrace.getFrames().get(0);
 
       assertEquals(2, frame.getSymbols().size(), "Should have 2 symbols");
-      assertEquals(Integer.valueOf(100), frame.getSymbols().get(0).getLine(),
+      assertEquals(
+          Integer.valueOf(100),
+          frame.getSymbols().get(0).getLine(),
           "First symbol line should be 100");
-      assertEquals(Integer.valueOf(200), frame.getSymbols().get(1).getLine(),
+      assertEquals(
+          Integer.valueOf(200),
+          frame.getSymbols().get(1).getLine(),
           "Second symbol line should be 200");
     }
   }

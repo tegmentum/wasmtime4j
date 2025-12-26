@@ -32,9 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiResourceLeakDetector}.
- */
+/** Comprehensive tests for {@link WasiResourceLeakDetector}. */
 @DisplayName("WasiResourceLeakDetector Tests")
 class WasiResourceLeakDetectorTest {
 
@@ -88,7 +86,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Constructor with parameters should throw on zero threshold")
     void constructorShouldThrowOnZeroThreshold() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiResourceLeakDetector(0, Duration.ofMinutes(30), 30),
           "Should throw on zero leak threshold");
     }
@@ -96,7 +95,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Constructor with parameters should throw on negative threshold")
     void constructorShouldThrowOnNegativeThreshold() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiResourceLeakDetector(-1, Duration.ofMinutes(30), 30),
           "Should throw on negative leak threshold");
     }
@@ -104,7 +104,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Constructor with parameters should throw on null duration")
     void constructorShouldThrowOnNullDuration() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiResourceLeakDetector(1000, null, 30),
           "Should throw on null resource age threshold");
     }
@@ -112,7 +113,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Constructor with parameters should throw on zero interval")
     void constructorShouldThrowOnZeroInterval() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiResourceLeakDetector(1000, Duration.ofMinutes(30), 0),
           "Should throw on zero monitoring interval");
     }
@@ -120,7 +122,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Constructor with parameters should throw on negative interval")
     void constructorShouldThrowOnNegativeInterval() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiResourceLeakDetector(1000, Duration.ofMinutes(30), -1),
           "Should throw on negative monitoring interval");
     }
@@ -142,7 +145,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.trackWasiContext(null, null),
           "Should throw on null context ID");
     }
@@ -150,7 +154,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.trackWasiContext("", null),
           "Should throw on empty context ID");
     }
@@ -158,7 +163,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null context")
     void shouldThrowOnNullContext() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.trackWasiContext("test-context", null),
           "Should throw on null context");
     }
@@ -171,7 +177,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null context ID")
     void shouldThrowOnNullContextId() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.untrackWasiContext(null),
           "Should throw on null context ID");
     }
@@ -179,7 +186,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on empty context ID")
     void shouldThrowOnEmptyContextId() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.untrackWasiContext(""),
           "Should throw on empty context ID");
     }
@@ -201,7 +209,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null segment")
     void shouldThrowOnNullSegment() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.trackMemorySegment(null),
           "Should throw on null segment");
     }
@@ -212,10 +221,8 @@ class WasiResourceLeakDetectorTest {
       try (Arena arena = Arena.ofConfined()) {
         final MemorySegment segment = arena.allocate(1024);
         assertDoesNotThrow(
-            () -> detector.trackMemorySegment(segment),
-            "Should track memory segment");
-        assertEquals(1, detector.getTrackedMemorySegmentCount(),
-            "Should have 1 tracked segment");
+            () -> detector.trackMemorySegment(segment), "Should track memory segment");
+        assertEquals(1, detector.getTrackedMemorySegmentCount(), "Should have 1 tracked segment");
       }
     }
   }
@@ -227,7 +234,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null segment")
     void shouldThrowOnNullSegment() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.untrackMemorySegment(null),
           "Should throw on null segment");
     }
@@ -253,7 +261,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null handle")
     void shouldThrowOnNullHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.trackNativeHandle(null, "test"),
           "Should throw on null handle");
     }
@@ -263,7 +272,8 @@ class WasiResourceLeakDetectorTest {
     void shouldThrowOnNullResourceType() {
       try (Arena arena = Arena.ofConfined()) {
         final MemorySegment handle = arena.allocate(8);
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> detector.trackNativeHandle(handle, null),
             "Should throw on null resource type");
       }
@@ -274,7 +284,8 @@ class WasiResourceLeakDetectorTest {
     void shouldThrowOnEmptyResourceType() {
       try (Arena arena = Arena.ofConfined()) {
         final MemorySegment handle = arena.allocate(8);
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+            IllegalArgumentException.class,
             () -> detector.trackNativeHandle(handle, ""),
             "Should throw on empty resource type");
       }
@@ -286,10 +297,8 @@ class WasiResourceLeakDetectorTest {
       try (Arena arena = Arena.ofConfined()) {
         final MemorySegment handle = arena.allocate(8);
         assertDoesNotThrow(
-            () -> detector.trackNativeHandle(handle, "TestHandle"),
-            "Should track native handle");
-        assertEquals(1, detector.getTrackedNativeHandleCount(),
-            "Should have 1 tracked handle");
+            () -> detector.trackNativeHandle(handle, "TestHandle"), "Should track native handle");
+        assertEquals(1, detector.getTrackedNativeHandleCount(), "Should have 1 tracked handle");
       }
     }
   }
@@ -301,7 +310,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should throw on null handle")
     void shouldThrowOnNullHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> detector.untrackNativeHandle(null),
           "Should throw on null handle");
     }
@@ -327,8 +337,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should return 0 initially")
     void shouldReturnZeroInitially() {
-      assertEquals(0, detector.getTrackedContextCount(),
-          "Should have 0 tracked contexts initially");
+      assertEquals(
+          0, detector.getTrackedContextCount(), "Should have 0 tracked contexts initially");
     }
   }
 
@@ -339,8 +349,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should return 0 initially")
     void shouldReturnZeroInitially() {
-      assertEquals(0, detector.getTrackedMemorySegmentCount(),
-          "Should have 0 tracked segments initially");
+      assertEquals(
+          0, detector.getTrackedMemorySegmentCount(), "Should have 0 tracked segments initially");
     }
   }
 
@@ -351,8 +361,8 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should return 0 initially")
     void shouldReturnZeroInitially() {
-      assertEquals(0, detector.getTrackedNativeHandleCount(),
-          "Should have 0 tracked handles initially");
+      assertEquals(
+          0, detector.getTrackedNativeHandleCount(), "Should have 0 tracked handles initially");
     }
   }
 
@@ -435,9 +445,10 @@ class WasiResourceLeakDetectorTest {
     @DisplayName("getTotalLeaked should sum all leak types")
     void getTotalLeakedShouldSumAllLeakTypes() {
       final WasiResourceLeakDetector.LeakDetectionResults results = detector.performLeakDetection();
-      final int expected = results.getLeakedContexts()
-          + results.getLeakedMemorySegments()
-          + results.getLeakedNativeHandles();
+      final int expected =
+          results.getLeakedContexts()
+              + results.getLeakedMemorySegments()
+              + results.getLeakedNativeHandles();
       assertEquals(expected, results.getTotalLeaked(), "Total should be sum of all types");
     }
 
@@ -452,8 +463,8 @@ class WasiResourceLeakDetectorTest {
     @DisplayName("getCleanedUpResources should return count")
     void getCleanedUpResourcesShouldReturnCount() {
       final WasiResourceLeakDetector.LeakDetectionResults results = detector.performLeakDetection();
-      assertTrue(results.getCleanedUpResources() >= 0,
-          "Cleaned up resources should be non-negative");
+      assertTrue(
+          results.getCleanedUpResources() >= 0, "Cleaned up resources should be non-negative");
     }
   }
 
@@ -479,11 +490,13 @@ class WasiResourceLeakDetectorTest {
     @Test
     @DisplayName("Should work with try-with-resources")
     void shouldWorkWithTryWithResources() {
-      assertDoesNotThrow(() -> {
-        try (WasiResourceLeakDetector leakDetector = new WasiResourceLeakDetector()) {
-          assertNotNull(leakDetector, "Detector should exist in try block");
-        }
-      }, "Should work with try-with-resources");
+      assertDoesNotThrow(
+          () -> {
+            try (WasiResourceLeakDetector leakDetector = new WasiResourceLeakDetector()) {
+              assertNotNull(leakDetector, "Detector should exist in try block");
+            }
+          },
+          "Should work with try-with-resources");
     }
 
     @Test
@@ -496,7 +509,9 @@ class WasiResourceLeakDetectorTest {
 
         detector.close();
         // After close, counts should be cleared
-        assertEquals(0, detector.getTrackedMemorySegmentCount(),
+        assertEquals(
+            0,
+            detector.getTrackedMemorySegmentCount(),
             "Should have 0 tracked segments after close");
       }
     }
@@ -528,7 +543,8 @@ class WasiResourceLeakDetectorTest {
 
         final WasiResourceLeakDetector.ResourceStatistics stats = detector.getStatistics();
         assertEquals(1, stats.getMemorySegmentsCreated(), "Memory segments created should be 1");
-        assertEquals(1, stats.getMemorySegmentsDestroyed(), "Memory segments destroyed should be 1");
+        assertEquals(
+            1, stats.getMemorySegmentsDestroyed(), "Memory segments destroyed should be 1");
         assertEquals(0, stats.getActiveMemorySegments(), "Active segments should be 0");
       }
     }

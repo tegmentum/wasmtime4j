@@ -30,9 +30,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link PanamaAsyncRuntime}.
- */
+/** Comprehensive tests for {@link PanamaAsyncRuntime}. */
 @DisplayName("PanamaAsyncRuntime Tests")
 class PanamaAsyncRuntimeTest {
 
@@ -75,13 +73,11 @@ class PanamaAsyncRuntimeTest {
       // May fail if native bindings aren't available, but structure should work
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertFalse(runtime.isInitialized(),
-            "Newly created runtime should not be initialized");
+        assertFalse(runtime.isInitialized(), "Newly created runtime should not be initialized");
         runtime.close();
       } catch (Exception e) {
         // Expected if native bindings are not available
-        assertTrue(e.getMessage() != null,
-            "Exception should have message");
+        assertTrue(e.getMessage() != null, "Exception should have message");
       }
     }
   }
@@ -95,7 +91,8 @@ class PanamaAsyncRuntimeTest {
     void isInitializedShouldReturnFalseBeforeInitialize() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertFalse(runtime.isInitialized(),
+        assertFalse(
+            runtime.isInitialized(),
             "Runtime should not be initialized before calling initialize()");
         runtime.close();
       } catch (Exception e) {
@@ -109,8 +106,7 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.shutdown();
-        assertFalse(runtime.isInitialized(),
-            "Runtime should not be initialized after shutdown");
+        assertFalse(runtime.isInitialized(), "Runtime should not be initialized after shutdown");
       } catch (Exception e) {
         // Expected if native bindings not available
       }
@@ -127,7 +123,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.shutdown();
-        assertThrows(WasmException.class, runtime::initialize,
+        assertThrows(
+            WasmException.class,
+            runtime::initialize,
             "initialize should throw WasmException if already shutdown");
       } catch (Exception e) {
         // Expected if native bindings not available
@@ -145,8 +143,7 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         final String info = runtime.getRuntimeInfo();
-        assertEquals("Not initialized", info,
-            "Should return 'Not initialized' before init");
+        assertEquals("Not initialized", info, "Should return 'Not initialized' before init");
         runtime.close();
       } catch (Exception e) {
         // Expected if native bindings not available
@@ -164,8 +161,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.initialize();
-        assertThrows(NullPointerException.class, () ->
-                runtime.executeAsync(0L, null, new Object[0], 1000L, result -> {}),
+        assertThrows(
+            NullPointerException.class,
+            () -> runtime.executeAsync(0L, null, new Object[0], 1000L, result -> {}),
             "executeAsync should throw on null functionName");
         runtime.close();
       } catch (Exception e) {
@@ -179,8 +177,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.initialize();
-        assertThrows(NullPointerException.class, () ->
-                runtime.executeAsync(0L, "test", new Object[0], 1000L, null),
+        assertThrows(
+            NullPointerException.class,
+            () -> runtime.executeAsync(0L, "test", new Object[0], 1000L, null),
             "executeAsync should throw on null callback");
         runtime.close();
       } catch (Exception e) {
@@ -199,8 +198,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.initialize();
-        assertThrows(NullPointerException.class, () ->
-                runtime.compileAsync(null, 1000L, null, result -> {}),
+        assertThrows(
+            NullPointerException.class,
+            () -> runtime.compileAsync(null, 1000L, null, result -> {}),
             "compileAsync should throw on null wasmBytes");
         runtime.close();
       } catch (Exception e) {
@@ -214,8 +214,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.initialize();
-        assertThrows(NullPointerException.class, () ->
-                runtime.compileAsync(new byte[]{0x00}, 1000L, null, null),
+        assertThrows(
+            NullPointerException.class,
+            () -> runtime.compileAsync(new byte[] {0x00}, 1000L, null, null),
             "compileAsync should throw on null completionCallback");
         runtime.close();
       } catch (Exception e) {
@@ -229,8 +230,9 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.initialize();
-        assertThrows(IllegalArgumentException.class, () ->
-                runtime.compileAsync(new byte[0], 1000L, null, result -> {}),
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> runtime.compileAsync(new byte[0], 1000L, null, result -> {}),
             "compileAsync should throw on empty wasmBytes");
         runtime.close();
       } catch (Exception e) {
@@ -248,7 +250,8 @@ class PanamaAsyncRuntimeTest {
     void cancelOperationShouldReturnFalseForUnknownOperation() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertFalse(runtime.cancelOperation(999L),
+        assertFalse(
+            runtime.cancelOperation(999L),
             "cancelOperation should return false for unknown operation ID");
         runtime.close();
       } catch (Exception e) {
@@ -266,7 +269,9 @@ class PanamaAsyncRuntimeTest {
     void getOperationStatusShouldReturnPendingForUnknownOperation() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertEquals(OperationStatus.PENDING, runtime.getOperationStatus(999L),
+        assertEquals(
+            OperationStatus.PENDING,
+            runtime.getOperationStatus(999L),
             "getOperationStatus should return PENDING for unknown operation");
         runtime.close();
       } catch (Exception e) {
@@ -284,8 +289,9 @@ class PanamaAsyncRuntimeTest {
     void waitForOperationShouldThrowForUnknownOperation() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertThrows(WasmException.class, () ->
-                runtime.waitForOperation(999L, 100L),
+        assertThrows(
+            WasmException.class,
+            () -> runtime.waitForOperation(999L, 100L),
             "waitForOperation should throw for unknown operation");
         runtime.close();
       } catch (Exception e) {
@@ -303,8 +309,8 @@ class PanamaAsyncRuntimeTest {
     void getActiveOperationCountShouldReturnZeroInitially() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertEquals(0, runtime.getActiveOperationCount(),
-            "Active operation count should be 0 initially");
+        assertEquals(
+            0, runtime.getActiveOperationCount(), "Active operation count should be 0 initially");
         runtime.close();
       } catch (Exception e) {
         // Expected if native bindings not available
@@ -321,11 +327,13 @@ class PanamaAsyncRuntimeTest {
     void shutdownShouldBeIdempotent() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertDoesNotThrow(() -> {
-          runtime.shutdown();
-          runtime.shutdown();
-          runtime.shutdown();
-        }, "shutdown should be safe to call multiple times");
+        assertDoesNotThrow(
+            () -> {
+              runtime.shutdown();
+              runtime.shutdown();
+              runtime.shutdown();
+            },
+            "shutdown should be safe to call multiple times");
       } catch (Exception e) {
         // Expected if native bindings not available
       }
@@ -337,8 +345,8 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.shutdown();
-        assertEquals(0, runtime.getActiveOperationCount(),
-            "Active operations should be 0 after shutdown");
+        assertEquals(
+            0, runtime.getActiveOperationCount(), "Active operations should be 0 after shutdown");
       } catch (Exception e) {
         // Expected if native bindings not available
       }
@@ -355,8 +363,7 @@ class PanamaAsyncRuntimeTest {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         runtime.close();
-        assertFalse(runtime.isInitialized(),
-            "Runtime should not be initialized after close");
+        assertFalse(runtime.isInitialized(), "Runtime should not be initialized after close");
       } catch (Exception e) {
         // Expected if native bindings not available
       }
@@ -367,11 +374,13 @@ class PanamaAsyncRuntimeTest {
     void closeShouldBeSafeToCallMultipleTimes() {
       try {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
-        assertDoesNotThrow(() -> {
-          runtime.close();
-          runtime.close();
-          runtime.close();
-        }, "close should be safe to call multiple times");
+        assertDoesNotThrow(
+            () -> {
+              runtime.close();
+              runtime.close();
+              runtime.close();
+            },
+            "close should be safe to call multiple times");
       } catch (Exception e) {
         // Expected if native bindings not available
       }
@@ -389,14 +398,10 @@ class PanamaAsyncRuntimeTest {
         final PanamaAsyncRuntime runtime = new PanamaAsyncRuntime();
         final String str = runtime.toString();
         assertNotNull(str, "toString should not return null");
-        assertTrue(str.contains("PanamaAsyncRuntime"),
-            "toString should contain class name");
-        assertTrue(str.contains("initialized"),
-            "toString should contain initialized status");
-        assertTrue(str.contains("shutdown"),
-            "toString should contain shutdown status");
-        assertTrue(str.contains("activeOperations"),
-            "toString should contain activeOperations");
+        assertTrue(str.contains("PanamaAsyncRuntime"), "toString should contain class name");
+        assertTrue(str.contains("initialized"), "toString should contain initialized status");
+        assertTrue(str.contains("shutdown"), "toString should contain shutdown status");
+        assertTrue(str.contains("activeOperations"), "toString should contain activeOperations");
         runtime.close();
       } catch (Exception e) {
         // Expected if native bindings not available

@@ -37,24 +37,22 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Comprehensive tests for {@link WasiDirectoryAccessControl}.
- */
+/** Comprehensive tests for {@link WasiDirectoryAccessControl}. */
 @DisplayName("WasiDirectoryAccessControl Tests")
 class WasiDirectoryAccessControlTest {
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   private WasiDirectoryAccessControl accessControl;
 
   @BeforeEach
   void setUp() {
-    accessControl = WasiDirectoryAccessControl.builder()
-        .withInheritance(true)
-        .withStrictPathValidation(false) // Avoid filesystem checks in tests
-        .withAuditLogging(false)
-        .build();
+    accessControl =
+        WasiDirectoryAccessControl.builder()
+            .withInheritance(true)
+            .withStrictPathValidation(false) // Avoid filesystem checks in tests
+            .withAuditLogging(false)
+            .build();
   }
 
   @Nested
@@ -86,9 +84,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Builder should configure inheritance")
     void builderShouldConfigureInheritance() {
-      final WasiDirectoryAccessControl control = WasiDirectoryAccessControl.builder()
-          .withInheritance(false)
-          .build();
+      final WasiDirectoryAccessControl control =
+          WasiDirectoryAccessControl.builder().withInheritance(false).build();
 
       assertNotNull(control, "Access control should be created");
     }
@@ -96,9 +93,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Builder should configure strict path validation")
     void builderShouldConfigureStrictPathValidation() {
-      final WasiDirectoryAccessControl control = WasiDirectoryAccessControl.builder()
-          .withStrictPathValidation(true)
-          .build();
+      final WasiDirectoryAccessControl control =
+          WasiDirectoryAccessControl.builder().withStrictPathValidation(true).build();
 
       assertNotNull(control, "Access control should be created");
     }
@@ -106,9 +102,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Builder should configure audit logging")
     void builderShouldConfigureAuditLogging() {
-      final WasiDirectoryAccessControl control = WasiDirectoryAccessControl.builder()
-          .withAuditLogging(true)
-          .build();
+      final WasiDirectoryAccessControl control =
+          WasiDirectoryAccessControl.builder().withAuditLogging(true).build();
 
       assertNotNull(control, "Access control should be created");
     }
@@ -116,37 +111,38 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Builder should add global default permission")
     void builderShouldAddGlobalDefaultPermission() {
-      final WasiDirectoryAccessControl control = WasiDirectoryAccessControl.builder()
-          .withGlobalDefaultPermission(WasiFileOperation.READ)
-          .withStrictPathValidation(false)
-          .build();
+      final WasiDirectoryAccessControl control =
+          WasiDirectoryAccessControl.builder()
+              .withGlobalDefaultPermission(WasiFileOperation.READ)
+              .withStrictPathValidation(false)
+              .build();
 
       assertNotNull(control, "Access control should be created");
 
       // Global default permission should allow READ on any directory
-      assertDoesNotThrow(
-          () -> control.validateDirectoryAccess(tempDir, WasiFileOperation.READ));
+      assertDoesNotThrow(() -> control.validateDirectoryAccess(tempDir, WasiFileOperation.READ));
     }
 
     @Test
     @DisplayName("Builder should throw on null permission")
     void builderShouldThrowOnNullPermission() {
-      assertThrows(JniException.class,
-          () -> WasiDirectoryAccessControl.builder()
-              .withGlobalDefaultPermission(null),
+      assertThrows(
+          JniException.class,
+          () -> WasiDirectoryAccessControl.builder().withGlobalDefaultPermission(null),
           "Should throw on null permission");
     }
 
     @Test
     @DisplayName("Builder should add directory permissions")
     void builderShouldAddDirectoryPermissions() {
-      final Set<WasiFileOperation> permissions = EnumSet.of(
-          WasiFileOperation.READ, WasiFileOperation.WRITE);
+      final Set<WasiFileOperation> permissions =
+          EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE);
 
-      final WasiDirectoryAccessControl control = WasiDirectoryAccessControl.builder()
-          .withDirectoryPermissions(tempDir.toString(), permissions, false)
-          .withStrictPathValidation(false)
-          .build();
+      final WasiDirectoryAccessControl control =
+          WasiDirectoryAccessControl.builder()
+              .withDirectoryPermissions(tempDir.toString(), permissions, false)
+              .withStrictPathValidation(false)
+              .build();
 
       assertEquals(1, control.getRuleCount(), "Should have one rule");
     }
@@ -156,9 +152,11 @@ class WasiDirectoryAccessControlTest {
     void builderShouldThrowOnNullDirectoryPath() {
       final Set<WasiFileOperation> permissions = EnumSet.of(WasiFileOperation.READ);
 
-      assertThrows(JniException.class,
-          () -> WasiDirectoryAccessControl.builder()
-              .withDirectoryPermissions(null, permissions, false),
+      assertThrows(
+          JniException.class,
+          () ->
+              WasiDirectoryAccessControl.builder()
+                  .withDirectoryPermissions(null, permissions, false),
           "Should throw on null directory path");
     }
 
@@ -167,18 +165,21 @@ class WasiDirectoryAccessControlTest {
     void builderShouldThrowOnEmptyDirectoryPath() {
       final Set<WasiFileOperation> permissions = EnumSet.of(WasiFileOperation.READ);
 
-      assertThrows(JniException.class,
-          () -> WasiDirectoryAccessControl.builder()
-              .withDirectoryPermissions("", permissions, false),
+      assertThrows(
+          JniException.class,
+          () ->
+              WasiDirectoryAccessControl.builder().withDirectoryPermissions("", permissions, false),
           "Should throw on empty directory path");
     }
 
     @Test
     @DisplayName("Builder should throw on null permissions set")
     void builderShouldThrowOnNullPermissionsSet() {
-      assertThrows(JniException.class,
-          () -> WasiDirectoryAccessControl.builder()
-              .withDirectoryPermissions(tempDir.toString(), null, false),
+      assertThrows(
+          JniException.class,
+          () ->
+              WasiDirectoryAccessControl.builder()
+                  .withDirectoryPermissions(tempDir.toString(), null, false),
           "Should throw on null permissions set");
     }
   }
@@ -190,7 +191,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.validateDirectoryAccess(null, WasiFileOperation.READ),
           "Should throw on null path");
     }
@@ -198,7 +200,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null operation")
     void shouldThrowOnNullOperation() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.validateDirectoryAccess(tempDir, null),
           "Should throw on null operation");
     }
@@ -206,7 +209,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should deny access when no permissions configured")
     void shouldDenyAccessWhenNoPermissionsConfigured() {
-      assertThrows(WasiPermissionException.class,
+      assertThrows(
+          WasiPermissionException.class,
           () -> accessControl.validateDirectoryAccess(tempDir, WasiFileOperation.READ),
           "Should deny access when no permissions configured");
     }
@@ -215,9 +219,7 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should allow access when permission granted")
     void shouldAllowAccessWhenPermissionGranted() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       assertDoesNotThrow(
           () -> accessControl.validateDirectoryAccess(tempDir, WasiFileOperation.READ),
@@ -228,11 +230,10 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should deny access for ungrated operation")
     void shouldDenyAccessForUngrantedOperation() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
-      assertThrows(WasiPermissionException.class,
+      assertThrows(
+          WasiPermissionException.class,
           () -> accessControl.validateDirectoryAccess(tempDir, WasiFileOperation.WRITE),
           "Should deny access for ungranted operation");
     }
@@ -242,19 +243,19 @@ class WasiDirectoryAccessControlTest {
     void shouldAllowAccessThroughInheritance() throws IOException {
       // Create parent with recursive permission
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          true); // Recursive
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), true); // Recursive
 
       // Create subdirectory
       final Path subDir = Files.createDirectories(tempDir.resolve("subdir"));
 
       // Build new control with inheritance enabled
-      final WasiDirectoryAccessControl inheritingControl = WasiDirectoryAccessControl.builder()
-          .withInheritance(true)
-          .withStrictPathValidation(false)
-          .withDirectoryPermissions(tempDir.toString(), EnumSet.of(WasiFileOperation.READ), true)
-          .build();
+      final WasiDirectoryAccessControl inheritingControl =
+          WasiDirectoryAccessControl.builder()
+              .withInheritance(true)
+              .withStrictPathValidation(false)
+              .withDirectoryPermissions(
+                  tempDir.toString(), EnumSet.of(WasiFileOperation.READ), true)
+              .build();
 
       assertDoesNotThrow(
           () -> inheritingControl.validateDirectoryAccess(subDir, WasiFileOperation.READ),
@@ -269,25 +270,30 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null directory path")
     void shouldThrowOnNullDirectoryPath() {
-      assertThrows(JniException.class,
-          () -> accessControl.grantDirectoryPermissions(null, EnumSet.of(WasiFileOperation.READ),
-              false),
+      assertThrows(
+          JniException.class,
+          () ->
+              accessControl.grantDirectoryPermissions(
+                  null, EnumSet.of(WasiFileOperation.READ), false),
           "Should throw on null directory path");
     }
 
     @Test
     @DisplayName("Should throw on empty directory path")
     void shouldThrowOnEmptyDirectoryPath() {
-      assertThrows(JniException.class,
-          () -> accessControl.grantDirectoryPermissions("", EnumSet.of(WasiFileOperation.READ),
-              false),
+      assertThrows(
+          JniException.class,
+          () ->
+              accessControl.grantDirectoryPermissions(
+                  "", EnumSet.of(WasiFileOperation.READ), false),
           "Should throw on empty directory path");
     }
 
     @Test
     @DisplayName("Should throw on null permissions")
     void shouldThrowOnNullPermissions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.grantDirectoryPermissions(tempDir.toString(), null, false),
           "Should throw on null permissions");
     }
@@ -296,9 +302,7 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should grant permissions successfully")
     void shouldGrantPermissionsSuccessfully() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE), false);
 
       assertEquals(1, accessControl.getRuleCount(), "Should have one rule");
     }
@@ -307,9 +311,7 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should grant recursive permissions")
     void shouldGrantRecursivePermissions() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          true);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), true);
 
       assertEquals(1, accessControl.getRuleCount(), "Should have one rule");
     }
@@ -318,14 +320,10 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should overwrite existing permissions")
     void shouldOverwriteExistingPermissions() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.WRITE),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.WRITE), false);
 
       assertEquals(1, accessControl.getRuleCount(), "Should still have one rule");
 
@@ -343,7 +341,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null directory path")
     void shouldThrowOnNullDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.revokeDirectoryPermissions(null, EnumSet.of(WasiFileOperation.READ)),
           "Should throw on null directory path");
     }
@@ -351,7 +350,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on empty directory path")
     void shouldThrowOnEmptyDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.revokeDirectoryPermissions("", EnumSet.of(WasiFileOperation.READ)),
           "Should throw on empty directory path");
     }
@@ -359,7 +359,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null permissions")
     void shouldThrowOnNullPermissions() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.revokeDirectoryPermissions(tempDir.toString(), null),
           "Should throw on null permissions");
     }
@@ -368,13 +369,10 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should revoke specific permissions")
     void shouldRevokeSpecificPermissions() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE), false);
 
       accessControl.revokeDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.WRITE));
+          tempDir.toString(), EnumSet.of(WasiFileOperation.WRITE));
 
       final Set<WasiFileOperation> perms =
           accessControl.getDirectoryPermissions(tempDir.toString());
@@ -386,15 +384,12 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should remove rule when all permissions revoked")
     void shouldRemoveRuleWhenAllPermissionsRevoked() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       assertEquals(1, accessControl.getRuleCount(), "Should have one rule");
 
       accessControl.revokeDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ));
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ));
 
       assertEquals(0, accessControl.getRuleCount(), "Rule should be removed");
     }
@@ -403,9 +398,9 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should handle revoke on non-existent rule gracefully")
     void shouldHandleRevokeOnNonExistentRuleGracefully() {
       assertDoesNotThrow(
-          () -> accessControl.revokeDirectoryPermissions(
-              tempDir.toString(),
-              EnumSet.of(WasiFileOperation.READ)),
+          () ->
+              accessControl.revokeDirectoryPermissions(
+                  tempDir.toString(), EnumSet.of(WasiFileOperation.READ)),
           "Should handle non-existent rule gracefully");
     }
   }
@@ -417,7 +412,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null directory path")
     void shouldThrowOnNullDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.setDirectoryRuleEnabled(null, true),
           "Should throw on null directory path");
     }
@@ -425,7 +421,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on empty directory path")
     void shouldThrowOnEmptyDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.setDirectoryRuleEnabled("", true),
           "Should throw on empty directory path");
     }
@@ -434,14 +431,13 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should disable rule")
     void shouldDisableRule() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.setDirectoryRuleEnabled(tempDir.toString(), false);
 
       // Should deny access now that rule is disabled
-      assertThrows(WasiPermissionException.class,
+      assertThrows(
+          WasiPermissionException.class,
           () -> accessControl.validateDirectoryAccess(tempDir, WasiFileOperation.READ),
           "Should deny access when rule disabled");
     }
@@ -450,9 +446,7 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should enable rule")
     void shouldEnableRule() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.setDirectoryRuleEnabled(tempDir.toString(), false);
       accessControl.setDirectoryRuleEnabled(tempDir.toString(), true);
@@ -479,7 +473,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on null directory path")
     void shouldThrowOnNullDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.getDirectoryPermissions(null),
           "Should throw on null directory path");
     }
@@ -487,7 +482,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should throw on empty directory path")
     void shouldThrowOnEmptyDirectoryPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> accessControl.getDirectoryPermissions(""),
           "Should throw on empty directory path");
     }
@@ -495,8 +491,8 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should return empty set for unknown directory")
     void shouldReturnEmptySetForUnknownDirectory() {
-      final Set<WasiFileOperation> perms = accessControl.getDirectoryPermissions(
-          tempDir.toString());
+      final Set<WasiFileOperation> perms =
+          accessControl.getDirectoryPermissions(tempDir.toString());
 
       assertNotNull(perms, "Permissions should not be null");
       assertTrue(perms.isEmpty(), "Should be empty for unknown directory");
@@ -506,12 +502,10 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should return configured permissions")
     void shouldReturnConfiguredPermissions() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ, WasiFileOperation.WRITE), false);
 
-      final Set<WasiFileOperation> perms = accessControl.getDirectoryPermissions(
-          tempDir.toString());
+      final Set<WasiFileOperation> perms =
+          accessControl.getDirectoryPermissions(tempDir.toString());
 
       assertEquals(2, perms.size(), "Should have 2 permissions");
       assertTrue(perms.contains(WasiFileOperation.READ), "Should have READ");
@@ -521,13 +515,14 @@ class WasiDirectoryAccessControlTest {
     @Test
     @DisplayName("Should return global defaults when no explicit rule")
     void shouldReturnGlobalDefaultsWhenNoExplicitRule() {
-      final WasiDirectoryAccessControl controlWithDefaults = WasiDirectoryAccessControl.builder()
-          .withGlobalDefaultPermission(WasiFileOperation.READ)
-          .withStrictPathValidation(false)
-          .build();
+      final WasiDirectoryAccessControl controlWithDefaults =
+          WasiDirectoryAccessControl.builder()
+              .withGlobalDefaultPermission(WasiFileOperation.READ)
+              .withStrictPathValidation(false)
+              .build();
 
-      final Set<WasiFileOperation> perms = controlWithDefaults.getDirectoryPermissions(
-          tempDir.toString());
+      final Set<WasiFileOperation> perms =
+          controlWithDefaults.getDirectoryPermissions(tempDir.toString());
 
       assertTrue(perms.contains(WasiFileOperation.READ), "Should have global default READ");
     }
@@ -553,14 +548,10 @@ class WasiDirectoryAccessControlTest {
       final Path dir2 = Files.createDirectories(tempDir.resolve("dir2"));
 
       accessControl.grantDirectoryPermissions(
-          dir1.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          dir1.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.grantDirectoryPermissions(
-          dir2.toString(),
-          EnumSet.of(WasiFileOperation.WRITE),
-          false);
+          dir2.toString(), EnumSet.of(WasiFileOperation.WRITE), false);
 
       final Map<String, Set<WasiFileOperation>> rules = accessControl.listDirectoryRules();
 
@@ -571,9 +562,7 @@ class WasiDirectoryAccessControlTest {
     @DisplayName("Should not list disabled rules")
     void shouldNotListDisabledRules() {
       accessControl.grantDirectoryPermissions(
-          tempDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          tempDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.setDirectoryRuleEnabled(tempDir.toString(), false);
 
@@ -594,14 +583,10 @@ class WasiDirectoryAccessControlTest {
       final Path dir2 = Files.createDirectories(tempDir.resolve("dir2"));
 
       accessControl.grantDirectoryPermissions(
-          dir1.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          dir1.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       accessControl.grantDirectoryPermissions(
-          dir2.toString(),
-          EnumSet.of(WasiFileOperation.WRITE),
-          false);
+          dir2.toString(), EnumSet.of(WasiFileOperation.WRITE), false);
 
       assertEquals(2, accessControl.getRuleCount(), "Should have 2 rules");
 
@@ -628,16 +613,12 @@ class WasiDirectoryAccessControlTest {
       final Path dir2 = Files.createDirectories(tempDir.resolve("dir2"));
 
       accessControl.grantDirectoryPermissions(
-          dir1.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          dir1.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       assertEquals(1, accessControl.getRuleCount(), "Should have 1 rule");
 
       accessControl.grantDirectoryPermissions(
-          dir2.toString(),
-          EnumSet.of(WasiFileOperation.WRITE),
-          false);
+          dir2.toString(), EnumSet.of(WasiFileOperation.WRITE), false);
 
       assertEquals(2, accessControl.getRuleCount(), "Should have 2 rules");
     }
@@ -653,9 +634,7 @@ class WasiDirectoryAccessControlTest {
       final Path subDir = Files.createDirectories(tempDir.resolve("subdir"));
 
       accessControl.grantDirectoryPermissions(
-          subDir.toString(),
-          EnumSet.of(WasiFileOperation.READ),
-          false);
+          subDir.toString(), EnumSet.of(WasiFileOperation.READ), false);
 
       // Access with different path representation
       final Path unnormalizedPath = tempDir.resolve("subdir").resolve("..").resolve("subdir");

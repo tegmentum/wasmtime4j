@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link PerformanceMonitor} class.
  *
- * <p>This test class verifies the PerformanceMonitor utility class which provides
- * comprehensive performance monitoring and profiling infrastructure for WebAssembly operations.
+ * <p>This test class verifies the PerformanceMonitor utility class which provides comprehensive
+ * performance monitoring and profiling infrastructure for WebAssembly operations.
  */
 @DisplayName("PerformanceMonitor Tests")
 class PerformanceMonitorTest {
@@ -60,14 +60,17 @@ class PerformanceMonitorTest {
     @Test
     @DisplayName("PerformanceMonitor should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(PerformanceMonitor.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(PerformanceMonitor.class.getModifiers()),
           "PerformanceMonitor should be final");
     }
 
     @Test
     @DisplayName("SIMPLE_OPERATION_TARGET_NS should be 100")
     void simpleOperationTargetNsShouldBe100() {
-      assertEquals(100, PerformanceMonitor.SIMPLE_OPERATION_TARGET_NS,
+      assertEquals(
+          100,
+          PerformanceMonitor.SIMPLE_OPERATION_TARGET_NS,
           "SIMPLE_OPERATION_TARGET_NS should be 100");
     }
   }
@@ -79,8 +82,9 @@ class PerformanceMonitorTest {
     @Test
     @DisplayName("MonitoredOperation should be functional interface")
     void shouldBeFunctionalInterface() {
-      assertTrue(PerformanceMonitor.MonitoredOperation.class
-              .isAnnotationPresent(FunctionalInterface.class),
+      assertTrue(
+          PerformanceMonitor.MonitoredOperation.class.isAnnotationPresent(
+              FunctionalInterface.class),
           "MonitoredOperation should be annotated with @FunctionalInterface");
     }
 
@@ -157,21 +161,24 @@ class PerformanceMonitorTest {
     @DisplayName("endOperation should not throw")
     void endOperationShouldNotThrow() {
       final long startTime = PerformanceMonitor.startOperation("test_category");
-      assertDoesNotThrow(() -> PerformanceMonitor.endOperation("test_category", startTime),
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.endOperation("test_category", startTime),
           "endOperation should not throw");
     }
 
     @Test
     @DisplayName("endOperation with zero startTime should not throw")
     void endOperationWithZeroStartTimeShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.endOperation("test_category", 0),
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.endOperation("test_category", 0),
           "endOperation with 0 startTime should not throw");
     }
 
     @Test
     @DisplayName("endOperation with negative startTime should not throw")
     void endOperationWithNegativeStartTimeShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.endOperation("test_category", -1),
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.endOperation("test_category", -1),
           "endOperation with -1 startTime should not throw");
     }
   }
@@ -183,23 +190,23 @@ class PerformanceMonitorTest {
     @Test
     @DisplayName("recordAllocation should not throw")
     void recordAllocationShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.recordAllocation(1024),
-          "recordAllocation should not throw");
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.recordAllocation(1024), "recordAllocation should not throw");
     }
 
     @Test
     @DisplayName("recordDeallocation should not throw")
     void recordDeallocationShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.recordDeallocation(1024),
-          "recordDeallocation should not throw");
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.recordDeallocation(1024), "recordDeallocation should not throw");
     }
 
     @Test
     @DisplayName("recordAllocation should do nothing when disabled")
     void recordAllocationShouldDoNothingWhenDisabled() {
       PerformanceMonitor.setEnabled(false);
-      assertDoesNotThrow(() -> PerformanceMonitor.recordAllocation(1024),
-          "Should not throw when disabled");
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.recordAllocation(1024), "Should not throw when disabled");
     }
   }
 
@@ -210,7 +217,8 @@ class PerformanceMonitorTest {
     @Test
     @DisplayName("getAverageJniOverhead should return non-negative value")
     void getAverageJniOverheadShouldReturnNonNegativeValue() {
-      assertTrue(PerformanceMonitor.getAverageJniOverhead() >= 0,
+      assertTrue(
+          PerformanceMonitor.getAverageJniOverhead() >= 0,
           "Average JNI overhead should be non-negative");
     }
 
@@ -218,7 +226,8 @@ class PerformanceMonitorTest {
     @DisplayName("meetsPerformanceTarget should return true initially")
     void meetsPerformanceTargetShouldReturnTrueInitially() {
       // With no operations, average overhead is 0, which meets the target
-      assertTrue(PerformanceMonitor.meetsPerformanceTarget(),
+      assertTrue(
+          PerformanceMonitor.meetsPerformanceTarget(),
           "Should meet performance target with no operations");
     }
   }
@@ -232,8 +241,7 @@ class PerformanceMonitorTest {
     void getStatisticsShouldReturnFormattedStringWhenEnabled() {
       final String stats = PerformanceMonitor.getStatistics();
       assertNotNull(stats, "Statistics should not be null");
-      assertTrue(stats.contains("Performance Statistics"),
-          "Statistics should contain header");
+      assertTrue(stats.contains("Performance Statistics"), "Statistics should contain header");
     }
 
     @Test
@@ -248,7 +256,8 @@ class PerformanceMonitorTest {
     @DisplayName("getOperationStats should return message for unknown category")
     void getOperationStatsShouldReturnMessageForUnknownCategory() {
       final String stats = PerformanceMonitor.getOperationStats("unknown_category");
-      assertTrue(stats.contains("No statistics") || stats.contains("not found"),
+      assertTrue(
+          stats.contains("No statistics") || stats.contains("not found"),
           "Should indicate no statistics for unknown category");
     }
 
@@ -259,8 +268,7 @@ class PerformanceMonitorTest {
       PerformanceMonitor.endOperation("tracked_category", startTime);
 
       final String stats = PerformanceMonitor.getOperationStats("tracked_category");
-      assertTrue(stats.contains("tracked_category"),
-          "Should contain category name");
+      assertTrue(stats.contains("tracked_category"), "Should contain category name");
     }
   }
 
@@ -279,14 +287,16 @@ class PerformanceMonitorTest {
     @DisplayName("monitor should wrap checked exceptions in RuntimeException")
     void monitorShouldWrapCheckedExceptions() {
       try {
-        PerformanceMonitor.monitor("test_category", () -> {
-          throw new Exception("Checked exception");
-        });
+        PerformanceMonitor.monitor(
+            "test_category",
+            () -> {
+              throw new Exception("Checked exception");
+            });
         assertTrue(false, "Should have thrown RuntimeException");
       } catch (RuntimeException e) {
         assertNotNull(e.getCause(), "Should have cause");
-        assertEquals("Checked exception", e.getCause().getMessage(),
-            "Should wrap original exception");
+        assertEquals(
+            "Checked exception", e.getCause().getMessage(), "Should wrap original exception");
       }
     }
   }
@@ -319,14 +329,16 @@ class PerformanceMonitorTest {
     @Test
     @DisplayName("getMonitoringOverheadPercentage should return non-negative value")
     void getMonitoringOverheadPercentageShouldReturnNonNegativeValue() {
-      assertTrue(PerformanceMonitor.getMonitoringOverheadPercentage() >= 0,
+      assertTrue(
+          PerformanceMonitor.getMonitoringOverheadPercentage() >= 0,
           "Overhead percentage should be non-negative");
     }
 
     @Test
     @DisplayName("getAverageMonitoringOverheadNs should return non-negative value")
     void getAverageMonitoringOverheadNsShouldReturnNonNegativeValue() {
-      assertTrue(PerformanceMonitor.getAverageMonitoringOverheadNs() >= 0,
+      assertTrue(
+          PerformanceMonitor.getAverageMonitoringOverheadNs() >= 0,
           "Average overhead should be non-negative");
     }
 
@@ -334,7 +346,8 @@ class PerformanceMonitorTest {
     @DisplayName("meetsOverheadTarget should check 5% threshold")
     void meetsOverheadTargetShouldCheck5PercentThreshold() {
       // With no operations, overhead is 0%, which meets the <5% target
-      assertTrue(PerformanceMonitor.meetsOverheadTarget(),
+      assertTrue(
+          PerformanceMonitor.meetsOverheadTarget(),
           "Should meet overhead target with no operations");
     }
 
@@ -343,7 +356,8 @@ class PerformanceMonitorTest {
     void getOverheadStatisticsShouldReturnFormattedString() {
       final String stats = PerformanceMonitor.getOverheadStatistics();
       assertNotNull(stats, "Overhead statistics should not be null");
-      assertTrue(stats.contains("Monitoring Overhead") || stats.contains("overhead"),
+      assertTrue(
+          stats.contains("Monitoring Overhead") || stats.contains("overhead"),
           "Should contain overhead information");
     }
   }
@@ -356,22 +370,23 @@ class PerformanceMonitorTest {
     @DisplayName("getBaselineInformation should return message when no baselines")
     void getBaselineInformationShouldReturnMessageWhenNoBaselines() {
       final String info = PerformanceMonitor.getBaselineInformation();
-      assertTrue(info.contains("No performance baselines") || info.contains("Baselines"),
+      assertTrue(
+          info.contains("No performance baselines") || info.contains("Baselines"),
           "Should indicate no baselines or show baseline info");
     }
 
     @Test
     @DisplayName("forceRegressionCheck should not throw")
     void forceRegressionCheckShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.forceRegressionCheck(),
-          "forceRegressionCheck should not throw");
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.forceRegressionCheck(), "forceRegressionCheck should not throw");
     }
 
     @Test
     @DisplayName("resetBaselines should not throw")
     void resetBaselinesShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.resetBaselines(),
-          "resetBaselines should not throw");
+      assertDoesNotThrow(
+          () -> PerformanceMonitor.resetBaselines(), "resetBaselines should not throw");
     }
   }
 
@@ -390,15 +405,17 @@ class PerformanceMonitorTest {
       PerformanceMonitor.reset();
 
       // Check that statistics are cleared
-      assertEquals(0.0, PerformanceMonitor.getAverageJniOverhead(), 0.01,
+      assertEquals(
+          0.0,
+          PerformanceMonitor.getAverageJniOverhead(),
+          0.01,
           "Average JNI overhead should be 0 after reset");
     }
 
     @Test
     @DisplayName("reset should not throw")
     void resetShouldNotThrow() {
-      assertDoesNotThrow(() -> PerformanceMonitor.reset(),
-          "reset should not throw");
+      assertDoesNotThrow(() -> PerformanceMonitor.reset(), "reset should not throw");
     }
   }
 

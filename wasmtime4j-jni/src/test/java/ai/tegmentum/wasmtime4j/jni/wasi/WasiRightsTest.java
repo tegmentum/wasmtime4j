@@ -97,7 +97,8 @@ class WasiRightsTest {
     void valuesShouldBePowersOfTwo() {
       for (final WasiRights right : WasiRights.values()) {
         final long value = right.getValue();
-        assertTrue(value > 0 && (value & (value - 1)) == 0,
+        assertTrue(
+            value > 0 && (value & (value - 1)) == 0,
             right.name() + " value should be a power of 2");
       }
     }
@@ -108,7 +109,8 @@ class WasiRightsTest {
       final WasiRights[] rights = WasiRights.values();
       for (int i = 0; i < rights.length; i++) {
         for (int j = i + 1; j < rights.length; j++) {
-          assertFalse(rights[i].getValue() == rights[j].getValue(),
+          assertFalse(
+              rights[i].getValue() == rights[j].getValue(),
               rights[i].name() + " and " + rights[j].name() + " should have different values");
         }
       }
@@ -143,10 +145,8 @@ class WasiRightsTest {
     @Test
     @DisplayName("combine read/write/seek rights")
     void combineReadWriteSeekRights() {
-      final long combined = WasiRights.combine(
-          WasiRights.FD_READ,
-          WasiRights.FD_WRITE,
-          WasiRights.FD_SEEK);
+      final long combined =
+          WasiRights.combine(WasiRights.FD_READ, WasiRights.FD_WRITE, WasiRights.FD_SEEK);
       assertEquals(70L, combined, "FD_READ(2) | FD_WRITE(64) | FD_SEEK(4) should be 70");
     }
   }
@@ -188,8 +188,7 @@ class WasiRightsTest {
     void combineAndContainsShouldRoundTripCorrectly() {
       for (final WasiRights right : WasiRights.values()) {
         final long mask = WasiRights.combine(right);
-        assertTrue(WasiRights.contains(mask, right),
-            "Round trip should work for " + right.name());
+        assertTrue(WasiRights.contains(mask, right), "Round trip should work for " + right.name());
       }
     }
   }

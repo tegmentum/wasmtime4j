@@ -32,7 +32,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link WitInterfaceLinker} class.
  *
- * <p>WitInterfaceLinker provides component composition and linking functionality for WIT interfaces.
+ * <p>WitInterfaceLinker provides component composition and linking functionality for WIT
+ * interfaces.
  */
 @DisplayName("WitInterfaceLinker Tests")
 class WitInterfaceLinkerTest {
@@ -110,8 +111,9 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("validateInterfaceCompatibility should throw on null provider")
     void validateInterfaceCompatibilityShouldThrowOnNullProvider() {
-      assertThrows(NullPointerException.class, () ->
-          linker.validateInterfaceCompatibility(null, null, "interface"));
+      assertThrows(
+          NullPointerException.class,
+          () -> linker.validateInterfaceCompatibility(null, null, "interface"));
     }
   }
 
@@ -142,11 +144,14 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("ComponentLinkType valueOf should work")
     void componentLinkTypeValueOfShouldWork() {
-      assertEquals(WitInterfaceLinker.ComponentLinkType.INTERFACE_BINDING,
+      assertEquals(
+          WitInterfaceLinker.ComponentLinkType.INTERFACE_BINDING,
           WitInterfaceLinker.ComponentLinkType.valueOf("INTERFACE_BINDING"));
-      assertEquals(WitInterfaceLinker.ComponentLinkType.RESOURCE_SHARING,
+      assertEquals(
+          WitInterfaceLinker.ComponentLinkType.RESOURCE_SHARING,
           WitInterfaceLinker.ComponentLinkType.valueOf("RESOURCE_SHARING"));
-      assertEquals(WitInterfaceLinker.ComponentLinkType.EVENT_COMMUNICATION,
+      assertEquals(
+          WitInterfaceLinker.ComponentLinkType.EVENT_COMMUNICATION,
           WitInterfaceLinker.ComponentLinkType.valueOf("EVENT_COMMUNICATION"));
     }
 
@@ -224,12 +229,13 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("should create component link with all fields")
     void shouldCreateComponentLinkWithAllFields() {
-      final WitInterfaceLinker.ComponentLink link = new WitInterfaceLinker.ComponentLink(
-          "provider-id",
-          "consumer-id",
-          "test-interface",
-          WitInterfaceLinker.ComponentLinkType.INTERFACE_BINDING,
-          Map.of("linkId", "link-123", "extra", "data"));
+      final WitInterfaceLinker.ComponentLink link =
+          new WitInterfaceLinker.ComponentLink(
+              "provider-id",
+              "consumer-id",
+              "test-interface",
+              WitInterfaceLinker.ComponentLinkType.INTERFACE_BINDING,
+              Map.of("linkId", "link-123", "extra", "data"));
 
       assertEquals("provider-id", link.getProviderId());
       assertEquals("consumer-id", link.getConsumerId());
@@ -242,12 +248,13 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("getLinkId should return null when not in metadata")
     void getLinkIdShouldReturnNullWhenNotInMetadata() {
-      final WitInterfaceLinker.ComponentLink link = new WitInterfaceLinker.ComponentLink(
-          "provider",
-          "consumer",
-          "interface",
-          WitInterfaceLinker.ComponentLinkType.RESOURCE_SHARING,
-          Map.of());
+      final WitInterfaceLinker.ComponentLink link =
+          new WitInterfaceLinker.ComponentLink(
+              "provider",
+              "consumer",
+              "interface",
+              WitInterfaceLinker.ComponentLinkType.RESOURCE_SHARING,
+              Map.of());
 
       assertNotNull(link.getMetadata());
       // getLinkId returns null when linkId is not in metadata
@@ -261,15 +268,14 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("should create interface binding with all fields")
     void shouldCreateInterfaceBindingWithAllFields() {
-      final MockInterfaceDefinition providerInterface = new MockInterfaceDefinition("provider-iface");
-      final MockInterfaceDefinition consumerInterface = new MockInterfaceDefinition("consumer-iface");
+      final MockInterfaceDefinition providerInterface =
+          new MockInterfaceDefinition("provider-iface");
+      final MockInterfaceDefinition consumerInterface =
+          new MockInterfaceDefinition("consumer-iface");
 
-      final WitInterfaceLinker.InterfaceBinding binding = new WitInterfaceLinker.InterfaceBinding(
-          "provider-id",
-          "consumer-id",
-          "test-interface",
-          providerInterface,
-          consumerInterface);
+      final WitInterfaceLinker.InterfaceBinding binding =
+          new WitInterfaceLinker.InterfaceBinding(
+              "provider-id", "consumer-id", "test-interface", providerInterface, consumerInterface);
 
       assertEquals("provider-id", binding.getProviderId());
       assertEquals("consumer-id", binding.getConsumerId());
@@ -286,10 +292,11 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("should create linking manifest with all fields")
     void shouldCreateLinkingManifestWithAllFields() {
-      final WitInterfaceLinker.LinkingManifest manifest = new WitInterfaceLinker.LinkingManifest(
-          List.of("comp-1", "comp-2", "comp-3"),
-          List.of("link-1", "link-2"),
-          Map.of("timestamp", 12345L));
+      final WitInterfaceLinker.LinkingManifest manifest =
+          new WitInterfaceLinker.LinkingManifest(
+              List.of("comp-1", "comp-2", "comp-3"),
+              List.of("link-1", "link-2"),
+              Map.of("timestamp", 12345L));
 
       assertEquals(3, manifest.getComponentIds().size());
       assertEquals(2, manifest.getLinkIds().size());
@@ -299,10 +306,9 @@ class WitInterfaceLinkerTest {
     @Test
     @DisplayName("should create defensive copies")
     void shouldCreateDefensiveCopies() {
-      final WitInterfaceLinker.LinkingManifest manifest = new WitInterfaceLinker.LinkingManifest(
-          List.of("comp-1"),
-          List.of("link-1"),
-          Map.of("key", "value"));
+      final WitInterfaceLinker.LinkingManifest manifest =
+          new WitInterfaceLinker.LinkingManifest(
+              List.of("comp-1"), List.of("link-1"), Map.of("key", "value"));
 
       assertNotNull(manifest.getComponentIds());
       assertNotNull(manifest.getLinkIds());
@@ -354,8 +360,18 @@ class WitInterfaceLinkerTest {
     }
 
     @Override
+    public java.util.Set<String> getDependencies() {
+      return java.util.Set.of();
+    }
+
+    @Override
+    public String getWitText() {
+      return "interface " + name + " {}";
+    }
+
+    @Override
     public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
-      return WitCompatibilityResult.compatible();
+      return WitCompatibilityResult.compatible("Compatible", java.util.Set.of());
     }
   }
 }

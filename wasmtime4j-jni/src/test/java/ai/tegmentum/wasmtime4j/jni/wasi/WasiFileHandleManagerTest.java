@@ -28,9 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiFileHandleManager}.
- */
+/** Comprehensive tests for {@link WasiFileHandleManager}. */
 @DisplayName("WasiFileHandleManager Tests")
 class WasiFileHandleManagerTest {
 
@@ -85,7 +83,8 @@ class WasiFileHandleManagerTest {
     @Test
     @DisplayName("Parameterized constructor should validate maxHandles")
     void parameterizedConstructorShouldValidateMaxHandles() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiFileHandleManager(0, 300),
           "Should throw on zero maxHandles");
     }
@@ -93,7 +92,8 @@ class WasiFileHandleManagerTest {
     @Test
     @DisplayName("Parameterized constructor should validate timeout")
     void parameterizedConstructorShouldValidateTimeout() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> new WasiFileHandleManager(100, 0),
           "Should throw on zero timeout");
     }
@@ -125,7 +125,8 @@ class WasiFileHandleManagerTest {
     @Test
     @DisplayName("Should throw on null handle")
     void shouldThrowOnNullHandle() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> manager.registerHandle(null),
           "Should throw on null handle");
     }
@@ -138,7 +139,8 @@ class WasiFileHandleManagerTest {
 
       manager.registerHandle(handle1);
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> manager.registerHandle(handle2),
           "Should throw on duplicate descriptor");
     }
@@ -152,7 +154,8 @@ class WasiFileHandleManagerTest {
         limitedManager.registerHandle(createTestHandle(3));
         limitedManager.registerHandle(createTestHandle(4));
 
-        assertThrows(WasiFileSystemException.class,
+        assertThrows(
+            WasiFileSystemException.class,
             () -> limitedManager.registerHandle(createTestHandle(5)),
             "Should throw when max handles exceeded");
       } finally {
@@ -165,7 +168,8 @@ class WasiFileHandleManagerTest {
     void shouldThrowAfterShutdown() {
       manager.close();
 
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> manager.registerHandle(createTestHandle(3)),
           "Should throw after shutdown");
     }
@@ -190,7 +194,8 @@ class WasiFileHandleManagerTest {
     @Test
     @DisplayName("Should throw on invalid descriptor")
     void shouldThrowOnInvalidDescriptor() {
-      assertThrows(WasiFileSystemException.class,
+      assertThrows(
+          WasiFileSystemException.class,
           () -> manager.getHandle(999),
           "Should throw on invalid descriptor");
     }
@@ -205,8 +210,7 @@ class WasiFileHandleManagerTest {
       Thread.sleep(10);
       manager.getHandle(5);
 
-      assertTrue(managed.getLastAccessTime() >= initialTime,
-          "Last access time should be updated");
+      assertTrue(managed.getLastAccessTime() >= initialTime, "Last access time should be updated");
     }
 
     @Test
@@ -216,9 +220,8 @@ class WasiFileHandleManagerTest {
       manager.registerHandle(mockHandle);
       manager.close();
 
-      assertThrows(WasiFileSystemException.class,
-          () -> manager.getHandle(5),
-          "Should throw after shutdown");
+      assertThrows(
+          WasiFileSystemException.class, () -> manager.getHandle(5), "Should throw after shutdown");
     }
   }
 
@@ -414,13 +417,15 @@ class WasiFileHandleManagerTest {
 
       for (int i = 0; i < threadCount; i++) {
         final int fd = i + 3;
-        threads[i] = new Thread(() -> {
-          try {
-            manager.registerHandle(createTestHandle(fd));
-          } catch (final Exception e) {
-            // May fail due to race conditions, which is expected
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  try {
+                    manager.registerHandle(createTestHandle(fd));
+                  } catch (final Exception e) {
+                    // May fail due to race conditions, which is expected
+                  }
+                });
       }
 
       for (final Thread thread : threads) {
@@ -431,7 +436,8 @@ class WasiFileHandleManagerTest {
         thread.join();
       }
 
-      assertTrue(manager.getActiveHandleCount() <= threadCount,
+      assertTrue(
+          manager.getActiveHandleCount() <= threadCount,
           "Should have at most " + threadCount + " handles");
     }
   }

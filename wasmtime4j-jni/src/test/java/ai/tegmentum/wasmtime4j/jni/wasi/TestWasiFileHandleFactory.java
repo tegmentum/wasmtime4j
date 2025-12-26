@@ -16,12 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,11 +26,11 @@ import java.nio.file.Paths;
 /**
  * Factory for creating test-friendly WasiFileHandle instances.
  *
- * <p>This factory creates WasiFileHandle instances with in-memory byte channels,
- * avoiding the need for mocking or actual file system access.
+ * <p>This factory creates WasiFileHandle instances with in-memory byte channels, avoiding the need
+ * for mocking or actual file system access.
  *
- * <p>Note: Test handles created by this factory should not be used for actual file operations.
- * They are suitable for testing Java-side logic that requires a WasiFileHandle instance.
+ * <p>Note: Test handles created by this factory should not be used for actual file operations. They
+ * are suitable for testing Java-side logic that requires a WasiFileHandle instance.
  */
 public final class TestWasiFileHandleFactory {
 
@@ -59,8 +56,7 @@ public final class TestWasiFileHandleFactory {
    * @return a test WasiFileHandle instance
    */
   public static WasiFileHandle createTestHandle(
-      final int fileDescriptor,
-      final WasiFileOperation operation) {
+      final int fileDescriptor, final WasiFileOperation operation) {
     return createTestHandle(fileDescriptor, operation, "test-file-" + fileDescriptor + ".txt");
   }
 
@@ -73,9 +69,7 @@ public final class TestWasiFileHandleFactory {
    * @return a test WasiFileHandle instance
    */
   public static WasiFileHandle createTestHandle(
-      final int fileDescriptor,
-      final WasiFileOperation operation,
-      final String fileName) {
+      final int fileDescriptor, final WasiFileOperation operation, final String fileName) {
     final Path path = Paths.get(System.getProperty("java.io.tmpdir"), fileName);
     final SeekableByteChannel channel = new InMemorySeekableByteChannel();
 
@@ -87,9 +81,7 @@ public final class TestWasiFileHandleFactory {
         operation);
   }
 
-  /**
-   * An in-memory implementation of SeekableByteChannel for testing.
-   */
+  /** An in-memory implementation of SeekableByteChannel for testing. */
   private static final class InMemorySeekableByteChannel implements SeekableByteChannel {
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     private long position = 0;

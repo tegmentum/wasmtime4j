@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.jni.adapter;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,17 +46,13 @@ import org.junit.jupiter.api.Test;
 @DisplayName("WasmFunctionToFunctionAdapter Tests")
 class WasmFunctionToFunctionAdapterTest {
 
-  /**
-   * Functional interface that can throw WasmException.
-   */
+  /** Functional interface that can throw WasmException. */
   @FunctionalInterface
   private interface WasmCallHandler {
     WasmValue[] apply(WasmValue[] args) throws WasmException;
   }
 
-  /**
-   * Creates a mock WasmFunction for testing.
-   */
+  /** Creates a mock WasmFunction for testing. */
   private WasmFunction createMockFunction(
       final String name,
       final WasmValueType[] paramTypes,
@@ -67,9 +61,7 @@ class WasmFunctionToFunctionAdapterTest {
     return new TestWasmFunction(name, paramTypes, returnTypes, callHandler);
   }
 
-  /**
-   * Test implementation of WasmFunction.
-   */
+  /** Test implementation of WasmFunction. */
   private static class TestWasmFunction implements WasmFunction {
     private final String name;
     private final WasmValueType[] paramTypes;
@@ -109,19 +101,18 @@ class WasmFunctionToFunctionAdapterTest {
 
     @Override
     public CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
-      return CompletableFuture.supplyAsync(() -> {
-        try {
-          return call(params);
-        } catch (final WasmException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      return CompletableFuture.supplyAsync(
+          () -> {
+            try {
+              return call(params);
+            } catch (final WasmException e) {
+              throw new RuntimeException(e);
+            }
+          });
     }
   }
 
-  /**
-   * Test implementation of WasmFunction that throws on getFunctionType().
-   */
+  /** Test implementation of WasmFunction that throws on getFunctionType(). */
   private static class FailingWasmFunction implements WasmFunction {
     @Override
     public String getName() {
@@ -318,11 +309,16 @@ class WasmFunctionToFunctionAdapterTest {
     void callShouldInvokeDelegateAndReturnResults() throws WasmException {
       final WasmValueType[] params = {WasmValueType.I32, WasmValueType.I32};
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("add", params, returns, args -> {
-        int a = args[0].asInt();
-        int b = args[1].asInt();
-        return new WasmValue[]{WasmValue.i32(a + b)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "add",
+              params,
+              returns,
+              args -> {
+                int a = args[0].asInt();
+                int b = args[1].asInt();
+                return new WasmValue[] {WasmValue.i32(a + b)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -337,9 +333,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("call should handle no arguments")
     void callShouldHandleNoArguments() throws WasmException {
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("getConstant", null, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(42)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "getConstant",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(42)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -354,9 +355,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("call should handle void function")
     void callShouldHandleVoidFunction() throws WasmException {
       final WasmValueType[] params = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("logValue", params, null, args -> {
-        return new WasmValue[0];
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "logValue",
+              params,
+              null,
+              args -> {
+                return new WasmValue[0];
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -371,10 +377,15 @@ class WasmFunctionToFunctionAdapterTest {
     void callShouldHandleWasmValueArguments() throws WasmException {
       final WasmValueType[] params = {WasmValueType.I32};
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("double", params, returns, args -> {
-        int a = args[0].asInt();
-        return new WasmValue[]{WasmValue.i32(a * 2)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "double",
+              params,
+              returns,
+              args -> {
+                int a = args[0].asInt();
+                return new WasmValue[] {WasmValue.i32(a * 2)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -387,9 +398,14 @@ class WasmFunctionToFunctionAdapterTest {
     @Test
     @DisplayName("call should propagate WasmException")
     void callShouldPropagateWasmException() {
-      final WasmFunction delegate = createMockFunction("failing", null, null, args -> {
-        throw new WasmException("Function execution failed");
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "failing",
+              null,
+              null,
+              args -> {
+                throw new WasmException("Function execution failed");
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -405,9 +421,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("callSingle should return single result")
     void callSingleShouldReturnSingleResult() throws WasmException {
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("getValue", null, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(99)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "getValue",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(99)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -419,9 +440,14 @@ class WasmFunctionToFunctionAdapterTest {
     @Test
     @DisplayName("callSingle should return null for void function")
     void callSingleShouldReturnNullForVoidFunction() throws WasmException {
-      final WasmFunction delegate = createMockFunction("voidFunc", null, null, args -> {
-        return new WasmValue[0];
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "voidFunc",
+              null,
+              null,
+              args -> {
+                return new WasmValue[0];
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -434,9 +460,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("callSingle should throw for multiple return values")
     void callSingleShouldThrowForMultipleReturnValues() {
       final WasmValueType[] returns = {WasmValueType.I32, WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("divMod", null, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(10), WasmValue.i32(5)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "divMod",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(10), WasmValue.i32(5)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -518,9 +549,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("callAsync should complete successfully")
     void callAsyncShouldCompleteSuccessfully() throws Exception {
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("asyncFunc", null, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(123)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "asyncFunc",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(123)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -535,13 +571,19 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("callAsync with timeout should work")
     void callAsyncWithTimeoutShouldWork() throws Exception {
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("asyncFunc", null, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(456)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "asyncFunc",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(456)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
-      final CompletableFuture<Object[]> future = adapter.callAsync(5L, TimeUnit.SECONDS, new Object[0]);
+      final CompletableFuture<Object[]> future =
+          adapter.callAsync(5L, TimeUnit.SECONDS, new Object[0]);
       final Object[] results = future.get(10, TimeUnit.SECONDS);
 
       assertNotNull(results, "Results should not be null");
@@ -551,15 +593,22 @@ class WasmFunctionToFunctionAdapterTest {
     @Test
     @DisplayName("callAsync should propagate exception")
     void callAsyncShouldPropagateException() {
-      final WasmFunction delegate = createMockFunction("failingAsync", null, null, args -> {
-        throw new WasmException("Async failure");
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "failingAsync",
+              null,
+              null,
+              args -> {
+                throw new WasmException("Async failure");
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
       final CompletableFuture<Object[]> future = adapter.callAsync();
 
-      assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS),
+      assertThrows(
+          ExecutionException.class,
+          () -> future.get(5, TimeUnit.SECONDS),
           "Should propagate exception");
     }
   }
@@ -572,9 +621,14 @@ class WasmFunctionToFunctionAdapterTest {
     @DisplayName("callSingleAsync should return single result")
     void callSingleAsyncShouldReturnSingleResult() throws Exception {
       final WasmValueType[] returns = {WasmValueType.F64};
-      final WasmFunction delegate = createMockFunction("asyncSingle", null, returns, args -> {
-        return new WasmValue[]{WasmValue.f64(3.14)};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "asyncSingle",
+              null,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.f64(3.14)};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -594,9 +648,14 @@ class WasmFunctionToFunctionAdapterTest {
     void shouldConvertIntegerToI32() throws WasmException {
       final WasmValueType[] params = {WasmValueType.I32};
       final WasmValueType[] returns = {WasmValueType.I32};
-      final WasmFunction delegate = createMockFunction("identity", params, returns, args -> {
-        return new WasmValue[]{WasmValue.i32(args[0].asInt())};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "identity",
+              params,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i32(args[0].asInt())};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -610,9 +669,14 @@ class WasmFunctionToFunctionAdapterTest {
     void shouldConvertLongToI64() throws WasmException {
       final WasmValueType[] params = {WasmValueType.I64};
       final WasmValueType[] returns = {WasmValueType.I64};
-      final WasmFunction delegate = createMockFunction("identity", params, returns, args -> {
-        return new WasmValue[]{WasmValue.i64(args[0].asLong())};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "identity",
+              params,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.i64(args[0].asLong())};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -626,9 +690,14 @@ class WasmFunctionToFunctionAdapterTest {
     void shouldConvertFloatToF32() throws WasmException {
       final WasmValueType[] params = {WasmValueType.F32};
       final WasmValueType[] returns = {WasmValueType.F32};
-      final WasmFunction delegate = createMockFunction("identity", params, returns, args -> {
-        return new WasmValue[]{WasmValue.f32(args[0].asFloat())};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "identity",
+              params,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.f32(args[0].asFloat())};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -642,9 +711,14 @@ class WasmFunctionToFunctionAdapterTest {
     void shouldConvertDoubleToF64() throws WasmException {
       final WasmValueType[] params = {WasmValueType.F64};
       final WasmValueType[] returns = {WasmValueType.F64};
-      final WasmFunction delegate = createMockFunction("identity", params, returns, args -> {
-        return new WasmValue[]{WasmValue.f64(args[0].asDouble())};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "identity",
+              params,
+              returns,
+              args -> {
+                return new WasmValue[] {WasmValue.f64(args[0].asDouble())};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 
@@ -658,9 +732,14 @@ class WasmFunctionToFunctionAdapterTest {
     void shouldHandleNullAsExternref() throws WasmException {
       final WasmValueType[] params = {WasmValueType.EXTERNREF};
       final WasmValueType[] returns = {WasmValueType.EXTERNREF};
-      final WasmFunction delegate = createMockFunction("passThrough", params, returns, args -> {
-        return new WasmValue[]{args[0]};
-      });
+      final WasmFunction delegate =
+          createMockFunction(
+              "passThrough",
+              params,
+              returns,
+              args -> {
+                return new WasmValue[] {args[0]};
+              });
       final WasmFunctionToFunctionAdapter<?> adapter =
           new WasmFunctionToFunctionAdapter<>(delegate);
 

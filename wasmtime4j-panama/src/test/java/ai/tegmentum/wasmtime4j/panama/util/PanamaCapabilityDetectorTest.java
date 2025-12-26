@@ -56,7 +56,8 @@ class PanamaCapabilityDetectorTest {
     @Test
     @DisplayName("PanamaCapabilityDetector should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(PanamaCapabilityDetector.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(PanamaCapabilityDetector.class.getModifiers()),
           "PanamaCapabilityDetector should be final");
     }
 
@@ -65,7 +66,9 @@ class PanamaCapabilityDetectorTest {
     void constructorShouldThrowUnsupportedOperationException() throws Exception {
       final var constructor = PanamaCapabilityDetector.class.getDeclaredConstructor();
       constructor.setAccessible(true);
-      assertThrows(java.lang.reflect.InvocationTargetException.class, constructor::newInstance,
+      assertThrows(
+          java.lang.reflect.InvocationTargetException.class,
+          constructor::newInstance,
           "Constructor should throw exception");
     }
   }
@@ -110,8 +113,7 @@ class PanamaCapabilityDetectorTest {
     @DisplayName("isPanamaAvailable should return boolean value")
     void isPanamaAvailableShouldReturnBooleanValue() {
       // Just verify it doesn't throw - actual availability depends on JVM version
-      assertDoesNotThrow(PanamaCapabilityDetector::isPanamaAvailable,
-          "Should not throw exception");
+      assertDoesNotThrow(PanamaCapabilityDetector::isPanamaAvailable, "Should not throw exception");
     }
   }
 
@@ -131,7 +133,8 @@ class PanamaCapabilityDetectorTest {
     @DisplayName("getStatusDescription should contain meaningful content")
     void getStatusDescriptionShouldContainMeaningfulContent() {
       final String status = PanamaCapabilityDetector.getStatusDescription();
-      assertTrue(status.toLowerCase().contains("panama")
+      assertTrue(
+          status.toLowerCase().contains("panama")
               || status.toLowerCase().contains("available")
               || status.toLowerCase().contains("unavailable"),
           "Status should contain relevant information");
@@ -154,8 +157,7 @@ class PanamaCapabilityDetectorTest {
     @DisplayName("getDiagnosticInfo should contain version information")
     void getDiagnosticInfoShouldContainVersionInformation() {
       final String diagnostics = PanamaCapabilityDetector.getDiagnosticInfo();
-      assertTrue(diagnostics.contains("Available:"),
-          "Diagnostics should contain availability");
+      assertTrue(diagnostics.contains("Available:"), "Diagnostics should contain availability");
     }
   }
 
@@ -179,8 +181,7 @@ class PanamaCapabilityDetectorTest {
     @Test
     @DisplayName("clearCache should not throw")
     void clearCacheShouldNotThrow() {
-      assertDoesNotThrow(PanamaCapabilityDetector::clearCache,
-          "clearCache should not throw");
+      assertDoesNotThrow(PanamaCapabilityDetector::clearCache, "clearCache should not throw");
     }
 
     @Test
@@ -188,7 +189,8 @@ class PanamaCapabilityDetectorTest {
     void clearCacheShouldAllowReDetection() {
       PanamaCapabilityDetector.detectCapabilities();
       PanamaCapabilityDetector.clearCache();
-      assertDoesNotThrow(PanamaCapabilityDetector::detectCapabilities,
+      assertDoesNotThrow(
+          PanamaCapabilityDetector::detectCapabilities,
           "Should be able to detect after cache clear");
     }
   }
@@ -205,7 +207,8 @@ class PanamaCapabilityDetectorTest {
       // All getters should work without throwing
       assertDoesNotThrow(result::isAvailable, "isAvailable should work");
       assertDoesNotThrow(result::getFailureReason, "getFailureReason should work");
-      assertDoesNotThrow(result::getFallbackRecommendation, "getFallbackRecommendation should work");
+      assertDoesNotThrow(
+          result::getFallbackRecommendation, "getFallbackRecommendation should work");
       assertDoesNotThrow(result::getJavaVersionInfo, "getJavaVersionInfo should work");
       assertDoesNotThrow(result::getClassAvailabilityInfo, "getClassAvailabilityInfo should work");
       assertDoesNotThrow(result::getNativeAccessInfo, "getNativeAccessInfo should work");
@@ -219,8 +222,8 @@ class PanamaCapabilityDetectorTest {
     @DisplayName("DetectionResult fallback recommendation should not be null")
     void detectionResultFallbackRecommendationShouldNotBeNull() {
       final DetectionResult result = PanamaCapabilityDetector.detectCapabilities();
-      assertNotNull(result.getFallbackRecommendation(),
-          "Fallback recommendation should never be null");
+      assertNotNull(
+          result.getFallbackRecommendation(), "Fallback recommendation should never be null");
     }
   }
 
@@ -231,13 +234,15 @@ class PanamaCapabilityDetectorTest {
     @Test
     @DisplayName("FallbackRecommendation should have all expected values")
     void fallbackRecommendationShouldHaveAllExpectedValues() {
-      assertTrue(FallbackRecommendation.values().length >= 5,
+      assertTrue(
+          FallbackRecommendation.values().length >= 5,
           "Should have at least 5 fallback recommendations");
 
       assertNotNull(FallbackRecommendation.NONE, "NONE should exist");
       assertNotNull(FallbackRecommendation.USE_JNI, "USE_JNI should exist");
       assertNotNull(FallbackRecommendation.ENABLE_PREVIEW, "ENABLE_PREVIEW should exist");
-      assertNotNull(FallbackRecommendation.ENABLE_NATIVE_ACCESS, "ENABLE_NATIVE_ACCESS should exist");
+      assertNotNull(
+          FallbackRecommendation.ENABLE_NATIVE_ACCESS, "ENABLE_NATIVE_ACCESS should exist");
       assertNotNull(FallbackRecommendation.UPGRADE_JAVA, "UPGRADE_JAVA should exist");
     }
 
@@ -254,7 +259,8 @@ class PanamaCapabilityDetectorTest {
     @DisplayName("FallbackRecommendation toString should return description")
     void fallbackRecommendationToStringShouldReturnDescription() {
       for (final FallbackRecommendation recommendation : FallbackRecommendation.values()) {
-        assertTrue(recommendation.toString().equals(recommendation.getDescription()),
+        assertTrue(
+            recommendation.toString().equals(recommendation.getDescription()),
             "toString should return description");
       }
     }
@@ -293,8 +299,7 @@ class PanamaCapabilityDetectorTest {
       if (classInfo != null) {
         assertNotNull(classInfo.getAvailableClasses(), "Available classes should not be null");
         assertNotNull(classInfo.getMissingClasses(), "Missing classes should not be null");
-        assertDoesNotThrow(classInfo::areAllClassesAvailable,
-            "areAllClassesAvailable should work");
+        assertDoesNotThrow(classInfo::areAllClassesAvailable, "areAllClassesAvailable should work");
       }
     }
   }
@@ -328,8 +333,7 @@ class PanamaCapabilityDetectorTest {
       final PreviewFeatureInfo previewInfo = result.getPreviewFeatureInfo();
 
       if (previewInfo != null) {
-        assertNotNull(previewInfo.getPreviewProperties(),
-            "Preview properties should not be null");
+        assertNotNull(previewInfo.getPreviewProperties(), "Preview properties should not be null");
       }
     }
   }
@@ -363,23 +367,26 @@ class PanamaCapabilityDetectorTest {
       // Perform full detection cycle
       PanamaCapabilityDetector.clearCache();
 
-      assertDoesNotThrow(() -> {
-        final DetectionResult result = PanamaCapabilityDetector.detectCapabilities();
-        final boolean available = result.isAvailable();
-        final String status = result.getStatusDescription();
-        final String diagnostics = result.getDiagnosticInfo();
-        final FallbackRecommendation recommendation = result.getFallbackRecommendation();
+      assertDoesNotThrow(
+          () -> {
+            final DetectionResult result = PanamaCapabilityDetector.detectCapabilities();
+            final boolean available = result.isAvailable();
+            final String status = result.getStatusDescription();
+            final String diagnostics = result.getDiagnosticInfo();
+            final FallbackRecommendation recommendation = result.getFallbackRecommendation();
 
-        // Verify coherence
-        if (available) {
-          assertTrue(recommendation == FallbackRecommendation.NONE
-                  || recommendation == FallbackRecommendation.USE_JNI,
-              "Available Panama should have NONE or USE_JNI fallback");
-        }
+            // Verify coherence
+            if (available) {
+              assertTrue(
+                  recommendation == FallbackRecommendation.NONE
+                      || recommendation == FallbackRecommendation.USE_JNI,
+                  "Available Panama should have NONE or USE_JNI fallback");
+            }
 
-        assertNotNull(status, "Status should not be null");
-        assertNotNull(diagnostics, "Diagnostics should not be null");
-      }, "Full detection cycle should complete without errors");
+            assertNotNull(status, "Status should not be null");
+            assertNotNull(diagnostics, "Diagnostics should not be null");
+          },
+          "Full detection cycle should complete without errors");
     }
 
     @Test
@@ -394,13 +401,15 @@ class PanamaCapabilityDetectorTest {
 
       for (int i = 0; i < threadCount; i++) {
         final int index = i;
-        threads[i] = new Thread(() -> {
-          try {
-            results[index] = PanamaCapabilityDetector.detectCapabilities();
-          } catch (Exception e) {
-            errors[index] = e;
-          }
-        });
+        threads[i] =
+            new Thread(
+                () -> {
+                  try {
+                    results[index] = PanamaCapabilityDetector.detectCapabilities();
+                  } catch (Exception e) {
+                    errors[index] = e;
+                  }
+                });
       }
 
       // Start all threads

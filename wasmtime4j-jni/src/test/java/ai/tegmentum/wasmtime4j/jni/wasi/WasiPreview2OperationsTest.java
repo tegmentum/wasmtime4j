@@ -31,16 +31,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiPreview2Operations}.
- */
+/** Comprehensive tests for {@link WasiPreview2Operations}. */
 @DisplayName("WasiPreview2Operations Tests")
 class WasiPreview2OperationsTest {
 
@@ -80,7 +77,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiPreview2Operations(null),
           "Should throw on null context");
     }
@@ -101,7 +99,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null resource type")
     void shouldThrowOnNullResourceType() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.createResource(null, ByteBuffer.allocate(10)),
           "Should throw on null resourceType");
     }
@@ -109,7 +108,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on empty resource type")
     void shouldThrowOnEmptyResourceType() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.createResource("", ByteBuffer.allocate(10)),
           "Should throw on empty resourceType");
     }
@@ -117,7 +117,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.createResource("file", null),
           "Should throw on null data");
     }
@@ -130,9 +131,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
-          () -> operations.readAsync(1L, null),
-          "Should throw on null buffer");
+      assertThrows(
+          JniException.class, () -> operations.readAsync(1L, null), "Should throw on null buffer");
     }
 
     @Test
@@ -156,9 +156,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null buffer")
     void shouldThrowOnNullBuffer() {
-      assertThrows(JniException.class,
-          () -> operations.writeAsync(1L, null),
-          "Should throw on null buffer");
+      assertThrows(
+          JniException.class, () -> operations.writeAsync(1L, null), "Should throw on null buffer");
     }
 
     @Test
@@ -183,17 +182,15 @@ class WasiPreview2OperationsTest {
     @DisplayName("Should accept IPv4 address family")
     void shouldAcceptIpv4AddressFamily() {
       // Will throw due to missing native implementation
-      assertThrows(Exception.class,
-          () -> operations.createTcpSocket(4),
-          "Should attempt to create socket");
+      assertThrows(
+          Exception.class, () -> operations.createTcpSocket(4), "Should attempt to create socket");
     }
 
     @Test
     @DisplayName("Should accept IPv6 address family")
     void shouldAcceptIpv6AddressFamily() {
-      assertThrows(Exception.class,
-          () -> operations.createTcpSocket(6),
-          "Should attempt to create socket");
+      assertThrows(
+          Exception.class, () -> operations.createTcpSocket(6), "Should attempt to create socket");
     }
   }
 
@@ -204,7 +201,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null address")
     void shouldThrowOnNullAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.connectTcpAsync(1L, null, 80),
           "Should throw on null address");
     }
@@ -212,7 +210,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on empty address")
     void shouldThrowOnEmptyAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.connectTcpAsync(1L, "", 80),
           "Should throw on empty address");
     }
@@ -220,7 +219,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on invalid port (negative)")
     void shouldThrowOnNegativePort() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.connectTcpAsync(1L, "localhost", -1),
           "Should throw on negative port");
     }
@@ -228,7 +228,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on invalid port (too large)")
     void shouldThrowOnPortTooLarge() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.connectTcpAsync(1L, "localhost", 65536),
           "Should throw on port > 65535");
     }
@@ -252,9 +253,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should accept IPv4 address family")
     void shouldAcceptIpv4AddressFamily() {
-      assertThrows(Exception.class,
-          () -> operations.createUdpSocket(4),
-          "Should attempt to create socket");
+      assertThrows(
+          Exception.class, () -> operations.createUdpSocket(4), "Should attempt to create socket");
     }
   }
 
@@ -265,7 +265,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.sendUdpAsync(1L, null, "localhost", 8080),
           "Should throw on null data");
     }
@@ -273,7 +274,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null address")
     void shouldThrowOnNullAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.sendUdpAsync(1L, ByteBuffer.allocate(10), null, 8080),
           "Should throw on null address");
     }
@@ -281,7 +283,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on empty address")
     void shouldThrowOnEmptyAddress() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.sendUdpAsync(1L, ByteBuffer.allocate(10), "", 8080),
           "Should throw on empty address");
     }
@@ -289,7 +292,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on invalid port")
     void shouldThrowOnInvalidPort() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.sendUdpAsync(1L, ByteBuffer.allocate(10), "localhost", -1),
           "Should throw on invalid port");
     }
@@ -314,53 +318,54 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null method")
     void shouldThrowOnNullMethod() {
-      assertThrows(JniException.class,
-          () -> operations.httpRequestAsync(null, "http://example.com",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () ->
+              operations.httpRequestAsync(null, "http://example.com", Collections.emptyMap(), null),
           "Should throw on null method");
     }
 
     @Test
     @DisplayName("Should throw on empty method")
     void shouldThrowOnEmptyMethod() {
-      assertThrows(JniException.class,
-          () -> operations.httpRequestAsync("", "http://example.com",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () -> operations.httpRequestAsync("", "http://example.com", Collections.emptyMap(), null),
           "Should throw on empty method");
     }
 
     @Test
     @DisplayName("Should throw on null URI")
     void shouldThrowOnNullUri() {
-      assertThrows(JniException.class,
-          () -> operations.httpRequestAsync("GET", null,
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () -> operations.httpRequestAsync("GET", null, Collections.emptyMap(), null),
           "Should throw on null URI");
     }
 
     @Test
     @DisplayName("Should throw on empty URI")
     void shouldThrowOnEmptyUri() {
-      assertThrows(JniException.class,
-          () -> operations.httpRequestAsync("GET", "",
-              Collections.emptyMap(), null),
+      assertThrows(
+          JniException.class,
+          () -> operations.httpRequestAsync("GET", "", Collections.emptyMap(), null),
           "Should throw on empty URI");
     }
 
     @Test
     @DisplayName("Should throw on null headers")
     void shouldThrowOnNullHeaders() {
-      assertThrows(JniException.class,
-          () -> operations.httpRequestAsync("GET", "http://example.com",
-              null, null),
+      assertThrows(
+          JniException.class,
+          () -> operations.httpRequestAsync("GET", "http://example.com", null, null),
           "Should throw on null headers");
     }
 
     @Test
     @DisplayName("Should return CompletableFuture")
     void shouldReturnCompletableFuture() {
-      final CompletableFuture<WasiHttpResponse> future = operations.httpRequestAsync(
-          "GET", "http://example.com", Collections.emptyMap(), null);
+      final CompletableFuture<WasiHttpResponse> future =
+          operations.httpRequestAsync("GET", "http://example.com", Collections.emptyMap(), null);
 
       assertNotNull(future, "Future should not be null");
 
@@ -376,9 +381,8 @@ class WasiPreview2OperationsTest {
     @Test
     @DisplayName("Should throw on null pollables")
     void shouldThrowOnNullPollables() {
-      assertThrows(JniException.class,
-          () -> operations.poll(null, 1000),
-          "Should throw on null pollables");
+      assertThrows(
+          JniException.class, () -> operations.poll(null, 1000), "Should throw on null pollables");
     }
 
     @Test
@@ -387,7 +391,8 @@ class WasiPreview2OperationsTest {
       final List<Long> pollables = new ArrayList<>();
       pollables.add(1L);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> operations.poll(pollables, -1),
           "Should throw on negative timeout");
     }
@@ -399,9 +404,7 @@ class WasiPreview2OperationsTest {
       pollables.add(1L);
 
       // Will throw due to missing native implementation
-      assertThrows(Exception.class,
-          () -> operations.poll(pollables, 0),
-          "Should attempt to poll");
+      assertThrows(Exception.class, () -> operations.poll(pollables, 0), "Should attempt to poll");
     }
   }
 
@@ -444,7 +447,9 @@ class WasiPreview2OperationsTest {
 
       assertEquals(200, response.getStatusCode(), "Status code should match");
       assertEquals(2, response.getHeaders().size(), "Should have 2 headers");
-      assertEquals("application/json", response.getHeaders().get("Content-Type"),
+      assertEquals(
+          "application/json",
+          response.getHeaders().get("Content-Type"),
           "Content-Type should match");
       assertNotNull(response.getBody(), "Body should not be null");
     }
@@ -467,7 +472,8 @@ class WasiPreview2OperationsTest {
 
       final WasiHttpResponse response = new WasiHttpResponse(200, headers, null);
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> response.getHeaders().put("NewKey", "NewValue"),
           "Headers should be immutable");
     }
@@ -484,7 +490,8 @@ class WasiPreview2OperationsTest {
       headers.put("NewKey", "NewValue");
 
       // Response headers should not be affected
-      assertFalse(response.getHeaders().containsKey("NewKey"),
+      assertFalse(
+          response.getHeaders().containsKey("NewKey"),
           "Response should not contain newly added key");
     }
   }
@@ -497,9 +504,8 @@ class WasiPreview2OperationsTest {
     @DisplayName("Should attempt to open input stream")
     void shouldAttemptToOpenInputStream() {
       // Will throw due to missing stream handler setup
-      assertThrows(Exception.class,
-          () -> operations.openInputStream(1L),
-          "Should attempt to open stream");
+      assertThrows(
+          Exception.class, () -> operations.openInputStream(1L), "Should attempt to open stream");
     }
   }
 
@@ -511,9 +517,8 @@ class WasiPreview2OperationsTest {
     @DisplayName("Should attempt to open output stream")
     void shouldAttemptToOpenOutputStream() {
       // Will throw due to missing stream handler setup
-      assertThrows(Exception.class,
-          () -> operations.openOutputStream(1L),
-          "Should attempt to open stream");
+      assertThrows(
+          Exception.class, () -> operations.openOutputStream(1L), "Should attempt to open stream");
     }
   }
 }

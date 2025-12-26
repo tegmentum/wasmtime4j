@@ -43,9 +43,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link WasiExperimentalProcess}.
- */
+/** Comprehensive tests for {@link WasiExperimentalProcess}. */
 @DisplayName("WasiExperimentalProcess Tests")
 class WasiExperimentalProcessTest {
 
@@ -90,7 +88,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiExperimentalProcess(null, executorService),
           "Should throw on null context");
     }
@@ -98,7 +97,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiExperimentalProcess(testContext, null),
           "Should throw on null executor");
     }
@@ -106,7 +106,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Constructor should create handler with valid parameters")
     void constructorShouldCreateHandlerWithValidParameters() {
-      final WasiExperimentalProcess process = new WasiExperimentalProcess(testContext, executorService);
+      final WasiExperimentalProcess process =
+          new WasiExperimentalProcess(testContext, executorService);
       assertNotNull(process, "Handler should be created");
       process.close();
     }
@@ -126,7 +127,8 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
           WasiExperimentalProcess.ProcessResourceLimits.defaultLimits();
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.createSandboxedProcessAsync(null, args, env, config, limits),
           "Should throw on null executable");
     }
@@ -141,7 +143,8 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
           WasiExperimentalProcess.ProcessResourceLimits.defaultLimits();
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.createSandboxedProcessAsync("", args, env, config, limits),
           "Should throw on empty executable");
     }
@@ -155,8 +158,11 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
           WasiExperimentalProcess.ProcessResourceLimits.defaultLimits();
 
-      assertThrows(JniException.class,
-          () -> experimentalProcess.createSandboxedProcessAsync("/bin/test", null, env, config, limits),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalProcess.createSandboxedProcessAsync(
+                  "/bin/test", null, env, config, limits),
           "Should throw on null arguments");
     }
 
@@ -169,8 +175,11 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
           WasiExperimentalProcess.ProcessResourceLimits.defaultLimits();
 
-      assertThrows(JniException.class,
-          () -> experimentalProcess.createSandboxedProcessAsync("/bin/test", args, null, config, limits),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalProcess.createSandboxedProcessAsync(
+                  "/bin/test", args, null, config, limits),
           "Should throw on null environment");
     }
 
@@ -182,8 +191,10 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
           WasiExperimentalProcess.ProcessResourceLimits.defaultLimits();
 
-      assertThrows(JniException.class,
-          () -> experimentalProcess.createSandboxedProcessAsync("/bin/test", args, env, null, limits),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalProcess.createSandboxedProcessAsync("/bin/test", args, env, null, limits),
           "Should throw on null sandbox config");
     }
 
@@ -195,8 +206,10 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.SandboxConfig config =
           WasiExperimentalProcess.SandboxConfig.minimal();
 
-      assertThrows(JniException.class,
-          () -> experimentalProcess.createSandboxedProcessAsync("/bin/test", args, env, config, null),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalProcess.createSandboxedProcessAsync("/bin/test", args, env, config, null),
           "Should throw on null resource limits");
     }
 
@@ -228,7 +241,8 @@ class WasiExperimentalProcessTest {
     void shouldThrowOnNullMonitoringConfig() {
       final Consumer<WasiExperimentalProcess.ResourceUsageAlert> callback = alert -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.createResourceMonitorAsync(1L, null, callback),
           "Should throw on null monitoring config");
     }
@@ -237,9 +251,11 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should throw on null callback")
     void shouldThrowOnNullCallback() {
       final WasiExperimentalProcess.ResourceMonitoringConfig config =
-          new WasiExperimentalProcess.ResourceMonitoringConfig(60, 100_000_000, 50, 1000, 1000, true);
+          new WasiExperimentalProcess.ResourceMonitoringConfig(
+              60, 100_000_000, 50, 1000, 1000, true);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.createResourceMonitorAsync(1L, config, null),
           "Should throw on null callback");
     }
@@ -248,10 +264,12 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should throw on invalid process handle")
     void shouldThrowOnInvalidProcessHandle() {
       final WasiExperimentalProcess.ResourceMonitoringConfig config =
-          new WasiExperimentalProcess.ResourceMonitoringConfig(60, 100_000_000, 50, 1000, 1000, true);
+          new WasiExperimentalProcess.ResourceMonitoringConfig(
+              60, 100_000_000, 50, 1000, 1000, true);
       final Consumer<WasiExperimentalProcess.ResourceUsageAlert> callback = alert -> {};
 
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalProcess.createResourceMonitorAsync(999L, config, callback),
           "Should throw on invalid process handle");
     }
@@ -267,7 +285,8 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.IpcChannelConfig config =
           WasiExperimentalProcess.IpcChannelConfig.defaultConfig();
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.createIpcChannelAsync(1L, 2L, null, config),
           "Should throw on null channel type");
     }
@@ -275,9 +294,11 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on null channel config")
     void shouldThrowOnNullChannelConfig() {
-      assertThrows(JniException.class,
-          () -> experimentalProcess.createIpcChannelAsync(
-              1L, 2L, WasiExperimentalProcess.IpcChannelType.PIPE, null),
+      assertThrows(
+          JniException.class,
+          () ->
+              experimentalProcess.createIpcChannelAsync(
+                  1L, 2L, WasiExperimentalProcess.IpcChannelType.PIPE, null),
           "Should throw on null channel config");
     }
 
@@ -287,9 +308,11 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.IpcChannelConfig config =
           WasiExperimentalProcess.IpcChannelConfig.defaultConfig();
 
-      assertThrows(WasiException.class,
-          () -> experimentalProcess.createIpcChannelAsync(
-              999L, 2L, WasiExperimentalProcess.IpcChannelType.PIPE, config),
+      assertThrows(
+          WasiException.class,
+          () ->
+              experimentalProcess.createIpcChannelAsync(
+                  999L, 2L, WasiExperimentalProcess.IpcChannelType.PIPE, config),
           "Should throw on invalid source process");
     }
   }
@@ -306,7 +329,8 @@ class WasiExperimentalProcessTest {
               "1.0", "Test service", Collections.emptyList(), Collections.emptyList(), 8080, false);
       final Consumer<WasiExperimentalProcess.ServiceRequest> handler = req -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.registerSystemServiceAsync(null, metadata, handler),
           "Should throw on null service name");
     }
@@ -319,7 +343,8 @@ class WasiExperimentalProcessTest {
               "1.0", "Test service", Collections.emptyList(), Collections.emptyList(), 8080, false);
       final Consumer<WasiExperimentalProcess.ServiceRequest> handler = req -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.registerSystemServiceAsync("", metadata, handler),
           "Should throw on empty service name");
     }
@@ -329,7 +354,8 @@ class WasiExperimentalProcessTest {
     void shouldThrowOnNullMetadata() {
       final Consumer<WasiExperimentalProcess.ServiceRequest> handler = req -> {};
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.registerSystemServiceAsync("test-service", null, handler),
           "Should throw on null metadata");
     }
@@ -341,7 +367,8 @@ class WasiExperimentalProcessTest {
           new WasiExperimentalProcess.SystemServiceMetadata(
               "1.0", "Test service", Collections.emptyList(), Collections.emptyList(), 8080, false);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.registerSystemServiceAsync("test-service", metadata, null),
           "Should throw on null handler");
     }
@@ -370,7 +397,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on null service pattern")
     void shouldThrowOnNullServicePattern() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.discoverSystemServicesAsync(null, Collections.emptyList()),
           "Should throw on null service pattern");
     }
@@ -378,7 +406,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on empty service pattern")
     void shouldThrowOnEmptyServicePattern() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.discoverSystemServicesAsync("", Collections.emptyList()),
           "Should throw on empty service pattern");
     }
@@ -386,7 +415,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on null required capabilities")
     void shouldThrowOnNullRequiredCapabilities() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> experimentalProcess.discoverSystemServicesAsync("test-*", null),
           "Should throw on null required capabilities");
     }
@@ -410,7 +440,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on invalid process handle")
     void shouldThrowOnInvalidProcessHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalProcess.getProcessResourceUsageAsync(999L),
           "Should throw on invalid process handle");
     }
@@ -423,7 +454,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should throw on invalid process handle")
     void shouldThrowOnInvalidProcessHandle() {
-      assertThrows(WasiException.class,
+      assertThrows(
+          WasiException.class,
           () -> experimentalProcess.terminateProcessAsync(999L, 5),
           "Should throw on invalid process handle");
     }
@@ -436,14 +468,16 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should close without error")
     void shouldCloseWithoutError() {
-      final WasiExperimentalProcess process = new WasiExperimentalProcess(testContext, executorService);
+      final WasiExperimentalProcess process =
+          new WasiExperimentalProcess(testContext, executorService);
       assertDoesNotThrow(process::close, "Should close without error");
     }
 
     @Test
     @DisplayName("Should handle multiple close calls")
     void shouldHandleMultipleCloseCalls() {
-      final WasiExperimentalProcess process = new WasiExperimentalProcess(testContext, executorService);
+      final WasiExperimentalProcess process =
+          new WasiExperimentalProcess(testContext, executorService);
       assertDoesNotThrow(process::close, "First close should succeed");
       assertDoesNotThrow(process::close, "Second close should succeed");
     }
@@ -468,7 +502,8 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should support valueOf")
     void shouldSupportValueOf() {
-      assertEquals(WasiExperimentalProcess.ProcessState.RUNNING,
+      assertEquals(
+          WasiExperimentalProcess.ProcessState.RUNNING,
           WasiExperimentalProcess.ProcessState.valueOf("RUNNING"),
           "valueOf should work for RUNNING");
     }
@@ -502,8 +537,10 @@ class WasiExperimentalProcessTest {
           WasiExperimentalProcess.IpcChannelType.values();
       assertEquals(4, values.length, "Should have 4 values");
       assertNotNull(WasiExperimentalProcess.IpcChannelType.PIPE, "PIPE should exist");
-      assertNotNull(WasiExperimentalProcess.IpcChannelType.SHARED_MEMORY, "SHARED_MEMORY should exist");
-      assertNotNull(WasiExperimentalProcess.IpcChannelType.MESSAGE_QUEUE, "MESSAGE_QUEUE should exist");
+      assertNotNull(
+          WasiExperimentalProcess.IpcChannelType.SHARED_MEMORY, "SHARED_MEMORY should exist");
+      assertNotNull(
+          WasiExperimentalProcess.IpcChannelType.MESSAGE_QUEUE, "MESSAGE_QUEUE should exist");
       assertNotNull(WasiExperimentalProcess.IpcChannelType.SOCKET, "SOCKET should exist");
     }
   }
@@ -515,8 +552,7 @@ class WasiExperimentalProcessTest {
     @Test
     @DisplayName("Should have expected values")
     void shouldHaveExpectedValues() {
-      final WasiExperimentalProcess.IpcState[] values =
-          WasiExperimentalProcess.IpcState.values();
+      final WasiExperimentalProcess.IpcState[] values = WasiExperimentalProcess.IpcState.values();
       assertEquals(4, values.length, "Should have 4 values");
       assertNotNull(WasiExperimentalProcess.IpcState.CONNECTING, "CONNECTING should exist");
       assertNotNull(WasiExperimentalProcess.IpcState.CONNECTED, "CONNECTED should exist");
@@ -550,24 +586,44 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should have expected static values")
     void shouldHaveExpectedStaticValues() {
       assertNotNull(WasiExperimentalProcess.SandboxCapabilities.NONE, "NONE should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.FILE_READ, "FILE_READ should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.FILE_WRITE, "FILE_WRITE should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.NETWORK_CLIENT, "NETWORK_CLIENT should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.NETWORK_SERVER, "NETWORK_SERVER should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.PROCESS_SPAWN, "PROCESS_SPAWN should exist");
-      assertNotNull(WasiExperimentalProcess.SandboxCapabilities.SYSTEM_INFO, "SYSTEM_INFO should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.FILE_READ, "FILE_READ should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.FILE_WRITE, "FILE_WRITE should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.NETWORK_CLIENT,
+          "NETWORK_CLIENT should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.NETWORK_SERVER,
+          "NETWORK_SERVER should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.PROCESS_SPAWN, "PROCESS_SPAWN should exist");
+      assertNotNull(
+          WasiExperimentalProcess.SandboxCapabilities.SYSTEM_INFO, "SYSTEM_INFO should exist");
     }
 
     @Test
     @DisplayName("Should have expected values")
     void shouldHaveExpectedValues() {
       assertEquals(0x00, WasiExperimentalProcess.SandboxCapabilities.NONE.value, "NONE value");
-      assertEquals(0x01, WasiExperimentalProcess.SandboxCapabilities.FILE_READ.value, "FILE_READ value");
-      assertEquals(0x02, WasiExperimentalProcess.SandboxCapabilities.FILE_WRITE.value, "FILE_WRITE value");
-      assertEquals(0x04, WasiExperimentalProcess.SandboxCapabilities.NETWORK_CLIENT.value, "NETWORK_CLIENT value");
-      assertEquals(0x08, WasiExperimentalProcess.SandboxCapabilities.NETWORK_SERVER.value, "NETWORK_SERVER value");
-      assertEquals(0x10, WasiExperimentalProcess.SandboxCapabilities.PROCESS_SPAWN.value, "PROCESS_SPAWN value");
-      assertEquals(0x20, WasiExperimentalProcess.SandboxCapabilities.SYSTEM_INFO.value, "SYSTEM_INFO value");
+      assertEquals(
+          0x01, WasiExperimentalProcess.SandboxCapabilities.FILE_READ.value, "FILE_READ value");
+      assertEquals(
+          0x02, WasiExperimentalProcess.SandboxCapabilities.FILE_WRITE.value, "FILE_WRITE value");
+      assertEquals(
+          0x04,
+          WasiExperimentalProcess.SandboxCapabilities.NETWORK_CLIENT.value,
+          "NETWORK_CLIENT value");
+      assertEquals(
+          0x08,
+          WasiExperimentalProcess.SandboxCapabilities.NETWORK_SERVER.value,
+          "NETWORK_SERVER value");
+      assertEquals(
+          0x10,
+          WasiExperimentalProcess.SandboxCapabilities.PROCESS_SPAWN.value,
+          "PROCESS_SPAWN value");
+      assertEquals(
+          0x20, WasiExperimentalProcess.SandboxCapabilities.SYSTEM_INFO.value, "SYSTEM_INFO value");
     }
 
     @Test
@@ -590,7 +646,10 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.SandboxConfig config =
           WasiExperimentalProcess.SandboxConfig.minimal();
       assertNotNull(config, "Config should not be null");
-      assertEquals(WasiExperimentalProcess.SandboxType.MINIMAL, config.sandboxType, "Should be MINIMAL type");
+      assertEquals(
+          WasiExperimentalProcess.SandboxType.MINIMAL,
+          config.sandboxType,
+          "Should be MINIMAL type");
       assertFalse(config.allowNetworking, "Should not allow networking");
       assertFalse(config.allowFileSystemAccess, "Should not allow file system access");
       assertFalse(config.allowProcessControl, "Should not allow process control");
@@ -602,7 +661,10 @@ class WasiExperimentalProcessTest {
       final WasiExperimentalProcess.SandboxConfig config =
           WasiExperimentalProcess.SandboxConfig.standard();
       assertNotNull(config, "Config should not be null");
-      assertEquals(WasiExperimentalProcess.SandboxType.STANDARD, config.sandboxType, "Should be STANDARD type");
+      assertEquals(
+          WasiExperimentalProcess.SandboxType.STANDARD,
+          config.sandboxType,
+          "Should be STANDARD type");
       assertFalse(config.allowNetworking, "Should not allow networking");
       assertTrue(config.allowFileSystemAccess, "Should allow file system access");
       assertFalse(config.allowProcessControl, "Should not allow process control");
@@ -615,9 +677,12 @@ class WasiExperimentalProcessTest {
           new WasiExperimentalProcess.SandboxConfig(
               WasiExperimentalProcess.SandboxType.STRICT,
               WasiExperimentalProcess.SandboxCapabilities.FILE_READ,
-              true, true, true);
+              true,
+              true,
+              true);
       assertNotNull(config, "Config should not be null");
-      assertEquals(WasiExperimentalProcess.SandboxType.STRICT, config.sandboxType, "Should be STRICT type");
+      assertEquals(
+          WasiExperimentalProcess.SandboxType.STRICT, config.sandboxType, "Should be STRICT type");
       assertTrue(config.allowNetworking, "Should allow networking");
       assertTrue(config.allowFileSystemAccess, "Should allow file system access");
       assertTrue(config.allowProcessControl, "Should allow process control");
@@ -645,8 +710,7 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should create custom limits")
     void shouldCreateCustomLimits() {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
-          new WasiExperimentalProcess.ProcessResourceLimits(
-              1024 * 1024, 75, 100, 5, 60);
+          new WasiExperimentalProcess.ProcessResourceLimits(1024 * 1024, 75, 100, 5, 60);
       assertEquals(1024 * 1024, limits.maxMemoryBytes, "Custom max memory");
       assertEquals(75, limits.maxCpuPercent, "Custom max CPU");
       assertEquals(100, limits.maxFileDescriptors, "Custom max file descriptors");
@@ -658,11 +722,11 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should clamp negative values to zero or minimum")
     void shouldClampNegativeValues() {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
-          new WasiExperimentalProcess.ProcessResourceLimits(
-              -100, -50, -10, -5, -60);
+          new WasiExperimentalProcess.ProcessResourceLimits(-100, -50, -10, -5, -60);
       assertEquals(0, limits.maxMemoryBytes, "Negative memory should be clamped to 0");
       assertEquals(1, limits.maxCpuPercent, "Negative CPU should be clamped to 1");
-      assertEquals(1, limits.maxFileDescriptors, "Negative file descriptors should be clamped to 1");
+      assertEquals(
+          1, limits.maxFileDescriptors, "Negative file descriptors should be clamped to 1");
       assertEquals(1, limits.maxProcesses, "Negative processes should be clamped to 1");
       assertEquals(0, limits.timeoutSeconds, "Negative timeout should be clamped to 0");
     }
@@ -671,8 +735,7 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should clamp CPU to 100")
     void shouldClampCpuTo100() {
       final WasiExperimentalProcess.ProcessResourceLimits limits =
-          new WasiExperimentalProcess.ProcessResourceLimits(
-              1024 * 1024, 150, 100, 5, 60);
+          new WasiExperimentalProcess.ProcessResourceLimits(1024 * 1024, 150, 100, 5, 60);
       assertEquals(100, limits.maxCpuPercent, "CPU should be clamped to 100");
     }
   }
@@ -692,7 +755,8 @@ class WasiExperimentalProcessTest {
       assertEquals(1_000_000_000, config.memoryThresholdBytes, "Memory threshold should match");
       assertEquals(80, config.cpuThresholdPercent, "CPU threshold should match");
       assertEquals(10_000_000, config.ioThresholdBytesPerSecond, "I/O threshold should match");
-      assertEquals(5_000_000, config.networkThresholdBytesPerSecond, "Network threshold should match");
+      assertEquals(
+          5_000_000, config.networkThresholdBytesPerSecond, "Network threshold should match");
       assertTrue(config.enableDetailedStats, "Detailed stats should be enabled");
     }
 
@@ -700,13 +764,11 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should clamp interval to valid range")
     void shouldClampIntervalToValidRange() {
       final WasiExperimentalProcess.ResourceMonitoringConfig configLow =
-          new WasiExperimentalProcess.ResourceMonitoringConfig(
-              0, 0, 0, 0, 0, false);
+          new WasiExperimentalProcess.ResourceMonitoringConfig(0, 0, 0, 0, 0, false);
       assertEquals(1, configLow.intervalSeconds, "Interval should be clamped to minimum 1");
 
       final WasiExperimentalProcess.ResourceMonitoringConfig configHigh =
-          new WasiExperimentalProcess.ResourceMonitoringConfig(
-              4000, 0, 0, 0, 0, false);
+          new WasiExperimentalProcess.ResourceMonitoringConfig(4000, 0, 0, 0, 0, false);
       assertEquals(3600, configHigh.intervalSeconds, "Interval should be clamped to max 3600");
     }
   }
@@ -731,8 +793,7 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should create custom config")
     void shouldCreateCustomConfig() {
       final WasiExperimentalProcess.IpcChannelConfig config =
-          new WasiExperimentalProcess.IpcChannelConfig(
-              128 * 1024, 500, false, true);
+          new WasiExperimentalProcess.IpcChannelConfig(128 * 1024, 500, false, true);
       assertEquals(128 * 1024, config.bufferSize, "Custom buffer size");
       assertEquals(500, config.maxMessages, "Custom max messages");
       assertFalse(config.bidirectional, "Custom bidirectional");
@@ -743,8 +804,7 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should clamp small values")
     void shouldClampSmallValues() {
       final WasiExperimentalProcess.IpcChannelConfig config =
-          new WasiExperimentalProcess.IpcChannelConfig(
-              100, 0, true, false);
+          new WasiExperimentalProcess.IpcChannelConfig(100, 0, true, false);
       assertEquals(1024, config.bufferSize, "Buffer size should be clamped to minimum 1024");
       assertEquals(1, config.maxMessages, "Max messages should be clamped to minimum 1");
     }
@@ -782,7 +842,8 @@ class WasiExperimentalProcessTest {
           new WasiExperimentalProcess.SystemServiceMetadata(
               "1.0.0", "Test", capabilities, Collections.emptyList(), 8080, false);
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> metadata.capabilities.add("write"),
           "Capabilities list should be immutable");
     }
@@ -800,8 +861,16 @@ class WasiExperimentalProcessTest {
 
       final WasiExperimentalProcess.ProcessResourceUsage usage =
           new WasiExperimentalProcess.ProcessResourceUsage(
-              50.5, 1024 * 1024 * 100, 1000000, 500000, 250000, 125000,
-              32, 4, executionTime, lastUpdated);
+              50.5,
+              1024 * 1024 * 100,
+              1000000,
+              500000,
+              250000,
+              125000,
+              32,
+              4,
+              executionTime,
+              lastUpdated);
 
       assertEquals(50.5, usage.cpuUsagePercent, 0.01, "CPU usage should match");
       assertEquals(1024 * 1024 * 100, usage.memoryUsageBytes, "Memory should match");
@@ -827,8 +896,7 @@ class WasiExperimentalProcessTest {
 
       final WasiExperimentalProcess.ResourceUsageAlert alert =
           new WasiExperimentalProcess.ResourceUsageAlert(
-              1L, "CPU", "CPU usage exceeded threshold",
-              80.0, 95.5, timestamp);
+              1L, "CPU", "CPU usage exceeded threshold", 80.0, 95.5, timestamp);
 
       assertEquals(1L, alert.processHandle, "Process handle should match");
       assertEquals("CPU", alert.alertType, "Alert type should match");
@@ -851,8 +919,7 @@ class WasiExperimentalProcessTest {
       final byte[] data = "test data".getBytes();
 
       final WasiExperimentalProcess.ServiceRequest request =
-          new WasiExperimentalProcess.ServiceRequest(
-              "read", parameters, data, "client-123");
+          new WasiExperimentalProcess.ServiceRequest("read", parameters, data, "client-123");
 
       assertEquals("read", request.operation, "Operation should match");
       assertEquals("value", request.parameters.get("key"), "Parameters should match");
@@ -864,8 +931,7 @@ class WasiExperimentalProcessTest {
     @DisplayName("Should handle null parameters")
     void shouldHandleNullParameters() {
       final WasiExperimentalProcess.ServiceRequest request =
-          new WasiExperimentalProcess.ServiceRequest(
-              "read", null, null, "client-123");
+          new WasiExperimentalProcess.ServiceRequest("read", null, null, "client-123");
 
       assertNotNull(request.parameters, "Parameters should not be null");
       assertTrue(request.parameters.isEmpty(), "Parameters should be empty");
@@ -880,10 +946,10 @@ class WasiExperimentalProcessTest {
       parameters.put("key", "value");
 
       final WasiExperimentalProcess.ServiceRequest request =
-          new WasiExperimentalProcess.ServiceRequest(
-              "read", parameters, null, "client-123");
+          new WasiExperimentalProcess.ServiceRequest("read", parameters, null, "client-123");
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> request.parameters.put("newKey", "newValue"),
           "Parameters map should be immutable");
     }
@@ -904,14 +970,18 @@ class WasiExperimentalProcessTest {
 
       final WasiExperimentalProcess.SystemServiceInfo info =
           new WasiExperimentalProcess.SystemServiceInfo(
-              "test-service", metadata, handler,
+              "test-service",
+              metadata,
+              handler,
               WasiExperimentalProcess.ServiceState.ACTIVE,
-              "service-id-123", registeredAt);
+              "service-id-123",
+              registeredAt);
 
       assertEquals("test-service", info.serviceName, "Service name should match");
       assertNotNull(info.metadata, "Metadata should not be null");
       assertNotNull(info.handler, "Handler should not be null");
-      assertEquals(WasiExperimentalProcess.ServiceState.ACTIVE, info.state, "State should be ACTIVE");
+      assertEquals(
+          WasiExperimentalProcess.ServiceState.ACTIVE, info.state, "State should be ACTIVE");
       assertEquals("service-id-123", info.serviceId, "Service ID should match");
       assertEquals(registeredAt, info.registeredAt, "Registered time should match");
     }

@@ -44,14 +44,17 @@ class JniProfilerTest {
     @Test
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(JniProfiler.class.getModifiers()), "JniProfiler should be public");
+      assertTrue(
+          Modifier.isPublic(JniProfiler.class.getModifiers()), "JniProfiler should be public");
       assertTrue(Modifier.isFinal(JniProfiler.class.getModifiers()), "JniProfiler should be final");
     }
 
     @Test
     @DisplayName("should implement Profiler interface")
     void shouldImplementProfilerInterface() {
-      assertTrue(Profiler.class.isAssignableFrom(JniProfiler.class), "JniProfiler should implement Profiler");
+      assertTrue(
+          Profiler.class.isAssignableFrom(JniProfiler.class),
+          "JniProfiler should implement Profiler");
     }
 
     @Test
@@ -108,16 +111,19 @@ class JniProfilerTest {
     @DisplayName("should have recordFunctionExecution method")
     void shouldHaveRecordFunctionExecutionMethod() throws NoSuchMethodException {
       final Method method =
-          JniProfiler.class.getMethod("recordFunctionExecution", String.class, Duration.class, long.class);
+          JniProfiler.class.getMethod(
+              "recordFunctionExecution", String.class, Duration.class, long.class);
       assertNotNull(method, "recordFunctionExecution method should exist");
-      assertEquals(void.class, method.getReturnType(), "recordFunctionExecution should return void");
+      assertEquals(
+          void.class, method.getReturnType(), "recordFunctionExecution should return void");
     }
 
     @Test
     @DisplayName("should have recordCompilation method")
     void shouldHaveRecordCompilationMethod() throws NoSuchMethodException {
       final Method method =
-          JniProfiler.class.getMethod("recordCompilation", Duration.class, long.class, boolean.class, boolean.class);
+          JniProfiler.class.getMethod(
+              "recordCompilation", Duration.class, long.class, boolean.class, boolean.class);
       assertNotNull(method, "recordCompilation method should exist");
       assertEquals(void.class, method.getReturnType(), "recordCompilation should return void");
     }
@@ -140,7 +146,8 @@ class JniProfilerTest {
     void shouldHaveGetTotalCompilationTimeMethod() throws NoSuchMethodException {
       final Method method = JniProfiler.class.getMethod("getTotalCompilationTime");
       assertNotNull(method, "getTotalCompilationTime method should exist");
-      assertEquals(Duration.class, method.getReturnType(), "getTotalCompilationTime should return Duration");
+      assertEquals(
+          Duration.class, method.getReturnType(), "getTotalCompilationTime should return Duration");
     }
 
     @Test
@@ -148,7 +155,10 @@ class JniProfilerTest {
     void shouldHaveGetAverageCompilationTimeMethod() throws NoSuchMethodException {
       final Method method = JniProfiler.class.getMethod("getAverageCompilationTime");
       assertNotNull(method, "getAverageCompilationTime method should exist");
-      assertEquals(Duration.class, method.getReturnType(), "getAverageCompilationTime should return Duration");
+      assertEquals(
+          Duration.class,
+          method.getReturnType(),
+          "getAverageCompilationTime should return Duration");
     }
 
     @Test

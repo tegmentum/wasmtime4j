@@ -139,8 +139,7 @@ class PanamaExceptionMapperTest {
       final WasmException result = PanamaExceptionMapper.mapException(oom);
 
       assertNotNull(result, "Result should not be null");
-      assertTrue(
-          result.getMessage().toLowerCase().contains("memory"), "Should mention memory");
+      assertTrue(result.getMessage().toLowerCase().contains("memory"), "Should mention memory");
       assertEquals(oom, result.getCause(), "Should preserve cause");
     }
 
@@ -174,8 +173,7 @@ class PanamaExceptionMapperTest {
       final WasmException result = PanamaExceptionMapper.mapException(se);
 
       assertNotNull(result, "Result should not be null");
-      assertTrue(
-          result.getMessage().toLowerCase().contains("security"), "Should mention security");
+      assertTrue(result.getMessage().toLowerCase().contains("security"), "Should mention security");
       assertEquals(se, result.getCause(), "Should preserve cause");
     }
 
@@ -304,8 +302,7 @@ class PanamaExceptionMapperTest {
       final WasmException result = mapper.mapNativeError(4, "Memory failed");
 
       assertNotNull(result, "Result should not be null");
-      assertTrue(
-          result.getMessage().toLowerCase().contains("memory"), "Should mention memory");
+      assertTrue(result.getMessage().toLowerCase().contains("memory"), "Should mention memory");
     }
 
     @Test

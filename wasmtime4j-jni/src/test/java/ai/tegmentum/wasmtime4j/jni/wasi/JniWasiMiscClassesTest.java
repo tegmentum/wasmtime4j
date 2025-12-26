@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,16 +46,17 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive tests for JNI WASI miscellaneous classes.
  *
- * <p>This test class verifies the structure and interface compliance of WASI-related
- * JNI classes without loading native libraries.
+ * <p>This test class verifies the structure and interface compliance of WASI-related JNI classes
+ * without loading native libraries.
  *
  * <p>Classes tested:
+ *
  * <ul>
- *   <li>{@link JniWasiDescriptor}</li>
- *   <li>{@link JniWasiKeyValue}</li>
- *   <li>{@link JniWasiPollable}</li>
- *   <li>{@link JniWasiTimezone}</li>
- *   <li>{@link JniWasiComponent}</li>
+ *   <li>{@link JniWasiDescriptor}
+ *   <li>{@link JniWasiKeyValue}
+ *   <li>{@link JniWasiPollable}
+ *   <li>{@link JniWasiTimezone}
+ *   <li>{@link JniWasiComponent}
  * </ul>
  */
 @DisplayName("JNI WASI Miscellaneous Classes Tests")
@@ -143,9 +143,7 @@ class JniWasiMiscClassesTest {
         Constructor<?> constructor =
             JniWasiDescriptor.class.getDeclaredConstructor(long.class, long.class);
         assertNotNull(constructor, "Constructor with handles should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public");
+        assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
       }
     }
 
@@ -230,8 +228,8 @@ class JniWasiMiscClassesTest {
       void shouldHaveGetAvailableOperationsMethod() throws NoSuchMethodException {
         Method method = JniWasiDescriptor.class.getMethod("getAvailableOperations");
         assertNotNull(method, "getAvailableOperations method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()),
-            "getAvailableOperations should be public");
+        assertTrue(
+            Modifier.isPublic(method.getModifiers()), "getAvailableOperations should be public");
       }
     }
 
@@ -249,14 +247,12 @@ class JniWasiMiscClassesTest {
           }
         }
 
-        assertTrue(nativeMethods.contains("nativeReadViaStream"),
-            "Should have nativeReadViaStream");
-        assertTrue(nativeMethods.contains("nativeWriteViaStream"),
-            "Should have nativeWriteViaStream");
-        assertTrue(nativeMethods.contains("nativeSync"),
-            "Should have nativeSync");
-        assertTrue(nativeMethods.contains("nativeClose"),
-            "Should have nativeClose");
+        assertTrue(
+            nativeMethods.contains("nativeReadViaStream"), "Should have nativeReadViaStream");
+        assertTrue(
+            nativeMethods.contains("nativeWriteViaStream"), "Should have nativeWriteViaStream");
+        assertTrue(nativeMethods.contains("nativeSync"), "Should have nativeSync");
+        assertTrue(nativeMethods.contains("nativeClose"), "Should have nativeClose");
       }
     }
 
@@ -550,9 +546,7 @@ class JniWasiMiscClassesTest {
         Constructor<?> constructor =
             JniWasiPollable.class.getDeclaredConstructor(long.class, long.class);
         assertNotNull(constructor, "Constructor with handles should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public");
+        assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
       }
     }
 
@@ -710,12 +704,9 @@ class JniWasiMiscClassesTest {
       @Test
       @DisplayName("Should have constructor with long parameter")
       void shouldHaveConstructorWithHandle() throws NoSuchMethodException {
-        Constructor<?> constructor =
-            JniWasiTimezone.class.getDeclaredConstructor(long.class);
+        Constructor<?> constructor = JniWasiTimezone.class.getDeclaredConstructor(long.class);
         assertNotNull(constructor, "Constructor with handle should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public");
+        assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
       }
     }
 
@@ -726,8 +717,9 @@ class JniWasiMiscClassesTest {
       @Test
       @DisplayName("Should have display method")
       void shouldHaveDisplayMethod() throws NoSuchMethodException {
-        Method method = JniWasiTimezone.class.getMethod("display",
-            ai.tegmentum.wasmtime4j.wasi.clocks.DateTime.class);
+        Method method =
+            JniWasiTimezone.class.getMethod(
+                "display", ai.tegmentum.wasmtime4j.wasi.clocks.DateTime.class);
         assertNotNull(method, "display method should exist");
         assertEquals(
             ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay.class,
@@ -738,8 +730,9 @@ class JniWasiMiscClassesTest {
       @Test
       @DisplayName("Should have utcOffset method")
       void shouldHaveUtcOffsetMethod() throws NoSuchMethodException {
-        Method method = JniWasiTimezone.class.getMethod("utcOffset",
-            ai.tegmentum.wasmtime4j.wasi.clocks.DateTime.class);
+        Method method =
+            JniWasiTimezone.class.getMethod(
+                "utcOffset", ai.tegmentum.wasmtime4j.wasi.clocks.DateTime.class);
         assertNotNull(method, "utcOffset method should exist");
         assertEquals(int.class, method.getReturnType(), "utcOffset should return int");
       }
@@ -901,11 +894,12 @@ class JniWasiMiscClassesTest {
       @Test
       @DisplayName("Should have instantiate method with config")
       void shouldHaveInstantiateWithConfigMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("instantiate",
-            ai.tegmentum.wasmtime4j.wasi.WasiConfig.class);
+        Method method =
+            JniWasiComponent.class.getMethod(
+                "instantiate", ai.tegmentum.wasmtime4j.wasi.WasiConfig.class);
         assertNotNull(method, "instantiate with config method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()),
-            "instantiate with config should be public");
+        assertTrue(
+            Modifier.isPublic(method.getModifiers()), "instantiate with config should be public");
       }
 
       @Test
@@ -967,30 +961,40 @@ class JniWasiMiscClassesTest {
     @Test
     @DisplayName("All WASI resource classes should be final")
     void allWasiResourceClassesShouldBeFinal() {
-      assertTrue(Modifier.isFinal(JniWasiDescriptor.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniWasiDescriptor.class.getModifiers()),
           "JniWasiDescriptor should be final");
-      assertTrue(Modifier.isFinal(JniWasiKeyValue.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniWasiKeyValue.class.getModifiers()),
           "JniWasiKeyValue should be final");
-      assertTrue(Modifier.isFinal(JniWasiPollable.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniWasiPollable.class.getModifiers()),
           "JniWasiPollable should be final");
-      assertTrue(Modifier.isFinal(JniWasiTimezone.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniWasiTimezone.class.getModifiers()),
           "JniWasiTimezone should be final");
-      assertTrue(Modifier.isFinal(JniWasiComponent.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniWasiComponent.class.getModifiers()),
           "JniWasiComponent should be final");
     }
 
     @Test
     @DisplayName("All WASI resource classes should be public")
     void allWasiResourceClassesShouldBePublic() {
-      assertTrue(Modifier.isPublic(JniWasiDescriptor.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiDescriptor.class.getModifiers()),
           "JniWasiDescriptor should be public");
-      assertTrue(Modifier.isPublic(JniWasiKeyValue.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiKeyValue.class.getModifiers()),
           "JniWasiKeyValue should be public");
-      assertTrue(Modifier.isPublic(JniWasiPollable.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiPollable.class.getModifiers()),
           "JniWasiPollable should be public");
-      assertTrue(Modifier.isPublic(JniWasiTimezone.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiTimezone.class.getModifiers()),
           "JniWasiTimezone should be public");
-      assertTrue(Modifier.isPublic(JniWasiComponent.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiComponent.class.getModifiers()),
           "JniWasiComponent should be public");
     }
 
@@ -1010,11 +1014,11 @@ class JniWasiMiscClassesTest {
     @DisplayName("All classes should have LOGGER field")
     void allClassesShouldHaveLoggerField() throws NoSuchFieldException {
       Field[] loggerFields = {
-          JniWasiDescriptor.class.getDeclaredField("LOGGER"),
-          JniWasiKeyValue.class.getDeclaredField("LOGGER"),
-          JniWasiPollable.class.getDeclaredField("LOGGER"),
-          JniWasiTimezone.class.getDeclaredField("LOGGER"),
-          JniWasiComponent.class.getDeclaredField("LOGGER")
+        JniWasiDescriptor.class.getDeclaredField("LOGGER"),
+        JniWasiKeyValue.class.getDeclaredField("LOGGER"),
+        JniWasiPollable.class.getDeclaredField("LOGGER"),
+        JniWasiTimezone.class.getDeclaredField("LOGGER"),
+        JniWasiComponent.class.getDeclaredField("LOGGER")
       };
 
       for (Field field : loggerFields) {
@@ -1075,8 +1079,13 @@ class JniWasiMiscClassesTest {
               break;
             }
           }
-          assertTrue(found, implClass.getSimpleName() + " should implement: "
-              + interfaceMethod.getName() + " from " + interfaceClass.getSimpleName());
+          assertTrue(
+              found,
+              implClass.getSimpleName()
+                  + " should implement: "
+                  + interfaceMethod.getName()
+                  + " from "
+                  + interfaceClass.getSimpleName());
         }
       }
     }

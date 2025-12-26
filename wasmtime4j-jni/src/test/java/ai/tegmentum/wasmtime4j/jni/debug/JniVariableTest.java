@@ -29,9 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniVariable}.
- */
+/** Comprehensive tests for {@link JniVariable}. */
 @DisplayName("JniVariable Tests")
 class JniVariableTest {
 
@@ -56,8 +54,8 @@ class JniVariableTest {
     @DisplayName("Constructor should create variable with all fields")
     void constructorShouldCreateVariableWithAllFields() {
       final JniVariableValue value = JniVariableValue.i32(42);
-      final JniVariable var = new JniVariable(
-          "myVar", "i32", value, VariableScope.LOCAL, 5, true, "Test variable");
+      final JniVariable var =
+          new JniVariable("myVar", "i32", value, VariableScope.LOCAL, 5, true, "Test variable");
 
       assertEquals("myVar", var.getName(), "Name should match");
       assertEquals("i32", var.getVarType(), "Type should match");
@@ -73,8 +71,9 @@ class JniVariableTest {
     void constructorShouldThrowOnNullName() {
       assertThrows(
           NullPointerException.class,
-          () -> new JniVariable(
-              null, "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null),
+          () ->
+              new JniVariable(
+                  null, "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null),
           "Should throw on null name");
     }
 
@@ -83,8 +82,9 @@ class JniVariableTest {
     void constructorShouldThrowOnNullVarType() {
       assertThrows(
           NullPointerException.class,
-          () -> new JniVariable(
-              "var", null, JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null),
+          () ->
+              new JniVariable(
+                  "var", null, JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null),
           "Should throw on null varType");
     }
 
@@ -102,16 +102,16 @@ class JniVariableTest {
     void constructorShouldThrowOnNullScope() {
       assertThrows(
           NullPointerException.class,
-          () -> new JniVariable(
-              "var", "i32", JniVariableValue.i32(0), null, 0, true, null),
+          () -> new JniVariable("var", "i32", JniVariableValue.i32(0), null, 0, true, null),
           "Should throw on null scope");
     }
 
     @Test
     @DisplayName("Constructor should accept null description")
     void constructorShouldAcceptNullDescription() {
-      final JniVariable var = new JniVariable(
-          "var", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var =
+          new JniVariable(
+              "var", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, null);
 
       assertNull(var.getDescription(), "Description should be null");
     }
@@ -119,8 +119,9 @@ class JniVariableTest {
     @Test
     @DisplayName("Constructor should accept negative index")
     void constructorShouldAcceptNegativeIndex() {
-      final JniVariable var = new JniVariable(
-          "var", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, -1, true, null);
+      final JniVariable var =
+          new JniVariable(
+              "var", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, -1, true, null);
 
       assertEquals(-1, var.getIndex(), "Index should be -1");
     }
@@ -211,8 +212,8 @@ class JniVariableTest {
     @Test
     @DisplayName("global() should create mutable global variable")
     void globalShouldCreateMutableGlobalVariable() {
-      final JniVariable var = JniVariable.global(
-          "counter", "i32", JniVariableValue.i32(0), 0, true);
+      final JniVariable var =
+          JniVariable.global("counter", "i32", JniVariableValue.i32(0), 0, true);
 
       assertEquals("counter", var.getName(), "Name should match");
       assertEquals("i32", var.getVarType(), "Type should match");
@@ -225,8 +226,8 @@ class JniVariableTest {
     @Test
     @DisplayName("global() should create immutable global variable")
     void globalShouldCreateImmutableGlobalVariable() {
-      final JniVariable var = JniVariable.global(
-          "constant", "f64", JniVariableValue.f64(Math.PI), 0, false);
+      final JniVariable var =
+          JniVariable.global("constant", "f64", JniVariableValue.f64(Math.PI), 0, false);
 
       assertEquals("constant", var.getName(), "Name should match");
       assertEquals(VariableScope.GLOBAL, var.getScope(), "Scope should be GLOBAL");
@@ -268,8 +269,8 @@ class JniVariableTest {
     @DisplayName("Variables can be created with all scope types")
     void variablesCanBeCreatedWithAllScopeTypes() {
       for (final VariableScope scope : VariableScope.values()) {
-        final JniVariable var = new JniVariable(
-            "var", "i32", JniVariableValue.i32(0), scope, 0, true, null);
+        final JniVariable var =
+            new JniVariable("var", "i32", JniVariableValue.i32(0), scope, 0, true, null);
 
         assertEquals(scope, var.getScope(), "Scope should match: " + scope);
       }
@@ -283,8 +284,9 @@ class JniVariableTest {
     @Test
     @DisplayName("toString should include all fields")
     void toStringShouldIncludeAllFields() {
-      final JniVariable var = new JniVariable(
-          "myVar", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 5, true, null);
+      final JniVariable var =
+          new JniVariable(
+              "myVar", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 5, true, null);
 
       final String str = var.toString();
 
@@ -300,7 +302,8 @@ class JniVariableTest {
     void toStringShouldShowDifferentScopeValues() {
       final JniVariable localVar = JniVariable.local("x", "i32", JniVariableValue.i32(0), 0);
       final JniVariable paramVar = JniVariable.parameter("p", "i32", JniVariableValue.i32(0), 0);
-      final JniVariable globalVar = JniVariable.global("g", "i32", JniVariableValue.i32(0), 0, true);
+      final JniVariable globalVar =
+          JniVariable.global("g", "i32", JniVariableValue.i32(0), 0, true);
 
       assertTrue(localVar.toString().contains("scope=LOCAL"), "Local should show LOCAL");
       assertTrue(paramVar.toString().contains("scope=PARAMETER"), "Param should show PARAMETER");
@@ -315,10 +318,10 @@ class JniVariableTest {
     @Test
     @DisplayName("equals should return true for same values")
     void equalsShouldReturnTrueForSameValues() {
-      final JniVariable var1 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
-      final JniVariable var2 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var1 =
+          new JniVariable("x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var2 =
+          new JniVariable("x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
 
       assertEquals(var1, var2, "Variables with same values should be equal");
     }
@@ -326,10 +329,11 @@ class JniVariableTest {
     @Test
     @DisplayName("equals should ignore value content")
     void equalsShouldIgnoreValueContent() {
-      final JniVariable var1 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
-      final JniVariable var2 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(100), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var1 =
+          new JniVariable("x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var2 =
+          new JniVariable(
+              "x", "i32", JniVariableValue.i32(100), VariableScope.LOCAL, 0, true, null);
 
       assertEquals(var1, var2, "Variables should be equal regardless of value content");
     }
@@ -337,10 +341,12 @@ class JniVariableTest {
     @Test
     @DisplayName("equals should ignore description")
     void equalsShouldIgnoreDescription() {
-      final JniVariable var1 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, "desc1");
-      final JniVariable var2 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, "desc2");
+      final JniVariable var1 =
+          new JniVariable(
+              "x", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, "desc1");
+      final JniVariable var2 =
+          new JniVariable(
+              "x", "i32", JniVariableValue.i32(0), VariableScope.LOCAL, 0, true, "desc2");
 
       assertEquals(var1, var2, "Variables should be equal regardless of description");
     }
@@ -414,13 +420,13 @@ class JniVariableTest {
     @Test
     @DisplayName("hashCode should be consistent with equals")
     void hashCodeShouldBeConsistentWithEquals() {
-      final JniVariable var1 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
-      final JniVariable var2 = new JniVariable(
-          "x", "i32", JniVariableValue.i32(100), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var1 =
+          new JniVariable("x", "i32", JniVariableValue.i32(42), VariableScope.LOCAL, 0, true, null);
+      final JniVariable var2 =
+          new JniVariable(
+              "x", "i32", JniVariableValue.i32(100), VariableScope.LOCAL, 0, true, null);
 
-      assertEquals(var1.hashCode(), var2.hashCode(),
-          "Equal variables should have same hashCode");
+      assertEquals(var1.hashCode(), var2.hashCode(), "Equal variables should have same hashCode");
     }
 
     @Test

@@ -223,9 +223,7 @@ class PanamaComponentEngineTest {
     @DisplayName("close method should be public")
     void closeMethodShouldBePublic() throws NoSuchMethodException {
       Method method = PanamaComponentEngine.class.getMethod("close");
-      assertTrue(
-          Modifier.isPublic(method.getModifiers()),
-          "close method should be public");
+      assertTrue(Modifier.isPublic(method.getModifiers()), "close method should be public");
     }
   }
 
@@ -247,9 +245,7 @@ class PanamaComponentEngineTest {
                       c.getParameterCount() > 0
                           && Arrays.asList(c.getParameterTypes())
                               .contains(ArenaResourceManager.class));
-      assertTrue(
-          hasConstructor,
-          "Should have constructor accepting ArenaResourceManager");
+      assertTrue(hasConstructor, "Should have constructor accepting ArenaResourceManager");
     }
 
     @Test
@@ -285,8 +281,7 @@ class PanamaComponentEngineTest {
       for (Method method : compileMethods) {
         // Return type should not be void for compile operations
         assertFalse(
-            method.getReturnType().equals(void.class),
-            "compileComponent should not return void");
+            method.getReturnType().equals(void.class), "compileComponent should not return void");
       }
     }
 
@@ -301,9 +296,7 @@ class PanamaComponentEngineTest {
       if (!validateMethods.isEmpty()) {
         for (Method method : validateMethods) {
           assertEquals(
-              boolean.class,
-              method.getReturnType(),
-              "validateComponent should return boolean");
+              boolean.class, method.getReturnType(), "validateComponent should return boolean");
         }
       }
     }
@@ -328,9 +321,7 @@ class PanamaComponentEngineTest {
       boolean acceptsByteArray =
           compileMethods.stream()
               .anyMatch(
-                  m ->
-                      Arrays.stream(m.getParameterTypes())
-                          .anyMatch(p -> p.equals(byte[].class)));
+                  m -> Arrays.stream(m.getParameterTypes()).anyMatch(p -> p.equals(byte[].class)));
 
       assertTrue(acceptsByteArray, "compileComponent should accept byte[] parameter");
     }
@@ -346,8 +337,7 @@ class PanamaComponentEngineTest {
       if (!createMethods.isEmpty()) {
         for (Method method : createMethods) {
           assertTrue(
-              method.getParameterCount() > 0,
-              "createInstance should have at least one parameter");
+              method.getParameterCount() > 0, "createInstance should have at least one parameter");
         }
       }
     }
@@ -378,8 +368,7 @@ class PanamaComponentEngineTest {
 
       for (String methodName : componentEngineMethods) {
         assertTrue(
-            implementedMethods.contains(methodName),
-            "Should implement method: " + methodName);
+            implementedMethods.contains(methodName), "Should implement method: " + methodName);
       }
     }
 
@@ -462,8 +451,7 @@ class PanamaComponentEngineTest {
 
       // Should have compile/create/validate methods that interact with native code
       assertTrue(
-          methodNames.contains("compileComponent")
-              || methodNames.contains("compile"),
+          methodNames.contains("compileComponent") || methodNames.contains("compile"),
           "Should have compile method for native interaction");
     }
   }
@@ -488,8 +476,7 @@ class PanamaComponentEngineTest {
                           || f.getName().contains("counter")
                           || f.getName().contains("Counter"));
       assertTrue(
-          hasAtomicCounter,
-          "Should have atomic counter or similar for thread-safe ID generation");
+          hasAtomicCounter, "Should have atomic counter or similar for thread-safe ID generation");
     }
 
     @Test
@@ -523,8 +510,7 @@ class PanamaComponentEngineTest {
       Method[] methods = PanamaComponentEngine.class.getDeclaredMethods();
       // At minimum: compileComponent, createInstance, validateComponent, linkComponents, close
       assertTrue(
-          methods.length >= 5,
-          "Should have at least 5 declared methods, found: " + methods.length);
+          methods.length >= 5, "Should have at least 5 declared methods, found: " + methods.length);
     }
 
     @Test
@@ -536,13 +522,9 @@ class PanamaComponentEngineTest {
               .collect(Collectors.toSet());
 
       // Check for expected methods from ComponentEngine interface
-      Set<String> expectedMethods = Set.of(
-          "compileComponent",
-          "createInstance",
-          "validateComponent",
-          "linkComponents",
-          "close"
-      );
+      Set<String> expectedMethods =
+          Set.of(
+              "compileComponent", "createInstance", "validateComponent", "linkComponents", "close");
 
       for (String expected : expectedMethods) {
         assertTrue(
@@ -572,8 +554,7 @@ class PanamaComponentEngineTest {
                 && !Error.class.isAssignableFrom(exceptionType)) {
               // Only close() is allowed to throw Exception
               assertTrue(
-                  method.getName().equals("close")
-                      || exceptionType.equals(Exception.class),
+                  method.getName().equals("close") || exceptionType.equals(Exception.class),
                   "Method "
                       + method.getName()
                       + " should not throw checked exception: "

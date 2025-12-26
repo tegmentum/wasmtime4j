@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -83,49 +84,31 @@ class WitEvolutionResultTest {
     }
 
     @Override
+    public Set<String> getDependencies() {
+      return Set.of();
+    }
+
+    @Override
+    public String getWitText() {
+      return "interface " + name + " {}";
+    }
+
+    @Override
     public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
-      return WitCompatibilityResult.compatible();
+      return WitCompatibilityResult.compatible("Compatible", Set.of());
     }
   }
 
-  /** Simple mock implementation of WitEvolutionChange for testing. */
+  /**
+   * Creates a WitEvolutionChange for testing using the factory methods. Since WitEvolutionChange is
+   * a final class, we use the static factory methods.
+   */
   private static WitEvolutionChange createMockChange(final boolean breaking) {
-    return new WitEvolutionChange() {
-      @Override
-      public String getDescription() {
-        return breaking ? "Breaking change" : "Non-breaking change";
-      }
-
-      @Override
-      public boolean isBreaking() {
-        return breaking;
-      }
-
-      @Override
-      public WitEvolutionOperation getOperation() {
-        return WitEvolutionOperation.ADD_FIELD;
-      }
-
-      @Override
-      public String getTargetElement() {
-        return "test-element";
-      }
-
-      @Override
-      public Optional<String> getOldValue() {
-        return Optional.empty();
-      }
-
-      @Override
-      public Optional<String> getNewValue() {
-        return Optional.of("new-value");
-      }
-
-      @Override
-      public Map<String, Object> getMetadata() {
-        return Map.of();
-      }
-    };
+    if (breaking) {
+      return WitEvolutionChange.functionRemoved("testFunc", "func testFunc()");
+    } else {
+      return WitEvolutionChange.functionAdded("testFunc", "func testFunc()");
+    }
   }
 
   @Nested
@@ -140,16 +123,17 @@ class WitEvolutionResultTest {
       final Instant evolutionTime = Instant.now();
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = new WitEvolutionResult(
-          sourceInterface,
-          targetInterface,
-          true,
-          List.of(),
-          Map.of(),
-          null,
-          evolutionTime,
-          Optional.empty(),
-          metrics);
+      final WitEvolutionResult result =
+          new WitEvolutionResult(
+              sourceInterface,
+              targetInterface,
+              true,
+              List.of(),
+              Map.of(),
+              null,
+              evolutionTime,
+              Optional.empty(),
+              metrics);
 
       assertEquals("source", result.getSourceInterface().getName());
       assertEquals("target", result.getTargetInterface().getName());
@@ -170,16 +154,17 @@ class WitEvolutionResultTest {
       final Instant evolutionTime = Instant.now();
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = new WitEvolutionResult(
-          sourceInterface,
-          targetInterface,
-          true,
-          List.of(createMockChange(false)),
-          Map.of(),
-          null,
-          evolutionTime,
-          Optional.empty(),
-          metrics);
+      final WitEvolutionResult result =
+          new WitEvolutionResult(
+              sourceInterface,
+              targetInterface,
+              true,
+              List.of(createMockChange(false)),
+              Map.of(),
+              null,
+              evolutionTime,
+              Optional.empty(),
+              metrics);
 
       assertEquals(1, result.getChanges().size());
       assertTrue(result.getTypeAdapters().isEmpty());
@@ -197,13 +182,9 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface, targetInterface, List.of(), Map.of(), null, metrics);
 
       assertTrue(result.isSuccessful());
       assertTrue(result.getErrorMessage().isEmpty());
@@ -216,10 +197,9 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition sourceInterface = new MockInterfaceDefinition("source");
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
 
-      final WitEvolutionResult result = WitEvolutionResult.failure(
-          sourceInterface,
-          targetInterface,
-          "Evolution failed: incompatible types");
+      final WitEvolutionResult result =
+          WitEvolutionResult.failure(
+              sourceInterface, targetInterface, "Evolution failed: incompatible types");
 
       assertFalse(result.isSuccessful());
       assertTrue(result.getErrorMessage().isPresent());
@@ -241,8 +221,8 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition sourceInterface = new MockInterfaceDefinition("my-source");
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
 
-      final WitEvolutionResult result = WitEvolutionResult.failure(
-          sourceInterface, targetInterface, "error");
+      final WitEvolutionResult result =
+          WitEvolutionResult.failure(sourceInterface, targetInterface, "error");
 
       assertEquals("my-source", result.getSourceInterface().getName());
     }
@@ -253,8 +233,8 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition sourceInterface = new MockInterfaceDefinition("source");
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("my-target");
 
-      final WitEvolutionResult result = WitEvolutionResult.failure(
-          sourceInterface, targetInterface, "error");
+      final WitEvolutionResult result =
+          WitEvolutionResult.failure(sourceInterface, targetInterface, "error");
 
       assertEquals("my-target", result.getTargetInterface().getName());
     }
@@ -265,8 +245,8 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition sourceInterface = new MockInterfaceDefinition("source");
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
 
-      final WitEvolutionResult result = WitEvolutionResult.failure(
-          sourceInterface, targetInterface, "error");
+      final WitEvolutionResult result =
+          WitEvolutionResult.failure(sourceInterface, targetInterface, "error");
 
       assertNotNull(result.getEvolutionTime());
       // Evolution time should be recent
@@ -286,13 +266,14 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(createMockChange(true), createMockChange(false)),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(createMockChange(true), createMockChange(false)),
+              Map.of(),
+              null,
+              metrics);
 
       assertTrue(result.hasBreakingChanges());
     }
@@ -304,13 +285,14 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(createMockChange(false), createMockChange(false)),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(createMockChange(false), createMockChange(false)),
+              Map.of(),
+              null,
+              metrics);
 
       assertFalse(result.hasBreakingChanges());
     }
@@ -322,13 +304,14 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(createMockChange(true), createMockChange(false), createMockChange(true)),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(createMockChange(true), createMockChange(false), createMockChange(true)),
+              Map.of(),
+              null,
+              metrics);
 
       final List<WitEvolutionChange> breakingChanges = result.getBreakingChanges();
       assertEquals(2, breakingChanges.size());
@@ -342,13 +325,14 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(createMockChange(true), createMockChange(false), createMockChange(false)),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(createMockChange(true), createMockChange(false), createMockChange(false)),
+              Map.of(),
+              null,
+              metrics);
 
       final List<WitEvolutionChange> nonBreakingChanges = result.getNonBreakingChanges();
       assertEquals(2, nonBreakingChanges.size());
@@ -367,56 +351,17 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      // Create a mock type adapter
-      final WitTypeAdapter mockAdapter = new WitTypeAdapter() {
-        @Override
-        public WitTypeAdapter.AdapterType getAdapterType() {
-          return WitTypeAdapter.AdapterType.DIRECT_CONVERSION;
-        }
+      // Create a mock type adapter implementing the interface
+      final WitTypeAdapter mockAdapter = createMockTypeAdapter();
 
-        @Override
-        public WitType getSourceType() {
-          return null;
-        }
-
-        @Override
-        public WitType getTargetType() {
-          return null;
-        }
-
-        @Override
-        public Object adapt(final Object value) {
-          return value;
-        }
-
-        @Override
-        public Object reverse(final Object value) {
-          return value;
-        }
-
-        @Override
-        public boolean isReversible() {
-          return true;
-        }
-
-        @Override
-        public WitTypeAdapter.ConversionCost getConversionCost() {
-          return WitTypeAdapter.ConversionCost.LOW;
-        }
-
-        @Override
-        public WitTypeAdapter.AdapterValidationResult validate() {
-          return WitTypeAdapter.AdapterValidationResult.success();
-        }
-      };
-
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(),
-          Map.of("myType", mockAdapter),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(),
+              Map.of("myType", mockAdapter),
+              null,
+              metrics);
 
       assertTrue(result.getTypeAdapter("myType").isPresent());
       assertEquals(mockAdapter, result.getTypeAdapter("myType").get());
@@ -429,13 +374,9 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface, targetInterface, List.of(), Map.of(), null, metrics);
 
       assertTrue(result.getTypeAdapter("nonexistent").isEmpty());
     }
@@ -447,55 +388,16 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitTypeAdapter mockAdapter = new WitTypeAdapter() {
-        @Override
-        public WitTypeAdapter.AdapterType getAdapterType() {
-          return WitTypeAdapter.AdapterType.DIRECT_CONVERSION;
-        }
+      final WitTypeAdapter mockAdapter = createMockTypeAdapter();
 
-        @Override
-        public WitType getSourceType() {
-          return null;
-        }
-
-        @Override
-        public WitType getTargetType() {
-          return null;
-        }
-
-        @Override
-        public Object adapt(final Object value) {
-          return value;
-        }
-
-        @Override
-        public Object reverse(final Object value) {
-          return value;
-        }
-
-        @Override
-        public boolean isReversible() {
-          return true;
-        }
-
-        @Override
-        public WitTypeAdapter.ConversionCost getConversionCost() {
-          return WitTypeAdapter.ConversionCost.LOW;
-        }
-
-        @Override
-        public WitTypeAdapter.AdapterValidationResult validate() {
-          return WitTypeAdapter.AdapterValidationResult.success();
-        }
-      };
-
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(),
-          Map.of("existingType", mockAdapter),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(),
+              Map.of("existingType", mockAdapter),
+              null,
+              metrics);
 
       assertTrue(result.hasTypeAdapter("existingType"));
       assertFalse(result.hasTypeAdapter("missingType"));
@@ -513,13 +415,14 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("targetIface");
       final WitEvolutionMetrics metrics = WitEvolutionMetrics.empty();
 
-      final WitEvolutionResult result = WitEvolutionResult.success(
-          sourceInterface,
-          targetInterface,
-          List.of(createMockChange(false)),
-          Map.of(),
-          null,
-          metrics);
+      final WitEvolutionResult result =
+          WitEvolutionResult.success(
+              sourceInterface,
+              targetInterface,
+              List.of(createMockChange(false)),
+              Map.of(),
+              null,
+              metrics);
 
       final String str = result.toString();
       assertTrue(str.contains("WitEvolutionResult"));
@@ -535,11 +438,171 @@ class WitEvolutionResultTest {
       final MockInterfaceDefinition sourceInterface = new MockInterfaceDefinition("source");
       final MockInterfaceDefinition targetInterface = new MockInterfaceDefinition("target");
 
-      final WitEvolutionResult result = WitEvolutionResult.failure(
-          sourceInterface, targetInterface, "error");
+      final WitEvolutionResult result =
+          WitEvolutionResult.failure(sourceInterface, targetInterface, "error");
 
       final String str = result.toString();
       assertTrue(str.contains("successful=false"));
     }
+  }
+
+  /** Creates a mock WitTypeAdapter for testing. */
+  private static WitTypeAdapter createMockTypeAdapter() {
+    return new WitTypeAdapter() {
+      @Override
+      public String getSourceTypeName() {
+        return "source-type";
+      }
+
+      @Override
+      public String getTargetTypeName() {
+        return "target-type";
+      }
+
+      @Override
+      public AdapterType getAdapterType() {
+        return AdapterType.DIRECT_CONVERSION;
+      }
+
+      @Override
+      public boolean supportsForwardConversion() {
+        return true;
+      }
+
+      @Override
+      public boolean supportsReverseConversion() {
+        return true;
+      }
+
+      @Override
+      public WasmValue convertForward(final WasmValue sourceValue) {
+        return sourceValue;
+      }
+
+      @Override
+      public WasmValue convertReverse(final WasmValue targetValue) {
+        return targetValue;
+      }
+
+      @Override
+      public AdapterValidationResult validateForwardConversion(final WasmValue sourceValue) {
+        return AdapterValidationResult.success();
+      }
+
+      @Override
+      public AdapterValidationResult validateReverseConversion(final WasmValue targetValue) {
+        return AdapterValidationResult.success();
+      }
+
+      @Override
+      public ConversionMetadata getForwardConversionMetadata() {
+        return createMockConversionMetadata();
+      }
+
+      @Override
+      public ConversionMetadata getReverseConversionMetadata() {
+        return createMockConversionMetadata();
+      }
+
+      @Override
+      public AdapterStatistics getStatistics() {
+        return createMockAdapterStatistics();
+      }
+
+      @Override
+      public boolean isLossless() {
+        return true;
+      }
+
+      @Override
+      public List<String> getLimitations() {
+        return List.of();
+      }
+
+      @Override
+      public Optional<TypeMappingInfo> getTypeMappingInfo() {
+        return Optional.empty();
+      }
+
+      @Override
+      public void resetStatistics() {
+        // No-op for mock
+      }
+    };
+  }
+
+  /** Creates a mock ConversionMetadata for testing. */
+  private static WitTypeAdapter.ConversionMetadata createMockConversionMetadata() {
+    return new WitTypeAdapter.ConversionMetadata() {
+      @Override
+      public boolean isLossy() {
+        return false;
+      }
+
+      @Override
+      public WitTypeAdapter.ConversionCost getCost() {
+        return WitTypeAdapter.ConversionCost.LOW;
+      }
+
+      @Override
+      public List<String> getPreconditions() {
+        return List.of();
+      }
+
+      @Override
+      public List<String> getPostconditions() {
+        return List.of();
+      }
+
+      @Override
+      public Map<String, Object> getProperties() {
+        return Map.of();
+      }
+    };
+  }
+
+  /** Creates a mock AdapterStatistics for testing. */
+  private static WitTypeAdapter.AdapterStatistics createMockAdapterStatistics() {
+    return new WitTypeAdapter.AdapterStatistics() {
+      @Override
+      public long getForwardConversions() {
+        return 0;
+      }
+
+      @Override
+      public long getReverseConversions() {
+        return 0;
+      }
+
+      @Override
+      public long getSuccessfulConversions() {
+        return 0;
+      }
+
+      @Override
+      public long getFailedConversions() {
+        return 0;
+      }
+
+      @Override
+      public double getAverageConversionTime() {
+        return 0.0;
+      }
+
+      @Override
+      public long getTotalConversionTime() {
+        return 0;
+      }
+
+      @Override
+      public double getSuccessRate() {
+        return 1.0;
+      }
+
+      @Override
+      public Optional<java.time.Instant> getLastConversionTime() {
+        return Optional.empty();
+      }
+    };
   }
 }

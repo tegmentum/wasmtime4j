@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.jni.wasi.sockets;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.sockets.ResolveAddressStream;
@@ -25,9 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniResolveAddressStream}.
- */
+/** Comprehensive tests for {@link JniResolveAddressStream}. */
 @DisplayName("JniResolveAddressStream Tests")
 class JniResolveAddressStreamTest {
 
@@ -71,29 +68,29 @@ class JniResolveAddressStreamTest {
     @Test
     @DisplayName("resolveNextAddress method should exist")
     void resolveNextAddressMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniResolveAddressStream.class.getMethod("resolveNextAddress"),
+      assertNotNull(
+          JniResolveAddressStream.class.getMethod("resolveNextAddress"),
           "resolveNextAddress method should exist");
     }
 
     @Test
     @DisplayName("subscribe method should exist")
     void subscribeMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniResolveAddressStream.class.getMethod("subscribe"),
-          "subscribe method should exist");
+      assertNotNull(
+          JniResolveAddressStream.class.getMethod("subscribe"), "subscribe method should exist");
     }
 
     @Test
     @DisplayName("isClosed method should exist")
     void isClosedMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniResolveAddressStream.class.getMethod("isClosed"),
-          "isClosed method should exist");
+      assertNotNull(
+          JniResolveAddressStream.class.getMethod("isClosed"), "isClosed method should exist");
     }
 
     @Test
     @DisplayName("close method should exist")
     void closeMethodShouldExist() throws NoSuchMethodException {
-      assertNotNull(JniResolveAddressStream.class.getMethod("close"),
-          "close method should exist");
+      assertNotNull(JniResolveAddressStream.class.getMethod("close"), "close method should exist");
     }
   }
 
@@ -104,22 +101,24 @@ class JniResolveAddressStreamTest {
     @Test
     @DisplayName("Class should have contextHandle field")
     void classShouldHaveContextHandleField() throws NoSuchFieldException {
-      assertNotNull(JniResolveAddressStream.class.getDeclaredField("contextHandle"),
+      assertNotNull(
+          JniResolveAddressStream.class.getDeclaredField("contextHandle"),
           "contextHandle field should exist");
     }
 
     @Test
     @DisplayName("Class should have streamHandle field")
     void classShouldHaveStreamHandleField() throws NoSuchFieldException {
-      assertNotNull(JniResolveAddressStream.class.getDeclaredField("streamHandle"),
+      assertNotNull(
+          JniResolveAddressStream.class.getDeclaredField("streamHandle"),
           "streamHandle field should exist");
     }
 
     @Test
     @DisplayName("Class should have closed field")
     void classShouldHaveClosedField() throws NoSuchFieldException {
-      assertNotNull(JniResolveAddressStream.class.getDeclaredField("closed"),
-          "closed field should exist");
+      assertNotNull(
+          JniResolveAddressStream.class.getDeclaredField("closed"), "closed field should exist");
     }
   }
 

@@ -153,7 +153,9 @@ class JniResourceExceptionTest {
       assertEquals(message, exception.getMessage(), "Message should match");
       assertNull(exception.getCause(), "Cause should be null");
       assertTrue(exception.hasNativeErrorCode(), "Should have native error code");
-      assertEquals(Integer.valueOf(errorCode), exception.getNativeErrorCode(),
+      assertEquals(
+          Integer.valueOf(errorCode),
+          exception.getNativeErrorCode(),
           "Native error code should match");
     }
 
@@ -163,8 +165,8 @@ class JniResourceExceptionTest {
       final JniResourceException exception = new JniResourceException("Error", 0);
 
       assertTrue(exception.hasNativeErrorCode(), "Should have native error code");
-      assertEquals(Integer.valueOf(0), exception.getNativeErrorCode(),
-          "Native error code should be zero");
+      assertEquals(
+          Integer.valueOf(0), exception.getNativeErrorCode(), "Native error code should be zero");
     }
 
     @Test
@@ -173,17 +175,18 @@ class JniResourceExceptionTest {
       final JniResourceException exception = new JniResourceException("Error", -1);
 
       assertTrue(exception.hasNativeErrorCode(), "Should have native error code");
-      assertEquals(Integer.valueOf(-1), exception.getNativeErrorCode(),
-          "Native error code should be -1");
+      assertEquals(
+          Integer.valueOf(-1), exception.getNativeErrorCode(), "Native error code should be -1");
     }
 
     @Test
     @DisplayName("Should handle max integer error code")
     void shouldHandleMaxIntegerErrorCode() {
-      final JniResourceException exception =
-          new JniResourceException("Error", Integer.MAX_VALUE);
+      final JniResourceException exception = new JniResourceException("Error", Integer.MAX_VALUE);
 
-      assertEquals(Integer.valueOf(Integer.MAX_VALUE), exception.getNativeErrorCode(),
+      assertEquals(
+          Integer.valueOf(Integer.MAX_VALUE),
+          exception.getNativeErrorCode(),
           "Native error code should be MAX_VALUE");
     }
   }
@@ -198,13 +201,14 @@ class JniResourceExceptionTest {
       final String message = "Memory management failure";
       final Throwable cause = new OutOfMemoryError("Not enough memory");
       final int errorCode = 100;
-      final JniResourceException exception =
-          new JniResourceException(message, cause, errorCode);
+      final JniResourceException exception = new JniResourceException(message, cause, errorCode);
 
       assertEquals(message, exception.getMessage(), "Message should match");
       assertSame(cause, exception.getCause(), "Cause should match");
       assertTrue(exception.hasNativeErrorCode(), "Should have native error code");
-      assertEquals(Integer.valueOf(errorCode), exception.getNativeErrorCode(),
+      assertEquals(
+          Integer.valueOf(errorCode),
+          exception.getNativeErrorCode(),
           "Native error code should match");
     }
 
@@ -215,8 +219,8 @@ class JniResourceExceptionTest {
           new JniResourceException("Error", (Throwable) null, 50);
 
       assertNull(exception.getCause(), "Cause should be null");
-      assertEquals(Integer.valueOf(50), exception.getNativeErrorCode(),
-          "Native error code should match");
+      assertEquals(
+          Integer.valueOf(50), exception.getNativeErrorCode(), "Native error code should match");
     }
   }
 
@@ -261,8 +265,7 @@ class JniResourceExceptionTest {
     @Test
     @DisplayName("Should be serializable")
     void shouldBeSerializable() throws Exception {
-      final JniResourceException original =
-          new JniResourceException("Serialization test", 99);
+      final JniResourceException original = new JniResourceException("Serialization test", 99);
 
       final ByteArrayOutputStream baos = new ByteArrayOutputStream();
       final ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -274,9 +277,11 @@ class JniResourceExceptionTest {
       final JniResourceException deserialized = (JniResourceException) ois.readObject();
       ois.close();
 
-      assertEquals(original.getMessage(), deserialized.getMessage(),
-          "Message should survive serialization");
-      assertEquals(original.getNativeErrorCode(), deserialized.getNativeErrorCode(),
+      assertEquals(
+          original.getMessage(), deserialized.getMessage(), "Message should survive serialization");
+      assertEquals(
+          original.getNativeErrorCode(),
+          deserialized.getNativeErrorCode(),
           "Native error code should survive serialization");
     }
 
@@ -297,8 +302,8 @@ class JniResourceExceptionTest {
       ois.close();
 
       assertNotNull(deserialized.getCause(), "Cause should survive serialization");
-      assertEquals("Original cause", deserialized.getCause().getMessage(),
-          "Cause message should match");
+      assertEquals(
+          "Original cause", deserialized.getCause().getMessage(), "Cause message should match");
     }
   }
 
@@ -313,8 +318,8 @@ class JniResourceExceptionTest {
         throw new JniResourceException("Test throw", 1);
       } catch (JniResourceException e) {
         assertEquals("Test throw", e.getMessage(), "Should catch with correct message");
-        assertEquals(Integer.valueOf(1), e.getNativeErrorCode(),
-            "Should catch with correct error code");
+        assertEquals(
+            Integer.valueOf(1), e.getNativeErrorCode(), "Should catch with correct error code");
       }
     }
 
@@ -324,8 +329,7 @@ class JniResourceExceptionTest {
       try {
         throw new JniResourceException("Resource error");
       } catch (JniException e) {
-        assertTrue(e instanceof JniResourceException,
-            "Should be instance of JniResourceException");
+        assertTrue(e instanceof JniResourceException, "Should be instance of JniResourceException");
       }
     }
 
@@ -335,8 +339,7 @@ class JniResourceExceptionTest {
       try {
         throw new JniResourceException("Runtime error");
       } catch (RuntimeException e) {
-        assertTrue(e instanceof JniResourceException,
-            "Should be instance of JniResourceException");
+        assertTrue(e instanceof JniResourceException, "Should be instance of JniResourceException");
       }
     }
 
@@ -347,11 +350,11 @@ class JniResourceExceptionTest {
       final JniResourceException e2 = new JniResourceException("Error 2");
       final JniResourceException e3 = new JniResourceException("Error 1", 10);
 
-      assertFalse(e1.getMessage().equals(e2.getMessage()),
-          "Different messages should be different");
+      assertFalse(
+          e1.getMessage().equals(e2.getMessage()), "Different messages should be different");
       assertEquals(e1.getMessage(), e3.getMessage(), "Same messages should be equal");
-      assertFalse(e1.hasNativeErrorCode() == e3.hasNativeErrorCode(),
-          "Error code presence should differ");
+      assertFalse(
+          e1.hasNativeErrorCode() == e3.hasNativeErrorCode(), "Error code presence should differ");
     }
   }
 }

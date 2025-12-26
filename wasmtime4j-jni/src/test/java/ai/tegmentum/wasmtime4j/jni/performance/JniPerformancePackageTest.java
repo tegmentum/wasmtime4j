@@ -170,8 +170,10 @@ public class JniPerformancePackageTest {
         if ("get".equals(methodName) || methodName.startsWith("get")) {
           hasGet = true;
         }
-        if ("put".equals(methodName) || methodName.startsWith("put")
-            || methodName.contains("cache") || methodName.contains("Cache")) {
+        if ("put".equals(methodName)
+            || methodName.startsWith("put")
+            || methodName.contains("cache")
+            || methodName.contains("Cache")) {
           hasPut = true;
         }
         if ("clear".equals(methodName) || "clearCache".equals(methodName)) {
@@ -203,12 +205,16 @@ public class JniPerformancePackageTest {
 
       for (final Method method : clazz.getDeclaredMethods()) {
         final String methodName = method.getName();
-        if ("acquire".equals(methodName) || methodName.contains("acquire")
-            || methodName.contains("borrow") || methodName.contains("get")) {
+        if ("acquire".equals(methodName)
+            || methodName.contains("acquire")
+            || methodName.contains("borrow")
+            || methodName.contains("get")) {
           hasAcquire = true;
         }
-        if ("release".equals(methodName) || methodName.contains("release")
-            || methodName.contains("return") || methodName.contains("Return")) {
+        if ("release".equals(methodName)
+            || methodName.contains("release")
+            || methodName.contains("return")
+            || methodName.contains("Return")) {
           hasRelease = true;
         }
       }

@@ -40,7 +40,8 @@ class JniWasiConfigBuilderTest {
     @Test
     @DisplayName("should be public class")
     void shouldBePublicClass() {
-      assertTrue(Modifier.isPublic(JniWasiConfigBuilder.class.getModifiers()),
+      assertTrue(
+          Modifier.isPublic(JniWasiConfigBuilder.class.getModifiers()),
           "JniWasiConfigBuilder should be public");
     }
 
@@ -61,7 +62,8 @@ class JniWasiConfigBuilderTest {
     void shouldHaveInheritStdioMethod() throws NoSuchMethodException {
       final Method method = JniWasiConfigBuilder.class.getMethod("inheritStdio");
       assertNotNull(method, "Should have inheritStdio method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "inheritStdio should return builder for chaining");
     }
 
@@ -70,7 +72,8 @@ class JniWasiConfigBuilderTest {
     void shouldHaveInheritEnvMethod() throws NoSuchMethodException {
       final Method method = JniWasiConfigBuilder.class.getMethod("inheritEnv");
       assertNotNull(method, "Should have inheritEnv method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "inheritEnv should return builder for chaining");
     }
 
@@ -79,16 +82,19 @@ class JniWasiConfigBuilderTest {
     void shouldHaveInheritArgsMethod() throws NoSuchMethodException {
       final Method method = JniWasiConfigBuilder.class.getMethod("inheritArgs");
       assertNotNull(method, "Should have inheritArgs method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "inheritArgs should return builder for chaining");
     }
 
     @Test
     @DisplayName("should have setEnv method")
     void shouldHaveSetEnvMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod("setEnv", String.class, String.class);
+      final Method method =
+          JniWasiConfigBuilder.class.getMethod("setEnv", String.class, String.class);
       assertNotNull(method, "Should have setEnv method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "setEnv should return builder for chaining");
     }
 
@@ -97,7 +103,8 @@ class JniWasiConfigBuilderTest {
     void shouldHaveSetArgsMethod() throws NoSuchMethodException {
       final Method method = JniWasiConfigBuilder.class.getMethod("setArgs", String[].class);
       assertNotNull(method, "Should have setArgs method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "setArgs should return builder for chaining");
     }
   }
@@ -109,10 +116,11 @@ class JniWasiConfigBuilderTest {
     @Test
     @DisplayName("should have preopenDir method with guest and host paths")
     void shouldHavePreopenDirMethodWithGuestAndHostPaths() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod(
-          "preopenDir", String.class, String.class);
+      final Method method =
+          JniWasiConfigBuilder.class.getMethod("preopenDir", String.class, String.class);
       assertNotNull(method, "Should have preopenDir(String, String) method");
-      assertTrue(JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
           "preopenDir should return builder for chaining");
     }
   }

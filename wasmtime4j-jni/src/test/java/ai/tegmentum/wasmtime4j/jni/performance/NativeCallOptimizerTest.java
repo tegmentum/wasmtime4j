@@ -35,9 +35,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link NativeCallOptimizer} class.
  *
- * <p>This test class verifies the NativeCallOptimizer singleton class which provides
- * advanced JNI optimization strategies including call batching, async execution,
- * and thread-local resource pooling.
+ * <p>This test class verifies the NativeCallOptimizer singleton class which provides advanced JNI
+ * optimization strategies including call batching, async execution, and thread-local resource
+ * pooling.
  */
 @DisplayName("NativeCallOptimizer Tests")
 class NativeCallOptimizerTest {
@@ -65,7 +65,8 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("NativeCallOptimizer should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(NativeCallOptimizer.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(NativeCallOptimizer.class.getModifiers()),
           "NativeCallOptimizer should be final");
     }
   }
@@ -107,8 +108,8 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("Should have exactly 5 optimization levels")
     void shouldHaveExactly5OptimizationLevels() {
-      assertEquals(5, OptimizationLevel.values().length,
-          "Should have exactly 5 optimization levels");
+      assertEquals(
+          5, OptimizationLevel.values().length, "Should have exactly 5 optimization levels");
     }
 
     @Test
@@ -190,8 +191,8 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("optimizeCall should execute operation and return result")
     void optimizeCallShouldExecuteOperationAndReturnResult() throws Exception {
-      final String result = optimizer.optimizeCall("testMethod", new Object[]{},
-          () -> "test result");
+      final String result =
+          optimizer.optimizeCall("testMethod", new Object[] {}, () -> "test result");
       assertEquals("test result", result, "Should return operation result");
     }
 
@@ -206,14 +207,15 @@ class NativeCallOptimizerTest {
     @DisplayName("optimizeCall should propagate exceptions")
     void optimizeCallShouldPropagateExceptions() {
       try {
-        optimizer.optimizeCall("testMethod", new Object[]{},
+        optimizer.optimizeCall(
+            "testMethod",
+            new Object[] {},
             () -> {
               throw new RuntimeException("Test exception");
             });
         assertTrue(false, "Should have thrown exception");
       } catch (Exception e) {
-        assertTrue(e.getMessage().contains("Test exception"),
-            "Should propagate exception");
+        assertTrue(e.getMessage().contains("Test exception"), "Should propagate exception");
       }
     }
 
@@ -221,8 +223,8 @@ class NativeCallOptimizerTest {
     @DisplayName("optimizeCall should bypass optimization when disabled")
     void optimizeCallShouldBypassOptimizationWhenDisabled() throws Exception {
       NativeCallOptimizer.setEnabled(false);
-      final String result = optimizer.optimizeCall("testMethod", new Object[]{},
-          () -> "direct result");
+      final String result =
+          optimizer.optimizeCall("testMethod", new Object[] {}, () -> "direct result");
       assertEquals("direct result", result, "Should return direct result");
     }
   }
@@ -241,8 +243,9 @@ class NativeCallOptimizerTest {
       operations[1] = () -> "result2";
       operations[2] = () -> "result3";
 
-      final String[] results = optimizer.optimizeBatch("testMethod", operations,
-          ops -> new String[]{"result1", "result2", "result3"});
+      final String[] results =
+          optimizer.optimizeBatch(
+              "testMethod", operations, ops -> new String[] {"result1", "result2", "result3"});
 
       assertNotNull(results, "Results should not be null");
       assertEquals(3, results.length, "Should have 3 results");
@@ -263,8 +266,8 @@ class NativeCallOptimizerTest {
       final NativeCallOptimizer.OptimizedOperation<String>[] operations =
           new NativeCallOptimizer.OptimizedOperation[0];
 
-      final String[] results = optimizer.optimizeBatch("testMethod", operations,
-          ops -> new String[0]);
+      final String[] results =
+          optimizer.optimizeBatch("testMethod", operations, ops -> new String[0]);
 
       assertNotNull(results, "Results should not be null");
       assertEquals(0, results.length, "Should have 0 results");
@@ -278,16 +281,14 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("optimizeAsync should return Future")
     void optimizeAsyncShouldReturnFuture() {
-      final Future<String> future = optimizer.optimizeAsync("testMethod",
-          () -> "async result");
+      final Future<String> future = optimizer.optimizeAsync("testMethod", () -> "async result");
       assertNotNull(future, "Should return non-null Future");
     }
 
     @Test
     @DisplayName("optimizeAsync result should be obtainable")
     void optimizeAsyncResultShouldBeObtainable() throws Exception {
-      final Future<String> future = optimizer.optimizeAsync("testMethod",
-          () -> "async result");
+      final Future<String> future = optimizer.optimizeAsync("testMethod", () -> "async result");
       final String result = future.get();
       assertEquals("async result", result, "Should get correct result");
     }
@@ -309,15 +310,15 @@ class NativeCallOptimizerTest {
     @DisplayName("returnOptimizedBuffer should not throw for valid buffer")
     void returnOptimizedBufferShouldNotThrowForValidBuffer() {
       final ByteBuffer buffer = optimizer.getOptimizedBuffer(100);
-      assertDoesNotThrow(() -> optimizer.returnOptimizedBuffer(buffer),
-          "Should not throw for valid buffer");
+      assertDoesNotThrow(
+          () -> optimizer.returnOptimizedBuffer(buffer), "Should not throw for valid buffer");
     }
 
     @Test
     @DisplayName("returnOptimizedBuffer should not throw for null buffer")
     void returnOptimizedBufferShouldNotThrowForNullBuffer() {
-      assertDoesNotThrow(() -> optimizer.returnOptimizedBuffer(null),
-          "Should not throw for null buffer");
+      assertDoesNotThrow(
+          () -> optimizer.returnOptimizedBuffer(null), "Should not throw for null buffer");
     }
 
     @Test
@@ -337,11 +338,14 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("executeWithOptimizedMemory should provide buffer to operation")
     void executeWithOptimizedMemoryShouldProvideBufferToOperation() throws Exception {
-      final Integer result = optimizer.executeWithOptimizedMemory(100, buffer -> {
-        assertNotNull(buffer, "Buffer should be provided");
-        assertTrue(buffer.capacity() >= 100, "Buffer capacity should be sufficient");
-        return 42;
-      });
+      final Integer result =
+          optimizer.executeWithOptimizedMemory(
+              100,
+              buffer -> {
+                assertNotNull(buffer, "Buffer should be provided");
+                assertTrue(buffer.capacity() >= 100, "Buffer capacity should be sufficient");
+                return 42;
+              });
       assertEquals(42, result, "Should return operation result");
     }
   }
@@ -355,8 +359,7 @@ class NativeCallOptimizerTest {
     void getStatisticsShouldReturnFormattedStringWhenEnabled() {
       final String stats = optimizer.getStatistics();
       assertNotNull(stats, "Statistics should not be null");
-      assertTrue(stats.contains("Native Call Optimization"),
-          "Statistics should contain header");
+      assertTrue(stats.contains("Native Call Optimization"), "Statistics should contain header");
     }
 
     @Test
@@ -370,16 +373,15 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("getTotalTimeSavedNs should return non-negative value")
     void getTotalTimeSavedNsShouldReturnNonNegativeValue() {
-      assertTrue(optimizer.getTotalTimeSavedNs() >= 0,
-          "Total time saved should be non-negative");
+      assertTrue(optimizer.getTotalTimeSavedNs() >= 0, "Total time saved should be non-negative");
     }
 
     @Test
     @DisplayName("getOptimizationEffectiveness should return value between 0 and 1")
     void getOptimizationEffectivenessShouldReturnValueBetween0And1() {
       final double effectiveness = optimizer.getOptimizationEffectiveness();
-      assertTrue(effectiveness >= 0.0 && effectiveness <= 1.0,
-          "Effectiveness should be between 0 and 1");
+      assertTrue(
+          effectiveness >= 0.0 && effectiveness <= 1.0, "Effectiveness should be between 0 and 1");
     }
   }
 
@@ -391,19 +393,17 @@ class NativeCallOptimizerTest {
     @DisplayName("reset should clear statistics")
     void resetShouldClearStatistics() throws Exception {
       // Generate some statistics
-      optimizer.optimizeCall("testMethod", new Object[]{}, () -> "result");
+      optimizer.optimizeCall("testMethod", new Object[] {}, () -> "result");
 
       optimizer.reset();
 
-      assertEquals(0, optimizer.getTotalTimeSavedNs(),
-          "Time saved should be 0 after reset");
+      assertEquals(0, optimizer.getTotalTimeSavedNs(), "Time saved should be 0 after reset");
     }
 
     @Test
     @DisplayName("reset should not throw")
     void resetShouldNotThrow() {
-      assertDoesNotThrow(() -> optimizer.reset(),
-          "reset should not throw");
+      assertDoesNotThrow(() -> optimizer.reset(), "reset should not throw");
     }
   }
 
@@ -414,8 +414,7 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("shutdown should not throw")
     void shutdownShouldNotThrow() {
-      assertDoesNotThrow(() -> optimizer.shutdown(),
-          "shutdown should not throw");
+      assertDoesNotThrow(() -> optimizer.shutdown(), "shutdown should not throw");
     }
   }
 
@@ -426,8 +425,9 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("OptimizedOperation should be functional interface")
     void shouldBeFunctionalInterface() {
-      assertTrue(NativeCallOptimizer.OptimizedOperation.class
-              .isAnnotationPresent(FunctionalInterface.class),
+      assertTrue(
+          NativeCallOptimizer.OptimizedOperation.class.isAnnotationPresent(
+              FunctionalInterface.class),
           "OptimizedOperation should be annotated with @FunctionalInterface");
     }
 
@@ -442,8 +442,8 @@ class NativeCallOptimizerTest {
     @DisplayName("OptimizedOperation should work with method reference")
     void shouldWorkWithMethodReference() throws Exception {
       final NativeCallOptimizer.OptimizedOperation<String> op = this::helperMethod;
-      assertEquals("method reference result", op.execute(),
-          "Method reference should execute correctly");
+      assertEquals(
+          "method reference result", op.execute(), "Method reference should execute correctly");
     }
 
     private String helperMethod() {
@@ -458,16 +458,16 @@ class NativeCallOptimizerTest {
     @Test
     @DisplayName("BatchOperation should be functional interface")
     void shouldBeFunctionalInterface() {
-      assertTrue(NativeCallOptimizer.BatchOperation.class
-              .isAnnotationPresent(FunctionalInterface.class),
+      assertTrue(
+          NativeCallOptimizer.BatchOperation.class.isAnnotationPresent(FunctionalInterface.class),
           "BatchOperation should be annotated with @FunctionalInterface");
     }
 
     @Test
     @DisplayName("BatchOperation should work with lambda")
     void shouldWorkWithLambda() throws Exception {
-      final NativeCallOptimizer.BatchOperation<String> op = ops -> new String[]{"result"};
-      final String[] results = op.execute(new Object[]{});
+      final NativeCallOptimizer.BatchOperation<String> op = ops -> new String[] {"result"};
+      final String[] results = op.execute(new Object[] {});
       assertEquals(1, results.length, "Lambda should execute correctly");
       assertEquals("result", results[0], "Lambda should return correct result");
     }
@@ -482,12 +482,12 @@ class NativeCallOptimizerTest {
     void multipleCallsShouldBeTrackedForOptimization() throws Exception {
       // Make several calls to build up pattern data
       for (int i = 0; i < 15; i++) {
-        optimizer.optimizeCall("frequentMethod", new Object[]{1, 2},
-            () -> "result");
+        optimizer.optimizeCall("frequentMethod", new Object[] {1, 2}, () -> "result");
       }
 
       final String stats = optimizer.getStatistics();
-      assertTrue(stats.contains("frequentMethod") || stats.contains("optimized"),
+      assertTrue(
+          stats.contains("frequentMethod") || stats.contains("optimized"),
           "Statistics should track frequent methods");
     }
   }

@@ -31,9 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniMemoryManager}.
- */
+/** Comprehensive tests for {@link JniMemoryManager}. */
 @DisplayName("JniMemoryManager Tests")
 class JniMemoryManagerTest {
 
@@ -75,7 +73,9 @@ class JniMemoryManagerTest {
     void privateConstructorShouldThrowAssertionError() throws Exception {
       final Constructor<?> constructor = JniMemoryManager.class.getDeclaredConstructor();
       constructor.setAccessible(true);
-      assertThrows(InvocationTargetException.class, constructor::newInstance,
+      assertThrows(
+          InvocationTargetException.class,
+          constructor::newInstance,
           "Constructor should throw when invoked");
     }
   }
@@ -92,9 +92,11 @@ class JniMemoryManagerTest {
       JniMemoryManager.registerHandle(12345L, "Engine");
 
       assertTrue(JniMemoryManager.isHandleRegistered(12345L), "Handle should be registered");
-      assertEquals("Engine", JniMemoryManager.getResourceType(12345L),
-          "Resource type should match");
-      assertEquals(initialCount + 1, JniMemoryManager.getTotalAllocatedCount(),
+      assertEquals(
+          "Engine", JniMemoryManager.getResourceType(12345L), "Resource type should match");
+      assertEquals(
+          initialCount + 1,
+          JniMemoryManager.getTotalAllocatedCount(),
           "Allocated count should increase");
     }
 
@@ -104,8 +106,8 @@ class JniMemoryManagerTest {
       JniMemoryManager.registerHandle(67890L, "Module", "TestClass.java:42");
 
       assertTrue(JniMemoryManager.isHandleRegistered(67890L), "Handle should be registered");
-      assertEquals("Module", JniMemoryManager.getResourceType(67890L),
-          "Resource type should match");
+      assertEquals(
+          "Module", JniMemoryManager.getResourceType(67890L), "Resource type should match");
     }
 
     @Test
@@ -116,7 +118,9 @@ class JniMemoryManagerTest {
       JniMemoryManager.registerHandle(0L, "Engine");
 
       assertFalse(JniMemoryManager.isHandleRegistered(0L), "Zero handle should not be registered");
-      assertEquals(initialActiveCount, JniMemoryManager.getActiveHandleCount(),
+      assertEquals(
+          initialActiveCount,
+          JniMemoryManager.getActiveHandleCount(),
           "Active count should not change");
     }
 
@@ -127,8 +131,8 @@ class JniMemoryManagerTest {
       JniMemoryManager.registerHandle(11111L, "Module");
 
       // The handle should now be associated with "Module"
-      assertEquals("Module", JniMemoryManager.getResourceType(11111L),
-          "Resource type should be updated");
+      assertEquals(
+          "Module", JniMemoryManager.getResourceType(11111L), "Resource type should be updated");
     }
   }
 
@@ -145,9 +149,11 @@ class JniMemoryManagerTest {
       final boolean result = JniMemoryManager.unregisterHandle(22222L);
 
       assertTrue(result, "Unregister should return true");
-      assertFalse(JniMemoryManager.isHandleRegistered(22222L),
-          "Handle should no longer be registered");
-      assertEquals(deallocBefore + 1, JniMemoryManager.getTotalDeallocatedCount(),
+      assertFalse(
+          JniMemoryManager.isHandleRegistered(22222L), "Handle should no longer be registered");
+      assertEquals(
+          deallocBefore + 1,
+          JniMemoryManager.getTotalDeallocatedCount(),
           "Deallocated count should increase");
     }
 
@@ -249,8 +255,8 @@ class JniMemoryManagerTest {
       JniMemoryManager.registerHandle(88881L, "Engine");
       JniMemoryManager.registerHandle(88882L, "Store");
 
-      assertEquals(before + 2, JniMemoryManager.getTotalAllocatedCount(),
-          "Should track allocations");
+      assertEquals(
+          before + 2, JniMemoryManager.getTotalAllocatedCount(), "Should track allocations");
     }
   }
 
@@ -269,8 +275,8 @@ class JniMemoryManagerTest {
       JniMemoryManager.unregisterHandle(99991L);
       JniMemoryManager.unregisterHandle(99992L);
 
-      assertEquals(before + 2, JniMemoryManager.getTotalDeallocatedCount(),
-          "Should track deallocations");
+      assertEquals(
+          before + 2, JniMemoryManager.getTotalDeallocatedCount(), "Should track deallocations");
     }
   }
 
@@ -287,8 +293,7 @@ class JniMemoryManagerTest {
       final String stats = JniMemoryManager.getMemoryStats();
 
       assertNotNull(stats, "Stats should not be null");
-      assertTrue(stats.contains("JNI Memory Management Statistics"),
-          "Should contain header");
+      assertTrue(stats.contains("JNI Memory Management Statistics"), "Should contain header");
       assertTrue(stats.contains("Active handles:"), "Should contain active handles");
       assertTrue(stats.contains("Total allocated:"), "Should contain total allocated");
       assertTrue(stats.contains("Total deallocated:"), "Should contain total deallocated");
@@ -334,8 +339,7 @@ class JniMemoryManagerTest {
       JniMemoryManager.checkForLeaks();
 
       // Verify the handle is still active
-      assertTrue(JniMemoryManager.isHandleRegistered(20002L),
-          "Handle should still be registered");
+      assertTrue(JniMemoryManager.isHandleRegistered(20002L), "Handle should still be registered");
     }
   }
 
@@ -352,8 +356,7 @@ class JniMemoryManagerTest {
 
       JniMemoryManager.emergencyCleanup();
 
-      assertEquals(0, JniMemoryManager.getActiveHandleCount(),
-          "All handles should be cleaned up");
+      assertEquals(0, JniMemoryManager.getActiveHandleCount(), "All handles should be cleaned up");
     }
 
     @Test
@@ -364,8 +367,7 @@ class JniMemoryManagerTest {
       // This should complete without exception
       JniMemoryManager.emergencyCleanup();
 
-      assertEquals(0, JniMemoryManager.getActiveHandleCount(),
-          "Should still have zero handles");
+      assertEquals(0, JniMemoryManager.getActiveHandleCount(), "Should still have zero handles");
     }
   }
 
@@ -382,12 +384,14 @@ class JniMemoryManagerTest {
 
       for (int t = 0; t < threadCount; t++) {
         final int threadIndex = t;
-        threads[t] = new Thread(() -> {
-          for (int i = 0; i < handlesPerThread; i++) {
-            final long handle = (threadIndex * 100000L) + i + 1;
-            JniMemoryManager.registerHandle(handle, "Thread" + threadIndex);
-          }
-        });
+        threads[t] =
+            new Thread(
+                () -> {
+                  for (int i = 0; i < handlesPerThread; i++) {
+                    final long handle = (threadIndex * 100000L) + i + 1;
+                    JniMemoryManager.registerHandle(handle, "Thread" + threadIndex);
+                  }
+                });
       }
 
       // Start all threads
@@ -400,7 +404,9 @@ class JniMemoryManagerTest {
         thread.join();
       }
 
-      assertEquals(threadCount * handlesPerThread, JniMemoryManager.getActiveHandleCount(),
+      assertEquals(
+          threadCount * handlesPerThread,
+          JniMemoryManager.getActiveHandleCount(),
           "All handles should be registered");
     }
   }

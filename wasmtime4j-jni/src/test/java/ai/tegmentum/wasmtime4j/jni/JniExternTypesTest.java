@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive tests for JNI Extern type implementations.
- * Tests JniExternFunc, JniExternGlobal, JniExternMemory, and JniExternTable.
+ * Comprehensive tests for JNI Extern type implementations. Tests JniExternFunc, JniExternGlobal,
+ * JniExternMemory, and JniExternTable.
  */
 @DisplayName("JNI Extern Types Tests")
 class JniExternTypesTest {
@@ -49,8 +49,7 @@ class JniExternTypesTest {
     @DisplayName("JniExternFunc should be final class")
     void shouldBeFinalClass() {
       assertTrue(
-          Modifier.isFinal(JniExternFunc.class.getModifiers()),
-          "JniExternFunc should be final");
+          Modifier.isFinal(JniExternFunc.class.getModifiers()), "JniExternFunc should be final");
     }
 
     @Test
@@ -58,7 +57,8 @@ class JniExternTypesTest {
     void shouldBePackagePrivate() {
       int modifiers = JniExternFunc.class.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "JniExternFunc should be package-private");
     }
@@ -94,12 +94,13 @@ class JniExternTypesTest {
     @Test
     @DisplayName("JniExternFunc should have package-private constructor")
     void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor = JniExternFunc.class.getDeclaredConstructor(
-          long.class, JniStore.class);
+      Constructor<?> constructor =
+          JniExternFunc.class.getDeclaredConstructor(long.class, JniStore.class);
       assertNotNull(constructor, "Constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -128,7 +129,8 @@ class JniExternTypesTest {
       assertEquals(long.class, method.getReturnType(), "Should return long");
       int modifiers = method.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "getNativeHandle should be package-private");
     }
@@ -151,7 +153,8 @@ class JniExternTypesTest {
     void shouldBePackagePrivate() {
       int modifiers = JniExternGlobal.class.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "JniExternGlobal should be package-private");
     }
@@ -187,12 +190,13 @@ class JniExternTypesTest {
     @Test
     @DisplayName("JniExternGlobal should have package-private constructor")
     void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor = JniExternGlobal.class.getDeclaredConstructor(
-          long.class, JniStore.class);
+      Constructor<?> constructor =
+          JniExternGlobal.class.getDeclaredConstructor(long.class, JniStore.class);
       assertNotNull(constructor, "Constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -221,7 +225,8 @@ class JniExternTypesTest {
       assertEquals(long.class, method.getReturnType(), "Should return long");
       int modifiers = method.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "getNativeHandle should be package-private");
     }
@@ -244,7 +249,8 @@ class JniExternTypesTest {
     void shouldBePackagePrivate() {
       int modifiers = JniExternMemory.class.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "JniExternMemory should be package-private");
     }
@@ -280,12 +286,13 @@ class JniExternTypesTest {
     @Test
     @DisplayName("JniExternMemory should have package-private constructor")
     void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor = JniExternMemory.class.getDeclaredConstructor(
-          long.class, JniStore.class);
+      Constructor<?> constructor =
+          JniExternMemory.class.getDeclaredConstructor(long.class, JniStore.class);
       assertNotNull(constructor, "Constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -314,7 +321,8 @@ class JniExternTypesTest {
       assertEquals(long.class, method.getReturnType(), "Should return long");
       int modifiers = method.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "getNativeHandle should be package-private");
     }
@@ -328,8 +336,7 @@ class JniExternTypesTest {
     @DisplayName("JniExternTable should be final class")
     void shouldBeFinalClass() {
       assertTrue(
-          Modifier.isFinal(JniExternTable.class.getModifiers()),
-          "JniExternTable should be final");
+          Modifier.isFinal(JniExternTable.class.getModifiers()), "JniExternTable should be final");
     }
 
     @Test
@@ -337,7 +344,8 @@ class JniExternTypesTest {
     void shouldBePackagePrivate() {
       int modifiers = JniExternTable.class.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "JniExternTable should be package-private");
     }
@@ -373,12 +381,13 @@ class JniExternTypesTest {
     @Test
     @DisplayName("JniExternTable should have package-private constructor")
     void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor = JniExternTable.class.getDeclaredConstructor(
-          long.class, JniStore.class);
+      Constructor<?> constructor =
+          JniExternTable.class.getDeclaredConstructor(long.class, JniStore.class);
       assertNotNull(constructor, "Constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "Constructor should be package-private");
     }
@@ -407,7 +416,8 @@ class JniExternTypesTest {
       assertEquals(long.class, method.getReturnType(), "Should return long");
       int modifiers = method.getModifiers();
       assertTrue(
-          !Modifier.isPublic(modifiers) && !Modifier.isPrivate(modifiers)
+          !Modifier.isPublic(modifiers)
+              && !Modifier.isPrivate(modifiers)
               && !Modifier.isProtected(modifiers),
           "getNativeHandle should be package-private");
     }
@@ -434,27 +444,33 @@ class JniExternTypesTest {
     @Test
     @DisplayName("All Extern types should implement Extern interface")
     void allExternTypesShouldImplementExtern() {
-      assertTrue(Extern.class.isAssignableFrom(JniExternFunc.class),
+      assertTrue(
+          Extern.class.isAssignableFrom(JniExternFunc.class),
           "JniExternFunc should implement Extern");
-      assertTrue(Extern.class.isAssignableFrom(JniExternGlobal.class),
+      assertTrue(
+          Extern.class.isAssignableFrom(JniExternGlobal.class),
           "JniExternGlobal should implement Extern");
-      assertTrue(Extern.class.isAssignableFrom(JniExternMemory.class),
+      assertTrue(
+          Extern.class.isAssignableFrom(JniExternMemory.class),
           "JniExternMemory should implement Extern");
-      assertTrue(Extern.class.isAssignableFrom(JniExternTable.class),
+      assertTrue(
+          Extern.class.isAssignableFrom(JniExternTable.class),
           "JniExternTable should implement Extern");
     }
 
     @Test
     @DisplayName("All Extern types should be final")
     void allExternTypesShouldBeFinal() {
-      assertTrue(Modifier.isFinal(JniExternFunc.class.getModifiers()),
-          "JniExternFunc should be final");
-      assertTrue(Modifier.isFinal(JniExternGlobal.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniExternFunc.class.getModifiers()), "JniExternFunc should be final");
+      assertTrue(
+          Modifier.isFinal(JniExternGlobal.class.getModifiers()),
           "JniExternGlobal should be final");
-      assertTrue(Modifier.isFinal(JniExternMemory.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(JniExternMemory.class.getModifiers()),
           "JniExternMemory should be final");
-      assertTrue(Modifier.isFinal(JniExternTable.class.getModifiers()),
-          "JniExternTable should be final");
+      assertTrue(
+          Modifier.isFinal(JniExternTable.class.getModifiers()), "JniExternTable should be final");
     }
 
     @Test
@@ -513,7 +529,8 @@ class JniExternTypesTest {
           boolean found = false;
           for (Method implMethod : JniExternFunc.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }
@@ -531,7 +548,8 @@ class JniExternTypesTest {
           boolean found = false;
           for (Method implMethod : JniExternGlobal.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }
@@ -549,7 +567,8 @@ class JniExternTypesTest {
           boolean found = false;
           for (Method implMethod : JniExternMemory.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }
@@ -567,7 +586,8 @@ class JniExternTypesTest {
           boolean found = false;
           for (Method implMethod : JniExternTable.class.getMethods()) {
             if (implMethod.getName().equals(interfaceMethod.getName())
-                && arrayEquals(implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
+                && arrayEquals(
+                    implMethod.getParameterTypes(), interfaceMethod.getParameterTypes())) {
               found = true;
               break;
             }

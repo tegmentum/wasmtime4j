@@ -45,9 +45,11 @@ class JniWitValueMarshallerTest {
     @DisplayName("should be public and final")
     void shouldBePublicAndFinal() {
       assertTrue(
-          Modifier.isPublic(JniWitValueMarshaller.class.getModifiers()), "JniWitValueMarshaller should be public");
+          Modifier.isPublic(JniWitValueMarshaller.class.getModifiers()),
+          "JniWitValueMarshaller should be public");
       assertTrue(
-          Modifier.isFinal(JniWitValueMarshaller.class.getModifiers()), "JniWitValueMarshaller should be final");
+          Modifier.isFinal(JniWitValueMarshaller.class.getModifiers()),
+          "JniWitValueMarshaller should be final");
     }
 
     @Test
@@ -55,7 +57,8 @@ class JniWitValueMarshallerTest {
     void shouldHavePrivateConstructor() {
       final Constructor<?>[] constructors = JniWitValueMarshaller.class.getDeclaredConstructors();
       assertEquals(1, constructors.length, "Should have exactly one constructor");
-      assertTrue(Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
+      assertTrue(
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
     }
   }
 
@@ -69,13 +72,15 @@ class JniWitValueMarshallerTest {
       final Method method = JniWitValueMarshaller.class.getMethod("marshal", WitValue.class);
       assertNotNull(method, "marshal method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "marshal should be static");
-      assertEquals(MarshalledValue.class, method.getReturnType(), "marshal should return MarshalledValue");
+      assertEquals(
+          MarshalledValue.class, method.getReturnType(), "marshal should return MarshalledValue");
     }
 
     @Test
     @DisplayName("should have unmarshal static method")
     void shouldHaveUnmarshalStaticMethod() throws NoSuchMethodException {
-      final Method method = JniWitValueMarshaller.class.getMethod("unmarshal", int.class, byte[].class);
+      final Method method =
+          JniWitValueMarshaller.class.getMethod("unmarshal", int.class, byte[].class);
       assertNotNull(method, "unmarshal method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "unmarshal should be static");
       assertEquals(WitValue.class, method.getReturnType(), "unmarshal should return WitValue");
@@ -84,10 +89,13 @@ class JniWitValueMarshallerTest {
     @Test
     @DisplayName("should have validateDiscriminator static method")
     void shouldHaveValidateDiscriminatorStaticMethod() throws NoSuchMethodException {
-      final Method method = JniWitValueMarshaller.class.getMethod("validateDiscriminator", int.class);
+      final Method method =
+          JniWitValueMarshaller.class.getMethod("validateDiscriminator", int.class);
       assertNotNull(method, "validateDiscriminator method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "validateDiscriminator should be static");
-      assertEquals(boolean.class, method.getReturnType(), "validateDiscriminator should return boolean");
+      assertTrue(
+          Modifier.isStatic(method.getModifiers()), "validateDiscriminator should be static");
+      assertEquals(
+          boolean.class, method.getReturnType(), "validateDiscriminator should return boolean");
     }
   }
 }

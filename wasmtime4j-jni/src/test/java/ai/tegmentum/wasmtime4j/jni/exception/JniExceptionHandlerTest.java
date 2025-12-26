@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.jni.exception;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,8 +44,7 @@ class JniExceptionHandlerTest {
     void shouldHavePrivateConstructor() throws NoSuchMethodException {
       final Constructor<JniExceptionHandler> constructor =
           JniExceptionHandler.class.getDeclaredConstructor();
-      assertTrue(Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
 
     @Test
@@ -70,7 +68,8 @@ class JniExceptionHandlerTest {
           JniExceptionHandler.handleNativeException("Memory allocation failed");
 
       assertNotNull(exception, "Exception should not be null");
-      assertTrue(exception.getMessage().contains("Memory allocation failed"),
+      assertTrue(
+          exception.getMessage().contains("Memory allocation failed"),
           "Message should contain original error");
     }
 
@@ -80,8 +79,8 @@ class JniExceptionHandlerTest {
       final WasmtimeException exception = JniExceptionHandler.handleNativeException(null);
 
       assertNotNull(exception, "Exception should not be null");
-      assertTrue(exception.getMessage().contains("Unknown"),
-          "Message should indicate unknown exception");
+      assertTrue(
+          exception.getMessage().contains("Unknown"), "Message should indicate unknown exception");
     }
 
     @Test
@@ -90,17 +89,17 @@ class JniExceptionHandlerTest {
       final WasmtimeException exception = JniExceptionHandler.handleNativeException("");
 
       assertNotNull(exception, "Exception should not be null");
-      assertTrue(exception.getMessage().contains("Unknown"),
-          "Message should indicate unknown exception");
+      assertTrue(
+          exception.getMessage().contains("Unknown"), "Message should indicate unknown exception");
     }
 
     @Test
     @DisplayName("Should prefix message with Native exception")
     void shouldPrefixMessageWithNativeException() {
-      final WasmtimeException exception =
-          JniExceptionHandler.handleNativeException("Some error");
+      final WasmtimeException exception = JniExceptionHandler.handleNativeException("Some error");
 
-      assertTrue(exception.getMessage().startsWith("Native exception:"),
+      assertTrue(
+          exception.getMessage().startsWith("Native exception:"),
           "Message should start with 'Native exception:'");
     }
   }
@@ -116,41 +115,35 @@ class JniExceptionHandlerTest {
           JniExceptionHandler.handleNativeException(42, "Resource not found");
 
       assertNotNull(exception, "Exception should not be null");
-      assertTrue(exception.getMessage().contains("42"),
-          "Message should contain error code");
-      assertTrue(exception.getMessage().contains("Resource not found"),
-          "Message should contain message");
+      assertTrue(exception.getMessage().contains("42"), "Message should contain error code");
+      assertTrue(
+          exception.getMessage().contains("Resource not found"), "Message should contain message");
     }
 
     @Test
     @DisplayName("Should format error code correctly")
     void shouldFormatErrorCodeCorrectly() {
-      final WasmtimeException exception =
-          JniExceptionHandler.handleNativeException(-1, "Error");
+      final WasmtimeException exception = JniExceptionHandler.handleNativeException(-1, "Error");
 
-      assertTrue(exception.getMessage().contains("[-1]"),
-          "Message should contain formatted error code");
+      assertTrue(
+          exception.getMessage().contains("[-1]"), "Message should contain formatted error code");
     }
 
     @Test
     @DisplayName("Should handle zero error code")
     void shouldHandleZeroErrorCode() {
-      final WasmtimeException exception =
-          JniExceptionHandler.handleNativeException(0, "Success");
+      final WasmtimeException exception = JniExceptionHandler.handleNativeException(0, "Success");
 
-      assertTrue(exception.getMessage().contains("[0]"),
-          "Message should contain zero error code");
+      assertTrue(exception.getMessage().contains("[0]"), "Message should contain zero error code");
     }
 
     @Test
     @DisplayName("Should handle null message with error code")
     void shouldHandleNullMessageWithErrorCode() {
-      final WasmtimeException exception =
-          JniExceptionHandler.handleNativeException(100, null);
+      final WasmtimeException exception = JniExceptionHandler.handleNativeException(100, null);
 
       assertNotNull(exception, "Exception should not be null");
-      assertTrue(exception.getMessage().contains("[100]"),
-          "Message should contain error code");
+      assertTrue(exception.getMessage().contains("[100]"), "Message should contain error code");
     }
   }
 
@@ -162,8 +155,7 @@ class JniExceptionHandlerTest {
     @DisplayName("Should return same exception if already WasmtimeException")
     void shouldReturnSameExceptionIfAlreadyWasmtimeException() {
       final WasmtimeException original = new WasmtimeException("Original error");
-      final WasmtimeException result =
-          JniExceptionHandler.wrapException(original, "Context");
+      final WasmtimeException result = JniExceptionHandler.wrapException(original, "Context");
 
       assertSame(original, result, "Should return same exception instance");
     }
@@ -176,10 +168,10 @@ class JniExceptionHandlerTest {
           JniExceptionHandler.wrapException(original, "During initialization");
 
       assertNotNull(result, "Result should not be null");
-      assertTrue(result.getMessage().contains("During initialization"),
-          "Message should contain context");
-      assertTrue(result.getMessage().contains("Runtime error"),
-          "Message should contain original message");
+      assertTrue(
+          result.getMessage().contains("During initialization"), "Message should contain context");
+      assertTrue(
+          result.getMessage().contains("Runtime error"), "Message should contain original message");
     }
 
     @Test
@@ -196,29 +188,27 @@ class JniExceptionHandlerTest {
     @DisplayName("Should handle exception with null message")
     void shouldHandleExceptionWithNullMessage() {
       final NullPointerException original = new NullPointerException();
-      final WasmtimeException result =
-          JniExceptionHandler.wrapException(original, "Context");
+      final WasmtimeException result = JniExceptionHandler.wrapException(original, "Context");
 
       assertNotNull(result, "Result should not be null");
-      assertTrue(result.getMessage().contains("Context"),
-          "Message should contain context");
+      assertTrue(result.getMessage().contains("Context"), "Message should contain context");
     }
 
     @Test
     @DisplayName("Should handle different exception types")
     void shouldHandleDifferentExceptionTypes() {
       final Exception[] exceptions = {
-          new RuntimeException("Runtime"),
-          new IllegalArgumentException("Illegal arg"),
-          new IllegalStateException("Illegal state"),
-          new NullPointerException("NPE")
+        new RuntimeException("Runtime"),
+        new IllegalArgumentException("Illegal arg"),
+        new IllegalStateException("Illegal state"),
+        new NullPointerException("NPE")
       };
 
       for (Exception e : exceptions) {
-        final WasmtimeException result =
-            JniExceptionHandler.wrapException(e, "Wrapper");
+        final WasmtimeException result = JniExceptionHandler.wrapException(e, "Wrapper");
         assertNotNull(result, "Result should not be null for " + e.getClass().getSimpleName());
-        assertSame(e, result.getCause(), "Cause should be preserved for " + e.getClass().getSimpleName());
+        assertSame(
+            e, result.getCause(), "Cause should be preserved for " + e.getClass().getSimpleName());
       }
     }
   }
@@ -234,8 +224,7 @@ class JniExceptionHandlerTest {
       final WasmtimeException e2 = JniExceptionHandler.handleNativeException("Error 2");
 
       assertTrue(e1 != e2, "Exceptions should be different instances");
-      assertTrue(!e1.getMessage().equals(e2.getMessage()),
-          "Messages should be different");
+      assertTrue(!e1.getMessage().equals(e2.getMessage()), "Messages should be different");
     }
 
     @Test
@@ -243,8 +232,7 @@ class JniExceptionHandlerTest {
     void fullExceptionChainShouldBePreservable() {
       final Exception root = new IllegalStateException("Root cause");
       final Exception middle = new RuntimeException("Middle cause", root);
-      final WasmtimeException result =
-          JniExceptionHandler.wrapException(middle, "Final context");
+      final WasmtimeException result = JniExceptionHandler.wrapException(middle, "Final context");
 
       assertSame(middle, result.getCause(), "Direct cause should be middle");
       assertSame(root, result.getCause().getCause(), "Root cause should be preserved");

@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,8 +32,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link JniMemoryType} class.
  *
- * <p>This test class verifies the JNI implementation of MemoryType interface
- * for WebAssembly memory types.
+ * <p>This test class verifies the JNI implementation of MemoryType interface for WebAssembly memory
+ * types.
  */
 @DisplayName("JniMemoryType Tests")
 class JniMemoryTypeTest {
@@ -46,14 +45,16 @@ class JniMemoryTypeTest {
     @Test
     @DisplayName("JniMemoryType should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(JniMemoryType.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(JniMemoryType.class.getModifiers()),
           "JniMemoryType should be final");
     }
 
     @Test
     @DisplayName("JniMemoryType should implement MemoryType")
     void shouldImplementMemoryType() {
-      assertTrue(MemoryType.class.isAssignableFrom(JniMemoryType.class),
+      assertTrue(
+          MemoryType.class.isAssignableFrom(JniMemoryType.class),
           "JniMemoryType should implement MemoryType");
     }
   }
@@ -90,16 +91,18 @@ class JniMemoryTypeTest {
     @Test
     @DisplayName("Constructor should throw for negative minimum")
     void constructorShouldThrowForNegativeMinimum() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniMemoryType(-1, null, false, false),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniMemoryType(-1, null, false, false),
           "Should throw for negative minimum");
     }
 
     @Test
     @DisplayName("Constructor should throw when maximum less than minimum")
     void constructorShouldThrowWhenMaximumLessThanMinimum() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniMemoryType(10, 5L, false, false),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniMemoryType(10, 5L, false, false),
           "Should throw when maximum < minimum");
     }
 
@@ -142,8 +145,7 @@ class JniMemoryTypeTest {
     @DisplayName("getKind should return MEMORY")
     void getKindShouldReturnMemory() {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
-      assertEquals(WasmTypeKind.MEMORY, memoryType.getKind(),
-          "Kind should be MEMORY");
+      assertEquals(WasmTypeKind.MEMORY, memoryType.getKind(), "Kind should be MEMORY");
     }
   }
 
@@ -230,7 +232,9 @@ class JniMemoryTypeTest {
     void equalObjectsShouldHaveEqualHashCodes() {
       final JniMemoryType memoryType1 = new JniMemoryType(1, 10L, true, true);
       final JniMemoryType memoryType2 = new JniMemoryType(1, 10L, true, true);
-      assertEquals(memoryType1.hashCode(), memoryType2.hashCode(),
+      assertEquals(
+          memoryType1.hashCode(),
+          memoryType2.hashCode(),
           "Equal objects should have equal hashCodes");
     }
 
@@ -269,7 +273,8 @@ class JniMemoryTypeTest {
     void toStringShouldIndicateUnlimitedWhenNoMaximum() {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
       final String str = memoryType.toString();
-      assertTrue(str.contains("unlimited") || str.contains("null") || str.contains("max="),
+      assertTrue(
+          str.contains("unlimited") || str.contains("null") || str.contains("max="),
           "toString should indicate unlimited");
     }
 
@@ -297,16 +302,18 @@ class JniMemoryTypeTest {
     @Test
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniMemoryType.fromNative(0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniMemoryType.fromNative(0),
           "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniMemoryType.fromNative(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniMemoryType.fromNative(-1),
           "Should throw for negative handle");
     }
   }

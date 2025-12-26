@@ -40,8 +40,8 @@ class JniWasiConfigTest {
     @Test
     @DisplayName("should be public class")
     void shouldBePublicClass() {
-      assertTrue(Modifier.isPublic(JniWasiConfig.class.getModifiers()),
-          "JniWasiConfig should be public");
+      assertTrue(
+          Modifier.isPublic(JniWasiConfig.class.getModifiers()), "JniWasiConfig should be public");
     }
 
     @Test
@@ -59,15 +59,15 @@ class JniWasiConfigTest {
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(JniWasiConfig.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(JniWasiConfig.class),
           "JniWasiConfig should implement AutoCloseable");
     }
 
     @Test
     @DisplayName("should have close method")
     void shouldHaveCloseMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiConfig.class.getMethod("close"),
-          "Should have close method");
+      assertNotNull(JniWasiConfig.class.getMethod("close"), "Should have close method");
     }
   }
 
@@ -78,15 +78,14 @@ class JniWasiConfigTest {
     @Test
     @DisplayName("should have getNativeHandle method")
     void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiConfig.class.getMethod("getNativeHandle"),
-          "Should have getNativeHandle method");
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getNativeHandle"), "Should have getNativeHandle method");
     }
 
     @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiConfig.class.getMethod("isValid"),
-          "Should have isValid method");
+      assertNotNull(JniWasiConfig.class.getMethod("isValid"), "Should have isValid method");
     }
   }
 }

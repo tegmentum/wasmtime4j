@@ -383,26 +383,13 @@ class WitEvolutionOperationTest {
     @Test
     @DisplayName("descriptions should be meaningful")
     void descriptionsShouldBeMeaningful() {
+      assertTrue(WitEvolutionOperation.ADD_FUNCTION.getDescription().toLowerCase().contains("add"));
       assertTrue(
-          WitEvolutionOperation.ADD_FUNCTION
-              .getDescription()
-              .toLowerCase()
-              .contains("add"));
+          WitEvolutionOperation.REMOVE_FUNCTION.getDescription().toLowerCase().contains("remove"));
       assertTrue(
-          WitEvolutionOperation.REMOVE_FUNCTION
-              .getDescription()
-              .toLowerCase()
-              .contains("remove"));
+          WitEvolutionOperation.MODIFY_TYPE.getDescription().toLowerCase().contains("modify"));
       assertTrue(
-          WitEvolutionOperation.MODIFY_TYPE
-              .getDescription()
-              .toLowerCase()
-              .contains("modify"));
-      assertTrue(
-          WitEvolutionOperation.RENAME_TYPE
-              .getDescription()
-              .toLowerCase()
-              .contains("rename"));
+          WitEvolutionOperation.RENAME_TYPE.getDescription().toLowerCase().contains("rename"));
     }
   }
 

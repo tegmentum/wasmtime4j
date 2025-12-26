@@ -131,9 +131,11 @@ class WitInterfaceBindingsTest {
     @Test
     @DisplayName("BindingType valueOf should work")
     void bindingTypeValueOfShouldWork() {
-      assertEquals(WitInterfaceBindings.BindingType.DIRECT,
+      assertEquals(
+          WitInterfaceBindings.BindingType.DIRECT,
           WitInterfaceBindings.BindingType.valueOf("DIRECT"));
-      assertEquals(WitInterfaceBindings.BindingType.ADAPTED,
+      assertEquals(
+          WitInterfaceBindings.BindingType.ADAPTED,
           WitInterfaceBindings.BindingType.valueOf("ADAPTED"));
     }
   }

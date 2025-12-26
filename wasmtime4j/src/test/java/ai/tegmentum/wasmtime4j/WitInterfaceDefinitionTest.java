@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,8 +147,8 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should support basic interface implementation")
     void shouldSupportBasicInterfaceImplementation() {
-      final WitInterfaceDefinition definition = createStubDefinition(
-          "test-interface", "0.1.0", "test:package");
+      final WitInterfaceDefinition definition =
+          createStubDefinition("test-interface", "0.1.0", "test:package");
 
       assertEquals("test-interface", definition.getName());
       assertEquals("0.1.0", definition.getVersion());
@@ -159,9 +158,9 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should return function names")
     void shouldReturnFunctionNames() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithFunctions(
-          "my-interface",
-          List.of("process", "transform", "validate"));
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithFunctions(
+              "my-interface", List.of("process", "transform", "validate"));
 
       final List<String> functions = definition.getFunctionNames();
 
@@ -174,9 +173,8 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should return type names")
     void shouldReturnTypeNames() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithTypes(
-          "my-interface",
-          List.of("user", "config", "result"));
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithTypes("my-interface", List.of("user", "config", "result"));
 
       final List<String> types = definition.getTypeNames();
 
@@ -189,9 +187,9 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should return dependencies")
     void shouldReturnDependencies() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithDependencies(
-          "my-interface",
-          Set.of("wasi:http/types@0.2.0", "wasi:io/streams@0.2.0"));
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithDependencies(
+              "my-interface", Set.of("wasi:http/types@0.2.0", "wasi:io/streams@0.2.0"));
 
       final Set<String> deps = definition.getDependencies();
 
@@ -204,8 +202,8 @@ class WitInterfaceDefinitionTest {
     @DisplayName("should return WIT text")
     void shouldReturnWitText() {
       final String witText = "interface my-interface { greet: func(name: string) -> string }";
-      final WitInterfaceDefinition definition = createStubDefinitionWithWitText(
-          "my-interface", witText);
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithWitText("my-interface", witText);
 
       assertEquals(witText, definition.getWitText());
     }
@@ -213,10 +211,9 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should return imports and exports")
     void shouldReturnImportsAndExports() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithImportsExports(
-          "my-interface",
-          List.of("import1", "import2"),
-          List.of("export1"));
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithImportsExports(
+              "my-interface", List.of("import1", "import2"), List.of("export1"));
 
       assertEquals(2, definition.getImportNames().size());
       assertEquals(1, definition.getExportNames().size());
@@ -225,10 +222,10 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should check compatibility")
     void shouldCheckCompatibility() {
-      final WitInterfaceDefinition definition1 = createStubDefinition(
-          "interface-a", "0.1.0", "pkg");
-      final WitInterfaceDefinition definition2 = createStubDefinition(
-          "interface-b", "0.1.0", "pkg");
+      final WitInterfaceDefinition definition1 =
+          createStubDefinition("interface-a", "0.1.0", "pkg");
+      final WitInterfaceDefinition definition2 =
+          createStubDefinition("interface-b", "0.1.0", "pkg");
 
       final WitCompatibilityResult result = definition1.isCompatibleWith(definition2);
 
@@ -245,8 +242,8 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should handle empty function list")
     void shouldHandleEmptyFunctionList() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithFunctions(
-          "empty-interface", List.of());
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithFunctions("empty-interface", List.of());
 
       assertTrue(definition.getFunctionNames().isEmpty());
     }
@@ -254,8 +251,8 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should handle empty type list")
     void shouldHandleEmptyTypeList() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithTypes(
-          "empty-interface", List.of());
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithTypes("empty-interface", List.of());
 
       assertTrue(definition.getTypeNames().isEmpty());
     }
@@ -263,8 +260,8 @@ class WitInterfaceDefinitionTest {
     @Test
     @DisplayName("should handle empty dependencies")
     void shouldHandleEmptyDependencies() {
-      final WitInterfaceDefinition definition = createStubDefinitionWithDependencies(
-          "empty-interface", Set.of());
+      final WitInterfaceDefinition definition =
+          createStubDefinitionWithDependencies("empty-interface", Set.of());
 
       assertTrue(definition.getDependencies().isEmpty());
     }

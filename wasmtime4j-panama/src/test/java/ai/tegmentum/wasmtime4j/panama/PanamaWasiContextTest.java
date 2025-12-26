@@ -73,11 +73,8 @@ class PanamaWasiContextTest {
     @DisplayName("PanamaWasiContext should implement WasiContext interface")
     void shouldImplementWasiContextInterface() {
       Class<?>[] interfaces = PanamaWasiContext.class.getInterfaces();
-      boolean implementsWasiContext =
-          Arrays.asList(interfaces).contains(WasiContext.class);
-      assertTrue(
-          implementsWasiContext,
-          "PanamaWasiContext should implement WasiContext interface");
+      boolean implementsWasiContext = Arrays.asList(interfaces).contains(WasiContext.class);
+      assertTrue(implementsWasiContext, "PanamaWasiContext should implement WasiContext interface");
     }
 
     @Test
@@ -103,15 +100,9 @@ class PanamaWasiContextTest {
     void shouldHaveNativeBindingsField() throws NoSuchFieldException {
       Field field = PanamaWasiContext.class.getDeclaredField("NATIVE_BINDINGS");
       assertNotNull(field, "NATIVE_BINDINGS field should exist");
-      assertTrue(
-          Modifier.isStatic(field.getModifiers()),
-          "NATIVE_BINDINGS should be static");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "NATIVE_BINDINGS should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "NATIVE_BINDINGS should be private");
+      assertTrue(Modifier.isStatic(field.getModifiers()), "NATIVE_BINDINGS should be static");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "NATIVE_BINDINGS should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "NATIVE_BINDINGS should be private");
       assertEquals(
           NativeFunctionBindings.class,
           field.getType(),
@@ -123,16 +114,10 @@ class PanamaWasiContextTest {
     void shouldHaveContextHandleField() throws NoSuchFieldException {
       Field field = PanamaWasiContext.class.getDeclaredField("contextHandle");
       assertNotNull(field, "contextHandle field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "contextHandle should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "contextHandle should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "contextHandle should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "contextHandle should be private");
       assertEquals(
-          MemorySegment.class,
-          field.getType(),
-          "contextHandle should be of type MemorySegment");
+          MemorySegment.class, field.getType(), "contextHandle should be of type MemorySegment");
     }
 
     @Test
@@ -140,16 +125,9 @@ class PanamaWasiContextTest {
     void shouldHaveClosedField() throws NoSuchFieldException {
       Field field = PanamaWasiContext.class.getDeclaredField("closed");
       assertNotNull(field, "closed field should exist");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()),
-          "closed should be final");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()),
-          "closed should be private");
-      assertEquals(
-          AtomicBoolean.class,
-          field.getType(),
-          "closed should be of type AtomicBoolean");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "closed should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
+      assertEquals(AtomicBoolean.class, field.getType(), "closed should be of type AtomicBoolean");
     }
   }
 
@@ -167,12 +145,8 @@ class PanamaWasiContextTest {
       var constructor = PanamaWasiContext.class.getConstructor();
       assertNotNull(constructor, "No-arg constructor should exist");
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "No-arg constructor should be public");
-      assertEquals(
-          0,
-          constructor.getParameterCount(),
-          "Constructor should have no parameters");
+          Modifier.isPublic(constructor.getModifiers()), "No-arg constructor should be public");
+      assertEquals(0, constructor.getParameterCount(), "Constructor should have no parameters");
     }
   }
 
@@ -189,10 +163,7 @@ class PanamaWasiContextTest {
     void shouldHaveSetArgvMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("setArgv", String[].class);
       assertNotNull(method, "setArgv method should exist");
-      assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setArgv should return WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "setArgv should return WasiContext");
     }
 
     @Test
@@ -200,10 +171,7 @@ class PanamaWasiContextTest {
     void shouldHaveSetEnvKeyValueMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("setEnv", String.class, String.class);
       assertNotNull(method, "setEnv(String, String) method should exist");
-      assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setEnv should return WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "setEnv should return WasiContext");
     }
 
     @Test
@@ -211,10 +179,7 @@ class PanamaWasiContextTest {
     void shouldHaveSetEnvMapMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("setEnv", Map.class);
       assertNotNull(method, "setEnv(Map) method should exist");
-      assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setEnv should return WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "setEnv should return WasiContext");
     }
 
     @Test
@@ -223,13 +188,8 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("inheritEnv");
       assertNotNull(method, "inheritEnv method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "inheritEnv should return WasiContext");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "inheritEnv should have no parameters");
+          WasiContext.class, method.getReturnType(), "inheritEnv should return WasiContext");
+      assertEquals(0, method.getParameterCount(), "inheritEnv should have no parameters");
     }
   }
 
@@ -247,13 +207,8 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("inheritStdio");
       assertNotNull(method, "inheritStdio method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "inheritStdio should return WasiContext");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "inheritStdio should have no parameters");
+          WasiContext.class, method.getReturnType(), "inheritStdio should return WasiContext");
+      assertEquals(0, method.getParameterCount(), "inheritStdio should have no parameters");
     }
 
     @Test
@@ -261,10 +216,7 @@ class PanamaWasiContextTest {
     void shouldHaveSetStdinMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("setStdin", Path.class);
       assertNotNull(method, "setStdin(Path) method should exist");
-      assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setStdin should return WasiContext");
+      assertEquals(WasiContext.class, method.getReturnType(), "setStdin should return WasiContext");
     }
 
     @Test
@@ -273,9 +225,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setStdinBytes", byte[].class);
       assertNotNull(method, "setStdinBytes method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setStdinBytes should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setStdinBytes should return WasiContext");
     }
 
     @Test
@@ -284,9 +234,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setStdout", Path.class);
       assertNotNull(method, "setStdout(Path) method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setStdout should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setStdout should return WasiContext");
     }
 
     @Test
@@ -295,9 +243,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setStderr", Path.class);
       assertNotNull(method, "setStderr(Path) method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setStderr should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setStderr should return WasiContext");
     }
   }
 
@@ -315,9 +261,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("preopenedDir", Path.class, String.class);
       assertNotNull(method, "preopenedDir method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "preopenedDir should return WasiContext");
+          WasiContext.class, method.getReturnType(), "preopenedDir should return WasiContext");
       assertTrue(
           Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
           "preopenedDir should throw WasmException");
@@ -353,9 +297,7 @@ class PanamaWasiContextTest {
           method.getReturnType(),
           "preopenedDirWithPermissions should return WasiContext");
       assertEquals(
-          3,
-          method.getParameterCount(),
-          "preopenedDirWithPermissions should have 3 parameters");
+          3, method.getParameterCount(), "preopenedDirWithPermissions should have 3 parameters");
     }
   }
 
@@ -384,9 +326,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setNetworkEnabled", boolean.class);
       assertNotNull(method, "setNetworkEnabled method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setNetworkEnabled should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setNetworkEnabled should return WasiContext");
     }
 
     @Test
@@ -395,9 +335,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setMaxOpenFiles", int.class);
       assertNotNull(method, "setMaxOpenFiles method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setMaxOpenFiles should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setMaxOpenFiles should return WasiContext");
     }
 
     @Test
@@ -406,9 +344,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setAsyncIoEnabled", boolean.class);
       assertNotNull(method, "setAsyncIoEnabled method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setAsyncIoEnabled should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setAsyncIoEnabled should return WasiContext");
     }
 
     @Test
@@ -428,9 +364,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setAsyncTimeout", long.class);
       assertNotNull(method, "setAsyncTimeout method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setAsyncTimeout should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setAsyncTimeout should return WasiContext");
     }
 
     @Test
@@ -450,9 +384,7 @@ class PanamaWasiContextTest {
       Method method = PanamaWasiContext.class.getMethod("setProcessEnabled", boolean.class);
       assertNotNull(method, "setProcessEnabled method should exist");
       assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "setProcessEnabled should return WasiContext");
+          WasiContext.class, method.getReturnType(), "setProcessEnabled should return WasiContext");
     }
 
     @Test
@@ -494,14 +426,8 @@ class PanamaWasiContextTest {
     void shouldHaveGetStdoutCaptureMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("getStdoutCapture");
       assertNotNull(method, "getStdoutCapture method should exist");
-      assertEquals(
-          byte[].class,
-          method.getReturnType(),
-          "getStdoutCapture should return byte[]");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "getStdoutCapture should have no parameters");
+      assertEquals(byte[].class, method.getReturnType(), "getStdoutCapture should return byte[]");
+      assertEquals(0, method.getParameterCount(), "getStdoutCapture should have no parameters");
     }
 
     @Test
@@ -509,14 +435,8 @@ class PanamaWasiContextTest {
     void shouldHaveGetStderrCaptureMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("getStderrCapture");
       assertNotNull(method, "getStderrCapture method should exist");
-      assertEquals(
-          byte[].class,
-          method.getReturnType(),
-          "getStderrCapture should return byte[]");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "getStderrCapture should have no parameters");
+      assertEquals(byte[].class, method.getReturnType(), "getStderrCapture should return byte[]");
+      assertEquals(0, method.getParameterCount(), "getStderrCapture should have no parameters");
     }
 
     @Test
@@ -524,14 +444,8 @@ class PanamaWasiContextTest {
     void shouldHaveHasStdoutCaptureMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("hasStdoutCapture");
       assertNotNull(method, "hasStdoutCapture method should exist");
-      assertEquals(
-          boolean.class,
-          method.getReturnType(),
-          "hasStdoutCapture should return boolean");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "hasStdoutCapture should have no parameters");
+      assertEquals(boolean.class, method.getReturnType(), "hasStdoutCapture should return boolean");
+      assertEquals(0, method.getParameterCount(), "hasStdoutCapture should have no parameters");
     }
 
     @Test
@@ -539,14 +453,8 @@ class PanamaWasiContextTest {
     void shouldHaveHasStderrCaptureMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("hasStderrCapture");
       assertNotNull(method, "hasStderrCapture method should exist");
-      assertEquals(
-          boolean.class,
-          method.getReturnType(),
-          "hasStderrCapture should return boolean");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "hasStderrCapture should have no parameters");
+      assertEquals(boolean.class, method.getReturnType(), "hasStderrCapture should return boolean");
+      assertEquals(0, method.getParameterCount(), "hasStderrCapture should have no parameters");
     }
   }
 
@@ -567,10 +475,7 @@ class PanamaWasiContextTest {
           MemorySegment.class,
           method.getReturnType(),
           "getNativeContext should return MemorySegment");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "getNativeContext should have no parameters");
+      assertEquals(0, method.getParameterCount(), "getNativeContext should have no parameters");
     }
 
     @Test
@@ -582,10 +487,7 @@ class PanamaWasiContextTest {
           MemorySegment.class,
           method.getReturnType(),
           "getNativeHandle should return MemorySegment");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "getNativeHandle should have no parameters");
+      assertEquals(0, method.getParameterCount(), "getNativeHandle should have no parameters");
     }
   }
 
@@ -602,14 +504,8 @@ class PanamaWasiContextTest {
     void shouldHaveCloseMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getMethod("close");
       assertNotNull(method, "close method should exist");
-      assertEquals(
-          void.class,
-          method.getReturnType(),
-          "close should return void");
-      assertEquals(
-          0,
-          method.getParameterCount(),
-          "close should have no parameters");
+      assertEquals(void.class, method.getReturnType(), "close should return void");
+      assertEquals(0, method.getParameterCount(), "close should have no parameters");
     }
 
     @Test
@@ -617,13 +513,8 @@ class PanamaWasiContextTest {
     void shouldHaveEnsureNotClosedMethod() throws NoSuchMethodException {
       Method method = PanamaWasiContext.class.getDeclaredMethod("ensureNotClosed");
       assertNotNull(method, "ensureNotClosed method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "ensureNotClosed should be private");
-      assertEquals(
-          void.class,
-          method.getReturnType(),
-          "ensureNotClosed should return void");
+      assertTrue(Modifier.isPrivate(method.getModifiers()), "ensureNotClosed should be private");
+      assertEquals(void.class, method.getReturnType(), "ensureNotClosed should return void");
     }
   }
 
@@ -640,12 +531,26 @@ class PanamaWasiContextTest {
     void allConfigMethodsShouldReturnWasiContext() {
       Method[] methods = PanamaWasiContext.class.getDeclaredMethods();
       String[] fluentMethods = {
-        "setArgv", "setEnv", "inheritEnv", "inheritStdio",
-        "setStdin", "setStdinBytes", "setStdout", "setStderr",
-        "preopenedDir", "preopenedDirReadOnly", "preopenedDirWithPermissions",
-        "setWorkingDirectory", "setNetworkEnabled", "setMaxOpenFiles",
-        "setAsyncIoEnabled", "setMaxAsyncOperations", "setAsyncTimeout",
-        "setComponentModelEnabled", "setProcessEnabled", "setFilesystemWorkingDir",
+        "setArgv",
+        "setEnv",
+        "inheritEnv",
+        "inheritStdio",
+        "setStdin",
+        "setStdinBytes",
+        "setStdout",
+        "setStderr",
+        "preopenedDir",
+        "preopenedDirReadOnly",
+        "preopenedDirWithPermissions",
+        "setWorkingDirectory",
+        "setNetworkEnabled",
+        "setMaxOpenFiles",
+        "setAsyncIoEnabled",
+        "setMaxAsyncOperations",
+        "setAsyncTimeout",
+        "setComponentModelEnabled",
+        "setProcessEnabled",
+        "setFilesystemWorkingDir",
         "enableOutputCapture"
       };
 
@@ -725,8 +630,7 @@ class PanamaWasiContextTest {
             Method implMethod =
                 implClass.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
             assertNotNull(
-                implMethod,
-                "Implementation should have method: " + interfaceMethod.getName());
+                implMethod, "Implementation should have method: " + interfaceMethod.getName());
             assertFalse(
                 Modifier.isAbstract(implMethod.getModifiers()),
                 "Method " + interfaceMethod.getName() + " should not be abstract");

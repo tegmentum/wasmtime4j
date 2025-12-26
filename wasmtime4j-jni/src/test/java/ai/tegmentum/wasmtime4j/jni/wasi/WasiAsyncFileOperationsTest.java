@@ -28,7 +28,6 @@ import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -42,16 +41,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Comprehensive tests for {@link WasiAsyncFileOperations}.
- */
+/** Comprehensive tests for {@link WasiAsyncFileOperations}. */
 @DisplayName("WasiAsyncFileOperations Tests")
 class WasiAsyncFileOperationsTest {
 
   private WasiAsyncFileOperations asyncFileOps;
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @BeforeEach
   void setUp() {
@@ -111,15 +107,15 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Constructor should throw on zero timeout")
     void constructorShouldThrowOnZeroTimeout() {
-      assertThrows(JniException.class,
-          () -> new WasiAsyncFileOperations(0),
-          "Should throw on zero timeout");
+      assertThrows(
+          JniException.class, () -> new WasiAsyncFileOperations(0), "Should throw on zero timeout");
     }
 
     @Test
     @DisplayName("Constructor should throw on negative timeout")
     void constructorShouldThrowOnNegativeTimeout() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> new WasiAsyncFileOperations(-1),
           "Should throw on negative timeout");
     }
@@ -132,7 +128,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(null, 0L, 1024),
           "Should throw on null path");
     }
@@ -140,7 +137,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on negative position")
     void shouldThrowOnNegativePosition() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(tempDir.resolve("test.txt"), -1L, 1024),
           "Should throw on negative position");
     }
@@ -148,7 +146,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on zero buffer size")
     void shouldThrowOnZeroBufferSize() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(tempDir.resolve("test.txt"), 0L, 0),
           "Should throw on zero buffer size");
     }
@@ -156,7 +155,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on negative buffer size")
     void shouldThrowOnNegativeBufferSize() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(tempDir.resolve("test.txt"), 0L, -1),
           "Should throw on negative buffer size");
     }
@@ -189,7 +189,8 @@ class WasiAsyncFileOperationsTest {
       assertNotNull(future, "Future should not be null");
 
       // The future should complete exceptionally
-      assertThrows(ExecutionException.class,
+      assertThrows(
+          ExecutionException.class,
           () -> future.get(5, TimeUnit.SECONDS),
           "Should throw ExecutionException for non-existent file");
     }
@@ -214,7 +215,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on zero timeout")
     void shouldThrowOnZeroTimeout() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(tempDir.resolve("test.txt"), 0L, 1024, 0L),
           "Should throw on zero timeout");
     }
@@ -222,7 +224,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on negative timeout")
     void shouldThrowOnNegativeTimeout() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readAsync(tempDir.resolve("test.txt"), 0L, 1024, -1L),
           "Should throw on negative timeout");
     }
@@ -237,7 +240,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNullPath() {
       final ByteBuffer data = ByteBuffer.wrap("test".getBytes());
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeAsync(null, 0L, data),
           "Should throw on null path");
     }
@@ -247,7 +251,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNegativePosition() {
       final ByteBuffer data = ByteBuffer.wrap("test".getBytes());
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeAsync(tempDir.resolve("test.txt"), -1L, data),
           "Should throw on negative position");
     }
@@ -255,7 +260,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeAsync(tempDir.resolve("test.txt"), 0L, null),
           "Should throw on null data");
     }
@@ -266,8 +272,7 @@ class WasiAsyncFileOperationsTest {
       final ByteBuffer data = ByteBuffer.wrap("Hello, World!".getBytes());
       final Path testFile = tempDir.resolve("write-test.txt");
 
-      final CompletableFuture<Integer> future =
-          asyncFileOps.writeAsync(testFile, 0L, data);
+      final CompletableFuture<Integer> future = asyncFileOps.writeAsync(testFile, 0L, data);
 
       assertNotNull(future, "Future should not be null");
 
@@ -300,7 +305,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnZeroTimeout() {
       final ByteBuffer data = ByteBuffer.wrap("test".getBytes());
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeAsync(tempDir.resolve("test.txt"), 0L, data, 0L),
           "Should throw on zero timeout");
     }
@@ -310,7 +316,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNegativeTimeout() {
       final ByteBuffer data = ByteBuffer.wrap("test".getBytes());
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeAsync(tempDir.resolve("test.txt"), 0L, data, -1L),
           "Should throw on negative timeout");
     }
@@ -323,7 +330,8 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.registerChannel(null, 1, null),
           "Should throw on null channel");
     }
@@ -349,7 +357,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNullChannel() {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.readNonBlocking(null, buffer),
           "Should throw on null channel");
     }
@@ -359,7 +368,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNullBuffer() throws Exception {
       final SocketChannel channel = SocketChannel.open();
       try {
-        assertThrows(JniException.class,
+        assertThrows(
+            JniException.class,
             () -> asyncFileOps.readNonBlocking(channel, null),
             "Should throw on null buffer");
       } finally {
@@ -375,7 +385,8 @@ class WasiAsyncFileOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1024);
 
       try {
-        assertThrows(WasiFileSystemException.class,
+        assertThrows(
+            WasiFileSystemException.class,
             () -> asyncFileOps.readNonBlocking(channel, buffer),
             "Should throw when closed");
       } finally {
@@ -393,7 +404,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNullChannel() {
       final ByteBuffer buffer = ByteBuffer.wrap("test".getBytes());
 
-      assertThrows(JniException.class,
+      assertThrows(
+          JniException.class,
           () -> asyncFileOps.writeNonBlocking(null, buffer),
           "Should throw on null channel");
     }
@@ -403,7 +415,8 @@ class WasiAsyncFileOperationsTest {
     void shouldThrowOnNullBuffer() throws Exception {
       final SocketChannel channel = SocketChannel.open();
       try {
-        assertThrows(JniException.class,
+        assertThrows(
+            JniException.class,
             () -> asyncFileOps.writeNonBlocking(channel, null),
             "Should throw on null buffer");
       } finally {
@@ -419,7 +432,8 @@ class WasiAsyncFileOperationsTest {
       final ByteBuffer buffer = ByteBuffer.wrap("test".getBytes());
 
       try {
-        assertThrows(WasiFileSystemException.class,
+        assertThrows(
+            WasiFileSystemException.class,
             () -> asyncFileOps.writeNonBlocking(channel, buffer),
             "Should throw when closed");
       } finally {
@@ -435,7 +449,9 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should return zero initially")
     void shouldReturnZeroInitially() {
-      assertEquals(0L, asyncFileOps.getActiveOperationCount(),
+      assertEquals(
+          0L,
+          asyncFileOps.getActiveOperationCount(),
           "Active operation count should be 0 initially");
     }
 
@@ -456,7 +472,9 @@ class WasiAsyncFileOperationsTest {
       future.get(5, TimeUnit.SECONDS);
 
       // After completion, count should be back to 0
-      assertEquals(0L, asyncFileOps.getActiveOperationCount(),
+      assertEquals(
+          0L,
+          asyncFileOps.getActiveOperationCount(),
           "Active operation count should be 0 after completion");
     }
   }
@@ -578,13 +596,13 @@ class WasiAsyncFileOperationsTest {
     @Test
     @DisplayName("Should handle read from directory")
     void shouldHandleReadFromDirectory() {
-      final CompletableFuture<ByteBuffer> future =
-          asyncFileOps.readAsync(tempDir, 0L, 1024);
+      final CompletableFuture<ByteBuffer> future = asyncFileOps.readAsync(tempDir, 0L, 1024);
 
       assertNotNull(future, "Future should not be null");
 
       // Reading a directory should fail
-      assertThrows(ExecutionException.class,
+      assertThrows(
+          ExecutionException.class,
           () -> future.get(5, TimeUnit.SECONDS),
           "Should fail when reading directory");
     }
@@ -600,7 +618,8 @@ class WasiAsyncFileOperationsTest {
         future.get(5, TimeUnit.SECONDS);
       } catch (ExecutionException e) {
         assertNotNull(e.getCause(), "Should have a cause");
-        assertTrue(e.getCause() instanceof WasiFileSystemException,
+        assertTrue(
+            e.getCause() instanceof WasiFileSystemException,
             "Cause should be WasiFileSystemException");
       } catch (InterruptedException | TimeoutException e) {
         // These are acceptable in test context

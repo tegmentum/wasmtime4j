@@ -145,9 +145,10 @@ class WitTypeKindTest {
     @Test
     @DisplayName("record should return fields")
     void recordShouldReturnFields() {
-      final Map<String, WitType> fields = Map.of(
-          "id", WitType.createU32(),
-          "name", WitType.createString());
+      final Map<String, WitType> fields =
+          Map.of(
+              "id", WitType.createU32(),
+              "name", WitType.createString());
       final WitTypeKind kind = WitTypeKind.record(fields);
 
       assertEquals(2, kind.getRecordFields().size());
@@ -188,9 +189,10 @@ class WitTypeKindTest {
     @Test
     @DisplayName("variant should create variant type kind")
     void variantShouldCreateVariantTypeKind() {
-      final Map<String, Optional<WitType>> cases = Map.of(
-          "ok", Optional.of(WitType.createString()),
-          "err", Optional.of(WitType.createU32()));
+      final Map<String, Optional<WitType>> cases =
+          Map.of(
+              "ok", Optional.of(WitType.createString()),
+              "err", Optional.of(WitType.createU32()));
       final WitTypeKind kind = WitTypeKind.variant(cases);
 
       assertFalse(kind.isPrimitive());
@@ -211,9 +213,10 @@ class WitTypeKindTest {
     @Test
     @DisplayName("variant should return cases")
     void variantShouldReturnCases() {
-      final Map<String, Optional<WitType>> cases = Map.of(
-          "some", Optional.of(WitType.createString()),
-          "none", Optional.empty());
+      final Map<String, Optional<WitType>> cases =
+          Map.of(
+              "some", Optional.of(WitType.createString()),
+              "none", Optional.empty());
       final WitTypeKind kind = WitTypeKind.variant(cases);
 
       assertEquals(2, kind.getVariantCases().size());
@@ -291,7 +294,9 @@ class WitTypeKindTest {
     @DisplayName("flags should return size based on count")
     void flagsShouldReturnSizeBasedOnCount() {
       assertEquals(Optional.of(1), WitTypeKind.flags(List.of("a", "b", "c")).getSizeBytes());
-      assertEquals(Optional.of(2), WitTypeKind.flags(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9")).getSizeBytes());
+      assertEquals(
+          Optional.of(2),
+          WitTypeKind.flags(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9")).getSizeBytes());
     }
 
     @Test
@@ -398,9 +403,8 @@ class WitTypeKindTest {
     @Test
     @DisplayName("result should create result type kind")
     void resultShouldCreateResultTypeKind() {
-      final WitTypeKind kind = WitTypeKind.result(
-          Optional.of(WitType.createString()),
-          Optional.of(WitType.createU32()));
+      final WitTypeKind kind =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.of(WitType.createU32()));
 
       assertFalse(kind.isPrimitive());
       assertTrue(kind.isComposite());
@@ -428,10 +432,10 @@ class WitTypeKindTest {
     @Test
     @DisplayName("same results should be compatible")
     void sameResultsShouldBeCompatible() {
-      final WitTypeKind kind1 = WitTypeKind.result(
-          Optional.of(WitType.createString()), Optional.empty());
-      final WitTypeKind kind2 = WitTypeKind.result(
-          Optional.of(WitType.createString()), Optional.empty());
+      final WitTypeKind kind1 =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.empty());
+      final WitTypeKind kind2 =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.empty());
 
       assertTrue(kind1.isCompatibleWith(kind2));
     }
@@ -481,7 +485,8 @@ class WitTypeKindTest {
     @DisplayName("different size tuples should not be compatible")
     void differentSizeTuplesShouldNotBeCompatible() {
       final WitTypeKind kind1 = WitTypeKind.tuple(List.of(WitType.createS32()));
-      final WitTypeKind kind2 = WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createString()));
+      final WitTypeKind kind2 =
+          WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createString()));
 
       assertFalse(kind1.isCompatibleWith(kind2));
     }

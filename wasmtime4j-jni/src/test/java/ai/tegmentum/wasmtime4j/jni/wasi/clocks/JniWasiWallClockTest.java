@@ -45,7 +45,9 @@ class JniWasiWallClockTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiWallClock", false, getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiWallClock",
+        false,
+        getClass().getClassLoader());
   }
 
   @Nested
@@ -94,7 +96,8 @@ class JniWasiWallClockTest {
         }
       }
 
-      assertTrue(hasLongConstructor, "Should have constructor with long parameter (context handle)");
+      assertTrue(
+          hasLongConstructor, "Should have constructor with long parameter (context handle)");
     }
 
     @Test
@@ -146,7 +149,8 @@ class JniWasiWallClockTest {
 
     @Test
     @DisplayName("resolution method should take no parameters")
-    void resolutionMethodShouldTakeNoParameters() throws ClassNotFoundException, NoSuchMethodException {
+    void resolutionMethodShouldTakeNoParameters()
+        throws ClassNotFoundException, NoSuchMethodException {
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("resolution");
       assertEquals(0, method.getParameterCount(), "resolution should take no parameters");
@@ -247,8 +251,7 @@ class JniWasiWallClockTest {
           try {
             clazz.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
           } catch (final NoSuchMethodException e) {
-            throw new AssertionError(
-                "Should implement method: " + interfaceMethod.getName(), e);
+            throw new AssertionError("Should implement method: " + interfaceMethod.getName(), e);
           }
         }
       }

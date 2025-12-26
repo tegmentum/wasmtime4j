@@ -134,7 +134,8 @@ class ComponentEngineHealthCheckConfigTest {
     @Test
     @DisplayName("stub should handle disabled state")
     void stubShouldHandleDisabledState() {
-      final ComponentEngineHealthCheckConfig config = new StubHealthCheckConfig(60000, 10000, false);
+      final ComponentEngineHealthCheckConfig config =
+          new StubHealthCheckConfig(60000, 10000, false);
 
       assertEquals(60000, config.getHealthCheckInterval(), "Interval should match");
       assertEquals(10000, config.getHealthCheckTimeout(), "Timeout should match");

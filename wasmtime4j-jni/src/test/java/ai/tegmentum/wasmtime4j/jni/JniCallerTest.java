@@ -22,15 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Export;
-import ai.tegmentum.wasmtime4j.Function;
-import ai.tegmentum.wasmtime4j.Global;
-import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.Table;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -147,7 +141,8 @@ class JniCallerTest {
     @Test
     @DisplayName("should have getExportByModuleExport method")
     void shouldHaveGetExportByModuleExportMethod() throws NoSuchMethodException {
-      final Method method = JniCaller.class.getMethod("getExportByModuleExport", ModuleExport.class);
+      final Method method =
+          JniCaller.class.getMethod("getExportByModuleExport", ModuleExport.class);
       assertNotNull(method, "getExportByModuleExport method should exist");
       assertEquals(
           Optional.class, method.getReturnType(), "getExportByModuleExport should return Optional");
@@ -196,7 +191,8 @@ class JniCallerTest {
     void shouldHaveSetFuelAsyncYieldIntervalMethod() throws NoSuchMethodException {
       final Method method = JniCaller.class.getMethod("setFuelAsyncYieldInterval", long.class);
       assertNotNull(method, "setFuelAsyncYieldInterval method should exist");
-      assertEquals(void.class, method.getReturnType(), "setFuelAsyncYieldInterval should return void");
+      assertEquals(
+          void.class, method.getReturnType(), "setFuelAsyncYieldInterval should return void");
     }
   }
 

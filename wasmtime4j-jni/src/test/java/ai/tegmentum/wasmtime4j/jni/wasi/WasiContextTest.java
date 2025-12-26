@@ -40,8 +40,8 @@ class WasiContextTest {
     @Test
     @DisplayName("should be public class")
     void shouldBePublicClass() {
-      assertTrue(Modifier.isPublic(WasiContext.class.getModifiers()),
-          "WasiContext should be public");
+      assertTrue(
+          Modifier.isPublic(WasiContext.class.getModifiers()), "WasiContext should be public");
     }
 
     @Test
@@ -50,7 +50,8 @@ class WasiContextTest {
       final Method method = WasiContext.class.getMethod("builder");
       assertNotNull(method, "Should have builder method");
       assertTrue(Modifier.isStatic(method.getModifiers()), "builder should be static");
-      assertTrue(WasiContextBuilder.class.isAssignableFrom(method.getReturnType()),
+      assertTrue(
+          WasiContextBuilder.class.isAssignableFrom(method.getReturnType()),
           "builder should return WasiContextBuilder or subtype");
     }
   }
@@ -62,35 +63,37 @@ class WasiContextTest {
     @Test
     @DisplayName("should have getPermissionManager method")
     void shouldHaveGetPermissionManagerMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getPermissionManager"),
+      assertNotNull(
+          WasiContext.class.getMethod("getPermissionManager"),
           "Should have getPermissionManager method");
     }
 
     @Test
     @DisplayName("should have getSecurityValidator method")
     void shouldHaveGetSecurityValidatorMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getSecurityValidator"),
+      assertNotNull(
+          WasiContext.class.getMethod("getSecurityValidator"),
           "Should have getSecurityValidator method");
     }
 
     @Test
     @DisplayName("should have getEnvironment method")
     void shouldHaveGetEnvironmentMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getEnvironment"),
-          "Should have getEnvironment method");
+      assertNotNull(
+          WasiContext.class.getMethod("getEnvironment"), "Should have getEnvironment method");
     }
 
     @Test
     @DisplayName("should have getArguments method")
     void shouldHaveGetArgumentsMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getArguments"),
-          "Should have getArguments method");
+      assertNotNull(WasiContext.class.getMethod("getArguments"), "Should have getArguments method");
     }
 
     @Test
     @DisplayName("should have getPreopenedDirectories method")
     void shouldHaveGetPreopenedDirectoriesMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getPreopenedDirectories"),
+      assertNotNull(
+          WasiContext.class.getMethod("getPreopenedDirectories"),
           "Should have getPreopenedDirectories method");
     }
   }
@@ -102,15 +105,14 @@ class WasiContextTest {
     @Test
     @DisplayName("should have getNativeHandle method")
     void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("getNativeHandle"),
-          "Should have getNativeHandle method");
+      assertNotNull(
+          WasiContext.class.getMethod("getNativeHandle"), "Should have getNativeHandle method");
     }
 
     @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("isValid"),
-          "Should have isValid method");
+      assertNotNull(WasiContext.class.getMethod("isValid"), "Should have isValid method");
     }
   }
 
@@ -121,15 +123,15 @@ class WasiContextTest {
     @Test
     @DisplayName("should implement AutoCloseable")
     void shouldImplementAutoCloseable() {
-      assertTrue(AutoCloseable.class.isAssignableFrom(WasiContext.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(WasiContext.class),
           "WasiContext should implement AutoCloseable");
     }
 
     @Test
     @DisplayName("should have close method")
     void shouldHaveCloseMethod() throws NoSuchMethodException {
-      assertNotNull(WasiContext.class.getMethod("close"),
-          "Should have close method");
+      assertNotNull(WasiContext.class.getMethod("close"), "Should have close method");
     }
   }
 
@@ -147,10 +149,11 @@ class WasiContextTest {
     @Test
     @DisplayName("builder should allow fluent configuration")
     void builderShouldAllowFluentConfiguration() {
-      final WasiContextBuilder builder = WasiContext.builder()
-          .withEnvironment("KEY", "value")
-          .withArgument("--test")
-          .withWorkingDirectory("/app");
+      final WasiContextBuilder builder =
+          WasiContext.builder()
+              .withEnvironment("KEY", "value")
+              .withArgument("--test")
+              .withWorkingDirectory("/app");
 
       assertNotNull(builder, "Fluent builder should work");
     }
@@ -187,8 +190,9 @@ class WasiContextTest {
     void wasiContextShouldBeDesignedForThreadSafety() {
       // This is a documentation/design test
       // We verify that the class is final to prevent subclass-based thread safety issues
-      assertTrue(Modifier.isFinal(WasiContext.class.getModifiers())
-          || !Modifier.isFinal(WasiContext.class.getModifiers()),
+      assertTrue(
+          Modifier.isFinal(WasiContext.class.getModifiers())
+              || !Modifier.isFinal(WasiContext.class.getModifiers()),
           "WasiContext should have considered thread safety in design");
     }
   }
@@ -203,8 +207,7 @@ class WasiContextTest {
       // Verify close method exists and can be called
       final Method closeMethod = WasiContext.class.getMethod("close");
       assertNotNull(closeMethod);
-      assertTrue(Modifier.isPublic(closeMethod.getModifiers()),
-          "close should be public");
+      assertTrue(Modifier.isPublic(closeMethod.getModifiers()), "close should be public");
     }
 
     @Test
@@ -212,7 +215,8 @@ class WasiContextTest {
     void shouldSupportTryWithResourcesPattern() {
       // This is a compile-time/design test
       // WasiContext implementing AutoCloseable means it supports try-with-resources
-      assertTrue(AutoCloseable.class.isAssignableFrom(WasiContext.class),
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(WasiContext.class),
           "Should support try-with-resources");
     }
   }

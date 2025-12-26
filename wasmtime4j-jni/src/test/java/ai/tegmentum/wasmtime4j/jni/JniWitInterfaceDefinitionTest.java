@@ -151,7 +151,8 @@ class JniWitInterfaceDefinitionTest {
     @DisplayName("should have isCompatibleWith method")
     void shouldHaveIsCompatibleWithMethod() throws NoSuchMethodException {
       final Method method =
-          JniWitInterfaceDefinition.class.getMethod("isCompatibleWith", WitInterfaceDefinition.class);
+          JniWitInterfaceDefinition.class.getMethod(
+              "isCompatibleWith", WitInterfaceDefinition.class);
       assertNotNull(method, "isCompatibleWith method should exist");
       assertEquals(
           ai.tegmentum.wasmtime4j.WitCompatibilityResult.class,
@@ -179,7 +180,8 @@ class JniWitInterfaceDefinitionTest {
       final Set<String> imports = new HashSet<>(Arrays.asList("import1"));
 
       final JniWitInterfaceDefinition definition =
-          new JniWitInterfaceDefinition("test-interface", "1.0.0", "test-package", exports, imports);
+          new JniWitInterfaceDefinition(
+              "test-interface", "1.0.0", "test-package", exports, imports);
 
       assertEquals("test-interface", definition.getName(), "Name should match");
       assertEquals("1.0.0", definition.getVersion(), "Version should match");

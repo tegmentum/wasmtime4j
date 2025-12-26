@@ -163,8 +163,10 @@ class FieldDefinitionTest {
       final FieldDefinition i32Field = new FieldDefinition("x", FieldType.i32(), true, 0);
       final FieldDefinition i64Field = new FieldDefinition("y", FieldType.i64(), true, 1);
 
-      assertEquals(FieldType.i32().getSizeBytes(), i32Field.getSizeBytes(), "Should return I32 size");
-      assertEquals(FieldType.i64().getSizeBytes(), i64Field.getSizeBytes(), "Should return I64 size");
+      assertEquals(
+          FieldType.i32().getSizeBytes(), i32Field.getSizeBytes(), "Should return I32 size");
+      assertEquals(
+          FieldType.i64().getSizeBytes(), i64Field.getSizeBytes(), "Should return I64 size");
     }
   }
 

@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link JniTableType} class.
  *
- * <p>This test class verifies the JNI implementation of TableType interface
- * for WebAssembly table types.
+ * <p>This test class verifies the JNI implementation of TableType interface for WebAssembly table
+ * types.
  */
 @DisplayName("JniTableType Tests")
 class JniTableTypeTest {
@@ -46,14 +46,16 @@ class JniTableTypeTest {
     @Test
     @DisplayName("JniTableType should be final class")
     void shouldBeFinalClass() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(JniTableType.class.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(JniTableType.class.getModifiers()),
           "JniTableType should be final");
     }
 
     @Test
     @DisplayName("JniTableType should implement TableType")
     void shouldImplementTableType() {
-      assertTrue(TableType.class.isAssignableFrom(JniTableType.class),
+      assertTrue(
+          TableType.class.isAssignableFrom(JniTableType.class),
           "JniTableType should implement TableType");
     }
   }
@@ -67,14 +69,16 @@ class JniTableTypeTest {
     void constructorShouldCreateWithFuncrefElementType() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, null);
       assertNotNull(tableType, "TableType should not be null");
-      assertEquals(WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
+      assertEquals(
+          WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
     }
 
     @Test
     @DisplayName("Constructor should create with EXTERNREF element type")
     void constructorShouldCreateWithExternrefElementType() {
       final JniTableType tableType = new JniTableType(WasmValueType.EXTERNREF, 0, null);
-      assertEquals(WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
+      assertEquals(
+          WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
     }
 
     @Test
@@ -104,64 +108,72 @@ class JniTableTypeTest {
     @Test
     @DisplayName("Constructor should throw for null element type")
     void constructorShouldThrowForNullElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(null, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(null, 0, null),
           "Should throw for null element type");
     }
 
     @Test
     @DisplayName("Constructor should throw for negative minimum")
     void constructorShouldThrowForNegativeMinimum() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.FUNCREF, -1, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.FUNCREF, -1, null),
           "Should throw for negative minimum");
     }
 
     @Test
     @DisplayName("Constructor should throw when maximum less than minimum")
     void constructorShouldThrowWhenMaximumLessThanMinimum() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.FUNCREF, 100, 50L),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.FUNCREF, 100, 50L),
           "Should throw when maximum < minimum");
     }
 
     @Test
     @DisplayName("Constructor should throw for non-reference element type")
     void constructorShouldThrowForNonReferenceElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.I32, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.I32, 0, null),
           "Should throw for non-reference element type (I32)");
     }
 
     @Test
     @DisplayName("Constructor should throw for I64 element type")
     void constructorShouldThrowForI64ElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.I64, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.I64, 0, null),
           "Should throw for non-reference element type (I64)");
     }
 
     @Test
     @DisplayName("Constructor should throw for F32 element type")
     void constructorShouldThrowForF32ElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.F32, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.F32, 0, null),
           "Should throw for non-reference element type (F32)");
     }
 
     @Test
     @DisplayName("Constructor should throw for F64 element type")
     void constructorShouldThrowForF64ElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.F64, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.F64, 0, null),
           "Should throw for non-reference element type (F64)");
     }
 
     @Test
     @DisplayName("Constructor should throw for V128 element type")
     void constructorShouldThrowForV128ElementType() {
-      assertThrows(IllegalArgumentException.class, () ->
-              new JniTableType(WasmValueType.V128, 0, null),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new JniTableType(WasmValueType.V128, 0, null),
           "Should throw for non-reference element type (V128)");
     }
 
@@ -182,8 +194,7 @@ class JniTableTypeTest {
     @DisplayName("getKind should return TABLE")
     void getKindShouldReturnTable() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, null);
-      assertEquals(WasmTypeKind.TABLE, tableType.getKind(),
-          "Kind should be TABLE");
+      assertEquals(WasmTypeKind.TABLE, tableType.getKind(), "Kind should be TABLE");
     }
   }
 
@@ -262,7 +273,9 @@ class JniTableTypeTest {
     void equalObjectsShouldHaveEqualHashCodes() {
       final JniTableType tableType1 = new JniTableType(WasmValueType.FUNCREF, 10, 100L);
       final JniTableType tableType2 = new JniTableType(WasmValueType.FUNCREF, 10, 100L);
-      assertEquals(tableType1.hashCode(), tableType2.hashCode(),
+      assertEquals(
+          tableType1.hashCode(),
+          tableType2.hashCode(),
           "Equal objects should have equal hashCodes");
     }
 
@@ -285,7 +298,8 @@ class JniTableTypeTest {
     void toStringShouldIncludeElementType() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, null);
       final String str = tableType.toString();
-      assertTrue(str.contains("FUNCREF") || str.contains("funcref"),
+      assertTrue(
+          str.contains("FUNCREF") || str.contains("funcref"),
           "toString should include element type");
     }
 
@@ -310,7 +324,8 @@ class JniTableTypeTest {
     void toStringShouldIndicateUnlimitedWhenNoMaximum() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, null);
       final String str = tableType.toString();
-      assertTrue(str.contains("unlimited") || str.contains("null") || str.contains("max="),
+      assertTrue(
+          str.contains("unlimited") || str.contains("null") || str.contains("max="),
           "toString should indicate unlimited");
     }
 
@@ -330,16 +345,18 @@ class JniTableTypeTest {
     @Test
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniTableType.fromNative(0),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniTableType.fromNative(0),
           "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
-      assertThrows(IllegalArgumentException.class, () ->
-              JniTableType.fromNative(-1),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> JniTableType.fromNative(-1),
           "Should throw for negative handle");
     }
   }
@@ -360,7 +377,8 @@ class JniTableTypeTest {
     @DisplayName("FUNCREF table with bounds should work")
     void funcrefTableWithBoundsShouldWork() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 10, 100L);
-      assertEquals(WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
+      assertEquals(
+          WasmValueType.FUNCREF, tableType.getElementType(), "Element type should be FUNCREF");
       assertEquals(10, tableType.getMinimum(), "Minimum should be 10");
       assertEquals(100L, tableType.getMaximum().get(), "Maximum should be 100");
       assertEquals(WasmTypeKind.TABLE, tableType.getKind(), "Kind should be TABLE");
@@ -370,7 +388,8 @@ class JniTableTypeTest {
     @DisplayName("EXTERNREF table with bounds should work")
     void externrefTableWithBoundsShouldWork() {
       final JniTableType tableType = new JniTableType(WasmValueType.EXTERNREF, 5, 50L);
-      assertEquals(WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
+      assertEquals(
+          WasmValueType.EXTERNREF, tableType.getElementType(), "Element type should be EXTERNREF");
       assertEquals(5, tableType.getMinimum(), "Minimum should be 5");
       assertEquals(50L, tableType.getMaximum().get(), "Maximum should be 50");
     }

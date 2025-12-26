@@ -141,7 +141,8 @@ class PanamaMemoryManagerTest {
       final MemorySegment segment = memoryManager.allocate(ValueLayout.JAVA_LONG);
 
       assertNotNull(segment, "Segment should not be null");
-      assertEquals(ValueLayout.JAVA_LONG.byteSize(), segment.byteSize(), "Size should match layout");
+      assertEquals(
+          ValueLayout.JAVA_LONG.byteSize(), segment.byteSize(), "Size should match layout");
     }
 
     @Test
@@ -274,7 +275,8 @@ class PanamaMemoryManagerTest {
 
       assertNotNull(segment, "Segment should not be null");
       for (int i = 0; i < data.length; i++) {
-        assertEquals(data[i], segment.getAtIndex(ValueLayout.JAVA_INT, i), "Int at " + i + " should match");
+        assertEquals(
+            data[i], segment.getAtIndex(ValueLayout.JAVA_INT, i), "Int at " + i + " should match");
       }
     }
 
@@ -299,7 +301,9 @@ class PanamaMemoryManagerTest {
 
       assertNotNull(segment, "Segment should not be null");
       assertEquals(
-          ValueLayout.ADDRESS.byteSize() * 10, segment.byteSize(), "Size should match pointer count");
+          ValueLayout.ADDRESS.byteSize() * 10,
+          segment.byteSize(),
+          "Size should match pointer count");
     }
 
     @Test
@@ -322,7 +326,8 @@ class PanamaMemoryManagerTest {
       final MemorySegment segment = memoryManager.allocateSize();
 
       assertNotNull(segment, "Segment should not be null");
-      assertEquals(ValueLayout.JAVA_LONG.byteSize(), segment.byteSize(), "Size should be long size");
+      assertEquals(
+          ValueLayout.JAVA_LONG.byteSize(), segment.byteSize(), "Size should be long size");
     }
   }
 

@@ -26,15 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.debug.DebugSession;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive tests for {@link JniDebugSession}.
- */
+/** Comprehensive tests for {@link JniDebugSession}. */
 @DisplayName("JniDebugSession Tests")
 class JniDebugSessionTest {
 
@@ -69,7 +66,8 @@ class JniDebugSessionTest {
       final JniDebugSession session = new JniDebugSession(0L);
 
       assertNotNull(session.getSessionId(), "Session ID should not be null");
-      assertTrue(session.getSessionId().startsWith("session-"), "Session ID should start with session-");
+      assertTrue(
+          session.getSessionId().startsWith("session-"), "Session ID should start with session-");
       assertEquals(0L, session.getNativeHandle(), "Native handle should be 0");
       assertFalse(session.isActive(), "Session should be inactive");
       assertFalse(session.isPaused(), "Session should not be paused");
@@ -84,8 +82,8 @@ class JniDebugSessionTest {
       assertNotNull(session.getSessionId(), "Session ID should not be null");
       assertEquals(100L, session.getNativeHandle(), "Native handle should be 100");
       assertEquals(100L, session.getDebuggerHandle(), "Debugger handle should be 100");
-      assertArrayEquals(new long[]{200L}, session.getInstanceHandles(),
-          "Instance handles should contain 200");
+      assertArrayEquals(
+          new long[] {200L}, session.getInstanceHandles(), "Instance handles should contain 200");
       assertTrue(session.isActive(), "Session should be active");
     }
 
@@ -95,8 +93,7 @@ class JniDebugSessionTest {
       final long[] handles = {100L, 200L, 300L};
       final JniDebugSession session = new JniDebugSession(50L, handles);
 
-      assertArrayEquals(handles, session.getInstanceHandles(),
-          "Instance handles should match");
+      assertArrayEquals(handles, session.getInstanceHandles(), "Instance handles should match");
     }
 
     @Test
@@ -104,8 +101,7 @@ class JniDebugSessionTest {
     void constructorWithNullInstanceHandlesShouldUseEmptyArray() {
       final JniDebugSession session = new JniDebugSession(50L, (long[]) null);
 
-      assertEquals(0, session.getInstanceHandles().length,
-          "Instance handles should be empty");
+      assertEquals(0, session.getInstanceHandles().length, "Instance handles should be empty");
     }
 
     @Test
@@ -243,7 +239,9 @@ class JniDebugSessionTest {
     void addBreakpointShouldThrowOnNullBreakpoint() {
       final JniDebugSession session = JniDebugSession.createLocal();
 
-      assertThrows(NullPointerException.class, () -> session.addBreakpoint(null),
+      assertThrows(
+          NullPointerException.class,
+          () -> session.addBreakpoint(null),
           "Should throw on null breakpoint");
     }
 
@@ -281,8 +279,7 @@ class JniDebugSessionTest {
             }
 
             @Override
-            public void setEnabled(final boolean enabled) {
-            }
+            public void setEnabled(final boolean enabled) {}
 
             @Override
             public String getCondition() {
@@ -290,8 +287,7 @@ class JniDebugSessionTest {
             }
 
             @Override
-            public void setCondition(final String condition) {
-            }
+            public void setCondition(final String condition) {}
 
             @Override
             public int getHitCount() {
@@ -299,11 +295,12 @@ class JniDebugSessionTest {
             }
 
             @Override
-            public void resetHitCount() {
-            }
+            public void resetHitCount() {}
           };
 
-      assertThrows(IllegalArgumentException.class, () -> session.addBreakpoint(nonJniBp),
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> session.addBreakpoint(nonJniBp),
           "Should throw for non-JniBreakpoint");
     }
 
@@ -321,7 +318,9 @@ class JniDebugSessionTest {
       session.removeBreakpoint(bp1);
 
       assertEquals(1, session.getBreakpoints().size(), "Should have 1 breakpoint");
-      assertEquals("bp-2", session.getBreakpoints().get(0).getBreakpointId(),
+      assertEquals(
+          "bp-2",
+          session.getBreakpoints().get(0).getBreakpointId(),
           "Remaining breakpoint should be bp-2");
     }
 
@@ -330,7 +329,9 @@ class JniDebugSessionTest {
     void removeBreakpointShouldThrowOnNullBreakpoint() {
       final JniDebugSession session = JniDebugSession.createLocal();
 
-      assertThrows(NullPointerException.class, () -> session.removeBreakpoint(null),
+      assertThrows(
+          NullPointerException.class,
+          () -> session.removeBreakpoint(null),
           "Should throw on null breakpoint");
     }
 
@@ -342,7 +343,8 @@ class JniDebugSessionTest {
 
       final List<JniBreakpoint> breakpoints = session.getBreakpoints();
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> breakpoints.add(new JniBreakpoint("bp-2", "func", 1, 1, 0L)),
           "List should be unmodifiable");
     }
@@ -360,7 +362,9 @@ class JniDebugSessionTest {
 
       session.step(DebugSession.StepType.STEP_INTO);
 
-      assertEquals(DebugSession.StepType.STEP_INTO, session.getPendingStep(),
+      assertEquals(
+          DebugSession.StepType.STEP_INTO,
+          session.getPendingStep(),
           "Pending step should be STEP_INTO");
     }
 
@@ -370,8 +374,8 @@ class JniDebugSessionTest {
       final JniDebugSession session = JniDebugSession.createLocal();
       session.start();
 
-      assertThrows(NullPointerException.class, () -> session.step(null),
-          "Should throw on null stepType");
+      assertThrows(
+          NullPointerException.class, () -> session.step(null), "Should throw on null stepType");
     }
 
     @Test
@@ -379,7 +383,8 @@ class JniDebugSessionTest {
     void stepShouldThrowWhenSessionNotActive() {
       final JniDebugSession session = JniDebugSession.createLocal();
 
-      assertThrows(IllegalStateException.class,
+      assertThrows(
+          IllegalStateException.class,
           () -> session.step(DebugSession.StepType.STEP_INTO),
           "Should throw when session not active");
     }
@@ -434,7 +439,9 @@ class JniDebugSessionTest {
     void continueExecutionShouldThrowWhenSessionNotActive() {
       final JniDebugSession session = JniDebugSession.createLocal();
 
-      assertThrows(IllegalStateException.class, session::continueExecution,
+      assertThrows(
+          IllegalStateException.class,
+          session::continueExecution,
           "Should throw when session not active");
     }
   }
@@ -518,14 +525,17 @@ class JniDebugSessionTest {
     @DisplayName("updateCallStack should update call stack")
     void updateCallStackShouldUpdateCallStack() {
       final JniDebugSession session = JniDebugSession.createLocal();
-      final List<JniStackFrame> frames = Arrays.asList(
-          JniStackFrame.fromNative(0, "func1", 100L, 10, 1, "file1.wasm"),
-          JniStackFrame.fromNative(1, "func2", 200L, 20, 2, "file2.wasm"));
+      final List<JniStackFrame> frames =
+          Arrays.asList(
+              JniStackFrame.fromNative(0, "func1", 100L, 10, 1, "file1.wasm"),
+              JniStackFrame.fromNative(1, "func2", 200L, 20, 2, "file2.wasm"));
 
       session.updateCallStack(frames);
 
       assertEquals(2, session.getCallStack().size(), "Call stack should have 2 frames");
-      assertEquals("func1", session.getCallStack().get(0).getFunctionName(),
+      assertEquals(
+          "func1",
+          session.getCallStack().get(0).getFunctionName(),
           "First frame function should be func1");
     }
 
@@ -533,8 +543,8 @@ class JniDebugSessionTest {
     @DisplayName("updateCallStack with null should clear call stack")
     void updateCallStackWithNullShouldClearCallStack() {
       final JniDebugSession session = JniDebugSession.createLocal();
-      session.updateCallStack(Arrays.asList(
-          JniStackFrame.fromNative(0, "func", 100L, 10, 1, "file.wasm")));
+      session.updateCallStack(
+          Arrays.asList(JniStackFrame.fromNative(0, "func", 100L, 10, 1, "file.wasm")));
 
       assertEquals(1, session.getCallStack().size(), "Call stack should have 1 frame");
 
@@ -550,7 +560,8 @@ class JniDebugSessionTest {
 
       final List<JniStackFrame> callStack = session.getCallStack();
 
-      assertThrows(UnsupportedOperationException.class,
+      assertThrows(
+          UnsupportedOperationException.class,
           () -> callStack.add(JniStackFrame.fromNative(0, "func", 0L, 0, 0, null)),
           "List should be unmodifiable");
     }
@@ -589,8 +600,8 @@ class JniDebugSessionTest {
       final long[] retrieved = session.getInstanceHandles();
       retrieved[0] = 999L;
 
-      assertEquals(100L, session.getInstanceHandles()[0],
-          "Original handles should not be modified");
+      assertEquals(
+          100L, session.getInstanceHandles()[0], "Original handles should not be modified");
     }
   }
 }
