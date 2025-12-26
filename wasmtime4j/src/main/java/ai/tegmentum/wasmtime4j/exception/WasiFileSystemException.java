@@ -307,6 +307,9 @@ public class WasiFileSystemException extends WasiException {
    * @return true if retryable, false otherwise
    */
   private static boolean isRetryableError(final FileSystemErrorType errorType) {
+    if (errorType == null) {
+      return false;
+    }
     switch (errorType) {
       case IO_ERROR:
       case WOULD_BLOCK:

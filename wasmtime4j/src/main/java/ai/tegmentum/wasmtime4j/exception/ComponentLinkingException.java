@@ -176,7 +176,7 @@ public class ComponentLinkingException extends WasmException {
     report.append("Error Message: ").append(getMessage()).append("\n");
     report.append("Recoverable: ").append(isRecoverable() ? "Yes" : "No").append("\n\n");
 
-    if (!involvedComponents.isEmpty()) {
+    if (involvedComponents != null && !involvedComponents.isEmpty()) {
       report.append("Involved Components:\n");
       for (String component : involvedComponents) {
         report.append("  - ").append(component).append("\n");
@@ -184,7 +184,7 @@ public class ComponentLinkingException extends WasmException {
       report.append("\n");
     }
 
-    if (!compatibilityIssues.isEmpty()) {
+    if (compatibilityIssues != null && !compatibilityIssues.isEmpty()) {
       report.append("Compatibility Issues:\n");
       for (Map.Entry<String, String> entry : compatibilityIssues.entrySet()) {
         report
@@ -197,7 +197,7 @@ public class ComponentLinkingException extends WasmException {
       report.append("\n");
     }
 
-    if (!missingDependencies.isEmpty()) {
+    if (missingDependencies != null && !missingDependencies.isEmpty()) {
       report.append("Missing Dependencies:\n");
       for (String dependency : missingDependencies) {
         report.append("  - ").append(dependency).append("\n");
@@ -205,7 +205,7 @@ public class ComponentLinkingException extends WasmException {
       report.append("\n");
     }
 
-    if (!circularDependencies.isEmpty()) {
+    if (circularDependencies != null && !circularDependencies.isEmpty()) {
       report.append("Circular Dependencies:\n");
       for (String component : circularDependencies) {
         report.append("  - ").append(component).append("\n");
@@ -213,7 +213,7 @@ public class ComponentLinkingException extends WasmException {
       report.append("\n");
     }
 
-    if (!suggestedResolutions.isEmpty()) {
+    if (suggestedResolutions != null && !suggestedResolutions.isEmpty()) {
       report.append("Suggested Resolutions:\n");
       for (int i = 0; i < suggestedResolutions.size(); i++) {
         report
