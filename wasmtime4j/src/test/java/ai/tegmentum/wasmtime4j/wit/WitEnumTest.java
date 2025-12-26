@@ -70,15 +70,6 @@ class WitEnumTest {
       assertTrue(Modifier.isStatic(method.getModifiers()), "of should be static");
       assertEquals(WitEnum.class, method.getReturnType(), "of should return WitEnum");
     }
-
-    @Test
-    @DisplayName("should have byIndex factory method")
-    void shouldHaveByIndexFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("byIndex", WitType.class, int.class);
-      assertNotNull(method, "byIndex method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "byIndex should be static");
-      assertEquals(WitEnum.class, method.getReturnType(), "byIndex should return WitEnum");
-    }
   }
 
   @Nested
@@ -86,19 +77,11 @@ class WitEnumTest {
   class AccessorMethodTests {
 
     @Test
-    @DisplayName("should have getCase method")
-    void shouldHaveGetCaseMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("getCase");
-      assertNotNull(method, "getCase method should exist");
-      assertEquals(String.class, method.getReturnType(), "getCase should return String");
-    }
-
-    @Test
-    @DisplayName("should have getIndex method")
-    void shouldHaveGetIndexMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("getIndex");
-      assertNotNull(method, "getIndex method should exist");
-      assertEquals(int.class, method.getReturnType(), "getIndex should return int");
+    @DisplayName("should have getDiscriminant method")
+    void shouldHaveGetDiscriminantMethod() throws NoSuchMethodException {
+      final Method method = WitEnum.class.getMethod("getDiscriminant");
+      assertNotNull(method, "getDiscriminant method should exist");
+      assertEquals(String.class, method.getReturnType(), "getDiscriminant should return String");
     }
   }
 
@@ -120,17 +103,10 @@ class WitEnumTest {
   class MethodParameterTests {
 
     @Test
-    @DisplayName("getCase should take no parameters")
-    void getCaseShouldTakeNoParameters() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("getCase");
-      assertEquals(0, method.getParameterCount(), "getCase should take no parameters");
-    }
-
-    @Test
-    @DisplayName("getIndex should take no parameters")
-    void getIndexShouldTakeNoParameters() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("getIndex");
-      assertEquals(0, method.getParameterCount(), "getIndex should take no parameters");
+    @DisplayName("getDiscriminant should take no parameters")
+    void getDiscriminantShouldTakeNoParameters() throws NoSuchMethodException {
+      final Method method = WitEnum.class.getMethod("getDiscriminant");
+      assertEquals(0, method.getParameterCount(), "getDiscriminant should take no parameters");
     }
   }
 

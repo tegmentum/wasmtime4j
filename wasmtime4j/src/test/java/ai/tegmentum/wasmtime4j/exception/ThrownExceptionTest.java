@@ -23,11 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import ai.tegmentum.wasmtime4j.ExnRef;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +45,107 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("ThrownException Tests")
 class ThrownExceptionTest {
+
+  /** Simple stub implementation of Tag interface for testing. */
+  private static final class StubTag implements Tag {
+    private final String id;
+
+    StubTag(final String id) {
+      this.id = id;
+    }
+
+    @Override
+    public TagType getType(final Store store) {
+      return null;
+    }
+
+    @Override
+    public boolean equals(final Tag other, final Store store) {
+      if (other == null) {
+        return false;
+      }
+      if (other instanceof StubTag) {
+        return id.equals(((StubTag) other).id);
+      }
+      return false;
+    }
+
+    @Override
+    public long getNativeHandle() {
+      return 0;
+    }
+
+    @Override
+    public String toString() {
+      return "StubTag[" + id + "]";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof StubTag)) {
+        return false;
+      }
+      return id.equals(((StubTag) obj).id);
+    }
+
+    @Override
+    public int hashCode() {
+      return id.hashCode();
+    }
+  }
+
+  /** Simple stub implementation of ExnRef interface for testing. */
+  private static final class StubExnRef implements ExnRef {
+    private final String id;
+
+    StubExnRef(final String id) {
+      this.id = id;
+    }
+
+    @Override
+    public Tag getTag(final Store store) {
+      return null;
+    }
+
+    @Override
+    public long getNativeHandle() {
+      return 0;
+    }
+
+    @Override
+    public boolean isValid() {
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "StubExnRef[" + id + "]";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof StubExnRef)) {
+        return false;
+      }
+      return id.equals(((StubExnRef) obj).id);
+    }
+
+    @Override
+    public int hashCode() {
+      return id.hashCode();
+    }
+  }
+
+  /** Creates a simple stub WasmValue for testing. */
+  private static WasmValue createStubWasmValue(final int value) {
+    return WasmValue.i32(value);
+  }
 
   @Nested
   @DisplayName("Class Structure Tests")
@@ -72,10 +175,10 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("Constructor with tag, payload, and exnRef should set all fields")
     void constructorWithAllFieldsShouldSetAll() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value = createStubWasmValue(42);
       final List<WasmValue> payload = Arrays.asList(value);
-      final ExnRef exnRef = mock(ExnRef.class);
+      final ExnRef exnRef = new StubExnRef("exn1");
 
       final ThrownException exception = new ThrownException(tag, payload, exnRef);
 
@@ -88,8 +191,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("Constructor with tag and payload should set fields")
     void constructorWithTagAndPayloadShouldSetFields() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value = createStubWasmValue(42);
       final List<WasmValue> payload = Arrays.asList(value);
 
       final ThrownException exception = new ThrownException(tag, payload);
@@ -113,7 +216,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("Constructor should handle null payload")
     void constructorShouldHandleNullPayload() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
 
       final ThrownException exception = new ThrownException(tag, null);
 
@@ -124,7 +227,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("Constructor should handle null exnRef")
     void constructorShouldHandleNullExnRef() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
 
       final ThrownException exception = new ThrownException(tag, Collections.emptyList(), null);
 
@@ -139,7 +242,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("getTag should return the tag")
     void getTagShouldReturnTag() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
       assertSame(tag, exception.getTag(), "getTag should return the tag");
@@ -148,8 +251,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("getPayload should return unmodifiable list")
     void getPayloadShouldReturnUnmodifiableList() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value = createStubWasmValue(42);
       final List<WasmValue> payload = Arrays.asList(value);
 
       final ThrownException exception = new ThrownException(tag, payload);
@@ -157,15 +260,15 @@ class ThrownExceptionTest {
 
       assertThrows(
           UnsupportedOperationException.class,
-          () -> retrievedPayload.add(mock(WasmValue.class)),
+          () -> retrievedPayload.add(createStubWasmValue(99)),
           "Payload should be unmodifiable");
     }
 
     @Test
     @DisplayName("hasPayload should return true when payload not empty")
     void hasPayloadShouldReturnTrueWhenPayloadNotEmpty() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value = createStubWasmValue(42);
 
       final ThrownException exception = new ThrownException(tag, Arrays.asList(value));
 
@@ -175,7 +278,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("hasPayload should return false when payload empty")
     void hasPayloadShouldReturnFalseWhenPayloadEmpty() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
 
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
@@ -185,20 +288,20 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("getPayloadValue should return value at index")
     void getPayloadValueShouldReturnValueAtIndex() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value1 = mock(WasmValue.class);
-      final WasmValue value2 = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value1 = createStubWasmValue(1);
+      final WasmValue value2 = createStubWasmValue(2);
 
       final ThrownException exception = new ThrownException(tag, Arrays.asList(value1, value2));
 
-      assertSame(value1, exception.getPayloadValue(0), "First value should match");
-      assertSame(value2, exception.getPayloadValue(1), "Second value should match");
+      assertEquals(value1, exception.getPayloadValue(0), "First value should match");
+      assertEquals(value2, exception.getPayloadValue(1), "Second value should match");
     }
 
     @Test
     @DisplayName("getPayloadValue should throw for invalid index")
     void getPayloadValueShouldThrowForInvalidIndex() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
 
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
@@ -211,10 +314,10 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("getPayloadSize should return correct size")
     void getPayloadSizeShouldReturnCorrectSize() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value1 = mock(WasmValue.class);
-      final WasmValue value2 = mock(WasmValue.class);
-      final WasmValue value3 = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value1 = createStubWasmValue(1);
+      final WasmValue value2 = createStubWasmValue(2);
+      final WasmValue value3 = createStubWasmValue(3);
 
       final ThrownException exception =
           new ThrownException(tag, Arrays.asList(value1, value2, value3));
@@ -230,7 +333,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("toString should include tag")
     void toStringShouldIncludeTag() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("testTag");
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
       final String result = exception.toString();
@@ -242,7 +345,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("toString should include payload info")
     void toStringShouldIncludePayloadInfo() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("testTag");
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
       final String result = exception.toString();
@@ -253,8 +356,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("toString should include exnRef status")
     void toStringShouldIncludeExnRefStatus() {
-      final Tag tag = mock(Tag.class);
-      final ExnRef exnRef = mock(ExnRef.class);
+      final Tag tag = new StubTag("testTag");
+      final ExnRef exnRef = new StubExnRef("exn1");
       final ThrownException withRef = new ThrownException(tag, Collections.emptyList(), exnRef);
       final ThrownException withoutRef = new ThrownException(tag, Collections.emptyList());
 
@@ -273,7 +376,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("equals should return true for same object")
     void equalsShouldReturnTrueForSameObject() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
       assertEquals(exception, exception, "Same object should be equal");
@@ -282,7 +385,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("equals should return true for equivalent objects")
     void equalsShouldReturnTrueForEquivalentObjects() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
       final List<WasmValue> payload = Collections.emptyList();
 
       final ThrownException exception1 = new ThrownException(tag, payload);
@@ -294,8 +397,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("equals should return false for different tags")
     void equalsShouldReturnFalseForDifferentTags() {
-      final Tag tag1 = mock(Tag.class);
-      final Tag tag2 = mock(Tag.class);
+      final Tag tag1 = new StubTag("tag1");
+      final Tag tag2 = new StubTag("tag2");
 
       final ThrownException exception1 = new ThrownException(tag1, Collections.emptyList());
       final ThrownException exception2 = new ThrownException(tag2, Collections.emptyList());
@@ -306,7 +409,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("equals should return false for null")
     void equalsShouldReturnFalseForNull() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
       final ThrownException exception = new ThrownException(tag, Collections.emptyList());
 
       assertNotEquals(null, exception, "Should not equal null");
@@ -315,7 +418,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("hashCode should be consistent for equivalent objects")
     void hashCodeShouldBeConsistentForEquivalentObjects() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
       final List<WasmValue> payload = Collections.emptyList();
 
       final ThrownException exception1 = new ThrownException(tag, payload);
@@ -335,7 +438,7 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("builder should create ThrownException")
     void builderShouldCreateThrownException() {
-      final Tag tag = mock(Tag.class);
+      final Tag tag = new StubTag("tag1");
 
       final ThrownException exception = ThrownException.builder(tag).build();
 
@@ -347,8 +450,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("builder should set payload")
     void builderShouldSetPayload() {
-      final Tag tag = mock(Tag.class);
-      final WasmValue value = mock(WasmValue.class);
+      final Tag tag = new StubTag("tag1");
+      final WasmValue value = createStubWasmValue(42);
 
       final ThrownException exception =
           ThrownException.builder(tag).payload(Arrays.asList(value)).build();
@@ -359,8 +462,8 @@ class ThrownExceptionTest {
     @Test
     @DisplayName("builder should set exnRef")
     void builderShouldSetExnRef() {
-      final Tag tag = mock(Tag.class);
-      final ExnRef exnRef = mock(ExnRef.class);
+      final Tag tag = new StubTag("tag1");
+      final ExnRef exnRef = new StubExnRef("exn1");
 
       final ThrownException exception = ThrownException.builder(tag).exnRef(exnRef).build();
 

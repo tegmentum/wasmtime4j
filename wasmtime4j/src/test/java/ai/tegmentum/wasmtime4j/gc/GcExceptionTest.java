@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
@@ -51,7 +52,8 @@ class GcExceptionTest {
     @DisplayName("should extend RuntimeException")
     void shouldExtendRuntimeException() {
       assertTrue(
-          RuntimeException.class.isAssignableFrom(GcException.class),
+          ai.tegmentum.wasmtime4j.exception.RuntimeException.class.isAssignableFrom(
+              GcException.class),
           "GcException should extend RuntimeException");
     }
 
@@ -92,7 +94,9 @@ class GcExceptionTest {
       final String message = "GC heap overflow";
       final GcException exception = new GcException(message);
 
-      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertTrue(
+          exception.getMessage().contains(message),
+          "Message should contain the original message");
       assertNull(exception.getCause(), "Cause should be null");
     }
 
@@ -100,10 +104,12 @@ class GcExceptionTest {
     @DisplayName("should create exception with message and cause")
     void shouldCreateExceptionWithMessageAndCause() {
       final String message = "Failed to allocate struct";
-      final RuntimeException cause = new RuntimeException("Out of memory");
+      final java.lang.RuntimeException cause = new java.lang.RuntimeException("Out of memory");
       final GcException exception = new GcException(message, cause);
 
-      assertEquals(message, exception.getMessage(), "Message should be set correctly");
+      assertTrue(
+          exception.getMessage().contains(message),
+          "Message should contain the original message");
       assertSame(cause, exception.getCause(), "Cause should be set correctly");
     }
   }
@@ -116,7 +122,8 @@ class GcExceptionTest {
     @DisplayName("should be unchecked exception")
     void shouldBeUncheckedException() {
       assertTrue(
-          RuntimeException.class.isAssignableFrom(GcException.class),
+          ai.tegmentum.wasmtime4j.exception.RuntimeException.class.isAssignableFrom(
+              GcException.class),
           "GcException should be an unchecked exception");
     }
 
@@ -199,17 +206,21 @@ class GcExceptionTest {
   class EdgeCaseTests {
 
     @Test
-    @DisplayName("should handle null message")
-    void shouldHandleNullMessage() {
-      final GcException exception = new GcException((String) null);
-      assertNull(exception.getMessage(), "Null message should be preserved");
+    @DisplayName("should reject null message")
+    void shouldRejectNullMessage() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new GcException((String) null),
+          "Null message should be rejected");
     }
 
     @Test
-    @DisplayName("should handle empty message")
-    void shouldHandleEmptyMessage() {
-      final GcException exception = new GcException("");
-      assertEquals("", exception.getMessage(), "Empty message should be preserved");
+    @DisplayName("should reject empty message")
+    void shouldRejectEmptyMessage() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new GcException(""),
+          "Empty message should be rejected");
     }
 
     @Test

@@ -104,30 +104,30 @@ class GcValueTest {
     }
 
     @Test
-    @DisplayName("should have static anyRef factory method")
-    void shouldHaveStaticAnyRefFactoryMethod() throws NoSuchMethodException {
-      final Method method = GcValue.class.getMethod("anyRef", AnyRef.class);
-      assertNotNull(method, "anyRef factory method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "anyRef should be static");
-      assertEquals(GcValue.class, method.getReturnType(), "anyRef should return GcValue");
+    @DisplayName("should have static reference factory method")
+    void shouldHaveStaticReferenceFactoryMethod() throws NoSuchMethodException {
+      final Method method = GcValue.class.getMethod("reference", GcObject.class);
+      assertNotNull(method, "reference factory method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "reference should be static");
+      assertEquals(GcValue.class, method.getReturnType(), "reference should return GcValue");
     }
 
     @Test
-    @DisplayName("should have static structRef factory method")
-    void shouldHaveStaticStructRefFactoryMethod() throws NoSuchMethodException {
-      final Method method = GcValue.class.getMethod("structRef", StructRef.class);
-      assertNotNull(method, "structRef factory method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "structRef should be static");
-      assertEquals(GcValue.class, method.getReturnType(), "structRef should return GcValue");
+    @DisplayName("should have static nullValue factory method")
+    void shouldHaveStaticNullValueFactoryMethod() throws NoSuchMethodException {
+      final Method method = GcValue.class.getMethod("nullValue");
+      assertNotNull(method, "nullValue factory method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "nullValue should be static");
+      assertEquals(GcValue.class, method.getReturnType(), "nullValue should return GcValue");
     }
 
     @Test
-    @DisplayName("should have static arrayRef factory method")
-    void shouldHaveStaticArrayRefFactoryMethod() throws NoSuchMethodException {
-      final Method method = GcValue.class.getMethod("arrayRef", ArrayRef.class);
-      assertNotNull(method, "arrayRef factory method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "arrayRef should be static");
-      assertEquals(GcValue.class, method.getReturnType(), "arrayRef should return GcValue");
+    @DisplayName("should have static v128 factory method")
+    void shouldHaveStaticV128FactoryMethod() throws NoSuchMethodException {
+      final Method method = GcValue.class.getMethod("v128", byte[].class);
+      assertNotNull(method, "v128 factory method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "v128 should be static");
+      assertEquals(GcValue.class, method.getReturnType(), "v128 should return GcValue");
     }
   }
 
