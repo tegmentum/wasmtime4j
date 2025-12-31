@@ -317,6 +317,10 @@
                         <!-- @{argLine} is set by jacoco-maven-plugin -->
                         <argLine>@{argLine}</argLine>
                         <useModulePath>false</useModulePath>
+                        <!-- Exclude tests tagged with 'integration' by default -->
+                        <!-- These tests require native Wasmtime runtime (JNI/Panama) -->
+                        <!-- Run with -P integration-tests to include them -->
+                        <excludedGroups>integration</excludedGroups>
                         <includes>
                             <include>**/*Test.java</include>
                             <include>**/*Tests.java</include>
@@ -1044,6 +1048,21 @@
             <id>integration-tests</id>
             <build>
                 <plugins>
+                    <!-- Include tests tagged with 'integration' when this profile is active -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Override excludedGroups to include integration tests -->
+                            <excludedGroups></excludedGroups>
+                            <!-- Parallel execution for faster test runs -->
+                            <parallel>classes</parallel>
+                            <threadCount>4</threadCount>
+                            <!-- Reuse JVM to reduce startup overhead -->
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
