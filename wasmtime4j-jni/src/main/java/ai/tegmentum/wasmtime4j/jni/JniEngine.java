@@ -372,4 +372,74 @@ public class JniEngine implements Engine {
   private native boolean nativeEngineSame(long handle1, long handle2);
 
   private native boolean nativeIsAsync(long engineHandle);
+
+  /**
+   * Creates a new engine with the specified configuration.
+   *
+   * @param config the engine configuration
+   * @return a new JniEngine instance
+   * @throws WasmException if the engine cannot be created
+   */
+  public static JniEngine createWithConfig(final EngineConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("config cannot be null");
+    }
+
+    // Map optimization level to native value
+    final int optLevel;
+    switch (config.getOptimizationLevel()) {
+      case NONE:
+        optLevel = 0;
+        break;
+      case SPEED:
+        optLevel = 1;
+        break;
+      case SPEED_AND_SIZE:
+        optLevel = 2;
+        break;
+      default:
+        optLevel = 1; // Default to SPEED
+    }
+
+    // Convert max memory from bytes to pages (1 page = 64KB)
+    // Use 0 to indicate default if not explicitly configured
+    final long maxMemoryBytes = config.getMaxMemoryPerInstance();
+    final int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
+
+    final long handle = nativeCreateEngineWithConfig(
+        0, // strategy (0 = auto/cranelift)
+        optLevel,
+        config.isDebugInfo(),
+        config.isWasmThreads(),
+        config.isWasmSimd(),
+        config.isWasmReferenceTypes(),
+        config.isWasmBulkMemory(),
+        config.isWasmMultiValue(),
+        config.isConsumeFuel(),
+        maxMemoryPages,
+        (int) config.getMaxWasmStack(),
+        config.isEpochInterruption(),
+        config.getInstancePoolSize());
+
+    if (handle == 0) {
+      throw new WasmException("Failed to create engine with configuration");
+    }
+
+    return new JniEngine(handle);
+  }
+
+  private static native long nativeCreateEngineWithConfig(
+      int strategy,
+      int optLevel,
+      boolean debugInfo,
+      boolean wasmThreads,
+      boolean wasmSimd,
+      boolean wasmReferenceTypes,
+      boolean wasmBulkMemory,
+      boolean wasmMultiValue,
+      boolean fuelEnabled,
+      int maxMemoryPages,
+      int maxStackSize,
+      boolean epochInterruption,
+      int maxInstances);
 }

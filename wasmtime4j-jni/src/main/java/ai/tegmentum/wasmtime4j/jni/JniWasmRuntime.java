@@ -179,10 +179,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Engine createEngine(final EngineConfig config) throws WasmException {
     JniValidation.requireNonNull(config, "config");
 
-    // For now, create engine with default config and log the custom config request
-    LOGGER.fine(
-        "Creating engine with custom config (config details will be implemented in future)");
-    return createEngine();
+    LOGGER.fine("Creating engine with custom config");
+    return JniEngine.createWithConfig(config);
   }
 
   @Override
