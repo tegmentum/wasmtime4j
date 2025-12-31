@@ -1269,7 +1269,10 @@ pub mod jni_engine {
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-            crate::store::core::create_store(engine)
+            let store = crate::store::core::create_store(engine)?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
     
@@ -1392,6 +1395,8 @@ pub mod jni_function {
     /// This allows for efficient type introspection without requiring a store context
     #[derive(Debug)]
     pub struct FunctionHandle {
+        /// The underlying Wasmtime function
+        pub func: Func,
         /// Function name for debugging
         pub name: String,
         /// Cached parameter type strings (Store-independent)
@@ -1403,8 +1408,7 @@ pub mod jni_function {
     impl FunctionHandle {
         /// Create a new function handle with type information cached as strings
         ///
-        /// IMPORTANT: Caches type info as strings at creation time, avoiding Store-bound FuncType
-        /// The Func parameter is only used for extracting type information and is not stored
+        /// Stores the Func reference and caches type info as strings at creation time.
         pub fn new(func: Func, name: String, store: &mut Store) -> Self {
             let store_guard = store.inner.lock();
             let func_type = func.ty(&*store_guard);
@@ -1413,10 +1417,16 @@ pub mod jni_function {
             let return_types = func_type.results().map(|vt| valtype_to_string(&vt)).collect();
 
             Self {
+                func,
                 name,
                 param_types,
                 return_types,
             }
+        }
+
+        /// Get the underlying Wasmtime function reference
+        pub fn get_func(&self) -> &Func {
+            &self.func
         }
 
         /// Get parameter types as strings (cached at creation, Store-independent)
@@ -1723,13 +1733,15 @@ pub mod jni_function {
         }
 
         use std::os::raw::c_void;
-        use crate::instance::core::get_function_ref;
         use wasmtime::Val;
 
         // Helper closure for the actual work
         let result = (|| -> WasmtimeResult<jobjectArray> {
-            // Get function reference
-            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+            // Get function from FunctionHandle
+            let func_handle = unsafe {
+                &*(function_ptr as *const jni_function::FunctionHandle)
+            };
+            let func = func_handle.get_func();
 
             // Get store reference
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -1803,13 +1815,15 @@ pub mod jni_function {
         }
 
         use std::os::raw::c_void;
-        use crate::instance::core::get_function_ref;
         use wasmtime::Val;
 
         // Helper closure for the actual work
         let result = (|| -> WasmtimeResult<jobjectArray> {
-            // Get function reference
-            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+            // Get function from FunctionHandle
+            let func_handle = unsafe {
+                &*(function_ptr as *const jni_function::FunctionHandle)
+            };
+            let func = func_handle.get_func();
 
             // Get store reference
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -1883,13 +1897,15 @@ pub mod jni_function {
         }
 
         use std::os::raw::c_void;
-        use crate::instance::core::get_function_ref;
         use wasmtime::Val;
 
         // Helper closure for the actual work
         let result = (|| -> WasmtimeResult<jobjectArray> {
-            // Get function reference
-            let func = unsafe { get_function_ref(function_ptr as *const c_void)? };
+            // Get function from FunctionHandle
+            let func_handle = unsafe {
+                &*(function_ptr as *const jni_function::FunctionHandle)
+            };
+            let func = func_handle.get_func();
 
             // Get store reference
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -1991,13 +2007,14 @@ pub mod jni_function {
     /// Destroy a function (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestroyFunction(
-        mut env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
     ) {
         if function_ptr != 0 {
             unsafe {
-                let _ = Box::from_raw(function_ptr as *mut wasmtime::Func);
+                // Free the FunctionHandle, not raw Func - FunctionHandle wraps the Func
+                let _ = Box::from_raw(function_ptr as *mut jni_function::FunctionHandle);
             }
         }
     }
@@ -2059,7 +2076,10 @@ pub mod jni_store {
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-            core::create_store(engine)
+            let store = core::create_store(engine)?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
     
@@ -2078,15 +2098,15 @@ pub mod jni_store {
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-            
+
             let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
             let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
             let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
             let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
             let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements as u32) };
             let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
-            
-            core::create_store_with_config(
+
+            let store = core::create_store_with_config(
                 engine,
                 fuel_limit_opt,
                 memory_limit_opt,
@@ -2094,7 +2114,10 @@ pub mod jni_store {
                 max_instances_opt,
                 max_table_elements_opt,
                 max_functions_opt,
-            )
+            )?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
 
@@ -2111,7 +2134,10 @@ pub mod jni_store {
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
-            core::create_store_for_module(module)
+            let store = core::create_store_for_module(module)?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
 
@@ -2799,7 +2825,7 @@ pub mod jni_store {
             let table_limit_opt = if table_elements == 0 { None } else { Some(table_elements as u32) };
             let instances_limit_opt = if instances == 0 { None } else { Some(instances as usize) };
 
-            core::create_store_with_config(
+            let store = core::create_store_with_config(
                 engine,
                 None,  // fuel_limit
                 memory_limit_opt,
@@ -2807,7 +2833,10 @@ pub mod jni_store {
                 instances_limit_opt,
                 table_limit_opt,
                 None,  // max_functions
-            )
+            )?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
 
@@ -2828,7 +2857,7 @@ pub mod jni_store {
             let memory_limit_opt = if memory_size == 0 { None } else { Some(memory_size as usize) };
             let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
 
-            core::create_store_with_config(
+            let store = core::create_store_with_config(
                 engine,
                 fuel_limit_opt,
                 memory_limit_opt,
@@ -2836,16 +2865,24 @@ pub mod jni_store {
                 None,  // instances
                 None,  // table_elements
                 None,  // max_functions
-            )
+            )?;
+            let store_ptr = store.as_ref() as *const _ as *const std::os::raw::c_void;
+            crate::memory::core::register_store_handle(store_ptr)?;
+            Ok(store)
         }) as jlong
     }
 
+    #[no_mangle]
     #[allow(non_snake_case)]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
-        mut env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
         store_ptr: jlong,
     ) {
+        if store_ptr != 0 {
+            // Unregister the store handle from memory module before destroying
+            let _ = crate::memory::core::unregister_store_handle(store_ptr as *const std::os::raw::c_void);
+        }
         unsafe {
             core::destroy_store(store_ptr as *mut std::os::raw::c_void);
         }
@@ -4316,7 +4353,7 @@ pub mod jni_module {
                     let type_str = match &export.export_type {
                         crate::module::ExportKind::Function(_) => "function",
                         crate::module::ExportKind::Global(_, _) => "global",
-                        crate::module::ExportKind::Memory(_, _, _) => "memory",
+                        crate::module::ExportKind::Memory(_, _, _, _) => "memory",
                         crate::module::ExportKind::Table(_, _, _) => "table",
                     };
                     
@@ -4361,7 +4398,7 @@ pub mod jni_module {
                     let type_str = match &import.import_type {
                         crate::module::ImportKind::Function(_) => "function",
                         crate::module::ImportKind::Global(_, _) => "global",
-                        crate::module::ImportKind::Memory(_, _, _) => "memory",
+                        crate::module::ImportKind::Memory(_, _, _, _) => "memory",
                         crate::module::ImportKind::Table(_, _, _) => "table",
                     };
                     
@@ -4655,23 +4692,32 @@ pub mod jni_module {
         ).ok()
     }
 
-    /// Helper: Create JniMemoryType from initial, max, and shared
+    /// Helper: Create JniMemoryType from initial, max, is_64, and shared
     fn create_jni_memory_type<'a>(
         env: &mut JNIEnv<'a>,
         initial: u64,
         max: Option<u64>,
+        is_64: bool,
         shared: bool,
     ) -> Option<JObject<'a>> {
         let memory_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType").ok()?;
-        let max_val = max.unwrap_or(0) as i64;
-        let has_max = max.is_some();
+
+        // Create boxed Long for maximum, or null if None
+        let max_obj: JObject = if let Some(max_val) = max {
+            let long_class = env.find_class("java/lang/Long").ok()?;
+            env.new_object(long_class, "(J)V", &[JValue::Long(max_val as i64)]).ok()?
+        } else {
+            JObject::null()
+        };
+
+        // JniMemoryType(long minimum, Long maximum, boolean is64Bit, boolean isShared)
         env.new_object(
             memory_type_class,
-            "(JJZZ)V",
+            "(JLjava/lang/Long;ZZ)V",
             &[
                 JValue::Long(initial as i64),
-                JValue::Long(max_val),
-                JValue::Bool(has_max as jboolean),
+                JValue::Object(&max_obj),
+                JValue::Bool(is_64 as jboolean),
                 JValue::Bool(shared as jboolean),
             ],
         ).ok()
@@ -4748,8 +4794,8 @@ pub mod jni_module {
                 crate::module::ExportKind::Global(val_type, mutable) => {
                     create_jni_global_type(&mut env, val_type, *mutable)
                 }
-                crate::module::ExportKind::Memory(initial, max, shared) => {
-                    create_jni_memory_type(&mut env, *initial, *max, *shared)
+                crate::module::ExportKind::Memory(initial, max, is_64, shared) => {
+                    create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared)
                 }
                 crate::module::ExportKind::Table(elem_type, initial, max) => {
                     create_jni_table_type(&mut env, elem_type, *initial, *max)
@@ -4848,8 +4894,8 @@ pub mod jni_module {
                         None => continue,
                     }
                 }
-                crate::module::ImportKind::Memory(initial, max, shared) => {
-                    match create_jni_memory_type(&mut env, *initial, *max, *shared) {
+                crate::module::ImportKind::Memory(initial, max, is_64, shared) => {
+                    match create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared) {
                         Some(obj) => obj,
                         None => continue,
                     }
@@ -11937,11 +11983,12 @@ pub mod jni_serializer {
                 });
             }
 
-            let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
+            let _serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
-            
-            let module = serializer.deserialize(engine.inner(), &data)?;
-            Ok(Box::new(module))
+
+            // Use our wrapper Module::deserialize which creates proper Module with engine reference
+            // This returns Box<Module> with correct ownership semantics for cleanup
+            crate::module::core::deserialize_module(engine, &data)
         }) as jlong
     }
 

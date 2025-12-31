@@ -110,8 +110,22 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(pages, "pages");
     ensureNotClosed();
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
+    final long memHandle = getNativeHandle();
+    final long storeHandle = store.getNativeHandle();
+    LOGGER.fine(
+        "grow: memHandle=0x"
+            + Long.toHexString(memHandle)
+            + ", storeHandle=0x"
+            + Long.toHexString(storeHandle)
+            + ", pages="
+            + pages);
+
     try {
-      return nativeGrow(getNativeHandle(), pages);
+      return nativeGrow(memHandle, storeHandle, pages);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -138,8 +152,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureNotClosed();
     validateOffset(offset, 1);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      return nativeReadByte(getNativeHandle(), offset);
+      return nativeReadByte(getNativeHandle(), store.getNativeHandle(), offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -166,8 +184,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureNotClosed();
     validateOffset(offset, 1);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      nativeWriteByte(getNativeHandle(), offset, value);
+      nativeWriteByte(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -199,8 +221,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     validateOffset(offset, buffer.length);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      return nativeReadBytes(getNativeHandle(), offset, buffer);
+      return nativeReadBytes(getNativeHandle(), store.getNativeHandle(), offset, buffer);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -217,21 +243,27 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(destOffset, "destOffset");
     JniValidation.requireNonNegative(length, "length");
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
     }
 
+    final long storeHandle = store.getNativeHandle();
+
     // Optimization: For large operations or when destOffset is 0, avoid temporary buffer
     if (destOffset == 0 && length == dest.length) {
       // Direct read into destination array
-      nativeReadBytes(getNativeHandle(), offset, dest);
+      nativeReadBytes(getNativeHandle(), storeHandle, offset, dest);
     } else if (length >= BULK_OPERATION_THRESHOLD) {
       // Use optimized bulk read for large operations
       readBytesOptimized(offset, dest, destOffset, length);
     } else {
       // Original implementation for small operations
       final byte[] tempBuffer = new byte[length];
-      final int bytesRead = nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+      final int bytesRead = nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
     }
   }
@@ -255,8 +287,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     validateOffset(offset, buffer.length);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      return nativeWriteBytes(getNativeHandle(), offset, buffer);
+      return nativeWriteBytes(getNativeHandle(), store.getNativeHandle(), offset, buffer);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -273,14 +309,20 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(srcOffset, "srcOffset");
     JniValidation.requireNonNegative(length, "length");
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
     }
 
+    final long storeHandle = store.getNativeHandle();
+
     // Optimization: For large operations or when srcOffset is 0, avoid temporary buffer
     if (srcOffset == 0 && length == src.length) {
       // Direct write from source array
-      nativeWriteBytes(getNativeHandle(), offset, src);
+      nativeWriteBytes(getNativeHandle(), storeHandle, offset, src);
     } else if (length >= BULK_OPERATION_THRESHOLD) {
       // Use optimized bulk write for large operations
       writeBytesOptimized(offset, src, srcOffset, length);
@@ -288,7 +330,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
       // Original implementation for small operations
       final byte[] tempBuffer = new byte[length];
       System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-      nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+      nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
     }
   }
 
@@ -338,6 +380,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void readBytesOptimized(
       final int offset, final byte[] dest, final int destOffset, final int length) {
+    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -347,13 +390,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
       } else {
         // Fallback to regular read if buffer is not available or too small
         final byte[] tempBuffer = new byte[length];
-        nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+        nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, length);
       }
     } catch (final Exception e) {
       // Fallback to regular read on any error
       final byte[] tempBuffer = new byte[length];
-      nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+      nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       System.arraycopy(tempBuffer, 0, dest, destOffset, length);
     }
   }
@@ -368,6 +411,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void writeBytesOptimized(
       final int offset, final byte[] src, final int srcOffset, final int length) {
+    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -378,13 +422,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Fallback to regular write if buffer is not available or too small
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-        nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+        nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       }
     } catch (final Exception e) {
       // Fallback to regular write on any error
       final byte[] tempBuffer = new byte[length];
       System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-      nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+      nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
     }
   }
 
@@ -402,6 +446,11 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     validateOffset(offset, 4);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+    final long storeHandle = store.getNativeHandle();
+
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + 4) {
@@ -409,13 +458,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
       } else {
         // Fallback to byte-by-byte read
         final byte[] bytes = new byte[4];
-        nativeReadBytes(getNativeHandle(), offset, bytes);
+        nativeReadBytes(getNativeHandle(), storeHandle, offset, bytes);
         return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
       }
     } catch (final Exception e) {
       // Fallback to byte-by-byte read
       final byte[] bytes = new byte[4];
-      nativeReadBytes(getNativeHandle(), offset, bytes);
+      nativeReadBytes(getNativeHandle(), storeHandle, offset, bytes);
       return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
   }
@@ -434,6 +483,11 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     validateOffset(offset, 4);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+    final long storeHandle = store.getNativeHandle();
+
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + 4) {
@@ -442,13 +496,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Fallback to byte-by-byte write
         final byte[] bytes =
             ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
-        nativeWriteBytes(getNativeHandle(), offset, bytes);
+        nativeWriteBytes(getNativeHandle(), storeHandle, offset, bytes);
       }
     } catch (final Exception e) {
       // Fallback to byte-by-byte write
       final byte[] bytes =
           ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
-      nativeWriteBytes(getNativeHandle(), offset, bytes);
+      nativeWriteBytes(getNativeHandle(), storeHandle, offset, bytes);
     }
   }
 
@@ -522,11 +576,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
   /**
    * Performs the actual native resource cleanup.
    *
+   * <p>Note: In wasmtime, Memories are owned by the Store. Destroying a Memory while the Store
+   * still exists can corrupt the Store's internal slab state. We mark the Memory as closed but
+   * don't destroy it - the Store will handle cleanup.
+   *
    * @throws Exception if there's an error during cleanup
    */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroyMemory(nativeHandle);
+    // Note: Do NOT call nativeDestroyMemory here. Memories are Store-owned resources.
+    // The Store will clean up all its Memories when it is destroyed.
   }
 
   // Native method declarations
@@ -543,48 +602,56 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * Grows a memory by the specified number of pages.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param pages the number of pages to grow by
    * @return the previous size in pages, or -1 on failure
    */
-  private static native long nativeGrow(long memoryHandle, long pages);
+  private static native long nativeGrow(long memoryHandle, long storeHandle, long pages);
 
   /**
    * Reads a single byte from memory.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param offset the byte offset
    * @return the byte value
    */
-  private static native byte nativeReadByte(long memoryHandle, long offset);
+  private static native byte nativeReadByte(long memoryHandle, long storeHandle, long offset);
 
   /**
    * Writes a single byte to memory.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param offset the byte offset
    * @param value the byte value
    */
-  private static native void nativeWriteByte(long memoryHandle, long offset, byte value);
+  private static native void nativeWriteByte(
+      long memoryHandle, long storeHandle, long offset, byte value);
 
   /**
    * Reads bytes from memory into a buffer.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param offset the starting byte offset
    * @param buffer the buffer to read into
    * @return the number of bytes read
    */
-  private static native int nativeReadBytes(long memoryHandle, long offset, byte[] buffer);
+  private static native int nativeReadBytes(
+      long memoryHandle, long storeHandle, long offset, byte[] buffer);
 
   /**
    * Writes bytes from a buffer to memory.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @param offset the starting byte offset
    * @param buffer the buffer to write from
    * @return the number of bytes written
    */
-  private static native int nativeWriteBytes(long memoryHandle, long offset, byte[] buffer);
+  private static native int nativeWriteBytes(
+      long memoryHandle, long storeHandle, long offset, byte[] buffer);
 
   /**
    * Gets a direct ByteBuffer view of the memory.
@@ -1239,7 +1306,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     ensureNotClosed();
     try {
-      return nativeGrow(getNativeHandle(), pages);
+      return nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
     } catch (final Exception e) {
       return -1;
     }
@@ -1251,8 +1318,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureNotClosed();
     validateOffset64(offset, 1);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      return nativeReadByte(getNativeHandle(), offset);
+      return nativeReadByte(getNativeHandle(), store.getNativeHandle(), offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1266,8 +1337,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureNotClosed();
     validateOffset64(offset, 1);
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     try {
-      nativeWriteByte(getNativeHandle(), offset, value);
+      nativeWriteByte(getNativeHandle(), store.getNativeHandle(), offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1284,23 +1359,29 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(destOffset, "destOffset");
     JniValidation.requireNonNegative(length, "length");
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
     }
 
     validateOffset64(offset, length);
 
+    final long storeHandle = store.getNativeHandle();
+
     try {
       if (destOffset == 0 && length == dest.length) {
         // Direct read into destination array
-        nativeReadBytes(getNativeHandle(), offset, dest);
+        nativeReadBytes(getNativeHandle(), storeHandle, offset, dest);
       } else if (length >= BULK_OPERATION_THRESHOLD) {
         // Use optimized bulk read for large operations
         readBytesOptimized64(offset, dest, destOffset, length);
       } else {
         // Original implementation for small operations
         final byte[] tempBuffer = new byte[length];
-        final int bytesRead = nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+        final int bytesRead = nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
       }
     } catch (final RuntimeException e) {
@@ -1319,16 +1400,22 @@ public final class JniMemory extends JniResource implements WasmMemory {
     JniValidation.requireNonNegative(srcOffset, "srcOffset");
     JniValidation.requireNonNegative(length, "length");
 
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
     }
 
     validateOffset64(offset, length);
 
+    final long storeHandle = store.getNativeHandle();
+
     try {
       if (srcOffset == 0 && length == src.length) {
         // Direct write from source array
-        nativeWriteBytes(getNativeHandle(), offset, src);
+        nativeWriteBytes(getNativeHandle(), storeHandle, offset, src);
       } else if (length >= BULK_OPERATION_THRESHOLD) {
         // Use optimized bulk write for large operations
         writeBytesOptimized64(offset, src, srcOffset, length);
@@ -1336,7 +1423,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Original implementation for small operations
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-        nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+        nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       }
     } catch (final RuntimeException e) {
       throw e;
@@ -1447,6 +1534,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void readBytesOptimized64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
+    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -1456,13 +1544,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
       } else {
         // Fallback to regular read if buffer is not available or too small
         final byte[] tempBuffer = new byte[length];
-        nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+        nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, length);
       }
     } catch (final Exception e) {
       // Fallback to regular read on any error
       final byte[] tempBuffer = new byte[length];
-      nativeReadBytes(getNativeHandle(), offset, tempBuffer);
+      nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       System.arraycopy(tempBuffer, 0, dest, destOffset, length);
     }
   }
@@ -1478,6 +1566,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void writeBytesOptimized64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
+    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       if (buffer != null && buffer.capacity() >= offset + length) {
@@ -1488,13 +1577,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Fallback to regular write if buffer is not available or too small
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-        nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+        nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
       }
     } catch (final Exception e) {
       // Fallback to regular write on any error
       final byte[] tempBuffer = new byte[length];
       System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-      nativeWriteBytes(getNativeHandle(), offset, tempBuffer);
+      nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
     }
   }
 

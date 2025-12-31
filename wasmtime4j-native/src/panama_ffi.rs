@@ -1123,13 +1123,15 @@ pub mod store {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
-            
+
             let store = core::create_store(engine)?;
-            
+            let raw_ptr = Box::into_raw(store);
+            crate::memory::core::register_store_handle(raw_ptr as *const c_void)?;
+
             unsafe {
-                *store_ptr = Box::into_raw(store) as *mut c_void;
+                *store_ptr = raw_ptr as *mut c_void;
             }
-            
+
             Ok(())
         })
     }
@@ -1148,14 +1150,14 @@ pub mod store {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
-            
+
             let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
             let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
             let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs) };
             let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
             let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements) };
             let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
-            
+
             let store = core::create_store_with_config(
                 engine,
                 fuel_limit_opt,
@@ -1165,11 +1167,13 @@ pub mod store {
                 max_table_elements_opt,
                 max_functions_opt,
             )?;
-            
+            let raw_ptr = Box::into_raw(store);
+            crate::memory::core::register_store_handle(raw_ptr as *const c_void)?;
+
             unsafe {
-                *store_ptr = Box::into_raw(store) as *mut c_void;
+                *store_ptr = raw_ptr as *mut c_void;
             }
-            
+
             Ok(())
         })
     }
@@ -1326,6 +1330,10 @@ pub mod store {
     /// Destroy a WebAssembly store (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_store_destroy(store_ptr: *mut c_void) {
+        if !store_ptr.is_null() {
+            // Unregister the store handle from memory module before destroying
+            let _ = crate::memory::core::unregister_store_handle(store_ptr as *const c_void);
+        }
         unsafe {
             core::destroy_store(store_ptr);
         }
