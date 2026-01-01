@@ -4014,6 +4014,58 @@ pub mod jni_linker {
             linker_core::destroy_linker(linker_handle as *mut c_void);
         }
     }
+
+    /// Set whether name shadowing is allowed in the linker
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowShadowing(
+        mut env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        allow: jboolean,
+    ) {
+        // DEFENSIVE: Validate handle
+        if linker_handle == 0 || (linker_handle as usize) < 4096 || (linker_handle as usize) % std::mem::align_of::<usize>() != 0 {
+            log::warn!("Attempted to set allow_shadowing on invalid linker handle: {:#x}", linker_handle);
+            return;
+        }
+
+        match unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void) } {
+            Ok(linker) => {
+                if let Err(e) = linker.set_allow_shadowing(allow != 0) {
+                    log::error!("Failed to set allow_shadowing: {:?}", e);
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to get linker for allow_shadowing: {:?}", e);
+            }
+        }
+    }
+
+    /// Set whether unknown exports are allowed during instantiation
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowUnknownExports(
+        mut env: JNIEnv,
+        _class: JClass,
+        linker_handle: jlong,
+        allow: jboolean,
+    ) {
+        // DEFENSIVE: Validate handle
+        if linker_handle == 0 || (linker_handle as usize) < 4096 || (linker_handle as usize) % std::mem::align_of::<usize>() != 0 {
+            log::warn!("Attempted to set allow_unknown_exports on invalid linker handle: {:#x}", linker_handle);
+            return;
+        }
+
+        match unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void) } {
+            Ok(linker) => {
+                if let Err(e) = linker.set_allow_unknown_exports(allow != 0) {
+                    log::error!("Failed to set allow_unknown_exports: {:?}", e);
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to get linker for allow_unknown_exports: {:?}", e);
+            }
+        }
+    }
 }
 
 /// JNI bindings for Module operations

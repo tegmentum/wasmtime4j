@@ -660,6 +660,56 @@ impl Linker {
         !self.metadata.disposed && self.inner.lock().is_ok()
     }
 
+    /// Sets whether name shadowing is allowed in the linker
+    ///
+    /// # Arguments
+    /// * `allow` - Whether to allow shadowing of previously defined names
+    ///
+    /// # Returns
+    /// Ok(()) on success, or WasmtimeError if the linker is disposed or locked
+    pub fn set_allow_shadowing(&mut self, allow: bool) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
+
+        linker.allow_shadowing(allow);
+        log::debug!("Linker allow_shadowing set to: {}", allow);
+        Ok(())
+    }
+
+    /// Sets whether unknown exports are allowed during instantiation
+    ///
+    /// # Arguments
+    /// * `allow` - Whether to allow unknown exports
+    ///
+    /// # Returns
+    /// Ok(()) on success, or WasmtimeError if the linker is disposed or locked
+    pub fn set_allow_unknown_exports(&mut self, allow: bool) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
+
+        linker.allow_unknown_exports(allow);
+        log::debug!("Linker allow_unknown_exports set to: {}", allow);
+        Ok(())
+    }
+
     /// Disposes the linker and releases resources
     pub fn dispose(&mut self) {
         if !self.metadata.disposed {

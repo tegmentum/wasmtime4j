@@ -214,8 +214,17 @@ public final class JniTable extends JniResource implements WasmTable {
   public int grow(final int delta, final Object init) {
     JniValidation.requireNonNegative(delta, "delta");
 
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+
     try {
-      return nativeGrow(getNativeHandle(), delta, init);
+      final long tableHandle = getNativeHandle();
+      final long storeHandle = store.getNativeHandle();
+      // Convert init Object to a long handle for native code
+      // For null/funcref null, pass 0
+      final long initValue = 0L; // funcref null
+      return (int) nativeTableGrow(tableHandle, storeHandle, delta, initValue);
     } catch (final JniResourceException | IllegalArgumentException e) {
       throw e;
     } catch (final Exception e) {
@@ -376,9 +385,17 @@ public final class JniTable extends JniResource implements WasmTable {
     }
   }
 
+  /**
+   * Performs the actual native resource cleanup.
+   *
+   * <p>Note: In wasmtime, Tables are owned by the Store. Destroying a Table while the Store still
+   * exists can corrupt the Store's internal slab state. We mark the Table as closed but don't
+   * destroy it - the Store will handle cleanup.
+   */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroy(nativeHandle);
+    // Note: Do NOT call nativeDestroy here. Tables are Store-owned resources.
+    // The Store will clean up all its Tables when it is destroyed.
   }
 
   @Override
@@ -443,6 +460,18 @@ public final class JniTable extends JniResource implements WasmTable {
    * @return the previous size or -1 on failure
    */
   private static native int nativeGrow(long tableHandle, int delta, Object init);
+
+  /**
+   * Grows a table by the specified number of elements (with store context).
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @param delta the number of elements to add
+   * @param initValue the initial value handle for new elements (0 for null)
+   * @return the previous size or -1 on failure
+   */
+  private static native long nativeTableGrow(
+      long tableHandle, long storeHandle, int delta, long initValue);
 
   /**
    * Fills a range of a table with the specified value.
