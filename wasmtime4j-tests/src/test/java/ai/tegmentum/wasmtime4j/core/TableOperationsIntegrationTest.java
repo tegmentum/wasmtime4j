@@ -58,90 +58,99 @@ public final class TableOperationsIntegrationTest {
   /**
    * WebAssembly module with an exported funcref table. Table has 2 elements initial, 10 max.
    * Contains two functions (add and sub) stored in the table.
+   *
+   * <pre>
+   * (module
+   *   (type $binop (func (param i32 i32) (result i32)))
+   *   (table (export "table") 2 10 funcref)
+   *   (func $add (export "add") (type $binop) local.get 0 local.get 1 i32.add)
+   *   (func $sub (export "sub") (type $binop) local.get 0 local.get 1 i32.sub)
+   *   (elem (i32.const 0) $add $sub))
+   * </pre>
    */
   private static final byte[] TABLE_FUNCREF_WASM =
       new byte[] {
         0x00,
         0x61,
         0x73,
-        0x6D, // magic number
+        0x6d,
         0x01,
         0x00,
         0x00,
-        0x00, // version
+        0x00, // magic + version
         0x01,
-        0x07, // type section
-        0x01, // 1 function type
+        0x07,
+        0x01,
         0x60,
         0x02,
-        0x7F,
-        0x7F,
+        0x7f,
+        0x7f,
         0x01,
-        0x7F, // (i32, i32) -> i32
+        0x7f, // type section
         0x03,
-        0x03, // function section
+        0x03,
         0x02,
         0x00,
-        0x00, // 2 functions, both type 0
+        0x00, // function section
         0x04,
-        0x05, // table section
-        0x01, // 1 table
+        0x05,
+        0x01,
         0x70,
         0x01,
         0x02,
-        0x0A, // funcref, min 2, max 10
+        0x0a, // table section (min 2, max 10)
         0x07,
-        0x14, // export section
-        0x03, // 3 exports
+        0x15,
+        0x03, // export section header
         0x05,
         0x74,
         0x61,
         0x62,
-        0x6C,
-        0x65, // "table"
+        0x6c,
+        0x65,
         0x01,
-        0x00, // table export, index 0
+        0x00, // "table" export
         0x03,
         0x61,
         0x64,
         0x64,
         0x00,
-        0x00, // "add", func 0
+        0x00, // "add" export
         0x03,
         0x73,
         0x75,
         0x62,
         0x00,
-        0x01, // "sub", func 1
+        0x01, // "sub" export
         0x09,
-        0x08, // element section
-        0x01, // 1 element segment
-        0x00, // table index 0
+        0x08,
+        0x01,
+        0x00,
         0x41,
         0x00,
-        0x0B, // offset: i32.const 0, end
+        0x0b,
         0x02,
         0x00,
-        0x01, // 2 functions: index 0 and 1
-        0x0A,
-        0x11, // code section
-        0x02, // 2 function bodies
-        0x07, // body 1 size (add)
-        0x00, // 0 locals
+        0x01, // elem section
+        0x0a,
+        0x11,
+        0x02, // code section header
+        0x07,
+        0x00,
         0x20,
         0x00,
         0x20,
         0x01,
-        0x6A,
-        0x0B, // local.get 0, local.get 1, i32.add, end
-        0x07, // body 2 size (sub)
-        0x00, // 0 locals
+        0x6a,
+        0x0b, // add function
+        0x07,
+        0x00,
         0x20,
         0x00,
         0x20,
         0x01,
-        0x6B,
-        0x0B // local.get 0, local.get 1, i32.sub, end
+        0x6b,
+        0x0b // sub function
       };
 
   /** Simple table with funcref type, initial size 4. */
@@ -204,104 +213,118 @@ public final class TableOperationsIntegrationTest {
         0x00 // table export, index 0
       };
 
-  /** Table with call_indirect support. */
+  /**
+   * Table with call_indirect support.
+   *
+   * <pre>
+   * (module
+   *   (type $binop (func (param i32 i32) (result i32)))
+   *   (type $call_type (func (param i32 i32 i32) (result i32)))
+   *   (table (export "table") 2 funcref)
+   *   (func $add (type $binop) local.get 0 local.get 1 i32.add)
+   *   (func $sub (type $binop) local.get 0 local.get 1 i32.sub)
+   *   (func (export "call") (type $call_type)
+   *     local.get 0 local.get 1 local.get 2 call_indirect (type $binop))
+   *   (elem (i32.const 0) $add $sub))
+   * </pre>
+   */
   private static final byte[] CALL_INDIRECT_WASM =
       new byte[] {
         0x00,
         0x61,
         0x73,
-        0x6D, // magic number
+        0x6d,
         0x01,
         0x00,
         0x00,
-        0x00, // version
+        0x00, // magic + version
         0x01,
-        0x0B, // type section
-        0x02, // 2 function types
+        0x0e,
+        0x02, // type section header
         0x60,
         0x02,
-        0x7F,
-        0x7F,
+        0x7f,
+        0x7f,
         0x01,
-        0x7F, // (i32, i32) -> i32
+        0x7f, // type 0: (i32, i32) -> i32
         0x60,
         0x03,
-        0x7F,
-        0x7F,
-        0x7F,
+        0x7f,
+        0x7f,
+        0x7f,
         0x01,
-        0x7F, // (i32, i32, i32) -> i32 for call
+        0x7f, // type 1: (i32, i32, i32) -> i32
         0x03,
-        0x04, // function section
-        0x03,
-        0x00,
-        0x00,
-        0x01, // 3 functions: add, sub, call_table
         0x04,
-        0x04, // table section
-        0x01, // 1 table
+        0x03,
+        0x00,
+        0x00,
+        0x01, // function section: 3 funcs
+        0x04,
+        0x04,
+        0x01,
         0x70,
         0x00,
-        0x02, // funcref, min 2, no max
+        0x02, // table section: min 2
         0x07,
-        0x12, // export section
-        0x02, // 2 exports
+        0x10,
+        0x02, // export section header
         0x05,
         0x74,
         0x61,
         0x62,
-        0x6C,
+        0x6c,
         0x65,
         0x01,
-        0x00, // "table", table 0
+        0x00, // "table" export
         0x04,
         0x63,
         0x61,
-        0x6C,
-        0x6C,
+        0x6c,
+        0x6c,
         0x00,
-        0x02, // "call", func 2
+        0x02, // "call" export
         0x09,
-        0x08, // element section
-        0x01, // 1 element segment
+        0x08,
+        0x01,
         0x00,
         0x41,
         0x00,
-        0x0B, // table 0, offset i32.const 0, end
+        0x0b,
         0x02,
         0x00,
-        0x01, // 2 functions: add (0), sub (1)
-        0x0A,
-        0x17, // code section
-        0x03, // 3 function bodies
+        0x01, // elem section
+        0x0a,
+        0x1d,
+        0x03, // code section header
         0x07,
         0x00,
         0x20,
         0x00,
         0x20,
         0x01,
-        0x6A,
-        0x0B, // add: local.get 0, 1, i32.add
+        0x6a,
+        0x0b, // add function
         0x07,
         0x00,
         0x20,
         0x00,
         0x20,
         0x01,
-        0x6B,
-        0x0B, // sub: local.get 0, 1, i32.sub
-        0x08,
+        0x6b,
+        0x0b, // sub function
+        0x0b,
         0x00,
         0x20,
         0x00,
         0x20,
         0x01,
         0x20,
-        0x02, // call_table body
+        0x02,
         0x11,
         0x00,
         0x00,
-        0x0B // call_indirect type 0, table 0, end
+        0x0b // call function
       };
 
   private Engine engine;
@@ -373,8 +396,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should report correct size for funcref table with limits")
-    @org.junit.jupiter.api.Disabled(
-        "TABLE_FUNCREF_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldReportCorrectSizeForFuncrefTableWithLimits() throws Exception {
       LOGGER.info("Testing funcref table with limits");
 
@@ -429,7 +450,8 @@ public final class TableOperationsIntegrationTest {
     @Test
     @DisplayName("should respect table maximum limit when growing")
     @org.junit.jupiter.api.Disabled(
-        "TABLE_FUNCREF_WASM bytecode fails parsing - needs regeneration with wat2wasm")
+        "TODO: table.grow API returns success but doesn't actually grow the table - investigate"
+            + " native implementation")
     void shouldRespectTableMaximumLimitWhenGrowing() throws Exception {
       LOGGER.info("Testing table grow with max limit");
 
@@ -521,7 +543,8 @@ public final class TableOperationsIntegrationTest {
     @Test
     @DisplayName("should access initialized funcref elements")
     @org.junit.jupiter.api.Disabled(
-        "TABLE_FUNCREF_WASM bytecode fails parsing - needs regeneration with wat2wasm")
+        "TODO: table.get returns null for element-initialized funcref table - investigate native"
+            + " implementation")
     void shouldAccessInitializedFuncrefElements() throws Exception {
       LOGGER.info("Testing initialized funcref element access");
 
@@ -555,8 +578,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should call function through table using call_indirect")
-    @org.junit.jupiter.api.Disabled(
-        "CALL_INDIRECT_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldCallFunctionThroughTableUsingCallIndirect() throws Exception {
       LOGGER.info("Testing call_indirect through table");
 
@@ -590,8 +611,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should trap when calling invalid table index")
-    @org.junit.jupiter.api.Disabled(
-        "CALL_INDIRECT_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldTrapWhenCallingInvalidTableIndex() throws Exception {
       LOGGER.info("Testing call_indirect with invalid index");
 

@@ -73,73 +73,63 @@ public final class HostFunctionIntegrationTest {
         0x00,
         0x61,
         0x73,
-        0x6D, // magic number
+        0x6d,
         0x01,
         0x00,
         0x00,
-        0x00, // version 1
-
-        // Type section (id=1)
+        0x00, // magic + version
         0x01,
-        0x07, // section id and size
-        0x01, // number of types
+        0x07,
+        0x01,
         0x60,
         0x02,
-        0x7F,
-        0x7F,
+        0x7f,
+        0x7f,
         0x01,
-        0x7F, // (i32, i32) -> i32
-
-        // Import section (id=2)
+        0x7f, // type section
         0x02,
-        0x0B, // section id and size
-        0x01, // number of imports
+        0x0b,
+        0x01,
         0x03,
         0x65,
-        0x6E,
-        0x76, // "env"
+        0x6e,
+        0x76,
         0x03,
         0x61,
         0x64,
-        0x64, // "add"
+        0x64,
         0x00,
-        0x00, // function, type index 0
-
-        // Function section (id=3)
+        0x00, // import "env" "add"
         0x03,
-        0x02, // section id and size
-        0x01, // number of functions
-        0x00, // type index 0
-
-        // Export section (id=7)
+        0x02,
+        0x01,
+        0x00, // function section
         0x07,
-        0x0C, // section id and size
-        0x01, // number of exports
+        0x0c,
+        0x01,
         0x08,
         0x63,
         0x61,
-        0x6C,
-        0x6C,
-        0x5F,
+        0x6c,
+        0x6c,
+        0x5f,
         0x61,
         0x64,
-        0x64, // "call_add"
+        0x64,
         0x00,
-        0x01, // function, index 1 (first local function)
-
-        // Code section (id=10)
-        0x0A,
-        0x09, // section id and size
-        0x01, // number of functions
-        0x07, // function body size
-        0x00, // local count
+        0x01, // export "call_add"
+        0x0a,
+        0x0a,
+        0x01,
+        0x08,
+        0x00,
         0x20,
-        0x00, // local.get 0
+        0x00,
         0x20,
-        0x01, // local.get 1
+        0x01,
         0x10,
-        0x00, // call 0 (imported function)
-        0x0B // end
+        0x00,
+        0x0b // code section
       };
 
   /**
@@ -161,71 +151,57 @@ public final class HostFunctionIntegrationTest {
         0x00,
         0x61,
         0x73,
-        0x6D, // magic number
+        0x6d,
         0x01,
         0x00,
         0x00,
-        0x00, // version 1
-
-        // Type section (id=1)
+        0x00, // magic + version
         0x01,
-        0x08, // section id and size
-        0x02, // number of types
+        0x05,
+        0x01,
         0x60,
         0x01,
-        0x7F,
-        0x00, // (i32) -> ()
-        0x60,
-        0x01,
-        0x7F,
-        0x00, // (i32) -> () for local func
-
-        // Import section (id=2)
+        0x7f,
+        0x00, // type section: (i32) -> ()
         0x02,
-        0x0B, // section id and size
-        0x01, // number of imports
+        0x0b,
+        0x01,
         0x03,
         0x65,
-        0x6E,
-        0x76, // "env"
+        0x6e,
+        0x76,
         0x03,
-        0x6C,
-        0x6F,
-        0x67, // "log"
+        0x6c,
+        0x6f,
+        0x67,
         0x00,
-        0x00, // function, type index 0
-
-        // Function section (id=3)
+        0x00, // import "env" "log"
         0x03,
-        0x02, // section id and size
-        0x01, // number of functions
-        0x00, // type index 0
-
-        // Export section (id=7)
+        0x02,
+        0x01,
+        0x00, // function section
         0x07,
-        0x0A, // section id and size
-        0x01, // number of exports
+        0x0a,
+        0x01,
         0x06,
         0x64,
-        0x6F,
-        0x5F,
-        0x6C,
-        0x6F,
-        0x67, // "do_log"
+        0x6f,
+        0x5f,
+        0x6c,
+        0x6f,
+        0x67,
         0x00,
-        0x01, // function, index 1
-
-        // Code section (id=10)
-        0x0A,
-        0x07, // section id and size
-        0x01, // number of functions
-        0x05, // function body size
-        0x00, // local count
+        0x01, // export "do_log"
+        0x0a,
+        0x08,
+        0x01,
+        0x06,
+        0x00,
         0x20,
-        0x00, // local.get 0
+        0x00,
         0x10,
-        0x00, // call 0
-        0x0B // end
+        0x00,
+        0x0b // code section
       };
 
   /**
@@ -549,8 +525,6 @@ public final class HostFunctionIntegrationTest {
 
     @Test
     @DisplayName("should call void host function with side effects")
-    @org.junit.jupiter.api.Disabled(
-        "IMPORT_LOG_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldCallVoidHostFunctionWithSideEffects() throws Exception {
       LOGGER.info("Testing void host function with side effects");
 
@@ -587,8 +561,6 @@ public final class HostFunctionIntegrationTest {
 
     @Test
     @DisplayName("should call void host function multiple times")
-    @org.junit.jupiter.api.Disabled(
-        "IMPORT_LOG_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldCallVoidHostFunctionMultipleTimes() throws Exception {
       LOGGER.info("Testing void host function multiple calls");
 
@@ -838,8 +810,6 @@ public final class HostFunctionIntegrationTest {
 
     @Test
     @DisplayName("should propagate exception from host function as trap")
-    @org.junit.jupiter.api.Disabled(
-        "IMPORT_ADD_WASM bytecode fails parsing - needs regeneration with wat2wasm")
     void shouldPropagateExceptionFromHostFunctionAsTrap() throws Exception {
       LOGGER.info("Testing host function exception propagation");
 
