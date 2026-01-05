@@ -1505,11 +1505,12 @@ public final class JniStore extends JniResource implements Store {
 
   private native void nativeGcAsync(long storeHandle);
 
-  private native void nativeEpochDeadlineAsyncYieldAndUpdate(long storeHandle, long deltaTicks);
+  private static native void nativeEpochDeadlineAsyncYieldAndUpdate(
+      long storeHandle, long deltaTicks);
 
-  private native void nativeEpochDeadlineTrap(long storeHandle);
+  private static native void nativeEpochDeadlineTrap(long storeHandle);
 
-  private native void nativeSetEpochDeadlineCallback(long storeHandle);
+  private static native void nativeSetEpochDeadlineCallback(long storeHandle);
 
   private native void nativeClearEpochDeadlineCallback(long storeHandle);
 

@@ -1911,16 +1911,30 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning boolean result
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn jni_try_bool<F>(env: &mut jni::JNIEnv, operation: F) -> bool
     where
         F: FnOnce() -> WasmtimeResult<bool>,
     {
-        match operation() {
-            Ok(result) => {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        match result {
+            Ok(Ok(value)) => {
                 clear_last_error();
-                result
+                value
             }
-            Err(error) => {
+            Ok(Err(error)) => {
+                throw_jni_exception(env, &error);
+                false
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
                 throw_jni_exception(env, &error);
                 false
             }
@@ -1929,16 +1943,30 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning default value on error
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn jni_try_with_default<F, T>(env: &mut jni::JNIEnv, default_value: T, operation: F) -> T
     where
         F: FnOnce() -> WasmtimeResult<T>,
     {
-        match operation() {
-            Ok(result) => {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        match result {
+            Ok(Ok(value)) => {
                 clear_last_error();
-                result
+                value
             }
-            Err(error) => {
+            Ok(Err(error)) => {
+                throw_jni_exception(env, &error);
+                default_value
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
                 throw_jni_exception(env, &error);
                 default_value
             }
@@ -1947,15 +1975,29 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning void
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn jni_try_void<F>(env: &mut jni::JNIEnv, operation: F)
     where
         F: FnOnce() -> WasmtimeResult<()>,
     {
-        match operation() {
-            Ok(()) => {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        match result {
+            Ok(Ok(())) => {
                 clear_last_error();
             }
-            Err(error) => {
+            Ok(Err(error)) => {
+                throw_jni_exception(env, &error);
+            }
+            Err(panic_info) => {
+                // Convert panic to a WasmtimeError and throw as Java exception
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
                 throw_jni_exception(env, &error);
             }
         }
@@ -1963,16 +2005,30 @@ pub mod jni_utils {
 
     #[cfg(feature = "jni-bindings")]
     /// Execute operation with JNI exception throwing, returning JNI object as raw jobject
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn jni_try_object<F>(env: &mut jni::JNIEnv, operation: F) -> jni::sys::jobject
     where
         F: FnOnce(&mut jni::JNIEnv) -> WasmtimeResult<jni::objects::JObject<'static>>,
     {
-        match operation(env) {
-            Ok(result) => {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| operation(env)));
+        match result {
+            Ok(Ok(value)) => {
                 clear_last_error();
-                result.as_raw()
+                value.as_raw()
             }
-            Err(error) => {
+            Ok(Err(error)) => {
+                throw_jni_exception(env, &error);
+                std::ptr::null_mut()
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
                 throw_jni_exception(env, &error);
                 std::ptr::null_mut()
             }
