@@ -34,10 +34,10 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetEle
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeGet
- * Signature: (JI)Ljava/lang/Object;
+ * Signature: (JJI)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
@@ -54,6 +54,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGrow
   (JNIEnv *, jclass, jlong, jint, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeTableGrow
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable

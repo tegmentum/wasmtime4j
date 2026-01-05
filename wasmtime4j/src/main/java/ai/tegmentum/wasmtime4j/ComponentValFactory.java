@@ -541,5 +541,22 @@ public abstract class ComponentValFactory {
     public String toString() {
       return type.name().toLowerCase(Locale.ROOT) + "(" + value + ")";
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof SimpleVal)) {
+        return false;
+      }
+      final SimpleVal other = (SimpleVal) obj;
+      return type == other.type && java.util.Objects.equals(value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(type, value);
+    }
   }
 }

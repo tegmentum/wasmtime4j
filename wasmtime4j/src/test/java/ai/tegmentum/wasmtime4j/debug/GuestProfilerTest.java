@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.debug;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.debug.GuestProfiler.ProfileFormat;
@@ -177,6 +178,29 @@ class GuestProfilerTest {
               "create", ai.tegmentum.wasmtime4j.Store.class, ProfilerConfig.class);
       assertNotNull(method, "create(Store, ProfilerConfig) method should exist");
       assertEquals(GuestProfiler.class, method.getReturnType(), "Should return GuestProfiler");
+    }
+  }
+
+  @Nested
+  @DisplayName("Static Factory Behavior Tests")
+  class StaticFactoryBehaviorTests {
+
+    @Test
+    @DisplayName("create with null store should throw exception")
+    void createWithNullStoreShouldThrowException() {
+      assertThrows(
+          Exception.class,
+          () -> GuestProfiler.create(null),
+          "create with null store should throw exception");
+    }
+
+    @Test
+    @DisplayName("create with null store and config should throw exception")
+    void createWithNullStoreAndConfigShouldThrowException() {
+      assertThrows(
+          Exception.class,
+          () -> GuestProfiler.create(null, null),
+          "create with null store and config should throw exception");
     }
   }
 }

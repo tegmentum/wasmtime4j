@@ -421,8 +421,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should grow table by specified number of elements")
-    @org.junit.jupiter.api.Disabled(
-        "TODO: table.grow returns wrong value (5 instead of 4) - investigate native implementation")
     void shouldGrowTableBySpecifiedNumberOfElements() throws Exception {
       LOGGER.info("Testing table grow");
 
@@ -449,9 +447,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should respect table maximum limit when growing")
-    @org.junit.jupiter.api.Disabled(
-        "TODO: table.grow API returns success but doesn't actually grow the table - investigate"
-            + " native implementation")
     void shouldRespectTableMaximumLimitWhenGrowing() throws Exception {
       LOGGER.info("Testing table grow with max limit");
 
@@ -542,9 +537,6 @@ public final class TableOperationsIntegrationTest {
 
     @Test
     @DisplayName("should access initialized funcref elements")
-    @org.junit.jupiter.api.Disabled(
-        "TODO: table.get returns null for element-initialized funcref table - investigate native"
-            + " implementation")
     void shouldAccessInitializedFuncrefElements() throws Exception {
       LOGGER.info("Testing initialized funcref element access");
 

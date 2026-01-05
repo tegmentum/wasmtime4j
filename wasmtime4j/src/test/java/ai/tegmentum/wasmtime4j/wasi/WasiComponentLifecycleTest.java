@@ -8,9 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
@@ -24,6 +26,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * <p>Tests are designed to be verbose for debugging purposes and use actual component operations
  * rather than mocks to ensure real-world functionality.
  */
+@DisplayName("WasiComponentLifecycle Tests")
+@RequiresWasmRuntime
 class WasiComponentLifecycleTest {
 
   private WasiContext context;

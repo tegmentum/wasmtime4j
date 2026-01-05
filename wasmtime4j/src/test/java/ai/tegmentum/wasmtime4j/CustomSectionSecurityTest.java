@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ final class CustomSectionSecurityTest {
 
   @Test
   void testValidCustomSection() {
-    final byte[] data = "Hello, World!".getBytes();
+    final byte[] data = "Hello, World!".getBytes(StandardCharsets.UTF_8);
     final CustomSection section = new CustomSection("greeting", data, CustomSectionType.UNKNOWN);
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(section);
@@ -40,7 +41,7 @@ final class CustomSectionSecurityTest {
 
   @Test
   void testSuspiciousSectionName() {
-    final byte[] data = "data".getBytes();
+    final byte[] data = "data".getBytes(StandardCharsets.UTF_8);
     final CustomSection section = new CustomSection("eval_script", data, CustomSectionType.UNKNOWN);
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(section);
@@ -56,7 +57,7 @@ final class CustomSectionSecurityTest {
   @Test
   void testLongSectionName() {
     final String longName = "a".repeat(CustomSectionSecurity.MAX_SECTION_NAME_LENGTH + 1);
-    final byte[] data = "data".getBytes();
+    final byte[] data = "data".getBytes(StandardCharsets.UTF_8);
     final CustomSection section = new CustomSection(longName, data, CustomSectionType.UNKNOWN);
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(section);
@@ -70,7 +71,7 @@ final class CustomSectionSecurityTest {
 
   @Test
   void testSectionNameWithControlCharacters() {
-    final byte[] data = "data".getBytes();
+    final byte[] data = "data".getBytes(StandardCharsets.UTF_8);
     final CustomSection section = new CustomSection("test\0name", data, CustomSectionType.UNKNOWN);
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(section);
@@ -102,7 +103,10 @@ final class CustomSectionSecurityTest {
     // Add normal sections
     for (int i = 0; i < 5; i++) {
       sections.add(
-          new CustomSection("section" + i, ("data" + i).getBytes(), CustomSectionType.UNKNOWN));
+          new CustomSection(
+              "section" + i,
+              ("data" + i).getBytes(StandardCharsets.UTF_8),
+              CustomSectionType.UNKNOWN));
     }
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(sections);
@@ -116,7 +120,9 @@ final class CustomSectionSecurityTest {
 
     // Add too many sections
     for (int i = 0; i < CustomSectionSecurity.MAX_CUSTOM_SECTION_COUNT + 1; i++) {
-      sections.add(new CustomSection("section" + i, "data".getBytes(), CustomSectionType.UNKNOWN));
+      sections.add(
+          new CustomSection(
+              "section" + i, "data".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN));
     }
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(sections);
@@ -155,9 +161,15 @@ final class CustomSectionSecurityTest {
   @Test
   void testDuplicateSectionNames() {
     final List<CustomSection> sections = new ArrayList<>();
-    sections.add(new CustomSection("duplicate", "data1".getBytes(), CustomSectionType.UNKNOWN));
-    sections.add(new CustomSection("duplicate", "data2".getBytes(), CustomSectionType.UNKNOWN));
-    sections.add(new CustomSection("unique", "data3".getBytes(), CustomSectionType.UNKNOWN));
+    sections.add(
+        new CustomSection(
+            "duplicate", "data1".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN));
+    sections.add(
+        new CustomSection(
+            "duplicate", "data2".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN));
+    sections.add(
+        new CustomSection(
+            "unique", "data3".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN));
 
     final CustomSectionValidationResult result = CustomSectionSecurity.validateSecurity(sections);
     assertTrue(result.isValid()); // Valid but with warnings
@@ -205,19 +217,28 @@ final class CustomSectionSecurityTest {
             new byte[] {(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})); // Mach-O
 
     // Test script patterns
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns("eval(malicious)".getBytes()));
-    assertTrue(CustomSectionSecurity.containsSuspiciousPatterns("system('rm -rf /')".getBytes()));
     assertTrue(
-        CustomSectionSecurity.containsSuspiciousPatterns("<script>alert()</script>".getBytes()));
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            "eval(malicious)".getBytes(StandardCharsets.UTF_8)));
+    assertTrue(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            "system('rm -rf /')".getBytes(StandardCharsets.UTF_8)));
+    assertTrue(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            "<script>alert()</script>".getBytes(StandardCharsets.UTF_8)));
 
     // Test normal data
-    assertFalse(CustomSectionSecurity.containsSuspiciousPatterns("normal data".getBytes()));
-    assertFalse(CustomSectionSecurity.containsSuspiciousPatterns("function_names".getBytes()));
+    assertFalse(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            "normal data".getBytes(StandardCharsets.UTF_8)));
+    assertFalse(
+        CustomSectionSecurity.containsSuspiciousPatterns(
+            "function_names".getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
   void testSanitize() {
-    final byte[] data = "normal data".getBytes();
+    final byte[] data = "normal data".getBytes(StandardCharsets.UTF_8);
     final CustomSection section = new CustomSection("test", data, CustomSectionType.UNKNOWN);
 
     final CustomSection sanitized = CustomSectionSecurity.sanitize(section);

@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,12 +11,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the Store interface.
+ * Integration tests for the Store interface.
  *
  * <p>Tests verify store creation, data management, context operations, fuel management, epoch
- * interruption, and resource lifecycle management.
+ * interruption, and resource lifecycle management. These tests require the native Wasmtime runtime
+ * to be available.
  */
 @DisplayName("Store Interface Tests")
+@RequiresWasmRuntime
 class StoreTest {
 
   private Engine engine;

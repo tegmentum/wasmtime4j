@@ -184,6 +184,9 @@ public enum WitEvolutionOperation {
     final String name = name();
     if (name.contains("FUNCTION")) {
       return OperationCategory.FUNCTION;
+    } else if (name.contains("PARAMETER") || name.contains("RETURN")) {
+      // Check SIGNATURE before TYPE since CHANGE_RETURN_TYPE contains "TYPE"
+      return OperationCategory.SIGNATURE;
     } else if (name.contains("TYPE")
         || name.contains("FIELD")
         || name.contains("VARIANT")
@@ -191,8 +194,6 @@ public enum WitEvolutionOperation {
       return OperationCategory.TYPE;
     } else if (name.contains("IMPORT") || name.contains("EXPORT")) {
       return OperationCategory.INTERFACE;
-    } else if (name.contains("PARAMETER") || name.contains("RETURN")) {
-      return OperationCategory.SIGNATURE;
     } else {
       return OperationCategory.METADATA;
     }

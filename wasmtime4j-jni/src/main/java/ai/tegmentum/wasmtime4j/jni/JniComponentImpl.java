@@ -33,6 +33,7 @@ import ai.tegmentum.wasmtime4j.WitInterfaceMigrationPlan;
 import ai.tegmentum.wasmtime4j.WitInterfaceVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -241,6 +242,9 @@ public final class JniComponentImpl implements Component {
    * @return future that completes when hot-swap is done
    * @throws WasmException if hot-swap fails
    */
+  @SuppressFBWarnings(
+      value = "SIO_SUPERFLUOUS_INSTANCEOF",
+      justification = "Component is an interface with multiple implementations, check is needed")
   public CompletableFuture<Void> hotSwap(
       final Component newComponent, final HotSwapStrategy migrationStrategy) throws WasmException {
     JniValidation.requireNonNull(newComponent, "newComponent");

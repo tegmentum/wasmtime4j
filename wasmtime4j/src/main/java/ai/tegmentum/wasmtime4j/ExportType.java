@@ -45,4 +45,21 @@ public final class ExportType {
   public String toString() {
     return String.format("ExportType{name='%s', type=%s}", name, type);
   }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final ExportType that = (ExportType) obj;
+    return java.util.Objects.equals(name, that.name) && java.util.Objects.equals(type, that.type);
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hash(name, type);
+  }
 }

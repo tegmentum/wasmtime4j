@@ -90,10 +90,10 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeDestroyComponentInstance
- * Signature: (J)V
+ * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentInstance
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent

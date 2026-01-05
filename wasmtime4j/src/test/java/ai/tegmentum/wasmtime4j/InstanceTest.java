@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,12 +14,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the Instance interface.
+ * Integration tests for the Instance interface.
  *
  * <p>Tests verify instance creation, export retrieval, function calls, and resource lifecycle
- * management.
+ * management. These tests require the native Wasmtime runtime to be available.
  */
 @DisplayName("Instance Interface Tests")
+@RequiresWasmRuntime
 class InstanceTest {
 
   /** Minimal valid WebAssembly module (empty module). */

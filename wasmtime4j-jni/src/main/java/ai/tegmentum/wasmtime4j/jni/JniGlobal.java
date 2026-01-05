@@ -501,11 +501,16 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   /**
    * Performs the actual native resource cleanup.
    *
+   * <p>Note: In wasmtime, Globals are owned by the Store. Destroying a Global while the Store still
+   * exists can corrupt the Store's internal slab state. We mark the Global as closed but don't
+   * destroy it - the Store will handle cleanup.
+   *
    * @throws Exception if there's an error during cleanup
    */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroyGlobal(nativeHandle);
+    // Note: Do NOT call nativeDestroyGlobal here. Globals are Store-owned resources.
+    // The Store will clean up all its Globals when it is destroyed.
   }
 
   // Native method declarations

@@ -118,10 +118,10 @@ public final class StructRef implements GcRef {
    * @throws IllegalStateException if this is a null reference
    */
   public StructType getStructType(final Store store) {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get type of null struct reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getType();
   }
 
@@ -133,10 +133,10 @@ public final class StructRef implements GcRef {
    * @throws IllegalStateException if this is a null reference
    */
   public int getFieldCount(final Store store) {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get field count of null struct reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getFieldCount();
   }
 
@@ -151,10 +151,10 @@ public final class StructRef implements GcRef {
    * @throws GcException if field access fails
    */
   public GcValue getField(final Store store, final int index) throws GcException {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get field from null struct reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getField(index);
   }
 
@@ -170,11 +170,11 @@ public final class StructRef implements GcRef {
    * @throws GcException if field assignment fails
    */
   public void setField(final Store store, final int index, final GcValue value) throws GcException {
-    Objects.requireNonNull(store, "store cannot be null");
-    Objects.requireNonNull(value, "value cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot set field on null struct reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(value, "value cannot be null");
     instance.setField(index, value);
   }
 

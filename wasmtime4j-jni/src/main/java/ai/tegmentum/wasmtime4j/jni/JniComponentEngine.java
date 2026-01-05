@@ -27,6 +27,7 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.WitSupportInfo;
@@ -73,6 +74,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private final JniComponent.JniComponentEngine nativeEngine;
   private final ConcurrentMap<String, ComponentSimple> loadedComponents;
   private final AtomicLong componentIdCounter;
+  private final WasmRuntime runtime;
   private ComponentRegistry registry;
 
   // Load native library when this class is first loaded
@@ -88,21 +90,36 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   /**
    * Creates a new JNI component engine with the given configuration.
    *
+   * <p>This constructor is intended for unit tests. Production code should use {@link
+   * #JniComponentEngine(ComponentEngineConfig, WasmRuntime)}.
+   *
    * @param config the component engine configuration
    * @throws WasmException if engine creation fails
    */
   public JniComponentEngine(final ComponentEngineConfig config) throws WasmException {
-    super(0); // Will be set by native engine creation
+    this(config, null);
+  }
+
+  /**
+   * Creates a new JNI component engine with the given configuration and runtime reference.
+   *
+   * @param config the component engine configuration
+   * @param runtime the runtime that owns this engine
+   * @throws WasmException if engine creation fails
+   */
+  public JniComponentEngine(final ComponentEngineConfig config, final WasmRuntime runtime)
+      throws WasmException {
+    // Create native engine first before calling super() to get a valid handle
+    super(createNativeEngine());
     this.config = config != null ? config : new ComponentEngineConfig();
+    this.runtime = runtime;
     this.engineId = "jni-component-engine-" + System.nanoTime();
     this.loadedComponents = new ConcurrentHashMap<>();
     this.componentIdCounter = new AtomicLong(0);
 
     try {
-      // Create native component engine
-      this.nativeEngine = JniComponent.createComponentEngine();
-      // Update the native handle
-      setNativeHandle(this.nativeEngine.getNativeHandle());
+      // Get the native engine wrapper using the handle we just passed to super
+      this.nativeEngine = new JniComponent.JniComponentEngine(getNativeHandle());
 
       // TODO: Initialize component registry when JniComponentRegistry is implemented
       this.registry = null;
@@ -110,6 +127,21 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       LOGGER.fine("Created JNI component engine: " + engineId);
     } catch (final Exception e) {
       throw new WasmException("Failed to create JNI component engine", e);
+    }
+  }
+
+  /**
+   * Creates a native component engine and returns its handle.
+   *
+   * @return the native handle for the created engine
+   * @throws WasmException if engine creation fails
+   */
+  private static long createNativeEngine() throws WasmException {
+    try {
+      final JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine();
+      return engine.getNativeHandle();
+    } catch (final Exception e) {
+      throw new WasmException("Failed to create native component engine", e);
     }
   }
 
@@ -140,6 +172,11 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     ensureNotClosed();
     throw new UnsupportedOperationException(
         "ComponentEngine does not support Store creation - use regular Engine");
+  }
+
+  @Override
+  public WasmRuntime getRuntime() {
+    return runtime;
   }
 
   @Override

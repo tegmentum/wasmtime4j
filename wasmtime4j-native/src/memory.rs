@@ -498,10 +498,10 @@ impl Memory {
             }
         }
 
-        // Create Wasmtime memory type
-        let memory_type = MemoryType::new64(
-            config.initial_pages,
-            config.maximum_pages,
+        // Create Wasmtime memory type (standard 32-bit memory, not memory64)
+        let memory_type = MemoryType::new(
+            config.initial_pages as u32,
+            config.maximum_pages.map(|p| p as u32),
         );
 
         // Create memory instance

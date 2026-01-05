@@ -152,7 +152,7 @@ public final class MemoryOperationsIntegrationTest {
         0x00,
         0x01, // min 1 page
         0x07,
-        0x16, // export section
+        0x19, // export section (25 bytes: count + 3 exports)
         0x03, // 3 exports
         0x06,
         0x6D,
@@ -179,9 +179,9 @@ public final class MemoryOperationsIntegrationTest {
         0x00,
         0x01, // "load", func 1
         0x0A,
-        0x11, // code section
+        0x13, // code section (19 bytes: count + 2 bodies)
         0x02, // 2 function bodies
-        0x07, // body 1 size (store)
+        0x09, // body 1 size (9 bytes: store function)
         0x00, // 0 locals
         0x20,
         0x00, // local.get 0 (address)
@@ -679,13 +679,18 @@ public final class MemoryOperationsIntegrationTest {
       final WasmMemory memory = memOpt.get();
 
       // Try to read beyond memory bounds
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check happens
-      final Exception readException = assertThrows(
-          Exception.class,
-          () -> memory.readByte(PAGE_SIZE), // Just beyond 1 page
-          "Should throw exception for out-of-bounds read");
-      assertTrue(readException instanceof WasmException || readException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: " + readException.getClass().getName());
+      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+      // happens
+      final Exception readException =
+          assertThrows(
+              Exception.class,
+              () -> memory.readByte(PAGE_SIZE), // Just beyond 1 page
+              "Should throw exception for out-of-bounds read");
+      assertTrue(
+          readException instanceof WasmException
+              || readException instanceof IndexOutOfBoundsException,
+          "Should throw WasmException or IndexOutOfBoundsException, got: "
+              + readException.getClass().getName());
 
       LOGGER.info("Out-of-bounds read check passed");
     }
@@ -707,13 +712,18 @@ public final class MemoryOperationsIntegrationTest {
       final WasmMemory memory = memOpt.get();
 
       // Try to write beyond memory bounds
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check happens
-      final Exception writeException = assertThrows(
-          Exception.class,
-          () -> memory.writeByte(PAGE_SIZE, (byte) 0x42),
-          "Should throw exception for out-of-bounds write");
-      assertTrue(writeException instanceof WasmException || writeException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: " + writeException.getClass().getName());
+      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+      // happens
+      final Exception writeException =
+          assertThrows(
+              Exception.class,
+              () -> memory.writeByte(PAGE_SIZE, (byte) 0x42),
+              "Should throw exception for out-of-bounds write");
+      assertTrue(
+          writeException instanceof WasmException
+              || writeException instanceof IndexOutOfBoundsException,
+          "Should throw WasmException or IndexOutOfBoundsException, got: "
+              + writeException.getClass().getName());
 
       LOGGER.info("Out-of-bounds write check passed");
     }
@@ -735,11 +745,16 @@ public final class MemoryOperationsIntegrationTest {
       final WasmMemory memory = memOpt.get();
 
       // Initially can't access offset 65536 (page 2)
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check happens
-      final Exception beforeGrowException = assertThrows(
-          Exception.class, () -> memory.readByte(PAGE_SIZE), "Should throw before grow");
-      assertTrue(beforeGrowException instanceof WasmException || beforeGrowException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: " + beforeGrowException.getClass().getName());
+      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+      // happens
+      final Exception beforeGrowException =
+          assertThrows(
+              Exception.class, () -> memory.readByte(PAGE_SIZE), "Should throw before grow");
+      assertTrue(
+          beforeGrowException instanceof WasmException
+              || beforeGrowException instanceof IndexOutOfBoundsException,
+          "Should throw WasmException or IndexOutOfBoundsException, got: "
+              + beforeGrowException.getClass().getName());
 
       // Grow memory
       memory.grow(1);
@@ -758,7 +773,6 @@ public final class MemoryOperationsIntegrationTest {
 
     @Test
     @DisplayName("should use WASM store and load functions")
-    @org.junit.jupiter.api.Disabled("MEMORY_FUNCS_WASM bytecode has section size calculation errors - needs regeneration with wat2wasm")
     void shouldUseWasmStoreAndLoadFunctions() throws Exception {
       LOGGER.info("Testing WASM store/load functions");
 
@@ -796,7 +810,6 @@ public final class MemoryOperationsIntegrationTest {
 
     @Test
     @DisplayName("should share memory between Java and WASM")
-    @org.junit.jupiter.api.Disabled("MEMORY_FUNCS_WASM bytecode has section size calculation errors - needs regeneration with wat2wasm")
     void shouldShareMemoryBetweenJavaAndWasm() throws Exception {
       LOGGER.info("Testing memory sharing between Java and WASM");
 

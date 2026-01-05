@@ -117,6 +117,29 @@ public final class CodeBuilder {
   }
 
   /**
+   * Adds a global import.
+   *
+   * @param moduleName the module name
+   * @param fieldName the field name
+   * @param valueType the value type of the global
+   * @param mutable whether the global is mutable
+   * @return this builder
+   */
+  public CodeBuilder addGlobalImport(
+      final String moduleName,
+      final String fieldName,
+      final WasmValueType valueType,
+      final boolean mutable) {
+    Objects.requireNonNull(moduleName, "moduleName cannot be null");
+    Objects.requireNonNull(fieldName, "fieldName cannot be null");
+    Objects.requireNonNull(valueType, "valueType cannot be null");
+    imports.add(
+        new ImportEntry(
+            moduleName, fieldName, ImportKind.GLOBAL, encodeGlobalType(valueType, mutable)));
+    return this;
+  }
+
+  /**
    * Adds a function definition.
    *
    * @param typeIndex the type index
@@ -293,7 +316,23 @@ public final class CodeBuilder {
       writeName(section, imp.moduleName);
       writeName(section, imp.fieldName);
       section.write(imp.kind.ordinal());
-      writeUnsignedLeb128(section, imp.typeIndex);
+      if (imp.kind == ImportKind.MEMORY) {
+        // Decode min/max from encoded value
+        int encodedLimits = imp.typeIndex;
+        int min = encodedLimits & 0xFFFF;
+        int maxEncoded = (encodedLimits >> 16) & 0xFFFF;
+        int max = (maxEncoded == 0) ? -1 : maxEncoded;
+        writeLimits(section, min, max);
+      } else if (imp.kind == ImportKind.GLOBAL) {
+        // Decode value type and mutability from encoded value
+        int encodedGlobal = imp.typeIndex;
+        int valType = encodedGlobal & 0xFF;
+        boolean mutable = (encodedGlobal & 0x100) != 0;
+        section.write(valType);
+        section.write(mutable ? 0x01 : 0x00);
+      } else {
+        writeUnsignedLeb128(section, imp.typeIndex);
+      }
     }
     writeSection(out, 2, section.toByteArray());
   }
@@ -490,6 +529,11 @@ public final class CodeBuilder {
 
   private int encodeMemoryLimits(final int min, final int max) {
     return (max < 0) ? min : (min | (max << 16));
+  }
+
+  private int encodeGlobalType(final WasmValueType valueType, final boolean mutable) {
+    // Encode value type in low byte, mutability in high byte
+    return getValueTypeByte(valueType) | (mutable ? 0x100 : 0);
   }
 
   // Internal entry types

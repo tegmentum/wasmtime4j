@@ -309,7 +309,7 @@ class ComponentEngineConfigTest {
       final ComponentEngineConfig config = new ComponentEngineConfig();
       config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
       config.addComponentFeature(ComponentFeature.ORCHESTRATION);
-      config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
+      config.addComponentFeature(ComponentFeature.HOT_SWAPPING);
 
       assertEquals(3, config.getComponentFeatures().size(), "Should have 3 features");
     }

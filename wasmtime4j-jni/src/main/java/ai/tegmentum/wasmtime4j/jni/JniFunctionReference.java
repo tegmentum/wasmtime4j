@@ -328,29 +328,27 @@ public final class JniFunctionReference extends JniResource implements FunctionR
     return wasmFunction != null;
   }
 
+  /**
+   * Performs the actual native resource cleanup.
+   *
+   * <p>Note: In wasmtime, FunctionReferences are owned by the Store. Destroying a FunctionReference
+   * while the Store still exists can corrupt the Store's internal slab state. We mark the
+   * FunctionReference as closed and remove from registry but don't destroy native resources.
+   */
   @Override
   protected void doClose() throws Exception {
-    try {
-      // Remove from registry first
-      FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+    // Remove from registry to prevent further use
+    FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
 
-      // Destroy native resources
-      if (getNativeHandle() != 0) {
-        nativeDestroyFunctionReference(getNativeHandle());
-
-        if (LOGGER.isLoggable(Level.FINE)) {
-          LOGGER.fine(
-              "Destroyed function reference '"
-                  + functionName
-                  + "' with ID: "
-                  + functionReferenceId
-                  + ", handle: 0x"
-                  + Long.toHexString(getNativeHandle()));
-        }
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Error closing function reference: " + functionName, e);
-      throw e;
+    // Note: Do NOT call nativeDestroyFunctionReference here. FunctionReferences are Store-owned.
+    // The Store will clean up all its FunctionReferences when it is destroyed.
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(
+          "Function reference '"
+              + functionName
+              + "' marked as closed (ID: "
+              + functionReferenceId
+              + "). Native resources freed with Store.");
     }
   }
 

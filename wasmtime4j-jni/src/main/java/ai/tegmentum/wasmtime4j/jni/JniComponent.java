@@ -162,11 +162,12 @@ public final class JniComponent {
   static native void nativeDestroyComponent(long componentHandle);
 
   /**
-   * Destroys a component instance and releases associated resources.
+   * Destroys a component instance by removing it from the engine's internal map.
    *
-   * @param instanceHandle the native component instance handle
+   * @param engineHandle the native component engine handle
+   * @param instanceId the instance ID to destroy
    */
-  static native void nativeDestroyComponentInstance(long instanceHandle);
+  static native void nativeDestroyComponentInstance(long engineHandle, long instanceId);
 
   /**
    * Compiles a WebAssembly component from WAT (WebAssembly Text format).
@@ -370,10 +371,11 @@ public final class JniComponent {
       }
 
       try {
-        final long instanceHandle =
-            nativeInstantiateComponent(getNativeHandle(), component.getNativeHandle());
-        JniValidation.requireValidHandle(instanceHandle, "instanceHandle");
-        return new JniComponentInstanceHandle(instanceHandle);
+        final long engineHandle = getNativeHandle();
+        final long instanceId =
+            nativeInstantiateComponent(engineHandle, component.getNativeHandle());
+        JniValidation.requireValidHandle(instanceId, "instanceId");
+        return new JniComponentInstanceHandle(engineHandle, instanceId);
       } catch (final Exception e) {
         if (e instanceof JniException) {
           throw new WasmException(e.getMessage(), e);
@@ -419,10 +421,9 @@ public final class JniComponent {
 
     @Override
     protected void doClose() throws Exception {
-      if (getNativeHandle() != 0) {
-        nativeDestroyComponentEngine(getNativeHandle());
-        LOGGER.fine(
-            "Destroyed component engine with handle: 0x" + Long.toHexString(getNativeHandle()));
+      if (nativeHandle != 0) {
+        nativeDestroyComponentEngine(nativeHandle);
+        LOGGER.fine("Destroyed component engine with handle: 0x" + Long.toHexString(nativeHandle));
       }
     }
 
@@ -509,9 +510,9 @@ public final class JniComponent {
 
     @Override
     protected void doClose() throws Exception {
-      if (getNativeHandle() != 0) {
-        nativeDestroyComponent(getNativeHandle());
-        LOGGER.fine("Destroyed component with handle: 0x" + Long.toHexString(getNativeHandle()));
+      if (nativeHandle != 0) {
+        nativeDestroyComponent(nativeHandle);
+        LOGGER.fine("Destroyed component with handle: 0x" + Long.toHexString(nativeHandle));
       }
     }
 
@@ -534,23 +535,57 @@ public final class JniComponent {
    */
   public static final class JniComponentInstanceHandle extends JniResource {
 
+    /** The engine handle that owns this instance. Zero if instance is not engine-managed. */
+    private final long engineHandle;
+
     /**
      * Creates a new component instance handle wrapper with the given native handle.
      *
-     * @param nativeHandle the native component instance handle
-     * @throws JniResourceException if nativeHandle is invalid
+     * <p>This constructor is for stub/placeholder instances that are not managed by an engine
+     * (e.g., linker-based instantiation stubs). These instances will not be destroyed via native
+     * call.
+     *
+     * @param instanceId the instance ID (not a raw pointer)
+     * @throws JniResourceException if instanceId is invalid
      */
-    JniComponentInstanceHandle(final long nativeHandle) {
-      super(nativeHandle);
-      LOGGER.fine("Created component instance with handle: 0x" + Long.toHexString(nativeHandle));
+    JniComponentInstanceHandle(final long instanceId) {
+      super(instanceId);
+      this.engineHandle = 0;
+      LOGGER.fine("Created unmanaged component instance with ID: " + instanceId);
+    }
+
+    /**
+     * Creates a new component instance handle wrapper with the given native handle.
+     *
+     * @param engineHandle the native component engine handle that owns this instance
+     * @param instanceId the instance ID (not a raw pointer)
+     * @throws JniResourceException if instanceId is invalid
+     */
+    JniComponentInstanceHandle(final long engineHandle, final long instanceId) {
+      super(instanceId);
+      this.engineHandle = engineHandle;
+      LOGGER.fine("Created component instance with ID: " + instanceId
+          + " in engine: 0x" + Long.toHexString(engineHandle));
+    }
+
+    /**
+     * Gets the engine handle that owns this instance.
+     *
+     * @return the engine handle, or 0 if not engine-managed
+     */
+    public long getEngineHandle() {
+      return engineHandle;
     }
 
     @Override
     protected void doClose() throws Exception {
-      if (getNativeHandle() != 0) {
-        nativeDestroyComponentInstance(getNativeHandle());
-        LOGGER.fine(
-            "Destroyed component instance with handle: 0x" + Long.toHexString(getNativeHandle()));
+      if (nativeHandle != 0 && engineHandle != 0) {
+        nativeDestroyComponentInstance(engineHandle, nativeHandle);
+        LOGGER.fine("Destroyed component instance with ID: " + nativeHandle
+            + " from engine: 0x" + Long.toHexString(engineHandle));
+      } else if (nativeHandle != 0) {
+        // Unmanaged instance - no native cleanup needed
+        LOGGER.fine("Closed unmanaged component instance with ID: " + nativeHandle);
       }
     }
 

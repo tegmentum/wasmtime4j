@@ -470,6 +470,10 @@ public final class JniFunction extends JniResource
   /**
    * Performs the actual native resource cleanup.
    *
+   * <p>Note: In wasmtime, Functions are owned by the Store. Destroying a Function while the Store
+   * still exists can corrupt the Store's internal slab state ("object used with wrong store"
+   * panic). We mark the Function as closed but don't destroy it - the Store will handle cleanup.
+   *
    * @throws Exception if there's an error during cleanup
    */
   @Override
@@ -481,11 +485,14 @@ public final class JniFunction extends JniResource
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine(
           String.format(
-              "Closing function '%s': %d calls, %.2f%% cache hit ratio",
+              "Function '%s' marked as closed: %d calls, %.2f%% cache hit ratio. "
+                  + "Native resources will be freed when Store is destroyed.",
               name, getCallCount(), getCacheHitRatio() * 100));
     }
 
-    nativeDestroyFunction(getNativeHandle());
+    // Note: Do NOT call nativeDestroyFunction here. Functions are Store-owned resources.
+    // Destroying them while the Store exists causes "object used with wrong store" panics.
+    // The Store will clean up all its Functions when it is destroyed.
   }
 
   /**

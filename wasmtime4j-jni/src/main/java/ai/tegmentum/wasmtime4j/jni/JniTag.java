@@ -91,10 +91,21 @@ public final class JniTag extends JniResource implements Tag {
         getNativeHandle(), ((JniTag) other).getNativeHandle(), jniStore.getNativeHandle());
   }
 
+  /**
+   * Performs the actual native resource cleanup.
+   *
+   * <p>Note: In wasmtime, Tags are owned by the Store. Destroying a Tag while the Store still
+   * exists can corrupt the Store's internal slab state. We mark the Tag as closed but don't destroy
+   * it - the Store will handle cleanup.
+   */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroy(getNativeHandle());
-    LOGGER.fine("Destroyed tag with handle: 0x" + Long.toHexString(getNativeHandle()));
+    // Note: Do NOT call nativeDestroy here. Tags are Store-owned resources.
+    // The Store will clean up all its Tags when it is destroyed.
+    LOGGER.fine(
+        "Tag marked as closed (handle: 0x"
+            + Long.toHexString(nativeHandle)
+            + "). Native resources freed with Store.");
   }
 
   @Override

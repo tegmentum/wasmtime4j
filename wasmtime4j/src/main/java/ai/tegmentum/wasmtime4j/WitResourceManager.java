@@ -407,8 +407,6 @@ public final class WitResourceManager implements AutoCloseable {
       return;
     }
 
-    closed = true;
-
     try {
       // Stop cleanup executor
       cleanupExecutor.shutdown();
@@ -416,8 +414,8 @@ public final class WitResourceManager implements AutoCloseable {
         cleanupExecutor.shutdownNow();
       }
 
-      // Destroy all remaining resources
-      final Set<Integer> remainingResources = Collections.unmodifiableSet(activeResources.keySet());
+      // Destroy all remaining resources before marking as closed
+      final Set<Integer> remainingResources = Set.copyOf(activeResources.keySet());
       for (final int resourceId : remainingResources) {
         try {
           destroyResource(resourceId);
@@ -434,6 +432,9 @@ public final class WitResourceManager implements AutoCloseable {
 
     } catch (final Exception e) {
       LOGGER.warning("Error during resource manager shutdown: " + e.getMessage());
+    } finally {
+      // Mark as closed at the very end
+      closed = true;
     }
   }
 

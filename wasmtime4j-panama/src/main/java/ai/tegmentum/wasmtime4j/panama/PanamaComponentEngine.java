@@ -11,6 +11,7 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.WitSupportInfo;
@@ -60,17 +61,34 @@ public final class PanamaComponentEngine implements ComponentEngine {
   private final Arena arena;
   private final ConcurrentMap<String, PanamaComponentSimple> loadedComponents;
   private final AtomicLong componentIdCounter;
+  private final WasmRuntime runtime;
   private volatile boolean closed = false;
   private ComponentRegistry registry;
 
   /**
    * Creates a new Panama component engine with the given configuration.
    *
+   * <p>This constructor is intended for unit tests. Production code should use {@link
+   * #PanamaComponentEngine(ComponentEngineConfig, WasmRuntime)}.
+   *
    * @param config the component engine configuration
    * @throws WasmException if engine creation fails
    */
   public PanamaComponentEngine(final ComponentEngineConfig config) throws WasmException {
+    this(config, null);
+  }
+
+  /**
+   * Creates a new Panama component engine with the given configuration and runtime reference.
+   *
+   * @param config the component engine configuration
+   * @param runtime the runtime that owns this engine
+   * @throws WasmException if engine creation fails
+   */
+  public PanamaComponentEngine(final ComponentEngineConfig config, final WasmRuntime runtime)
+      throws WasmException {
     this.config = config != null ? config : new ComponentEngineConfig();
+    this.runtime = runtime;
     this.engineId = "panama-component-engine-" + System.nanoTime();
     this.arena = Arena.ofShared();
     this.loadedComponents = new ConcurrentHashMap<>();
@@ -409,6 +427,11 @@ public final class PanamaComponentEngine implements ComponentEngine {
   public Store createStore(final Object storeData) throws WasmException {
     throw new UnsupportedOperationException(
         "Store creation not supported - use PanamaEngine for store creation");
+  }
+
+  @Override
+  public WasmRuntime getRuntime() {
+    return runtime;
   }
 
   @Override

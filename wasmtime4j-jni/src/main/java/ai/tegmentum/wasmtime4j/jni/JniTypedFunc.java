@@ -431,8 +431,13 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
 
   @Override
   protected void doClose() throws Exception {
-    nativeDestroy(getNativeHandle());
-    LOGGER.log(Level.FINE, "Closed TypedFunc with signature: {0}", signature);
+    // Note: Do NOT call nativeDestroy here. TypedFunc is a Store-owned resource (wrapper
+    // around Function + Store). Destroying it while the Store exists causes wasmtime panics.
+    // The Store will clean up all its resources when it is destroyed.
+    LOGGER.log(
+        Level.FINE,
+        "TypedFunc with signature: {0} marked as closed. Native resources freed with Store.",
+        signature);
   }
 
   // Native method declarations

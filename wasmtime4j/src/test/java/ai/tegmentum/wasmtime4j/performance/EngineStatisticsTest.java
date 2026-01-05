@@ -17,7 +17,9 @@
 package ai.tegmentum.wasmtime4j.performance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -343,6 +345,268 @@ class EngineStatisticsTest {
       assertTrue(method.isDefault(), "getPerformanceScore should be a default method");
       assertEquals(
           double.class, method.getReturnType(), "getPerformanceScore should return double");
+    }
+  }
+
+  @Nested
+  @DisplayName("Static Factory Behavior Tests")
+  class StaticFactoryBehaviorTests {
+
+    @Test
+    @DisplayName("capture should throw IllegalArgumentException for null engine")
+    void captureShouldThrowIllegalArgumentExceptionForNullEngine() {
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> EngineStatistics.capture(null),
+              "capture should throw IllegalArgumentException for null engine");
+
+      assertNotNull(exception.getMessage(), "Exception message should not be null");
+      assertTrue(
+          exception.getMessage().contains("null"),
+          "Exception message should mention null. Actual: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("captureAndReset should throw IllegalArgumentException for null engine")
+    void captureAndResetShouldThrowIllegalArgumentExceptionForNullEngine() {
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> EngineStatistics.captureAndReset(null),
+              "captureAndReset should throw IllegalArgumentException for null engine");
+
+      assertNotNull(exception.getMessage(), "Exception message should not be null");
+      assertTrue(
+          exception.getMessage().contains("null"),
+          "Exception message should mention null. Actual: " + exception.getMessage());
+    }
+  }
+
+  @Nested
+  @DisplayName("Default Method Behavior Tests")
+  class DefaultMethodBehaviorTests {
+
+    /** Creates a test implementation of EngineStatistics with configurable values. */
+    private EngineStatistics createTestStats(
+        final Duration compilationTime,
+        final Duration executionTime,
+        final long peakMemory,
+        final long currentMemory,
+        final double cacheHitRatio,
+        final double executionThroughput) {
+      return new EngineStatistics() {
+        @Override
+        public long getModulesCompiled() {
+          return 0;
+        }
+
+        @Override
+        public Duration getTotalCompilationTime() {
+          return compilationTime;
+        }
+
+        @Override
+        public Duration getAverageCompilationTime() {
+          return Duration.ZERO;
+        }
+
+        @Override
+        public long getBytesCompiled() {
+          return 0;
+        }
+
+        @Override
+        public double getCompilationThroughput() {
+          return 0.0;
+        }
+
+        @Override
+        public long getFunctionsExecuted() {
+          return 0;
+        }
+
+        @Override
+        public Duration getTotalExecutionTime() {
+          return executionTime;
+        }
+
+        @Override
+        public long getInstructionsExecuted() {
+          return 0;
+        }
+
+        @Override
+        public double getExecutionThroughput() {
+          return executionThroughput;
+        }
+
+        @Override
+        public long getPeakMemoryUsage() {
+          return peakMemory;
+        }
+
+        @Override
+        public long getCurrentMemoryUsage() {
+          return currentMemory;
+        }
+
+        @Override
+        public long getTotalAllocations() {
+          return 0;
+        }
+
+        @Override
+        public long getTotalDeallocations() {
+          return 0;
+        }
+
+        @Override
+        public long getCacheHits() {
+          return 0;
+        }
+
+        @Override
+        public long getCacheMisses() {
+          return 0;
+        }
+
+        @Override
+        public double getCacheHitRatio() {
+          return cacheHitRatio;
+        }
+
+        @Override
+        public long getJitCompilations() {
+          return 0;
+        }
+
+        @Override
+        public Duration getJitCompilationTime() {
+          return Duration.ZERO;
+        }
+
+        @Override
+        public long getJitCodeSize() {
+          return 0;
+        }
+
+        @Override
+        public Instant getCaptureTime() {
+          return Instant.now();
+        }
+
+        @Override
+        public Duration getUptime() {
+          return Duration.ZERO;
+        }
+
+        @Override
+        public void reset() {
+          // No-op for test
+        }
+
+        @Override
+        public Map<String, Object> getExtendedStatistics() {
+          return java.util.Collections.emptyMap();
+        }
+      };
+    }
+
+    @Test
+    @DisplayName("hasHighCompilationOverhead should return false when total time is zero")
+    void hasHighCompilationOverheadShouldReturnFalseWhenTotalTimeIsZero() {
+      final EngineStatistics stats = createTestStats(Duration.ZERO, Duration.ZERO, 0, 0, 0.0, 0.0);
+      assertFalse(
+          stats.hasHighCompilationOverhead(), "Should return false when total time is zero");
+    }
+
+    @Test
+    @DisplayName("hasHighCompilationOverhead should return true when compilation > 50% of total")
+    void hasHighCompilationOverheadShouldReturnTrueWhenCompilationOverHalf() {
+      final EngineStatistics stats =
+          createTestStats(Duration.ofSeconds(6), Duration.ofSeconds(4), 0, 0, 0.0, 0.0);
+      assertTrue(
+          stats.hasHighCompilationOverhead(),
+          "Should return true when compilation is more than 50% of total time");
+    }
+
+    @Test
+    @DisplayName("hasHighCompilationOverhead should return false when compilation < 50% of total")
+    void hasHighCompilationOverheadShouldReturnFalseWhenCompilationUnderHalf() {
+      final EngineStatistics stats =
+          createTestStats(Duration.ofSeconds(4), Duration.ofSeconds(6), 0, 0, 0.0, 0.0);
+      assertFalse(
+          stats.hasHighCompilationOverhead(),
+          "Should return false when compilation is less than 50% of total time");
+    }
+
+    @Test
+    @DisplayName("hasEfficientMemoryUtilization should return true when peak is zero")
+    void hasEfficientMemoryUtilizationShouldReturnTrueWhenPeakIsZero() {
+      final EngineStatistics stats = createTestStats(Duration.ZERO, Duration.ZERO, 0, 0, 0.0, 0.0);
+      assertTrue(
+          stats.hasEfficientMemoryUtilization(), "Should return true when peak memory is zero");
+    }
+
+    @Test
+    @DisplayName("hasEfficientMemoryUtilization should return true when current < 80% of peak")
+    void hasEfficientMemoryUtilizationShouldReturnTrueWhenCurrentUnder80Percent() {
+      final EngineStatistics stats =
+          createTestStats(Duration.ZERO, Duration.ZERO, 1000, 700, 0.0, 0.0);
+      assertTrue(
+          stats.hasEfficientMemoryUtilization(),
+          "Should return true when current memory is less than 80% of peak");
+    }
+
+    @Test
+    @DisplayName("hasEfficientMemoryUtilization should return false when current >= 80% of peak")
+    void hasEfficientMemoryUtilizationShouldReturnFalseWhenCurrentAtOrAbove80Percent() {
+      final EngineStatistics stats =
+          createTestStats(Duration.ZERO, Duration.ZERO, 1000, 900, 0.0, 0.0);
+      assertFalse(
+          stats.hasEfficientMemoryUtilization(),
+          "Should return false when current memory is 80% or more of peak");
+    }
+
+    @Test
+    @DisplayName("getPerformanceScore should return positive score with good metrics")
+    void getPerformanceScoreShouldReturnPositiveScoreWithGoodMetrics() {
+      // Good metrics: low compilation overhead, efficient memory, high cache ratio, high throughput
+      final EngineStatistics stats =
+          createTestStats(
+              Duration.ofSeconds(2), Duration.ofSeconds(10), 1000, 500, 0.9, 2_000_000.0);
+      final double score = stats.getPerformanceScore();
+      assertTrue(score > 0, "Score should be positive with good metrics. Actual score: " + score);
+      assertTrue(score <= 100, "Score should not exceed 100. Actual score: " + score);
+    }
+
+    @Test
+    @DisplayName("getPerformanceScore should return lower score with poor metrics")
+    void getPerformanceScoreShouldReturnLowerScoreWithPoorMetrics() {
+      // Poor metrics: high compilation overhead, inefficient memory, low cache ratio, low
+      // throughput
+      final EngineStatistics poorStats =
+          createTestStats(Duration.ofSeconds(8), Duration.ofSeconds(2), 1000, 950, 0.1, 100.0);
+
+      final EngineStatistics goodStats =
+          createTestStats(
+              Duration.ofSeconds(2), Duration.ofSeconds(10), 1000, 500, 0.9, 2_000_000.0);
+
+      final double poorScore = poorStats.getPerformanceScore();
+      final double goodScore = goodStats.getPerformanceScore();
+
+      assertTrue(
+          poorScore < goodScore,
+          "Poor metrics should have lower score. Poor: " + poorScore + ", Good: " + goodScore);
+    }
+
+    @Test
+    @DisplayName("getPerformanceScore should return zero when all factors are zero")
+    void getPerformanceScoreShouldHandleZeroMetrics() {
+      final EngineStatistics stats = createTestStats(Duration.ZERO, Duration.ZERO, 0, 0, 0.0, 0.0);
+      final double score = stats.getPerformanceScore();
+      assertTrue(score >= 0, "Score should be non-negative. Actual score: " + score);
     }
   }
 }

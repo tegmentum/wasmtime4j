@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
@@ -765,9 +766,9 @@ public final class JniStore extends JniResource implements Store {
       LOGGER.warning("Error closing callback registry: " + e.getMessage());
     }
 
-    if (getNativeHandle() != 0) {
-      nativeDestroyStore(getNativeHandle());
-      LOGGER.fine("Destroyed JNI store with handle: 0x" + Long.toHexString(getNativeHandle()));
+    if (nativeHandle != 0) {
+      nativeDestroyStore(nativeHandle);
+      LOGGER.fine("Destroyed JNI store with handle: 0x" + Long.toHexString(nativeHandle));
     }
   }
 
@@ -1474,6 +1475,9 @@ public final class JniStore extends JniResource implements Store {
 
   // Called from native code when epoch deadline is reached
   @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
   private long onEpochDeadlineReached(final long currentEpoch) {
     if (epochDeadlineCallback == null) {
       return -1; // Signal trap
@@ -1539,6 +1543,9 @@ public final class JniStore extends JniResource implements Store {
 
   // Called from native code when a call hook event occurs
   @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
   private void onCallHook(final int hookType)
       throws ai.tegmentum.wasmtime4j.exception.TrapException {
     if (callHookHandler != null) {
@@ -1548,6 +1555,9 @@ public final class JniStore extends JniResource implements Store {
 
   // Called from native code for async call hook
   @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
   private void onCallHookAsync(final int hookType) {
     if (asyncCallHookHandler != null) {
       asyncCallHookHandler.onCallHook(ai.tegmentum.wasmtime4j.CallHook.fromValue(hookType));
@@ -1683,6 +1693,9 @@ public final class JniStore extends JniResource implements Store {
 
   // Called from native code when async memory growth is requested
   @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
   private boolean onAsyncMemoryGrowRequest(final long currentPages, final long requestedPages) {
     if (asyncResourceLimiter == null) {
       return true;
@@ -1697,6 +1710,9 @@ public final class JniStore extends JniResource implements Store {
 
   // Called from native code when async table growth is requested
   @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
   private boolean onAsyncTableGrowRequest(
       final long currentElements, final long requestedElements) {
     if (asyncResourceLimiter == null) {

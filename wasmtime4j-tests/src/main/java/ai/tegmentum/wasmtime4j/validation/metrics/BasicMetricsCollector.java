@@ -214,7 +214,6 @@ public final class BasicMetricsCollector {
      */
     OperationMetrics getMetrics() {
       final List<Duration> allSuccessTimes = new ArrayList<>(successTimes);
-      final List<Duration> allFailureTimes = new ArrayList<>(failureTimes);
 
       final long totalCount = successCount.get() + failureCount.get();
       final double successRate = totalCount > 0 ? (double) successCount.get() / totalCount : 0.0;

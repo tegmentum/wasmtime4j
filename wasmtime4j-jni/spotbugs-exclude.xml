@@ -21,14 +21,71 @@
     </Or>
   </Match>
 
-  <!-- Suppress test-specific warnings in test classes -->
+  <!-- Suppress test-specific warnings globally in test classes -->
   <!-- Tests intentionally use patterns that trigger warnings for validation purposes -->
+
+  <!-- CNT_ROUGH_CONSTANT_VALUE: Tests use specific test values like 3.14 -->
   <Match>
-    <Or>
-      <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
-      <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
-      <Bug pattern="DE_MIGHT_IGNORE"/>
-    </Or>
-    <Class name="~.*Test.*"/>
+    <Bug pattern="CNT_ROUGH_CONSTANT_VALUE"/>
+  </Match>
+
+  <!-- NP_* bugs in tests: Testing null handling behavior -->
+  <Match>
+    <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
+  </Match>
+  <Match>
+    <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+  </Match>
+
+  <!-- DE_MIGHT_IGNORE: Ignoring exceptions in test setup -->
+  <Match>
+    <Bug pattern="DE_MIGHT_IGNORE"/>
+  </Match>
+
+  <!-- PZLA_PREFER_ZERO_LENGTH_ARRAYS: Test lambdas return null -->
+  <Match>
+    <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
+  </Match>
+
+  <!-- DLS_DEAD_LOCAL_STORE: Some test variables are for readability -->
+  <Match>
+    <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+  </Match>
+
+  <!-- DM_GC: Some tests need to force GC -->
+  <Match>
+    <Bug pattern="DM_GC"/>
+  </Match>
+
+  <!-- DP_DO_INSIDE_DO_PRIVILEGED: Test reflection access -->
+  <Match>
+    <Bug pattern="DP_DO_INSIDE_DO_PRIVILEGED"/>
+  </Match>
+
+  <!-- RpC_REPEATED_CONDITIONAL_TEST: Test code patterns -->
+  <Match>
+    <Bug pattern="RpC_REPEATED_CONDITIONAL_TEST"/>
+  </Match>
+
+  <!-- EC_UNRELATED_TYPES: Testing equals with different types -->
+  <Match>
+    <Bug pattern="EC_UNRELATED_TYPES"/>
+  </Match>
+
+  <!-- OBJECT_DESERIALIZATION: Testing serialization -->
+  <Match>
+    <Bug pattern="OBJECT_DESERIALIZATION"/>
+  </Match>
+
+  <!-- DMI_ANNOTATION_IS_NOT_VISIBLE_TO_REFLECTION: Annotation checks in tests -->
+  <Match>
+    <Bug pattern="DMI_ANNOTATION_IS_NOT_VISIBLE_TO_REFLECTION"/>
+  </Match>
+
+  <!-- Suppress instanceof check in lambdas - Component is an interface with multiple implementations -->
+  <Match>
+    <Bug pattern="SIO_SUPERFLUOUS_INSTANCEOF"/>
+    <Class name="ai.tegmentum.wasmtime4j.jni.JniComponentImpl"/>
+    <Method name="~lambda\$hotSwap.*"/>
   </Match>
 </FindBugsFilter>

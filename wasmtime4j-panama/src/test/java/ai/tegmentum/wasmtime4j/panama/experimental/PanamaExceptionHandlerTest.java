@@ -28,13 +28,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link PanamaExceptionHandler} class. */
 @DisplayName("PanamaExceptionHandler Tests")
-@Disabled("Requires native library to be loaded")
 public class PanamaExceptionHandlerTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaExceptionHandlerTest.class.getName());

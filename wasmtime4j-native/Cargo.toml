@@ -195,7 +195,7 @@ connection-pooling = ["bb8", "tower-http"]
 opt-level = 3
 lto = true
 codegen-units = 1
-panic = "abort"
+panic = "unwind"  # Required for catch_unwind to work in JNI
 
 [profile.dev]
 # Fast compilation for development

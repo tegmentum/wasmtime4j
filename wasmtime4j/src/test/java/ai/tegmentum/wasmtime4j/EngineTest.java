@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
@@ -12,12 +13,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the Engine interface.
+ * Integration tests for the Engine interface.
  *
  * <p>Tests verify engine creation, configuration, module compilation, store creation, and resource
- * management.
+ * management. These tests require the native Wasmtime runtime to be available.
  */
 @DisplayName("Engine Interface Tests")
+@RequiresWasmRuntime
 class EngineTest {
 
   /** Simple WebAssembly module that exports an add function. */

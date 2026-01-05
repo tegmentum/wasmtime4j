@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.Test;
  *
  * @since 1.0.0
  */
+@DisplayName("WasiFactory Tests")
+@RequiresWasmRuntime
 final class WasiFactoryTest {
 
   @Test

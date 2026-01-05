@@ -364,7 +364,7 @@ impl Instance {
                     Ok(())
                 })
             }
-            (ImportKind::Memory(_req_min, _req_max, _req_shared), Extern::Memory(_memory)) => {
+            (ImportKind::Memory(_req_min, _req_max, _req_64, _req_shared), Extern::Memory(_memory)) => {
                 // Memory compatibility validation could be more sophisticated
                 Ok(())
             }
@@ -924,6 +924,7 @@ impl Instance {
                 Ok(ExportKind::Memory(
                     memory_type.minimum(),
                     memory_type.maximum(),
+                    memory_type.is_64(),
                     memory_type.is_shared(),
                 ))
             }

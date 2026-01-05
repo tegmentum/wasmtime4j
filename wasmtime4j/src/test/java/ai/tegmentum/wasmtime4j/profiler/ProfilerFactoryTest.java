@@ -18,8 +18,10 @@ package ai.tegmentum.wasmtime4j.profiler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -81,6 +83,44 @@ class ProfilerFactoryTest {
       final Method method = ProfilerFactory.ProfilerProvider.class.getMethod("create");
       assertNotNull(method, "create method should exist");
       assertEquals(Profiler.class, method.getReturnType(), "Should return Profiler");
+    }
+  }
+
+  @Nested
+  @DisplayName("create() Behavior Tests")
+  class CreateBehaviorTests {
+
+    @Test
+    @DisplayName("should throw WasmException when no provider found")
+    void shouldThrowWasmExceptionWhenNoProviderFound() {
+      // When running in the wasmtime4j module without JNI/Panama implementations
+      // on the classpath, the ServiceLoader won't find any ProfilerProvider
+      // This tests the error path when no provider is available
+      final WasmException exception =
+          assertThrows(
+              WasmException.class,
+              ProfilerFactory::create,
+              "Should throw WasmException when no provider is found");
+
+      assertNotNull(exception.getMessage(), "Exception message should not be null");
+      assertTrue(
+          exception.getMessage().contains("No Profiler implementation found"),
+          "Exception message should indicate no implementation found. "
+              + "Actual message: "
+              + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("exception message should suggest adding wasmtime4j-jni or wasmtime4j-panama")
+    void exceptionMessageShouldSuggestImplementation() {
+      final WasmException exception = assertThrows(WasmException.class, ProfilerFactory::create);
+
+      final String message = exception.getMessage();
+      assertTrue(
+          message.contains("wasmtime4j-jni") || message.contains("wasmtime4j-panama"),
+          "Exception message should mention wasmtime4j-jni or wasmtime4j-panama. "
+              + "Actual message: "
+              + message);
     }
   }
 }

@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -101,6 +102,9 @@ public final class WasmFunctionToFunctionAdapter<T> implements Function<T> {
   }
 
   @Override
+  @SuppressFBWarnings(
+      value = "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE",
+      justification = "Defensive null check for safety even though call() shouldn't return null")
   public Object callSingle(final Object... args) throws WasmException {
     final Object[] results = call(args);
     if (results == null || results.length == 0) {

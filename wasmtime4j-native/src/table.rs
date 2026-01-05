@@ -222,9 +222,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        let table_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let table_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Bounds check
         if index >= table_size {
@@ -238,11 +236,10 @@ impl Table {
         }
 
         let wasmtime_value = store.with_context(|ctx| {
-            table.get(ctx, index)
-                .ok_or_else(|| WasmtimeError::Runtime {
-                    message: format!("Failed to get table element at index {}", index),
-                    backtrace: None,
-                })
+            table.get(ctx, index).ok_or_else(|| WasmtimeError::Runtime {
+                message: format!("Failed to get table element at index {}", index),
+                backtrace: None,
+            })
         })?;
 
         Self::wasmtime_val_to_table_element(wasmtime_value, &self.metadata.element_type)
@@ -815,67 +812,59 @@ impl Table {
     fn wasmtime_val_to_table_element(val: Ref, element_type: &ValType) -> WasmtimeResult<TableElement> {
         let table_element = match element_type {
             ValType::Ref(ref_type) => {
-                // Discriminate between different reference types based on heap type
-                match ref_type.heap_type() {
-                    wasmtime::HeapType::Func => {
-                        if val.is_null() {
-                            TableElement::FuncRef(None)
-                        } else {
-                            // Try to extract function and register it
-                            if let Some(func_ref) = val.as_func() {
-                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                    message: format!("Failed to lock reference registry: {}", e),
-                                })?;
-                                let id = registry.register_function(func_ref.unwrap().clone());
-                                TableElement::FuncRef(Some(id))
-                            } else {
-                                TableElement::FuncRef(None)
-                            }
+                // First, try to extract as a funcref using as_func()
+                // In Wasmtime 39+, as_func() returns Option<Option<Func>>:
+                // - Some(Some(func)) = non-null funcref
+                // - Some(None) = null funcref
+                // - None = not a funcref type
+                if let Some(func_opt) = val.as_func() {
+                    // This is a funcref
+                    match func_opt {
+                        Some(func) => {
+                            // Non-null funcref - register and return
+                            log::debug!("wasmtime_val_to_table_element: registering non-null funcref");
+                            let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
+                                message: format!("Failed to lock reference registry: {}", e),
+                            })?;
+                            let id = registry.register_function(func.clone());
+                            log::debug!("wasmtime_val_to_table_element: registered with id={}", id);
+                            TableElement::FuncRef(Some(id))
                         }
-                    },
-                    wasmtime::HeapType::Extern => {
-                        if val.is_null() {
-                            TableElement::ExternRef(None)
-                        } else {
-                            // For external references, we create a generic Extern::Func if possible
-                            if let Some(func_ref) = val.as_func() {
-                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                    message: format!("Failed to lock reference registry: {}", e),
-                                })?;
-                                let external = Extern::Func(func_ref.unwrap().clone());
-                                let id = registry.register_external(external);
-                                TableElement::ExternRef(Some(id))
+                        None => {
+                            // Null funcref
+                            log::debug!("wasmtime_val_to_table_element: null funcref");
+                            TableElement::FuncRef(None)
+                        }
+                    }
+                } else {
+                    log::debug!("wasmtime_val_to_table_element: not a funcref, checking heap type");
+                    // Not a funcref, check for externref or other types based on heap type
+                    match ref_type.heap_type() {
+                        wasmtime::HeapType::Extern => {
+                            if val.is_null() {
+                                TableElement::ExternRef(None)
                             } else {
-                                // Could not extract function, use null
+                                // For external references that aren't funcrefs
                                 TableElement::ExternRef(None)
                             }
                         }
-                    },
-                    _ => {
-                        // For unknown reference types, use AnyRef
-                        if val.is_null() {
-                            TableElement::AnyRef(None)
-                        } else {
-                            // Try to register as function first, then as external
-                            if let Some(func_ref) = val.as_func() {
-                                let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                    message: format!("Failed to lock reference registry: {}", e),
-                                })?;
-                                let id = registry.register_function(func_ref.unwrap().clone());
-                                TableElement::AnyRef(Some(id))
+                        _ => {
+                            // For other reference types, use AnyRef
+                            if val.is_null() {
+                                TableElement::AnyRef(None)
                             } else {
-                                // Could not extract, use null
                                 TableElement::AnyRef(None)
                             }
                         }
                     }
                 }
-            },
+            }
             _ => return Err(WasmtimeError::Type {
                 message: format!("Cannot convert Ref to TableElement for non-reference type {:?}", element_type),
             }),
         };
 
+        log::debug!("wasmtime_val_to_table_element: returning {:?}", table_element);
         Ok(table_element)
     }
 

@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.io.InputStream;
  */
 public class JniEngine implements Engine {
   private final long nativeHandle;
+  private final WasmRuntime runtime;
   private volatile boolean closed = false;
 
   // Load native library when this class is first loaded
@@ -28,12 +30,26 @@ public class JniEngine implements Engine {
   }
 
   /**
+   * Creates a new JNI engine with the given native handle and runtime.
+   *
+   * @param nativeHandle the native handle
+   * @param runtime the runtime that created this engine
+   */
+  public JniEngine(final long nativeHandle, final WasmRuntime runtime) {
+    this.nativeHandle = nativeHandle;
+    this.runtime = runtime;
+  }
+
+  /**
    * Creates a new JNI engine with the given native handle.
+   *
+   * <p>This constructor is intended for unit tests that don't need a runtime reference. Production
+   * code should use {@link #JniEngine(long, WasmRuntime)}.
    *
    * @param nativeHandle the native handle
    */
   public JniEngine(final long nativeHandle) {
-    this.nativeHandle = nativeHandle;
+    this(nativeHandle, null);
   }
 
   /**
@@ -43,6 +59,11 @@ public class JniEngine implements Engine {
    */
   public long getNativeHandle() {
     return nativeHandle;
+  }
+
+  @Override
+  public WasmRuntime getRuntime() {
+    return runtime;
   }
 
   @Override
@@ -377,10 +398,12 @@ public class JniEngine implements Engine {
    * Creates a new engine with the specified configuration.
    *
    * @param config the engine configuration
+   * @param runtime the runtime that owns this engine
    * @return a new JniEngine instance
    * @throws WasmException if the engine cannot be created
    */
-  public static JniEngine createWithConfig(final EngineConfig config) throws WasmException {
+  public static JniEngine createWithConfig(final EngineConfig config, final WasmRuntime runtime)
+      throws WasmException {
     if (config == null) {
       throw new IllegalArgumentException("config cannot be null");
     }
@@ -406,26 +429,27 @@ public class JniEngine implements Engine {
     final long maxMemoryBytes = config.getMaxMemoryPerInstance();
     final int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
 
-    final long handle = nativeCreateEngineWithConfig(
-        0, // strategy (0 = auto/cranelift)
-        optLevel,
-        config.isDebugInfo(),
-        config.isWasmThreads(),
-        config.isWasmSimd(),
-        config.isWasmReferenceTypes(),
-        config.isWasmBulkMemory(),
-        config.isWasmMultiValue(),
-        config.isConsumeFuel(),
-        maxMemoryPages,
-        (int) config.getMaxWasmStack(),
-        config.isEpochInterruption(),
-        config.getInstancePoolSize());
+    final long handle =
+        nativeCreateEngineWithConfig(
+            0, // strategy (0 = auto/cranelift)
+            optLevel,
+            config.isDebugInfo(),
+            config.isWasmThreads(),
+            config.isWasmSimd(),
+            config.isWasmReferenceTypes(),
+            config.isWasmBulkMemory(),
+            config.isWasmMultiValue(),
+            config.isConsumeFuel(),
+            maxMemoryPages,
+            (int) config.getMaxWasmStack(),
+            config.isEpochInterruption(),
+            config.getInstancePoolSize());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
     }
 
-    return new JniEngine(handle);
+    return new JniEngine(handle, runtime);
   }
 
   private static native long nativeCreateEngineWithConfig(

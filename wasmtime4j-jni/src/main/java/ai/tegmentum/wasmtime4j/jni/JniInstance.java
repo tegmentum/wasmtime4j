@@ -468,11 +468,20 @@ public final class JniInstance extends JniResource implements Instance {
   /**
    * Performs the actual native resource cleanup.
    *
+   * <p>Note: In wasmtime, Instances are owned by the Store that created them. The native Instance
+   * resources will be automatically freed when the Store is destroyed. We don't call
+   * nativeDestroyInstance here to avoid corrupting the Store's internal slab state.
+   *
    * @throws Exception if there's an error during cleanup
    */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroyInstance(getNativeHandle());
+    // Instance resources are owned by Store and will be freed when Store is destroyed.
+    // Explicitly destroying Instance before Store can corrupt wasmtime's internal slab state.
+    LOGGER.fine(
+        "Instance marked as closed (handle: 0x"
+            + Long.toHexString(nativeHandle)
+            + "). Native resources will be freed when Store is destroyed.");
   }
 
   @Override

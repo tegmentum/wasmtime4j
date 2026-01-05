@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,12 +12,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the WasmMemory interface.
+ * Integration tests for the WasmMemory interface.
  *
  * <p>Tests verify memory creation, size operations, read/write operations, growth, bulk operations,
- * and 64-bit addressing support.
+ * and 64-bit addressing support. These tests require the native Wasmtime runtime to be available.
  */
 @DisplayName("WasmMemory Interface Tests")
+@RequiresWasmRuntime
 class MemoryTest {
 
   /** WebAssembly page size in bytes (64KB). */

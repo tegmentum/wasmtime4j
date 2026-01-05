@@ -22,42 +22,42 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeGrow
- * Signature: (JJ)J
+ * Signature: (JJJ)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow
-  (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeReadByte
- * Signature: (JJ)B
+ * Signature: (JJJ)B
  */
 JNIEXPORT jbyte JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
-  (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeWriteByte
- * Signature: (JJB)V
+ * Signature: (JJJB)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByte
-  (JNIEnv *, jclass, jlong, jlong, jbyte);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jbyte);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeReadBytes
- * Signature: (JJ[B)I
+ * Signature: (JJJ[B)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadBytes
-  (JNIEnv *, jclass, jlong, jlong, jbyteArray);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeWriteBytes
- * Signature: (JJ[B)I
+ * Signature: (JJJ[B)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteBytes
-  (JNIEnv *, jclass, jlong, jlong, jbyteArray);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory

@@ -105,14 +105,14 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Engine createEngine() throws WasmException {
     ensureNotClosed();
-    return new PanamaEngine();
+    return new PanamaEngine(new EngineConfig(), this);
   }
 
   @Override
   public Engine createEngine(final EngineConfig config) throws WasmException {
     PanamaValidation.requireNonNull(config, "config");
     ensureNotClosed();
-    return new PanamaEngine(config);
+    return new PanamaEngine(config, this);
   }
 
   @Override

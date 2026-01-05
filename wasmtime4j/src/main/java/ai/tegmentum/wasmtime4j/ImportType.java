@@ -58,4 +58,23 @@ public final class ImportType {
   public String toString() {
     return String.format("ImportType{module='%s', name='%s', type=%s}", moduleName, name, type);
   }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final ImportType that = (ImportType) obj;
+    return java.util.Objects.equals(moduleName, that.moduleName)
+        && java.util.Objects.equals(name, that.name)
+        && java.util.Objects.equals(type, that.type);
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hash(moduleName, name, type);
+  }
 }

@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
@@ -624,6 +623,6 @@ public interface Linker<T> extends Closeable {
    * @throws IllegalArgumentException if engine is null
    */
   static <T> Linker<T> create(final Engine engine) throws WasmException {
-    return WasmRuntimeFactory.create().createLinker(engine);
+    return engine.getRuntime().createLinker(engine);
   }
 }

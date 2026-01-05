@@ -161,11 +161,15 @@ public final class JniTable extends JniResource implements WasmTable {
   public Object get(final int index) {
     JniValidation.requireNonNegative(index, "index");
 
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+
     final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
     try {
-      return nativeGet(handle, index);
+      return nativeGet(handle, store.getNativeHandle(), index);
     } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
@@ -436,10 +440,11 @@ public final class JniTable extends JniResource implements WasmTable {
    * Gets an element from a table.
    *
    * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
    * @param index the table index
    * @return the element at the index or null
    */
-  private static native Object nativeGet(long tableHandle, int index);
+  private static native Object nativeGet(long tableHandle, long storeHandle, int index);
 
   /**
    * Sets an element in a table.

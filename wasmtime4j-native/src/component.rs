@@ -350,7 +350,14 @@ impl ComponentEngine {
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created
     /// due to system resource constraints or configuration issues.
     pub fn new() -> WasmtimeResult<Self> {
-        let engine = WasmtimeEngine::default();
+        // Create a properly configured engine with component model support
+        let mut config = wasmtime::Config::default();
+        config.wasm_component_model(true);
+
+        let engine = WasmtimeEngine::new(&config)
+            .map_err(|e| WasmtimeError::EngineConfig {
+                message: format!("Failed to create component engine: {}", e),
+            })?;
         let linker = Linker::new(&engine);
         
         Ok(ComponentEngine {

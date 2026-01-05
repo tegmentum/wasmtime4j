@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -240,7 +241,7 @@ public final class ErrorMonitor {
     final ErrorOccurrence occurrence =
         new ErrorOccurrence(errorType, errorMessage, functionContext, isRetryable);
 
-    recentErrors.computeIfAbsent(errorType, k -> new ArrayList<>()).add(occurrence);
+    recentErrors.computeIfAbsent(errorType, k -> new CopyOnWriteArrayList<>()).add(occurrence);
 
     // Limit recent errors list size
     final List<ErrorOccurrence> errors = recentErrors.get(errorType);
@@ -270,7 +271,7 @@ public final class ErrorMonitor {
                   errorRates.getOrDefault(errorType, new RateTracker()).getRate();
 
               final List<ErrorOccurrence> occurrences =
-                  recentErrors.getOrDefault(errorType, new ArrayList<>());
+                  recentErrors.getOrDefault(errorType, new CopyOnWriteArrayList<>());
 
               final Instant firstOccurrence =
                   occurrences.stream()

@@ -41,6 +41,17 @@ public interface Engine extends Closeable {
   Store createStore(final Object data) throws WasmException;
 
   /**
+   * Gets the runtime that created this engine.
+   *
+   * <p>This method returns the WasmRuntime instance that was used to create this engine. This is
+   * useful for operations that need to use the same runtime context, such as creating a Linker for
+   * this engine.
+   *
+   * @return the WasmRuntime that created this engine
+   */
+  WasmRuntime getRuntime();
+
+  /**
    * Compiles WebAssembly bytecode into a module using this engine.
    *
    * <p>This method validates and compiles the provided WebAssembly bytecode. The compilation

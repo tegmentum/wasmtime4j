@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionHandlingConfig;
 import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionTag;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -70,8 +71,8 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   static {
     try {
-      System.loadLibrary("wasmtime4j_native");
-      SYMBOL_LOOKUP = SymbolLookup.loaderLookup();
+      // Use NativeLibraryLoader to properly load the library from JAR resources
+      SYMBOL_LOOKUP = NativeLibraryLoader.getInstance().getSymbolLookup();
 
       CREATE_HANDLER =
           LINKER.downcallHandle(

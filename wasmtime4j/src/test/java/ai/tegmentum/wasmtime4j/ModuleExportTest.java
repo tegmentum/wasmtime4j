@@ -49,6 +49,23 @@ class ModuleExportTest {
     public WasmTypeKind getKind() {
       return kind;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TestWasmType)) {
+        return false;
+      }
+      final TestWasmType other = (TestWasmType) obj;
+      return kind == other.kind;
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(kind);
+    }
   }
 
   @Nested

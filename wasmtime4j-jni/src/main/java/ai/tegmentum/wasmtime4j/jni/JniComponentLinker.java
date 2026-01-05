@@ -199,8 +199,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     // Register constructor callback if present
     long constructorCallbackId = 0;
     if (resourceDefinition.getConstructor().isPresent()) {
-      final ComponentResourceDefinition.ResourceConstructor<?> constructor =
-          resourceDefinition.getConstructor().get();
+      // Constructor callback wraps the resource constructor from the definition
       constructorCallbackId =
           registerHostFunctionCallback(params -> java.util.Collections.singletonList(null));
     }

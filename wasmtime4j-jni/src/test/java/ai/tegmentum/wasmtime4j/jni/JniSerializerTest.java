@@ -145,6 +145,11 @@ class JniSerializerTest {
         }
 
         @Override
+        public ai.tegmentum.wasmtime4j.WasmRuntime getRuntime() {
+          return null;
+        }
+
+        @Override
         public boolean isEpochInterruptionEnabled() {
           return false;
         }

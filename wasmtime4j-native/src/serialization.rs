@@ -160,8 +160,8 @@ impl Default for SerializationConfig {
         Self {
             max_cache_size: DEFAULT_MAX_CACHE_SIZE,
             max_cache_age: Duration::from_secs(DEFAULT_MAX_CACHE_AGE),
-            enable_compression: true,
-            compression_level: 6, // Default compression level
+            enable_compression: false, // Disable by default - compression adds complexity
+            compression_level: 6, // Default compression level (when enabled)
             max_entry_age: Duration::from_secs(DEFAULT_MAX_CACHE_AGE),
             cache_directory: None,
             enable_cross_process: false,
@@ -728,16 +728,38 @@ pub mod ffi_core {
         serializer.serialize(engine, &module)
     }
 
-    /// Core function to deserialize module
+    /// Core function to deserialize module - returns our wrapper Module
+    pub fn deserialize_module_to_wrapper(
+        serializer: &mut ModuleSerializer,
+        engine: &crate::engine::Engine,
+        serialized_bytes: &[u8],
+    ) -> WasmtimeResult<crate::module::Module> {
+        log::debug!("deserialize_module_to_wrapper called: bytes len={}, compression={}",
+            serialized_bytes.len(), serializer.config.enable_compression);
+
+        // Decompress if needed and deserialize using the serializer
+        let wasmtime_module = serializer.deserialize_module(engine.inner(), serialized_bytes)?;
+
+        log::info!("deserialize_module_to_wrapper: wasmtime module created successfully");
+
+        // Create our wrapper Module with empty metadata (can't extract from deserialized modules)
+        let metadata = crate::module::ModuleMetadata::empty();
+
+        Ok(crate::module::Module::from_wasmtime_module(
+            wasmtime_module,
+            engine.clone(),
+            metadata,
+        ))
+    }
+
+    /// Core function to deserialize module (legacy - returns bytes, kept for compatibility)
     pub fn deserialize_module(
         serializer: &mut ModuleSerializer,
         engine: &Engine,
         serialized_bytes: &[u8],
     ) -> WasmtimeResult<Vec<u8>> {
-        let module = serializer.deserialize(engine, serialized_bytes)?;
-        // Convert Module back to bytes - use the module's serialize method or wasm bytes
-        // For now, return the original serialized bytes since this function signature suggests
-        // it might be doing a different kind of processing
+        let _module = serializer.deserialize(engine, serialized_bytes)?;
+        // Legacy stub - callers should use deserialize_module_to_wrapper instead
         Ok(serialized_bytes.to_vec())
     }
 

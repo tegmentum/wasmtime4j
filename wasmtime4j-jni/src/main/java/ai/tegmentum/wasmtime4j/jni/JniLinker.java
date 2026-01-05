@@ -964,18 +964,26 @@ public class JniLinker<T> implements Linker<T> {
   public void close() {
     if (!closed) {
       closed = true;
-      cleanupHostFunctionCallbacks();
+      final boolean hadHostFunctions = !registeredCallbackIds.isEmpty();
 
       // DEFENSIVE: Only destroy native handle if it's valid
       // Prevents crashes when closing linkers created with fake/test handles
       if (nativeHandle == 0) {
+        // Clean up Java callbacks even if native handle is invalid
+        cleanupHostFunctionCallbacks();
         return;
       }
 
-      // WORKAROUND: Native linker destruction with host functions can block indefinitely
-      // due to circular references in Wasmtime linker closures. Call in separate thread
-      // with timeout to prevent test hangs. The linker will be garbage collected eventually.
-      // TODO: Investigate proper solution for host function cleanup
+      // If no host functions were registered, destroy directly (fast path)
+      if (!hadHostFunctions) {
+        nativeDestroyLinker(nativeHandle);
+        return;
+      }
+
+      // CRITICAL: Native destruction must complete BEFORE cleaning up Java callbacks.
+      // The native code may invoke callbacks during destruction. If we clean up callbacks
+      // first, native code would find null callbacks and crash the JVM.
+      // Use synchronous destruction with timeout to ensure proper ordering.
       try {
         Thread destroyThread =
             new Thread(
@@ -985,14 +993,23 @@ public class JniLinker<T> implements Linker<T> {
                 "LinkerDestroyThread");
         destroyThread.setDaemon(true); // Don't prevent JVM exit
         destroyThread.start();
-        destroyThread.join(1000); // Wait max 1 second
+        destroyThread.join(500); // Wait max 500ms for native destruction
         if (destroyThread.isAlive()) {
-          LOGGER.warning("Native linker destruction timed out - linker will be garbage collected");
+          LOGGER.fine("Native linker destruction deferred to GC - callbacks kept active");
+          // If native destruction is still running, DON'T clean up callbacks yet.
+          // The callbacks will be cleaned up when the linker is GC'd and
+          // the daemon thread eventually completes or times out.
+          return;
         }
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         LOGGER.warning("Interrupted while destroying linker: " + e.getMessage());
+        // If interrupted, don't clean up callbacks - native may still need them
+        return;
       }
+
+      // Only clean up Java callbacks AFTER native destruction has completed
+      cleanupHostFunctionCallbacks();
     }
   }
 

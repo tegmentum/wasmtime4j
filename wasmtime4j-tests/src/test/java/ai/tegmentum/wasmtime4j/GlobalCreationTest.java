@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -186,6 +187,12 @@ class GlobalCreationTest {
   @ParameterizedTest
   @EnumSource(WasmValueType.class)
   void testCreateGlobalAllTypes(final WasmValueType valueType) throws WasmException {
+    // Skip WasmGC reference types - they require struct/array type definitions
+    // which cannot be created standalone via store.createGlobal()
+    Assumptions.assumeFalse(
+        valueType.isGcReference(),
+        "WasmGC reference types require type definitions and are tested separately");
+
     final WasmValue initialValue = createDefaultValue(valueType);
 
     assertDoesNotThrow(

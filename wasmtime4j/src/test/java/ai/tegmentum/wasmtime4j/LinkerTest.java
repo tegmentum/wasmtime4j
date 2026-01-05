@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,12 +12,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the Linker interface.
+ * Integration tests for the Linker interface.
  *
  * <p>Tests verify linker creation, host function definition, import resolution, module
- * instantiation, and WASI support.
+ * instantiation, and WASI support. These tests require the native Wasmtime runtime to be available.
  */
 @DisplayName("Linker Interface Tests")
+@RequiresWasmRuntime
 class LinkerTest {
 
   /** Module that imports a function from env. */

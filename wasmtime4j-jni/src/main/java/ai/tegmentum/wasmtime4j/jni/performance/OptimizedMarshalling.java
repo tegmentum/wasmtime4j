@@ -346,6 +346,13 @@ public final class OptimizedMarshalling {
   /** Buffered marshalling using pooled ByteBuffers. */
   private static Object[] marshalBuffered(
       final WasmValue[] parameters, final MarshallingPlan plan) {
+    // When useDirect is true, use direct marshalling which returns individual objects
+    // that the native JNI code can process. The byte buffer format is not understood
+    // by the native code which expects Object[] of Integer/Long/Float/Double.
+    if (plan.useDirect) {
+      return marshalDirect(parameters);
+    }
+
     ByteBuffer buffer = null;
     try {
       // Get buffer from pool
@@ -361,17 +368,9 @@ public final class OptimizedMarshalling {
         return marshalDirect(parameters);
       }
 
-      // Marshal all parameters into buffer
-      for (final WasmValue param : parameters) {
-        marshalIntoBuffer(param, buffer);
-      }
-
-      // Create result array with buffer
-      buffer.flip();
-      final byte[] data = new byte[buffer.remaining()];
-      buffer.get(data);
-
-      return new Object[] {data};
+      // Note: The byte buffer format is only useful for specialized native code paths
+      // that understand packed binary format. For standard JNI calls, fall back to direct.
+      return marshalDirect(parameters);
 
     } finally {
       if (buffer != null) {
@@ -432,31 +431,6 @@ public final class OptimizedMarshalling {
     }
   }
 
-  /** Marshals a value into a ByteBuffer. */
-  private static void marshalIntoBuffer(final WasmValue value, final ByteBuffer buffer) {
-    switch (value.getType()) {
-      case I32:
-        buffer.putInt(value.asI32());
-        break;
-      case I64:
-        buffer.putLong(value.asI64());
-        break;
-      case F32:
-        buffer.putFloat(value.asF32());
-        break;
-      case F64:
-        buffer.putDouble(value.asF64());
-        break;
-      case V128:
-        // V128 is 16 bytes
-        final byte[] v128Data = value.asV128();
-        buffer.put(v128Data);
-        break;
-      default:
-        throw new IllegalArgumentException("Cannot marshal type to buffer: " + value.getType());
-    }
-  }
-
   /** Bulk marshalling for I32 arrays. */
   private static Object[] marshalBulkI32(final WasmValue[] parameters) {
     final int[] values = new int[parameters.length];
@@ -498,6 +472,17 @@ public final class OptimizedMarshalling {
       final Object nativeResult, final WasmValueType expectedType) {
     if (nativeResult == null) {
       throw new IllegalArgumentException("nativeResult cannot be null");
+    }
+
+    // If the native code already returned a WasmValue, use it directly
+    if (nativeResult instanceof WasmValue) {
+      final WasmValue wasmValue = (WasmValue) nativeResult;
+      // Optional type validation (defensive check)
+      if (wasmValue.getType() != expectedType) {
+        throw new IllegalArgumentException(
+            "WasmValue type mismatch: got " + wasmValue.getType() + ", expected " + expectedType);
+      }
+      return wasmValue;
     }
 
     switch (expectedType) {

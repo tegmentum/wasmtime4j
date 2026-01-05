@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.performance.EngineStatistics;
 import java.io.ByteArrayOutputStream;
@@ -37,28 +38,47 @@ public final class PanamaEngine implements Engine {
   private final MemorySegment profilerHandle;
   private final EngineConfig config;
   private final Instant createdAt;
+  private final WasmRuntime runtime;
   private volatile boolean closed = false;
 
   /**
    * Creates a new Panama engine with default configuration.
    *
+   * <p>This constructor is intended for unit tests. Production code should use {@link
+   * #PanamaEngine(EngineConfig, WasmRuntime)}.
+   *
    * @throws WasmException if engine creation fails
    */
   public PanamaEngine() throws WasmException {
-    this(new EngineConfig());
+    this(new EngineConfig(), null);
   }
 
   /**
    * Creates a new Panama engine with specified configuration.
    *
+   * <p>This constructor is intended for unit tests. Production code should use {@link
+   * #PanamaEngine(EngineConfig, WasmRuntime)}.
+   *
    * @param config the engine configuration
    * @throws WasmException if engine creation fails
    */
   public PanamaEngine(final EngineConfig config) throws WasmException {
+    this(config, null);
+  }
+
+  /**
+   * Creates a new Panama engine with specified configuration and runtime reference.
+   *
+   * @param config the engine configuration
+   * @param runtime the runtime that owns this engine
+   * @throws WasmException if engine creation fails
+   */
+  public PanamaEngine(final EngineConfig config, final WasmRuntime runtime) throws WasmException {
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
     this.config = config;
+    this.runtime = runtime;
     this.arena = Arena.ofShared();
 
     // Create native engine via Panama FFI
@@ -92,6 +112,11 @@ public final class PanamaEngine implements Engine {
     final Store store = createStore();
     store.setData(data);
     return store;
+  }
+
+  @Override
+  public WasmRuntime getRuntime() {
+    return runtime;
   }
 
   @Override

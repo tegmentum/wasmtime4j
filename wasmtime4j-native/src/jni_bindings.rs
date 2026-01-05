@@ -2771,8 +2771,9 @@ pub mod jni_store {
             // Create the memory
             let memory = crate::memory::Memory::new_with_config(store, memory_config)?;
 
-            // Return the memory as a pointer
-            Ok(Box::into_raw(Box::new(memory)) as jlong)
+            // Register the memory handle for validation and return the pointer
+            let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+            Ok(validated_ptr as jlong)
         })
     }
 
@@ -2803,8 +2804,9 @@ pub mod jni_store {
             // Create the shared memory
             let memory = crate::memory::Memory::new_with_config(store, memory_config)?;
 
-            // Return the memory as a pointer
-            Ok(Box::into_raw(Box::new(memory)) as jlong)
+            // Register the memory handle for validation and return the pointer
+            let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+            Ok(validated_ptr as jlong)
         })
     }
 
@@ -5112,6 +5114,274 @@ pub mod engine {}
 #[cfg(not(feature = "jni-bindings"))]
 pub mod module {}
 
+/// JNI bindings for ModuleCache operations
+#[cfg(feature = "jni-bindings")]
+pub mod jni_module_cache {
+    use super::*;
+    use crate::module_cache::ModuleCache;
+    use crate::error::jni_utils;
+    use std::path::PathBuf;
+
+    /// Creates a new module cache with configuration
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeCreateWithConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_handle: jlong,
+        cache_dir: JString,
+        max_cache_size: jlong,
+        max_entries: jint,
+        compression_enabled: jboolean,
+        compression_level: jint,
+    ) -> jlong {
+        // Extract cache_dir string before calling jni_try_ptr
+        let cache_dir_path = if cache_dir.is_null() {
+            PathBuf::from("wasmtime4j_cache")
+        } else {
+            match env.get_string(&cache_dir) {
+                Ok(jstr) => PathBuf::from(String::from(jstr)),
+                Err(_) => return 0, // Return null on error
+            }
+        };
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            if engine_handle == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Engine handle cannot be null".to_string(),
+                });
+            }
+
+            // Get the engine from the handle
+            let engine_ptr = engine_handle as *mut crate::engine::Engine;
+            let engine_guard = unsafe { &*engine_ptr };
+            let wasmtime_engine = engine_guard.inner().clone();
+
+            // Create configuration
+            let config = crate::module_cache::ModuleCacheConfig {
+                cache_dir: cache_dir_path.clone(),
+                max_cache_size: max_cache_size as u64,
+                max_entries: max_entries as usize,
+                compression_enabled: compression_enabled != 0,
+                compression_level: compression_level as u32,
+                ..crate::module_cache::ModuleCacheConfig::default()
+            };
+
+            // Create the cache
+            let cache = ModuleCache::new(wasmtime_engine, config)
+                .map_err(|e| crate::error::WasmtimeError::Runtime {
+                    message: format!("Failed to create module cache: {}", e),
+                    backtrace: None,
+                })?;
+
+            // jni_try_ptr handles Box::into_raw conversion
+            Ok(Box::new(cache))
+        }) as jlong
+    }
+
+    /// Gets or compiles a module from the cache
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeGetOrCompile(
+        mut env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+        wasm_bytes: JByteArray,
+    ) -> jlong {
+        // Extract byte array before calling jni_try_ptr
+        let bytecode = match env.convert_byte_array(wasm_bytes) {
+            Ok(data) => data,
+            Err(_) => return 0, // Return null on error
+        };
+
+        jni_utils::jni_try_ptr(&mut env, || {
+            if cache_handle == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Cache handle cannot be null".to_string(),
+                });
+            }
+
+            let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+
+            // Get or compile the module
+            let module = cache.get_or_compile(&bytecode)
+                .map_err(|e| crate::error::WasmtimeError::Compilation {
+                    message: format!("Failed to get or compile module: {}", e),
+                })?;
+
+            // Return module handle - jni_try_ptr handles Box::into_raw conversion
+            Ok(Box::new(module))
+        }) as jlong
+    }
+
+    /// Pre-compiles a module and returns the hash
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativePrecompile(
+        mut env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+        wasm_bytes: JByteArray,
+    ) -> jstring {
+        // Extract byte array first
+        let bytecode = match env.convert_byte_array(wasm_bytes) {
+            Ok(data) => data,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        if cache_handle == 0 {
+            let _ = jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::InvalidParameter {
+                message: "Cache handle cannot be null".to_string(),
+            });
+            return std::ptr::null_mut();
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+
+        // Precompile and get hash
+        match cache.cache_module(&bytecode) {
+            Ok(hash) => {
+                match env.new_string(&hash) {
+                    Ok(jstr) => jstr.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            Err(e) => {
+                let _ = jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::Compilation {
+                    message: format!("Failed to precompile module: {}", e),
+                });
+                std::ptr::null_mut()
+            }
+        }
+    }
+
+    /// Clears the cache
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeClear(
+        mut env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jboolean {
+        if cache_handle == 0 {
+            return 0;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.clear() {
+            Ok(()) => 1,
+            Err(e) => {
+                log::error!("Failed to clear module cache: {}", e);
+                0
+            }
+        }
+    }
+
+    /// Performs cache maintenance
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativePerformMaintenance(
+        mut env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jboolean {
+        if cache_handle == 0 {
+            return 0;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.perform_maintenance() {
+            Ok(()) => 1,
+            Err(e) => {
+                log::error!("Failed to perform cache maintenance: {}", e);
+                0
+            }
+        }
+    }
+
+    /// Gets the entry count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeEntryCount(
+        _env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jlong {
+        if cache_handle == 0 {
+            return -1;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.get_statistics() {
+            Ok(stats) => stats.entries_count as jlong,
+            Err(_) => -1,
+        }
+    }
+
+    /// Gets storage bytes used
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeStorageBytes(
+        _env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jlong {
+        if cache_handle == 0 {
+            return -1;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.get_statistics() {
+            Ok(stats) => stats.storage_bytes_used as jlong,
+            Err(_) => -1,
+        }
+    }
+
+    /// Gets cache hit count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeHitCount(
+        _env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jlong {
+        if cache_handle == 0 {
+            return -1;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.get_statistics() {
+            Ok(stats) => stats.cache_hits as jlong,
+            Err(_) => -1,
+        }
+    }
+
+    /// Gets cache miss count
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeMissCount(
+        _env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) -> jlong {
+        if cache_handle == 0 {
+            return -1;
+        }
+
+        let cache = unsafe { &*(cache_handle as *mut ModuleCache) };
+        match cache.get_statistics() {
+            Ok(stats) => stats.cache_misses as jlong,
+            Err(_) => -1,
+        }
+    }
+
+    /// Destroys the cache
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeDestroy(
+        _env: JNIEnv,
+        _class: JClass,
+        cache_handle: jlong,
+    ) {
+        if cache_handle != 0 {
+            unsafe {
+                let _ = Box::from_raw(cache_handle as *mut ModuleCache);
+            }
+            log::debug!("Destroyed module cache with handle: {:#x}", cache_handle);
+        }
+    }
+}
+
 /// JNI bindings for Component operations (WASI Preview 2)
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component {
@@ -5129,7 +5399,33 @@ pub mod jni_component {
         _class: JClass,
     ) -> jlong {
         // Use EnhancedComponentEngine which supports ComponentInstanceInfo with store field
-        jni_utils::jni_try_ptr(&mut env, || crate::component_core::core::create_enhanced_component_engine()) as jlong
+        eprintln!("[RUST DEBUG] nativeCreateComponentEngine called");
+        let result = jni_utils::jni_try_ptr(&mut env, || {
+            eprintln!("[RUST DEBUG] About to call create_enhanced_component_engine()");
+            match crate::component_core::core::create_enhanced_component_engine() {
+                Ok(engine) => {
+                    eprintln!("[RUST DEBUG] Component engine created successfully, ptr={:?}", &*engine as *const _);
+                    Ok(engine)
+                }
+                Err(e) => {
+                    eprintln!("[RUST DEBUG] Failed to create component engine: {:?}", e);
+                    Err(e)
+                }
+            }
+        }) as jlong;
+        if result == 0 {
+            eprintln!("[RUST DEBUG] Component engine creation returned null pointer (0)");
+            // Check if there's a pending exception
+            if let Ok(pending) = env.exception_check() {
+                eprintln!("[RUST DEBUG] Pending Java exception: {}", pending);
+                if pending {
+                    let _ = env.exception_describe();
+                }
+            }
+        } else {
+            eprintln!("[RUST DEBUG] Component engine created with handle: 0x{:x}", result);
+        }
+        result
     }
 
     /// Load component from WebAssembly bytes
@@ -5147,14 +5443,15 @@ pub mod jni_component {
             });
 
         jni_utils::jni_try_ptr(&mut env, || {
-            let engine = unsafe { 
-                crate::component::core::get_component_engine_ref(engine_ptr as *const std::os::raw::c_void)? 
+            // Use enhanced component engine since nativeCreateComponentEngine creates EnhancedComponentEngine
+            let engine = unsafe {
+                crate::component_core::core::get_enhanced_component_engine_ref(engine_ptr as *const std::os::raw::c_void)?
             };
 
             // Get byte array data from extracted result
             let wasm_data = wasm_data_result?;
 
-            crate::component::core::load_component_from_bytes(engine, &wasm_data)
+            crate::component_core::core::load_component_from_bytes_enhanced(engine, &wasm_data)
         }) as jlong
     }
 
@@ -5261,7 +5558,8 @@ pub mod jni_component {
             return -1;
         }
 
-        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+        // Use EnhancedComponentEngine since nativeCreateComponentEngine creates EnhancedComponentEngine
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
 
         match engine.get_active_instances() {
             Ok(instances) => instances.len() as jint,
@@ -5284,7 +5582,8 @@ pub mod jni_component {
             return -1;
         }
 
-        let engine = unsafe { &*(engine_ptr as *const ComponentEngine) };
+        // Use EnhancedComponentEngine since nativeCreateComponentEngine creates EnhancedComponentEngine
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
 
         match engine.cleanup_instances() {
             Ok(cleaned_count) => cleaned_count as jint,
@@ -5303,7 +5602,8 @@ pub mod jni_component {
         engine_ptr: jlong,
     ) {
         unsafe {
-            crate::component::core::destroy_component_engine(engine_ptr as *mut std::os::raw::c_void);
+            // Use enhanced component engine since nativeCreateComponentEngine creates EnhancedComponentEngine
+            crate::component_core::core::destroy_enhanced_component_engine(engine_ptr as *mut std::os::raw::c_void);
         }
     }
 
@@ -5319,16 +5619,50 @@ pub mod jni_component {
         }
     }
 
-    /// Destroy a component instance
+    /// Destroy a component instance by removing it from the engine's HashMap
+    ///
+    /// This properly releases the instance by removing it from the engine,
+    /// allowing the Store and Instance to be dropped correctly.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentInstance(
         mut env: JNIEnv,
         _class: JClass,
-        instance_ptr: jlong,
+        engine_ptr: jlong,
+        instance_id: jlong,
     ) {
-        unsafe {
-            crate::component_core::core::destroy_enhanced_component_instance(instance_ptr as *mut std::os::raw::c_void);
+        use std::io::Write;
+        let log = |msg: &str| {
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+                let _ = writeln!(f, "[nativeDestroyComponentInstance] {}", msg);
+                let _ = f.flush();
+            }
+        };
+
+        log(&format!("called: engine_ptr={}, instance_id={}", engine_ptr, instance_id));
+
+        // Validate parameters
+        if engine_ptr == 0 {
+            log("ERROR: null engine pointer");
+            return;
         }
+        if instance_id == 0 {
+            log("ERROR: zero instance ID");
+            return;
+        }
+
+        // Get engine reference and remove instance from HashMap
+        let engine = unsafe {
+            &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
+        };
+
+        log("About to call engine.remove_instance()");
+        let result = engine.remove_instance(instance_id as u64);
+        log(&format!("remove_instance returned: {:?}", result));
+
+        if let Err(e) = result {
+            log(&format!("Error: {:?}", e));
+        }
+        log("nativeDestroyComponentInstance completed");
     }
 
     /// Invoke a component function with marshalled WIT values
@@ -5426,23 +5760,30 @@ pub mod jni_component {
 
             // Get the function export and call it
             // Store and Instance are kept together following Wasmtime's ownership model
+            // Access through ManuallyDrop - we need ONE mutable ref so Rust can see disjoint field borrows
             use wasmtime::component::Func;
 
-            let func: Func = handle.instance
-                .get_func(&mut handle.store, &func_name)
+            // Get a single mutable reference so Rust can split borrows on different fields
+            let handle_ref = &mut **handle;
+
+            // Get the function using disjoint field borrows
+            let func: Func = handle_ref.instance.get_func(&mut handle_ref.store, &func_name)
                 .ok_or_else(|| WasmtimeError::ImportExport {
                     message: format!("Function '{}' not found in component exports", func_name),
                 })?;
 
-            // Call the function
-            let mut results = vec![wasmtime::component::Val::Bool(false); func.ty(&handle.store).results().len()];
-            func.call(&mut handle.store, &params, &mut results)
+            // Call the function - need a fresh mutable reference
+            let handle_ref = &mut **handle;
+            let results_len = func.ty(&handle_ref.store).results().len();
+            let mut results = vec![wasmtime::component::Val::Bool(false); results_len];
+            func.call(&mut handle_ref.store, &params, &mut results)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Function call failed: {}", e),
                     backtrace: None,
                 })?;
 
-            func.post_return(&mut handle.store)
+            let handle_ref = &mut **handle;
+            func.post_return(&mut handle_ref.store)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Post-return failed: {}", e),
                     backtrace: None,
@@ -8111,9 +8452,12 @@ pub mod jni_memory {
         mut env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
+        store_ptr: jlong,
         index: jint,
     ) -> jobject {
         match (|| -> crate::error::WasmtimeResult<jobject> {
+            use std::os::raw::c_void;
+
             if table_ptr == 0 {
                 log::error!("JNI Table.nativeGet: null table handle provided");
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -8121,29 +8465,87 @@ pub mod jni_memory {
                 });
             }
 
+            if store_ptr == 0 {
+                log::error!("JNI Table.nativeGet: null store handle provided");
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null.".to_string(),
+                });
+            }
+
             if index < 0 {
                 log::error!("JNI Table.nativeGet: negative index {} provided", index);
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!(
-                        "Table index cannot be negative (received: {}). Specify a non-negative index within table bounds.", 
+                        "Table index cannot be negative (received: {}). Specify a non-negative index within table bounds.",
                         index
                     ),
                 });
             }
 
-            // Note: This operation requires store context which is not available in current API design
-            // The table operations in Java API don't pass store context, but Wasmtime requires it
-            // For now, we'll return null (which represents a null reference in table)
-            // TODO: Redesign API to include store context or store reference within table
-            let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
-            log::debug!("JNI Table.nativeGet: table operations require store context - returning null for table 0x{:x} index {}", table_ptr, index);
-            
-            // Return null to represent an uninitialized table slot (this is valid for tables)
-            Ok(std::ptr::null_mut())
+            // Get table and store references
+            let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+            // Get element from table
+            let element = table.get(store, index as u64)?;
+
+            log::debug!("JNI Table.nativeGet: retrieved element at index {} = {:?}", index, element);
+
+            // Convert TableElement to Java object
+            match element {
+                crate::table::TableElement::FuncRef(None) => Ok(std::ptr::null_mut()),
+                crate::table::TableElement::FuncRef(Some(func_id)) => {
+                    // Return a Long object representing the function ID
+                    let long_class = env.find_class("java/lang/Long")
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
+                    let long_obj = env.new_object(long_class, "(J)V", &[jni::objects::JValue::Long(func_id as jlong)])
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to create Long object: {}", e),
+                            backtrace: None,
+                        })?;
+                    Ok(long_obj.into_raw())
+                }
+                crate::table::TableElement::ExternRef(None) => Ok(std::ptr::null_mut()),
+                crate::table::TableElement::ExternRef(Some(extern_id)) => {
+                    // Return a Long object representing the extern reference ID
+                    let long_class = env.find_class("java/lang/Long")
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
+                    let long_obj = env.new_object(long_class, "(J)V", &[jni::objects::JValue::Long(extern_id as jlong)])
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to create Long object: {}", e),
+                            backtrace: None,
+                        })?;
+                    Ok(long_obj.into_raw())
+                }
+                crate::table::TableElement::AnyRef(None) => Ok(std::ptr::null_mut()),
+                crate::table::TableElement::AnyRef(Some(any_id)) => {
+                    // Return a Long object representing the any reference ID
+                    let long_class = env.find_class("java/lang/Long")
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
+                    let long_obj = env.new_object(long_class, "(J)V", &[jni::objects::JValue::Long(any_id as jlong)])
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to create Long object: {}", e),
+                            backtrace: None,
+                        })?;
+                    Ok(long_obj.into_raw())
+                }
+            }
         })() {
-            Ok(result) => result,
+            Ok(result) => {
+                eprintln!("[DEBUG] nativeGet: returning result (is_null={})", result.is_null());
+                result
+            }
             Err(error) => {
-                log::error!("Error in nativeGet: {:?}", error);
+                eprintln!("[DEBUG] nativeGet: error occurred: {:?}", error);
                 std::ptr::null_mut()
             }
         }
@@ -11974,7 +12376,7 @@ pub mod jni_serializer {
         };
 
         // Perform serialization
-        match (|| -> Result<Vec<u8>, WasmtimeError> {
+        let result: Result<Vec<u8>, WasmtimeError> = (|| {
             if serializer_ptr == 0 {
                 return Err(WasmtimeError::InvalidParameter {
                     message: "Serializer handle cannot be null".to_string(),
@@ -11988,16 +12390,26 @@ pub mod jni_serializer {
 
             let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
-            
+
             ffi_core::serialize_module(serializer, engine.inner(), &data)
-        })() {
+        })();
+
+        match result {
             Ok(bytes) => {
                 match env.byte_array_from_slice(&bytes) {
                     Ok(jarray) => jarray.into_raw(),
-                    Err(_) => std::ptr::null_mut(),
+                    Err(e) => {
+                        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Internal {
+                            message: format!("Failed to create Java byte array: {}", e),
+                        });
+                        std::ptr::null_mut()
+                    }
                 }
             }
-            Err(_) => std::ptr::null_mut(),
+            Err(error) => {
+                jni_utils::throw_jni_exception(&mut env, &error);
+                std::ptr::null_mut()
+            }
         }
     }
 
@@ -12035,12 +12447,13 @@ pub mod jni_serializer {
                 });
             }
 
-            let _serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
+            let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-            // Use our wrapper Module::deserialize which creates proper Module with engine reference
-            // This returns Box<Module> with correct ownership semantics for cleanup
-            crate::module::core::deserialize_module(engine, &data)
+            // Use the new function that handles decompression and creates our wrapper Module
+            let module = ffi_core::deserialize_module_to_wrapper(serializer, engine, &data)?;
+            // Return boxed module - jni_try_ptr handles Box::into_raw conversion
+            Ok(Box::new(module))
         }) as jlong
     }
 
@@ -13297,10 +13710,15 @@ mod async_runtime_jni {
         _class: JClass,
         module_bytes: jni::objects::JByteArray,
         _timeout_ms: jlong,
-        _completion_callback: JObject,
-        _progress_callback: JObject,
+        completion_callback: JObject,
+        progress_callback: JObject,
         _user_data: JObject,
     ) -> jint {
+        use std::sync::atomic::{AtomicI32, Ordering};
+        use std::thread;
+
+        static OPERATION_COUNTER: AtomicI32 = AtomicI32::new(1);
+
         // Get module bytes
         let bytes = match env.convert_byte_array(&module_bytes) {
             Ok(b) => b,
@@ -13317,13 +13735,177 @@ mod async_runtime_jni {
 
         log::info!("Async module compilation requested for {} bytes", bytes.len());
 
-        // REQUIRES: Full Wasmtime async integration
-        // - Engine must be configured with async_support
-        // - Module::compile_async needs async Engine
-        // - JNI callbacks must use GlobalRef for thread-safe invocation
-        // - Infrastructure exists in async_runtime.rs::compile_module_async
-        // Returning dummy operation ID for now
-        1
+        // Get JavaVM for thread-safe callback invocation
+        let jvm = match env.get_java_vm() {
+            Ok(vm) => vm,
+            Err(e) => {
+                log::error!("Failed to get JavaVM: {:?}", e);
+                return -1;
+            }
+        };
+
+        // Create global refs for callbacks (thread-safe)
+        let completion_global = match env.new_global_ref(&completion_callback) {
+            Ok(g) => g,
+            Err(e) => {
+                log::error!("Failed to create global ref for completion callback: {:?}", e);
+                return -1;
+            }
+        };
+
+        let progress_global = if !progress_callback.is_null() {
+            match env.new_global_ref(&progress_callback) {
+                Ok(g) => Some(g),
+                Err(e) => {
+                    log::warn!("Failed to create global ref for progress callback: {:?}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        let operation_id = OPERATION_COUNTER.fetch_add(1, Ordering::SeqCst);
+
+        // Spawn thread to do compilation asynchronously
+        thread::spawn(move || {
+            // Attach this thread to JVM
+            let mut guard = match jvm.attach_current_thread() {
+                Ok(g) => g,
+                Err(e) => {
+                    log::error!("Failed to attach thread to JVM: {:?}", e);
+                    return;
+                }
+            };
+
+            // Report progress if callback provided
+            if let Some(ref progress_ref) = progress_global {
+                // Create Integer object first to avoid borrow conflict
+                let progress_obj = guard.new_object(
+                    "java/lang/Integer",
+                    "(I)V",
+                    &[jni::objects::JValue::Int(50)],
+                ).unwrap_or_else(|_| jni::objects::JObject::null());
+
+                if let Err(e) = guard.call_method(
+                    progress_ref.as_obj(),
+                    "accept",
+                    "(Ljava/lang/Object;)V",
+                    &[jni::objects::JValue::Object(&progress_obj)],
+                ) {
+                    log::warn!("Failed to invoke progress callback: {:?}", e);
+                }
+            }
+
+            // Try to compile the module
+            let config = wasmtime::Config::new();
+            let engine = match wasmtime::Engine::new(&config) {
+                Ok(e) => e,
+                Err(e) => {
+                    log::error!("Failed to create engine: {:?}", e);
+                    // Create failed AsyncResult and invoke callback
+                    invoke_completion_callback(&mut guard, &completion_global, false, &format!("Engine creation failed: {}", e));
+                    return;
+                }
+            };
+
+            let compile_result = wasmtime::Module::new(&engine, &bytes);
+
+            match compile_result {
+                Ok(_module) => {
+                    log::info!("Async compilation succeeded for operation {}", operation_id);
+                    invoke_completion_callback(&mut guard, &completion_global, true, "Compilation successful");
+                }
+                Err(e) => {
+                    log::error!("Async compilation failed for operation {}: {:?}", operation_id, e);
+                    invoke_completion_callback(&mut guard, &completion_global, false, &format!("Compilation failed: {}", e));
+                }
+            }
+        });
+
+        operation_id
+    }
+
+    /// Helper function to invoke the Java completion callback with an AsyncResult
+    fn invoke_completion_callback(
+        env: &mut jni::JNIEnv,
+        callback: &jni::objects::GlobalRef,
+        success: bool,
+        message: &str,
+    ) {
+        // Find OperationStatus enum class
+        let status_class = match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$OperationStatus") {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to find OperationStatus class: {:?}", e);
+                return;
+            }
+        };
+
+        // Get the appropriate enum value (COMPLETED or FAILED)
+        let status_field_name = if success { "COMPLETED" } else { "FAILED" };
+        let status_sig = "Lai/tegmentum/wasmtime4j/async/AsyncRuntime$OperationStatus;";
+        let status_value = match env.get_static_field(&status_class, status_field_name, status_sig) {
+            Ok(v) => match v.l() {
+                Ok(obj) => obj,
+                Err(e) => {
+                    log::error!("Failed to get OperationStatus value as object: {:?}", e);
+                    return;
+                }
+            },
+            Err(e) => {
+                log::error!("Failed to get OperationStatus.{}: {:?}", status_field_name, e);
+                return;
+            }
+        };
+
+        // Find the AsyncResult class (nested inside AsyncRuntime)
+        let result_class = match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$AsyncResult") {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to find AsyncResult class: {:?}", e);
+                return;
+            }
+        };
+
+        // Create message string
+        let message_jstr = match env.new_string(message) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to create message string: {:?}", e);
+                return;
+            }
+        };
+
+        // Create AsyncResult instance with correct constructor:
+        // AsyncResult(OperationStatus status, int statusCode, String message, Object result)
+        let status_code = if success { 0 } else { 1 };
+        let result_obj = match env.new_object(
+            result_class,
+            "(Lai/tegmentum/wasmtime4j/async/AsyncRuntime$OperationStatus;ILjava/lang/String;Ljava/lang/Object;)V",
+            &[
+                jni::objects::JValue::Object(&status_value),
+                jni::objects::JValue::Int(status_code),
+                jni::objects::JValue::Object(&message_jstr),
+                jni::objects::JValue::Object(&jni::objects::JObject::null()),
+            ],
+        ) {
+            Ok(obj) => obj,
+            Err(e) => {
+                log::error!("Failed to create AsyncResult: {:?}", e);
+                return;
+            }
+        };
+
+        // Invoke the Consumer.accept method
+        if let Err(e) = env.call_method(
+            callback.as_obj(),
+            "accept",
+            "(Ljava/lang/Object;)V",
+            &[jni::objects::JValue::Object(&result_obj)],
+        ) {
+            log::error!("Failed to invoke completion callback: {:?}", e);
+        }
     }
 }
 

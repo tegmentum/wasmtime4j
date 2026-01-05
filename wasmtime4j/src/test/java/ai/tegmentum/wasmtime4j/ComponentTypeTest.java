@@ -37,10 +37,10 @@ class ComponentTypeTest {
   class EnumValueTests {
 
     @Test
-    @DisplayName("should have all 22 component types")
+    @DisplayName("should have all 23 component types")
     void shouldHaveAllComponentTypes() {
       final var types = ComponentType.values();
-      assertEquals(22, types.length, "Should have 22 component types");
+      assertEquals(23, types.length, "Should have 23 component types");
     }
 
     @Test

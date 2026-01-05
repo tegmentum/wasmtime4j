@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -29,6 +31,8 @@ import org.junit.jupiter.api.Test;
  * <p>Since we don't have actual component binaries for testing, many tests focus on API validation,
  * error handling, and lifecycle management rather than function execution.
  */
+@DisplayName("WasiInstance Tests")
+@RequiresWasmRuntime
 class WasiInstanceTest {
 
   private WasiContext context;

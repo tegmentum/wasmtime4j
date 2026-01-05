@@ -117,10 +117,10 @@ public final class ArrayRef implements GcRef {
    * @throws IllegalStateException if this is a null reference
    */
   public ArrayType getArrayType(final Store store) {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get type of null array reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getType();
   }
 
@@ -132,10 +132,10 @@ public final class ArrayRef implements GcRef {
    * @throws IllegalStateException if this is a null reference
    */
   public int getLength(final Store store) {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get length of null array reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getLength();
   }
 
@@ -150,10 +150,10 @@ public final class ArrayRef implements GcRef {
    * @throws GcException if element access fails
    */
   public GcValue getElement(final Store store, final int index) throws GcException {
-    Objects.requireNonNull(store, "store cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot get element from null array reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
     return instance.getElement(index);
   }
 
@@ -170,11 +170,11 @@ public final class ArrayRef implements GcRef {
    */
   public void setElement(final Store store, final int index, final GcValue value)
       throws GcException {
-    Objects.requireNonNull(store, "store cannot be null");
-    Objects.requireNonNull(value, "value cannot be null");
     if (instance == null) {
       throw new IllegalStateException("Cannot set element on null array reference");
     }
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(value, "value cannot be null");
     instance.setElement(index, value);
   }
 

@@ -175,6 +175,17 @@ public final class JniTypeConverter {
       final Object result, final WasmValueType expectedType) {
     JniValidation.requireNonNull(expectedType, "expectedType");
 
+    // If the native code already returned a WasmValue, use it directly
+    if (result instanceof WasmValue) {
+      final WasmValue wasmValue = (WasmValue) result;
+      // Optional type validation (defensive check)
+      if (wasmValue.getType() != expectedType) {
+        throw new JniValidationException(
+            "WasmValue type mismatch: got " + wasmValue.getType() + ", expected " + expectedType);
+      }
+      return wasmValue;
+    }
+
     switch (expectedType) {
       case I32:
         if (!(result instanceof Integer)) {

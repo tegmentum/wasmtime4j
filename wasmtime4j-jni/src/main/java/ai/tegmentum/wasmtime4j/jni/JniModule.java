@@ -672,9 +672,10 @@ public class JniModule implements Module {
   public void close() {
     if (!closed) {
       closed = true;
-      if (nativeHandle != 0) {
-        nativeDestroyModule(nativeHandle);
-      }
+      // Note: Module destruction must be handled carefully to avoid JVM crashes.
+      // The native Module contains Arc references that need to be properly cleaned up.
+      // For now, we skip native destruction to prevent crashes - this is a known memory leak.
+      // TODO: Fix native module cleanup to properly handle Arc<WasmtimeModule> drop
     }
   }
 

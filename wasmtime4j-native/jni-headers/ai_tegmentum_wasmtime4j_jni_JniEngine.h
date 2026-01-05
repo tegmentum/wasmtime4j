@@ -135,6 +135,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeEngi
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsAsync
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateEngineWithConfig
+ * Signature: (IIZZZZZZZIIZI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithConfig
+  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint);
+
 #ifdef __cplusplus
 }
 #endif

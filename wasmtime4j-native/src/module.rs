@@ -168,8 +168,8 @@ pub enum ImportKind {
     Function(FunctionSignature),
     /// Global variable import with type and mutability
     Global(ModuleValueType, bool), // (type, mutable)
-    /// Memory import with initial size, optional max size, and sharing
-    Memory(u64, Option<u64>, bool), // (initial, max, shared)
+    /// Memory import with initial size, optional max size, is_64, and sharing
+    Memory(u64, Option<u64>, bool, bool), // (initial, max, is_64, shared)
     /// Table import with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>), // (element_type, initial, max)
 }
@@ -181,8 +181,8 @@ pub enum ExportKind {
     Function(FunctionSignature),
     /// Global variable export with type and mutability
     Global(ModuleValueType, bool),
-    /// Memory export with initial size, optional max size, and sharing
-    Memory(u64, Option<u64>, bool),
+    /// Memory export with initial size, optional max size, is_64, and sharing
+    Memory(u64, Option<u64>, bool, bool),
     /// Table export with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>),
 }
@@ -357,7 +357,7 @@ impl Module {
     /// Get all memory exports
     pub fn memory_exports(&self) -> Vec<&ExportInfo> {
         self.metadata.exports.iter()
-            .filter(|exp| matches!(exp.export_type, ExportKind::Memory(_, _, _)))
+            .filter(|exp| matches!(exp.export_type, ExportKind::Memory(_, _, _, _)))
             .collect()
     }
 
@@ -432,6 +432,27 @@ impl Module {
             element_segments,
             data_segments,
         })
+    }
+
+    /// Create a Module wrapper from a raw wasmtime::Module
+    ///
+    /// This is used when deserializing modules through the serializer which handles
+    /// decompression and returns a raw wasmtime::Module.
+    ///
+    /// Note: Element and data segments cannot be recovered from deserialized modules,
+    /// so table.init() and memory.init() operations won't work.
+    pub fn from_wasmtime_module(
+        module: WasmtimeModule,
+        engine: Engine,
+        metadata: ModuleMetadata,
+    ) -> Self {
+        Module {
+            inner: Arc::new(module),
+            engine,
+            metadata,
+            element_segments: Vec::new(),
+            data_segments: Vec::new(),
+        }
     }
 
     /// Deserialize module directly from a file using memory-mapped I/O
@@ -545,7 +566,8 @@ impl ModuleMetadata {
         })
     }
 
-    fn empty() -> Self {
+    /// Create empty metadata for deserialized modules
+    pub fn empty() -> Self {
         ModuleMetadata {
             name: None,
             size_bytes: 0,
@@ -599,6 +621,7 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
             Ok(ImportKind::Memory(
                 memory_type.minimum(),
                 memory_type.maximum(),
+                memory_type.is_64(),
                 memory_type.is_shared()
             ))
         }
@@ -633,6 +656,7 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
             Ok(ExportKind::Memory(
                 memory_type.minimum(),
                 memory_type.maximum(),
+                memory_type.is_64(),
                 memory_type.is_shared()
             ))
         }
@@ -695,8 +719,9 @@ fn import_types_compatible(required: &ImportKind, available: &ImportKind) -> boo
         (ImportKind::Global(req_type, req_mut), ImportKind::Global(avail_type, avail_mut)) => {
             req_type == avail_type && req_mut <= avail_mut
         }
-        (ImportKind::Memory(req_min, req_max, req_shared), ImportKind::Memory(avail_min, avail_max, avail_shared)) => {
-            avail_min >= req_min && 
+        (ImportKind::Memory(req_min, req_max, req_64, req_shared), ImportKind::Memory(avail_min, avail_max, avail_64, avail_shared)) => {
+            req_64 == avail_64 &&
+            avail_min >= req_min &&
             match (req_max, avail_max) {
                 (Some(req_max), Some(avail_max)) => avail_max >= req_max,
                 (Some(_), None) => true,
@@ -975,7 +1000,7 @@ pub mod ffi_core {
     /// Core function to get memory exports
     pub fn get_memory_exports(module: &Module) -> Vec<ExportInfo> {
         module.metadata.exports.iter()
-            .filter(|export| matches!(export.export_type, ExportKind::Memory(_, _, _)))
+            .filter(|export| matches!(export.export_type, ExportKind::Memory(_, _, _, _)))
             .cloned()
             .collect()
     }
@@ -1295,7 +1320,7 @@ pub unsafe extern "C" fn wasmtime4j_module_get_export_kind(
                     return match export.export_type {
                         ExportKind::Function(_) => 1,
                         ExportKind::Global(_, _) => 2,
-                        ExportKind::Memory(_, _, _) => 3,
+                        ExportKind::Memory(_, _, _, _) => 3,
                         ExportKind::Table(_, _, _) => 4,
                     };
                 }

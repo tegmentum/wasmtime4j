@@ -124,13 +124,20 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       final JniStore store)
       throws WasmException {
     // Validate all parameters first
-    try {
-      Objects.requireNonNull(functionName, "Function name cannot be null");
-      Objects.requireNonNull(functionType, "Function type cannot be null");
-      Objects.requireNonNull(implementation, "Implementation cannot be null");
-      Objects.requireNonNull(store, "Store cannot be null");
-    } catch (NullPointerException e) {
-      throw new WasmException("Failed to create native host function: " + e.getMessage(), e);
+    if (functionName == null) {
+      throw new WasmException(
+          "Failed to create native host function: Function name cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException(
+          "Failed to create native host function: Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new WasmException(
+          "Failed to create native host function: Implementation cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create native host function: Store cannot be null");
     }
 
     final long hostFunctionId = NEXT_HOST_FUNCTION_ID.getAndIncrement();
@@ -257,29 +264,27 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
     return result;
   }
 
+  /**
+   * Performs the actual native resource cleanup.
+   *
+   * <p>Note: In wasmtime, HostFunctions are owned by the Store. Destroying a HostFunction while the
+   * Store still exists can corrupt the Store's internal slab state. We mark the HostFunction as
+   * closed and remove from registry but don't destroy native resources - the Store handles that.
+   */
   @Override
   protected void doClose() throws Exception {
-    try {
-      // Remove from registry first
-      HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
+    // Remove from registry to prevent further callbacks
+    HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
 
-      // Destroy native resources
-      if (getNativeHandle() != 0) {
-        nativeDestroyHostFunction(getNativeHandle());
-
-        if (LOGGER.isLoggable(Level.FINE)) {
-          LOGGER.fine(
-              "Destroyed host function '"
-                  + functionName
-                  + "' with ID: "
-                  + hostFunctionId
-                  + ", handle: 0x"
-                  + Long.toHexString(getNativeHandle()));
-        }
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Error closing host function: " + functionName, e);
-      throw e;
+    // Note: Do NOT call nativeDestroyHostFunction here. HostFunctions are Store-owned resources.
+    // The Store will clean up all its HostFunctions when it is destroyed.
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(
+          "Host function '"
+              + functionName
+              + "' marked as closed (ID: "
+              + hostFunctionId
+              + "). Native resources freed with Store.");
     }
   }
 

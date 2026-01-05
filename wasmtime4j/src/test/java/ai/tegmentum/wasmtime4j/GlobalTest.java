@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,12 +11,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the WasmGlobal interface.
+ * Integration tests for the WasmGlobal interface.
  *
  * <p>Tests verify global creation, value operations, mutability, and type handling for all
- * WebAssembly value types (i32, i64, f32, f64).
+ * WebAssembly value types (i32, i64, f32, f64). These tests require the native Wasmtime runtime to
+ * be available.
  */
 @DisplayName("WasmGlobal Interface Tests")
+@RequiresWasmRuntime
 class GlobalTest {
 
   private Engine engine;

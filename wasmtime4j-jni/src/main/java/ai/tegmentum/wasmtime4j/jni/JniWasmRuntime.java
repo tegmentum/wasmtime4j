@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.logging.Logger;
 
 /**
@@ -150,7 +151,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
                 throw new WasmException("Failed to create engine");
               }
 
-              final JniEngine engine = new JniEngine(engineHandle);
+              final JniEngine engine = new JniEngine(engineHandle, JniWasmRuntime.this);
 
               // Register engine for concurrency management and cleanup
               concurrencyManager.registerResource(engineHandle);
@@ -180,7 +181,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     JniValidation.requireNonNull(config, "config");
 
     LOGGER.fine("Creating engine with custom config");
-    return JniEngine.createWithConfig(config);
+    return JniEngine.createWithConfig(config, this);
   }
 
   @Override
@@ -526,6 +527,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    *     instantiation errors. Use {@link #compileModule(Engine, byte[])} instead.
    */
   @Deprecated
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Deprecated method retained for backward compatibility")
   private Module compileModuleLegacy(final byte[] wasmBytes) throws WasmException {
     JniValidation.requireNonNull(wasmBytes, "wasmBytes");
 

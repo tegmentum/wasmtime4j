@@ -72,11 +72,21 @@ public final class JniExnRef extends JniResource implements ExnRef {
     return storeHandle;
   }
 
+  /**
+   * Performs the actual native resource cleanup.
+   *
+   * <p>Note: In wasmtime, ExnRefs are owned by the Store. Destroying an ExnRef while the Store
+   * still exists can corrupt the Store's internal slab state. We mark the ExnRef as closed but
+   * don't destroy it - the Store will handle cleanup.
+   */
   @Override
   protected void doClose() throws Exception {
-    nativeDestroy(getNativeHandle());
+    // Note: Do NOT call nativeDestroy here. ExnRefs are Store-owned resources.
+    // The Store will clean up all its ExnRefs when it is destroyed.
     LOGGER.fine(
-        "Destroyed exception reference with handle: 0x" + Long.toHexString(getNativeHandle()));
+        "ExnRef marked as closed (handle: 0x"
+            + Long.toHexString(nativeHandle)
+            + "). Native resources freed with Store.");
   }
 
   @Override
