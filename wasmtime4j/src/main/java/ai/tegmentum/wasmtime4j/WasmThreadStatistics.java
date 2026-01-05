@@ -185,9 +185,9 @@ public final class WasmThreadStatistics {
   @Override
   public String toString() {
     return String.format(
-        "WasmThreadStatistics{functionsExecuted=%d, totalExecutionTime=%dns (%.2fms), "
+        "WasmThreadStatistics{functionsExecuted=%d, totalExecutionTime=%dns (%dms), "
             + "atomicOperations=%d, memoryAccesses=%d, waitNotifyOperations=%d, "
-            + "peakMemoryUsage=%d bytes (%.2f MB), opsPerSec=%.2f, memAccessRate=%.2f}",
+            + "peakMemoryUsage=%d bytes (%d MB), opsPerSec=%.2f, memAccessRate=%.2f}",
         functionsExecuted,
         totalExecutionTime,
         getTotalExecutionTimeMillis(),
