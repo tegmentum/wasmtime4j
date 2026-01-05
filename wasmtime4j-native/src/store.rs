@@ -392,6 +392,32 @@ impl Store {
         Ok(())
     }
 
+    /// Configure the store to trap when the epoch deadline is reached
+    ///
+    /// When the epoch counter exceeds the deadline set via `set_epoch_deadline`,
+    /// WebAssembly execution will trap with an error.
+    pub fn epoch_deadline_trap(&self) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+        store.epoch_deadline_trap();
+        Ok(())
+    }
+
+    /// Configure an epoch deadline callback
+    ///
+    /// When the epoch counter exceeds the deadline, the provided callback
+    /// function will be invoked to determine how to proceed.
+    ///
+    /// Note: For JNI, we use a simplified approach that just configures trap behavior.
+    /// Full callback support requires more complex JNI callback infrastructure.
+    pub fn epoch_deadline_callback(&self) -> WasmtimeResult<()> {
+        // For now, we configure trap behavior as a safe default
+        // Full callback support would require maintaining a callback reference
+        // and invoking Java code from Rust, which is complex
+        let mut store = self.inner.lock();
+        store.epoch_deadline_trap();
+        Ok(())
+    }
+
     /// Get memory usage statistics
     pub fn memory_usage(&self) -> WasmtimeResult<MemoryUsage> {
         let store = self.inner.lock();
@@ -852,7 +878,22 @@ pub mod core {
     pub fn set_epoch_deadline(store: &Store, ticks: u64) {
         store.set_epoch_deadline(ticks)
     }
-    
+
+    /// Core function to configure epoch deadline trap
+    pub fn epoch_deadline_trap(store: &Store) -> WasmtimeResult<()> {
+        store.epoch_deadline_trap()
+    }
+
+    /// Core function to configure epoch deadline callback (uses trap as default)
+    pub fn epoch_deadline_callback(store: &Store) -> WasmtimeResult<()> {
+        store.epoch_deadline_callback()
+    }
+
+    /// Core function to configure epoch deadline async yield and update
+    pub fn epoch_deadline_async_yield_and_update(store: &Store, delta: u64) -> WasmtimeResult<()> {
+        store.epoch_deadline_async_yield_and_update(delta)
+    }
+
     /// Core function to get execution statistics
     pub fn get_execution_stats(store: &Store) -> WasmtimeResult<ExecutionState> {
         store.execution_stats()

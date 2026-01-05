@@ -2199,7 +2199,50 @@ pub mod jni_store {
             Ok(())
         });
     }
-    
+
+    /// Configure store to trap on epoch deadline
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeEpochDeadlineTrap(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(&mut env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::epoch_deadline_trap(store)?;
+            Ok(())
+        });
+    }
+
+    /// Configure epoch deadline callback (uses trap as default implementation)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadlineCallback(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(&mut env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::epoch_deadline_callback(store)?;
+            Ok(())
+        });
+    }
+
+    /// Configure epoch deadline async yield and update
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeEpochDeadlineAsyncYieldAndUpdate(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        delta_ticks: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(&mut env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::epoch_deadline_async_yield_and_update(store, delta_ticks as u64)?;
+            Ok(())
+        });
+    }
+
     /// Force garbage collection in the store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGarbageCollect(

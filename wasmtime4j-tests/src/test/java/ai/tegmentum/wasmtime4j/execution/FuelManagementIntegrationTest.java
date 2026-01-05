@@ -133,9 +133,9 @@ public final class FuelManagementIntegrationTest {
         0x00,
         0x00, // export "loop"
         0x0A,
-        0x11,
-        0x01, // code section
-        0x0F,
+        0x17,
+        0x01, // code section (size=23)
+        0x15,
         0x01,
         0x01,
         0x7F, // 1 local i32
