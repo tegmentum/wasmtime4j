@@ -321,7 +321,7 @@ public final class JniStore extends JniResource implements Store {
     ensureNotClosed();
 
     try {
-      final boolean success = nativeAddFuel(getNativeHandle(), fuel);
+      final boolean success = nativeSetFuel(getNativeHandle(), fuel);
       if (!success) {
         throw new WasmException("Failed to set fuel to " + fuel);
       }
@@ -1121,6 +1121,15 @@ public final class JniStore extends JniResource implements Store {
    * @return true on success, false on failure
    */
   private static native boolean nativeAddFuel(long storeHandle, long additionalFuel);
+
+  /**
+   * Sets fuel to a specific amount (replaces current fuel).
+   *
+   * @param storeHandle the native store handle
+   * @param fuel the fuel amount to set
+   * @return true on success, false on failure
+   */
+  private static native boolean nativeSetFuel(long storeHandle, long fuel);
 
   /**
    * Gets the remaining fuel for a store.

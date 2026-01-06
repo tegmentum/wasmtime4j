@@ -272,6 +272,22 @@ impl Store {
     pub fn add_fuel(&self, fuel: u64) -> WasmtimeResult<()> {
         let mut store = self.inner.lock();
 
+        // Get current fuel and add to it
+        let current_fuel = store.get_fuel().unwrap_or(0);
+        let new_fuel = current_fuel.saturating_add(fuel);
+
+        store.set_fuel(new_fuel).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to add fuel: {}", e),
+            backtrace: None,
+        })?;
+
+        Ok(())
+    }
+
+    /// Set fuel to a specific amount (replaces current fuel)
+    pub fn set_fuel(&self, fuel: u64) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+
         store.set_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to set fuel: {}", e),
             backtrace: None,
@@ -863,7 +879,12 @@ pub mod core {
     pub fn add_fuel(store: &Store, fuel: u64) -> WasmtimeResult<()> {
         store.add_fuel(fuel)
     }
-    
+
+    /// Core function to set fuel to a specific amount
+    pub fn set_fuel(store: &Store, fuel: u64) -> WasmtimeResult<()> {
+        store.set_fuel(fuel)
+    }
+
     /// Core function to get remaining fuel
     pub fn get_fuel_remaining(store: &Store) -> WasmtimeResult<u64> {
         store.fuel_remaining().map(|opt| opt.unwrap_or(0))
@@ -985,7 +1006,7 @@ pub mod core {
     
     /// Core function to set fuel level
     pub fn set_fuel_level(store: &Store, fuel: u64) -> WasmtimeResult<()> {
-        store.add_fuel(fuel)
+        store.set_fuel(fuel)
     }
 
     /// Core function to increment epoch counter

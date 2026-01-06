@@ -2169,7 +2169,22 @@ pub mod jni_store {
             Ok(true)
         }) as jboolean
     }
-    
+
+    /// Set fuel to a specific amount (replaces current fuel)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetFuel(
+        mut env: JNIEnv,
+        _class: JClass,
+        store_ptr: jlong,
+        fuel: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            core::set_fuel(store, fuel as u64)?;
+            Ok(true)
+        }) as jboolean
+    }
+
     /// Get remaining fuel in the store
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetFuelRemaining(
