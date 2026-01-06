@@ -84,6 +84,11 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
       throw new WasmException("Failed to create WASI HTTP config builder");
     }
 
+    // Track whether we've called build() - after build(), the builder is consumed
+    // and must NOT be freed. Set this BEFORE calling build().
+    boolean builderConsumed = false;
+    MemorySegment configPtr = null;
+
     try {
       // Configure allowed hosts
       final Set<String> allowedHosts = config.getAllowedHosts();
@@ -170,26 +175,31 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
                 bindings.wasiHttpConfigBuilderSetUserAgent(builderPtr, userAgentStr);
               });
 
-      // Build the config
-      final MemorySegment configPtr = bindings.wasiHttpConfigBuilderBuild(builderPtr);
+      // Build the config - IMPORTANT: build() consumes the builder via Box::from_raw
+      // Set builderConsumed BEFORE the call so we don't try to free it if build() throws
+      builderConsumed = true;
+      configPtr = bindings.wasiHttpConfigBuilderBuild(builderPtr);
+
       if (configPtr == null || configPtr.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to build WASI HTTP config");
       }
 
-      try {
-        // Create the context from the config
-        final MemorySegment ctxPtr = bindings.wasiHttpContextNew(configPtr);
-        if (ctxPtr == null || ctxPtr.equals(MemorySegment.NULL)) {
-          throw new WasmException("Failed to create WASI HTTP context from config");
-        }
-        return ctxPtr;
-      } finally {
-        // Free the config - it's been consumed by the context
+      // Create the context from the config (config is cloned, not consumed)
+      final MemorySegment ctxPtr = bindings.wasiHttpContextNew(configPtr);
+      if (ctxPtr == null || ctxPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to create WASI HTTP context from config");
+      }
+      return ctxPtr;
+    } finally {
+      // Free the config if it was created (wasi_http_ctx_new clones it)
+      if (configPtr != null && !configPtr.equals(MemorySegment.NULL)) {
         bindings.wasiHttpConfigFree(configPtr);
       }
-    } finally {
-      // Free the builder
-      bindings.wasiHttpConfigBuilderFree(builderPtr);
+      // Free the builder ONLY if build() was never called
+      // After build() is called, the builder is consumed and must not be freed
+      if (!builderConsumed) {
+        bindings.wasiHttpConfigBuilderFree(builderPtr);
+      }
     }
   }
 

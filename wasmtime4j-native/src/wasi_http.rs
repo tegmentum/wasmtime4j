@@ -1046,9 +1046,12 @@ pub unsafe extern "C" fn wasi_http_config_builder_build(
 }
 
 /// Free a config builder
+/// Note: #[inline(never)] prevents ICF (Identical Code Folding) from merging this with config_free
 #[no_mangle]
+#[inline(never)]
 pub unsafe extern "C" fn wasi_http_config_builder_free(builder_ptr: *mut c_void) {
     if !builder_ptr.is_null() {
+        log::trace!("Freeing WasiHttpConfigBuilder at {:p}", builder_ptr);
         drop(Box::from_raw(builder_ptr as *mut WasiHttpConfigBuilder));
     }
 }
@@ -1061,9 +1064,12 @@ pub unsafe extern "C" fn wasi_http_config_default() -> *mut c_void {
 }
 
 /// Free a WASI HTTP config
+/// Note: #[inline(never)] prevents ICF (Identical Code Folding) from merging this with builder_free
 #[no_mangle]
+#[inline(never)]
 pub unsafe extern "C" fn wasi_http_config_free(config_ptr: *mut c_void) {
     if !config_ptr.is_null() {
+        log::trace!("Freeing WasiHttpConfig at {:p}", config_ptr);
         drop(Box::from_raw(config_ptr as *mut WasiHttpConfig));
     }
 }
