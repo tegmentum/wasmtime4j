@@ -816,21 +816,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   /**
-   * Sets the native handle for this resource. This is needed because the superclass constructor
-   * runs before we can create the native engine.
-   */
-  private void setNativeHandle(final long handle) {
-    // Use reflection to set the protected nativeHandle field
-    try {
-      final java.lang.reflect.Field field = JniResource.class.getDeclaredField("nativeHandle");
-      field.setAccessible(true);
-      field.setLong(this, handle);
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set native handle: " + e.getMessage());
-    }
-  }
-
-  /**
    * Generates a unique component identifier.
    *
    * @return a new component identifier

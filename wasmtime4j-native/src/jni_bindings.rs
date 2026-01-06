@@ -906,16 +906,17 @@ pub mod jni_engine {
         max_stack_size: jint,
         epoch_interruption: jboolean,
         max_instances: jint,
+        async_support: jboolean,
     ) -> jlong {
-        
-        
+
+
         jni_utils::jni_try_ptr(&mut env, || {
             let strategy_opt = parameter_conversion::convert_strategy(strategy);
             let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
             let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
             let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
             let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
-            
+
             core::create_engine_with_config(
                 strategy_opt,
                 opt_level_opt,
@@ -930,7 +931,7 @@ pub mod jni_engine {
                 max_stack_size_opt,
                 parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
                 max_instances_opt,
-                false,  // async_support - TODO: add JNI parameter
+                parameter_conversion::convert_int_to_bool(async_support as i32),
             )
         }) as jlong
     }
@@ -1091,6 +1092,19 @@ pub mod jni_engine {
         jni_utils::jni_try_bool(&mut env, || {
             let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
             Ok(engine.fuel_enabled())
+        }) as jboolean
+    }
+
+    /// Query if async support is enabled
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsAsync(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            Ok(engine.async_support_enabled())
         }) as jboolean
     }
 
