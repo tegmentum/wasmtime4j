@@ -156,7 +156,10 @@ public class JniEngine implements Engine {
 
   @Override
   public void incrementEpoch() {
-    // No-op for JNI engine - epoch interruption handled at store level
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
+    nativeIncrementEpoch(nativeHandle);
   }
 
   @Override
@@ -394,6 +397,8 @@ public class JniEngine implements Engine {
 
   private native boolean nativeIsAsync(long engineHandle);
 
+  private native void nativeIncrementEpoch(long engineHandle);
+
   /**
    * Creates a new engine with the specified configuration.
    *
@@ -443,7 +448,8 @@ public class JniEngine implements Engine {
             maxMemoryPages,
             (int) config.getMaxWasmStack(),
             config.isEpochInterruption(),
-            config.getInstancePoolSize());
+            config.getInstancePoolSize(),
+            config.isAsyncSupport());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -465,5 +471,6 @@ public class JniEngine implements Engine {
       int maxMemoryPages,
       int maxStackSize,
       boolean epochInterruption,
-      int maxInstances);
+      int maxInstances,
+      boolean asyncSupport);
 }

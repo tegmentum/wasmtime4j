@@ -1108,6 +1108,20 @@ pub mod jni_engine {
         }) as jboolean
     }
 
+    /// Increment the epoch counter for epoch-based interruption
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncrementEpoch(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+    ) {
+        let _ = jni_utils::jni_try_void(&mut env, || {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+            engine.increment_epoch();
+            Ok(())
+        });
+    }
+
     /// Get stack size limit in bytes
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackSizeLimit(

@@ -137,11 +137,19 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsAs
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeIncrementEpoch
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncrementEpoch
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateEngineWithConfig
- * Signature: (IIZZZZZZZIIZI)J
+ * Signature: (IIZZZZZZZIIZIZ)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithConfig
-  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint);
+  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint, jboolean);
 
 #ifdef __cplusplus
 }
