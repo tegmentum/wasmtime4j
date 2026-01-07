@@ -128,7 +128,7 @@ class PanamaImportDescriptorTest {
       final WasmType type = createTestType();
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaImportDescriptor(null, "memory", type),
           "Should throw on null module name");
     }
@@ -139,7 +139,7 @@ class PanamaImportDescriptorTest {
       final WasmType type = createTestType();
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaImportDescriptor("env", null, type),
           "Should throw on null name");
     }
@@ -148,7 +148,7 @@ class PanamaImportDescriptorTest {
     @DisplayName("Constructor should throw on null type")
     void constructorShouldThrowOnNullType() {
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaImportDescriptor("env", "memory", null),
           "Should throw on null type");
     }
@@ -392,7 +392,7 @@ class PanamaImportDescriptorTest {
     @DisplayName("fromNative should throw on null segment")
     void fromNativeShouldThrowOnNullSegment() {
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> PanamaImportDescriptor.fromNative(null, arena),
           "fromNative should throw on null segment");
     }
@@ -403,7 +403,7 @@ class PanamaImportDescriptorTest {
       final MemorySegment segment = arena.allocate(64);
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> PanamaImportDescriptor.fromNative(segment, null),
           "fromNative should throw on null arena");
     }

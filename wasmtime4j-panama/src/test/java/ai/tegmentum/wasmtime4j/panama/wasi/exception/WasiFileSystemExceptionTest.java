@@ -46,11 +46,12 @@ class WasiFileSystemExceptionTest {
     }
 
     @Test
-    @DisplayName("should extend WasiException")
-    void shouldExtendWasiException() {
+    @DisplayName("should extend PanamaException")
+    void shouldExtendPanamaException() {
       assertTrue(
-          WasiException.class.isAssignableFrom(WasiFileSystemException.class),
-          "WasiFileSystemException should extend WasiException");
+          ai.tegmentum.wasmtime4j.panama.exception.PanamaException.class.isAssignableFrom(
+              WasiFileSystemException.class),
+          "WasiFileSystemException should extend PanamaException");
     }
   }
 
@@ -59,19 +60,20 @@ class WasiFileSystemExceptionTest {
   class ConstructorTests {
 
     @Test
-    @DisplayName("should have constructor with String message")
-    void shouldHaveConstructorWithMessage() throws NoSuchMethodException {
-      final Constructor<?> constructor = WasiFileSystemException.class.getConstructor(String.class);
-      assertNotNull(constructor, "Constructor with String should exist");
+    @DisplayName("should have constructor with String message and String wasiErrorCode")
+    void shouldHaveConstructorWithMessageAndErrorCode() throws NoSuchMethodException {
+      final Constructor<?> constructor =
+          WasiFileSystemException.class.getConstructor(String.class, String.class);
+      assertNotNull(constructor, "Constructor with String, String should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("should have constructor with String message and Throwable cause")
-    void shouldHaveConstructorWithMessageAndCause() throws NoSuchMethodException {
+    @DisplayName("should have constructor with message, wasiErrorCode, and cause")
+    void shouldHaveConstructorWithMessageErrorCodeAndCause() throws NoSuchMethodException {
       final Constructor<?> constructor =
-          WasiFileSystemException.class.getConstructor(String.class, Throwable.class);
-      assertNotNull(constructor, "Constructor with String and Throwable should exist");
+          WasiFileSystemException.class.getConstructor(String.class, String.class, Throwable.class);
+      assertNotNull(constructor, "Constructor with String, String, Throwable should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
   }

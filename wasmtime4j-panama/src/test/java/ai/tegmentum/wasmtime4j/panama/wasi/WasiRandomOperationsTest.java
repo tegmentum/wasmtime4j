@@ -52,7 +52,7 @@ class WasiRandomOperationsTest {
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> new WasiRandomOperations(null, null),
           "Should throw on null context");
     }

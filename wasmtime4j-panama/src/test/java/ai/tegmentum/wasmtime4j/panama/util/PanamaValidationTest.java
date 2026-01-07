@@ -53,10 +53,14 @@ class PanamaValidationTest {
     void constructorShouldThrowAssertionError() throws Exception {
       final var constructor = PanamaValidation.class.getDeclaredConstructor();
       constructor.setAccessible(true);
-      assertThrows(
-          AssertionError.class,
-          constructor::newInstance,
-          "Constructor should throw AssertionError");
+      final var exception =
+          assertThrows(
+              java.lang.reflect.InvocationTargetException.class,
+              constructor::newInstance,
+              "Constructor should throw via reflection");
+      assertTrue(
+          exception.getCause() instanceof AssertionError,
+          "Cause should be AssertionError");
     }
   }
 

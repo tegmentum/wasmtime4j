@@ -145,7 +145,7 @@ class PanamaExportDescriptorTest {
       final WasmType type = createTestType();
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaExportDescriptor(null, type),
           "Should throw on null name");
     }
@@ -154,7 +154,7 @@ class PanamaExportDescriptorTest {
     @DisplayName("Constructor should throw on null type")
     void constructorShouldThrowOnNullType() {
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaExportDescriptor("main", null),
           "Should throw on null type");
     }
@@ -354,7 +354,7 @@ class PanamaExportDescriptorTest {
     @DisplayName("fromNative should throw on null segment")
     void fromNativeShouldThrowOnNullSegment() {
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> PanamaExportDescriptor.fromNative(null, arena),
           "fromNative should throw on null segment");
     }
@@ -365,7 +365,7 @@ class PanamaExportDescriptorTest {
       final MemorySegment segment = arena.allocate(64);
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> PanamaExportDescriptor.fromNative(segment, null),
           "fromNative should throw on null arena");
     }

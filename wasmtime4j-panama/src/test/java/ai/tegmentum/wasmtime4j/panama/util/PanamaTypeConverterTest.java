@@ -137,7 +137,7 @@ class PanamaTypeConverterTest {
     @DisplayName("wasmTypeToNative should throw for null type")
     void wasmTypeToNativeShouldThrowForNullType() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.wasmTypeToNative(null),
           "Should throw for null type");
     }
@@ -322,7 +322,7 @@ class PanamaTypeConverterTest {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.marshalWasmValue(null, valueSlot),
           "Should throw for null wasmValue");
     }
@@ -333,7 +333,7 @@ class PanamaTypeConverterTest {
       final WasmValue value = WasmValue.i32(42);
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.marshalWasmValue(value, null),
           "Should throw for null valueSlot");
     }
@@ -411,7 +411,7 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should throw for null valueSlot")
     void unmarshalWasmValueShouldThrowForNullValueSlot() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.unmarshalWasmValue(null, WasmValueType.I32),
           "Should throw for null valueSlot");
     }
@@ -422,7 +422,7 @@ class PanamaTypeConverterTest {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.unmarshalWasmValue(valueSlot, null),
           "Should throw for null expectedType");
     }
@@ -472,7 +472,7 @@ class PanamaTypeConverterTest {
       final MemorySegment paramsMemory = arena.allocate(MemoryLayouts.WASM_VAL.byteSize());
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.marshalParameters(null, paramsMemory),
           "Should throw for null values");
     }
@@ -483,7 +483,7 @@ class PanamaTypeConverterTest {
       final WasmValue[] values = new WasmValue[] {WasmValue.i32(1)};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.marshalParameters(values, null),
           "Should throw for null paramsMemory");
     }
@@ -496,7 +496,7 @@ class PanamaTypeConverterTest {
           arena.allocate(values.length * MemoryLayouts.WASM_VAL.byteSize());
 
       assertThrows(
-          PanamaException.class,
+          RuntimeException.class,
           () -> PanamaTypeConverter.marshalParameters(values, paramsMemory),
           "Should throw for null value in array");
     }
@@ -552,7 +552,7 @@ class PanamaTypeConverterTest {
       final WasmValueType[] expectedTypes = new WasmValueType[] {WasmValueType.I32};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.unmarshalResults(null, expectedTypes),
           "Should throw for null resultsMemory");
     }
@@ -563,7 +563,7 @@ class PanamaTypeConverterTest {
       final MemorySegment resultsMemory = arena.allocate(MemoryLayouts.WASM_VAL.byteSize());
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.unmarshalResults(resultsMemory, null),
           "Should throw for null expectedTypes");
     }
@@ -634,7 +634,7 @@ class PanamaTypeConverterTest {
       final WasmValueType[] expectedTypes = new WasmValueType[] {WasmValueType.I32};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.validateParameterTypes(null, expectedTypes),
           "Should throw for null params");
     }
@@ -645,7 +645,7 @@ class PanamaTypeConverterTest {
       final WasmValue[] params = new WasmValue[] {WasmValue.i32(1)};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.validateParameterTypes(params, null),
           "Should throw for null expectedTypes");
     }
@@ -746,7 +746,7 @@ class PanamaTypeConverterTest {
     @DisplayName("functionTypeToNative should throw for null functionType")
     void functionTypeToNativeShouldThrowForNullFunctionType() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.functionTypeToNative(null),
           "Should throw for null functionType");
     }
@@ -792,7 +792,7 @@ class PanamaTypeConverterTest {
       final int[] nativeReturnTypes = new int[] {MemoryLayouts.WASM_I32};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.nativeToFunctionType(null, nativeReturnTypes),
           "Should throw for null nativeParamTypes");
     }
@@ -803,7 +803,7 @@ class PanamaTypeConverterTest {
       final int[] nativeParamTypes = new int[] {MemoryLayouts.WASM_I32};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.nativeToFunctionType(nativeParamTypes, null),
           "Should throw for null nativeReturnTypes");
     }
@@ -872,7 +872,7 @@ class PanamaTypeConverterTest {
     @DisplayName("validateReferenceTypes should throw for null values array")
     void validateReferenceTypesShouldThrowForNullValuesArray() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.validateReferenceTypes(null),
           "Should throw for null values array");
     }
@@ -883,7 +883,7 @@ class PanamaTypeConverterTest {
       final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), null};
 
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> PanamaTypeConverter.validateReferenceTypes(values),
           "Should throw for null value in array");
     }

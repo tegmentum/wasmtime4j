@@ -46,11 +46,11 @@ class WasiPermissionExceptionTest {
     }
 
     @Test
-    @DisplayName("should extend WasiException")
-    void shouldExtendWasiException() {
+    @DisplayName("should extend WasiFileSystemException")
+    void shouldExtendWasiFileSystemException() {
       assertTrue(
-          WasiException.class.isAssignableFrom(WasiPermissionException.class),
-          "WasiPermissionException should extend WasiException");
+          WasiFileSystemException.class.isAssignableFrom(WasiPermissionException.class),
+          "WasiPermissionException should extend WasiFileSystemException");
     }
   }
 

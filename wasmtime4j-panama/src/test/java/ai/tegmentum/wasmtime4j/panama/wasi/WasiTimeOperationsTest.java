@@ -87,7 +87,7 @@ class WasiTimeOperationsTest {
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> new WasiTimeOperations(null, null),
           "Should throw on null context");
     }
@@ -211,7 +211,7 @@ class WasiTimeOperationsTest {
     @DisplayName("Should throw on null time unit")
     void shouldThrowOnNullTimeUnit() {
       assertThrows(
-          PanamaException.class,
+          IllegalArgumentException.class,
           () -> WasiTimeOperations.convertTime(1000000000L, null),
           "Should throw on null time unit");
     }
