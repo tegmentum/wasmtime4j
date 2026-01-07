@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,18 +53,18 @@ class JniWasiContextImplTest {
 
   @Test
   void testConstructorWithZeroHandle() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> new JniWasiContextImpl(0L));
+    final JniValidationException exception =
+        assertThrows(JniValidationException.class, () -> new JniWasiContextImpl(0L));
 
-    assertThat(exception.getMessage()).contains("invalid native handle");
+    assertThat(exception.getMessage()).contains("nativeHandle");
   }
 
   @Test
   void testConstructorWithNegativeHandle() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> new JniWasiContextImpl(-1L));
+    final JniValidationException exception =
+        assertThrows(JniValidationException.class, () -> new JniWasiContextImpl(-1L));
 
-    assertThat(exception.getMessage()).contains("invalid native handle");
+    assertThat(exception.getMessage()).contains("nativeHandle");
   }
 
   // setArgv validation tests

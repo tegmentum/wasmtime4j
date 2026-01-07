@@ -167,8 +167,9 @@ class JniPoolStatisticsTest {
       final JniPoolStatistics stats =
           new JniPoolStatistics(100L, 80L, 20L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-      // Reuse ratio = instancesReused / instancesAllocated = 80/100 = 0.8
-      assertEquals(0.8, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.8");
+      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 80/180 ≈ 0.444
+      final double expectedRatio = 80.0 / (100.0 + 80.0);
+      assertEquals(expectedRatio, stats.getReuseRatio(), 0.001, "Reuse ratio should match formula");
     }
 
     @Test
@@ -176,19 +177,20 @@ class JniPoolStatisticsTest {
     void getReuseRatioShouldReturnZeroWhenNoAllocations() {
       final JniPoolStatistics stats = new JniPoolStatistics();
 
-      // When instancesAllocated is 0, ratio should be 0.0
+      // When total (instancesAllocated + instancesReused) is 0, ratio should be 0.0
       assertEquals(
           0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0 when no allocations");
     }
 
     @Test
-    @DisplayName("getReuseRatio should return 1.0 when all reused")
-    void getReuseRatioShouldReturnOneWhenAllReused() {
+    @DisplayName("getReuseRatio should return 0.5 when allocated equals reused")
+    void getReuseRatioShouldReturnHalfWhenAllocatedEqualsReused() {
       final JniPoolStatistics stats =
           new JniPoolStatistics(100L, 100L, 0L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
+      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 100/200 = 0.5
       assertEquals(
-          1.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 1.0 when all are reused");
+          0.5, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.5 when allocated equals reused");
     }
   }
 

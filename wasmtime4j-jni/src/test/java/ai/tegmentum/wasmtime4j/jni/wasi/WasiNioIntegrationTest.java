@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -100,7 +101,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Constructor should throw on null executor")
     void constructorShouldThrowOnNullExecutor() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiNioIntegration(true, true, null),
           "Should throw on null executor");
     }
@@ -128,7 +129,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.bulkRead(null, 0, 100),
           "Should throw on null channel");
     }
@@ -141,7 +142,7 @@ class WasiNioIntegrationTest {
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.bulkRead(channel, -1, 100),
             "Should throw on negative position");
       }
@@ -155,7 +156,7 @@ class WasiNioIntegrationTest {
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.bulkRead(channel, 0, 0),
             "Should throw on zero buffer size");
       }
@@ -186,7 +187,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.bulkWrite(null, 0, ByteBuffer.allocate(10)),
           "Should throw on null channel");
     }
@@ -199,7 +200,7 @@ class WasiNioIntegrationTest {
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.WRITE)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.bulkWrite(channel, 0, null),
             "Should throw on null data");
       }
@@ -234,7 +235,7 @@ class WasiNioIntegrationTest {
 
       try (final FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.vectoredRead(channel, null, 0),
             "Should throw on null buffers");
       }
@@ -285,7 +286,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.asyncRead(null, 0, 100),
           "Should throw on null path");
     }
@@ -312,7 +313,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.asyncWrite(null, 0, ByteBuffer.allocate(10)),
           "Should throw on null path");
     }
@@ -321,7 +322,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null data")
     void shouldThrowOnNullData() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.asyncWrite(tempDir.resolve("test.txt"), 0, null),
           "Should throw on null data");
     }
@@ -358,7 +359,7 @@ class WasiNioIntegrationTest {
 
       try (final FileChannel target = FileChannel.open(targetFile, StandardOpenOption.WRITE)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.transferFile(null, 0, 10, target),
             "Should throw on null source");
       }
@@ -407,7 +408,7 @@ class WasiNioIntegrationTest {
     @DisplayName("Should throw on null channel")
     void shouldThrowOnNullChannel() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> nioIntegration.lockFile(null, 0, 10, false),
           "Should throw on null channel");
     }
@@ -421,7 +422,7 @@ class WasiNioIntegrationTest {
       try (final FileChannel channel =
           FileChannel.open(testFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> nioIntegration.lockFile(channel, 0, 0, false),
             "Should throw on zero size");
       }
@@ -462,9 +463,15 @@ class WasiNioIntegrationTest {
         final FileLock lock1 = channel1.lock(0, 10, false);
 
         // Try to acquire overlapping lock
-        final FileLock lock2 = nioIntegration.tryLockFile(channel2, 0, 10, false);
-
-        assertNull(lock2, "Second lock should fail");
+        // Note: On some platforms (including macOS/Linux), trying to lock the same region
+        // from the same JVM throws OverlappingFileLockException instead of returning null
+        try {
+          final FileLock lock2 = nioIntegration.tryLockFile(channel2, 0, 10, false);
+          assertNull(lock2, "Second lock should fail");
+        } catch (final java.nio.channels.OverlappingFileLockException e) {
+          // Expected on some platforms - indicates lock is unavailable
+          assertTrue(true, "OverlappingFileLockException indicates lock is unavailable");
+        }
         lock1.release();
       }
     }

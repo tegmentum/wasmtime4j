@@ -471,6 +471,14 @@ class WasiAsyncFileOperationsTest {
       // Wait for completion
       future.get(5, TimeUnit.SECONDS);
 
+      // Allow briefly for the finally block to decrement the counter
+      // (the counter decrement happens after the future completes)
+      int attempts = 0;
+      while (asyncFileOps.getActiveOperationCount() > 0 && attempts < 50) {
+        Thread.sleep(10);
+        attempts++;
+      }
+
       // After completion, count should be back to 0
       assertEquals(
           0L,

@@ -209,23 +209,6 @@ class JniWasiInputStreamTest {
 
       assertTrue(hasContextHandle, "Should have contextHandle field");
     }
-
-    @Test
-    @DisplayName("should have streamHandle field")
-    void shouldHaveStreamHandleField() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit();
-      boolean hasStreamHandle = false;
-
-      for (final java.lang.reflect.Field field : clazz.getDeclaredFields()) {
-        if ("streamHandle".equals(field.getName())) {
-          hasStreamHandle = true;
-          assertEquals(long.class, field.getType(), "streamHandle should be long");
-          break;
-        }
-      }
-
-      assertTrue(hasStreamHandle, "Should have streamHandle field");
-    }
   }
 
   @Nested

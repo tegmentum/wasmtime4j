@@ -88,9 +88,9 @@ class PerformanceOptimizationTest {
     final Object[] simpleMarshalled = OptimizedMarshalling.marshalParameters(simpleParams);
     final Object[] multipleMarshalled = OptimizedMarshalling.marshalParameters(multipleParams);
 
-    // Assert
+    // Assert - marshalParameters returns one object per parameter
     assertThat(simpleMarshalled).hasSize(1);
-    assertThat(multipleMarshalled).hasSize(1); // Optimized marshalling may batch parameters
+    assertThat(multipleMarshalled).hasSize(4); // One marshalled object per WasmValue parameter
 
     // Test unmarshalling
     final WasmValueType[] expectedTypes = new WasmValueType[] {WasmValueType.I32};

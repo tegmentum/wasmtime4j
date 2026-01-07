@@ -302,7 +302,8 @@ class JniOptimizationEngineTest {
       operations[1] = () -> "result2";
       operations[2] = () -> "result3";
 
-      final String[] results = engine.optimizeBatch("testMethod", operations);
+      // Note: optimizeBatch returns Object[] due to Java generic array limitations
+      final Object[] results = engine.optimizeBatch("testMethod", operations);
 
       assertNotNull(results, "Results should not be null");
       assertEquals(3, results.length, "Should have 3 results");

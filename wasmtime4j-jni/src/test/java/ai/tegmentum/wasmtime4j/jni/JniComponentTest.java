@@ -423,7 +423,8 @@ class JniComponentTest {
     @DisplayName("JniComponent should have nativeDestroyComponentInstance method")
     void shouldHaveNativeDestroyComponentInstanceMethod() throws NoSuchMethodException {
       Method method =
-          JniComponent.class.getDeclaredMethod("nativeDestroyComponentInstance", long.class);
+          JniComponent.class.getDeclaredMethod(
+              "nativeDestroyComponentInstance", long.class, long.class);
       assertTrue(Modifier.isNative(method.getModifiers()), "Should be native");
       assertTrue(Modifier.isStatic(method.getModifiers()), "Should be static");
       assertEquals(void.class, method.getReturnType(), "Should return void");

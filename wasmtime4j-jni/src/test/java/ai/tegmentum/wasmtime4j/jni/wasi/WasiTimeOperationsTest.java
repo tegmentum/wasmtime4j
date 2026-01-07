@@ -142,20 +142,17 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should accept zero precision")
     void shouldAcceptZeroPrecision() {
-      // Zero means maximum precision - validation should pass
-      // Will throw from native call, but validation passes
-      assertThrows(
-          Exception.class,
-          () -> timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME, 0));
+      // Zero means maximum precision - should return valid timestamp
+      final long time = timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME, 0);
+      assertTrue(time >= 0, "Should return non-negative timestamp");
     }
 
     @Test
     @DisplayName("Overloaded method should use zero precision")
     void overloadedMethodShouldUseZeroPrecision() {
-      // Single-arg version uses precision=0
-      assertThrows(
-          Exception.class,
-          () -> timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME));
+      // Single-arg version uses precision=0 - should return valid timestamp
+      final long time = timeOperations.getCurrentTime(WasiTimeOperations.WASI_CLOCK_REALTIME);
+      assertTrue(time >= 0, "Should return non-negative timestamp");
     }
   }
 
@@ -166,26 +163,33 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("getRealtime should use CLOCK_REALTIME")
     void getRealtimeShouldUseClockRealtime() {
-      // Will throw from native, but validates it calls with correct clock ID
-      assertThrows(Exception.class, () -> timeOperations.getRealtime());
+      // Returns wall clock time as nanoseconds since Unix epoch
+      final long realtime = timeOperations.getRealtime();
+      assertTrue(realtime >= 0, "Realtime should be non-negative");
     }
 
     @Test
     @DisplayName("getMonotonicTime should use CLOCK_MONOTONIC")
     void getMonotonicTimeShouldUseClockMonotonic() {
-      assertThrows(Exception.class, () -> timeOperations.getMonotonicTime());
+      // Returns monotonic time suitable for measuring intervals
+      final long monotonic = timeOperations.getMonotonicTime();
+      assertTrue(monotonic >= 0, "Monotonic time should be non-negative");
     }
 
     @Test
     @DisplayName("getProcessCpuTime should use CLOCK_PROCESS_CPUTIME_ID")
     void getProcessCpuTimeShouldUseClockProcessCputimeId() {
-      assertThrows(Exception.class, () -> timeOperations.getProcessCpuTime());
+      // Returns process CPU time
+      final long cpuTime = timeOperations.getProcessCpuTime();
+      assertTrue(cpuTime >= 0, "Process CPU time should be non-negative");
     }
 
     @Test
     @DisplayName("getThreadCpuTime should use CLOCK_THREAD_CPUTIME_ID")
     void getThreadCpuTimeShouldUseClockThreadCputimeId() {
-      assertThrows(Exception.class, () -> timeOperations.getThreadCpuTime());
+      // Returns thread CPU time
+      final long cpuTime = timeOperations.getThreadCpuTime();
+      assertTrue(cpuTime >= 0, "Thread CPU time should be non-negative");
     }
   }
 
@@ -374,13 +378,10 @@ class WasiTimeOperationsTest {
     @Test
     @DisplayName("Should validate all supported clock IDs pass")
     void shouldValidateAllSupportedClockIdsPass() {
-      // These should all pass validation (but fail on native call)
+      // All supported clock IDs should pass validation and return valid resolution
       for (int clockId = 0; clockId <= 3; clockId++) {
-        final int finalClockId = clockId;
-        assertThrows(
-            Exception.class,
-            () -> timeOperations.getClockResolution(finalClockId),
-            "Clock ID " + clockId + " should pass validation");
+        final long resolution = timeOperations.getClockResolution(clockId);
+        assertTrue(resolution >= 0, "Clock ID " + clockId + " should have non-negative resolution");
       }
     }
 

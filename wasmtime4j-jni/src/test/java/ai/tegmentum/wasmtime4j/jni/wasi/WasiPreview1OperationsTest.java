@@ -142,8 +142,9 @@ class WasiPreview1OperationsTest {
       // Empty list should return 0 bytes read
       final List<ByteBuffer> iovs = new ArrayList<>();
 
-      // This will throw because of mock setup, but validates the path
-      assertThrows(WasiException.class, () -> operations.fdRead(3, iovs));
+      // Empty iovs list returns 0 bytes (no buffers to read into)
+      final int bytesRead = operations.fdRead(3, iovs);
+      assertEquals(0, bytesRead, "Empty iovs list should return 0 bytes read");
     }
   }
 

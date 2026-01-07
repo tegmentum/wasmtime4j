@@ -196,37 +196,39 @@ class JniBacktraceTest {
   }
 
   @Test
-  @DisplayName("Should handle FrameInfo with immutable symbols list")
-  void shouldHandleFrameInfoWithImmutableSymbolsList() {
+  @DisplayName("Should handle FrameInfo with defensive copy of symbols list")
+  void shouldHandleFrameInfoWithDefensiveCopyOfSymbolsList() {
     final FrameSymbol symbol = new FrameSymbol("test", "file.wasm", 42, 10);
     final FrameInfo frame =
         new FrameInfo(0, null, "test", 100, 50, Collections.singletonList(symbol));
 
-    // Verify list is immutable by checking it's the expected type
+    // Verify defensive copy behavior
     assertNotNull(frame.getSymbols(), "Symbols list should not be null");
     assertEquals(1, frame.getSymbols().size(), "Should have one symbol");
 
-    // Attempt to modify should throw UnsupportedOperationException
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> frame.getSymbols().clear(),
-        "Symbols list should be immutable");
+    // Get a copy and modify it - should not affect original
+    final java.util.List<FrameSymbol> copy = frame.getSymbols();
+    copy.clear();
+
+    // Original should still have the symbol (defensive copy)
+    assertEquals(1, frame.getSymbols().size(), "Original symbols list should be unaffected");
   }
 
   @Test
-  @DisplayName("Should handle WasmBacktrace with immutable frames list")
-  void shouldHandleBacktraceWithImmutableFramesList() {
+  @DisplayName("Should handle WasmBacktrace with defensive copy of frames list")
+  void shouldHandleBacktraceWithDefensiveCopyOfFramesList() {
     final FrameInfo frame = new FrameInfo(0, null, "test", 100, 50, Collections.emptyList());
     final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
-    // Verify list is immutable
+    // Verify defensive copy behavior
     assertNotNull(backtrace.getFrames(), "Frames list should not be null");
     assertEquals(1, backtrace.getFrames().size(), "Should have one frame");
 
-    // Attempt to modify should throw UnsupportedOperationException
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> backtrace.getFrames().clear(),
-        "Frames list should be immutable");
+    // Get a copy and modify it - should not affect original
+    final java.util.List<FrameInfo> copy = backtrace.getFrames();
+    copy.clear();
+
+    // Original should still have the frame (defensive copy)
+    assertEquals(1, backtrace.getFrames().size(), "Original frames list should be unaffected");
   }
 }
