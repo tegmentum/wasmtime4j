@@ -159,9 +159,9 @@ class BacktraceDeserializerTest {
 
       final FrameInfo frame = backtrace.getFrames().get(0);
       assertEquals(42, frame.getFuncIndex(), "Function index should be 42");
-      assertNull(frame.getFuncName(), "Function name should be null");
-      assertNull(frame.getModuleOffset(), "Module offset should be null");
-      assertNull(frame.getFuncOffset(), "Function offset should be null");
+      assertTrue(frame.getFuncName().isEmpty(), "Function name should be empty");
+      assertTrue(frame.getModuleOffset().isEmpty(), "Module offset should be empty");
+      assertTrue(frame.getFuncOffset().isEmpty(), "Function offset should be empty");
       assertTrue(frame.getSymbols().isEmpty(), "Symbols should be empty");
     }
 
@@ -192,7 +192,8 @@ class BacktraceDeserializerTest {
       final WasmBacktrace backtrace = BacktraceDeserializer.deserialize(data);
       final FrameInfo frame = backtrace.getFrames().get(0);
 
-      assertEquals(funcName, frame.getFuncName(), "Function name should match");
+      assertTrue(frame.getFuncName().isPresent(), "Function name should be present");
+      assertEquals(funcName, frame.getFuncName().get(), "Function name should match");
     }
 
     @Test
@@ -220,8 +221,10 @@ class BacktraceDeserializerTest {
       final WasmBacktrace backtrace = BacktraceDeserializer.deserialize(data);
       final FrameInfo frame = backtrace.getFrames().get(0);
 
-      assertEquals(Integer.valueOf(1024), frame.getModuleOffset(), "Module offset should be 1024");
-      assertEquals(Integer.valueOf(256), frame.getFuncOffset(), "Function offset should be 256");
+      assertTrue(frame.getModuleOffset().isPresent(), "Module offset should be present");
+      assertEquals(Integer.valueOf(1024), frame.getModuleOffset().get(), "Module offset should be 1024");
+      assertTrue(frame.getFuncOffset().isPresent(), "Function offset should be present");
+      assertEquals(Integer.valueOf(256), frame.getFuncOffset().get(), "Function offset should be 256");
     }
   }
 
@@ -272,10 +275,14 @@ class BacktraceDeserializerTest {
       assertEquals(1, frame.getSymbols().size(), "Should have 1 symbol");
       final FrameSymbol symbol = frame.getSymbols().get(0);
 
-      assertEquals(symbolName, symbol.getName(), "Symbol name should match");
-      assertEquals(sourceFile, symbol.getFile(), "Source file should match");
-      assertEquals(Integer.valueOf(42), symbol.getLine(), "Line should be 42");
-      assertEquals(Integer.valueOf(10), symbol.getColumn(), "Column should be 10");
+      assertTrue(symbol.getName().isPresent(), "Symbol name should be present");
+      assertEquals(symbolName, symbol.getName().get(), "Symbol name should match");
+      assertTrue(symbol.getFile().isPresent(), "Source file should be present");
+      assertEquals(sourceFile, symbol.getFile().get(), "Source file should match");
+      assertTrue(symbol.getLine().isPresent(), "Line should be present");
+      assertEquals(Integer.valueOf(42), symbol.getLine().get(), "Line should be 42");
+      assertTrue(symbol.getColumn().isPresent(), "Column should be present");
+      assertEquals(Integer.valueOf(10), symbol.getColumn().get(), "Column should be 10");
     }
 
     @Test
@@ -307,10 +314,10 @@ class BacktraceDeserializerTest {
       final WasmBacktrace backtrace = BacktraceDeserializer.deserialize(data);
       final FrameSymbol symbol = backtrace.getFrames().get(0).getSymbols().get(0);
 
-      assertNull(symbol.getName(), "Name should be null");
-      assertNull(symbol.getFile(), "File should be null");
-      assertNull(symbol.getLine(), "Line should be null");
-      assertNull(symbol.getColumn(), "Column should be null");
+      assertTrue(symbol.getName().isEmpty(), "Name should be empty");
+      assertTrue(symbol.getFile().isEmpty(), "File should be empty");
+      assertTrue(symbol.getLine().isEmpty(), "Line should be empty");
+      assertTrue(symbol.getColumn().isEmpty(), "Column should be empty");
     }
   }
 
@@ -408,13 +415,15 @@ class BacktraceDeserializerTest {
       final FrameInfo frame = backtrace.getFrames().get(0);
 
       assertEquals(2, frame.getSymbols().size(), "Should have 2 symbols");
+      assertTrue(frame.getSymbols().get(0).getLine().isPresent(), "First symbol line should be present");
       assertEquals(
           Integer.valueOf(100),
-          frame.getSymbols().get(0).getLine(),
+          frame.getSymbols().get(0).getLine().get(),
           "First symbol line should be 100");
+      assertTrue(frame.getSymbols().get(1).getLine().isPresent(), "Second symbol line should be present");
       assertEquals(
           Integer.valueOf(200),
-          frame.getSymbols().get(1).getLine(),
+          frame.getSymbols().get(1).getLine().get(),
           "Second symbol line should be 200");
     }
   }
