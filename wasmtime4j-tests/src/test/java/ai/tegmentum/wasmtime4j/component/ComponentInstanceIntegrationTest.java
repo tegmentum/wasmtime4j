@@ -77,7 +77,8 @@ public final class ComponentInstanceIntegrationTest {
           addComponentBytes = readAllBytes(is);
           componentInstanceAvailable = true;
           LOGGER.info(
-              "ComponentInstance native implementation available - " + addComponentBytes.length
+              "ComponentInstance native implementation available - "
+                  + addComponentBytes.length
                   + " bytes loaded");
         } else {
           unavailableReason = "add.wasm test component not found in resources";
@@ -210,11 +211,11 @@ public final class ComponentInstanceIntegrationTest {
 
       // Test multiple value combinations
       final int[][] testCases = {
-          {0, 0, 0},       // Zero addition
-          {1, 1, 2},       // Small positive
-          {100, 200, 300}, // Larger positive
-          {-5, 10, 5},     // Mixed signs
-          {-10, -20, -30}  // Negative addition
+        {0, 0, 0}, // Zero addition
+        {1, 1, 2}, // Small positive
+        {100, 200, 300}, // Larger positive
+        {-5, 10, 5}, // Mixed signs
+        {-10, -20, -30} // Negative addition
       };
 
       for (final int[] testCase : testCases) {
@@ -228,9 +229,7 @@ public final class ComponentInstanceIntegrationTest {
         final Object result = instance.invoke("add", param1, param2);
 
         assertEquals(
-            expected,
-            result,
-            String.format("add(%d, %d) should equal %d", a, b, expected));
+            expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
 
         LOGGER.info(String.format("add(%d, %d) = %d ✓", a, b, expected));
       }
@@ -334,9 +333,7 @@ public final class ComponentInstanceIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       assertThrows(
-          Exception.class,
-          () -> engine.loadComponentFromBytes(null),
-          "Should reject null bytes");
+          Exception.class, () -> engine.loadComponentFromBytes(null), "Should reject null bytes");
 
       LOGGER.info("Null component bytes rejected as expected");
     }
@@ -439,9 +436,7 @@ public final class ComponentInstanceIntegrationTest {
         assertTrue(inst2.isValid(), "Instance 2 should be valid");
 
         // Different instance IDs
-        assertFalse(
-            inst1.getId().equals(inst2.getId()),
-            "Instances should have different IDs");
+        assertFalse(inst1.getId().equals(inst2.getId()), "Instances should have different IDs");
 
         inst1.close();
         inst2.close();

@@ -564,8 +564,11 @@ public final class JniComponent {
     JniComponentInstanceHandle(final long engineHandle, final long instanceId) {
       super(instanceId);
       this.engineHandle = engineHandle;
-      LOGGER.fine("Created component instance with ID: " + instanceId
-          + " in engine: 0x" + Long.toHexString(engineHandle));
+      LOGGER.fine(
+          "Created component instance with ID: "
+              + instanceId
+              + " in engine: 0x"
+              + Long.toHexString(engineHandle));
     }
 
     /**
@@ -581,8 +584,11 @@ public final class JniComponent {
     protected void doClose() throws Exception {
       if (nativeHandle != 0 && engineHandle != 0) {
         nativeDestroyComponentInstance(engineHandle, nativeHandle);
-        LOGGER.fine("Destroyed component instance with ID: " + nativeHandle
-            + " from engine: 0x" + Long.toHexString(engineHandle));
+        LOGGER.fine(
+            "Destroyed component instance with ID: "
+                + nativeHandle
+                + " from engine: 0x"
+                + Long.toHexString(engineHandle));
       } else if (nativeHandle != 0) {
         // Unmanaged instance - no native cleanup needed
         LOGGER.fine("Closed unmanaged component instance with ID: " + nativeHandle);

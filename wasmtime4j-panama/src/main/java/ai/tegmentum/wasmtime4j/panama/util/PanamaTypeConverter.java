@@ -111,23 +111,23 @@ public final class PanamaTypeConverter {
     PanamaValidation.requireNonNull(valueSlot, "valueSlot");
 
     final int nativeType = wasmTypeToNative(wasmValue.getType());
-    MemoryLayouts.WASM_VAL_KIND.set(valueSlot, nativeType);
+    MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, nativeType);
 
     switch (wasmValue.getType()) {
       case I32:
-        MemoryLayouts.WASM_VAL_I32.set(valueSlot, wasmValue.asI32());
+        MemoryLayouts.WASM_VAL_I32.set(valueSlot, 0L, wasmValue.asI32());
         break;
 
       case I64:
-        MemoryLayouts.WASM_VAL_I64.set(valueSlot, wasmValue.asI64());
+        MemoryLayouts.WASM_VAL_I64.set(valueSlot, 0L, wasmValue.asI64());
         break;
 
       case F32:
-        MemoryLayouts.WASM_VAL_F32.set(valueSlot, wasmValue.asF32());
+        MemoryLayouts.WASM_VAL_F32.set(valueSlot, 0L, wasmValue.asF32());
         break;
 
       case F64:
-        MemoryLayouts.WASM_VAL_F64.set(valueSlot, wasmValue.asF64());
+        MemoryLayouts.WASM_VAL_F64.set(valueSlot, 0L, wasmValue.asF64());
         break;
 
       case V128:
@@ -164,7 +164,7 @@ public final class PanamaTypeConverter {
     PanamaValidation.requireNonNull(valueSlot, "valueSlot");
     PanamaValidation.requireNonNull(expectedType, "expectedType");
 
-    final int actualNativeType = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
+    final int actualNativeType = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
     final int expectedNativeType = wasmTypeToNative(expectedType);
 
     if (actualNativeType != expectedNativeType) {
@@ -178,10 +178,10 @@ public final class PanamaTypeConverter {
     }
 
     return switch (expectedType) {
-      case I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot));
-      case I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot));
-      case F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot));
-      case F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot));
+      case I32 -> WasmValue.i32((Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot, 0L));
+      case I64 -> WasmValue.i64((Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot, 0L));
+      case F32 -> WasmValue.f32((Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot, 0L));
+      case F64 -> WasmValue.f64((Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot, 0L));
       case V128 -> {
         final MemorySegment v128Segment = MemoryLayouts.getV128Value(valueSlot);
         final byte[] v128Bytes = v128Segment.toArray(ValueLayout.JAVA_BYTE);
@@ -399,14 +399,14 @@ public final class PanamaTypeConverter {
     final Object funcrefValue = wasmValue.asFuncref();
 
     if (funcrefValue == null) {
-      // Null funcref - set ref field to 0
-      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L);
+      // Null funcref - set ref field to NULL pointer
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L, MemorySegment.NULL);
       LOGGER.fine("Marshalled null funcref");
     } else if (funcrefValue instanceof FunctionReference) {
       // FunctionReference interface provides getId()
       final FunctionReference funcRef = (FunctionReference) funcrefValue;
       final long funcRefId = funcRef.getId();
-      MemoryLayouts.WASM_VAL_REF.set(valueSlot, funcRefId);
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L, MemorySegment.ofAddress(funcRefId));
       LOGGER.fine("Marshalled funcref with ID: " + funcRefId);
     } else {
       throw new PanamaException(
@@ -428,19 +428,19 @@ public final class PanamaTypeConverter {
     final Object externrefValue = wasmValue.asExternref();
 
     if (externrefValue == null) {
-      // Null externref - set ref field to 0
-      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L);
+      // Null externref - set ref field to NULL pointer
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L, MemorySegment.NULL);
       LOGGER.fine("Marshalled null externref");
     } else if (externrefValue instanceof Number) {
       // If it's already a number (ID), use it directly
       final long refId = ((Number) externrefValue).longValue();
-      MemoryLayouts.WASM_VAL_REF.set(valueSlot, refId);
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L, MemorySegment.ofAddress(refId));
       LOGGER.fine("Marshalled externref with numeric ID: " + refId);
     } else {
       // For arbitrary objects, use the identity hash code as a reference ID
       // The actual object needs to be tracked separately to prevent GC
       final long refId = System.identityHashCode(externrefValue);
-      MemoryLayouts.WASM_VAL_REF.set(valueSlot, refId);
+      MemoryLayouts.WASM_VAL_REF.set(valueSlot, 0L, MemorySegment.ofAddress(refId));
       LOGGER.fine("Marshalled externref object with identity hash: " + refId);
     }
   }
@@ -453,7 +453,8 @@ public final class PanamaTypeConverter {
    * @throws PanamaException if unmarshalling fails
    */
   private static WasmValue unmarshalFuncref(final MemorySegment valueSlot) throws PanamaException {
-    final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+    final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
+    final long refId = refSegment.address();
 
     if (refId == 0) {
       // Null funcref
@@ -482,7 +483,8 @@ public final class PanamaTypeConverter {
    */
   private static WasmValue unmarshalExternref(final MemorySegment valueSlot)
       throws PanamaException {
-    final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+    final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
+    final long refId = refSegment.address();
 
     if (refId == 0) {
       // Null externref

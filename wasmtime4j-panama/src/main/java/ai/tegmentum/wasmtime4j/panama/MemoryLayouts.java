@@ -105,6 +105,9 @@ public final class MemoryLayouts {
   public static final int WASM_ANYREF = 5;
   public static final int WASM_FUNCREF = 6;
 
+  /** V128 type size in bytes. */
+  public static final int V128_BYTE_SIZE = 16;
+
   /**
    * Layout for WebAssembly value.
    *
@@ -115,6 +118,7 @@ public final class MemoryLayouts {
    *     float f32;
    *     double f64;
    *     void* ref;
+   *     uint8_t v128[16];
    * } wasm_val_value_t;
    * </pre>
    */
@@ -124,7 +128,8 @@ public final class MemoryLayouts {
               ValueLayout.JAVA_LONG.withName("i64"),
               ValueLayout.JAVA_FLOAT.withName("f32"),
               ValueLayout.JAVA_DOUBLE.withName("f64"),
-              C_POINTER.withName("ref"))
+              C_POINTER.withName("ref"),
+              MemoryLayout.sequenceLayout(V128_BYTE_SIZE, ValueLayout.JAVA_BYTE).withName("v128"))
           .withName("wasm_val_value_t");
 
   /**
@@ -542,22 +547,28 @@ public final class MemoryLayouts {
     LOGGER.fine("Initialized Wasmtime memory layouts");
   }
 
+  /** Offset of the union 'of' field within WASM_VAL struct (kind + padding). */
+  public static final long WASM_VAL_UNION_OFFSET = 8;
+
   /**
-   * Extracts a V128 value from a memory segment.
+   * Extracts a V128 value from a WASM_VAL memory segment.
    *
-   * @param segment the memory segment containing the V128 value
-   * @return the V128 value as a memory segment
+   * <p>The V128 value is stored in the union field at offset 8 (after kind + padding).
+   *
+   * @param segment the memory segment containing the WASM_VAL struct
+   * @return the V128 value as a memory segment (16 bytes)
    * @throws IllegalArgumentException if segment is null or too small
    */
   public static MemorySegment getV128Value(final MemorySegment segment) {
     if (segment == null) {
       throw new IllegalArgumentException("Memory segment cannot be null");
     }
-    if (segment.byteSize() < 16) {
+    // WASM_VAL struct: kind (4 bytes) + padding (4 bytes) + union (at least 16 bytes for v128)
+    if (segment.byteSize() < WASM_VAL_UNION_OFFSET + 16) {
       throw new IllegalArgumentException(
           "Memory segment too small for V128 value: " + segment.byteSize());
     }
 
-    return segment.asSlice(0, 16);
+    return segment.asSlice(WASM_VAL_UNION_OFFSET, 16);
   }
 }

@@ -218,8 +218,8 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final int marshalledValue = (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final int marshalledValue = (Integer) MemoryLayouts.WASM_VAL_I32.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_I32, kind, "Kind should be I32");
       assertEquals(42, marshalledValue, "Value should be 42");
@@ -233,8 +233,8 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final long marshalledValue = (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final long marshalledValue = (Long) MemoryLayouts.WASM_VAL_I64.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_I64, kind, "Kind should be I64");
       assertEquals(123456789L, marshalledValue, "Value should be 123456789");
@@ -248,8 +248,8 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final float marshalledValue = (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final float marshalledValue = (Float) MemoryLayouts.WASM_VAL_F32.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_F32, kind, "Kind should be F32");
       assertEquals(3.14f, marshalledValue, 0.001f, "Value should be 3.14");
@@ -263,8 +263,8 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final double marshalledValue = (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final double marshalledValue = (Double) MemoryLayouts.WASM_VAL_F64.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_F64, kind, "Kind should be F64");
       assertEquals(2.71828, marshalledValue, 0.00001, "Value should be 2.71828");
@@ -282,7 +282,7 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
       assertEquals(MemoryLayouts.WASM_V128, kind, "Kind should be V128");
     }
 
@@ -294,11 +294,11 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_FUNCREF, kind, "Kind should be FUNCREF");
-      assertEquals(0L, refId, "Null funcref should have ref ID 0");
+      assertEquals(0L, refSegment.address(), "Null funcref should have ref address 0");
     }
 
     @Test
@@ -309,11 +309,11 @@ class PanamaTypeConverterTest {
 
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
-      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot);
-      final long refId = (Long) MemoryLayouts.WASM_VAL_REF.get(valueSlot);
+      final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
+      final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_ANYREF, kind, "Kind should be EXTERNREF");
-      assertEquals(0L, refId, "Null externref should have ref ID 0");
+      assertEquals(0L, refSegment.address(), "Null externref should have ref address 0");
     }
 
     @Test
@@ -347,8 +347,8 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should unmarshal I32 value")
     void unmarshalWasmValueShouldUnmarshalI32() throws PanamaException {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
-      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I32);
-      MemoryLayouts.WASM_VAL_I32.set(valueSlot, 42);
+      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, MemoryLayouts.WASM_I32);
+      MemoryLayouts.WASM_VAL_I32.set(valueSlot, 0L, 42);
 
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I32);
 
@@ -360,8 +360,8 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should unmarshal I64 value")
     void unmarshalWasmValueShouldUnmarshalI64() throws PanamaException {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
-      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I64);
-      MemoryLayouts.WASM_VAL_I64.set(valueSlot, 123456789L);
+      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, MemoryLayouts.WASM_I64);
+      MemoryLayouts.WASM_VAL_I64.set(valueSlot, 0L, 123456789L);
 
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I64);
 
@@ -373,8 +373,8 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should unmarshal F32 value")
     void unmarshalWasmValueShouldUnmarshalF32() throws PanamaException {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
-      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F32);
-      MemoryLayouts.WASM_VAL_F32.set(valueSlot, 3.14f);
+      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, MemoryLayouts.WASM_F32);
+      MemoryLayouts.WASM_VAL_F32.set(valueSlot, 0L, 3.14f);
 
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F32);
 
@@ -386,8 +386,8 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should unmarshal F64 value")
     void unmarshalWasmValueShouldUnmarshalF64() throws PanamaException {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
-      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_F64);
-      MemoryLayouts.WASM_VAL_F64.set(valueSlot, 2.71828);
+      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, MemoryLayouts.WASM_F64);
+      MemoryLayouts.WASM_VAL_F64.set(valueSlot, 0L, 2.71828);
 
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F64);
 
@@ -399,7 +399,7 @@ class PanamaTypeConverterTest {
     @DisplayName("unmarshalWasmValue should throw for type mismatch")
     void unmarshalWasmValueShouldThrowForTypeMismatch() {
       final MemorySegment valueSlot = arena.allocate(MemoryLayouts.WASM_VAL);
-      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, MemoryLayouts.WASM_I32);
+      MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, MemoryLayouts.WASM_I32);
 
       assertThrows(
           PanamaException.class,
@@ -444,15 +444,15 @@ class PanamaTypeConverterTest {
 
       // Verify first parameter
       final MemorySegment slot0 = paramsMemory.asSlice(0, MemoryLayouts.WASM_VAL.byteSize());
-      assertEquals(MemoryLayouts.WASM_I32, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot0));
-      assertEquals(1, (Integer) MemoryLayouts.WASM_VAL_I32.get(slot0));
+      assertEquals(MemoryLayouts.WASM_I32, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot0, 0L));
+      assertEquals(1, (Integer) MemoryLayouts.WASM_VAL_I32.get(slot0, 0L));
 
       // Verify second parameter
       final MemorySegment slot1 =
           paramsMemory.asSlice(
               MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-      assertEquals(MemoryLayouts.WASM_I64, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot1));
-      assertEquals(2L, (Long) MemoryLayouts.WASM_VAL_I64.get(slot1));
+      assertEquals(MemoryLayouts.WASM_I64, (Integer) MemoryLayouts.WASM_VAL_KIND.get(slot1, 0L));
+      assertEquals(2L, (Long) MemoryLayouts.WASM_VAL_I64.get(slot1, 0L));
     }
 
     @Test
@@ -496,7 +496,7 @@ class PanamaTypeConverterTest {
           arena.allocate(values.length * MemoryLayouts.WASM_VAL.byteSize());
 
       assertThrows(
-          RuntimeException.class,
+          PanamaException.class,
           () -> PanamaTypeConverter.marshalParameters(values, paramsMemory),
           "Should throw for null value in array");
     }
@@ -516,15 +516,15 @@ class PanamaTypeConverterTest {
 
       // Set up first result
       final MemorySegment slot0 = resultsMemory.asSlice(0, MemoryLayouts.WASM_VAL.byteSize());
-      MemoryLayouts.WASM_VAL_KIND.set(slot0, MemoryLayouts.WASM_I32);
-      MemoryLayouts.WASM_VAL_I32.set(slot0, 100);
+      MemoryLayouts.WASM_VAL_KIND.set(slot0, 0L, MemoryLayouts.WASM_I32);
+      MemoryLayouts.WASM_VAL_I32.set(slot0, 0L, 100);
 
       // Set up second result
       final MemorySegment slot1 =
           resultsMemory.asSlice(
               MemoryLayouts.WASM_VAL.byteSize(), MemoryLayouts.WASM_VAL.byteSize());
-      MemoryLayouts.WASM_VAL_KIND.set(slot1, MemoryLayouts.WASM_I64);
-      MemoryLayouts.WASM_VAL_I64.set(slot1, 200L);
+      MemoryLayouts.WASM_VAL_KIND.set(slot1, 0L, MemoryLayouts.WASM_I64);
+      MemoryLayouts.WASM_VAL_I64.set(slot1, 0L, 200L);
 
       final WasmValue[] results =
           PanamaTypeConverter.unmarshalResults(resultsMemory, expectedTypes);
@@ -883,7 +883,7 @@ class PanamaTypeConverterTest {
       final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), null};
 
       assertThrows(
-          IllegalArgumentException.class,
+          PanamaException.class,
           () -> PanamaTypeConverter.validateReferenceTypes(values),
           "Should throw for null value in array");
     }
@@ -1009,8 +1009,8 @@ class PanamaTypeConverterTest {
       final long resultsSize =
           PanamaTypeConverter.calculateValuesMemorySize(funcType.getReturnTypes());
       final MemorySegment resultsMemory = arena.allocate(resultsSize);
-      MemoryLayouts.WASM_VAL_KIND.set(resultsMemory, MemoryLayouts.WASM_F64);
-      MemoryLayouts.WASM_VAL_F64.set(resultsMemory, 3.14159);
+      MemoryLayouts.WASM_VAL_KIND.set(resultsMemory, 0L, MemoryLayouts.WASM_F64);
+      MemoryLayouts.WASM_VAL_F64.set(resultsMemory, 0L, 3.14159);
 
       // Unmarshal results
       final WasmValue[] results =

@@ -80,7 +80,8 @@ public final class ComponentFuncIntegrationTest {
           addComponentBytes = readAllBytes(is);
           componentFuncAvailable = true;
           LOGGER.info(
-              "ComponentFunc native implementation available - " + addComponentBytes.length
+              "ComponentFunc native implementation available - "
+                  + addComponentBytes.length
                   + " bytes loaded");
         } else {
           unavailableReason = "add.wasm test component not found in resources";
@@ -277,11 +278,11 @@ public final class ComponentFuncIntegrationTest {
 
       // Call multiple times with different values
       final int[][] testCases = {
-          {0, 0, 0},
-          {1, 1, 2},
-          {100, 200, 300},
-          {-5, 10, 5},
-          {-10, -20, -30}
+        {0, 0, 0},
+        {1, 1, 2},
+        {100, 200, 300},
+        {-5, 10, 5},
+        {-10, -20, -30}
       };
 
       for (final int[] testCase : testCases) {
@@ -290,7 +291,8 @@ public final class ComponentFuncIntegrationTest {
         final int expected = testCase[2];
 
         final Object result = func.call(WitS32.of(a), WitS32.of(b));
-        assertEquals(expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
+        assertEquals(
+            expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
 
         LOGGER.info(String.format("add(%d, %d) = %d ✓", a, b, expected));
       }
@@ -315,9 +317,7 @@ public final class ComponentFuncIntegrationTest {
 
       // Try calling with wrong type (String instead of s32)
       assertThrows(
-          Exception.class,
-          () -> func.call("not", "numbers"),
-          "Should throw for type mismatch");
+          Exception.class, () -> func.call("not", "numbers"), "Should throw for type mismatch");
 
       LOGGER.info("Type mismatch handling verified");
     }
@@ -341,9 +341,7 @@ public final class ComponentFuncIntegrationTest {
 
       // Try calling with too few parameters
       assertThrows(
-          Exception.class,
-          () -> func.call(WitS32.of(5)),
-          "Should throw for too few parameters");
+          Exception.class, () -> func.call(WitS32.of(5)), "Should throw for too few parameters");
 
       // Try calling with too many parameters
       assertThrows(
