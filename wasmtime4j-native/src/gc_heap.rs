@@ -678,6 +678,11 @@ struct CollectionSummary {
 }
 
 impl GcWeakReference {
+    /// Create a new weak reference to an object
+    pub fn new(object_id: ObjectId, heap: Arc<GcHeap>) -> Self {
+        Self { object_id, heap }
+    }
+
     /// Attempt to upgrade weak reference to strong reference
     pub fn upgrade(&self) -> Option<Arc<GcObjectEntry>> {
         self.heap.get_object(self.object_id).ok()

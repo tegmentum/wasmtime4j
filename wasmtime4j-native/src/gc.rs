@@ -1176,7 +1176,20 @@ impl WasmGcRuntime {
 
     /// Create weak reference
     pub fn create_weak_reference(&self, object_id: ObjectId) -> WasmtimeResult<GcWeakReference> {
-        self.heap.create_weak_reference(object_id)
+        // Check that the object exists in gc_objects (where struct_new stores objects)
+        let gc_objects = self.gc_objects.read()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire gc_objects lock"))?;
+
+        if !gc_objects.contains_key(&object_id) {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Object with ID {} not found in gc_objects", object_id),
+            });
+        }
+        drop(gc_objects);
+
+        // Create weak reference using the heap (which has weak_references enabled by default)
+        // Note: The heap may not have this object, so we construct the weak reference directly
+        Ok(GcWeakReference::new(object_id, self.heap.clone()))
     }
 
     // === Advanced GC Features ===
@@ -1187,10 +1200,9 @@ impl WasmGcRuntime {
         if let Some(_callback) = finalization_callback {
             // In a real implementation, this would be stored in a finalization registry
             // For now, we just create the weak reference
-            self.heap.create_weak_reference(object_id)
-        } else {
-            self.heap.create_weak_reference(object_id)
         }
+        // Use the same logic as create_weak_reference
+        self.create_weak_reference(object_id)
     }
 
     /// Register object for finalization monitoring (future GC proposal support)
