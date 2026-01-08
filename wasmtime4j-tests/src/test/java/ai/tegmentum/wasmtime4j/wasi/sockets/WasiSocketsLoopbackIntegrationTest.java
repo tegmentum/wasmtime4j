@@ -528,9 +528,11 @@ public final class WasiSocketsLoopbackIntegrationTest {
 
       // Verify ConnectionStreams is a public final class
       final Class<?> clazz = WasiTcpSocket.ConnectionStreams.class;
-      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
           "ConnectionStreams should be final");
-      assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
           "ConnectionStreams should be public");
 
       LOGGER.info("ConnectionStreams class verified");
@@ -543,9 +545,10 @@ public final class WasiSocketsLoopbackIntegrationTest {
 
       // Verify AcceptResult is a public final class
       final Class<?> clazz = WasiTcpSocket.AcceptResult.class;
-      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-          "AcceptResult should be final");
-      assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "AcceptResult should be final");
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
           "AcceptResult should be public");
 
       LOGGER.info("AcceptResult class verified");
@@ -589,20 +592,264 @@ public final class WasiSocketsLoopbackIntegrationTest {
   }
 
   @Nested
+  @DisplayName("NetworkErrorCode Tests")
+  class NetworkErrorCodeTests {
+
+    @Test
+    @DisplayName("should have all expected error codes")
+    void shouldHaveAllExpectedErrorCodes(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final NetworkErrorCode[] codes = NetworkErrorCode.values();
+      assertEquals(21, codes.length, "Should have 21 error codes");
+
+      // Verify all expected codes exist
+      assertNotNull(NetworkErrorCode.UNKNOWN, "UNKNOWN should exist");
+      assertNotNull(NetworkErrorCode.ACCESS_DENIED, "ACCESS_DENIED should exist");
+      assertNotNull(NetworkErrorCode.NOT_SUPPORTED, "NOT_SUPPORTED should exist");
+      assertNotNull(NetworkErrorCode.INVALID_ARGUMENT, "INVALID_ARGUMENT should exist");
+      assertNotNull(NetworkErrorCode.OUT_OF_MEMORY, "OUT_OF_MEMORY should exist");
+      assertNotNull(NetworkErrorCode.TIMEOUT, "TIMEOUT should exist");
+      assertNotNull(NetworkErrorCode.CONCURRENCY_CONFLICT, "CONCURRENCY_CONFLICT should exist");
+      assertNotNull(NetworkErrorCode.NOT_IN_PROGRESS, "NOT_IN_PROGRESS should exist");
+      assertNotNull(NetworkErrorCode.WOULD_BLOCK, "WOULD_BLOCK should exist");
+      assertNotNull(NetworkErrorCode.INVALID_STATE, "INVALID_STATE should exist");
+      assertNotNull(NetworkErrorCode.NEW_SOCKET_LIMIT, "NEW_SOCKET_LIMIT should exist");
+
+      LOGGER.info("All " + codes.length + " error codes verified");
+    }
+
+    @Test
+    @DisplayName("should have connection error codes")
+    void shouldHaveConnectionErrorCodes(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertNotNull(NetworkErrorCode.ADDRESS_NOT_BINDABLE, "ADDRESS_NOT_BINDABLE should exist");
+      assertNotNull(NetworkErrorCode.ADDRESS_IN_USE, "ADDRESS_IN_USE should exist");
+      assertNotNull(NetworkErrorCode.REMOTE_UNREACHABLE, "REMOTE_UNREACHABLE should exist");
+      assertNotNull(NetworkErrorCode.CONNECTION_REFUSED, "CONNECTION_REFUSED should exist");
+      assertNotNull(NetworkErrorCode.CONNECTION_RESET, "CONNECTION_RESET should exist");
+      assertNotNull(NetworkErrorCode.CONNECTION_ABORTED, "CONNECTION_ABORTED should exist");
+
+      LOGGER.info("Connection error codes verified");
+    }
+
+    @Test
+    @DisplayName("should have DNS error codes")
+    void shouldHaveDnsErrorCodes(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertNotNull(NetworkErrorCode.NAME_UNRESOLVABLE, "NAME_UNRESOLVABLE should exist");
+      assertNotNull(
+          NetworkErrorCode.TEMPORARY_RESOLVER_FAILURE, "TEMPORARY_RESOLVER_FAILURE should exist");
+      assertNotNull(
+          NetworkErrorCode.PERMANENT_RESOLVER_FAILURE, "PERMANENT_RESOLVER_FAILURE should exist");
+
+      LOGGER.info("DNS error codes verified");
+    }
+
+    @Test
+    @DisplayName("should have datagram error code")
+    void shouldHaveDatagramErrorCode(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertNotNull(NetworkErrorCode.DATAGRAM_TOO_LARGE, "DATAGRAM_TOO_LARGE should exist");
+      assertEquals(
+          "DATAGRAM_TOO_LARGE", NetworkErrorCode.DATAGRAM_TOO_LARGE.name(), "Name should match");
+
+      LOGGER.info("Datagram error code verified");
+    }
+
+    @Test
+    @DisplayName("should convert error codes from string")
+    void shouldConvertErrorCodesFromString(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertEquals(
+          NetworkErrorCode.UNKNOWN, NetworkErrorCode.valueOf("UNKNOWN"), "valueOf UNKNOWN");
+      assertEquals(
+          NetworkErrorCode.TIMEOUT, NetworkErrorCode.valueOf("TIMEOUT"), "valueOf TIMEOUT");
+      assertEquals(
+          NetworkErrorCode.CONNECTION_REFUSED,
+          NetworkErrorCode.valueOf("CONNECTION_REFUSED"),
+          "valueOf CONNECTION_REFUSED");
+
+      LOGGER.info("Error code valueOf conversion verified");
+    }
+  }
+
+  @Nested
+  @DisplayName("ConnectionStreams Structure Tests")
+  class ConnectionStreamsStructureTests {
+
+    @Test
+    @DisplayName("should be a final class")
+    void shouldBeFinalClass(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.ConnectionStreams.class;
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
+          "ConnectionStreams should be final");
+
+      LOGGER.info("ConnectionStreams is final class");
+    }
+
+    @Test
+    @DisplayName("should have getter methods")
+    void shouldHaveGetterMethods(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.ConnectionStreams.class;
+
+      assertNotNull(clazz.getMethod("getInputStream"), "getInputStream should exist");
+      assertNotNull(clazz.getMethod("getOutputStream"), "getOutputStream should exist");
+
+      LOGGER.info("ConnectionStreams getter methods verified");
+    }
+
+    @Test
+    @DisplayName("should have appropriate constructor")
+    void shouldHaveAppropriateConstructor(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.ConnectionStreams.class;
+      final var constructor =
+          clazz.getConstructor(
+              ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream.class,
+              ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream.class);
+
+      assertNotNull(constructor, "Constructor should exist");
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(constructor.getModifiers()),
+          "Constructor should be public");
+
+      LOGGER.info("ConnectionStreams constructor verified");
+    }
+  }
+
+  @Nested
+  @DisplayName("AcceptResult Structure Tests")
+  class AcceptResultStructureTests {
+
+    @Test
+    @DisplayName("should be a final class")
+    void shouldBeFinalClass(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.AcceptResult.class;
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
+          "AcceptResult should be final");
+
+      LOGGER.info("AcceptResult is final class");
+    }
+
+    @Test
+    @DisplayName("should have getter methods")
+    void shouldHaveGetterMethods(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.AcceptResult.class;
+
+      assertNotNull(clazz.getMethod("getSocket"), "getSocket should exist");
+      assertNotNull(clazz.getMethod("getInputStream"), "getInputStream should exist");
+      assertNotNull(clazz.getMethod("getOutputStream"), "getOutputStream should exist");
+
+      LOGGER.info("AcceptResult getter methods verified");
+    }
+
+    @Test
+    @DisplayName("should have appropriate constructor")
+    void shouldHaveAppropriateConstructor(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Class<?> clazz = WasiTcpSocket.AcceptResult.class;
+      final var constructor =
+          clazz.getConstructor(
+              WasiTcpSocket.class,
+              ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream.class,
+              ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream.class);
+
+      assertNotNull(constructor, "Constructor should exist");
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(constructor.getModifiers()),
+          "Constructor should be public");
+
+      LOGGER.info("AcceptResult constructor verified");
+    }
+  }
+
+  @Nested
   @DisplayName("Native Socket Operation Tests")
   class NativeSocketOperationTests {
+
+    @Test
+    @DisplayName("should verify TCP socket API completeness")
+    void shouldVerifyTcpSocketApiCompleteness(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      // Verify all core TCP socket methods exist
+      final Class<?> clazz = WasiTcpSocket.class;
+
+      assertNotNull(clazz.getMethod("startBind", WasiNetwork.class, IpSocketAddress.class));
+      assertNotNull(clazz.getMethod("finishBind"));
+      assertNotNull(clazz.getMethod("startConnect", WasiNetwork.class, IpSocketAddress.class));
+      assertNotNull(clazz.getMethod("finishConnect"));
+      assertNotNull(clazz.getMethod("startListen"));
+      assertNotNull(clazz.getMethod("finishListen"));
+      assertNotNull(clazz.getMethod("accept"));
+      assertNotNull(clazz.getMethod("localAddress"));
+      assertNotNull(clazz.getMethod("remoteAddress"));
+      assertNotNull(clazz.getMethod("addressFamily"));
+      assertNotNull(clazz.getMethod("setListenBacklogSize", long.class));
+      assertNotNull(clazz.getMethod("setKeepAliveEnabled", boolean.class));
+      assertNotNull(clazz.getMethod("setKeepAliveIdleTime", long.class));
+      assertNotNull(clazz.getMethod("setKeepAliveInterval", long.class));
+      assertNotNull(clazz.getMethod("setKeepAliveCount", int.class));
+      assertNotNull(clazz.getMethod("setHopLimit", int.class));
+      assertNotNull(clazz.getMethod("subscribe"));
+      assertNotNull(clazz.getMethod("shutdown", WasiTcpSocket.ShutdownType.class));
+      assertNotNull(clazz.getMethod("close"));
+
+      LOGGER.info("All TCP socket API methods verified");
+    }
+
+    @Test
+    @DisplayName("should verify UDP socket API completeness")
+    void shouldVerifyUdpSocketApiCompleteness(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      // Verify all core UDP socket methods exist
+      final Class<?> clazz = WasiUdpSocket.class;
+
+      assertNotNull(clazz.getMethod("startBind", WasiNetwork.class, IpSocketAddress.class));
+      assertNotNull(clazz.getMethod("finishBind"));
+      assertNotNull(clazz.getMethod("stream", WasiNetwork.class, IpSocketAddress.class));
+      assertNotNull(clazz.getMethod("localAddress"));
+      assertNotNull(clazz.getMethod("remoteAddress"));
+      assertNotNull(clazz.getMethod("addressFamily"));
+      assertNotNull(clazz.getMethod("subscribe"));
+      assertNotNull(clazz.getMethod("close"));
+
+      LOGGER.info("All UDP socket API methods verified");
+    }
 
     @Test
     @DisplayName("should create TCP loopback server")
     void shouldCreateTcpLoopbackServer(final TestInfo testInfo) {
       assumeWasiSocketsAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
-      // When native implementation is available, this would:
-      // 1. Create a TCP socket
+
+      // This test requires native WASI sockets implementation
+      // Expected behavior when native is available:
+      // 1. Create a TCP socket via WasiNetwork
       // 2. Bind to 127.0.0.1:0 (ephemeral port)
-      // 3. Start listening
-      // 4. Verify the socket is in listening state
-      LOGGER.info("Test placeholder - requires full native implementation");
+      // 3. Start listening with startListen()/finishListen()
+      // 4. Verify localAddress() returns bound address
+      // 5. Close the socket
+
+      LOGGER.info("Native WASI sockets required - test will be implemented with native support");
     }
 
     @Test
@@ -610,13 +857,18 @@ public final class WasiSocketsLoopbackIntegrationTest {
     void shouldConnectTcpClientToLoopbackServer(final TestInfo testInfo) {
       assumeWasiSocketsAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
-      // When native implementation is available, this would:
-      // 1. Create a server socket on loopback
-      // 2. Create a client socket
-      // 3. Connect client to server
-      // 4. Accept connection on server
-      // 5. Verify connection established
-      LOGGER.info("Test placeholder - requires full native implementation");
+
+      // This test requires native WASI sockets implementation
+      // Expected behavior when native is available:
+      // 1. Create and bind server socket to 127.0.0.1:0
+      // 2. Start listening on server
+      // 3. Create client socket
+      // 4. Connect client to server's localAddress()
+      // 5. Accept connection on server
+      // 6. Verify both sockets have valid streams
+      // 7. Close all resources
+
+      LOGGER.info("Native WASI sockets required - test will be implemented with native support");
     }
 
     @Test
@@ -624,12 +876,18 @@ public final class WasiSocketsLoopbackIntegrationTest {
     void shouldSendAndReceiveUdpDatagramOnLoopback(final TestInfo testInfo) {
       assumeWasiSocketsAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
-      // When native implementation is available, this would:
-      // 1. Create sender UDP socket bound to loopback
-      // 2. Create receiver UDP socket bound to loopback
-      // 3. Send datagram from sender to receiver
-      // 4. Receive and verify datagram
-      LOGGER.info("Test placeholder - requires full native implementation");
+
+      // This test requires native WASI sockets implementation
+      // Expected behavior when native is available:
+      // 1. Create and bind receiver UDP socket to 127.0.0.1:0
+      // 2. Create and bind sender UDP socket to 127.0.0.1:0
+      // 3. Get stream from sender to receiver's address
+      // 4. Send datagram via output stream
+      // 5. Receive datagram via input stream
+      // 6. Verify datagram content matches
+      // 7. Close all resources
+
+      LOGGER.info("Native WASI sockets required - test will be implemented with native support");
     }
   }
 }
