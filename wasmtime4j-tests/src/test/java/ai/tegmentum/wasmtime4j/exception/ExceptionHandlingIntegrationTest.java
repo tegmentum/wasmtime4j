@@ -23,15 +23,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
 import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.ThrownException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -221,57 +229,243 @@ public final class ExceptionHandlingIntegrationTest {
   }
 
   @Nested
-  @DisplayName("ExnRef Tests")
-  class ExnRefTests {
+  @DisplayName("ExnRef API Structure Tests")
+  class ExnRefApiStructureTests {
 
     @Test
-    @DisplayName("should create ExnRef from tag")
-    void shouldCreateExnRefFromTag(final TestInfo testInfo) throws Exception {
+    @DisplayName("ExnRef should be an interface")
+    void exnRefShouldBeAnInterface(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      assertTrue(ExnRef.class.isInterface(), "ExnRef should be an interface");
+      LOGGER.info("ExnRef is correctly an interface");
+    }
+
+    @Test
+    @DisplayName("ExnRef should have getTag method")
+    void exnRefShouldHaveGetTagMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = ExnRef.class.getMethod("getTag", Store.class);
+      assertNotNull(method, "getTag method should exist");
+      assertEquals(Tag.class, method.getReturnType(), "getTag should return Tag");
+      LOGGER.info("ExnRef has getTag(Store) method returning Tag");
+    }
+
+    @Test
+    @DisplayName("ExnRef should have getNativeHandle method")
+    void exnRefShouldHaveGetNativeHandleMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = ExnRef.class.getMethod("getNativeHandle");
+      assertNotNull(method, "getNativeHandle method should exist");
+      assertEquals(long.class, method.getReturnType(), "getNativeHandle should return long");
+      LOGGER.info("ExnRef has getNativeHandle() method returning long");
+    }
+
+    @Test
+    @DisplayName("ExnRef should have isValid method")
+    void exnRefShouldHaveIsValidMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = ExnRef.class.getMethod("isValid");
+      assertNotNull(method, "isValid method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "isValid should return boolean");
+      LOGGER.info("ExnRef has isValid() method returning boolean");
+    }
+
+    @Test
+    @DisplayName("ExnRef should have exactly 3 methods")
+    void exnRefShouldHaveExactlyThreeMethods(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      assertEquals(3, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 3 methods");
+      LOGGER.info("ExnRef correctly has 3 declared methods");
+    }
+  }
+
+  @Nested
+  @DisplayName("Store Exception Handling Tests")
+  class StoreExceptionHandlingTests {
+
+    @Test
+    @DisplayName("should report no pending exception initially")
+    void shouldReportNoPendingExceptionInitially(final TestInfo testInfo) throws Exception {
       assumeExceptionHandlingAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      // This test is a placeholder - ExnRef creation typically happens during exception propagation
-      // The native implementation would need to support creating ExnRef objects
+      assertFalse(store.hasPendingException(), "Store should not have pending exception initially");
+      LOGGER.info("Store correctly reports no pending exception");
+    }
+
+    @Test
+    @DisplayName("should return null when taking non-existent exception")
+    void shouldReturnNullWhenTakingNonExistentException(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final ExnRef exnRef = store.takePendingException();
+      // Should return null when no exception is pending
+      // (Some implementations may return null, others may throw)
+      LOGGER.info("takePendingException() returned: " + exnRef);
+      assertTrue(exnRef == null || !exnRef.isValid(),
+          "takePendingException should return null or invalid when no exception pending");
+    }
+
+    @Test
+    @DisplayName("Store should have hasPendingException method")
+    void storeShouldHaveHasPendingExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = Store.class.getMethod("hasPendingException");
+      assertNotNull(method, "hasPendingException method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "hasPendingException should return boolean");
+      LOGGER.info("Store has hasPendingException() method");
+    }
+
+    @Test
+    @DisplayName("Store should have takePendingException method")
+    void storeShouldHaveTakePendingExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = Store.class.getMethod("takePendingException");
+      assertNotNull(method, "takePendingException method should exist");
+      assertEquals(ExnRef.class, method.getReturnType(), "takePendingException should return ExnRef");
+      LOGGER.info("Store has takePendingException() method returning ExnRef");
+    }
+
+    @Test
+    @DisplayName("Store should have throwException method")
+    void storeShouldHaveThrowExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+      final Method method = Store.class.getMethod("throwException", ExnRef.class);
+      assertNotNull(method, "throwException method should exist");
+      assertEquals(Object.class, method.getReturnType(), "throwException should return generic type");
+      LOGGER.info("Store has throwException(ExnRef) method");
+    }
+  }
+
+  @Nested
+  @DisplayName("ThrownException Tests")
+  class ThrownExceptionTests {
+
+    @Test
+    @DisplayName("should create ThrownException with tag and empty payload")
+    void shouldCreateThrownExceptionWithTagAndEmptyPayload(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+      final TagType tagType = TagType.create(funcType);
+      final Tag tag = sharedRuntime.createTag(store, tagType);
+
+      final ThrownException thrownException = new ThrownException(tag, Collections.emptyList());
+
+      assertNotNull(thrownException, "ThrownException should not be null");
+      assertEquals(tag, thrownException.getTag(), "Tag should match");
+      assertFalse(thrownException.hasPayload(), "Should have no payload");
+      assertEquals(0, thrownException.getPayloadSize(), "Payload size should be 0");
+      assertTrue(thrownException.getExnRef().isEmpty(), "ExnRef should be empty");
+      LOGGER.info("Created ThrownException: " + thrownException);
+    }
+
+    @Test
+    @DisplayName("should create ThrownException with payload values")
+    void shouldCreateThrownExceptionWithPayloadValues(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
+              new WasmValueType[] {});
+      final TagType tagType = TagType.create(funcType);
+      final Tag tag = sharedRuntime.createTag(store, tagType);
+
+      final List<WasmValue> payload = Arrays.asList(
+          WasmValue.i32(42),
+          WasmValue.i64(1234567890L));
+
+      final ThrownException thrownException = new ThrownException(tag, payload);
+
+      assertNotNull(thrownException, "ThrownException should not be null");
+      assertTrue(thrownException.hasPayload(), "Should have payload");
+      assertEquals(2, thrownException.getPayloadSize(), "Payload size should be 2");
+      assertEquals(payload, thrownException.getPayload(), "Payload should match");
+      LOGGER.info("Created ThrownException with payload: " + thrownException);
+    }
+
+    @Test
+    @DisplayName("should access payload values by index")
+    void shouldAccessPayloadValuesByIndex(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
       final Tag tag = sharedRuntime.createTag(store, tagType);
 
-      assertNotNull(tag, "Tag should be created successfully");
-      LOGGER.info("Tag created - ExnRef creation requires exception propagation context");
+      final WasmValue value = WasmValue.i32(99);
+      final ThrownException thrownException = new ThrownException(tag, Collections.singletonList(value));
+
+      final WasmValue retrieved = thrownException.getPayloadValue(0);
+      assertEquals(value, retrieved, "Payload value at index 0 should match");
+      LOGGER.info("Retrieved payload value: " + retrieved);
     }
 
     @Test
-    @DisplayName("should get tag from ExnRef")
-    void shouldGetTagFromExnRef(final TestInfo testInfo) throws Exception {
+    @DisplayName("should build ThrownException using builder")
+    void shouldBuildThrownExceptionUsingBuilder(final TestInfo testInfo) throws Exception {
       assumeExceptionHandlingAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      // This test is a placeholder - getting tag from ExnRef requires exception context
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {});
+      final TagType tagType = TagType.create(funcType);
+      final Tag tag = sharedRuntime.createTag(store, tagType);
+
+      final ThrownException thrownException = ThrownException.builder(tag)
+          .payload(Collections.singletonList(WasmValue.f64(3.14)))
+          .build();
+
+      assertNotNull(thrownException, "ThrownException should not be null");
+      assertEquals(tag, thrownException.getTag(), "Tag should match");
+      assertEquals(1, thrownException.getPayloadSize(), "Payload should have 1 value");
+      LOGGER.info("Built ThrownException using builder: " + thrownException);
+    }
+
+    @Test
+    @DisplayName("should support equals and hashCode")
+    void shouldSupportEqualsAndHashCode(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+      final TagType tagType = TagType.create(funcType);
+      final Tag tag = sharedRuntime.createTag(store, tagType);
+
+      final ThrownException te1 = new ThrownException(tag, Collections.emptyList());
+      final ThrownException te2 = new ThrownException(tag, Collections.emptyList());
+
+      assertEquals(te1, te2, "Equal ThrownExceptions should be equal");
+      assertEquals(te1.hashCode(), te2.hashCode(), "Equal objects should have same hashCode");
+      LOGGER.info("ThrownException equals and hashCode work correctly");
+    }
+
+    @Test
+    @DisplayName("should have meaningful toString")
+    void shouldHaveMeaningfulToString(final TestInfo testInfo) throws Exception {
+      assumeExceptionHandlingAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
       final Tag tag = sharedRuntime.createTag(store, tagType);
 
-      assertNotNull(tag, "Tag should be created successfully");
-      LOGGER.info("Tag created - ExnRef tag retrieval requires exception context");
-    }
+      final ThrownException thrownException = new ThrownException(tag, Collections.emptyList());
+      final String toString = thrownException.toString();
 
-    @Test
-    @DisplayName("should get payload from ExnRef")
-    void shouldGetPayloadFromExnRef(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // This test is a placeholder - getting payload from ExnRef requires exception context
-      final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, new WasmValueType[] {});
-      final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
-
-      assertNotNull(tag, "Tag should be created successfully");
-      LOGGER.info("Tag with payload types created - ExnRef payload requires exception context");
+      assertNotNull(toString, "toString should not be null");
+      assertTrue(toString.contains("ThrownException"), "toString should contain class name");
+      assertTrue(toString.contains("tag="), "toString should contain tag");
+      assertTrue(toString.contains("payload="), "toString should contain payload");
+      LOGGER.info("ThrownException toString: " + toString);
     }
   }
 
