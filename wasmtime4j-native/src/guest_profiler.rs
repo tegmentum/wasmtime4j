@@ -187,12 +187,21 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_create(
         Err(_) => return -2,
     };
 
-    let _engine = &*(engine_ptr as *const Engine);
+    let engine = &*(engine_ptr as *const Engine);
 
     let interval = Duration::from_micros(interval_us as u64);
 
     // Create profiler with no modules initially (can be added via sample calls)
-    let profiler = GuestProfiler::new(&name_str, interval, Vec::<(String, wasmtime::Module)>::new());
+    // Note: wasmtime 40.0.1 requires Engine reference and returns Result
+    let profiler = match GuestProfiler::new(
+        engine.inner(),
+        &name_str,
+        interval,
+        Vec::<(String, wasmtime::Module)>::new(),
+    ) {
+        Ok(p) => p,
+        Err(_) => return -3,
+    };
 
     let config = ProfilerConfig {
         name: name_str,
@@ -237,7 +246,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_create_with_module(
         Err(_) => return -2,
     };
 
-    let _engine = &*(engine_ptr as *const Engine);
+    let engine = &*(engine_ptr as *const Engine);
     let module = &*(module_ptr as *const Module);
 
     let interval = Duration::from_micros(interval_us as u64);
@@ -246,11 +255,16 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_create_with_module(
     let module_name = module.metadata.name.clone().unwrap_or_else(|| "unknown".to_string());
 
     // Create profiler with the module - need to clone the inner wasmtime::Module
-    let profiler = GuestProfiler::new(
+    // Note: wasmtime 40.0.1 requires Engine reference and returns Result
+    let profiler = match GuestProfiler::new(
+        engine.inner(),
         &name_str,
         interval,
         vec![(module_name.clone(), module.inner().clone())],
-    );
+    ) {
+        Ok(p) => p,
+        Err(_) => return -3,
+    };
 
     let config = ProfilerConfig {
         name: name_str,

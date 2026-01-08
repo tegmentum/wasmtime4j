@@ -39,7 +39,7 @@ Do not initlize a new git repo in the root working directory.
 
 Share as much code between wasmtime4j-panama and wasmtime4j-jni
 
-implement the latest version of wasmtime (36.0.2)
+implement the latest version of wasmtime (40.0.1)
 
 Use conventianl commits format when writing commit mesages https://conventionalcommits.org/en/v1.0.0
 

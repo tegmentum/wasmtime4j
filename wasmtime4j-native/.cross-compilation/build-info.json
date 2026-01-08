@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "wasmtime_version": "36.0.2",
+  "wasmtime_version": "40.0.1",
   "host_platform": "macos-aarch64",
   "git_commit": "da502acc4bb0f8f1570f15844d2766fbf38ec5cb",
   "git_dirty": "-dirty",

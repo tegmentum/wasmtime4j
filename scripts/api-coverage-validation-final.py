@@ -59,7 +59,7 @@ class FinalApiCoverageValidator:
 
     def __init__(self, base_path: str):
         self.base_path = Path(base_path)
-        self.wasmtime_version = "36.0.2"
+        self.wasmtime_version = "40.0.1"
 
         # Comprehensive list of Wasmtime 36.0.2 API categories
         self.wasmtime_api_categories = {

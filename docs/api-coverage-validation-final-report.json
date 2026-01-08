@@ -2,13 +2,13 @@
   "metadata": {
     "validation_type": "Final API Coverage Validation",
     "task": "Task #310 - API Coverage Validation and Documentation",
-    "wasmtime_version": "36.0.2",
+    "wasmtime_version": "40.0.1",
     "timestamp": "2025-09-27T14:30:10Z",
     "validator_version": "1.0.0"
   },
   "summary": {
     "timestamp": "2025-09-27T14:30:10Z",
-    "wasmtime_version": "36.0.2",
+    "wasmtime_version": "40.0.1",
     "core_api_count": 579,
     "jni_implementation_count": 128,
     "panama_implementation_count": 108,

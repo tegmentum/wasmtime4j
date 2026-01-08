@@ -14,20 +14,20 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime
-wasmtime = { version = "39.0.1", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
-wasmtime-wasi = { version = "39.0.1", optional = true }
-wasmtime-wasi-http = { version = "39.0.1", optional = true }
-wasmtime-wasi-nn = { version = "39.0.1", optional = true }
-wasmtime-wasi-threads = { version = "39.0.1", optional = true }
-wasmtime-wasi-keyvalue = { version = "39.0.1", optional = true }
-wasmtime-wasi-config = { version = "39.0.1", optional = true }
-wasi-common = { version = "39.0.1", optional = true }
-wasmtime-wast = { version = "39.0.1", features = ["component-model", "component-model-async"] }
+wasmtime = { version = "40.0.1", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
+wasmtime-wasi = { version = "40.0.1", optional = true }
+wasmtime-wasi-http = { version = "40.0.1", optional = true }
+wasmtime-wasi-nn = { version = "40.0.1", optional = true }
+wasmtime-wasi-threads = { version = "40.0.1", optional = true }
+wasmtime-wasi-keyvalue = { version = "40.0.1", optional = true }
+wasmtime-wasi-config = { version = "40.0.1", optional = true }
+wasi-common = { version = "40.0.1", optional = true }
+wasmtime-wast = { version = "40.0.1", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"
-wast = "241.0.0"
-wasmparser = "0.241"
+wast = "243.0.0"
+wasmparser = "0.243"
 
 # JNI support for Java 8-22 compatibility
 jni = { version = "0.21.1", optional = true }
@@ -129,7 +129,7 @@ tonic-build = "0.10"
 tempfile = "3.8"
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "wasi-keyvalue", "advanced-networking"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "wasi-keyvalue", "wasi-threads", "advanced-networking"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
