@@ -76,7 +76,7 @@ pub mod deadlock_prevention;
 pub mod threading_integration_tests;
 
 // Platform optimization integration tests (NUMA, cache, memory bandwidth)
-// NOTE: Disabled due to missing type implementations in memory_bandwidth_optimization module
+// DISABLED: Requires platform optimization modules (398 type definitions needed)
 // #[cfg(test)]
 // pub mod platform_optimization_integration_test;
 
@@ -245,10 +245,9 @@ pub mod wasi_keyvalue_helpers;
 pub mod networking;
 
 // Platform-specific optimizations for maximum performance
-// NOTE: These modules are disabled pending full implementation of their type systems.
-// They require 100+ struct/enum definitions with proper fields and methods.
-// Re-enabling requires implementing the complete platform optimization API.
-// See: memory_bandwidth_optimization.rs, cpu_microarchitecture_detection.rs, platform_config.rs
+// DISABLED: These modules require 398 missing type definitions. See Phase 5 plan.
+// Types needed include: BandwidthPriorityScheme, PrefetchAlgorithm, ControllerConfiguration,
+// BandwidthQosPolicy, BandwidthSla, and ~390 more. Estimated 2-3 days effort.
 // pub mod numa_topology;
 // pub mod cpu_cache_management;
 // pub mod memory_bandwidth_optimization;
