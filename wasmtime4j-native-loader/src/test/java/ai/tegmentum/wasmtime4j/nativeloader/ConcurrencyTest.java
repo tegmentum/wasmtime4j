@@ -88,7 +88,7 @@ final class ConcurrencyTest {
     // Start multiple threads simultaneously
     for (int i = 0; i < threadCount; i++) {
       final Future<PlatformDetector.PlatformInfo> future =
-          executorService.submit(PlatformDetector::detect);
+          executorService.submit(() -> PlatformDetector.detect());
       futures.add(future);
     }
 

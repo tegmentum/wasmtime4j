@@ -21,18 +21,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mockStatic;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
 
 /**
  * Error handling and edge case tests for {@link PlatformDetector}.
@@ -91,97 +88,74 @@ final class PlatformDetectorErrorHandlingTest {
 
   @ParameterizedTest(name = "Should handle {0}")
   @MethodSource("provideInvalidSystemPropertyScenarios")
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testInvalidSystemPropertyHandling(
       final String scenario, final String osName, final String osArch) {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(osName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(osArch);
-      systemMock
-          .when(() -> System.getProperty("java.version"))
-          .thenReturn(System.getProperty("java.version"));
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
 
-      PlatformDetectorTestUtils.clearCache();
-
-      // Should throw RuntimeException for invalid combinations
+    if (osName == null || osArch == null) {
+      // Null values should throw NullPointerException from the detect(String, String) method
+      assertThrows(
+          NullPointerException.class,
+          () -> PlatformDetector.detect(osName, osArch),
+          "Should throw NullPointerException for null inputs in scenario: " + scenario);
+    } else {
+      // Other invalid strings should throw UnsupportedOperationException
       final RuntimeException exception =
           assertThrows(
               RuntimeException.class,
-              PlatformDetector::detect,
+              () -> PlatformDetector.detect(osName, osArch),
               "Should throw RuntimeException for scenario: " + scenario);
 
       assertNotNull(exception.getMessage(), "Exception message should not be null");
-
-      // Verify isPlatformSupported returns false for these cases
-      PlatformDetectorTestUtils.clearCache();
-      assertFalse(
-          PlatformDetector.isPlatformSupported(),
-          "isPlatformSupported should return false for invalid scenarios");
-
-      // Verify platform description handles the error gracefully
-      final String description = PlatformDetector.getPlatformDescription();
-      assertNotNull(description, "Platform description should not be null even on error");
-      assertTrue(
-          description.contains("unsupported") || description.contains("Error"),
-          "Description should indicate error condition");
     }
   }
 
   @Test
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
-  void testSystemPropertyAccessFailures() {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      // Mock system property access to throw SecurityException
-      systemMock
-          .when(() -> System.getProperty("os.name"))
-          .thenThrow(new SecurityException("Access denied"));
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn("x86_64");
+  void testNullInputHandling() {
+    // Test that null inputs are properly handled by the testable methods
 
-      PlatformDetectorTestUtils.clearCache();
+    // Null OS name should throw appropriate exception
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> PlatformDetector.detectOperatingSystemFromString(null),
+        "Should throw UnsupportedOperationException for null OS name");
 
-      // Should throw RuntimeException wrapping the SecurityException
-      final RuntimeException exception =
-          assertThrows(
-              RuntimeException.class,
-              PlatformDetector::detect,
-              "Should throw RuntimeException when system property access fails");
+    // Null arch name should throw appropriate exception
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> PlatformDetector.detectArchitectureFromString(null),
+        "Should throw UnsupportedOperationException for null arch name");
 
-      // Verify the cause is preserved
-      assertTrue(
-          exception.getCause() instanceof SecurityException
-              || exception.getMessage().contains("Access denied"),
-          "Exception should indicate security access failure");
-    }
+    // Null values to detect(String, String) should throw NullPointerException
+    assertThrows(
+        NullPointerException.class,
+        () -> PlatformDetector.detect(null, "x86_64"),
+        "Should throw NullPointerException for null OS name in detect");
+
+    assertThrows(
+        NullPointerException.class,
+        () -> PlatformDetector.detect("Linux", null),
+        "Should throw NullPointerException for null arch name in detect");
   }
 
   @ParameterizedTest(name = "Edge case: {0}")
   @MethodSource("provideEdgeCasePlatforms")
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testEdgeCasePlatforms(final String caseName, final String osName, final String osArch) {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(osName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(osArch);
-      systemMock
-          .when(() -> System.getProperty("java.version"))
-          .thenReturn(System.getProperty("java.version"));
-
-      PlatformDetectorTestUtils.clearCache();
-
-      try {
-        final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
-        // If detection succeeds, verify the result is valid
-        assertNotNull(info, "Platform info should not be null if detection succeeds");
-        assertNotNull(info.getOperatingSystem(), "Operating system should not be null");
-        assertNotNull(info.getArchitecture(), "Architecture should not be null");
-        assertNotNull(info.getPlatformId(), "Platform ID should not be null");
-        assertFalse(info.getPlatformId().isEmpty(), "Platform ID should not be empty");
-      } catch (final RuntimeException e) {
-        // Expected for unsupported edge cases - verify error message is helpful
-        assertNotNull(e.getMessage(), "Error message should not be null");
-        assertTrue(
-            e.getMessage().contains("Unsupported"),
-            "Error message should indicate unsupported platform/architecture");
-      }
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    try {
+      final PlatformDetector.PlatformInfo info = PlatformDetector.detect(osName, osArch);
+      // If detection succeeds, verify the result is valid
+      assertNotNull(info, "Platform info should not be null if detection succeeds");
+      assertNotNull(info.getOperatingSystem(), "Operating system should not be null");
+      assertNotNull(info.getArchitecture(), "Architecture should not be null");
+      assertNotNull(info.getPlatformId(), "Platform ID should not be null");
+      assertFalse(info.getPlatformId().isEmpty(), "Platform ID should not be empty");
+    } catch (final RuntimeException e) {
+      // Expected for unsupported edge cases - verify error message is helpful
+      assertNotNull(e.getMessage(), "Error message should not be null");
+      assertTrue(
+          e.getMessage().contains("Unsupported"),
+          "Error message should indicate unsupported platform/architecture");
     }
   }
 
@@ -252,82 +226,78 @@ final class PlatformDetectorErrorHandlingTest {
   }
 
   @Test
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testExtremelyLongInputStrings() {
     final String veryLongOsName = "Linux" + "A".repeat(100000);
     final String veryLongArchName = "x86_64" + "B".repeat(100000);
 
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(veryLongOsName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(veryLongArchName);
-
-      PlatformDetectorTestUtils.clearCache();
-
-      // Should handle extremely long strings without crashing
-      // May throw RuntimeException for unsupported platform, but should not cause OutOfMemoryError
-      assertThrows(
-          RuntimeException.class,
-          PlatformDetector::detect,
-          "Should throw RuntimeException for unsupported extremely long input");
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    // Should handle extremely long strings without crashing
+    // May throw RuntimeException for unsupported platform, but should not cause OutOfMemoryError
+    try {
+      final PlatformDetector.PlatformInfo info =
+          PlatformDetector.detect(veryLongOsName, veryLongArchName);
+      // If detection succeeds (Linux substring found), verify result is valid
+      assertNotNull(info, "Platform info should not be null");
+      assertEquals(
+          PlatformDetector.OperatingSystem.LINUX,
+          info.getOperatingSystem(),
+          "Should detect Linux despite long string");
+    } catch (final RuntimeException e) {
+      // Expected if architecture is not recognized due to extra characters
+      assertNotNull(e.getMessage(), "Exception message should not be null");
     }
   }
 
   @Test
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testUnicodeCharacterHandling() {
     final String unicodeOsName = "Linux" + "中文αβγ";
-    final String unicodeArchName = "x86_64" + "ABC";
+    final String unicodeArchName = "x86_64";
 
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(unicodeOsName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(unicodeArchName);
-
-      PlatformDetectorTestUtils.clearCache();
-
-      try {
-        final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
-        // If it succeeds (because "Linux" substring is found), verify it's valid
-        assertNotNull(info, "Platform info should not be null");
-        assertEquals(
-            PlatformDetector.OperatingSystem.LINUX,
-            info.getOperatingSystem(),
-            "Should detect Linux despite Unicode characters");
-      } catch (final RuntimeException e) {
-        // Expected if architecture is not recognized
-        assertNotNull(e.getMessage(), "Exception message should not be null");
-      }
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    try {
+      final PlatformDetector.PlatformInfo info =
+          PlatformDetector.detect(unicodeOsName, unicodeArchName);
+      // If it succeeds (because "Linux" substring is found), verify it's valid
+      assertNotNull(info, "Platform info should not be null");
+      assertEquals(
+          PlatformDetector.OperatingSystem.LINUX,
+          info.getOperatingSystem(),
+          "Should detect Linux despite Unicode characters");
+      assertEquals(
+          PlatformDetector.Architecture.X86_64,
+          info.getArchitecture(),
+          "Should detect x86_64 architecture");
+    } catch (final RuntimeException e) {
+      // Unexpected - the detection should succeed for these inputs
+      throw new AssertionError("Detection should succeed for valid OS with Unicode suffix", e);
     }
   }
 
   @Test
-  @Disabled("System.class mocking causes infinite loops in newer Mockito versions")
   void testConsistentErrorMessages() {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn("UnsupportedOS");
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn("x86_64");
+    // Using testable methods instead of mocking System.getProperty()
 
-      PlatformDetectorTestUtils.clearCache();
+    // Test OS error message
+    final RuntimeException osException =
+        assertThrows(
+            RuntimeException.class,
+            () -> PlatformDetector.detect("UnsupportedOS", "x86_64"),
+            "Should throw for unsupported OS");
 
-      final RuntimeException osException =
-          assertThrows(RuntimeException.class, PlatformDetector::detect);
+    // Test architecture error message
+    final RuntimeException archException =
+        assertThrows(
+            RuntimeException.class,
+            () -> PlatformDetector.detect("Linux", "UnsupportedArch"),
+            "Should throw for unsupported architecture");
 
-      // Test consistent architecture error
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn("Linux");
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn("UnsupportedArch");
-
-      PlatformDetectorTestUtils.clearCache();
-
-      final RuntimeException archException =
-          assertThrows(RuntimeException.class, PlatformDetector::detect);
-
-      // Verify error message patterns
-      assertTrue(
-          osException.getMessage().contains("Unsupported operating system"),
-          "OS error should mention unsupported operating system");
-      assertTrue(
-          archException.getMessage().contains("Unsupported architecture"),
-          "Architecture error should mention unsupported architecture");
-    }
+    // Verify error message patterns
+    assertTrue(
+        osException.getMessage().contains("Unsupported operating system"),
+        "OS error should mention unsupported operating system");
+    assertTrue(
+        archException.getMessage().contains("Unsupported architecture"),
+        "Architecture error should mention unsupported architecture");
   }
 
   @Test

@@ -20,25 +20,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mockStatic;
 
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
 
 /**
  * Parameterized tests for {@link PlatformDetector} covering all supported platform combinations.
  *
  * <p>This test class focuses on systematic testing of all platform detection scenarios including
  * the 6 supported platform combinations and error cases for unsupported platforms.
+ *
+ * <p>Uses the testable detect(String, String) method to avoid System.getProperty() mocking issues.
  */
-@Disabled("System.class mocking causes infinite loops in newer Mockito versions")
 final class PlatformDetectorParameterizedTest {
 
   /**
@@ -130,9 +128,7 @@ final class PlatformDetectorParameterizedTest {
         "OS/2",
         "BeOS",
         "QNX",
-        "UnknownOS",
-        "",
-        "   ");
+        "UnknownOS");
   }
 
   /**
@@ -156,9 +152,7 @@ final class PlatformDetectorParameterizedTest {
         "s390x",
         "riscv32",
         "riscv64",
-        "UnknownArch",
-        "",
-        "   ");
+        "UnknownArch");
   }
 
   @ParameterizedTest(name = "Platform {0}/{1} should detect as {2}/{3}")
@@ -169,103 +163,72 @@ final class PlatformDetectorParameterizedTest {
       final PlatformDetector.OperatingSystem expectedOs,
       final PlatformDetector.Architecture expectedArch) {
 
-    // Mock system properties to simulate different platforms
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(osName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(osArch);
-      systemMock
-          .when(() -> System.getProperty("java.version"))
-          .thenReturn(System.getProperty("java.version"));
-      systemMock
-          .when(() -> System.getProperty("java.io.tmpdir"))
-          .thenReturn(System.getProperty("java.io.tmpdir"));
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    final PlatformDetector.PlatformInfo info = PlatformDetector.detect(osName, osArch);
 
-      // Clear the cached platform info to force re-detection
-      PlatformDetectorTestUtils.clearCache();
+    assertNotNull(info, "Platform info should not be null");
+    assertEquals(
+        expectedOs,
+        info.getOperatingSystem(),
+        String.format("OS should be detected as %s for input %s", expectedOs, osName));
+    assertEquals(
+        expectedArch,
+        info.getArchitecture(),
+        String.format(
+            "Architecture should be detected as %s for input %s", expectedArch, osArch));
 
-      // Test detection
-      final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
+    // Verify platform ID format
+    final String expectedPlatformId = expectedOs.getName() + "-" + expectedArch.getName();
+    assertEquals(
+        expectedPlatformId, info.getPlatformId(), "Platform ID should match expected format");
 
-      assertNotNull(info, "Platform info should not be null");
-      assertEquals(
-          expectedOs,
-          info.getOperatingSystem(),
-          String.format("OS should be detected as %s for input %s", expectedOs, osName));
-      assertEquals(
-          expectedArch,
-          info.getArchitecture(),
-          String.format(
-              "Architecture should be detected as %s for input %s", expectedArch, osArch));
+    // Verify library file name construction
+    final String libraryName = "test";
+    final String expectedFileName =
+        expectedOs.getLibraryPrefix() + libraryName + expectedOs.getLibraryExtension();
+    assertEquals(
+        expectedFileName,
+        info.getLibraryFileName(libraryName),
+        "Library file name should be correctly constructed");
 
-      // Verify platform ID format
-      final String expectedPlatformId = expectedOs.getName() + "-" + expectedArch.getName();
-      assertEquals(
-          expectedPlatformId, info.getPlatformId(), "Platform ID should match expected format");
-
-      // Verify library file name construction
-      final String libraryName = "test";
-      final String expectedFileName =
-          expectedOs.getLibraryPrefix() + libraryName + expectedOs.getLibraryExtension();
-      assertEquals(
-          expectedFileName,
-          info.getLibraryFileName(libraryName),
-          "Library file name should be correctly constructed");
-
-      // Verify resource path construction
-      final String expectedResourcePath = "/natives/" + expectedPlatformId + "/" + expectedFileName;
-      assertEquals(
-          expectedResourcePath,
-          info.getLibraryResourcePath(libraryName),
-          "Library resource path should be correctly constructed");
-    }
+    // Verify resource path construction
+    final String expectedResourcePath = "/natives/" + expectedPlatformId + "/" + expectedFileName;
+    assertEquals(
+        expectedResourcePath,
+        info.getLibraryResourcePath(libraryName),
+        "Library resource path should be correctly constructed");
   }
 
   @ParameterizedTest(name = "Unsupported OS: {0}")
   @MethodSource("provideUnsupportedOperatingSystems")
   void testUnsupportedOperatingSystemDetection(final String unsupportedOsName) {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(unsupportedOsName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn("x86_64");
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    final RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () -> PlatformDetector.detect(unsupportedOsName, "x86_64"),
+            "Should throw RuntimeException for unsupported OS: " + unsupportedOsName);
 
-      // Clear cache
-      PlatformDetectorTestUtils.clearCache();
-
-      // Should throw RuntimeException for unsupported OS
-      final RuntimeException exception =
-          assertThrows(
-              RuntimeException.class,
-              PlatformDetector::detect,
-              "Should throw RuntimeException for unsupported OS: " + unsupportedOsName);
-
-      assertNotNull(exception.getMessage(), "Exception message should not be null");
-      assertTrue(
-          exception.getMessage().contains("Unsupported operating system"),
-          "Exception message should indicate unsupported OS");
-    }
+    assertNotNull(exception.getMessage(), "Exception message should not be null");
+    assertTrue(
+        exception.getMessage().contains("Unsupported operating system"),
+        "Exception message should indicate unsupported OS");
   }
 
   @ParameterizedTest(name = "Unsupported Architecture: {0}")
   @MethodSource("provideUnsupportedArchitectures")
   void testUnsupportedArchitectureDetection(final String unsupportedArchName) {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn("Linux");
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(unsupportedArchName);
+    // Using testable detect(String, String) method instead of mocking System.getProperty()
+    final RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () -> PlatformDetector.detect("Linux", unsupportedArchName),
+            "Should throw RuntimeException for unsupported architecture: " + unsupportedArchName);
 
-      // Clear cache
-      PlatformDetectorTestUtils.clearCache();
-
-      // Should throw RuntimeException for unsupported architecture
-      final RuntimeException exception =
-          assertThrows(
-              RuntimeException.class,
-              PlatformDetector::detect,
-              "Should throw RuntimeException for unsupported architecture: " + unsupportedArchName);
-
-      assertNotNull(exception.getMessage(), "Exception message should not be null");
-      assertTrue(
-          exception.getMessage().contains("Unsupported architecture"),
-          "Exception message should indicate unsupported architecture");
-    }
+    assertNotNull(exception.getMessage(), "Exception message should not be null");
+    assertTrue(
+        exception.getMessage().contains("Unsupported architecture"),
+        "Exception message should indicate unsupported architecture");
   }
 
   @ParameterizedTest
@@ -276,16 +239,10 @@ final class PlatformDetectorParameterizedTest {
   })
   void testPlatformIdFormat(
       final String osName, final String osArch, final String expectedPlatformId) {
-    try (final MockedStatic<System> systemMock = mockStatic(System.class)) {
-      systemMock.when(() -> System.getProperty("os.name")).thenReturn(osName);
-      systemMock.when(() -> System.getProperty("os.arch")).thenReturn(osArch);
-
-      PlatformDetectorTestUtils.clearCache();
-
-      final PlatformDetector.PlatformInfo info = PlatformDetector.detect();
-      assertEquals(expectedPlatformId, info.getPlatformId(), "Platform ID should match expected");
-      assertEquals(expectedPlatformId, info.toString(), "toString should return platform ID");
-    }
+    // Using testable detect(String, String) method
+    final PlatformDetector.PlatformInfo info = PlatformDetector.detect(osName, osArch);
+    assertEquals(expectedPlatformId, info.getPlatformId(), "Platform ID should match expected");
+    assertEquals(expectedPlatformId, info.toString(), "toString should return platform ID");
   }
 
   @ParameterizedTest

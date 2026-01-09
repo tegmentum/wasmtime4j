@@ -298,6 +298,27 @@ public final class PlatformDetector {
   }
 
   /**
+   * Detects the platform using the provided OS name and architecture strings.
+   *
+   * <p>This method is provided for testing purposes to allow detection logic to be tested without
+   * mocking System.getProperty(). The detection logic is identical to the standard detect() method.
+   *
+   * @param osName the operating system name (e.g., "Mac OS X", "Linux", "Windows 10")
+   * @param osArch the architecture name (e.g., "amd64", "x86_64", "aarch64", "arm64")
+   * @return the platform information
+   * @throws RuntimeException if the platform is not supported
+   * @throws NullPointerException if osName or osArch is null
+   */
+  public static PlatformInfo detect(final String osName, final String osArch) {
+    Objects.requireNonNull(osName, "osName must not be null");
+    Objects.requireNonNull(osArch, "osArch must not be null");
+
+    final OperatingSystem os = detectOperatingSystemFromString(osName);
+    final Architecture arch = detectArchitectureFromString(osArch);
+    return new PlatformInfo(os, arch);
+  }
+
+  /**
    * Detects the current operating system.
    *
    * @return the operating system
@@ -374,13 +395,31 @@ public final class PlatformDetector {
    * @throws RuntimeException if not supported
    */
   private static OperatingSystem detectOperatingSystemInternal() {
-    final String osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    final String osName = System.getProperty("os.name");
+    return detectOperatingSystemFromString(osName);
+  }
 
-    if (osName.contains("linux")) {
+  /**
+   * Detects the operating system from a given OS name string.
+   *
+   * <p>This method is provided for testing purposes.
+   *
+   * @param osName the operating system name string
+   * @return the operating system
+   * @throws UnsupportedOperationException if the operating system is not supported
+   */
+  public static OperatingSystem detectOperatingSystemFromString(final String osName) {
+    if (osName == null) {
+      throw new UnsupportedOperationException("Operating system name is null");
+    }
+
+    final String normalizedName = osName.toLowerCase(Locale.ENGLISH);
+
+    if (normalizedName.contains("linux")) {
       return OperatingSystem.LINUX;
-    } else if (osName.contains("windows")) {
+    } else if (normalizedName.contains("windows")) {
       return OperatingSystem.WINDOWS;
-    } else if (osName.contains("mac") || osName.contains("darwin")) {
+    } else if (normalizedName.contains("mac") || normalizedName.contains("darwin")) {
       return OperatingSystem.MACOS;
     } else {
       throw new UnsupportedOperationException("Unsupported operating system: " + osName);
@@ -394,11 +433,29 @@ public final class PlatformDetector {
    * @throws RuntimeException if not supported
    */
   private static Architecture detectArchitectureInternal() {
-    final String archName = System.getProperty("os.arch").toLowerCase(Locale.ENGLISH);
+    final String archName = System.getProperty("os.arch");
+    return detectArchitectureFromString(archName);
+  }
 
-    if ("amd64".equals(archName) || "x86_64".equals(archName)) {
+  /**
+   * Detects the CPU architecture from a given architecture name string.
+   *
+   * <p>This method is provided for testing purposes.
+   *
+   * @param archName the architecture name string
+   * @return the architecture
+   * @throws UnsupportedOperationException if the architecture is not supported
+   */
+  public static Architecture detectArchitectureFromString(final String archName) {
+    if (archName == null) {
+      throw new UnsupportedOperationException("Architecture name is null");
+    }
+
+    final String normalizedArch = archName.toLowerCase(Locale.ENGLISH);
+
+    if ("amd64".equals(normalizedArch) || "x86_64".equals(normalizedArch)) {
       return Architecture.X86_64;
-    } else if ("aarch64".equals(archName) || "arm64".equals(archName)) {
+    } else if ("aarch64".equals(normalizedArch) || "arm64".equals(normalizedArch)) {
       return Architecture.AARCH64;
     } else {
       throw new UnsupportedOperationException("Unsupported architecture: " + archName);
