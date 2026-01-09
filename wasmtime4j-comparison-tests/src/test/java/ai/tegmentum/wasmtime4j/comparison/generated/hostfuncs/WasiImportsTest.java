@@ -1,7 +1,13 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.hostfuncs;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -15,34 +21,61 @@ import org.junit.jupiter.api.Test;
  */
 public final class WasiImportsTest {
 
+  /** Custom exception to simulate WASI proc_exit behavior. */
+  private static class ProcExitException extends RuntimeException {
+    private final int exitCode;
+
+    ProcExitException(final int exitCode) {
+      super("proc_exit called with code: " + exitCode);
+      this.exitCode = exitCode;
+    }
+
+    int getExitCode() {
+      return exitCode;
+    }
+  }
+
   @Test
   @DisplayName("host_funcs::wasi_imports")
-  public void testWasiImports() {
-    // WAT code from original Wasmtime test:
-    // (import "wasi_snapshot_preview1" "proc_exit" (func $__wasi_proc_exit (param i32)))
-    //         (memory (export "memory") 0)
-    //         (func (export "_start")
-    //             (call $__wasi_proc_exit (i32.const 123))
-    //         )
+  public void testWasiImports() throws Exception {
+    // Track the exit code passed to proc_exit
+    final AtomicInteger exitCode = new AtomicInteger(-1);
 
-    final String wat =
-        """
-        (import "wasi_snapshot_preview1" "proc_exit" (func $__wasi_proc_exit (param i32)))
-                (memory (export "memory") 0)
-                (func (export "_start")
-                    (call $__wasi_proc_exit (i32.const 123))
-                )
-    """;
+    try (final WastTestRunner runner = new WastTestRunner()) {
+      // Define a mock WASI proc_exit function
+      // In the original Wasmtime test, proc_exit causes the runtime to exit with the given code
+      runner.defineHostFunction(
+          "wasi_snapshot_preview1",
+          "proc_exit",
+          FunctionType.of(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {}),
+          (args) -> {
+            exitCode.set(args[0].asI32());
+            // proc_exit should terminate execution, so we throw an exception
+            throw new ProcExitException(exitCode.get());
+          });
 
-    // TODO: Implement equivalent wasmtime4j test logic
-    // 1. Create Engine
-    // 2. Compile WAT to Module
-    // 3. Instantiate Module
-    // 4. Call exported functions
-    // 5. Assert expected results
+      // The WAT module calls proc_exit with exit code 123
+      final String wat =
+          "(module "
+              + "(import \"wasi_snapshot_preview1\" \"proc_exit\" "
+              + "  (func $__wasi_proc_exit (param i32))) "
+              + "(memory (export \"memory\") 0) "
+              + "(func (export \"_start\") "
+              + "  (call $__wasi_proc_exit (i32.const 123)) "
+              + ")"
+              + ")";
 
-    // Expected results from original test:
-    // exit.0, 123
-    fail("Test not yet implemented - awaiting test framework completion");
+      runner.compileAndInstantiate(wat);
+
+      // Calling _start should result in proc_exit being called
+      final ProcExitException exception =
+          assertThrows(
+              ProcExitException.class,
+              () -> runner.invoke("_start"),
+              "_start should call proc_exit which throws ProcExitException");
+
+      // Verify the exit code
+      assertEquals(123, exception.getExitCode(), "proc_exit should be called with exit code 123");
+    }
   }
 }

@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.wasmtime;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.comparison.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
 import java.io.IOException;
@@ -47,34 +48,50 @@ public final class PartialInitMemorySegmentTest extends DualRuntimeTest {
 
       // ( assert_trap ( module ( memory ( import "m" "mem") 1) ( data ( i32.const 0) "abc") ( data
       // ( i32.const 65530) "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")) "out of bounds")
-      // TODO: Parse assert_trap - no function name found
+      // Module with data segment that exceeds memory bounds should trap on instantiation
+      runner.assertModuleTrap(
+          "(module (memory (import \"m\" \"mem\") 1) "
+              + "(data (i32.const 0) \"abc\") "
+              + "(data (i32.const 65530) \"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\"))",
+          "out of bounds");
 
       // ( assert_return ( invoke $m "load" ( i32.const 0)) ( i32.const 97))
-      // TODO: Parse assert_return - no function name found
+      // After partial initialization failure, the "abc" data should still be written at offset 0
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(97)}, WasmValue.i32(0));
 
       // ( assert_return ( invoke $m "load" ( i32.const 1)) ( i32.const 98))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(98)}, WasmValue.i32(1));
 
       // ( assert_return ( invoke $m "load" ( i32.const 2)) ( i32.const 99))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(99)}, WasmValue.i32(2));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65530)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      // The failed segment at 65530 should NOT have written any data (out of bounds)
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65530));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65531)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65531));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65532)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65532));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65533)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65533));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65534)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65534));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65535)) ( i32.const 0))
-      // TODO: Parse assert_return - no function name found
+      runner.assertReturn(
+          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65535));
 
     }
   }

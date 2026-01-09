@@ -20,12 +20,8 @@ public final class TrapStartFunctionImportTest {
   @Test
   @DisplayName("traps::trap_start_function_import")
   public void testTrapStartFunctionImport() throws Exception {
-    // WAT code from original Wasmtime test:
-    // (module $a
-    //                 (import "" "" (func $foo))
-    //                 (start $foo)
-    //             )
-
+    // WAT code from original Wasmtime test - module has start function that calls imported
+    // host function which traps. The trap should occur during instantiation.
     final String wat =
         """
         (module $a
@@ -45,11 +41,12 @@ public final class TrapStartFunctionImportTest {
           "trap",
           funcType,
           (params) -> {
-            throw new WasmException("Host function trap");
+            throw new WasmException("trap during start");
           });
 
       // Module should fail to instantiate because the start function traps
-      runner.assertUnlinkable(wat, null);
+      // assertUnlinkable expects compileAndInstantiate to throw an exception
+      runner.assertUnlinkable(wat, "trap during start");
     }
   }
 }

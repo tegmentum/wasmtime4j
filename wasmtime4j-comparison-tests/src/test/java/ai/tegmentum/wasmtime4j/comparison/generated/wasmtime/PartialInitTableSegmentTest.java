@@ -49,7 +49,14 @@ public final class PartialInitTableSegmentTest extends DualRuntimeTest {
       // ( assert_trap ( module ( table ( import "m" "table") 10 funcref) ( func $one ( result i32)
       // ( i32.const 1)) ( elem ( i32.const 7) $one) ( elem ( i32.const 9) $one $one $one)) "out of
       // bounds")
-      // TODO: Parse assert_trap - no function name found
+      // Module with element segment that exceeds table bounds should trap on instantiation
+      runner.assertModuleTrap(
+          "(module "
+              + "(table (import \"m\" \"table\") 10 funcref) "
+              + "(func $one (result i32) (i32.const 1)) "
+              + "(elem (i32.const 7) $one) "
+              + "(elem (i32.const 9) $one $one $one))",
+          "out of bounds");
 
       // ( assert_return ( invoke "indirect-call" ( i32.const 7)) ( i32.const 1))
       runner.assertReturn("indirect-call", new WasmValue[] {WasmValue.i32(1)}, WasmValue.i32(7));

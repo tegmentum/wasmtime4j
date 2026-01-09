@@ -268,6 +268,42 @@ public final class WastTestRunner implements AutoCloseable {
   }
 
   /**
+   * Asserts that invoking a function on a named instance returns the expected values.
+   *
+   * @param instanceName the name of the instance to invoke the function on
+   * @param functionName the function to invoke
+   * @param expectedResults the expected return values
+   * @param args the arguments to pass to the function
+   * @throws Exception if the assertion fails
+   */
+  public void assertReturn(
+      final String instanceName,
+      final String functionName,
+      final WasmValue[] expectedResults,
+      final WasmValue... args)
+      throws Exception {
+    final WasmValue[] actualResults = invoke(instanceName, functionName, args);
+
+    if (expectedResults.length != actualResults.length) {
+      throw new AssertionError(
+          String.format(
+              "Expected %d return values but got %d",
+              expectedResults.length, actualResults.length));
+    }
+
+    for (int i = 0; i < expectedResults.length; i++) {
+      final WasmValue expected = expectedResults[i];
+      final WasmValue actual = actualResults[i];
+
+      if (!valuesEqual(expected, actual)) {
+        throw new AssertionError(
+            String.format(
+                "Return value mismatch at index %d: expected %s but got %s", i, expected, actual));
+      }
+    }
+  }
+
+  /**
    * Asserts that invoking a function throws a trap with the expected message.
    *
    * @param functionName the function to invoke

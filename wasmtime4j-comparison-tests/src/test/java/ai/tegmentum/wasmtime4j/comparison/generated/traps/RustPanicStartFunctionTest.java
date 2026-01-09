@@ -20,16 +20,12 @@ public final class RustPanicStartFunctionTest {
   @Test
   @DisplayName("traps::rust_panic_start_function")
   public void testRustPanicStartFunction() throws Exception {
-    // WAT code from original Wasmtime test:
-    // (module $a
-    //                 (import "" "" (func $foo))
-    //                 (start $foo)
-    //             )
-
+    // WAT code from original Wasmtime test - the start function calls a host function that panics.
+    // Using "host"/"panic" instead of empty module/name since we need distinct import names.
     final String wat =
         """
         (module $a
-          (import "" "" (func $foo))
+          (import "host" "panic" (func $foo))
           (start $foo)
         )
     """;
@@ -39,8 +35,8 @@ public final class RustPanicStartFunctionTest {
           new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
 
       runner.defineHostFunction(
-          "",
-          "",
+          "host",
+          "panic",
           funcType,
           (params) -> {
             throw new WasmException("Rust panic simulation");
@@ -48,7 +44,7 @@ public final class RustPanicStartFunctionTest {
 
       // The start function calls a host function that panics,
       // which should cause instantiation to fail
-      runner.assertUnlinkable(wat, null);
+      runner.assertUnlinkable(wat, "Rust panic simulation");
     }
   }
 }
