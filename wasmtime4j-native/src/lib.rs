@@ -245,10 +245,12 @@ pub mod wasi_keyvalue_helpers;
 pub mod networking;
 
 // Platform-specific optimizations for maximum performance
-pub mod numa_topology;
-pub mod cpu_cache_management;
-// TODO: Advanced performance optimization modules need missing type implementations
-// These modules have incomplete type definitions (BandwidthPriorityScheme, PrefetchAlgorithm, etc.)
+// NOTE: These modules are disabled pending full implementation of their type systems.
+// They require 100+ struct/enum definitions with proper fields and methods.
+// Re-enabling requires implementing the complete platform optimization API.
+// See: memory_bandwidth_optimization.rs, cpu_microarchitecture_detection.rs, platform_config.rs
+// pub mod numa_topology;
+// pub mod cpu_cache_management;
 // pub mod memory_bandwidth_optimization;
 // pub mod cpu_microarchitecture_detection;
 // pub mod platform_config;
@@ -639,16 +641,16 @@ pub use hot_reload::{
 };
 
 // Re-export platform optimization functionality
-pub use numa_topology::{
-    AdvancedNumaTopology, NumaBindingStrategy, WorkloadType, MemoryAllocationPolicy,
-    CpuAffinityPolicy, NumaLoadBalancing, MigrationPolicies
-};
-pub use cpu_cache_management::{
-    CachePartitioningManager, CachePartition, CacheAffinityPolicy, PartitionType,
-    AffinityStrategy, CacheTopology
-    // InterferenceDetectionAlgorithm is private, cannot be re-exported
-};
-// TODO: Re-enable when modules are implemented
+// NOTE: Disabled pending full implementation of platform optimization modules
+// pub use numa_topology::{
+//     AdvancedNumaTopology, NumaBindingStrategy, WorkloadType, MemoryAllocationPolicy,
+//     CpuAffinityPolicy, NumaLoadBalancing, MigrationPolicies
+// };
+// pub use cpu_cache_management::{
+//     CachePartitioningManager, CachePartition, CacheAffinityPolicy, PartitionType,
+//     AffinityStrategy, CacheTopology
+// };
+// TODO: Re-enable when modules are fully implemented
 // pub use memory_bandwidth_optimization::{
 //     MemoryBandwidthOptimizer, BandwidthAllocationPolicy, CacheAwareAllocationStrategy,
 //     MemoryTopology, BandwidthOptimizationReport, OptimizationRecommendation
