@@ -133,7 +133,8 @@ public final class JniResourceTracker {
           .values()
           .forEach(
               info -> {
-                typeCounts.merge(info.resourceType, 1, Integer::sum);
+                final String type = info.resourceType != null ? info.resourceType : "Unknown";
+                typeCounts.merge(type, 1, Integer::sum);
               });
       stats.append("  Tracked resource types:\n");
       typeCounts.forEach(

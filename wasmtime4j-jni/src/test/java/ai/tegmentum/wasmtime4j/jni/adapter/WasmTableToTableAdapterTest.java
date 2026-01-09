@@ -30,7 +30,6 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -727,7 +726,8 @@ class WasmTableToTableAdapterTest {
       assertNotNull(tableType, "TableType should not be null");
       assertEquals(WasmValueType.FUNCREF, tableType.getElementType(), "Element type should match");
       assertEquals(10, tableType.getMinimum(), "Minimum should be 10");
-      assertEquals(100, tableType.getMaximum(), "Maximum should be 100");
+      assertTrue(tableType.getMaximum().isPresent(), "Maximum should be present");
+      assertEquals(100L, tableType.getMaximum().get(), "Maximum should be 100");
     }
   }
 
@@ -749,18 +749,17 @@ class WasmTableToTableAdapterTest {
     }
 
     @Test
-    @DisplayName("growAsync should propagate failure")
-    void growAsyncShouldPropagateFailure() {
+    @DisplayName("growAsync should return -1 on failure")
+    void growAsyncShouldReturnNegativeOneOnFailure() throws Exception {
       final WasmTable delegate = createMockTable(WasmValueType.FUNCREF, 90, 100);
       final WasmTableToTableAdapter adapter = new WasmTableToTableAdapter(delegate);
 
-      // This grow will fail because it exceeds max size
+      // This grow will fail because it exceeds max size (90 + 20 > 100)
       final CompletableFuture<Long> future = adapter.growAsync(20, null);
+      final Long result = future.get(5, TimeUnit.SECONDS);
 
-      assertThrows(
-          ExecutionException.class,
-          () -> future.get(5, TimeUnit.SECONDS),
-          "Should propagate exception");
+      // Wasmtime API returns -1 on grow failure instead of throwing
+      assertEquals(-1L, result, "Should return -1 when growth exceeds max size");
     }
   }
 

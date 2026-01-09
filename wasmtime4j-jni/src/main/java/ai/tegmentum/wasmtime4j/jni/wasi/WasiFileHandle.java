@@ -79,6 +79,28 @@ public final class WasiFileHandle implements AutoCloseable {
   }
 
   /**
+   * Gets the file descriptor number.
+   *
+   * <p>This is an alias for {@link #getFileDescriptor()}.
+   *
+   * @return the file descriptor
+   */
+  public int getFd() {
+    return getFileDescriptor();
+  }
+
+  /**
+   * Checks if this file handle is valid and usable.
+   *
+   * <p>A file handle is valid if it has not been closed and has a non-negative file descriptor.
+   *
+   * @return true if the handle is valid, false otherwise
+   */
+  public boolean isValid() {
+    return !closed && fileDescriptor >= 0;
+  }
+
+  /**
    * Gets the absolute path to the file.
    *
    * @return the file path

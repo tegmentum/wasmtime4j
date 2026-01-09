@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -74,48 +75,44 @@ class WasiResourceLeakDetectorTest {
 
   @Test
   void testParameterizedConstructorWithZeroLeakThreshold() {
-    final IllegalArgumentException exception =
+    final JniException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new WasiResourceLeakDetector(0, Duration.ofMinutes(15), 60));
+            JniException.class, () -> new WasiResourceLeakDetector(0, Duration.ofMinutes(15), 60));
 
     assertThat(exception.getMessage()).contains("leakThreshold");
   }
 
   @Test
   void testParameterizedConstructorWithNegativeLeakThreshold() {
-    final IllegalArgumentException exception =
+    final JniException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new WasiResourceLeakDetector(-1, Duration.ofMinutes(15), 60));
+            JniException.class, () -> new WasiResourceLeakDetector(-1, Duration.ofMinutes(15), 60));
 
     assertThat(exception.getMessage()).contains("leakThreshold");
   }
 
   @Test
   void testParameterizedConstructorWithNullResourceAgeThreshold() {
-    final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> new WasiResourceLeakDetector(500, null, 60));
+    final JniException exception =
+        assertThrows(JniException.class, () -> new WasiResourceLeakDetector(500, null, 60));
 
     assertThat(exception.getMessage()).contains("resourceAgeThreshold");
   }
 
   @Test
   void testParameterizedConstructorWithZeroMonitoringInterval() {
-    final IllegalArgumentException exception =
+    final JniException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new WasiResourceLeakDetector(500, Duration.ofMinutes(15), 0));
+            JniException.class, () -> new WasiResourceLeakDetector(500, Duration.ofMinutes(15), 0));
 
     assertThat(exception.getMessage()).contains("monitoringIntervalSeconds");
   }
 
   @Test
   void testParameterizedConstructorWithNegativeMonitoringInterval() {
-    final IllegalArgumentException exception =
+    final JniException exception =
         assertThrows(
-            IllegalArgumentException.class,
+            JniException.class,
             () -> new WasiResourceLeakDetector(500, Duration.ofMinutes(15), -1));
 
     assertThat(exception.getMessage()).contains("monitoringIntervalSeconds");
@@ -127,9 +124,8 @@ class WasiResourceLeakDetectorTest {
   void testTrackWasiContextWithNullContextId() {
     final WasiContext context = createFakeWasiContext();
 
-    final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> detector.trackWasiContext(null, context));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.trackWasiContext(null, context));
 
     assertThat(exception.getMessage()).contains("contextId");
   }
@@ -138,16 +134,16 @@ class WasiResourceLeakDetectorTest {
   void testTrackWasiContextWithEmptyContextId() {
     final WasiContext context = createFakeWasiContext();
 
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> detector.trackWasiContext("", context));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.trackWasiContext("", context));
 
     assertThat(exception.getMessage()).contains("contextId");
   }
 
   @Test
   void testTrackWasiContextWithNullContext() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> detector.trackWasiContext("ctx1", null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.trackWasiContext("ctx1", null));
 
     assertThat(exception.getMessage()).contains("context");
   }
@@ -187,16 +183,16 @@ class WasiResourceLeakDetectorTest {
 
   @Test
   void testUntrackWasiContextWithNullContextId() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> detector.untrackWasiContext(null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.untrackWasiContext(null));
 
     assertThat(exception.getMessage()).contains("contextId");
   }
 
   @Test
   void testUntrackWasiContextWithEmptyContextId() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> detector.untrackWasiContext(""));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.untrackWasiContext(""));
 
     assertThat(exception.getMessage()).contains("contextId");
   }
@@ -223,8 +219,8 @@ class WasiResourceLeakDetectorTest {
 
   @Test
   void testTrackFileHandleWithNullHandle() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> detector.trackFileHandle(1, null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.trackFileHandle(1, null));
 
     assertThat(exception.getMessage()).contains("handle");
   }
@@ -284,9 +280,8 @@ class WasiResourceLeakDetectorTest {
 
   @Test
   void testTrackMemorySegmentWithNullSegment() {
-    final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> detector.trackMemorySegment(0x1000L, null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> detector.trackMemorySegment(0x1000L, null));
 
     assertThat(exception.getMessage()).contains("segment");
   }

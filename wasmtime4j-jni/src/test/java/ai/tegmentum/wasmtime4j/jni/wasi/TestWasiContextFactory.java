@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
+import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
+import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityValidator;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -120,8 +122,17 @@ public final class TestWasiContextFactory {
       final Map<String, String> environment,
       final String[] arguments) {
     try {
+      // Create a permissive security validator for testing that allows absolute paths
+      final WasiSecurityValidator testSecurityValidator =
+          WasiSecurityValidator.builder()
+              .withAllowAbsolutePaths(true)
+              .withAllowSymbolicLinks(true)
+              .build();
+
       final WasiContextBuilder builder =
           new WasiContextBuilder()
+              .withSecurityValidator(testSecurityValidator)
+              .withPermissionManager(WasiPermissionManager.permissiveManager())
               .withWorkingDirectory(workingDirectory.toString())
               .withPreopenDirectory(".", workingDirectory.toString());
 

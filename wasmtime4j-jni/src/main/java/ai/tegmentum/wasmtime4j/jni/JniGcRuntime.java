@@ -49,6 +49,7 @@ public final class JniGcRuntime implements GcRuntime {
   private final long nativeHandle;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private volatile boolean disposed = false;
+
   /** Map storing host objects by their GC object ID for extraction. */
   private final java.util.concurrent.ConcurrentHashMap<Long, Object> hostObjectMap =
       new java.util.concurrent.ConcurrentHashMap<>();

@@ -149,12 +149,16 @@ class JniCallerContextProviderTest {
     }
 
     @Test
-    @DisplayName("getCurrentCaller should have @Override annotation")
-    void getCurrentCallerShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("getCurrentCaller method should match interface signature")
+    void getCurrentCallerMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify the method exists and matches the interface method signature
+      // Note: @Override annotation may not be retained at runtime with all compilers
       Method method = JniCallerContextProvider.class.getMethod("getCurrentCaller");
-      assertTrue(
-          method.isAnnotationPresent(Override.class),
-          "getCurrentCaller should have @Override annotation");
+      Method interfaceMethod = CallerContextProvider.class.getMethod("getCurrentCaller");
+      assertEquals(
+          interfaceMethod.getReturnType(),
+          method.getReturnType(),
+          "Return type should match interface");
     }
 
     @Test
@@ -222,12 +226,17 @@ class JniCallerContextProviderTest {
   class FieldTests {
 
     @Test
-    @DisplayName("should have no declared fields")
-    void shouldHaveNoDeclaredFields() {
+    @DisplayName("should have no non-synthetic declared fields")
+    void shouldHaveNoNonSyntheticDeclaredFields() {
+      // Filter out synthetic fields (e.g., $jacocoData from code coverage)
+      long nonSyntheticCount =
+          java.util.Arrays.stream(JniCallerContextProvider.class.getDeclaredFields())
+              .filter(f -> !f.isSynthetic())
+              .count();
       assertEquals(
           0,
-          JniCallerContextProvider.class.getDeclaredFields().length,
-          "JniCallerContextProvider should have no declared fields");
+          nonSyntheticCount,
+          "JniCallerContextProvider should have no non-synthetic declared fields");
     }
   }
 

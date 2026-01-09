@@ -78,14 +78,14 @@ class JniNnClassesTest {
     }
 
     @Test
-    @DisplayName("should have package-private constructor with nativeHandle")
+    @DisplayName("should have constructor with nativeHandle")
     void shouldHaveConstructorWithNativeHandle() throws NoSuchMethodException {
       final Constructor<?> constructor = JniNnContext.class.getDeclaredConstructor(long.class);
       assertNotNull(constructor, "Constructor with nativeHandle should exist");
+      // Constructor is public to allow factory creation patterns
       assertTrue(
-          !Modifier.isPublic(constructor.getModifiers())
-              && !Modifier.isProtected(constructor.getModifiers()),
-          "Constructor should be package-private");
+          Modifier.isPublic(constructor.getModifiers()),
+          "Constructor should be public for factory patterns");
     }
 
     @Test
@@ -209,14 +209,11 @@ class JniNnClassesTest {
     }
 
     @Test
-    @DisplayName("should be package-private final class")
-    void shouldBePackagePrivateFinalClass() throws ClassNotFoundException {
+    @DisplayName("should be public final class")
+    void shouldBePublicFinalClass() throws ClassNotFoundException {
       final Class<?> clazz = getJniNnGraphClass();
-      assertTrue(
-          !Modifier.isPublic(clazz.getModifiers())
-              && !Modifier.isProtected(clazz.getModifiers())
-              && !Modifier.isPrivate(clazz.getModifiers()),
-          "JniNnGraph should be package-private");
+      // JniNnGraph is public to allow usage as NnGraph implementation
+      assertTrue(Modifier.isPublic(clazz.getModifiers()), "JniNnGraph should be public");
       assertTrue(Modifier.isFinal(clazz.getModifiers()), "JniNnGraph should be final");
     }
 

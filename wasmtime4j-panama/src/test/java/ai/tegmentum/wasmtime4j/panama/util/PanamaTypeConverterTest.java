@@ -295,7 +295,8 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
       final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
-      final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
+      final MemorySegment refSegment =
+          (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_FUNCREF, kind, "Kind should be FUNCREF");
       assertEquals(0L, refSegment.address(), "Null funcref should have ref address 0");
@@ -310,7 +311,8 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(value, valueSlot);
 
       final int kind = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
-      final MemorySegment refSegment = (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
+      final MemorySegment refSegment =
+          (MemorySegment) MemoryLayouts.WASM_VAL_REF.get(valueSlot, 0L);
 
       assertEquals(MemoryLayouts.WASM_ANYREF, kind, "Kind should be EXTERNREF");
       assertEquals(0L, refSegment.address(), "Null externref should have ref address 0");

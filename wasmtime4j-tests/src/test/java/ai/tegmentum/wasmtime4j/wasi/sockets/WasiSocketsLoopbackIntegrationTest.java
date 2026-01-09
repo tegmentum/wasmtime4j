@@ -739,8 +739,7 @@ public final class WasiSocketsLoopbackIntegrationTest {
 
       final Class<?> clazz = WasiTcpSocket.AcceptResult.class;
       assertTrue(
-          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-          "AcceptResult should be final");
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "AcceptResult should be final");
 
       LOGGER.info("AcceptResult is final class");
     }
@@ -786,7 +785,8 @@ public final class WasiSocketsLoopbackIntegrationTest {
 
     @Test
     @DisplayName("should verify TCP socket API completeness")
-    void shouldVerifyTcpSocketApiCompleteness(final TestInfo testInfo) throws NoSuchMethodException {
+    void shouldVerifyTcpSocketApiCompleteness(final TestInfo testInfo)
+        throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Verify all core TCP socket methods exist
@@ -817,7 +817,8 @@ public final class WasiSocketsLoopbackIntegrationTest {
 
     @Test
     @DisplayName("should verify UDP socket API completeness")
-    void shouldVerifyUdpSocketApiCompleteness(final TestInfo testInfo) throws NoSuchMethodException {
+    void shouldVerifyUdpSocketApiCompleteness(final TestInfo testInfo)
+        throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Verify all core UDP socket methods exist

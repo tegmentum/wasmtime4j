@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -109,7 +110,7 @@ class JniTableTypeTest {
     @DisplayName("Constructor should throw for null element type")
     void constructorShouldThrowForNullElementType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniTableType(null, 0, null),
           "Should throw for null element type");
     }
@@ -346,16 +347,14 @@ class JniTableTypeTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> JniTableType.fromNative(0),
-          "Should throw for zero handle");
+          JniException.class, () -> JniTableType.fromNative(0), "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniTableType.fromNative(-1),
           "Should throw for negative handle");
     }

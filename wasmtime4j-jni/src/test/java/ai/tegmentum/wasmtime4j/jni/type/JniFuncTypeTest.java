@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -110,7 +111,7 @@ class JniFuncTypeTest {
     @DisplayName("Constructor should throw for null params list")
     void constructorShouldThrowForNullParamsList() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniFuncType(null, Collections.emptyList()),
           "Should throw for null params");
     }
@@ -119,7 +120,7 @@ class JniFuncTypeTest {
     @DisplayName("Constructor should throw for null results list")
     void constructorShouldThrowForNullResultsList() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniFuncType(Collections.emptyList(), null),
           "Should throw for null results");
     }
@@ -332,18 +333,14 @@ class JniFuncTypeTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> JniFuncType.fromNative(0),
-          "Should throw for zero handle");
+          JniException.class, () -> JniFuncType.fromNative(0), "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> JniFuncType.fromNative(-1),
-          "Should throw for negative handle");
+          JniException.class, () -> JniFuncType.fromNative(-1), "Should throw for negative handle");
     }
   }
 

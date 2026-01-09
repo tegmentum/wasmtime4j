@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.MarshalingConfiguration;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -405,7 +406,7 @@ class ComplexJniTypeConverterTest {
     @DisplayName("Should throw on null WasmValues")
     void shouldThrowOnNullWasmValues() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> converter.unmarshalMultiDimensionalArray(null, int[].class),
           "Should throw on null WasmValues");
     }
@@ -416,7 +417,7 @@ class ComplexJniTypeConverterTest {
       final WasmValue[] wasmValues = new WasmValue[4];
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> converter.unmarshalMultiDimensionalArray(wasmValues, null),
           "Should throw on null array type");
     }
@@ -441,7 +442,7 @@ class ComplexJniTypeConverterTest {
     @DisplayName("Should throw on null WasmValues")
     void shouldThrowOnNullWasmValues() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> converter.unmarshalCollection(null, List.class),
           "Should throw on null WasmValues");
     }
@@ -452,7 +453,7 @@ class ComplexJniTypeConverterTest {
       final WasmValue[] wasmValues = new WasmValue[2];
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> converter.unmarshalCollection(wasmValues, null),
           "Should throw on null collection type");
     }

@@ -176,7 +176,9 @@ public final class WasiContext extends JniResource {
     ensureNotClosed();
     JniValidation.requireNonEmpty(path, "path");
 
-    final Path resolvedPath = Paths.get(path);
+    // Resolve relative paths against the working directory
+    final Path pathObj = Paths.get(path);
+    final Path resolvedPath = pathObj.isAbsolute() ? pathObj : workingDirectory.resolve(path);
 
     // Security validation - check for path traversal attacks
     securityValidator.validatePath(resolvedPath);
@@ -206,6 +208,17 @@ public final class WasiContext extends JniResource {
     permissionManager.validateFileSystemAccess(resolvedPath, operation);
 
     return resolvedPath;
+  }
+
+  /**
+   * Checks if this WASI context is valid and usable.
+   *
+   * <p>A context is valid if it has a non-zero native handle and has not been closed.
+   *
+   * @return true if the context is valid, false otherwise
+   */
+  public boolean isValid() {
+    return nativeHandle != 0 && !isClosed();
   }
 
   /**

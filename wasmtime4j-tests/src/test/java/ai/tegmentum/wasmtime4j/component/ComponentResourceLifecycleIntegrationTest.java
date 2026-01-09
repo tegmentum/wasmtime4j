@@ -413,8 +413,7 @@ public final class ComponentResourceLifecycleIntegrationTest {
             "string-res",
             new WitResourceManager.ResourceTypeInfo("string-res", String.class, null));
         manager.registerResourceType(
-            "int-res",
-            new WitResourceManager.ResourceTypeInfo("int-res", Integer.class, null));
+            "int-res", new WitResourceManager.ResourceTypeInfo("int-res", Integer.class, null));
         manager.registerResourceType(
             "double-res",
             new WitResourceManager.ResourceTypeInfo("double-res", Double.class, null));
@@ -515,9 +514,14 @@ public final class ComponentResourceLifecycleIntegrationTest {
         assertEquals(3, afterDestroy.getTotalCreated(), "3 total created");
         assertEquals(2, afterDestroy.getTotalDestroyed(), "2 total destroyed");
 
-        LOGGER.info("Usage stats: " + afterDestroy.getActiveResources() + " active, "
-            + afterDestroy.getTotalCreated() + " created, "
-            + afterDestroy.getTotalDestroyed() + " destroyed");
+        LOGGER.info(
+            "Usage stats: "
+                + afterDestroy.getActiveResources()
+                + " active, "
+                + afterDestroy.getTotalCreated()
+                + " created, "
+                + afterDestroy.getTotalDestroyed()
+                + " destroyed");
       }
     }
 
@@ -539,14 +543,8 @@ public final class ComponentResourceLifecycleIntegrationTest {
         manager.createResource("type-b", "b2");
 
         WitResourceManager.ResourceUsageStats stats = manager.getUsageStats();
-        assertEquals(
-            Long.valueOf(3),
-            stats.getResourceTypeCounts().get("type-a"),
-            "Type-a count");
-        assertEquals(
-            Long.valueOf(2),
-            stats.getResourceTypeCounts().get("type-b"),
-            "Type-b count");
+        assertEquals(Long.valueOf(3), stats.getResourceTypeCounts().get("type-a"), "Type-a count");
+        assertEquals(Long.valueOf(2), stats.getResourceTypeCounts().get("type-b"), "Type-b count");
 
         LOGGER.info("Resource type counts: " + stats.getResourceTypeCounts());
       }
@@ -568,9 +566,7 @@ public final class ComponentResourceLifecycleIntegrationTest {
 
       WitResourceManager.ResourceTypeInfo typeInfo =
           new WitResourceManager.ResourceTypeInfo(
-              "cleanup-test",
-              String.class,
-              resource -> destructorCallCount.incrementAndGet());
+              "cleanup-test", String.class, resource -> destructorCallCount.incrementAndGet());
       manager.registerResourceType("cleanup-test", typeInfo);
 
       manager.createResource("cleanup-test", "r1");

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -129,7 +130,7 @@ class JniGlobalTypeTest {
     @DisplayName("Constructor should throw for null value type")
     void constructorShouldThrowForNullValueType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniGlobalType(null, false),
           "Should throw for null value type");
     }
@@ -260,16 +261,14 @@ class JniGlobalTypeTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> JniGlobalType.fromNative(0),
-          "Should throw for zero handle");
+          JniException.class, () -> JniGlobalType.fromNative(0), "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniGlobalType.fromNative(-1),
           "Should throw for negative handle");
     }

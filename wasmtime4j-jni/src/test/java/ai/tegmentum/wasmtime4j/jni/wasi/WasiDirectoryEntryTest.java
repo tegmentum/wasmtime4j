@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
@@ -89,7 +90,7 @@ class WasiDirectoryEntryTest {
     @DisplayName("should throw for null name")
     void shouldThrowForNullName() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiDirectoryEntry(null, true, false, false, 0L, NOW),
           "Should throw for null name");
     }
@@ -98,7 +99,7 @@ class WasiDirectoryEntryTest {
     @DisplayName("should throw for empty name")
     void shouldThrowForEmptyName() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiDirectoryEntry("", true, false, false, 0L, NOW),
           "Should throw for empty name");
     }
@@ -107,7 +108,7 @@ class WasiDirectoryEntryTest {
     @DisplayName("should throw for null lastModifiedTime")
     void shouldThrowForNullLastModifiedTime() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiDirectoryEntry("test.txt", true, false, false, 0L, null),
           "Should throw for null lastModifiedTime");
     }

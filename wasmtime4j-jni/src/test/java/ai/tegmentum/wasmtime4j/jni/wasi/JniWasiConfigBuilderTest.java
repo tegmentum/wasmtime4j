@@ -19,8 +19,12 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,6 +50,22 @@ class JniWasiConfigBuilderTest {
     }
 
     @Test
+    @DisplayName("should be final class")
+    void shouldBeFinalClass() {
+      assertTrue(
+          Modifier.isFinal(JniWasiConfigBuilder.class.getModifiers()),
+          "JniWasiConfigBuilder should be final");
+    }
+
+    @Test
+    @DisplayName("should implement WasiConfigBuilder")
+    void shouldImplementWasiConfigBuilder() {
+      assertTrue(
+          WasiConfigBuilder.class.isAssignableFrom(JniWasiConfigBuilder.class),
+          "JniWasiConfigBuilder should implement WasiConfigBuilder");
+    }
+
+    @Test
     @DisplayName("should have build method")
     void shouldHaveBuildMethod() throws NoSuchMethodException {
       final Method method = JniWasiConfigBuilder.class.getMethod("build");
@@ -58,54 +78,39 @@ class JniWasiConfigBuilderTest {
   class ConfigurationMethodsTests {
 
     @Test
-    @DisplayName("should have inheritStdio method")
-    void shouldHaveInheritStdioMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod("inheritStdio");
-      assertNotNull(method, "Should have inheritStdio method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "inheritStdio should return builder for chaining");
+    @DisplayName("should have inheritEnvironment method")
+    void shouldHaveInheritEnvironmentMethod() throws NoSuchMethodException {
+      final Method method = JniWasiConfigBuilder.class.getMethod("inheritEnvironment");
+      assertNotNull(method, "Should have inheritEnvironment method");
     }
 
     @Test
-    @DisplayName("should have inheritEnv method")
-    void shouldHaveInheritEnvMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod("inheritEnv");
-      assertNotNull(method, "Should have inheritEnv method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "inheritEnv should return builder for chaining");
-    }
-
-    @Test
-    @DisplayName("should have inheritArgs method")
-    void shouldHaveInheritArgsMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod("inheritArgs");
-      assertNotNull(method, "Should have inheritArgs method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "inheritArgs should return builder for chaining");
-    }
-
-    @Test
-    @DisplayName("should have setEnv method")
-    void shouldHaveSetEnvMethod() throws NoSuchMethodException {
+    @DisplayName("should have withEnvironment method")
+    void shouldHaveWithEnvironmentMethod() throws NoSuchMethodException {
       final Method method =
-          JniWasiConfigBuilder.class.getMethod("setEnv", String.class, String.class);
-      assertNotNull(method, "Should have setEnv method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "setEnv should return builder for chaining");
+          JniWasiConfigBuilder.class.getMethod("withEnvironment", String.class, String.class);
+      assertNotNull(method, "Should have withEnvironment method");
     }
 
     @Test
-    @DisplayName("should have setArgs method")
-    void shouldHaveSetArgsMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfigBuilder.class.getMethod("setArgs", String[].class);
-      assertNotNull(method, "Should have setArgs method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "setArgs should return builder for chaining");
+    @DisplayName("should have withEnvironment(Map) method")
+    void shouldHaveWithEnvironmentMapMethod() throws NoSuchMethodException {
+      final Method method = JniWasiConfigBuilder.class.getMethod("withEnvironment", Map.class);
+      assertNotNull(method, "Should have withEnvironment(Map) method");
+    }
+
+    @Test
+    @DisplayName("should have withArgument method")
+    void shouldHaveWithArgumentMethod() throws NoSuchMethodException {
+      final Method method = JniWasiConfigBuilder.class.getMethod("withArgument", String.class);
+      assertNotNull(method, "Should have withArgument method");
+    }
+
+    @Test
+    @DisplayName("should have withArguments method")
+    void shouldHaveWithArgumentsMethod() throws NoSuchMethodException {
+      final Method method = JniWasiConfigBuilder.class.getMethod("withArguments", List.class);
+      assertNotNull(method, "Should have withArguments method");
     }
   }
 
@@ -114,27 +119,39 @@ class JniWasiConfigBuilderTest {
   class DirectoryConfigurationTests {
 
     @Test
-    @DisplayName("should have preopenDir method with guest and host paths")
-    void shouldHavePreopenDirMethodWithGuestAndHostPaths() throws NoSuchMethodException {
+    @DisplayName("should have withPreopenDirectory method")
+    void shouldHaveWithPreopenDirectoryMethod() throws NoSuchMethodException {
       final Method method =
-          JniWasiConfigBuilder.class.getMethod("preopenDir", String.class, String.class);
-      assertNotNull(method, "Should have preopenDir(String, String) method");
-      assertTrue(
-          JniWasiConfigBuilder.class.isAssignableFrom(method.getReturnType()),
-          "preopenDir should return builder for chaining");
+          JniWasiConfigBuilder.class.getMethod("withPreopenDirectory", String.class, Path.class);
+      assertNotNull(method, "Should have withPreopenDirectory method");
+    }
+
+    @Test
+    @DisplayName("should have withPreopenDirectories method")
+    void shouldHaveWithPreopenDirectoriesMethod() throws NoSuchMethodException {
+      final Method method =
+          JniWasiConfigBuilder.class.getMethod("withPreopenDirectories", Map.class);
+      assertNotNull(method, "Should have withPreopenDirectories method");
     }
   }
 
   @Nested
-  @DisplayName("Fluent API Tests")
-  class FluentApiTests {
+  @DisplayName("Builder Instance Tests")
+  class BuilderInstanceTests {
 
     @Test
-    @DisplayName("builder should return non-null")
-    void builderShouldReturnNonNull() throws NoSuchMethodException {
-      // Get builder from JniWasiConfig
-      final Method builderMethod = JniWasiConfig.class.getMethod("builder");
-      assertNotNull(builderMethod, "JniWasiConfig should have builder method");
+    @DisplayName("builder should have public constructor")
+    void builderShouldHavePublicConstructor() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfigBuilder.class.getConstructor(),
+          "JniWasiConfigBuilder should have public constructor");
+    }
+
+    @Test
+    @DisplayName("should create builder instance")
+    void shouldCreateBuilderInstance() {
+      final JniWasiConfigBuilder builder = new JniWasiConfigBuilder();
+      assertNotNull(builder, "Should create builder instance");
     }
   }
 }

@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.exception;
  *
  * @since 1.0.0
  */
-public final class JniValidationException extends IllegalArgumentException {
+public final class JniValidationException extends JniException {
 
   private static final long serialVersionUID = 1L;
 

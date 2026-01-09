@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.JniEngine;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -47,10 +49,26 @@ class JniWasiLinkerTest {
     }
 
     @Test
-    @DisplayName("should have constructor with JniEngine parameter")
-    void shouldHaveConstructorWithJniEngineParameter() throws NoSuchMethodException {
-      final Constructor<?> constructor = JniWasiLinker.class.getConstructor(JniEngine.class);
-      assertNotNull(constructor, "Should have constructor with JniEngine");
+    @DisplayName("should be final class")
+    void shouldBeFinalClass() {
+      assertTrue(
+          Modifier.isFinal(JniWasiLinker.class.getModifiers()), "JniWasiLinker should be final");
+    }
+
+    @Test
+    @DisplayName("should implement WasiLinker")
+    void shouldImplementWasiLinker() {
+      assertTrue(
+          WasiLinker.class.isAssignableFrom(JniWasiLinker.class),
+          "JniWasiLinker should implement WasiLinker");
+    }
+
+    @Test
+    @DisplayName("should have constructor with long, JniEngine, and WasiConfig parameters")
+    void shouldHaveConstructorWithParameters() throws NoSuchMethodException {
+      final Constructor<?> constructor =
+          JniWasiLinker.class.getConstructor(long.class, JniEngine.class, WasiConfig.class);
+      assertNotNull(constructor, "Should have constructor with long, JniEngine, WasiConfig");
     }
   }
 
@@ -59,17 +77,37 @@ class JniWasiLinkerTest {
   class WasiMethodsTests {
 
     @Test
-    @DisplayName("should have addToLinker method")
-    void shouldHaveAddToLinkerMethod() {
-      // Look for a method that adds WASI to a linker
-      boolean hasAddMethod = false;
+    @DisplayName("should have instantiate method")
+    void shouldHaveInstantiateMethod() {
+      boolean hasInstantiate = false;
       for (final Method method : JniWasiLinker.class.getDeclaredMethods()) {
-        if (method.getName().contains("add") || method.getName().contains("link")) {
-          hasAddMethod = true;
+        if (method.getName().equals("instantiate")) {
+          hasInstantiate = true;
           break;
         }
       }
-      assertTrue(true, "JniWasiLinker should have methods for linking WASI");
+      assertTrue(hasInstantiate, "JniWasiLinker should have instantiate method");
+    }
+
+    @Test
+    @DisplayName("should have allowDirectoryAccess method")
+    void shouldHaveAllowDirectoryAccessMethod() {
+      boolean hasMethod = false;
+      for (final Method method : JniWasiLinker.class.getDeclaredMethods()) {
+        if (method.getName().equals("allowDirectoryAccess")) {
+          hasMethod = true;
+          break;
+        }
+      }
+      assertTrue(hasMethod, "JniWasiLinker should have allowDirectoryAccess method");
+    }
+
+    @Test
+    @DisplayName("should have setEnvironmentVariable method")
+    void shouldHaveSetEnvironmentVariableMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiLinker.class.getMethod("setEnvironmentVariable", String.class, String.class),
+          "Should have setEnvironmentVariable method");
     }
   }
 
@@ -93,40 +131,31 @@ class JniWasiLinkerTest {
   }
 
   @Nested
-  @DisplayName("Native Handle Tests")
-  class NativeHandleTests {
-
-    @Test
-    @DisplayName("should have getNativeHandle method")
-    void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
-      assertNotNull(
-          JniWasiLinker.class.getMethod("getNativeHandle"), "Should have getNativeHandle method");
-    }
+  @DisplayName("Accessor Tests")
+  class AccessorTests {
 
     @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
       assertNotNull(JniWasiLinker.class.getMethod("isValid"), "Should have isValid method");
     }
-  }
-
-  @Nested
-  @DisplayName("Engine Integration Tests")
-  class EngineIntegrationTests {
 
     @Test
     @DisplayName("should have getEngine method")
-    void shouldHaveGetEngineMethod() {
-      boolean hasEngineGetter = false;
-      for (final Method method : JniWasiLinker.class.getDeclaredMethods()) {
-        if (method.getName().equals("getEngine") && method.getParameterCount() == 0) {
-          hasEngineGetter = true;
-          break;
-        }
-      }
-      assertTrue(
-          hasEngineGetter || !hasEngineGetter,
-          "JniWasiLinker may have getEngine method for engine access");
+    void shouldHaveGetEngineMethod() throws NoSuchMethodException {
+      assertNotNull(JniWasiLinker.class.getMethod("getEngine"), "Should have getEngine method");
+    }
+
+    @Test
+    @DisplayName("should have getConfig method")
+    void shouldHaveGetConfigMethod() throws NoSuchMethodException {
+      assertNotNull(JniWasiLinker.class.getMethod("getConfig"), "Should have getConfig method");
+    }
+
+    @Test
+    @DisplayName("should have getLinker method")
+    void shouldHaveGetLinkerMethod() throws NoSuchMethodException {
+      assertNotNull(JniWasiLinker.class.getMethod("getLinker"), "Should have getLinker method");
     }
   }
 }

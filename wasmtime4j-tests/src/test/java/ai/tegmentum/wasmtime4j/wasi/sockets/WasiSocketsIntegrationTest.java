@@ -28,13 +28,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
-import ai.tegmentum.wasmtime4j.wasi.sockets.IpSocketAddress;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4SocketAddress;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6SocketAddress;
-import ai.tegmentum.wasmtime4j.wasi.sockets.WasiTcpSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -173,9 +166,7 @@ public final class WasiSocketsIntegrationTest {
 
       // Null octets
       assertThrows(
-          IllegalArgumentException.class,
-          () -> new Ipv4Address(null),
-          "Should reject null octets");
+          IllegalArgumentException.class, () -> new Ipv4Address(null), "Should reject null octets");
 
       LOGGER.info("IPv4 address validation passed");
     }
@@ -370,18 +361,14 @@ public final class WasiSocketsIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final Ipv4Address addr = new Ipv4Address(new byte[] {10, 0, 0, 1});
-      final IpSocketAddress sockAddr1 =
-          IpSocketAddress.ipv4(new Ipv4SocketAddress(8080, addr));
-      final IpSocketAddress sockAddr2 =
-          IpSocketAddress.ipv4(new Ipv4SocketAddress(8080, addr));
-      final IpSocketAddress sockAddr3 =
-          IpSocketAddress.ipv4(new Ipv4SocketAddress(9090, addr));
+      final IpSocketAddress sockAddr1 = IpSocketAddress.ipv4(new Ipv4SocketAddress(8080, addr));
+      final IpSocketAddress sockAddr2 = IpSocketAddress.ipv4(new Ipv4SocketAddress(8080, addr));
+      final IpSocketAddress sockAddr3 = IpSocketAddress.ipv4(new Ipv4SocketAddress(9090, addr));
 
       assertEquals(sockAddr1, sockAddr2, "Same address/port should be equal");
       assertNotEquals(sockAddr1, sockAddr3, "Different ports should not be equal");
       assertEquals(
-          sockAddr1.hashCode(), sockAddr2.hashCode(),
-          "Hash codes should match for equal objects");
+          sockAddr1.hashCode(), sockAddr2.hashCode(), "Hash codes should match for equal objects");
 
       LOGGER.info("IpSocketAddress equals verification passed");
     }

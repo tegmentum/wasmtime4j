@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
-import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Method;
@@ -50,18 +49,45 @@ public class ConcurrentExecutionIntegrationTest {
   // Simple WASM module that adds two numbers
   private static final byte[] ADD_WASM =
       new byte[] {
-        0x00, 0x61, 0x73, 0x6D, // magic number
-        0x01, 0x00, 0x00, 0x00, // version
-        0x01, 0x07, // type section, 7 bytes
-        0x01, 0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // func type (i32, i32) -> i32
-        0x03, 0x02, // function section, 2 bytes
-        0x01, 0x00, // function 0 uses type 0
-        0x07, 0x07, // export section, 7 bytes
-        0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // export "add" as func 0
-        0x0A, 0x09, // code section, 9 bytes
-        0x01, 0x07, 0x00, // function 0 body, 7 bytes, 0 locals
-        0x20, 0x00, // local.get 0
-        0x20, 0x01, // local.get 1
+        0x00,
+        0x61,
+        0x73,
+        0x6D, // magic number
+        0x01,
+        0x00,
+        0x00,
+        0x00, // version
+        0x01,
+        0x07, // type section, 7 bytes
+        0x01,
+        0x60,
+        0x02,
+        0x7F,
+        0x7F,
+        0x01,
+        0x7F, // func type (i32, i32) -> i32
+        0x03,
+        0x02, // function section, 2 bytes
+        0x01,
+        0x00, // function 0 uses type 0
+        0x07,
+        0x07, // export section, 7 bytes
+        0x01,
+        0x03,
+        0x61,
+        0x64,
+        0x64,
+        0x00,
+        0x00, // export "add" as func 0
+        0x0A,
+        0x09, // code section, 9 bytes
+        0x01,
+        0x07,
+        0x00, // function 0 body, 7 bytes, 0 locals
+        0x20,
+        0x00, // local.get 0
+        0x20,
+        0x01, // local.get 1
         0x6A, // i32.add
         0x0B // end
       };

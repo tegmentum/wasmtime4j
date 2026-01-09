@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsContextBuilder;
-import ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsFactory;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -53,9 +51,9 @@ public final class WasiThreadsIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // isSupported should return a boolean without throwing
-      final boolean supported = assertDoesNotThrow(
-          () -> WasiThreadsFactory.isSupported(),
-          "isSupported should not throw");
+      final boolean supported =
+          assertDoesNotThrow(
+              () -> WasiThreadsFactory.isSupported(), "isSupported should not throw");
 
       LOGGER.info("WASI Threads supported: " + supported);
       // Just verify it returns a boolean - may be true or false depending on runtime
@@ -69,12 +67,14 @@ public final class WasiThreadsIntegrationTest {
 
       // If WASI Threads is not supported, createBuilder should throw
       if (!WasiThreadsFactory.isSupported()) {
-        final UnsupportedOperationException exception = assertThrows(
-            UnsupportedOperationException.class,
-            () -> WasiThreadsFactory.createBuilder(),
-            "createBuilder should throw when not supported");
+        final UnsupportedOperationException exception =
+            assertThrows(
+                UnsupportedOperationException.class,
+                () -> WasiThreadsFactory.createBuilder(),
+                "createBuilder should throw when not supported");
         assertNotNull(exception.getMessage(), "Exception should have a message");
-        assertTrue(exception.getMessage().contains("not supported"),
+        assertTrue(
+            exception.getMessage().contains("not supported"),
             "Exception message should indicate not supported");
         LOGGER.info("Correctly threw UnsupportedOperationException: " + exception.getMessage());
       } else {
@@ -88,9 +88,10 @@ public final class WasiThreadsIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       if (WasiThreadsFactory.isSupported()) {
-        final WasiThreadsContextBuilder builder = assertDoesNotThrow(
-            () -> WasiThreadsFactory.createBuilder(),
-            "createBuilder should not throw when supported");
+        final WasiThreadsContextBuilder builder =
+            assertDoesNotThrow(
+                () -> WasiThreadsFactory.createBuilder(),
+                "createBuilder should not throw when supported");
         assertNotNull(builder, "Builder should not be null");
         LOGGER.info("Successfully created WasiThreadsContextBuilder");
       } else {
@@ -104,10 +105,11 @@ public final class WasiThreadsIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       if (!WasiThreadsFactory.isSupported()) {
-        final UnsupportedOperationException exception = assertThrows(
-            UnsupportedOperationException.class,
-            () -> WasiThreadsFactory.createContext(null, null, null),
-            "createContext should throw when not supported");
+        final UnsupportedOperationException exception =
+            assertThrows(
+                UnsupportedOperationException.class,
+                () -> WasiThreadsFactory.createContext(null, null, null),
+                "createContext should throw when not supported");
         assertNotNull(exception.getMessage(), "Exception should have a message");
         LOGGER.info("Correctly threw UnsupportedOperationException: " + exception.getMessage());
       } else {
@@ -121,10 +123,11 @@ public final class WasiThreadsIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       if (!WasiThreadsFactory.isSupported()) {
-        final UnsupportedOperationException exception = assertThrows(
-            UnsupportedOperationException.class,
-            () -> WasiThreadsFactory.addToLinker(null, null, null),
-            "addToLinker should throw when not supported");
+        final UnsupportedOperationException exception =
+            assertThrows(
+                UnsupportedOperationException.class,
+                () -> WasiThreadsFactory.addToLinker(null, null, null),
+                "addToLinker should throw when not supported");
         assertNotNull(exception.getMessage(), "Exception should have a message");
         LOGGER.info("Correctly threw UnsupportedOperationException: " + exception.getMessage());
       } else {
@@ -138,7 +141,8 @@ public final class WasiThreadsIntegrationTest {
   class BuilderValidationTests {
 
     private void assumeFactorySupported() {
-      assumeTrue(WasiThreadsFactory.isSupported(),
+      assumeTrue(
+          WasiThreadsFactory.isSupported(),
           "WASI Threads factory not supported - skipping builder tests");
     }
 
@@ -150,10 +154,11 @@ public final class WasiThreadsIntegrationTest {
 
       final WasiThreadsContextBuilder builder = WasiThreadsFactory.createBuilder();
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withModule(null),
-          "withModule should reject null");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withModule(null),
+              "withModule should reject null");
       assertNotNull(exception.getMessage(), "Exception should have a message");
       LOGGER.info("Correctly rejected null module: " + exception.getMessage());
     }
@@ -166,10 +171,11 @@ public final class WasiThreadsIntegrationTest {
 
       final WasiThreadsContextBuilder builder = WasiThreadsFactory.createBuilder();
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withLinker(null),
-          "withLinker should reject null");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withLinker(null),
+              "withLinker should reject null");
       assertNotNull(exception.getMessage(), "Exception should have a message");
       LOGGER.info("Correctly rejected null linker: " + exception.getMessage());
     }
@@ -182,10 +188,11 @@ public final class WasiThreadsIntegrationTest {
 
       final WasiThreadsContextBuilder builder = WasiThreadsFactory.createBuilder();
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withStore(null),
-          "withStore should reject null");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withStore(null),
+              "withStore should reject null");
       assertNotNull(exception.getMessage(), "Exception should have a message");
       LOGGER.info("Correctly rejected null store: " + exception.getMessage());
     }
@@ -199,13 +206,17 @@ public final class WasiThreadsIntegrationTest {
       final WasiThreadsContextBuilder builder = WasiThreadsFactory.createBuilder();
 
       // Build without setting any components should throw IllegalStateException
-      final Exception exception = assertThrows(
-          Exception.class,
-          () -> builder.build(),
-          "build should throw when required components not set");
+      final Exception exception =
+          assertThrows(
+              Exception.class,
+              () -> builder.build(),
+              "build should throw when required components not set");
       assertNotNull(exception, "Exception should not be null");
-      LOGGER.info("Correctly threw exception when building without components: "
-          + exception.getClass().getSimpleName() + ": " + exception.getMessage());
+      LOGGER.info(
+          "Correctly threw exception when building without components: "
+              + exception.getClass().getSimpleName()
+              + ": "
+              + exception.getMessage());
     }
 
     @Test
@@ -228,7 +239,8 @@ public final class WasiThreadsIntegrationTest {
   class ContextLifecycleTests {
 
     private void assumeFactorySupported() {
-      assumeTrue(WasiThreadsFactory.isSupported(),
+      assumeTrue(
+          WasiThreadsFactory.isSupported(),
           "WASI Threads factory not supported - skipping context tests");
     }
 

@@ -165,11 +165,20 @@ class JniAsyncRuntimeProviderTest {
     }
 
     @Test
-    @DisplayName("create should have @Override annotation")
-    void createShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("create method should match interface signature")
+    void createMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify the method exists and matches the interface method signature
+      // Note: @Override annotation may not be retained at runtime with all compilers
       Method method = JniAsyncRuntimeProvider.class.getMethod("create");
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "create should have @Override annotation");
+      Method interfaceMethod = AsyncRuntimeFactory.AsyncRuntimeProvider.class.getMethod("create");
+      assertEquals(
+          interfaceMethod.getReturnType(),
+          method.getReturnType(),
+          "Return type should match interface");
+      assertEquals(
+          interfaceMethod.getParameterCount(),
+          method.getParameterCount(),
+          "Parameter count should match interface");
     }
   }
 

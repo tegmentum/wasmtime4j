@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.FrameInfo;
 import ai.tegmentum.wasmtime4j.FrameSymbol;
 import ai.tegmentum.wasmtime4j.WasmBacktrace;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.*;
 
 /**
@@ -182,37 +183,38 @@ class PanamaBacktraceTest {
   }
 
   @Test
-  @DisplayName("Should handle FrameInfo with immutable symbols list")
-  void shouldHandleFrameInfoWithImmutableSymbolsList() {
+  @DisplayName("Should handle FrameInfo with defensive copied symbols list")
+  void shouldHandleFrameInfoWithDefensiveCopiedSymbolsList() {
     final FrameSymbol symbol = new FrameSymbol("test", "file.wasm", 42, 10);
     final FrameInfo frame =
         new FrameInfo(0, null, "test", 100, 50, Collections.singletonList(symbol));
 
-    // Verify list is immutable by checking it's the expected type
+    // Verify list is not null and has correct size
     assertNotNull(frame.getSymbols(), "Symbols list should not be null");
     assertEquals(1, frame.getSymbols().size(), "Should have one symbol");
 
-    // Attempt to modify should throw UnsupportedOperationException
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> frame.getSymbols().clear(),
-        "Symbols list should be immutable");
+    // Implementation returns defensive copy (mutable ArrayList) to protect internal state
+    // Verify modifying returned list doesn't affect original
+    final List<FrameSymbol> copy = frame.getSymbols();
+    copy.clear();
+    assertEquals(1, frame.getSymbols().size(), "Original should be unchanged after clearing copy");
   }
 
   @Test
-  @DisplayName("Should handle WasmBacktrace with immutable frames list")
-  void shouldHandleBacktraceWithImmutableFramesList() {
+  @DisplayName("Should handle WasmBacktrace with defensive copied frames list")
+  void shouldHandleBacktraceWithDefensiveCopiedFramesList() {
     final FrameInfo frame = new FrameInfo(0, null, "test", 100, 50, Collections.emptyList());
     final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
-    // Verify list is immutable
+    // Verify list is not null and has correct size
     assertNotNull(backtrace.getFrames(), "Frames list should not be null");
     assertEquals(1, backtrace.getFrames().size(), "Should have one frame");
 
-    // Attempt to modify should throw UnsupportedOperationException
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> backtrace.getFrames().clear(),
-        "Frames list should be immutable");
+    // Implementation returns defensive copy (mutable ArrayList) to protect internal state
+    // Verify modifying returned list doesn't affect original
+    final List<FrameInfo> copy = backtrace.getFrames();
+    copy.clear();
+    assertEquals(
+        1, backtrace.getFrames().size(), "Original should be unchanged after clearing copy");
   }
 }

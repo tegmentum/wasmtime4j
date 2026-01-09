@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
@@ -159,7 +160,7 @@ class WasiContextBuilderTest {
     void withEnvironmentShouldThrowForNullName() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withEnvironment(null, "value"),
           "Should throw for null name");
     }
@@ -169,7 +170,7 @@ class WasiContextBuilderTest {
     void withEnvironmentShouldThrowForEmptyName() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withEnvironment("", "value"),
           "Should throw for empty name");
     }
@@ -179,7 +180,7 @@ class WasiContextBuilderTest {
     void withEnvironmentShouldThrowForNullValue() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withEnvironment("KEY", null),
           "Should throw for null value");
     }
@@ -189,7 +190,7 @@ class WasiContextBuilderTest {
     void withEnvironmentMapShouldThrowForNullMap() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withEnvironment((Map<String, String>) null),
           "Should throw for null map");
     }
@@ -237,9 +238,7 @@ class WasiContextBuilderTest {
     void withArgumentShouldThrowForNullArgument() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withArgument(null),
-          "Should throw for null argument");
+          JniException.class, () -> builder.withArgument(null), "Should throw for null argument");
     }
 
     @Test
@@ -260,7 +259,7 @@ class WasiContextBuilderTest {
     void withArgumentsShouldThrowForNullArray() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withArguments((String[]) null),
           "Should throw for null array");
     }
@@ -292,7 +291,7 @@ class WasiContextBuilderTest {
     void withWorkingDirectoryShouldThrowForNull() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withWorkingDirectory(null),
           "Should throw for null directory");
     }
@@ -302,7 +301,7 @@ class WasiContextBuilderTest {
     void withWorkingDirectoryShouldThrowForEmptyString() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withWorkingDirectory(""),
           "Should throw for empty directory");
     }
@@ -326,7 +325,7 @@ class WasiContextBuilderTest {
     void withPreopenDirectoryShouldThrowForNullGuestDir() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withPreopenDirectory(null, "/tmp"),
           "Should throw for null guest dir");
     }
@@ -336,7 +335,7 @@ class WasiContextBuilderTest {
     void withPreopenDirectoryShouldThrowForNullHostDir() {
       final WasiContextBuilder builder = WasiContextBuilder.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withPreopenDirectory("/guest", null),
           "Should throw for null host dir");
     }

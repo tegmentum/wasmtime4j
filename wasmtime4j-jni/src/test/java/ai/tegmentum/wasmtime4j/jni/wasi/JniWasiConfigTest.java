@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -45,47 +46,80 @@ class JniWasiConfigTest {
     }
 
     @Test
-    @DisplayName("should have builder method")
-    void shouldHaveBuilderMethod() throws NoSuchMethodException {
-      final Method method = JniWasiConfig.class.getMethod("builder");
-      assertNotNull(method, "Should have builder method");
-    }
-  }
-
-  @Nested
-  @DisplayName("AutoCloseable Tests")
-  class AutoCloseableTests {
-
-    @Test
-    @DisplayName("should implement AutoCloseable")
-    void shouldImplementAutoCloseable() {
+    @DisplayName("should be final class")
+    void shouldBeFinalClass() {
       assertTrue(
-          AutoCloseable.class.isAssignableFrom(JniWasiConfig.class),
-          "JniWasiConfig should implement AutoCloseable");
+          Modifier.isFinal(JniWasiConfig.class.getModifiers()), "JniWasiConfig should be final");
     }
 
     @Test
-    @DisplayName("should have close method")
-    void shouldHaveCloseMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiConfig.class.getMethod("close"), "Should have close method");
+    @DisplayName("should implement WasiConfig")
+    void shouldImplementWasiConfig() {
+      assertTrue(
+          WasiConfig.class.isAssignableFrom(JniWasiConfig.class),
+          "JniWasiConfig should implement WasiConfig");
+    }
+
+    @Test
+    @DisplayName("should have toBuilder method")
+    void shouldHaveToBuilderMethod() throws NoSuchMethodException {
+      final Method method = JniWasiConfig.class.getMethod("toBuilder");
+      assertNotNull(method, "Should have toBuilder method");
     }
   }
 
   @Nested
-  @DisplayName("Native Handle Tests")
-  class NativeHandleTests {
+  @DisplayName("Configuration Method Tests")
+  class ConfigurationMethodTests {
 
     @Test
-    @DisplayName("should have getNativeHandle method")
-    void shouldHaveGetNativeHandleMethod() throws NoSuchMethodException {
+    @DisplayName("should have getEnvironment method")
+    void shouldHaveGetEnvironmentMethod() throws NoSuchMethodException {
       assertNotNull(
-          JniWasiConfig.class.getMethod("getNativeHandle"), "Should have getNativeHandle method");
+          JniWasiConfig.class.getMethod("getEnvironment"), "Should have getEnvironment method");
     }
 
     @Test
-    @DisplayName("should have isValid method")
-    void shouldHaveIsValidMethod() throws NoSuchMethodException {
-      assertNotNull(JniWasiConfig.class.getMethod("isValid"), "Should have isValid method");
+    @DisplayName("should have getArguments method")
+    void shouldHaveGetArgumentsMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getArguments"), "Should have getArguments method");
+    }
+
+    @Test
+    @DisplayName("should have getPreopenDirectories method")
+    void shouldHaveGetPreopenDirectoriesMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getPreopenDirectories"),
+          "Should have getPreopenDirectories method");
+    }
+
+    @Test
+    @DisplayName("should have getWorkingDirectory method")
+    void shouldHaveGetWorkingDirectoryMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getWorkingDirectory"),
+          "Should have getWorkingDirectory method");
+    }
+
+    @Test
+    @DisplayName("should have getMemoryLimit method")
+    void shouldHaveGetMemoryLimitMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getMemoryLimit"), "Should have getMemoryLimit method");
+    }
+
+    @Test
+    @DisplayName("should have getWasiVersion method")
+    void shouldHaveGetWasiVersionMethod() throws NoSuchMethodException {
+      assertNotNull(
+          JniWasiConfig.class.getMethod("getWasiVersion"), "Should have getWasiVersion method");
+    }
+
+    @Test
+    @DisplayName("should have validate method")
+    void shouldHaveValidateMethod() throws NoSuchMethodException {
+      assertNotNull(JniWasiConfig.class.getMethod("validate"), "Should have validate method");
     }
   }
 }

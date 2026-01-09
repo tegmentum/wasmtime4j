@@ -268,6 +268,35 @@ pub struct ThreadingMetrics {
 
 // Core configuration and data structures
 
+// Supporting types for ThreadPoolConfig
+#[derive(Debug, Clone, Default)]
+pub struct ThreadNamingScheme;
+
+#[derive(Debug, Clone, Default)]
+pub enum SchedulingAlgorithm {
+    #[default]
+    RoundRobin,
+    WorkStealing,
+    Priority,
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum NumaAffinity {
+    #[default]
+    None,
+    Local,
+    Balanced,
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum ThreadPriority {
+    Low,
+    #[default]
+    Normal,
+    High,
+    Realtime,
+}
+
 #[derive(Debug, Clone)]
 pub struct ThreadPoolConfig {
     /// Minimum number of threads
@@ -461,7 +490,7 @@ impl WasiThreadsContext {
         let thread_id = THREAD_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
 
         if thread_id > MAX_THREAD_ID {
-            return Err(WasmtimeError::Other(
+            return Err(WasmtimeError::from_string(
                 format!("Thread ID {} exceeds maximum allowed value {}", thread_id, MAX_THREAD_ID)
             ));
         }
@@ -544,7 +573,7 @@ impl WasiThreadsContext {
 
         let mut pool_manager = self.thread_pool_manager
             .write()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire pool manager lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire pool manager lock"))?;
 
         // Create thread pool with NUMA awareness
         let numa_placement = self.determine_numa_placement(&config).await?;
@@ -598,7 +627,7 @@ impl WasiThreadsContext {
 
         let mut sync_registry = self.sync_registry
             .write()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire sync registry lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire sync registry lock"))?;
 
         let primitive = match primitive_type {
             SyncPrimitiveType::Mutex => {
@@ -636,7 +665,7 @@ impl WasiThreadsContext {
 
         let mut migration_manager = self.migration_manager
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire migration manager lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire migration manager lock"))?;
 
         // Analyze current load distribution
         let load_analysis = migration_manager.analyze_load_distribution().await?;
@@ -666,15 +695,15 @@ impl WasiThreadsContext {
     pub async fn get_performance_report(&self) -> WasmtimeResult<ThreadingPerformanceReport> {
         let metrics = self.metrics
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire metrics lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
         let pool_manager = self.thread_pool_manager
             .read()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire pool manager lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire pool manager lock"))?;
 
         let profiler = self.profiler
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire profiler lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire profiler lock"))?;
 
         let report = ThreadingPerformanceReport {
             pool_utilization: metrics.pool_utilization.clone(),
@@ -698,7 +727,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<NumaPlacement> {
         let numa_scheduler = self.numa_scheduler
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire NUMA scheduler lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire NUMA scheduler lock"))?;
 
         numa_scheduler.determine_optimal_placement(config).await
     }
@@ -706,7 +735,7 @@ impl WasiThreadsContext {
     async fn initialize_work_stealing(&self, pool_name: &str) -> WasmtimeResult<()> {
         let mut coordinator = self.work_stealing_coordinator
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire work stealing coordinator lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire work stealing coordinator lock"))?;
 
         coordinator.initialize_pool_coordination(pool_name).await
     }
@@ -719,7 +748,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<String> {
         let pool_manager = self.thread_pool_manager
             .read()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire pool manager lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire pool manager lock"))?;
 
         pool_manager.select_optimal_pool(requested_pool, task, options).await
     }
@@ -732,7 +761,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<TaskSubmissionResult> {
         let coordinator = self.work_stealing_coordinator
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire work stealing coordinator lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire work stealing coordinator lock"))?;
 
         coordinator.submit_with_stealing(pool_name, task, options).await
     }
@@ -744,7 +773,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<()> {
         let mut detector = self.deadlock_detector
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire deadlock detector lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire deadlock detector lock"))?;
 
         detector.register_primitive(primitive_name, primitive_type).await
     }
@@ -752,7 +781,7 @@ impl WasiThreadsContext {
     async fn update_numa_scheduler(&self, migration_result: &MigrationResult) -> WasmtimeResult<()> {
         let mut scheduler = self.numa_scheduler
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire NUMA scheduler lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire NUMA scheduler lock"))?;
 
         scheduler.update_with_migration_result(migration_result).await
     }
@@ -766,7 +795,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<()> {
         let mut metrics = self.metrics
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire metrics lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
         metrics.record_pool_creation(pool_name, start_time.elapsed());
         Ok(())
@@ -779,7 +808,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<()> {
         let mut metrics = self.metrics
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire metrics lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
         metrics.record_task_submission(pool_name, start_time.elapsed());
         Ok(())
@@ -793,7 +822,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<()> {
         let mut metrics = self.metrics
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire metrics lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
         metrics.record_sync_primitive_creation(name, primitive_type, start_time.elapsed());
         Ok(())
@@ -806,7 +835,7 @@ impl WasiThreadsContext {
     ) -> WasmtimeResult<()> {
         let mut metrics = self.metrics
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire metrics lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
         metrics.record_migration(migration_result, start_time.elapsed());
         Ok(())
@@ -815,7 +844,7 @@ impl WasiThreadsContext {
     async fn update_task_profiling(&self, result: &TaskSubmissionResult) -> WasmtimeResult<()> {
         let mut profiler = self.profiler
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire profiler lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire profiler lock"))?;
 
         profiler.update_task_profiling(result).await
     }
@@ -823,7 +852,7 @@ impl WasiThreadsContext {
     async fn get_numa_performance_summary(&self) -> WasmtimeResult<NumaPerformanceSummary> {
         let scheduler = self.numa_scheduler
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire NUMA scheduler lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire NUMA scheduler lock"))?;
 
         scheduler.generate_performance_summary().await
     }
@@ -831,7 +860,7 @@ impl WasiThreadsContext {
     async fn get_deadlock_statistics(&self) -> WasmtimeResult<DeadlockStatistics> {
         let detector = self.deadlock_detector
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire deadlock detector lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire deadlock detector lock"))?;
 
         detector.generate_statistics().await
     }
@@ -839,7 +868,7 @@ impl WasiThreadsContext {
     async fn get_migration_statistics(&self) -> WasmtimeResult<MigrationStatistics> {
         let manager = self.migration_manager
             .lock()
-            .map_err(|_| WasmtimeError::Other("Failed to acquire migration manager lock".into()))?;
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire migration manager lock"))?;
 
         manager.generate_statistics().await
     }
@@ -1252,23 +1281,7 @@ pub struct WasiThreadsConfig {
 #[derive(Debug, Clone, Default)] pub struct DeadlockDetectorConfig;
 #[derive(Debug, Clone, Default)] pub struct MigrationManagerConfig;
 
-// Core types and enums
-#[derive(Debug, Clone, Default)]
-pub struct ThreadPoolConfig {
-    pub min_threads: usize,
-    pub max_threads: usize,
-    pub keep_alive: Duration,
-    pub queue_capacity: usize,
-    pub thread_naming: ThreadNamingScheme,
-    pub scheduler: SchedulingAlgorithm,
-    pub numa_affinity: NumaAffinity,
-    pub priority: ThreadPriority,
-}
-
-#[derive(Debug, Clone, Default)] pub struct ThreadNamingScheme;
-#[derive(Debug, Clone, Default)] pub enum SchedulingAlgorithm { #[default] RoundRobin }
-#[derive(Debug, Clone, Default)] pub enum NumaAffinity { #[default] None }
-#[derive(Debug, Clone, Default)] pub enum ThreadPriority { #[default] Normal }
+// Additional supporting types
 #[derive(Debug, Clone)] pub struct TaskPayload;
 #[derive(Debug, Clone, Default)] pub enum TaskPriority { #[default] Normal }
 #[derive(Debug, Clone)] pub struct ResourceRequirements;
@@ -1326,7 +1339,7 @@ pub struct ThreadPoolConfig {
 #[derive(Debug, Clone, Default)] pub struct ContentionMetrics;
 #[derive(Debug, Clone, Default)] pub struct WorkStealingMetrics;
 #[derive(Debug, Clone)] pub struct ThreadLifecycleEvent;
-#[derive(Debug, Clone)] pub struct PerformanceRegressionDetector;
+#[derive(Debug, Clone, Default)] pub struct PerformanceRegressionDetector;
 #[derive(Debug, Clone)] pub enum NumaPlacement { Automatic }
 #[derive(Debug, Clone)] pub enum SyncPrimitiveType { Mutex, CondVar, Semaphore, RwLock, Barrier }
 #[derive(Debug, Clone)] pub struct SyncPrimitiveConfig {
@@ -1457,9 +1470,4 @@ impl NumaAwareMigration {
     fn new() -> Self { Self }
 }
 
-// Export the main context and configuration types
-pub use self::{
-    WasiThreadsContext, WasiThreadsConfig, ThreadPoolConfig, WorkItem,
-    SyncPrimitiveType, SyncPrimitiveConfig, TaskSubmissionOptions,
-    ThreadMigrationRequest, MigrationResult, ThreadingPerformanceReport,
-};
+// Main types are already pub and don't need re-export

@@ -164,12 +164,19 @@ class JniModuleCacheProviderTest {
     }
 
     @Test
-    @DisplayName("create should have @Override annotation")
-    void createShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("create method should match interface signature")
+    void createMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify the method exists and matches the interface method signature
+      // Note: @Override annotation may not be retained at runtime with all compilers
       Method method =
           JniModuleCacheProvider.class.getMethod("create", Engine.class, ModuleCacheConfig.class);
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "create should have @Override annotation");
+      Method interfaceMethod =
+          ModuleCacheFactory.ModuleCacheProvider.class.getMethod(
+              "create", Engine.class, ModuleCacheConfig.class);
+      assertEquals(
+          interfaceMethod.getReturnType(),
+          method.getReturnType(),
+          "Return type should match interface");
     }
   }
 
@@ -231,12 +238,17 @@ class JniModuleCacheProviderTest {
   class FieldTests {
 
     @Test
-    @DisplayName("should have no declared fields")
-    void shouldHaveNoDeclaredFields() {
+    @DisplayName("should have no non-synthetic declared fields")
+    void shouldHaveNoNonSyntheticDeclaredFields() {
+      // Filter out synthetic fields (e.g., $jacocoData from code coverage)
+      long nonSyntheticCount =
+          java.util.Arrays.stream(JniModuleCacheProvider.class.getDeclaredFields())
+              .filter(f -> !f.isSynthetic())
+              .count();
       assertEquals(
           0,
-          JniModuleCacheProvider.class.getDeclaredFields().length,
-          "JniModuleCacheProvider should have no declared fields");
+          nonSyntheticCount,
+          "JniModuleCacheProvider should have no non-synthetic declared fields");
     }
   }
 

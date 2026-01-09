@@ -22,11 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
+import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiResourceLimits;
 import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityPolicyEngine;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -118,12 +120,12 @@ class JniWasiOperationsTest {
     }
 
     @Test
-    @DisplayName("Should have executor field")
-    void shouldHaveExecutorField() throws Exception {
-      final Field field = WasiAdvancedFileOperations.class.getDeclaredField("executor");
-      assertNotNull(field, "executor field should exist");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "executor should be private");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "executor should be final");
+    @DisplayName("Should have asyncExecutor field")
+    void shouldHaveAsyncExecutorField() throws Exception {
+      final Field field = WasiAdvancedFileOperations.class.getDeclaredField("asyncExecutor");
+      assertNotNull(field, "asyncExecutor field should exist");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "asyncExecutor should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "asyncExecutor should be final");
       assertEquals(ExecutorService.class, field.getType(), "Should be ExecutorService type");
     }
 
@@ -164,7 +166,7 @@ class JniWasiOperationsTest {
     void shouldHaveSetFilePermissionsMethod() throws Exception {
       final Method method =
           WasiAdvancedFileOperations.class.getDeclaredMethod(
-              "setFilePermissions", String.class, Set.class);
+              "setFilePermissions", String.class, int.class);
       assertNotNull(method, "setFilePermissions method should exist");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -177,7 +179,7 @@ class JniWasiOperationsTest {
           WasiAdvancedFileOperations.class.getDeclaredMethod("getFilePermissions", String.class);
       assertNotNull(method, "getFilePermissions method should exist");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
-      assertEquals(Set.class, method.getReturnType(), "Should return Set");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
 
     @Test
@@ -197,7 +199,7 @@ class JniWasiOperationsTest {
       // copyFileAsync
       final Method copyAsync =
           WasiAdvancedFileOperations.class.getDeclaredMethod(
-              "copyFileAsync", String.class, String.class, boolean.class);
+              "copyFileAsync", String.class, String.class);
       assertNotNull(copyAsync, "copyFileAsync method should exist");
       assertTrue(Modifier.isPublic(copyAsync.getModifiers()), "Should be public");
       assertEquals(
@@ -206,7 +208,7 @@ class JniWasiOperationsTest {
       // moveFileAsync
       final Method moveAsync =
           WasiAdvancedFileOperations.class.getDeclaredMethod(
-              "moveFileAsync", String.class, String.class, boolean.class);
+              "moveFileAsync", String.class, String.class);
       assertNotNull(moveAsync, "moveFileAsync method should exist");
       assertEquals(
           CompletableFuture.class, moveAsync.getReturnType(), "Should return CompletableFuture");
@@ -250,7 +252,8 @@ class JniWasiOperationsTest {
     @DisplayName("Should have required constructor")
     void shouldHaveRequiredConstructor() throws Exception {
       final Constructor<?> constructor =
-          WasiAdvancedNetworking.class.getDeclaredConstructor(WasiContext.class);
+          WasiAdvancedNetworking.class.getDeclaredConstructor(
+              WasiContext.class, ExecutorService.class);
       assertNotNull(constructor, "Constructor should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
@@ -268,20 +271,20 @@ class JniWasiOperationsTest {
     @Test
     @DisplayName("Should have connection tracking fields")
     void shouldHaveConnectionTrackingFields() throws Exception {
-      // Check http2Connections
-      final Field http2Field = WasiAdvancedNetworking.class.getDeclaredField("http2Connections");
-      assertNotNull(http2Field, "http2Connections field should exist");
-      assertTrue(Modifier.isPrivate(http2Field.getModifiers()), "Should be private");
+      // Check activeConnections field
+      final Field activeField = WasiAdvancedNetworking.class.getDeclaredField("activeConnections");
+      assertNotNull(activeField, "activeConnections field should exist");
+      assertTrue(Modifier.isPrivate(activeField.getModifiers()), "Should be private");
 
-      // Check http3Connections
-      final Field http3Field = WasiAdvancedNetworking.class.getDeclaredField("http3Connections");
-      assertNotNull(http3Field, "http3Connections field should exist");
-      assertTrue(Modifier.isPrivate(http3Field.getModifiers()), "Should be private");
-
-      // Check webSocketConnections
+      // Check webSocketConnections field
       final Field wsField = WasiAdvancedNetworking.class.getDeclaredField("webSocketConnections");
       assertNotNull(wsField, "webSocketConnections field should exist");
       assertTrue(Modifier.isPrivate(wsField.getModifiers()), "Should be private");
+
+      // Check asyncExecutor field
+      final Field execField = WasiAdvancedNetworking.class.getDeclaredField("asyncExecutor");
+      assertNotNull(execField, "asyncExecutor field should exist");
+      assertTrue(Modifier.isPrivate(execField.getModifiers()), "Should be private");
     }
 
     @Test
@@ -297,13 +300,14 @@ class JniWasiOperationsTest {
           Class.forName(WasiAdvancedNetworking.class.getName() + "$Http2Response");
       assertNotNull(responseClass, "Http2Response inner class should exist");
 
-      // openHttp2Connection method
-      final Method openMethod =
+      // createHttp2ConnectionAsync method (async API)
+      final Method createMethod =
           WasiAdvancedNetworking.class.getDeclaredMethod(
-              "openHttp2Connection", String.class, int.class, optionsClass);
-      assertNotNull(openMethod, "openHttp2Connection method should exist");
-      assertTrue(Modifier.isPublic(openMethod.getModifiers()), "Should be public");
-      assertEquals(long.class, openMethod.getReturnType(), "Should return long");
+              "createHttp2ConnectionAsync", String.class, int.class, boolean.class, optionsClass);
+      assertNotNull(createMethod, "createHttp2ConnectionAsync method should exist");
+      assertTrue(Modifier.isPublic(createMethod.getModifiers()), "Should be public");
+      assertEquals(
+          CompletableFuture.class, createMethod.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -314,13 +318,14 @@ class JniWasiOperationsTest {
           Class.forName(WasiAdvancedNetworking.class.getName() + "$Http3Options");
       assertNotNull(optionsClass, "Http3Options inner class should exist");
 
-      // openHttp3Connection method
-      final Method openMethod =
+      // createHttp3ConnectionAsync method (async API)
+      final Method createMethod =
           WasiAdvancedNetworking.class.getDeclaredMethod(
-              "openHttp3Connection", String.class, int.class, optionsClass);
-      assertNotNull(openMethod, "openHttp3Connection method should exist");
-      assertTrue(Modifier.isPublic(openMethod.getModifiers()), "Should be public");
-      assertEquals(long.class, openMethod.getReturnType(), "Should return long");
+              "createHttp3ConnectionAsync", String.class, int.class, optionsClass);
+      assertNotNull(createMethod, "createHttp3ConnectionAsync method should exist");
+      assertTrue(Modifier.isPublic(createMethod.getModifiers()), "Should be public");
+      assertEquals(
+          CompletableFuture.class, createMethod.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -336,28 +341,39 @@ class JniWasiOperationsTest {
           Class.forName(WasiAdvancedNetworking.class.getName() + "$WebSocketMessage");
       assertNotNull(messageClass, "WebSocketMessage inner class should exist");
 
-      // openWebSocket method
-      final Method openMethod =
-          WasiAdvancedNetworking.class.getDeclaredMethod(
-              "openWebSocket", String.class, optionsClass);
-      assertNotNull(openMethod, "openWebSocket method should exist");
-      assertTrue(Modifier.isPublic(openMethod.getModifiers()), "Should be public");
-      assertEquals(long.class, openMethod.getReturnType(), "Should return long");
+      // Check for WebSocketMessageType inner enum
+      final Class<?> messageTypeClass =
+          Class.forName(WasiAdvancedNetworking.class.getName() + "$WebSocketMessageType");
+      assertNotNull(messageTypeClass, "WebSocketMessageType inner enum should exist");
 
-      // sendWebSocketMessage method
+      // createWebSocketAsync method (async API)
+      final Method createMethod =
+          WasiAdvancedNetworking.class.getDeclaredMethod(
+              "createWebSocketAsync", String.class, List.class, Map.class, optionsClass);
+      assertNotNull(createMethod, "createWebSocketAsync method should exist");
+      assertTrue(Modifier.isPublic(createMethod.getModifiers()), "Should be public");
+      assertEquals(
+          CompletableFuture.class, createMethod.getReturnType(), "Should return CompletableFuture");
+
+      // sendWebSocketMessageAsync method (async API)
       final Method sendMethod =
           WasiAdvancedNetworking.class.getDeclaredMethod(
-              "sendWebSocketMessage", long.class, messageClass);
-      assertNotNull(sendMethod, "sendWebSocketMessage method should exist");
+              "sendWebSocketMessageAsync", long.class, ByteBuffer.class, messageTypeClass);
+      assertNotNull(sendMethod, "sendWebSocketMessageAsync method should exist");
       assertTrue(Modifier.isPublic(sendMethod.getModifiers()), "Should be public");
+      assertEquals(
+          CompletableFuture.class, sendMethod.getReturnType(), "Should return CompletableFuture");
 
-      // receiveWebSocketMessage method
+      // receiveWebSocketMessageAsync method (async API)
       final Method receiveMethod =
           WasiAdvancedNetworking.class.getDeclaredMethod(
-              "receiveWebSocketMessage", long.class, long.class);
-      assertNotNull(receiveMethod, "receiveWebSocketMessage method should exist");
+              "receiveWebSocketMessageAsync", long.class, ByteBuffer.class, long.class);
+      assertNotNull(receiveMethod, "receiveWebSocketMessageAsync method should exist");
       assertTrue(Modifier.isPublic(receiveMethod.getModifiers()), "Should be public");
-      assertEquals(messageClass, receiveMethod.getReturnType(), "Should return WebSocketMessage");
+      assertEquals(
+          CompletableFuture.class,
+          receiveMethod.getReturnType(),
+          "Should return CompletableFuture");
     }
 
     @Test
@@ -431,15 +447,17 @@ class JniWasiOperationsTest {
     }
 
     @Test
-    @DisplayName("Should have private constructor")
+    @DisplayName("Should have private constructor taking Builder")
     void shouldHavePrivateConstructor() throws Exception {
-      // WasiPermissionManager uses Builder pattern, so constructor is private
-      final Constructor<?>[] constructors = WasiPermissionManager.class.getDeclaredConstructors();
-      for (final Constructor<?> constructor : constructors) {
-        assertTrue(
-            Modifier.isPrivate(constructor.getModifiers()),
-            "All constructors should be private for Builder pattern");
-      }
+      // WasiPermissionManager uses Builder pattern, constructor takes Builder
+      final Class<?> builderClass =
+          Class.forName(WasiPermissionManager.class.getName() + "$Builder");
+      final Constructor<?> constructor =
+          WasiPermissionManager.class.getDeclaredConstructor(builderClass);
+      assertNotNull(constructor, "Constructor taking Builder should exist");
+      assertTrue(
+          Modifier.isPrivate(constructor.getModifiers()),
+          "Constructor should be private for Builder pattern");
     }
 
     @Test
@@ -473,13 +491,16 @@ class JniWasiOperationsTest {
       final Class<?> builderClass =
           Class.forName(WasiPermissionManager.class.getName() + "$Builder");
 
-      // Check for common builder methods
+      // Check for actual builder methods
       final Set<String> expectedMethods = new HashSet<>();
-      expectedMethods.add("addPreopenedDirectory");
-      expectedMethods.add("addAllowedEnvironmentVariable");
-      expectedMethods.add("setMaxMemorySize");
-      expectedMethods.add("setMaxFileDescriptors");
-      expectedMethods.add("allowNetworkAccess");
+      expectedMethods.add("withPathPermission");
+      expectedMethods.add("withPathPermissions");
+      expectedMethods.add("withGlobalPermission");
+      expectedMethods.add("withEnvironmentVariable");
+      expectedMethods.add("withResourceLimits");
+      expectedMethods.add("withDangerousOperations");
+      expectedMethods.add("withStrictPathValidation");
+      expectedMethods.add("build");
 
       final Method[] methods = builderClass.getDeclaredMethods();
       final Set<String> methodNames = new HashSet<>();
@@ -533,45 +554,67 @@ class JniWasiOperationsTest {
     }
 
     @Test
-    @DisplayName("Should have permission check methods")
-    void shouldHavePermissionCheckMethods() throws Exception {
-      // isDirectoryAllowed
-      final Method isDirAllowed =
-          WasiPermissionManager.class.getDeclaredMethod("isDirectoryAllowed", Path.class);
-      assertNotNull(isDirAllowed, "isDirectoryAllowed method should exist");
-      assertTrue(Modifier.isPublic(isDirAllowed.getModifiers()), "Should be public");
-      assertEquals(boolean.class, isDirAllowed.getReturnType(), "Should return boolean");
+    @DisplayName("Should have permission validation methods")
+    void shouldHavePermissionValidationMethods() throws Exception {
+      // validateFileSystemAccess(Path)
+      final Method validateFs1 =
+          WasiPermissionManager.class.getDeclaredMethod("validateFileSystemAccess", Path.class);
+      assertNotNull(validateFs1, "validateFileSystemAccess(Path) method should exist");
+      assertTrue(Modifier.isPublic(validateFs1.getModifiers()), "Should be public");
+      assertEquals(void.class, validateFs1.getReturnType(), "Should return void");
 
-      // isEnvironmentVariableAllowed
-      final Method isEnvAllowed =
+      // validateFileSystemAccess(Path, WasiFileOperation)
+      final Method validateFs2 =
           WasiPermissionManager.class.getDeclaredMethod(
-              "isEnvironmentVariableAllowed", String.class);
-      assertNotNull(isEnvAllowed, "isEnvironmentVariableAllowed method should exist");
-      assertTrue(Modifier.isPublic(isEnvAllowed.getModifiers()), "Should be public");
-      assertEquals(boolean.class, isEnvAllowed.getReturnType(), "Should return boolean");
+              "validateFileSystemAccess", Path.class, WasiFileOperation.class);
+      assertNotNull(
+          validateFs2, "validateFileSystemAccess(Path, WasiFileOperation) method should exist");
+      assertTrue(Modifier.isPublic(validateFs2.getModifiers()), "Should be public");
+      assertEquals(void.class, validateFs2.getReturnType(), "Should return void");
 
-      // isNetworkAccessAllowed
-      final Method isNetAllowed =
-          WasiPermissionManager.class.getDeclaredMethod("isNetworkAccessAllowed");
-      assertNotNull(isNetAllowed, "isNetworkAccessAllowed method should exist");
-      assertTrue(Modifier.isPublic(isNetAllowed.getModifiers()), "Should be public");
-      assertEquals(boolean.class, isNetAllowed.getReturnType(), "Should return boolean");
+      // validateEnvironmentAccess
+      final Method validateEnv =
+          WasiPermissionManager.class.getDeclaredMethod("validateEnvironmentAccess", String.class);
+      assertNotNull(validateEnv, "validateEnvironmentAccess method should exist");
+      assertTrue(Modifier.isPublic(validateEnv.getModifiers()), "Should be public");
+      assertEquals(void.class, validateEnv.getReturnType(), "Should return void");
+
+      // areDangerousOperationsAllowed
+      final Method isDangerousAllowed =
+          WasiPermissionManager.class.getDeclaredMethod("areDangerousOperationsAllowed");
+      assertNotNull(isDangerousAllowed, "areDangerousOperationsAllowed method should exist");
+      assertTrue(Modifier.isPublic(isDangerousAllowed.getModifiers()), "Should be public");
+      assertEquals(boolean.class, isDangerousAllowed.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("Should have resource limit fields")
-    void shouldHaveResourceLimitFields() throws Exception {
-      final Field maxMemoryField = WasiPermissionManager.class.getDeclaredField("maxMemorySize");
-      assertNotNull(maxMemoryField, "maxMemorySize field should exist");
-      assertTrue(Modifier.isPrivate(maxMemoryField.getModifiers()), "Should be private");
-      assertTrue(Modifier.isFinal(maxMemoryField.getModifiers()), "Should be final");
-      assertEquals(long.class, maxMemoryField.getType(), "Should be long type");
+    @DisplayName("Should have resource limits field")
+    void shouldHaveResourceLimitsField() throws Exception {
+      final Field resourceLimitsField =
+          WasiPermissionManager.class.getDeclaredField("resourceLimits");
+      assertNotNull(resourceLimitsField, "resourceLimits field should exist");
+      assertTrue(Modifier.isPrivate(resourceLimitsField.getModifiers()), "Should be private");
+      assertTrue(Modifier.isFinal(resourceLimitsField.getModifiers()), "Should be final");
+      assertEquals(
+          WasiResourceLimits.class,
+          resourceLimitsField.getType(),
+          "Should be WasiResourceLimits type");
 
-      final Field maxFdField = WasiPermissionManager.class.getDeclaredField("maxFileDescriptors");
-      assertNotNull(maxFdField, "maxFileDescriptors field should exist");
-      assertTrue(Modifier.isPrivate(maxFdField.getModifiers()), "Should be private");
-      assertTrue(Modifier.isFinal(maxFdField.getModifiers()), "Should be final");
-      assertEquals(int.class, maxFdField.getType(), "Should be int type");
+      // Check allowDangerousOperations field
+      final Field dangerousField =
+          WasiPermissionManager.class.getDeclaredField("allowDangerousOperations");
+      assertNotNull(dangerousField, "allowDangerousOperations field should exist");
+      assertTrue(Modifier.isPrivate(dangerousField.getModifiers()), "Should be private");
+      assertTrue(Modifier.isFinal(dangerousField.getModifiers()), "Should be final");
+      assertEquals(boolean.class, dangerousField.getType(), "Should be boolean type");
+
+      // Check strictPathValidation field
+      final Field strictField =
+          WasiPermissionManager.class.getDeclaredField("strictPathValidation");
+      assertNotNull(strictField, "strictPathValidation field should exist");
+      assertTrue(Modifier.isPrivate(strictField.getModifiers()), "Should be private");
+      assertTrue(Modifier.isFinal(strictField.getModifiers()), "Should be final");
+      assertEquals(boolean.class, strictField.getType(), "Should be boolean type");
     }
   }
 

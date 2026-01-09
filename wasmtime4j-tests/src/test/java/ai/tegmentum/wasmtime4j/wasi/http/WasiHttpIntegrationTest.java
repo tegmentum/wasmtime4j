@@ -210,8 +210,12 @@ public final class WasiHttpIntegrationTest {
       assertNotNull(blockedHosts, "Blocked hosts should not be null");
       assertTrue(blockedHosts.contains("internal.example.com"), "Should contain blocked host");
 
-      LOGGER.info("Host pattern verification passed with " + allowedHosts.size() + " allowed, "
-          + blockedHosts.size() + " blocked");
+      LOGGER.info(
+          "Host pattern verification passed with "
+              + allowedHosts.size()
+              + " allowed, "
+              + blockedHosts.size()
+              + " blocked");
     }
 
     @Test
@@ -291,10 +295,7 @@ public final class WasiHttpIntegrationTest {
 
       // Test that valid config passes validation
       final WasiHttpConfig validConfig =
-          WasiHttpConfig.builder()
-              .allowHost("example.com")
-              .withMaxConnections(10)
-              .build();
+          WasiHttpConfig.builder().allowHost("example.com").withMaxConnections(10).build();
       validConfig.validate();
       LOGGER.info("Valid config passed validation");
 
@@ -312,20 +313,15 @@ public final class WasiHttpIntegrationTest {
 
       // Test HTTP/2 enabled
       final WasiHttpConfig configWithHttp2 =
-          WasiHttpConfig.builder()
-              .withHttp2(true)
-              .withConnectionPooling(true)
-              .build();
+          WasiHttpConfig.builder().withHttp2(true).withConnectionPooling(true).build();
 
       assertTrue(configWithHttp2.isHttp2Enabled(), "HTTP/2 should be enabled");
-      assertTrue(configWithHttp2.isConnectionPoolingEnabled(), "Connection pooling should be enabled");
+      assertTrue(
+          configWithHttp2.isConnectionPoolingEnabled(), "Connection pooling should be enabled");
 
       // Test HTTP/2 disabled
       final WasiHttpConfig configWithoutHttp2 =
-          WasiHttpConfig.builder()
-              .withHttp2(false)
-              .withConnectionPooling(false)
-              .build();
+          WasiHttpConfig.builder().withHttp2(false).withConnectionPooling(false).build();
 
       assertFalse(configWithoutHttp2.isHttp2Enabled(), "HTTP/2 should be disabled");
       assertFalse(configWithoutHttp2.isConnectionPoolingEnabled(), "Pooling should be disabled");
@@ -341,10 +337,7 @@ public final class WasiHttpIntegrationTest {
 
       // Test with redirects enabled
       final WasiHttpConfig configFollowRedirects =
-          WasiHttpConfig.builder()
-              .followRedirects(true)
-              .withMaxRedirects(5)
-              .build();
+          WasiHttpConfig.builder().followRedirects(true).withMaxRedirects(5).build();
 
       assertTrue(configFollowRedirects.isFollowRedirects(), "Should follow redirects");
       final Optional<Integer> maxRedirects = configFollowRedirects.getMaxRedirects();
@@ -353,9 +346,7 @@ public final class WasiHttpIntegrationTest {
 
       // Test with redirects disabled
       final WasiHttpConfig configNoRedirects =
-          WasiHttpConfig.builder()
-              .followRedirects(false)
-              .build();
+          WasiHttpConfig.builder().followRedirects(false).build();
 
       assertFalse(configNoRedirects.isFollowRedirects(), "Should not follow redirects");
 
@@ -369,10 +360,7 @@ public final class WasiHttpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final String userAgent = "Wasmtime4j/1.0.0";
-      final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .withUserAgent(userAgent)
-              .build();
+      final WasiHttpConfig config = WasiHttpConfig.builder().withUserAgent(userAgent).build();
 
       final Optional<String> configuredUserAgent = config.getUserAgent();
       assertTrue(configuredUserAgent.isPresent(), "User agent should be present");
@@ -388,9 +376,7 @@ public final class WasiHttpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .allowMethods("GET", "POST", "PUT")
-              .build();
+          WasiHttpConfig.builder().allowMethods("GET", "POST", "PUT").build();
 
       final List<String> allowedMethods = config.getAllowedMethods();
       assertNotNull(allowedMethods, "Allowed methods should not be null");
@@ -444,10 +430,7 @@ public final class WasiHttpIntegrationTest {
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .allowHost("api.example.com")
-              .build();
+      final WasiHttpConfig config = WasiHttpConfig.builder().allowHost("api.example.com").build();
 
       // Create context - use JNI implementation directly since sharedHttpContext is already created
       assertNotNull(sharedHttpContext, "Shared HTTP context should exist");
@@ -606,10 +589,7 @@ public final class WasiHttpIntegrationTest {
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .allowAllHosts()
-              .build();
+      final WasiHttpConfig config = WasiHttpConfig.builder().allowAllHosts().build();
 
       final Class<?> jniContextClass =
           Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
@@ -633,10 +613,7 @@ public final class WasiHttpIntegrationTest {
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .allowHost("example.com")
-              .build();
+      final WasiHttpConfig config = WasiHttpConfig.builder().allowHost("example.com").build();
 
       final Class<?> jniContextClass =
           Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
@@ -665,13 +642,11 @@ public final class WasiHttpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config =
-          WasiHttpConfig.builder()
-              .requireHttps(true)
-              .withCertificateValidation(true)
-              .build();
+          WasiHttpConfig.builder().requireHttps(true).withCertificateValidation(true).build();
 
       assertTrue(config.isHttpsRequired(), "HTTPS should be required");
-      assertTrue(config.isCertificateValidationEnabled(), "Certificate validation should be enabled");
+      assertTrue(
+          config.isCertificateValidationEnabled(), "Certificate validation should be enabled");
 
       LOGGER.info("HTTPS requirement verification passed");
     }
@@ -701,7 +676,8 @@ public final class WasiHttpIntegrationTest {
       assertTrue(context.isHostAllowed("www.example.com"), "www.example.com should be allowed");
 
       // But blocked host is denied
-      assertFalse(context.isHostAllowed("secret.example.com"), "secret.example.com should be blocked");
+      assertFalse(
+          context.isHostAllowed("secret.example.com"), "secret.example.com should be blocked");
 
       LOGGER.info("Block list priority verification passed");
     }
@@ -714,16 +690,12 @@ public final class WasiHttpIntegrationTest {
 
       // Test with validation enabled
       final WasiHttpConfig configEnabled =
-          WasiHttpConfig.builder()
-              .withCertificateValidation(true)
-              .build();
+          WasiHttpConfig.builder().withCertificateValidation(true).build();
       assertTrue(configEnabled.isCertificateValidationEnabled(), "Validation should be enabled");
 
       // Test with validation disabled (not recommended for production!)
       final WasiHttpConfig configDisabled =
-          WasiHttpConfig.builder()
-              .withCertificateValidation(false)
-              .build();
+          WasiHttpConfig.builder().withCertificateValidation(false).build();
       assertFalse(configDisabled.isCertificateValidationEnabled(), "Validation should be disabled");
 
       LOGGER.info("Certificate validation configuration verification passed");

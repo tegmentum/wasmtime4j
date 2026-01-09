@@ -169,7 +169,26 @@ impl HostFunction {
         caller_context_usage: CallerContextUsage,
         requires_caller_context: bool,
     ) -> WasmtimeResult<Arc<Self>> {
+        use std::io::Write;
+        fn debug_log(msg: &str) {
+            let log_path = std::env::var("HOME")
+                .map(|h| format!("{}/wasmtime4j-debug.log", h))
+                .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path) {
+                let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0), msg);
+                let _ = file.flush();
+            }
+        }
+
+        debug_log(&format!("HostFunction::new_with_optimization: name={}", name));
         let id = NEXT_HOST_FUNCTION_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        debug_log(&format!("HostFunction::new_with_optimization: assigned id={}", id));
 
         let host_func = Arc::new(HostFunction {
             id,
@@ -182,12 +201,16 @@ impl HostFunction {
         });
 
         // Register to prevent GC
+        debug_log("HostFunction: acquiring registry lock...");
         {
             let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock host function registry: {}", e),
             })?;
+            debug_log(&format!("HostFunction: registry lock acquired, inserting id={}", id));
             registry.insert(id, Arc::clone(&host_func));
+            debug_log(&format!("HostFunction: registry now has {} entries", registry.len()));
         }
+        debug_log("HostFunction: registry lock released");
 
         log::debug!("Created host function with ID: {} (caller context: {:?}, required: {})",
                    id, caller_context_usage, requires_caller_context);

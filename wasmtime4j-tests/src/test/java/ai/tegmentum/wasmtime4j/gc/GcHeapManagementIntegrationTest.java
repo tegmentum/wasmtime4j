@@ -145,8 +145,7 @@ public final class GcHeapManagementIntegrationTest {
       gcRuntime.registerStructType(pointType);
 
       for (int i = 0; i < 50; i++) {
-        gcRuntime.createStruct(
-            pointType, Arrays.asList(GcValue.i32(i), GcValue.i32(i * 2)));
+        gcRuntime.createStruct(pointType, Arrays.asList(GcValue.i32(i), GcValue.i32(i * 2)));
       }
 
       GcStats after = gcRuntime.getGcStats();
@@ -174,8 +173,7 @@ public final class GcHeapManagementIntegrationTest {
       GcStats after = gcRuntime.getGcStats();
       long finalCollections = after.getMajorCollections();
 
-      LOGGER.info(
-          "Collections before: " + initialCollections + ", after: " + finalCollections);
+      LOGGER.info("Collections before: " + initialCollections + ", after: " + finalCollections);
       assertTrue(
           finalCollections > initialCollections,
           "Collection count should increase after triggering GC");
@@ -197,8 +195,7 @@ public final class GcHeapManagementIntegrationTest {
           ArrayType.builder("IntArray").elementType(FieldType.i32()).mutable(true).build();
       gcRuntime.registerArrayType(intArrayType);
       gcRuntime.createArray(
-          intArrayType,
-          Arrays.asList(GcValue.i32(1), GcValue.i32(2), GcValue.i32(3)));
+          intArrayType, Arrays.asList(GcValue.i32(1), GcValue.i32(2), GcValue.i32(3)));
 
       GcHeapInspection inspection = gcRuntime.inspectHeap();
       assertNotNull(inspection, "Heap inspection should not be null");
@@ -236,7 +233,8 @@ public final class GcHeapManagementIntegrationTest {
       GcHeapInspection inspection = gcRuntime.inspectHeap();
       assertNotNull(inspection, "Heap inspection should not be null");
 
-      LOGGER.info("Created nested objects, heap has " + inspection.getTotalObjectCount() + " objects");
+      LOGGER.info(
+          "Created nested objects, heap has " + inspection.getTotalObjectCount() + " objects");
     }
   }
 
@@ -457,8 +455,7 @@ public final class GcHeapManagementIntegrationTest {
       LOGGER.info("  Total objects analyzed: " + analysis.getTotalObjectCount());
       LOGGER.info("  Potential leak count: " + analysis.getPotentialLeakCount());
 
-      assertTrue(
-          analysis.getTotalObjectCount() >= 0, "Total object count should be non-negative");
+      assertTrue(analysis.getTotalObjectCount() >= 0, "Total object count should be non-negative");
       assertTrue(
           analysis.getPotentialLeakCount() >= 0, "Potential leak count should be non-negative");
     }
@@ -477,7 +474,8 @@ public final class GcHeapManagementIntegrationTest {
       LOGGER.info("  Corruption count: " + analysis.getCorruptionIssues().size());
 
       // In normal operation, there should be no corruption
-      assertFalse(analysis.isCorruptionDetected(), "Should not detect corruption in normal operation");
+      assertFalse(
+          analysis.isCorruptionDetected(), "Should not detect corruption in normal operation");
     }
 
     @Test
@@ -493,7 +491,9 @@ public final class GcHeapManagementIntegrationTest {
       LOGGER.info("  All satisfied: " + validation.areAllInvariantsSatisfied());
       LOGGER.info("  Violations: " + validation.getViolationCount());
 
-      assertTrue(validation.areAllInvariantsSatisfied(), "GC invariants should be satisfied in normal operation");
+      assertTrue(
+          validation.areAllInvariantsSatisfied(),
+          "GC invariants should be satisfied in normal operation");
       assertEquals(0, validation.getViolationCount(), "Should have no invariant violations");
     }
   }
@@ -531,8 +531,7 @@ public final class GcHeapManagementIntegrationTest {
 
       assertTrue(
           allocationStats.getTotalAllocations() >= 100, "Should have at least 100 allocations");
-      assertTrue(
-          gcStats.getTotalCollections() >= 1, "Should have at least 1 collection");
+      assertTrue(gcStats.getTotalCollections() >= 1, "Should have at least 1 collection");
     }
 
     @Test
@@ -616,8 +615,7 @@ public final class GcHeapManagementIntegrationTest {
       StructInstance struct = gcRuntime.createStruct(type, Arrays.asList(GcValue.i32(100)));
 
       // Valid operation
-      boolean safeRead =
-          gcRuntime.enforceTypeSafety("struct.get", Arrays.asList(struct, 0));
+      boolean safeRead = gcRuntime.enforceTypeSafety("struct.get", Arrays.asList(struct, 0));
       assertTrue(safeRead, "Struct field read should be type-safe");
 
       // Invalid operation (wrong type for operation)
@@ -667,7 +665,8 @@ public final class GcHeapManagementIntegrationTest {
       Object bridge = gcRuntime.createSharingBridge(objectsToShare);
       assertNotNull(bridge, "Sharing bridge should not be null");
 
-      LOGGER.info("Cross-language sharing bridge created for " + objectsToShare.size() + " objects");
+      LOGGER.info(
+          "Cross-language sharing bridge created for " + objectsToShare.size() + " objects");
     }
   }
 
@@ -754,11 +753,7 @@ public final class GcHeapManagementIntegrationTest {
           gcRuntime.createArray(
               type,
               Arrays.asList(
-                  GcValue.i32(1),
-                  GcValue.i32(2),
-                  GcValue.i32(3),
-                  GcValue.i32(4),
-                  GcValue.i32(5)));
+                  GcValue.i32(1), GcValue.i32(2), GcValue.i32(3), GcValue.i32(4), GcValue.i32(5)));
       ArrayInstance dest = gcRuntime.createArray(type, 5);
 
       // Copy middle 3 elements

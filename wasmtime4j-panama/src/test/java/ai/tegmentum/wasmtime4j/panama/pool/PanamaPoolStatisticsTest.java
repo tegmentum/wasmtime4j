@@ -167,8 +167,9 @@ class PanamaPoolStatisticsTest {
       final PanamaPoolStatistics stats =
           new PanamaPoolStatistics(100L, 80L, 20L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-      // Reuse ratio = instancesReused / instancesAllocated = 80/100 = 0.8
-      assertEquals(0.8, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.8");
+      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 80/180 ≈ 0.444
+      assertEquals(
+          0.4444444444444444, stats.getReuseRatio(), 0.001, "Reuse ratio should be 80/180");
     }
 
     @Test
@@ -182,13 +183,13 @@ class PanamaPoolStatisticsTest {
     }
 
     @Test
-    @DisplayName("getReuseRatio should return 1.0 when all reused")
-    void getReuseRatioShouldReturnOneWhenAllReused() {
+    @DisplayName("getReuseRatio should return 0.5 when equal allocated and reused")
+    void getReuseRatioShouldReturnHalfWhenEqualAllocatedAndReused() {
       final PanamaPoolStatistics stats =
           new PanamaPoolStatistics(100L, 100L, 0L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-      assertEquals(
-          1.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 1.0 when all are reused");
+      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 100/200 = 0.5
+      assertEquals(0.5, stats.getReuseRatio(), 0.001, "Reuse ratio should be 100/200 = 0.5");
     }
   }
 

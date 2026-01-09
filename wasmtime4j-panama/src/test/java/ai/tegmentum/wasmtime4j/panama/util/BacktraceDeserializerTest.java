@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.panama.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -222,9 +221,11 @@ class BacktraceDeserializerTest {
       final FrameInfo frame = backtrace.getFrames().get(0);
 
       assertTrue(frame.getModuleOffset().isPresent(), "Module offset should be present");
-      assertEquals(Integer.valueOf(1024), frame.getModuleOffset().get(), "Module offset should be 1024");
+      assertEquals(
+          Integer.valueOf(1024), frame.getModuleOffset().get(), "Module offset should be 1024");
       assertTrue(frame.getFuncOffset().isPresent(), "Function offset should be present");
-      assertEquals(Integer.valueOf(256), frame.getFuncOffset().get(), "Function offset should be 256");
+      assertEquals(
+          Integer.valueOf(256), frame.getFuncOffset().get(), "Function offset should be 256");
     }
   }
 
@@ -415,12 +416,14 @@ class BacktraceDeserializerTest {
       final FrameInfo frame = backtrace.getFrames().get(0);
 
       assertEquals(2, frame.getSymbols().size(), "Should have 2 symbols");
-      assertTrue(frame.getSymbols().get(0).getLine().isPresent(), "First symbol line should be present");
+      assertTrue(
+          frame.getSymbols().get(0).getLine().isPresent(), "First symbol line should be present");
       assertEquals(
           Integer.valueOf(100),
           frame.getSymbols().get(0).getLine().get(),
           "First symbol line should be 100");
-      assertTrue(frame.getSymbols().get(1).getLine().isPresent(), "Second symbol line should be present");
+      assertTrue(
+          frame.getSymbols().get(1).getLine().isPresent(), "Second symbol line should be present");
       assertEquals(
           Integer.valueOf(200),
           frame.getSymbols().get(1).getLine().get(),

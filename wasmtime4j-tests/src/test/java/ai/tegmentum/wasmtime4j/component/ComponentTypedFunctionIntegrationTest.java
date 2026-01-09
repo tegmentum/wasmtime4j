@@ -32,6 +32,7 @@ import ai.tegmentum.wasmtime4j.ComponentTypeDescriptor;
 import ai.tegmentum.wasmtime4j.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.ComponentVal;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -101,8 +102,7 @@ public final class ComponentTypedFunctionIntegrationTest {
 
   private static void assumeComponentAvailable() {
     assumeTrue(
-        componentAvailable,
-        "Component native implementation not available: " + unavailableReason);
+        componentAvailable, "Component native implementation not available: " + unavailableReason);
   }
 
   private static void assumeTypedFuncAvailable() {
@@ -303,7 +303,8 @@ public final class ComponentTypedFunctionIntegrationTest {
         assertTrue(signature.contains("->"), "Signature should contain arrow: " + signature);
       }
 
-      LOGGER.info("Signature format validation completed for " + validSignatures.length + " formats");
+      LOGGER.info(
+          "Signature format validation completed for " + validSignatures.length + " formats");
     }
 
     @Test
@@ -328,6 +329,9 @@ public final class ComponentTypedFunctionIntegrationTest {
 
     @Test
     @DisplayName("should get typed function from component instance")
+    @SuppressFBWarnings(
+        value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+        justification = "Static field tracks feature availability across test instances")
     void shouldGetTypedFunctionFromComponentInstance(final TestInfo testInfo) throws Exception {
       assumeComponentAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
@@ -458,7 +462,8 @@ public final class ComponentTypedFunctionIntegrationTest {
           final int expected = testCase[2];
 
           final int result = typedFunc.callS32S32ToS32(a, b);
-          assertEquals(expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
+          assertEquals(
+              expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
 
           LOGGER.info(String.format("Typed call: add(%d, %d) = %d ✓", a, b, result));
         }

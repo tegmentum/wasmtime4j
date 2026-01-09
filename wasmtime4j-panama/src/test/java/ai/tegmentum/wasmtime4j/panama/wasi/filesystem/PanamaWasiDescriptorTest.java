@@ -126,10 +126,10 @@ class PanamaWasiDescriptorTest {
   class MetadataMethodTests {
 
     @Test
-    @DisplayName("should have getType method")
-    void shouldHaveGetTypeMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiDescriptor.class.getMethod("getType");
-      assertNotNull(method, "getType method should exist");
+    @DisplayName("should have getDescriptorType method")
+    void shouldHaveGetDescriptorTypeMethod() throws NoSuchMethodException {
+      final Method method = PanamaWasiDescriptor.class.getMethod("getDescriptorType");
+      assertNotNull(method, "getDescriptorType method should exist");
       assertEquals(DescriptorType.class, method.getReturnType(), "Should return DescriptorType");
     }
 
@@ -178,9 +178,10 @@ class PanamaWasiDescriptorTest {
     @Test
     @DisplayName("should have openAt method")
     void shouldHaveOpenAtMethod() throws NoSuchMethodException {
+      // Signature: openAt(String path, Set<PathFlags>, Set<OpenFlags>, Set<DescriptorFlags>)
       final Method method =
           PanamaWasiDescriptor.class.getMethod(
-              "openAt", Set.class, String.class, Set.class, Set.class);
+              "openAt", String.class, Set.class, Set.class, Set.class);
       assertNotNull(method, "openAt method should exist");
       assertEquals(WasiDescriptor.class, method.getReturnType(), "Should return WasiDescriptor");
     }

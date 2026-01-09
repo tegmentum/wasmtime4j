@@ -28,7 +28,6 @@ import ai.tegmentum.wasmtime4j.wasi.sockets.WasiUdpSocket;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -153,16 +152,9 @@ class PanamaWasiUdpSocketTest {
   class ConfigurationMethodTests {
 
     @Test
-    @DisplayName("should have unicastHopLimit method")
-    void shouldHaveUnicastHopLimitMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiUdpSocket.class.getMethod("unicastHopLimit");
-      assertNotNull(method, "unicastHopLimit method should exist");
-      assertEquals(int.class, method.getReturnType(), "Should return int");
-    }
-
-    @Test
     @DisplayName("should have setUnicastHopLimit method")
     void shouldHaveSetUnicastHopLimitMethod() throws NoSuchMethodException {
+      // Note: Only setter exists in implementation, no getter for unicastHopLimit
       final Method method = PanamaWasiUdpSocket.class.getMethod("setUnicastHopLimit", int.class);
       assertNotNull(method, "setUnicastHopLimit method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -215,7 +207,10 @@ class PanamaWasiUdpSocketTest {
     void shouldHaveReceiveMethod() throws NoSuchMethodException {
       final Method method = PanamaWasiUdpSocket.class.getMethod("receive", long.class);
       assertNotNull(method, "receive method should exist");
-      assertEquals(List.class, method.getReturnType(), "Should return List");
+      assertEquals(
+          WasiUdpSocket.IncomingDatagram[].class,
+          method.getReturnType(),
+          "Should return IncomingDatagram[]");
     }
 
     @Test

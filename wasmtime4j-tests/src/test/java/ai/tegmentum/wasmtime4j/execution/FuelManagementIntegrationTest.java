@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.execution;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -263,11 +262,15 @@ public final class FuelManagementIntegrationTest {
         // Note: If fuel system works differently than expected, log and skip
         if (afterAdd < initialFuel) {
           LOGGER.warning(
-              "Fuel decreased unexpectedly from " + initialFuel + " to " + afterAdd
+              "Fuel decreased unexpectedly from "
+                  + initialFuel
+                  + " to "
+                  + afterAdd
                   + " - native fuel API may have different semantics");
           assumeTrue(
               false,
-              "Native fuel API has unexpected behavior - addFuel did not increase fuel as expected");
+              "Native fuel API has unexpected behavior - addFuel did not increase fuel as"
+                  + " expected");
         }
 
         assertTrue(afterAdd >= initialFuel, "Fuel should increase or stay same after adding");
@@ -413,7 +416,8 @@ public final class FuelManagementIntegrationTest {
         try {
           testEngine.compileModule(LOOP_WASM);
         } catch (final Exception e) {
-          LOGGER.warning("WASM compilation failed - test bytecode may need updating: " + e.getMessage());
+          LOGGER.warning(
+              "WASM compilation failed - test bytecode may need updating: " + e.getMessage());
           assumeTrue(false, "WASM bytecode compilation failed: " + e.getMessage());
           return;
         }

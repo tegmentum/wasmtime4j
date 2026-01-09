@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -84,7 +85,7 @@ class JniImportDescriptorTest {
       final JniFuncType funcType =
           new JniFuncType(Collections.emptyList(), Collections.emptyList());
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor(null, "test", funcType),
           "Should throw for null module name");
     }
@@ -95,7 +96,7 @@ class JniImportDescriptorTest {
       final JniFuncType funcType =
           new JniFuncType(Collections.emptyList(), Collections.emptyList());
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor("env", null, funcType),
           "Should throw for null name");
     }
@@ -104,7 +105,7 @@ class JniImportDescriptorTest {
     @DisplayName("Constructor should throw for null type")
     void constructorShouldThrowForNullType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor("env", "test", null),
           "Should throw for null type");
     }
@@ -331,7 +332,7 @@ class JniImportDescriptorTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniImportDescriptor.fromNative(0),
           "Should throw for zero handle");
     }
@@ -340,7 +341,7 @@ class JniImportDescriptorTest {
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniImportDescriptor.fromNative(-1),
           "Should throw for negative handle");
     }

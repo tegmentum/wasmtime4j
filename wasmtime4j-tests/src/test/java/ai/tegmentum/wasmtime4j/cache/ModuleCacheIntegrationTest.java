@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -216,6 +217,9 @@ public final class ModuleCacheIntegrationTest {
   private final List<AutoCloseable> resources = new ArrayList<>();
 
   @BeforeEach
+  @SuppressFBWarnings(
+      value = "PATH_TRAVERSAL_IN",
+      justification = "Temp directory prefix is not user-controlled, uses timestamp")
   void setUp(final TestInfo testInfo) throws Exception {
     LOGGER.info("Setting up: " + testInfo.getDisplayName());
     if (moduleCacheAvailable) {

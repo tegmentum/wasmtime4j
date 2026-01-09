@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiPermissionException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,8 +60,8 @@ class WasiSecurityValidatorTest {
 
   @Test
   void testValidatePathWithNull() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> validator.validatePath(null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> validator.validatePath(null));
 
     assertThat(exception.getMessage()).contains("path");
   }
@@ -193,16 +194,16 @@ class WasiSecurityValidatorTest {
 
   @Test
   void testValidateResourceAccessWithNullResourceId() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> validator.validateResourceAccess(null));
+    final JniException exception =
+        assertThrows(JniException.class, () -> validator.validateResourceAccess(null));
 
     assertThat(exception.getMessage()).contains("resourceId");
   }
 
   @Test
   void testValidateResourceAccessWithEmptyResourceId() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> validator.validateResourceAccess(""));
+    final JniException exception =
+        assertThrows(JniException.class, () -> validator.validateResourceAccess(""));
 
     assertThat(exception.getMessage()).contains("empty");
   }

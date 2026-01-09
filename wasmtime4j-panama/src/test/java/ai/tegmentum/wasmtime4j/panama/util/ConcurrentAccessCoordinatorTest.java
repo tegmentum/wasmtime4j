@@ -239,11 +239,11 @@ class ConcurrentAccessCoordinatorTest {
     @Test
     @DisplayName("executeBatch should execute all operations and return results")
     void executeBatchShouldExecuteAllOperationsAndReturnResults() throws Exception {
-      @SuppressWarnings("unchecked")
-      final CompletableFuture<Integer[]> future =
+      // Note: Due to Java generics type erasure, executeBatch returns Object[] at runtime
+      final CompletableFuture<Object[]> future =
           coordinator.executeBatch(() -> 1, () -> 2, () -> 3);
 
-      final Integer[] results = future.get(5, TimeUnit.SECONDS);
+      final Object[] results = future.get(5, TimeUnit.SECONDS);
 
       assertEquals(3, results.length, "Should have 3 results");
       assertEquals(1, results[0], "First result should be 1");
@@ -470,8 +470,8 @@ class ConcurrentAccessCoordinatorTest {
       final String asyncResult = coordinator.executeAsync(() -> "async").get(5, TimeUnit.SECONDS);
       assertEquals("async", asyncResult, "Async result should match");
 
-      // Batch operation
-      final Integer[] batchResults =
+      // Batch operation (returns Object[] at runtime due to Java generics type erasure)
+      final Object[] batchResults =
           coordinator.executeBatch(() -> 1, () -> 2).get(5, TimeUnit.SECONDS);
       assertEquals(2, batchResults.length, "Batch should have 2 results");
 

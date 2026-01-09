@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -303,16 +304,14 @@ class JniMemoryTypeTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> JniMemoryType.fromNative(0),
-          "Should throw for zero handle");
+          JniException.class, () -> JniMemoryType.fromNative(0), "Should throw for zero handle");
     }
 
     @Test
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniMemoryType.fromNative(-1),
           "Should throw for negative handle");
     }

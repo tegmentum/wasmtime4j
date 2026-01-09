@@ -450,5 +450,55 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- Profile for integration tests - uses failsafe for *IntegrationTest.java -->
+        <profile>
+            <id>integration-tests</id>
+            <build>
+                <plugins>
+                    <!-- Skip surefire when running integration tests via failsafe -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+                    <!-- Use failsafe for integration tests (surefire has bugs with nested class selectors) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- Disable parallel execution - tests share native resources -->
+                            <parallel>none</parallel>
+                            <threadCount>1</threadCount>
+                            <!-- Fork a new JVM per test class to avoid native resource exhaustion -->
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <includes>
+                                <include>**/*IntegrationTest.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
+                                <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
+                                <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
+                                <!-- Force JNI runtime for tests until Panama implementation is complete -->
+                                <wasmtime4j.runtime>jni</wasmtime4j.runtime>
+                            </systemPropertyVariables>
+                            <argLine>-Xmx${test.memory} -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

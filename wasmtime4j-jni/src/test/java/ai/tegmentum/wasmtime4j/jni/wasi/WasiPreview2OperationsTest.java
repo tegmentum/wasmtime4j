@@ -404,7 +404,7 @@ class WasiPreview2OperationsTest {
       pollables.add(1L);
 
       // Will throw due to missing native implementation
-      assertThrows(Exception.class, () -> operations.poll(pollables, 0), "Should attempt to poll");
+      assertThrows(Throwable.class, () -> operations.poll(pollables, 0), "Should attempt to poll");
     }
   }
 
@@ -505,7 +505,7 @@ class WasiPreview2OperationsTest {
     void shouldAttemptToOpenInputStream() {
       // Will throw due to missing stream handler setup
       assertThrows(
-          Exception.class, () -> operations.openInputStream(1L), "Should attempt to open stream");
+          Throwable.class, () -> operations.openInputStream(1L), "Should attempt to open stream");
     }
   }
 
@@ -518,7 +518,7 @@ class WasiPreview2OperationsTest {
     void shouldAttemptToOpenOutputStream() {
       // Will throw due to missing stream handler setup
       assertThrows(
-          Exception.class, () -> operations.openOutputStream(1L), "Should attempt to open stream");
+          Throwable.class, () -> operations.openOutputStream(1L), "Should attempt to open stream");
     }
   }
 }

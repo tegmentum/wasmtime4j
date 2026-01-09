@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextIsolationValidator.IsolationLevel;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextIsolationValidator.IsolationStatistics;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -33,26 +35,33 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /** Comprehensive tests for {@link WasiContextIsolationValidator}. */
 @DisplayName("WasiContextIsolationValidator Tests")
 class WasiContextIsolationValidatorTest {
+
+  @TempDir Path tempDir;
 
   private WasiContextIsolationValidator validator;
   private WasiContext testContext1;
   private WasiContext testContext2;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     validator = new WasiContextIsolationValidator(true);
+
+    // Create temp subdirectories for test contexts
+    final Path context1Dir = Files.createDirectories(tempDir.resolve("context1"));
+    final Path context2Dir = Files.createDirectories(tempDir.resolve("context2"));
 
     testContext1 =
         TestWasiContextFactory.createTestContext(
-            1L, Collections.singletonMap("preopened", Paths.get("/tmp/context1")));
+            1L, Collections.singletonMap("preopened", context1Dir));
 
     testContext2 =
         TestWasiContextFactory.createTestContext(
-            2L, Collections.singletonMap("preopened", Paths.get("/tmp/context2")));
+            2L, Collections.singletonMap("preopened", context2Dir));
   }
 
   @Nested
@@ -270,7 +279,8 @@ class WasiContextIsolationValidatorTest {
     void shouldAllowAccessWithinPreopenedDirectory() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      final Path allowedPath = Paths.get("/tmp/context1/file.txt");
+      // Use tempDir-relative path that matches the preopened directory
+      final Path allowedPath = tempDir.resolve("context1/file.txt");
 
       assertDoesNotThrow(
           () -> validator.validatePathAccess("ctx1", allowedPath, WasiFileOperation.READ),
@@ -282,7 +292,8 @@ class WasiContextIsolationValidatorTest {
     void shouldDenyAccessOutsidePreopenedDirectory() {
       validator.registerContext("ctx1", testContext1, IsolationLevel.STANDARD);
 
-      final Path disallowedPath = Paths.get("/tmp/other/file.txt");
+      // Path outside the context1 preopened directory
+      final Path disallowedPath = tempDir.resolve("other/file.txt");
 
       assertThrows(
           JniException.class,

@@ -58,9 +58,7 @@ class PanamaValidationTest {
               java.lang.reflect.InvocationTargetException.class,
               constructor::newInstance,
               "Constructor should throw via reflection");
-      assertTrue(
-          exception.getCause() instanceof AssertionError,
-          "Cause should be AssertionError");
+      assertTrue(exception.getCause() instanceof AssertionError, "Cause should be AssertionError");
     }
   }
 

@@ -31,15 +31,12 @@ import ai.tegmentum.wasmtime4j.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.ThrownException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -252,7 +249,8 @@ public final class ExceptionHandlingIntegrationTest {
 
     @Test
     @DisplayName("ExnRef should have getNativeHandle method")
-    void exnRefShouldHaveGetNativeHandleMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void exnRefShouldHaveGetNativeHandleMethod(final TestInfo testInfo)
+        throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = ExnRef.class.getMethod("getNativeHandle");
       assertNotNull(method, "getNativeHandle method should exist");
@@ -274,7 +272,8 @@ public final class ExceptionHandlingIntegrationTest {
     @DisplayName("ExnRef should have exactly 3 methods")
     void exnRefShouldHaveExactlyThreeMethods(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
-      assertEquals(3, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 3 methods");
+      assertEquals(
+          3, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 3 methods");
       LOGGER.info("ExnRef correctly has 3 declared methods");
     }
   }
@@ -303,27 +302,32 @@ public final class ExceptionHandlingIntegrationTest {
       // Should return null when no exception is pending
       // (Some implementations may return null, others may throw)
       LOGGER.info("takePendingException() returned: " + exnRef);
-      assertTrue(exnRef == null || !exnRef.isValid(),
+      assertTrue(
+          exnRef == null || !exnRef.isValid(),
           "takePendingException should return null or invalid when no exception pending");
     }
 
     @Test
     @DisplayName("Store should have hasPendingException method")
-    void storeShouldHaveHasPendingExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void storeShouldHaveHasPendingExceptionMethod(final TestInfo testInfo)
+        throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("hasPendingException");
       assertNotNull(method, "hasPendingException method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "hasPendingException should return boolean");
+      assertEquals(
+          boolean.class, method.getReturnType(), "hasPendingException should return boolean");
       LOGGER.info("Store has hasPendingException() method");
     }
 
     @Test
     @DisplayName("Store should have takePendingException method")
-    void storeShouldHaveTakePendingExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void storeShouldHaveTakePendingExceptionMethod(final TestInfo testInfo)
+        throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("takePendingException");
       assertNotNull(method, "takePendingException method should exist");
-      assertEquals(ExnRef.class, method.getReturnType(), "takePendingException should return ExnRef");
+      assertEquals(
+          ExnRef.class, method.getReturnType(), "takePendingException should return ExnRef");
       LOGGER.info("Store has takePendingException() method returning ExnRef");
     }
 
@@ -333,7 +337,8 @@ public final class ExceptionHandlingIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("throwException", ExnRef.class);
       assertNotNull(method, "throwException method should exist");
-      assertEquals(Object.class, method.getReturnType(), "throwException should return generic type");
+      assertEquals(
+          Object.class, method.getReturnType(), "throwException should return generic type");
       LOGGER.info("Store has throwException(ExnRef) method");
     }
   }
@@ -344,7 +349,8 @@ public final class ExceptionHandlingIntegrationTest {
 
     @Test
     @DisplayName("should create ThrownException with tag and empty payload")
-    void shouldCreateThrownExceptionWithTagAndEmptyPayload(final TestInfo testInfo) throws Exception {
+    void shouldCreateThrownExceptionWithTagAndEmptyPayload(final TestInfo testInfo)
+        throws Exception {
       assumeExceptionHandlingAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
@@ -370,14 +376,12 @@ public final class ExceptionHandlingIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final FunctionType funcType =
-          new FunctionType(new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
-              new WasmValueType[] {});
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
       final Tag tag = sharedRuntime.createTag(store, tagType);
 
-      final List<WasmValue> payload = Arrays.asList(
-          WasmValue.i32(42),
-          WasmValue.i64(1234567890L));
+      final List<WasmValue> payload = Arrays.asList(WasmValue.i32(42), WasmValue.i64(1234567890L));
 
       final ThrownException thrownException = new ThrownException(tag, payload);
 
@@ -400,7 +404,8 @@ public final class ExceptionHandlingIntegrationTest {
       final Tag tag = sharedRuntime.createTag(store, tagType);
 
       final WasmValue value = WasmValue.i32(99);
-      final ThrownException thrownException = new ThrownException(tag, Collections.singletonList(value));
+      final ThrownException thrownException =
+          new ThrownException(tag, Collections.singletonList(value));
 
       final WasmValue retrieved = thrownException.getPayloadValue(0);
       assertEquals(value, retrieved, "Payload value at index 0 should match");
@@ -418,9 +423,10 @@ public final class ExceptionHandlingIntegrationTest {
       final TagType tagType = TagType.create(funcType);
       final Tag tag = sharedRuntime.createTag(store, tagType);
 
-      final ThrownException thrownException = ThrownException.builder(tag)
-          .payload(Collections.singletonList(WasmValue.f64(3.14)))
-          .build();
+      final ThrownException thrownException =
+          ThrownException.builder(tag)
+              .payload(Collections.singletonList(WasmValue.f64(3.14)))
+              .build();
 
       assertNotNull(thrownException, "ThrownException should not be null");
       assertEquals(tag, thrownException.getTag(), "Tag should match");

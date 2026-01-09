@@ -24,9 +24,14 @@ import java.util.logging.Logger;
  */
 public final class JsonReporter {
 
-  private static final Logger logger = Logger.getLogger(JsonReporter.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(JsonReporter.class.getName());
 
   private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+
+  /** Private constructor to prevent instantiation. */
+  private JsonReporter() {
+    // Utility class - do not instantiate
+  }
 
   /**
    * Exports metrics to a JSON file.
@@ -50,13 +55,13 @@ public final class JsonReporter {
     }
 
     // Write JSON content to file
-    try (final BufferedWriter writer =
+    try (BufferedWriter writer =
         Files.newBufferedWriter(
             outputPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       writer.write(jsonContent);
     }
 
-    logger.info("Exported metrics to JSON file: " + outputPath);
+    LOGGER.info("Exported metrics to JSON file: " + outputPath);
   }
 
   /**
@@ -94,13 +99,13 @@ public final class JsonReporter {
     }
 
     // Write JSON content to file
-    try (final BufferedWriter writer =
+    try (BufferedWriter writer =
         Files.newBufferedWriter(
             outputPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       writer.write(jsonContent);
     }
 
-    logger.info("Exported overall metrics to JSON file: " + outputPath);
+    LOGGER.info("Exported overall metrics to JSON file: " + outputPath);
   }
 
   /**
@@ -113,28 +118,24 @@ public final class JsonReporter {
     Objects.requireNonNull(metrics, "metrics cannot be null");
 
     final BasicMetricsCollector.OverallMetrics overall = metrics.getOverallMetrics();
-    final StringBuilder json = new StringBuilder();
+    final String status = overall.getOverallSuccessRate() >= 0.95 ? "PASS" : "FAIL";
 
-    json.append("{");
-    json.append("\"status\":\"")
-        .append(overall.getOverallSuccessRate() >= 0.95 ? "PASS" : "FAIL")
-        .append("\",");
-    json.append("\"successRate\":")
-        .append(String.format("%.4f", overall.getOverallSuccessRate()))
-        .append(",");
-    json.append("\"totalOperations\":").append(overall.getTotalOperations()).append(",");
-    json.append("\"successfulOperations\":").append(overall.getSuccessfulOperations()).append(",");
-    json.append("\"failedOperations\":").append(overall.getFailedOperations()).append(",");
-    json.append("\"durationMs\":").append(overall.getTotalDuration().toMillis());
-    json.append("}");
-
-    return json.toString();
+    return String.format(
+        "{\"status\":\"%s\",\"successRate\":%.4f,\"totalOperations\":%d,"
+            + "\"successfulOperations\":%d,\"failedOperations\":%d,\"durationMs\":%d}",
+        status,
+        overall.getOverallSuccessRate(),
+        overall.getTotalOperations(),
+        overall.getSuccessfulOperations(),
+        overall.getFailedOperations(),
+        overall.getTotalDuration().toMillis());
   }
 
+  @SuppressWarnings("PMD.NcssCount")
   private static String generateJsonContent(final BasicMetricsCollector metrics) {
     final StringWriter stringWriter = new StringWriter();
 
-    try (final BufferedWriter writer = new BufferedWriter(stringWriter)) {
+    try (BufferedWriter writer = new BufferedWriter(stringWriter)) {
       final String timestamp = TIMESTAMP_FORMATTER.format(Instant.now());
       final BasicMetricsCollector.OverallMetrics overall = metrics.getOverallMetrics();
       final List<BasicMetricsCollector.OperationMetrics> allMetrics =
@@ -214,7 +215,7 @@ public final class JsonReporter {
       writer.write("}");
 
     } catch (final IOException e) {
-      logger.warning("Error generating JSON content: " + e.getMessage());
+      LOGGER.warning("Error generating JSON content: " + e.getMessage());
       return "{}";
     }
 
@@ -225,7 +226,7 @@ public final class JsonReporter {
       final BasicMetricsCollector.OverallMetrics overallMetrics) {
     final StringWriter stringWriter = new StringWriter();
 
-    try (final BufferedWriter writer = new BufferedWriter(stringWriter)) {
+    try (BufferedWriter writer = new BufferedWriter(stringWriter)) {
       final String timestamp = TIMESTAMP_FORMATTER.format(Instant.now());
 
       writer.write("{");
@@ -266,7 +267,7 @@ public final class JsonReporter {
       writer.write("}");
 
     } catch (final IOException e) {
-      logger.warning("Error generating overall metrics JSON content: " + e.getMessage());
+      LOGGER.warning("Error generating overall metrics JSON content: " + e.getMessage());
       return "{}";
     }
 

@@ -1050,16 +1050,16 @@ class JniComponentEngineTest {
   class PrivateMethodTests {
 
     @Test
-    @DisplayName("Should have setNativeHandle method")
-    void shouldHaveSetNativeHandleMethod() {
+    @DisplayName("Should have createNativeEngine method")
+    void shouldHaveCreateNativeEngineMethod() {
       assertDoesNotThrow(
           () -> {
-            Method method = getTestedClass().getDeclaredMethod("setNativeHandle", long.class);
+            Method method = getTestedClass().getDeclaredMethod("createNativeEngine");
             assertTrue(
-                Modifier.isPrivate(method.getModifiers()), "setNativeHandle should be private");
-            assertEquals(void.class, method.getReturnType(), "Should return void");
+                Modifier.isPrivate(method.getModifiers()), "createNativeEngine should be private");
+            assertEquals(long.class, method.getReturnType(), "Should return long");
           },
-          "Should have setNativeHandle method");
+          "Should have createNativeEngine method");
     }
 
     @Test

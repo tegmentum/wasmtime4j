@@ -515,54 +515,58 @@ class JniResourceLimiterTest {
     }
 
     @Test
-    @DisplayName("getId should have @Override annotation")
-    void getIdShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("getId method should match interface signature")
+    void getIdMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("getId");
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "getId should have @Override annotation");
+      // JniResourceLimiter returns long for getId (native handle ID)
+      assertEquals(long.class, method.getReturnType(), "getId should return long");
+      assertEquals(0, method.getParameterCount(), "getId should have no parameters");
     }
 
     @Test
-    @DisplayName("getConfig should have @Override annotation")
-    void getConfigShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("getConfig method should match interface signature")
+    void getConfigMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("getConfig");
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "getConfig should have @Override annotation");
+      assertNotNull(method.getReturnType(), "getConfig should have a return type");
+      assertEquals(0, method.getParameterCount(), "getConfig should have no parameters");
     }
 
     @Test
-    @DisplayName("allowMemoryGrow should have @Override annotation")
-    void allowMemoryGrowShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("allowMemoryGrow method should match interface signature")
+    void allowMemoryGrowMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("allowMemoryGrow", long.class, long.class);
-      assertTrue(
-          method.isAnnotationPresent(Override.class),
-          "allowMemoryGrow should have @Override annotation");
+      assertEquals(boolean.class, method.getReturnType(), "allowMemoryGrow should return boolean");
+      assertEquals(2, method.getParameterCount(), "allowMemoryGrow should have 2 parameters");
     }
 
     @Test
-    @DisplayName("allowTableGrow should have @Override annotation")
-    void allowTableGrowShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("allowTableGrow method should match interface signature")
+    void allowTableGrowMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("allowTableGrow", long.class, long.class);
-      assertTrue(
-          method.isAnnotationPresent(Override.class),
-          "allowTableGrow should have @Override annotation");
+      assertEquals(boolean.class, method.getReturnType(), "allowTableGrow should return boolean");
+      assertEquals(2, method.getParameterCount(), "allowTableGrow should have 2 parameters");
     }
 
     @Test
-    @DisplayName("getStats should have @Override annotation")
-    void getStatsShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("getStats method should match interface signature")
+    void getStatsMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("getStats");
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "getStats should have @Override annotation");
+      assertNotNull(method.getReturnType(), "getStats should have a return type");
+      assertEquals(0, method.getParameterCount(), "getStats should have no parameters");
     }
 
     @Test
-    @DisplayName("resetStats should have @Override annotation")
-    void resetStatsShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("resetStats method should match interface signature")
+    void resetStatsMethodShouldMatchInterfaceSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getMethod("resetStats");
-      assertTrue(
-          method.isAnnotationPresent(Override.class),
-          "resetStats should have @Override annotation");
+      assertEquals(void.class, method.getReturnType(), "resetStats should return void");
+      assertEquals(0, method.getParameterCount(), "resetStats should have no parameters");
     }
   }
 
@@ -575,20 +579,21 @@ class JniResourceLimiterTest {
   class JniResourceOverrideTests {
 
     @Test
-    @DisplayName("doClose should have @Override annotation")
-    void doCloseShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("doClose method should have correct signature")
+    void doCloseMethodShouldHaveCorrectSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getDeclaredMethod("doClose");
-      assertTrue(
-          method.isAnnotationPresent(Override.class), "doClose should have @Override annotation");
+      assertEquals(void.class, method.getReturnType(), "doClose should return void");
+      assertEquals(0, method.getParameterCount(), "doClose should have no parameters");
     }
 
     @Test
-    @DisplayName("getResourceType should have @Override annotation")
-    void getResourceTypeShouldHaveOverrideAnnotation() throws NoSuchMethodException {
+    @DisplayName("getResourceType method should have correct signature")
+    void getResourceTypeMethodShouldHaveCorrectSignature() throws NoSuchMethodException {
+      // Verify method exists with correct signature - @Override may not be retained at runtime
       Method method = JniResourceLimiter.class.getDeclaredMethod("getResourceType");
-      assertTrue(
-          method.isAnnotationPresent(Override.class),
-          "getResourceType should have @Override annotation");
+      assertEquals(String.class, method.getReturnType(), "getResourceType should return String");
+      assertEquals(0, method.getParameterCount(), "getResourceType should have no parameters");
     }
   }
 

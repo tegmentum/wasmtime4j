@@ -24,12 +24,17 @@ import java.util.logging.Logger;
  */
 public final class CsvReporter {
 
-  private static final Logger logger = Logger.getLogger(CsvReporter.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CsvReporter.class.getName());
 
   private static final String CSV_HEADER =
       "Timestamp,Operation,SuccessCount,FailureCount,TotalCount,SuccessRate,MinTimeMs,MaxTimeMs,AvgTimeMs";
 
   private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+
+  /** Private constructor to prevent instantiation. */
+  private CsvReporter() {
+    // Utility class - do not instantiate
+  }
 
   /**
    * Exports metrics to a CSV file.
@@ -53,13 +58,13 @@ public final class CsvReporter {
     }
 
     // Write CSV content to file
-    try (final BufferedWriter writer =
+    try (BufferedWriter writer =
         Files.newBufferedWriter(
             outputPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       writer.write(csvContent);
     }
 
-    logger.info("Exported metrics to CSV file: " + outputPath);
+    LOGGER.info("Exported metrics to CSV file: " + outputPath);
   }
 
   /**
@@ -97,12 +102,12 @@ public final class CsvReporter {
     }
 
     // Append CSV content to file
-    try (final BufferedWriter writer =
+    try (BufferedWriter writer =
         Files.newBufferedWriter(outputPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
       writer.write(csvContent);
     }
 
-    logger.info("Appended metrics to CSV file: " + outputPath);
+    LOGGER.info("Appended metrics to CSV file: " + outputPath);
   }
 
   /**
@@ -128,13 +133,13 @@ public final class CsvReporter {
     }
 
     // Write CSV content to file
-    try (final BufferedWriter writer =
+    try (BufferedWriter writer =
         Files.newBufferedWriter(
             outputPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       writer.write(csvContent);
     }
 
-    logger.info("Exported overall metrics to CSV file: " + outputPath);
+    LOGGER.info("Exported overall metrics to CSV file: " + outputPath);
   }
 
   private static String generateCsvContent(final BasicMetricsCollector metrics) {
@@ -146,7 +151,7 @@ public final class CsvReporter {
     final StringWriter stringWriter = new StringWriter();
     final String timestamp = TIMESTAMP_FORMATTER.format(Instant.now());
 
-    try (final BufferedWriter writer = new BufferedWriter(stringWriter)) {
+    try (BufferedWriter writer = new BufferedWriter(stringWriter)) {
       // Write header if requested
       if (includeHeader) {
         writer.write(CSV_HEADER);
@@ -170,7 +175,7 @@ public final class CsvReporter {
       }
 
     } catch (final IOException e) {
-      logger.warning("Error generating CSV content: " + e.getMessage());
+      LOGGER.warning("Error generating CSV content: " + e.getMessage());
       return "";
     }
 
@@ -182,7 +187,7 @@ public final class CsvReporter {
     final StringWriter stringWriter = new StringWriter();
     final String timestamp = TIMESTAMP_FORMATTER.format(Instant.now());
 
-    try (final BufferedWriter writer = new BufferedWriter(stringWriter)) {
+    try (BufferedWriter writer = new BufferedWriter(stringWriter)) {
       // Write header for overall metrics
       writer.write(
           "Timestamp,TotalOperations,SuccessfulOperations,FailedOperations,"
@@ -203,7 +208,7 @@ public final class CsvReporter {
       writer.newLine();
 
     } catch (final IOException e) {
-      logger.warning("Error generating overall metrics CSV content: " + e.getMessage());
+      LOGGER.warning("Error generating overall metrics CSV content: " + e.getMessage());
       return "";
     }
 

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +85,7 @@ class WasiFileHandleManagerTest {
     @DisplayName("Parameterized constructor should validate maxHandles")
     void parameterizedConstructorShouldValidateMaxHandles() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiFileHandleManager(0, 300),
           "Should throw on zero maxHandles");
     }
@@ -93,7 +94,7 @@ class WasiFileHandleManagerTest {
     @DisplayName("Parameterized constructor should validate timeout")
     void parameterizedConstructorShouldValidateTimeout() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiFileHandleManager(100, 0),
           "Should throw on zero timeout");
     }
@@ -126,9 +127,7 @@ class WasiFileHandleManagerTest {
     @DisplayName("Should throw on null handle")
     void shouldThrowOnNullHandle() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> manager.registerHandle(null),
-          "Should throw on null handle");
+          JniException.class, () -> manager.registerHandle(null), "Should throw on null handle");
     }
 
     @Test

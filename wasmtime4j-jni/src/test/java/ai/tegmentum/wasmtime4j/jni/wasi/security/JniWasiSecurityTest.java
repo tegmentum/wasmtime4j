@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
@@ -159,7 +160,7 @@ class JniWasiSecurityTest {
     void validatePathShouldRejectNullPath() {
       WasiSecurityValidator validator = WasiSecurityValidator.defaultValidator();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> validator.validatePath(null),
           "Null path should throw IllegalArgumentException");
     }
@@ -207,7 +208,7 @@ class JniWasiSecurityTest {
     void validateEnvironmentAccessShouldRejectNullName() {
       WasiSecurityValidator validator = WasiSecurityValidator.defaultValidator();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> validator.validateEnvironmentAccess(null),
           "Null environment variable name should throw");
     }
@@ -217,7 +218,7 @@ class JniWasiSecurityTest {
     void validateEnvironmentAccessShouldRejectEmptyName() {
       WasiSecurityValidator validator = WasiSecurityValidator.defaultValidator();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> validator.validateEnvironmentAccess(""),
           "Empty environment variable name should throw");
     }
@@ -238,7 +239,7 @@ class JniWasiSecurityTest {
     void validateResourceAccessShouldRejectNullResourceId() {
       WasiSecurityValidator validator = WasiSecurityValidator.defaultValidator();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> validator.validateResourceAccess(null),
           "Null resource ID should throw");
     }
@@ -248,7 +249,7 @@ class JniWasiSecurityTest {
     void validateResourceAccessShouldRejectEmptyResourceId() {
       WasiSecurityValidator validator = WasiSecurityValidator.defaultValidator();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> validator.validateResourceAccess(""),
           "Empty resource ID should throw");
     }
@@ -403,11 +404,11 @@ class JniWasiSecurityTest {
     void withMaxPathLengthShouldRejectNonPositiveValues() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withMaxPathLength(0),
           "Zero max path length should throw");
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withMaxPathLength(-1),
           "Negative max path length should throw");
     }
@@ -417,7 +418,7 @@ class JniWasiSecurityTest {
     void withForbiddenPathComponentShouldRejectNull() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withForbiddenPathComponent(null),
           "Null forbidden path component should throw");
     }
@@ -427,7 +428,7 @@ class JniWasiSecurityTest {
     void withForbiddenPathComponentShouldRejectEmptyString() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withForbiddenPathComponent(""),
           "Empty forbidden path component should throw");
     }
@@ -437,7 +438,7 @@ class JniWasiSecurityTest {
     void withAllowedEnvironmentPatternPatternShouldRejectNull() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withAllowedEnvironmentPattern((Pattern) null),
           "Null pattern should throw");
     }
@@ -447,7 +448,7 @@ class JniWasiSecurityTest {
     void withAllowedEnvironmentPatternStringShouldRejectNull() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withAllowedEnvironmentPattern((String) null),
           "Null pattern string should throw");
     }
@@ -457,7 +458,7 @@ class JniWasiSecurityTest {
     void withAllowedEnvironmentPatternStringShouldRejectEmptyString() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withAllowedEnvironmentPattern(""),
           "Empty pattern string should throw");
     }
@@ -467,7 +468,7 @@ class JniWasiSecurityTest {
     void withForbiddenEnvironmentNameShouldRejectNull() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withForbiddenEnvironmentName(null),
           "Null forbidden environment name should throw");
     }
@@ -477,7 +478,7 @@ class JniWasiSecurityTest {
     void withForbiddenEnvironmentNameShouldRejectEmptyString() {
       WasiSecurityValidator.Builder builder = WasiSecurityValidator.builder();
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> builder.withForbiddenEnvironmentName(""),
           "Empty forbidden environment name should throw");
     }
@@ -493,7 +494,7 @@ class JniWasiSecurityTest {
     @DisplayName("constructor should reject null security policy")
     void constructorShouldRejectNullSecurityPolicy() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new WasiSecurityPolicyEngine(null),
           "Null security policy should throw");
     }
@@ -572,7 +573,7 @@ class JniWasiSecurityTest {
       SecurityPolicy policy = SecurityPolicy.builder().build();
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.validateFileSystemAccess(null, WasiFileOperation.READ, "ctx1"),
           "Null path should throw");
     }
@@ -584,7 +585,7 @@ class JniWasiSecurityTest {
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       Path path = Paths.get("test.txt");
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.validateFileSystemAccess(path, null, "ctx1"),
           "Null operation should throw");
     }
@@ -596,7 +597,7 @@ class JniWasiSecurityTest {
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       Path path = Paths.get("test.txt");
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.validateFileSystemAccess(path, WasiFileOperation.READ, ""),
           "Empty contextId should throw");
     }
@@ -607,7 +608,7 @@ class JniWasiSecurityTest {
       SecurityPolicy policy = SecurityPolicy.builder().build();
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.validateEnvironmentAccess("", "read", "ctx1"),
           "Empty variable name should throw");
     }
@@ -618,7 +619,7 @@ class JniWasiSecurityTest {
       SecurityPolicy policy = SecurityPolicy.builder().allowNetworkAccess(true).build();
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.validateNetworkAccess("", 80, "TCP", "ctx1"),
           "Empty host should throw");
     }
@@ -649,11 +650,9 @@ class JniWasiSecurityTest {
       SecurityPolicy policy = SecurityPolicy.builder().build();
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.getRecentAuditEvents(0),
-          "Zero maxEvents should throw");
+          JniException.class, () -> engine.getRecentAuditEvents(0), "Zero maxEvents should throw");
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> engine.getRecentAuditEvents(-1),
           "Negative maxEvents should throw");
     }
@@ -664,9 +663,7 @@ class JniWasiSecurityTest {
       SecurityPolicy policy = SecurityPolicy.builder().build();
       WasiSecurityPolicyEngine engine = new WasiSecurityPolicyEngine(policy);
       assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.updateSecurityPolicy(null),
-          "Null policy should throw");
+          JniException.class, () -> engine.updateSecurityPolicy(null), "Null policy should throw");
     }
 
     @Test

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -77,9 +78,7 @@ class WasiFileSystemTest {
     @DisplayName("Constructor should throw on null context")
     void constructorShouldThrowOnNullContext() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> new WasiFileSystem(null),
-          "Should throw on null context");
+          JniException.class, () -> new WasiFileSystem(null), "Should throw on null context");
     }
 
     @Test
@@ -133,7 +132,7 @@ class WasiFileSystemTest {
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.openFile(null, WasiFileOperation.READ, false, false),
           "Should throw on null path");
     }
@@ -142,7 +141,7 @@ class WasiFileSystemTest {
     @DisplayName("Should throw on empty path")
     void shouldThrowOnEmptyPath() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.openFile("", WasiFileOperation.READ, false, false),
           "Should throw on empty path");
     }
@@ -151,7 +150,7 @@ class WasiFileSystemTest {
     @DisplayName("Should throw on null operation")
     void shouldThrowOnNullOperation() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.openFile("test.txt", null, false, false),
           "Should throw on null operation");
     }
@@ -183,7 +182,7 @@ class WasiFileSystemTest {
       final int fd = fileSystem.openFile("read2.txt", WasiFileOperation.READ, false, false);
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.readFile(fd, null, 0, 10),
           "Should throw on null buffer");
     }
@@ -197,7 +196,7 @@ class WasiFileSystemTest {
       final byte[] buffer = new byte[100];
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.readFile(fd, buffer, -1, 10),
           "Should throw on negative offset");
     }
@@ -253,7 +252,7 @@ class WasiFileSystemTest {
       final int fd = fileSystem.openFile("write2.txt", WasiFileOperation.WRITE, false, false);
 
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> fileSystem.writeFile(fd, null, 0, 10),
           "Should throw on null buffer");
     }
@@ -363,9 +362,7 @@ class WasiFileSystemTest {
     @DisplayName("Should throw on null path")
     void shouldThrowOnNullPath() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> fileSystem.getFileMetadata(null),
-          "Should throw on null path");
+          JniException.class, () -> fileSystem.getFileMetadata(null), "Should throw on null path");
     }
   }
 
@@ -405,7 +402,7 @@ class WasiFileSystemTest {
       Files.createFile(file);
 
       assertThrows(
-          WasiFileSystemException.class,
+          JniException.class,
           () -> fileSystem.listDirectory("notdir.txt"),
           "Should throw on non-directory path");
     }
@@ -430,7 +427,7 @@ class WasiFileSystemTest {
       Files.createDirectory(dir);
 
       assertThrows(
-          WasiFileSystemException.class,
+          JniException.class,
           () -> fileSystem.createDirectory("existingdir"),
           "Should throw when directory exists");
     }
@@ -466,7 +463,7 @@ class WasiFileSystemTest {
     @DisplayName("Should throw on non-existent path")
     void shouldThrowOnNonExistentPath() {
       assertThrows(
-          WasiFileSystemException.class,
+          JniException.class,
           () -> fileSystem.removeFileOrDirectory("nonexistent"),
           "Should throw on non-existent path");
     }

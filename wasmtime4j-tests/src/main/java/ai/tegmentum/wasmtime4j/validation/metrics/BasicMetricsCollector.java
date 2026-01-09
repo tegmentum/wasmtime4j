@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  */
 public final class BasicMetricsCollector {
 
-  private static final Logger logger = Logger.getLogger(BasicMetricsCollector.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(BasicMetricsCollector.class.getName());
 
   private final ConcurrentMap<String, MetricData> metrics = new ConcurrentHashMap<>();
   private final AtomicLong totalOperations = new AtomicLong(0);
@@ -47,7 +47,7 @@ public final class BasicMetricsCollector {
     totalOperations.incrementAndGet();
     successfulOperations.incrementAndGet();
 
-    logger.fine(
+    LOGGER.fine(
         "Recorded successful operation '"
             + operationName
             + "' in "
@@ -72,7 +72,7 @@ public final class BasicMetricsCollector {
     totalOperations.incrementAndGet();
     failedOperations.incrementAndGet();
 
-    logger.fine(
+    LOGGER.fine(
         "Recorded failed operation '" + operationName + "' in " + executionTime.toMillis() + "ms");
   }
 
@@ -85,6 +85,7 @@ public final class BasicMetricsCollector {
    * @return the result of the operation
    * @throws Exception if the operation throws an exception
    */
+  @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "PMD.AvoidCatchingGenericException"})
   public <T> T recordOperation(final String operationName, final TimedOperation<T> operation)
       throws Exception {
     validateOperationName(operationName);
@@ -150,7 +151,7 @@ public final class BasicMetricsCollector {
     totalOperations.set(0);
     successfulOperations.set(0);
     failedOperations.set(0);
-    logger.info("Metrics cleared");
+    LOGGER.info("Metrics cleared");
   }
 
   /**
@@ -163,7 +164,7 @@ public final class BasicMetricsCollector {
   }
 
   private void validateOperationName(final String operationName) {
-    if (operationName == null || operationName.trim().isEmpty()) {
+    if (operationName == null || operationName.isBlank()) {
       throw new IllegalArgumentException("Operation name cannot be null or empty");
     }
   }
@@ -177,6 +178,7 @@ public final class BasicMetricsCollector {
   /** Functional interface for timed operations. */
   @FunctionalInterface
   public interface TimedOperation<T> {
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     T execute() throws Exception;
   }
 

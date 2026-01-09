@@ -6649,6 +6649,38 @@ public final class NativeFunctionBindings {
         "wasi_http_is_available",
         FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 1 if available
 
+    // WASI-Threads Functions
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_threads_is_supported",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 1 if supported
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_threads_context_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return context*
+            ValueLayout.ADDRESS, // module_handle
+            ValueLayout.ADDRESS, // linker_handle
+            ValueLayout.ADDRESS)); // store_handle
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_threads_context_close",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // context_handle
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_threads_spawn",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // thread_id
+            ValueLayout.ADDRESS, // context_handle
+            ValueLayout.JAVA_INT)); // thread_start_arg
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_threads_add_to_linker",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_handle
+            ValueLayout.ADDRESS, // store_handle
+            ValueLayout.ADDRESS)); // module_handle
+
     // Pooling Allocator Functions
     addFunctionBinding(
         "wasmtime4j_pooling_allocator_create", FunctionDescriptor.of(ValueLayout.ADDRESS));

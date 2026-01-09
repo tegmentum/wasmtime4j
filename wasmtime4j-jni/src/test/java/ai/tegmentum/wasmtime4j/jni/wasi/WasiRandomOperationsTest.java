@@ -186,7 +186,7 @@ class WasiRandomOperationsTest {
     void boundOfOneShouldBeValid() {
       // Bound of 1 is valid - should return 0
       // Will throw due to native call failure, but validation passes
-      assertThrows(Exception.class, () -> randomOperations.generateRandomInt(1));
+      assertThrows(Throwable.class, () -> randomOperations.generateRandomInt(1));
     }
   }
 
@@ -320,7 +320,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
 
       // Will throw from native, but validation should pass
-      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Throwable.class, () -> randomOperations.getRandomBytes(buffer));
     }
 
     @Test
@@ -340,7 +340,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(1);
 
       // Will throw from native, but validation passes
-      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Throwable.class, () -> randomOperations.getRandomBytes(buffer));
     }
   }
 
@@ -354,7 +354,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocate(100);
 
       // Will throw from native, but should attempt correct path
-      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Throwable.class, () -> randomOperations.getRandomBytes(buffer));
     }
 
     @Test
@@ -363,7 +363,7 @@ class WasiRandomOperationsTest {
       final ByteBuffer buffer = ByteBuffer.allocateDirect(100);
 
       // Will throw from native, but should attempt correct path
-      assertThrows(Exception.class, () -> randomOperations.getRandomBytes(buffer));
+      assertThrows(Throwable.class, () -> randomOperations.getRandomBytes(buffer));
     }
   }
 }

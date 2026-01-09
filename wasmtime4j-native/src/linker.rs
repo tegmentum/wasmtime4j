@@ -346,18 +346,40 @@ impl Linker {
         function_type: FuncType,
         host_function: HostFunction,
     ) -> WasmtimeResult<()> {
+        use std::io::Write;
+        fn debug_log(msg: &str) {
+            let log_path = std::env::var("HOME")
+                .map(|h| format!("{}/wasmtime4j-debug.log", h))
+                .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path) {
+                let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0), msg);
+                let _ = file.flush();
+            }
+        }
+
+        debug_log(&format!("define_host_function: {}::{}", module_name, function_name));
+
         if self.metadata.disposed {
+            debug_log("define_host_function: linker disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
                 backtrace: None
             });
         }
 
+        debug_log("define_host_function: acquiring inner lock...");
         let linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
             })?;
+        debug_log("define_host_function: inner lock acquired");
 
         // Use the host function to create a proper Wasmtime function
         // This will be handled through the HostFunction callback system
@@ -412,24 +434,34 @@ impl Linker {
             return Ok(());
         }
 
+        // Collect host function definitions first (without holding linker lock)
+        // This prevents deadlock with HOST_FUNCTION_REGISTRY lock ordering
+        let definitions: Vec<_> = self.host_functions.iter()
+            .map(|(key, def)| (key.clone(), def.clone()))
+            .collect();
+
+        // Create Wasmtime functions WITHOUT holding linker lock
+        // This allows HOST_FUNCTION_REGISTRY lock to be acquired safely
+        let mut created_funcs = Vec::with_capacity(definitions.len());
+        for (key, definition) in &definitions {
+            log::debug!("Creating host function: {}", key);
+            let wasmtime_func = definition.host_function.create_wasmtime_func(store)?;
+            created_funcs.push((definition.module_name.clone(), definition.function_name.clone(), wasmtime_func));
+        }
+
+        // Now acquire linker lock and define all functions
         let mut linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
             })?;
 
-        // Instantiate all registered host functions
-        for (key, definition) in &self.host_functions {
-            log::debug!("Instantiating host function: {}", key);
-
-            // Create the Wasmtime function using the host function
-            let wasmtime_func = definition.host_function.create_wasmtime_func(&mut *store)?;
-
-            // Define the function in the linker
+        for (module_name, function_name, wasmtime_func) in created_funcs {
+            log::debug!("Defining host function: {}:{}", module_name, function_name);
             linker.define(
                 &mut *store,
-                &definition.module_name,
-                &definition.function_name,
+                &module_name,
+                &function_name,
                 wasmtime::Extern::Func(wasmtime_func)
             ).map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to define host function in linker: {}", e),

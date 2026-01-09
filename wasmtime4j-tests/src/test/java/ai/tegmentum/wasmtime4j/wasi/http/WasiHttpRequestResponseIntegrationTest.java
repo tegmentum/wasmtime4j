@@ -35,7 +35,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,7 +142,9 @@ public final class WasiHttpRequestResponseIntegrationTest {
       assertTrue(
           java.lang.reflect.Modifier.isStatic(builder.getModifiers()), "builder should be static");
       assertEquals(
-          WasiHttpConfigBuilder.class, builder.getReturnType(), "Should return WasiHttpConfigBuilder");
+          WasiHttpConfigBuilder.class,
+          builder.getReturnType(),
+          "Should return WasiHttpConfigBuilder");
 
       LOGGER.info("Builder method verified");
     }
@@ -203,7 +204,8 @@ public final class WasiHttpRequestResponseIntegrationTest {
       assertNotNull(getMaxConnections, "getMaxConnections method should exist");
       assertEquals(Optional.class, getMaxConnections.getReturnType(), "Should return Optional");
 
-      final var getMaxConnectionsPerHost = WasiHttpConfig.class.getMethod("getMaxConnectionsPerHost");
+      final var getMaxConnectionsPerHost =
+          WasiHttpConfig.class.getMethod("getMaxConnectionsPerHost");
       assertNotNull(getMaxConnectionsPerHost, "getMaxConnectionsPerHost method should exist");
 
       LOGGER.info("Connection limit methods verified");
@@ -233,8 +235,7 @@ public final class WasiHttpRequestResponseIntegrationTest {
       assertNotNull(isHttpsRequired, "isHttpsRequired method should exist");
       assertEquals(boolean.class, isHttpsRequired.getReturnType(), "Should return boolean");
 
-      final var isCertValidation =
-          WasiHttpConfig.class.getMethod("isCertificateValidationEnabled");
+      final var isCertValidation = WasiHttpConfig.class.getMethod("isCertificateValidationEnabled");
       assertNotNull(isCertValidation, "isCertificateValidationEnabled method should exist");
 
       LOGGER.info("Security methods verified");
@@ -296,8 +297,7 @@ public final class WasiHttpRequestResponseIntegrationTest {
 
       final var getConfig = WasiHttpContext.class.getMethod("getConfig");
       assertNotNull(getConfig, "getConfig method should exist");
-      assertEquals(
-          WasiHttpConfig.class, getConfig.getReturnType(), "Should return WasiHttpConfig");
+      assertEquals(WasiHttpConfig.class, getConfig.getReturnType(), "Should return WasiHttpConfig");
 
       LOGGER.info("GetConfig method verified");
     }
@@ -491,8 +491,7 @@ public final class WasiHttpRequestResponseIntegrationTest {
 
       final var allowHost = WasiHttpConfigBuilder.class.getMethod("allowHost", String.class);
       assertNotNull(allowHost, "allowHost method should exist");
-      assertEquals(
-          WasiHttpConfigBuilder.class, allowHost.getReturnType(), "Should return builder");
+      assertEquals(WasiHttpConfigBuilder.class, allowHost.getReturnType(), "Should return builder");
 
       LOGGER.info("AllowHost method verified");
     }

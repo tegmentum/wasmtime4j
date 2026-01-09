@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.debug.ProfilerConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.profiler.Profiler;
 import ai.tegmentum.wasmtime4j.profiler.ProfilerFactory;
@@ -82,7 +81,8 @@ public final class ProfilerIntegrationTest {
       assertFalse(config.isTrackMemoryOperations(), "Default should not track memory operations");
       assertFalse(config.isTrackInstructionCount(), "Default should not track instruction count");
       assertTrue(config.isTrackStackDepth(), "Default should track stack depth");
-      assertEquals(1_000_000L, config.getSamplingIntervalNanos(), "Default sampling interval is 1ms");
+      assertEquals(
+          1_000_000L, config.getSamplingIntervalNanos(), "Default sampling interval is 1ms");
       assertEquals(128, config.getMaxStackFrames(), "Default max stack frames is 128");
 
       LOGGER.info("Default ProfilerConfig created successfully with expected defaults");
@@ -93,14 +93,15 @@ public final class ProfilerIntegrationTest {
     void shouldBuildConfigWithCustomSettings(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final ProfilerConfig config = ProfilerConfig.builder()
-          .trackFunctionCalls(false)
-          .trackMemoryOperations(true)
-          .trackInstructionCount(true)
-          .trackStackDepth(false)
-          .samplingIntervalNanos(500_000L)
-          .maxStackFrames(64)
-          .build();
+      final ProfilerConfig config =
+          ProfilerConfig.builder()
+              .trackFunctionCalls(false)
+              .trackMemoryOperations(true)
+              .trackInstructionCount(true)
+              .trackStackDepth(false)
+              .samplingIntervalNanos(500_000L)
+              .maxStackFrames(64)
+              .build();
 
       assertNotNull(config, "Custom config should not be null");
       assertFalse(config.isTrackFunctionCalls(), "Should not track function calls");
@@ -122,13 +123,14 @@ public final class ProfilerIntegrationTest {
       assertNotNull(builder, "Builder should not be null");
 
       // Verify method chaining returns the builder
-      final ProfilerConfig.Builder chained = builder
-          .trackFunctionCalls(true)
-          .trackMemoryOperations(true)
-          .trackInstructionCount(true)
-          .trackStackDepth(true)
-          .samplingIntervalNanos(100_000L)
-          .maxStackFrames(256);
+      final ProfilerConfig.Builder chained =
+          builder
+              .trackFunctionCalls(true)
+              .trackMemoryOperations(true)
+              .trackInstructionCount(true)
+              .trackStackDepth(true)
+              .samplingIntervalNanos(100_000L)
+              .maxStackFrames(256);
 
       assertNotNull(chained, "Chained builder should not be null");
 
@@ -143,9 +145,7 @@ public final class ProfilerIntegrationTest {
     void shouldAllowZeroSamplingInterval(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final ProfilerConfig config = ProfilerConfig.builder()
-          .samplingIntervalNanos(0L)
-          .build();
+      final ProfilerConfig config = ProfilerConfig.builder().samplingIntervalNanos(0L).build();
 
       assertEquals(0L, config.getSamplingIntervalNanos(), "Should allow zero sampling interval");
       LOGGER.info("Zero sampling interval accepted");
@@ -156,9 +156,7 @@ public final class ProfilerIntegrationTest {
     void shouldAllowMaxStackFramesOfOne(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final ProfilerConfig config = ProfilerConfig.builder()
-          .maxStackFrames(1)
-          .build();
+      final ProfilerConfig config = ProfilerConfig.builder().maxStackFrames(1).build();
 
       assertEquals(1, config.getMaxStackFrames(), "Should allow max stack frames of 1");
       LOGGER.info("Max stack frames of 1 accepted");
@@ -178,12 +176,14 @@ public final class ProfilerIntegrationTest {
       if (isProfilerFactoryAvailable()) {
         LOGGER.info("Profiler provider is available - factory creates profilers");
       } else {
-        final WasmException exception = assertThrows(
-            WasmException.class,
-            () -> ProfilerFactory.create(),
-            "Factory should throw WasmException when no provider");
+        final WasmException exception =
+            assertThrows(
+                WasmException.class,
+                () -> ProfilerFactory.create(),
+                "Factory should throw WasmException when no provider");
         assertNotNull(exception.getMessage(), "Exception should have a message");
-        assertTrue(exception.getMessage().contains("No Profiler implementation"),
+        assertTrue(
+            exception.getMessage().contains("No Profiler implementation"),
             "Message should indicate no implementation found");
         LOGGER.info("Correctly threw WasmException: " + exception.getMessage());
       }
@@ -192,13 +192,12 @@ public final class ProfilerIntegrationTest {
     @Test
     @DisplayName("should create profiler when provider available")
     void shouldCreateProfilerWhenProviderAvailable(final TestInfo testInfo) throws Exception {
-      assumeTrue(isProfilerFactoryAvailable(),
-          "Profiler provider not available - skipping");
+      assumeTrue(isProfilerFactoryAvailable(), "Profiler provider not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Profiler profiler = assertDoesNotThrow(
-          () -> ProfilerFactory.create(),
-          "Factory should not throw when provider available");
+      final Profiler profiler =
+          assertDoesNotThrow(
+              () -> ProfilerFactory.create(), "Factory should not throw when provider available");
       assertNotNull(profiler, "Profiler should not be null");
 
       profiler.close();
@@ -211,7 +210,8 @@ public final class ProfilerIntegrationTest {
   class ProfilerControlTests {
 
     private void assumeProfilerAvailable() {
-      assumeTrue(isProfilerFactoryAvailable(),
+      assumeTrue(
+          isProfilerFactoryAvailable(),
           "Profiler provider not available - skipping profiler tests");
     }
 
@@ -281,8 +281,8 @@ public final class ProfilerIntegrationTest {
   class ProfilerMetricsTests {
 
     private void assumeProfilerAvailable() {
-      assumeTrue(isProfilerFactoryAvailable(),
-          "Profiler provider not available - skipping metrics tests");
+      assumeTrue(
+          isProfilerFactoryAvailable(), "Profiler provider not available - skipping metrics tests");
     }
 
     @Test
@@ -358,7 +358,8 @@ public final class ProfilerIntegrationTest {
   class ProfilerStatisticsTests {
 
     private void assumeProfilerAvailable() {
-      assumeTrue(isProfilerFactoryAvailable(),
+      assumeTrue(
+          isProfilerFactoryAvailable(),
           "Profiler provider not available - skipping statistics tests");
     }
 
@@ -394,8 +395,16 @@ public final class ProfilerIntegrationTest {
         assertNotNull(uptime, "Uptime should not be null");
         assertNotNull(totalExecTime, "Total execution time should not be null");
 
-        LOGGER.info("Statistics - Modules: " + modulesCompiled + ", Calls: " + totalCalls
-            + ", Cache hits: " + cacheHits + ", Rate: " + callsPerSecond + " calls/sec");
+        LOGGER.info(
+            "Statistics - Modules: "
+                + modulesCompiled
+                + ", Calls: "
+                + totalCalls
+                + ", Cache hits: "
+                + cacheHits
+                + ", Rate: "
+                + callsPerSecond
+                + " calls/sec");
 
         profiler.stopProfiling();
       }

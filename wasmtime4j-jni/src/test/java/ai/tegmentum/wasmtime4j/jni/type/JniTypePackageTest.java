@@ -19,6 +19,7 @@ import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.TableType;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -91,7 +92,7 @@ class JniTypePackageTest {
     @DisplayName("JniFuncType should throw for null params")
     void jniFuncTypeShouldThrowForNullParams() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniFuncType(null, Collections.emptyList()),
           "Should throw for null params");
     }
@@ -100,7 +101,7 @@ class JniTypePackageTest {
     @DisplayName("JniFuncType should throw for null results")
     void jniFuncTypeShouldThrowForNullResults() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniFuncType(Collections.emptyList(), null),
           "Should throw for null results");
     }
@@ -255,7 +256,7 @@ class JniTypePackageTest {
     @DisplayName("JniGlobalType should throw for null value type")
     void jniGlobalTypeShouldThrowForNullValueType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniGlobalType(null, false),
           "Should throw for null value type");
     }
@@ -496,7 +497,7 @@ class JniTypePackageTest {
     @DisplayName("JniTableType should throw for null element type")
     void jniTableTypeShouldThrowForNullElementType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniTableType(null, 1, null),
           "Should throw for null element type");
     }
@@ -619,7 +620,7 @@ class JniTypePackageTest {
     void jniImportDescriptorShouldThrowForNullModuleName() {
       JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor(null, "name", globalType),
           "Should throw for null module name");
     }
@@ -629,7 +630,7 @@ class JniTypePackageTest {
     void jniImportDescriptorShouldThrowForNullName() {
       JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor("module", null, globalType),
           "Should throw for null name");
     }
@@ -638,7 +639,7 @@ class JniTypePackageTest {
     @DisplayName("JniImportDescriptor should throw for null type")
     void jniImportDescriptorShouldThrowForNullType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniImportDescriptor("module", "name", null),
           "Should throw for null type");
     }
@@ -733,7 +734,7 @@ class JniTypePackageTest {
     void jniExportDescriptorShouldThrowForNullName() {
       JniFuncType funcType = new JniFuncType(Collections.emptyList(), Collections.emptyList());
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniExportDescriptor(null, funcType),
           "Should throw for null name");
     }
@@ -742,7 +743,7 @@ class JniTypePackageTest {
     @DisplayName("JniExportDescriptor should throw for null type")
     void jniExportDescriptorShouldThrowForNullType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniExportDescriptor("name", null),
           "Should throw for null type");
     }

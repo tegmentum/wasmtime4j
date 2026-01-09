@@ -341,7 +341,8 @@ public final class EpochInterruptionIntegrationTest {
         try {
           module = engine.compileModule(LOOP_WASM);
         } catch (final Exception e) {
-          LOGGER.warning("WASM compilation failed - test bytecode may need updating: " + e.getMessage());
+          LOGGER.warning(
+              "WASM compilation failed - test bytecode may need updating: " + e.getMessage());
           assumeTrue(false, "WASM bytecode compilation failed: " + e.getMessage());
           return;
         }

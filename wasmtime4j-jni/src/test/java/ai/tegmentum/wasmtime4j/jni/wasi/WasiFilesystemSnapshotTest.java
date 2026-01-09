@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,18 +52,30 @@ class WasiFilesystemSnapshotTest {
   private WasiContext testContext;
   private ExecutorService executorService;
   private WasiFilesystemSnapshot snapshotHandler;
+  private boolean setupSucceeded = false;
 
   @BeforeEach
   void setUp() {
     testContext = TestWasiContextFactory.createTestContext();
     executorService = Executors.newSingleThreadExecutor();
-    snapshotHandler = new WasiFilesystemSnapshot(testContext, executorService);
+    try {
+      snapshotHandler = new WasiFilesystemSnapshot(testContext, executorService);
+      setupSucceeded = true;
+    } catch (final UnsatisfiedLinkError e) {
+      // Native library not available - tests will be skipped via assumption
+      setupSucceeded = false;
+    }
+    Assumptions.assumeTrue(setupSucceeded, "Native library not available - skipping test");
   }
 
   @AfterEach
   void tearDown() {
     if (snapshotHandler != null) {
-      snapshotHandler.close();
+      try {
+        snapshotHandler.close();
+      } catch (final UnsatisfiedLinkError e) {
+        // Ignore - native library not available
+      }
     }
     if (executorService != null) {
       executorService.shutdown();

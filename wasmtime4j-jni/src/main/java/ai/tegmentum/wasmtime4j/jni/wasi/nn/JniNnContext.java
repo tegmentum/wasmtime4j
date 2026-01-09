@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphEncoding;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -118,6 +119,22 @@ public final class JniNnContext extends JniResource implements NnContext {
     }
   }
 
+  /**
+   * Loads a neural network graph from a file path specified as a string.
+   *
+   * @param modelPath the file path to the model
+   * @param encoding the model encoding format
+   * @param target the execution target
+   * @return the loaded graph
+   * @throws NnException if loading fails
+   */
+  public NnGraph loadGraphFromFile(
+      final String modelPath, final NnGraphEncoding encoding, final NnExecutionTarget target)
+      throws NnException {
+    Objects.requireNonNull(modelPath, "modelPath cannot be null");
+    return loadGraphFromFile(Paths.get(modelPath), encoding, target);
+  }
+
   @Override
   public NnGraph loadGraphByName(final String name) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
@@ -129,6 +146,30 @@ public final class JniNnContext extends JniResource implements NnContext {
     }
     // When loading by name, we don't know the encoding/target - use AUTO/CPU as defaults
     return new JniNnGraph(graphHandle, NnGraphEncoding.AUTODETECT, NnExecutionTarget.CPU);
+  }
+
+  /**
+   * Loads a neural network graph by its registered name with explicit encoding and target.
+   *
+   * @param name the registered graph name
+   * @param encoding the expected model encoding format
+   * @param target the execution target
+   * @return the loaded graph
+   * @throws NnException if loading fails
+   */
+  public NnGraph loadGraphByName(
+      final String name, final NnGraphEncoding encoding, final NnExecutionTarget target)
+      throws NnException {
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(encoding, "encoding cannot be null");
+    Objects.requireNonNull(target, "target cannot be null");
+    ensureNotClosed();
+
+    final long graphHandle = nativeLoadGraphByName(nativeHandle, name);
+    if (graphHandle == 0) {
+      throw new NnException("Failed to load graph by name: " + name);
+    }
+    return new JniNnGraph(graphHandle, encoding, target);
   }
 
   @Override

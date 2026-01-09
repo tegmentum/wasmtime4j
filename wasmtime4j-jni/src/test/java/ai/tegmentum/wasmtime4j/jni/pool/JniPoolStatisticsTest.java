@@ -190,7 +190,10 @@ class JniPoolStatisticsTest {
 
       // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 100/200 = 0.5
       assertEquals(
-          0.5, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.5 when allocated equals reused");
+          0.5,
+          stats.getReuseRatio(),
+          0.001,
+          "Reuse ratio should be 0.5 when allocated equals reused");
     }
   }
 

@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Caller;
@@ -100,12 +101,15 @@ class PanamaCallerContextProviderTest {
   class BehaviorTests {
 
     @Test
-    @DisplayName("getCurrentCaller returns null when no caller context")
-    void getCurrentCallerReturnsNullWhenNoContext() {
+    @DisplayName("getCurrentCaller throws UnsupportedOperationException when no caller context")
+    void getCurrentCallerThrowsWhenNoContext() {
       PanamaCallerContextProvider provider = new PanamaCallerContextProvider();
-      Caller<?> caller = provider.getCurrentCaller();
-      // When not in a host function call, there's no caller context
-      // This may be null or may throw depending on implementation
+      // When not in a host function call, there's no caller context available
+      // Implementation throws UnsupportedOperationException in this case
+      assertThrows(
+          UnsupportedOperationException.class,
+          provider::getCurrentCaller,
+          "Should throw UnsupportedOperationException when caller context not available");
     }
   }
 }

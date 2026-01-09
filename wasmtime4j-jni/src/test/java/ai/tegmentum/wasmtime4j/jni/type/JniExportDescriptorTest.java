@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +84,7 @@ class JniExportDescriptorTest {
       final JniFuncType funcType =
           new JniFuncType(Collections.emptyList(), Collections.emptyList());
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniExportDescriptor(null, funcType),
           "Should throw for null name");
     }
@@ -92,7 +93,7 @@ class JniExportDescriptorTest {
     @DisplayName("Constructor should throw for null type")
     void constructorShouldThrowForNullType() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> new JniExportDescriptor("test", null),
           "Should throw for null type");
     }
@@ -290,7 +291,7 @@ class JniExportDescriptorTest {
     @DisplayName("fromNative should throw for zero handle")
     void fromNativeShouldThrowForZeroHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniExportDescriptor.fromNative(0),
           "Should throw for zero handle");
     }
@@ -299,7 +300,7 @@ class JniExportDescriptorTest {
     @DisplayName("fromNative should throw for negative handle")
     void fromNativeShouldThrowForNegativeHandle() {
       assertThrows(
-          IllegalArgumentException.class,
+          JniException.class,
           () -> JniExportDescriptor.fromNative(-1),
           "Should throw for negative handle");
     }

@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.debug;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.debug.DebugSession.StepType;
 import ai.tegmentum.wasmtime4j.jni.debug.JniBreakpoint;
@@ -61,19 +59,21 @@ public final class DebugSessionIntegrationTest {
       final JniDebugConfig config = JniDebugConfig.getDefault();
 
       assertNotNull(config, "Default config should not be null");
-      assertEquals(JniDebugConfig.DEFAULT_DEBUG_PORT, config.getDebugPort(),
-          "Default debug port");
-      assertEquals(JniDebugConfig.DEFAULT_HOST_ADDRESS, config.getHostAddress(),
-          "Default host address");
+      assertEquals(JniDebugConfig.DEFAULT_DEBUG_PORT, config.getDebugPort(), "Default debug port");
+      assertEquals(
+          JniDebugConfig.DEFAULT_HOST_ADDRESS, config.getHostAddress(), "Default host address");
       assertFalse(config.isRemoteDebuggingEnabled(), "Remote debugging disabled by default");
-      assertEquals(JniDebugConfig.DEFAULT_SESSION_TIMEOUT, config.getSessionTimeout(),
+      assertEquals(
+          JniDebugConfig.DEFAULT_SESSION_TIMEOUT,
+          config.getSessionTimeout(),
           "Default session timeout");
       assertTrue(config.isBreakpointsEnabled(), "Breakpoints enabled by default");
-      assertEquals(JniDebugConfig.DEFAULT_MAX_BREAKPOINTS, config.getMaxBreakpoints(),
+      assertEquals(
+          JniDebugConfig.DEFAULT_MAX_BREAKPOINTS,
+          config.getMaxBreakpoints(),
           "Default max breakpoints");
       assertTrue(config.isStepDebuggingEnabled(), "Step debugging enabled by default");
-      assertEquals(JniDebugConfig.DEFAULT_LOG_LEVEL, config.getLogLevel(),
-          "Default log level");
+      assertEquals(JniDebugConfig.DEFAULT_LOG_LEVEL, config.getLogLevel(), "Default log level");
 
       LOGGER.info("Default DebugConfig: " + config);
     }
@@ -83,16 +83,17 @@ public final class DebugSessionIntegrationTest {
     void shouldBuildConfigWithCustomSettings(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniDebugConfig config = JniDebugConfig.builder()
-          .debugPort(8080)
-          .hostAddress("0.0.0.0")
-          .remoteDebuggingEnabled(true)
-          .sessionTimeout(600_000L)
-          .breakpointsEnabled(false)
-          .maxBreakpoints(256)
-          .stepDebuggingEnabled(false)
-          .logLevel("DEBUG")
-          .build();
+      final JniDebugConfig config =
+          JniDebugConfig.builder()
+              .debugPort(8080)
+              .hostAddress("0.0.0.0")
+              .remoteDebuggingEnabled(true)
+              .sessionTimeout(600_000L)
+              .breakpointsEnabled(false)
+              .maxBreakpoints(256)
+              .stepDebuggingEnabled(false)
+              .logLevel("DEBUG")
+              .build();
 
       assertEquals(8080, config.getDebugPort(), "Custom debug port");
       assertEquals("0.0.0.0", config.getHostAddress(), "Custom host address");
@@ -111,17 +112,19 @@ public final class DebugSessionIntegrationTest {
     void shouldRejectInvalidPortNumbers(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final IllegalArgumentException negativePortException = assertThrows(
-          IllegalArgumentException.class,
-          () -> JniDebugConfig.builder().debugPort(-1),
-          "Should reject negative port");
+      final IllegalArgumentException negativePortException =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> JniDebugConfig.builder().debugPort(-1),
+              "Should reject negative port");
       assertNotNull(negativePortException.getMessage(), "Exception should have message");
       LOGGER.info("Rejected negative port: " + negativePortException.getMessage());
 
-      final IllegalArgumentException highPortException = assertThrows(
-          IllegalArgumentException.class,
-          () -> JniDebugConfig.builder().debugPort(65536),
-          "Should reject port > 65535");
+      final IllegalArgumentException highPortException =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> JniDebugConfig.builder().debugPort(65536),
+              "Should reject port > 65535");
       assertNotNull(highPortException.getMessage(), "Exception should have message");
       LOGGER.info("Rejected high port: " + highPortException.getMessage());
     }
@@ -131,10 +134,11 @@ public final class DebugSessionIntegrationTest {
     void shouldRejectNullHostAddress(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final NullPointerException exception = assertThrows(
-          NullPointerException.class,
-          () -> JniDebugConfig.builder().hostAddress(null),
-          "Should reject null host address");
+      final NullPointerException exception =
+          assertThrows(
+              NullPointerException.class,
+              () -> JniDebugConfig.builder().hostAddress(null),
+              "Should reject null host address");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected null host: " + exception.getMessage());
     }
@@ -144,10 +148,11 @@ public final class DebugSessionIntegrationTest {
     void shouldRejectNegativeSessionTimeout(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> JniDebugConfig.builder().sessionTimeout(-1),
-          "Should reject negative timeout");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> JniDebugConfig.builder().sessionTimeout(-1),
+              "Should reject negative timeout");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected negative timeout: " + exception.getMessage());
     }
@@ -157,10 +162,11 @@ public final class DebugSessionIntegrationTest {
     void shouldRejectNegativeMaxBreakpoints(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> JniDebugConfig.builder().maxBreakpoints(-1),
-          "Should reject negative max breakpoints");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> JniDebugConfig.builder().maxBreakpoints(-1),
+              "Should reject negative max breakpoints");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected negative max breakpoints: " + exception.getMessage());
     }
@@ -170,18 +176,12 @@ public final class DebugSessionIntegrationTest {
     void shouldSupportEqualsAndHashCode(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniDebugConfig config1 = JniDebugConfig.builder()
-          .debugPort(9000)
-          .hostAddress("localhost")
-          .build();
-      final JniDebugConfig config2 = JniDebugConfig.builder()
-          .debugPort(9000)
-          .hostAddress("localhost")
-          .build();
-      final JniDebugConfig config3 = JniDebugConfig.builder()
-          .debugPort(9001)
-          .hostAddress("localhost")
-          .build();
+      final JniDebugConfig config1 =
+          JniDebugConfig.builder().debugPort(9000).hostAddress("localhost").build();
+      final JniDebugConfig config2 =
+          JniDebugConfig.builder().debugPort(9000).hostAddress("localhost").build();
+      final JniDebugConfig config3 =
+          JniDebugConfig.builder().debugPort(9001).hostAddress("localhost").build();
 
       assertEquals(config1, config2, "Same config should be equal");
       assertEquals(config1.hashCode(), config2.hashCode(), "Same config should have same hashCode");
@@ -200,12 +200,7 @@ public final class DebugSessionIntegrationTest {
     void shouldCreateBreakpointWithAllFields(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniBreakpoint breakpoint = new JniBreakpoint(
-          "bp-001",
-          "testFunction",
-          42,
-          10,
-          0x1000L);
+      final JniBreakpoint breakpoint = new JniBreakpoint("bp-001", "testFunction", 42, 10, 0x1000L);
 
       assertEquals("bp-001", breakpoint.getBreakpointId(), "Breakpoint ID");
       assertEquals("testFunction", breakpoint.getFunctionName(), "Function name");
@@ -224,8 +219,7 @@ public final class DebugSessionIntegrationTest {
     void shouldEnableAndDisableBreakpoint(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniBreakpoint breakpoint = new JniBreakpoint(
-          "bp-002", "func", 1, 1, 0);
+      final JniBreakpoint breakpoint = new JniBreakpoint("bp-002", "func", 1, 1, 0);
 
       assertTrue(breakpoint.isEnabled(), "Initially enabled");
 
@@ -243,8 +237,7 @@ public final class DebugSessionIntegrationTest {
     void shouldSetAndGetCondition(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniBreakpoint breakpoint = new JniBreakpoint(
-          "bp-003", "func", 1, 1, 0);
+      final JniBreakpoint breakpoint = new JniBreakpoint("bp-003", "func", 1, 1, 0);
 
       assertNull(breakpoint.getCondition(), "Initial condition is null");
 
@@ -262,8 +255,7 @@ public final class DebugSessionIntegrationTest {
     void shouldTrackHitCount(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniBreakpoint breakpoint = new JniBreakpoint(
-          "bp-004", "func", 1, 1, 0);
+      final JniBreakpoint breakpoint = new JniBreakpoint("bp-004", "func", 1, 1, 0);
 
       assertEquals(0, breakpoint.getHitCount(), "Initial hit count is 0");
 
@@ -286,8 +278,8 @@ public final class DebugSessionIntegrationTest {
     void shouldCreateBreakpointFromNativeData(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final JniBreakpoint breakpoint = JniBreakpoint.fromNative(
-          12345L, "nativeFunc", 100, 5, 0x2000L);
+      final JniBreakpoint breakpoint =
+          JniBreakpoint.fromNative(12345L, "nativeFunc", 100, 5, 0x2000L);
 
       assertEquals("bp-12345", breakpoint.getBreakpointId(), "ID from native");
       assertEquals("nativeFunc", breakpoint.getFunctionName(), "Function name");
@@ -319,10 +311,11 @@ public final class DebugSessionIntegrationTest {
     void shouldRejectNullBreakpointId(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final NullPointerException exception = assertThrows(
-          NullPointerException.class,
-          () -> new JniBreakpoint(null, "func", 1, 1, 0),
-          "Should reject null breakpoint ID");
+      final NullPointerException exception =
+          assertThrows(
+              NullPointerException.class,
+              () -> new JniBreakpoint(null, "func", 1, 1, 0),
+              "Should reject null breakpoint ID");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected null ID: " + exception.getMessage());
     }
@@ -344,9 +337,13 @@ public final class DebugSessionIntegrationTest {
       assertNotNull(StepType.STEP_OVER, "STEP_OVER should exist");
       assertNotNull(StepType.STEP_OUT, "STEP_OUT should exist");
 
-      LOGGER.info("Step types: STEP_INTO=" + StepType.STEP_INTO
-          + ", STEP_OVER=" + StepType.STEP_OVER
-          + ", STEP_OUT=" + StepType.STEP_OUT);
+      LOGGER.info(
+          "Step types: STEP_INTO="
+              + StepType.STEP_INTO
+              + ", STEP_OVER="
+              + StepType.STEP_OVER
+              + ", STEP_OUT="
+              + StepType.STEP_OUT);
     }
 
     @Test
@@ -354,12 +351,9 @@ public final class DebugSessionIntegrationTest {
     void shouldConvertFromStringWithValueOf(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      assertEquals(StepType.STEP_INTO, StepType.valueOf("STEP_INTO"),
-          "valueOf STEP_INTO");
-      assertEquals(StepType.STEP_OVER, StepType.valueOf("STEP_OVER"),
-          "valueOf STEP_OVER");
-      assertEquals(StepType.STEP_OUT, StepType.valueOf("STEP_OUT"),
-          "valueOf STEP_OUT");
+      assertEquals(StepType.STEP_INTO, StepType.valueOf("STEP_INTO"), "valueOf STEP_INTO");
+      assertEquals(StepType.STEP_OVER, StepType.valueOf("STEP_OVER"), "valueOf STEP_OVER");
+      assertEquals(StepType.STEP_OUT, StepType.valueOf("STEP_OUT"), "valueOf STEP_OUT");
 
       LOGGER.info("valueOf works correctly");
     }

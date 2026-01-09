@@ -127,6 +127,8 @@ pub mod jni_wast_bindings;
 pub mod jni_wit_value_bindings;
 #[cfg(all(feature = "jni-bindings", feature = "wasi-nn"))]
 pub mod jni_wasi_nn_bindings;
+#[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
+pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -171,6 +173,10 @@ pub mod wasi_http;
 // WASI-NN support (neural network inference - Tier 3 experimental)
 #[cfg(feature = "wasi-nn")]
 pub mod wasi_nn;
+
+// WASI-Threads support (thread spawning - experimental)
+#[cfg(feature = "wasi-threads")]
+pub mod wasi_threads;
 
 // Advanced configuration modules for comprehensive optimization control
 // pub mod config_cranelift;

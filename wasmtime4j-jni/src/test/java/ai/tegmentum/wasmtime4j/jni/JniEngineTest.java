@@ -438,15 +438,32 @@ class JniEngineTest {
   @DisplayName("IncrementEpoch Tests")
   class IncrementEpochTests {
 
+    // Note: Tests that call incrementEpoch() or close() with fake handles are covered
+    // by integration tests in wasmtime4j-tests because calling these methods on
+    // objects with fake handles triggers native code that crashes the JVM.
+
     @Test
-    @DisplayName("should not throw on incrementEpoch")
-    void shouldNotThrowOnIncrementEpoch() {
-      final JniEngine engine = new JniEngine(VALID_HANDLE);
+    @DisplayName("should throw on invalid handle")
+    void shouldThrowOnInvalidHandle() {
+      final JniEngine engine = new JniEngine(ZERO_HANDLE);
 
-      // incrementEpoch is a no-op for JNI engine
-      engine.incrementEpoch();
+      // Native code throws IllegalArgumentException for null/zero pointer
+      assertThrows(
+          IllegalArgumentException.class,
+          engine::incrementEpoch,
+          "Should throw on zero handle engine");
+    }
 
-      assertTrue(engine.isValid(), "Engine should remain valid after incrementEpoch");
+    @Test
+    @DisplayName("incrementEpoch method should exist and be public")
+    void incrementEpochMethodShouldExistAndBePublic() throws NoSuchMethodException {
+      // Verify the incrementEpoch method exists with correct signature
+      java.lang.reflect.Method method = JniEngine.class.getMethod("incrementEpoch");
+      assertNotNull(method, "incrementEpoch method should exist");
+      assertEquals(void.class, method.getReturnType(), "incrementEpoch should return void");
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(method.getModifiers()),
+          "incrementEpoch should be public");
     }
   }
 }

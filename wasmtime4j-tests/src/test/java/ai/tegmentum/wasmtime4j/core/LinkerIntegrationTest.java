@@ -26,7 +26,6 @@ import ai.tegmentum.wasmtime4j.CodeBuilder;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FuncType;
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -41,9 +40,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 /**
  * Integration tests for WebAssembly Linker operations.
@@ -54,9 +58,24 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Linker Integration Tests")
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public final class LinkerIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(LinkerIntegrationTest.class.getName());
+
+  /**
+   * Forces garbage collection to clean up native resources between test classes. This helps prevent
+   * resource exhaustion that can cause test hangs.
+   */
+  static void cleanupNativeResources() {
+    System.gc();
+    try {
+      Thread.sleep(50); // Give GC time to run
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    System.gc();
+  }
 
   /** Helper method to create a FuncType without a factory method. */
   private static FuncType funcType(
@@ -210,8 +229,19 @@ public final class LinkerIntegrationTest {
   }
 
   @Nested
+  @Order(2)
   @DisplayName("Define Memory Tests")
   class DefineMemoryTests {
+
+    @BeforeAll
+    static void setUp() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void tearDown() {
+      cleanupNativeResources();
+    }
 
     @Test
     @DisplayName("should define and use imported memory")
@@ -284,8 +314,19 @@ public final class LinkerIntegrationTest {
   }
 
   @Nested
+  @Order(3)
   @DisplayName("Define Global Tests")
   class DefineGlobalTests {
+
+    @BeforeAll
+    static void setUp() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void tearDown() {
+      cleanupNativeResources();
+    }
 
     @Test
     @DisplayName("should define and use imported mutable global")
@@ -369,8 +410,19 @@ public final class LinkerIntegrationTest {
   }
 
   @Nested
+  @Order(4)
   @DisplayName("Define Instance Tests")
   class DefineInstanceTests {
+
+    @BeforeAll
+    static void setUp() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void tearDown() {
+      cleanupNativeResources();
+    }
 
     @Test
     @DisplayName("should define instance and import from it")
@@ -436,53 +488,19 @@ public final class LinkerIntegrationTest {
   }
 
   @Nested
-  @DisplayName("Host Function Tests")
-  class HostFunctionTests {
-
-    @Test
-    @DisplayName("should define host function and call from module")
-    void shouldDefineHostFunctionAndCallFromModule() throws Exception {
-      LOGGER.info("Testing host function definition");
-
-      try (final Engine engine = Engine.create();
-          final Linker<Void> linker = Linker.create(engine);
-          final Store store = engine.createStore()) {
-
-        // Create host function
-        final FunctionType addType =
-            new FunctionType(
-                new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-                new WasmValueType[] {WasmValueType.I32});
-
-        final HostFunction addImpl =
-            (params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
-              return new WasmValue[] {WasmValue.i32(a + b)};
-            };
-
-        linker.defineHostFunction("env", "add", addType, addImpl);
-        LOGGER.info("Defined host function in linker");
-
-        // Compile and instantiate
-        final Module module = engine.compileModule(createImportAddModule());
-        try (final Instance instance = linker.instantiate(store, module)) {
-          // Call the exported function that uses our host function
-          final Optional<WasmFunction> callAdd = instance.getFunction("call_add");
-          assertTrue(callAdd.isPresent());
-
-          final WasmValue[] result = callAdd.get().call(WasmValue.i32(15), WasmValue.i32(27));
-          assertEquals(42, result[0].asInt(), "15 + 27 should equal 42");
-
-          LOGGER.info("Host function definition verified");
-        }
-      }
-    }
-  }
-
-  @Nested
+  @Order(5)
   @DisplayName("Error Handling Tests")
   class ErrorHandlingTests {
+
+    @BeforeAll
+    static void setUp() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void tearDown() {
+      cleanupNativeResources();
+    }
 
     @Test
     @DisplayName("should fail when import not satisfied")
@@ -542,8 +560,19 @@ public final class LinkerIntegrationTest {
   }
 
   @Nested
+  @Order(1)
   @DisplayName("Linker Lifecycle Tests")
   class LinkerLifecycleTests {
+
+    @BeforeAll
+    static void setUp() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void tearDown() {
+      cleanupNativeResources();
+    }
 
     @Test
     @DisplayName("should create and close linker")

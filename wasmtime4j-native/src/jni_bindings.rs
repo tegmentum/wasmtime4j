@@ -3950,6 +3950,27 @@ pub mod jni_linker {
             use wasmtime::{ValType, FuncType};
             use crate::hostfunc::{HostFunction, HostFunctionCallback};
             use crate::instance::WasmValue;
+            use std::io::Write;
+
+            // Write to debug log file - use absolute path in user's home
+            fn debug_log(msg: &str) {
+                let log_path = std::env::var("HOME")
+                    .map(|h| format!("{}/wasmtime4j-debug.log", h))
+                    .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
+                if let Ok(mut file) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&log_path) {
+                    let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0), msg);
+                    let _ = file.flush();
+                }
+            }
+
+            debug_log("nativeDefineHostFunction starting...");
+            eprintln!("DEBUG: nativeDefineHostFunction starting...");
 
             // Convert parameter types
             let param_val_types: Vec<ValType> = param_vals.iter()
@@ -3961,13 +3982,21 @@ pub mod jni_linker {
                 .map(|&t| int_to_valtype(t))
                 .collect::<Result<Vec<_>, _>>()?;
 
+            debug_log("Getting linker...");
+            eprintln!("DEBUG: Getting linker...");
             // Get linker (mutable because define_host_function needs &mut)
             let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
+            debug_log("Acquiring linker inner lock...");
+            eprintln!("DEBUG: Acquiring linker inner lock...");
             // Get engine from wasmtime linker
             let linker_lock = linker.inner()?;
+            debug_log("Got linker inner lock, getting engine...");
+            eprintln!("DEBUG: Got linker inner lock, getting engine...");
             let engine = linker_lock.engine();
 
+            debug_log("Creating FuncType...");
+            eprintln!("DEBUG: Creating FuncType...");
             // Create function type
             let func_type = FuncType::new(
                 engine,
@@ -3975,9 +4004,15 @@ pub mod jni_linker {
                 return_val_types
             );
 
+            debug_log("Dropping linker lock...");
+            eprintln!("DEBUG: Dropping linker lock...");
             // Drop lock before creating host function
             drop(linker_lock);
+            debug_log("Linker lock dropped");
+            eprintln!("DEBUG: Linker lock dropped");
 
+            debug_log("Creating JNI callback...");
+            eprintln!("DEBUG: Creating JNI callback...");
             // Create JNI callback with Arc-wrapped JavaVM
             let callback = JniHostFunctionCallback {
                 jvm: std::sync::Arc::new(jvm),
@@ -3985,6 +4020,8 @@ pub mod jni_linker {
                 is_function_reference: false,  // This is a Linker host function
             };
 
+            debug_log("Creating HostFunction...");
+            eprintln!("DEBUG: Creating HostFunction...");
             // Create host function with weak store reference (will be set during instantiation)
             let host_func = HostFunction::new(
                 format!("{}::{}", module_name_str, name_str),
@@ -3992,10 +4029,16 @@ pub mod jni_linker {
                 std::sync::Weak::new(), // Empty weak ref for now
                 Box::new(callback),
             )?;
+            debug_log("HostFunction created");
+            eprintln!("DEBUG: HostFunction created");
 
+            debug_log("Calling define_host_function...");
+            eprintln!("DEBUG: Calling define_host_function...");
             // Register host function - host_func is Arc<HostFunction>, clone it
             let host_func_clone = (*host_func).clone();
             linker.define_host_function(&module_name_str, &name_str, host_func.func_type().clone(), host_func_clone)?;
+            debug_log("define_host_function complete");
+            eprintln!("DEBUG: define_host_function complete");
 
             Ok(1) // JNI_TRUE
         })

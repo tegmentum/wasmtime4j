@@ -199,7 +199,7 @@ public class PanamaExceptionHandlerTest {
 
     try (PanamaExceptionHandler handler = PanamaExceptionHandler.create()) {
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> handler.createExceptionTag(null, Collections.emptyList()),
           "Should reject null tag name");
 
