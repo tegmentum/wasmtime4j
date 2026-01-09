@@ -1013,7 +1013,7 @@ public final class PanamaInstance implements Instance {
 
       case I64:
         ptr.set(ValueLayout.JAVA_INT, offset, 1); // tag
-        ptr.set(ValueLayout.JAVA_LONG, offset + 4, value.asI64());
+        ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, value.asI64());
         break;
 
       case F32:
@@ -1023,7 +1023,7 @@ public final class PanamaInstance implements Instance {
 
       case F64:
         ptr.set(ValueLayout.JAVA_INT, offset, 3); // tag
-        ptr.set(ValueLayout.JAVA_DOUBLE, offset + 4, value.asF64());
+        ptr.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + 4, value.asF64());
         break;
 
       case V128:
@@ -1056,7 +1056,7 @@ public final class PanamaInstance implements Instance {
         return WasmValue.i32(i32Val);
 
       case 1: // I64
-        final long i64Val = ptr.get(ValueLayout.JAVA_LONG, offset + 4);
+        final long i64Val = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
         return WasmValue.i64(i64Val);
 
       case 2: // F32
@@ -1064,7 +1064,7 @@ public final class PanamaInstance implements Instance {
         return WasmValue.f32(f32Val);
 
       case 3: // F64
-        final double f64Val = ptr.get(ValueLayout.JAVA_DOUBLE, offset + 4);
+        final double f64Val = ptr.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + 4);
         return WasmValue.f64(f64Val);
 
       case 4: // V128

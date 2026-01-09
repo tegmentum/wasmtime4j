@@ -67,8 +67,56 @@ public class PanamaInstanceCallFunctionTest {
     engine.close();
   }
 
-  // TODO: Fix testCallFunctionI64 - WASM bytecode appears to be invalid
-  // Skipping this test for now as the other value types (i32, f32, f64) are working correctly
+  @Test
+  @DisplayName("Call function with i64 parameters")
+  public void testCallFunctionI64() throws WasmException {
+    // WASM bytecode for: (module (func (export "add64") (param i64 i64) (result i64)
+    //   local.get 0 local.get 1 i64.add))
+    final byte[] wasmBytes =
+        new byte[] {
+          0x00, 0x61, 0x73, 0x6d, // magic number
+          0x01, 0x00, 0x00, 0x00, // version 1
+          // Type section (id=1)
+          0x01, 0x07, // section id and size
+          0x01, // number of types
+          0x60, 0x02, 0x7e, 0x7e, 0x01, 0x7e, // (i64, i64) -> i64
+          // Function section (id=3)
+          0x03, 0x02, // section id and size
+          0x01, // number of functions
+          0x00, // function 0: type 0
+          // Export section (id=7)
+          0x07, 0x09, // section id and size
+          0x01, // number of exports
+          0x05, 0x61, 0x64, 0x64, 0x36, 0x34, // "add64"
+          0x00, 0x00, // function export, index 0
+          // Code section (id=10)
+          0x0a, 0x09, // section id and size
+          0x01, // number of function bodies
+          0x07, // function body size
+          0x00, // local variable count
+          0x20, 0x00, // local.get 0
+          0x20, 0x01, // local.get 1
+          0x7c, // i64.add
+          0x0b // end
+        };
+
+    final PanamaEngine engine = new PanamaEngine();
+    final PanamaStore store = new PanamaStore(engine);
+    final PanamaModule module = new PanamaModule(engine, wasmBytes);
+    final PanamaInstance instance = new PanamaInstance(module, store);
+
+    final WasmValue[] results =
+        instance.callFunction("add64", WasmValue.i64(1000000000L), WasmValue.i64(2000000000L));
+
+    assertNotNull(results, "Results should not be null");
+    assertEquals(1, results.length, "Should return 1 value");
+    assertEquals(3000000000L, results[0].asI64(), "Should return 1000000000 + 2000000000 = 3000000000");
+
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+  }
 
   @Test
   @DisplayName("Call function with f32 parameters")
