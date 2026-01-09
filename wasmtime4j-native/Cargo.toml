@@ -10,7 +10,7 @@ readme = "README.md"
 # Optimize for native library use
 [lib]
 name = "wasmtime4j"
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime

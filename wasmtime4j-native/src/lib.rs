@@ -75,6 +75,11 @@ pub mod deadlock_prevention;
 #[cfg(test)]
 pub mod threading_integration_tests;
 
+// Platform optimization integration tests (NUMA, cache, memory bandwidth)
+// NOTE: Disabled due to missing type implementations in memory_bandwidth_optimization module
+// #[cfg(test)]
+// pub mod platform_optimization_integration_test;
+
 // Advanced execution control with fuel and epoch management
 pub mod execution_control;
 
@@ -243,6 +248,7 @@ pub mod networking;
 pub mod numa_topology;
 pub mod cpu_cache_management;
 // TODO: Advanced performance optimization modules need missing type implementations
+// These modules have incomplete type definitions (BandwidthPriorityScheme, PrefetchAlgorithm, etc.)
 // pub mod memory_bandwidth_optimization;
 // pub mod cpu_microarchitecture_detection;
 // pub mod platform_config;

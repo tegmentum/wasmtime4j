@@ -1531,4 +1531,400 @@ mod tests {
 
         assert!(config.apply_to_config(&mut wasmtime_config).is_ok());
     }
+
+    // ==================== Allocation Strategy Tests ====================
+
+    #[test]
+    fn test_allocation_strategy_default_values() {
+        let config = AllocationStrategyConfig::default();
+        assert!(matches!(config.stack_allocation, StackAllocationStrategy::FixedSize));
+        assert!(matches!(config.heap_allocation, HeapAllocationStrategy::System));
+        assert!(!config.pooling_allocator.enabled);
+        assert_eq!(config.pooling_allocator.instance_pool_size, 100);
+        assert!(!config.garbage_collection.enabled);
+    }
+
+    #[test]
+    fn test_pooling_allocator_config_defaults() {
+        let config = PoolingAllocatorConfig::default();
+        assert!(!config.enabled);
+        assert_eq!(config.instance_pool_size, 100);
+        assert_eq!(config.memory_pool_size, 1024 * 1024 * 1024); // 1GB
+        assert_eq!(config.table_pool_size, 1000);
+        assert_eq!(config.stack_pool_size, 100);
+    }
+
+    #[test]
+    fn test_pooling_allocator_validation_enabled_with_valid_size() {
+        let mut config = AdvancedEngineConfig::default();
+        config.allocation_strategy.pooling_allocator.enabled = true;
+        config.allocation_strategy.pooling_allocator.instance_pool_size = 50;
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_memory_management_defaults() {
+        let config = MemoryManagementSettings::default();
+        assert!(!config.memory_compaction);
+        assert_eq!(config.memory_alignment, 8);
+        assert!(config.zero_on_allocation);
+        assert!(!config.memory_encryption);
+        assert!(!config.access_tracking);
+    }
+
+    #[test]
+    fn test_garbage_collection_config_defaults() {
+        let config = GarbageCollectionConfig::default();
+        assert!(!config.enabled);
+        assert!(matches!(config.algorithm, GcAlgorithm::MarkAndSweep));
+        assert!((config.trigger_threshold - 0.8).abs() < f64::EPSILON);
+        assert_eq!(config.max_pause_time, 10);
+    }
+
+    #[test]
+    fn test_generational_gc_config_defaults() {
+        let config = GenerationalGcConfig::default();
+        assert!(!config.enabled);
+        assert_eq!(config.generation_count, 2);
+        assert_eq!(config.promotion_threshold, 10);
+        assert_eq!(config.nursery_size, 64 * 1024 * 1024); // 64MB
+    }
+
+    // ==================== Compilation Pipeline Tests ====================
+
+    #[test]
+    fn test_compilation_pipeline_defaults() {
+        let config = CompilationPipelineConfig::default();
+        assert!(config.compilation_phases.parsing_optimization);
+        assert!(config.compilation_phases.validation_optimization);
+        assert!(config.compilation_phases.translation_optimization);
+        assert!(!config.compilation_caching.enabled);
+        assert!(!config.incremental_compilation.enabled);
+    }
+
+    #[test]
+    fn test_optimization_passes_defaults() {
+        let config = OptimizationPassesConfig::default();
+        assert!(config.standard_passes.constant_folding);
+        assert!(config.standard_passes.dead_code_elimination);
+        assert!(config.standard_passes.common_subexpression_elimination);
+        assert!(config.standard_passes.loop_optimization);
+        assert!(config.standard_passes.inlining);
+        assert!(!config.custom_passes.enabled);
+    }
+
+    #[test]
+    fn test_pass_iteration_limits_defaults() {
+        let config = PassIterationLimits::default();
+        assert_eq!(config.max_iterations, 100);
+        assert_eq!(config.global_limit, 1000);
+        assert!((config.convergence_threshold - 0.01).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_code_generation_config_defaults() {
+        let config = CodeGenerationConfig::default();
+        assert!(config.target_specific);
+        assert!(config.machine_code_optimization);
+        assert!(config.code_layout_optimization);
+        assert!(matches!(config.instruction_selection, InstructionSelectionStrategy::Balanced));
+        assert!(matches!(config.register_allocation, RegisterAllocationStrategy::LinearScan));
+    }
+
+    // ==================== Memory Protection Tests ====================
+
+    #[test]
+    fn test_memory_protection_defaults() {
+        let config = MemoryProtectionConfig::default();
+        assert!(config.guard_pages.enabled);  // Guard pages enabled by default
+        assert!(!config.memory_isolation.enabled);
+        assert!(config.stack_overflow_protection.enabled);  // Stack overflow protection enabled by default
+    }
+
+    #[test]
+    fn test_guard_page_config_defaults() {
+        let config = GuardPageConfig::default();
+        assert!(config.enabled);
+        assert_eq!(config.page_size, 4096);
+        assert_eq!(config.page_count, 1);
+        assert!(matches!(config.protection_level, ProtectionLevel::NoAccess));
+    }
+
+    #[test]
+    fn test_aslr_config_defaults() {
+        let config = AslrConfig::default();
+        assert!(!config.enabled);
+        assert_eq!(config.entropy_bits, 16);
+    }
+
+    // ==================== Code Cache Tests ====================
+
+    #[test]
+    fn test_code_cache_config_defaults() {
+        let config = CodeCacheConfig::default();
+        assert_eq!(config.cache_size_limits.max_cache_size, 256 * 1024 * 1024);
+        assert_eq!(config.cache_size_limits.max_entries, 10000);
+        assert!(matches!(config.replacement_policy, CacheReplacementPolicy::LRU));
+        assert!(matches!(config.invalidation_strategy, CacheInvalidationStrategy::SizeBased));
+        assert!(!config.code_sharing.enabled);
+    }
+
+    #[test]
+    fn test_cache_size_validation() {
+        let mut config = AdvancedEngineConfig::default();
+
+        // Valid cache size
+        config.code_cache.cache_size_limits.max_cache_size = 128 * 1024 * 1024;
+        assert!(config.validate().is_ok());
+
+        // Zero cache size should fail
+        config.code_cache.cache_size_limits.max_cache_size = 0;
+        let result = config.validate();
+        assert!(result.is_err());
+
+        // Check error message
+        if let Err(WasmtimeError::EngineConfig { message }) = result {
+            assert!(message.contains("cache size"), "Error message should mention cache size");
+        }
+    }
+
+    // ==================== Resource Limits Tests ====================
+
+    #[test]
+    fn test_resource_limits_defaults() {
+        let config = ResourceLimitsConfig::default();
+        assert_eq!(config.max_wasm_stack, Some(512 * 1024));  // 512KB default
+        assert!(config.max_memory_size.is_none());
+        assert!(config.max_tables_per_module.is_none());
+        assert!(config.max_memories_per_module.is_none());
+    }
+
+    // ==================== Profile Configurations Tests ====================
+
+    #[test]
+    fn test_profiling_integration_defaults() {
+        let config = ProfilingIntegrationConfig::default();
+        assert!(!config.perf_integration.enabled);
+        assert!(!config.vtune_integration.enabled);
+        assert!(!config.custom_profiling.enabled);
+    }
+
+    // ==================== Dynamic Optimization Tests ====================
+
+    #[test]
+    fn test_dynamic_optimization_defaults() {
+        let config = DynamicOptimizationConfig::default();
+        assert!(!config.adaptive_compilation.enabled);
+        assert!(!config.profile_guided_optimization.enabled);
+        assert!(!config.hot_path_detection.enabled);
+        assert!(!config.runtime_recompilation.enabled);
+        assert!(!config.feedback_directed_optimization.enabled);
+    }
+
+    // ==================== Placeholder Config Tests ====================
+
+    #[test]
+    fn test_security_config_placeholder() {
+        let config = SecurityConfig::default();
+        assert!(!config.placeholder, "SecurityConfig placeholder should default to false");
+    }
+
+    #[test]
+    fn test_performance_monitoring_config_placeholder() {
+        let config = PerformanceMonitoringConfig::default();
+        assert!(!config.placeholder, "PerformanceMonitoringConfig placeholder should default to false");
+    }
+
+    #[test]
+    fn test_compilation_parallelism_config_placeholder() {
+        let config = CompilationParallelismConfig::default();
+        assert!(!config.placeholder, "CompilationParallelismConfig placeholder should default to false");
+    }
+
+    // ==================== Error Message Tests ====================
+
+    #[test]
+    fn test_validation_error_messages_are_descriptive() {
+        let mut config = AdvancedEngineConfig::default();
+
+        // Test pooling allocator error message
+        config.allocation_strategy.pooling_allocator.enabled = true;
+        config.allocation_strategy.pooling_allocator.instance_pool_size = 0;
+        if let Err(WasmtimeError::EngineConfig { message }) = config.validate() {
+            assert!(message.len() > 10, "Error message should be descriptive");
+            assert!(message.to_lowercase().contains("pool") || message.to_lowercase().contains("instance"),
+                "Error message should mention the issue");
+        } else {
+            panic!("Expected EngineConfig error");
+        }
+    }
+
+    // ==================== Configuration Presets Tests ====================
+
+    #[test]
+    fn test_all_preset_configs_validate() {
+        // All preset configurations should pass validation
+        assert!(AdvancedEngineConfig::default().validate().is_ok());
+        assert!(AdvancedEngineConfig::performance_optimized().validate().is_ok());
+        assert!(AdvancedEngineConfig::security_hardened().validate().is_ok());
+        assert!(AdvancedEngineConfig::development_optimized().validate().is_ok());
+    }
+
+    #[test]
+    fn test_preset_config_characteristics() {
+        // Performance optimized should have caching enabled
+        let perf = AdvancedEngineConfig::performance_optimized();
+        assert!(perf.allocation_strategy.pooling_allocator.enabled);
+        assert!(perf.compilation_pipeline.compilation_caching.enabled);
+
+        // Security hardened should have protection enabled
+        let secure = AdvancedEngineConfig::security_hardened();
+        assert!(secure.memory_protection.guard_pages.enabled);
+        assert!(secure.memory_protection.memory_isolation.enabled);
+
+        // Development optimized should have profiling enabled
+        let dev = AdvancedEngineConfig::development_optimized();
+        assert!(dev.profiling_integration.perf_integration.enabled);
+    }
+
+    // ==================== Clone and Debug Tests ====================
+
+    #[test]
+    fn test_config_is_cloneable() {
+        let config = AdvancedEngineConfig::performance_optimized();
+        let cloned = config.clone();
+
+        // Verify cloned config has same validation result
+        assert_eq!(config.validate().is_ok(), cloned.validate().is_ok());
+
+        // Verify cloned config has same field values
+        assert_eq!(
+            config.allocation_strategy.pooling_allocator.enabled,
+            cloned.allocation_strategy.pooling_allocator.enabled
+        );
+    }
+
+    #[test]
+    fn test_config_is_debuggable() {
+        let config = AdvancedEngineConfig::default();
+        let debug_str = format!("{:?}", config);
+
+        // Debug output should contain struct names
+        assert!(debug_str.contains("AdvancedEngineConfig"));
+    }
+
+    // ==================== Core Module Function Tests ====================
+
+    #[test]
+    fn test_core_create_functions() {
+        assert!(core::create_advanced_engine_config().is_ok());
+        assert!(core::create_performance_engine_config().is_ok());
+        assert!(core::create_security_engine_config().is_ok());
+        assert!(core::create_development_engine_config().is_ok());
+    }
+
+    #[test]
+    fn test_core_apply_config() {
+        let config = core::create_advanced_engine_config().unwrap();
+        let mut wasmtime_config = Config::new();
+
+        unsafe {
+            let config_ptr = Box::into_raw(config) as *const std::os::raw::c_void;
+            let result = core::apply_advanced_engine_config(config_ptr, &mut wasmtime_config);
+            assert!(result.is_ok());
+
+            // Clean up
+            core::destroy_advanced_engine_config(config_ptr as *mut std::os::raw::c_void);
+        }
+    }
+
+    #[test]
+    fn test_core_validate_config() {
+        let config = core::create_advanced_engine_config().unwrap();
+
+        unsafe {
+            let config_ptr = Box::into_raw(config) as *const std::os::raw::c_void;
+            let result = core::validate_advanced_engine_config(config_ptr);
+            assert!(result.is_ok());
+
+            // Clean up
+            core::destroy_advanced_engine_config(config_ptr as *mut std::os::raw::c_void);
+        }
+    }
+
+    #[test]
+    fn test_core_null_pointer_handling() {
+        unsafe {
+            // Validate with null pointer should fail
+            let result = core::validate_advanced_engine_config(std::ptr::null());
+            assert!(result.is_err());
+
+            // Apply with null pointer should fail
+            let mut wasmtime_config = Config::new();
+            let result = core::apply_advanced_engine_config(std::ptr::null(), &mut wasmtime_config);
+            assert!(result.is_err());
+        }
+    }
+
+    // ==================== Enum Variant Tests ====================
+
+    #[test]
+    fn test_stack_allocation_strategy_variants() {
+        let strategies = [
+            StackAllocationStrategy::FixedSize,
+            StackAllocationStrategy::DynamicGrowth,
+            StackAllocationStrategy::SegmentedStack,
+            StackAllocationStrategy::StackPooling,
+        ];
+
+        for strategy in strategies {
+            // Verify all variants can be created and debugged
+            let _ = format!("{:?}", strategy);
+        }
+    }
+
+    #[test]
+    fn test_heap_allocation_strategy_variants() {
+        let strategies = [
+            HeapAllocationStrategy::System,
+            HeapAllocationStrategy::Custom,
+            HeapAllocationStrategy::Pool,
+            HeapAllocationStrategy::Bump,
+            HeapAllocationStrategy::Slab,
+        ];
+
+        for strategy in strategies {
+            let _ = format!("{:?}", strategy);
+        }
+    }
+
+    #[test]
+    fn test_cache_replacement_policy_variants() {
+        let policies = [
+            CacheReplacementPolicy::LRU,
+            CacheReplacementPolicy::LFU,
+            CacheReplacementPolicy::FIFO,
+            CacheReplacementPolicy::Random,
+            CacheReplacementPolicy::Adaptive,
+        ];
+
+        for policy in policies {
+            let _ = format!("{:?}", policy);
+        }
+    }
+
+    #[test]
+    fn test_gc_algorithm_variants() {
+        let algorithms = [
+            GcAlgorithm::MarkAndSweep,
+            GcAlgorithm::Generational,
+            GcAlgorithm::Incremental,
+            GcAlgorithm::Concurrent,
+            GcAlgorithm::RealTime,
+        ];
+
+        for algo in algorithms {
+            let _ = format!("{:?}", algo);
+        }
+    }
 }
