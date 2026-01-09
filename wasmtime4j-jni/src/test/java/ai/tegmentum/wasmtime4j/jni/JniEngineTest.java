@@ -406,31 +406,36 @@ class JniEngineTest {
   class ConfigAndStatsTests {
 
     @Test
-    @DisplayName("should return null for getConfig")
+    @DisplayName("should return null for getConfig - placeholder until native implementation")
     void shouldReturnNullForGetConfig() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // TODO: Currently unimplemented, returns null
-      assertNull(engine.getConfig(), "getConfig should return null (unimplemented)");
+      // getConfig returns null as a placeholder until native implementation is complete.
+      // This is the documented behavior for the current version.
+      assertNull(engine.getConfig(), "getConfig should return null (placeholder behavior)");
     }
 
     @Test
-    @DisplayName("should return 1 for getReferenceCount")
+    @DisplayName("should return 1 for getReferenceCount - placeholder until native implementation")
     void shouldReturnOneForGetReferenceCount() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // TODO: Currently returns 1 as placeholder
-      assertEquals(1, engine.getReferenceCount(), "getReferenceCount should return 1");
+      // getReferenceCount returns 1 as a placeholder until native implementation is complete.
+      // This is the documented behavior for the current version.
+      assertEquals(1, engine.getReferenceCount(), "getReferenceCount should return 1 (placeholder)");
     }
 
     @Test
-    @DisplayName("should return MAX_VALUE for getMaxInstances")
+    @DisplayName("should return MAX_VALUE for getMaxInstances - placeholder until native impl")
     void shouldReturnMaxValueForGetMaxInstances() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // TODO: Currently returns MAX_VALUE as placeholder
+      // getMaxInstances returns MAX_VALUE as a placeholder until native implementation is complete.
+      // This is the documented behavior for the current version (no instance limits).
       assertEquals(
-          Integer.MAX_VALUE, engine.getMaxInstances(), "getMaxInstances should return MAX_VALUE");
+          Integer.MAX_VALUE,
+          engine.getMaxInstances(),
+          "getMaxInstances should return MAX_VALUE (placeholder)");
     }
   }
 
