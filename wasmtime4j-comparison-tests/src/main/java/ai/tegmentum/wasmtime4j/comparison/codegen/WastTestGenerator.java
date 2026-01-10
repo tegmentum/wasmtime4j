@@ -820,7 +820,17 @@ public final class WastTestGenerator {
     final String functionName = nameMatcher.group(1);
 
     // Extract arguments and expected results
-    final int invokeStart = directive.indexOf("( invoke");
+    // Handle both "( invoke" and "(invoke" formats
+    int invokeStart = directive.indexOf("(invoke");
+    if (invokeStart == -1) {
+      invokeStart = directive.indexOf("( invoke");
+    }
+    if (invokeStart == -1) {
+      methodBody.add("// $L\n", directive);
+      methodBody.add("// TODO: Parse assert_return - invoke block not found\n");
+      methodBody.add("\n");
+      return;
+    }
     final int functionNameEnd = nameMatcher.end();
 
     // Find matching closing paren for invoke
@@ -902,7 +912,17 @@ public final class WastTestGenerator {
     final int functionNameEnd = nameMatcher.end();
 
     // Find matching closing paren for invoke
-    final int invokeStart = directive.indexOf("( invoke");
+    // Handle both "( invoke" and "(invoke" formats
+    int invokeStart = directive.indexOf("(invoke");
+    if (invokeStart == -1) {
+      invokeStart = directive.indexOf("( invoke");
+    }
+    if (invokeStart == -1) {
+      methodBody.add("// $L\n", directive);
+      methodBody.add("// TODO: Parse assert_trap - invoke block not found\n");
+      methodBody.add("\n");
+      return;
+    }
     int depth = 0;
     int invokeEnd = -1;
     for (int i = invokeStart; i < directive.length(); i++) {
@@ -1040,7 +1060,11 @@ public final class WastTestGenerator {
 
   private static void generateAssertInvalid(final String directive, final String assertType) {
     // Parse: (assert_invalid (module ...) "error message")
-    final int moduleStart = directive.indexOf("( module");
+    // Handle both "( module" and "(module" formats
+    int moduleStart = directive.indexOf("(module");
+    if (moduleStart == -1) {
+      moduleStart = directive.indexOf("( module");
+    }
     if (moduleStart == -1) {
       methodBody.add("// $L\n", directive);
       methodBody.add("// TODO: Parse $L - no module found\n", assertType);
