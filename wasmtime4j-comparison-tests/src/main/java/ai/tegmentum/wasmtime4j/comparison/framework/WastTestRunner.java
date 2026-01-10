@@ -72,6 +72,9 @@ public final class WastTestRunner implements AutoCloseable {
     this.engine = Engine.create();
     this.store = engine.createStore();
     this.linker = Linker.create(engine);
+    System.err.println("[RUNNER] Linker type: " + this.linker.getClass().getName());
+    System.err.println("[RUNNER] Engine type: " + this.engine.getClass().getName());
+    System.err.flush();
     this.namedInstances = new HashMap<>();
     this.currentInstance = null;
     this.hasHostFunctions = false;
@@ -134,12 +137,20 @@ public final class WastTestRunner implements AutoCloseable {
   public Instance compileAndInstantiate(final String wat) throws Exception {
     Objects.requireNonNull(wat, "WAT cannot be null");
 
+    System.err.println("[RUNNER] About to call engine.compileWat");
+    System.err.flush();
     final Module module = engine.compileWat(wat);
+    System.err.println("[RUNNER] compileWat returned: " + module);
+    System.err.flush();
     final Instance instance;
 
     if (hasHostFunctions) {
       // Use linker when host functions are defined
+      System.err.println("[RUNNER] Calling linker.instantiate with hasHostFunctions=true");
+      System.err.flush();
       instance = linker.instantiate(store, module);
+      System.err.println("[RUNNER] linker.instantiate returned: " + instance);
+      System.err.flush();
     } else {
       // Direct instantiation for simple modules
       instance = module.instantiate(store);

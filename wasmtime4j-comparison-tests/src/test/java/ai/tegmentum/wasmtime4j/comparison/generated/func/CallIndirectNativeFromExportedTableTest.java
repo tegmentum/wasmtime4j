@@ -59,8 +59,7 @@ public final class CallIndirectNativeFromExportedTableTest extends DualRuntimeTe
 
     // Host function that returns (10, 20, 30)
     final HostFunction hostFunc =
-        (params) ->
-            new WasmValue[] {WasmValue.i32(10), WasmValue.i32(20), WasmValue.i32(30)};
+        (params) -> new WasmValue[] {WasmValue.i32(10), WasmValue.i32(20), WasmValue.i32(30)};
 
     try (final WastTestRunner runner = new WastTestRunner(runtime)) {
       // Compile and instantiate the module

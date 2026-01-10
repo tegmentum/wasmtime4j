@@ -28,9 +28,7 @@ public final class CallIndirectNativeFromWasmImportTableTest extends DualRuntime
   public void testCallIndirectNativeFromWasmImportTable(final RuntimeType runtime)
       throws Exception {
     // Skip both runtimes for now as table imports require additional Linker.defineTable API
-    assumeTrue(
-        false,
-        "Table import support requires Linker.defineTable API - not yet implemented");
+    assumeTrue(false, "Table import support requires Linker.defineTable API - not yet implemented");
 
     // Original WAT from the Wasmtime test:
     // (module

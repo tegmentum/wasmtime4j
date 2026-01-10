@@ -57,42 +57,32 @@ public final class PartialInitMemorySegmentTest extends DualRuntimeTest {
 
       // ( assert_return ( invoke $m "load" ( i32.const 0)) ( i32.const 97))
       // After partial initialization failure, the "abc" data should still be written at offset 0
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(97)}, WasmValue.i32(0));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(97)}, WasmValue.i32(0));
 
       // ( assert_return ( invoke $m "load" ( i32.const 1)) ( i32.const 98))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(98)}, WasmValue.i32(1));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(98)}, WasmValue.i32(1));
 
       // ( assert_return ( invoke $m "load" ( i32.const 2)) ( i32.const 99))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(99)}, WasmValue.i32(2));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(99)}, WasmValue.i32(2));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65530)) ( i32.const 0))
       // The failed segment at 65530 should NOT have written any data (out of bounds)
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65530));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65530));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65531)) ( i32.const 0))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65531));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65531));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65532)) ( i32.const 0))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65532));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65532));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65533)) ( i32.const 0))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65533));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65533));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65534)) ( i32.const 0))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65534));
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65534));
 
       // ( assert_return ( invoke $m "load" ( i32.const 65535)) ( i32.const 0))
-      runner.assertReturn(
-          "m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65535));
-
+      runner.assertReturn("m", "load", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(65535));
     }
   }
 }

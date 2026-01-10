@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
  * <p>Original source: func.rs:472 Category: func
  *
  * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
- * implementation for this test case. The test verifies that host function destructors are called
- * at the appropriate time - when the store is dropped, not when the function is created.
+ * implementation for this test case. The test verifies that host function destructors are called at
+ * the appropriate time - when the store is dropped, not when the function is created.
  */
 public final class DtorDelayedTest {
 
@@ -40,8 +40,7 @@ public final class DtorDelayedTest {
         """;
 
     // Define function type for the import: () -> ()
-    final FunctionType funcType =
-        new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+    final FunctionType funcType = new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
 
     // Create host function that increments counter when called
     final HostFunction hostFunc =

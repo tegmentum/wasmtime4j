@@ -72,12 +72,12 @@ public final class ImportWorksTest {
         """;
 
     // Function type for func0: () -> ()
-    final FunctionType func0Type =
-        new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
+    final FunctionType func0Type = new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
 
     // Function type for func1: (i32) -> (i32)
     final FunctionType func1Type =
-        new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+        new FunctionType(
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
     // Function type for func2: (i32, i64) -> ()
     final FunctionType func2Type =

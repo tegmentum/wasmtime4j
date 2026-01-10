@@ -185,10 +185,9 @@
                         <include>**/comparison/Simple*Test.java</include>
                         <include>**/comparison/generated/func/**/*Test.java</include>
                         <include>**/comparison/generated/wasmtime/**/*Test.java</include>
+                        <include>**/comparison/generated/traps/**/*Test.java</include>
                     </includes>
                     <excludes>
-                        <!-- Trap tests (6 tests): Require enhanced trap message extraction from JNI layer -->
-                        <exclude>**/comparison/generated/traps/**</exclude>
 
                         <!-- Host function tests (7 tests): Require host function callback implementation -->
                         <exclude>**/comparison/generated/hostfuncs/**</exclude>
