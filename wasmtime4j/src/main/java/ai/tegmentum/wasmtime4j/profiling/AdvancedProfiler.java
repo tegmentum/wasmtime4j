@@ -147,6 +147,10 @@ public final class AdvancedProfiler implements AutoCloseable {
     }
 
     synchronized (functionRecords) {
+      // Enforce maxSamples limit to prevent unbounded growth
+      if (functionRecords.size() >= configuration.getMaxSamples()) {
+        functionRecords.remove(0);
+      }
       functionRecords.add(
           new FunctionRecord(
               name,
