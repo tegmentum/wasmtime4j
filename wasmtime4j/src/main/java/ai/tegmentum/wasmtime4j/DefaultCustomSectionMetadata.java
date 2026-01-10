@@ -31,7 +31,7 @@ public final class DefaultCustomSectionMetadata implements CustomSectionMetadata
    * @param parser the custom section parser
    * @throws IllegalArgumentException if customSections or parser is null
    */
-  DefaultCustomSectionMetadata(
+  public DefaultCustomSectionMetadata(
       final List<CustomSection> customSections, final CustomSectionParser parser) {
     if (customSections == null) {
       throw new IllegalArgumentException("Custom sections cannot be null");
