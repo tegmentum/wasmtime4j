@@ -280,5 +280,47 @@
                 <jmh.forks>3</jmh.forks>
             </properties>
         </profile>
+
+        <!-- Profile for JSON report output (for visualization) -->
+        <profile>
+            <id>benchmark-report</id>
+            <properties>
+                <jmh.resultFormat>JSON</jmh.resultFormat>
+                <jmh.output>target/benchmark-results.json</jmh.output>
+            </properties>
+        </profile>
+
+        <!-- Profile to run benchmarks and open visualizer -->
+        <profile>
+            <id>benchmark-visualize</id>
+            <properties>
+                <jmh.resultFormat>JSON</jmh.resultFormat>
+                <jmh.output>target/benchmark-results.json</jmh.output>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>open-visualizer</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.basedir}/scripts/visualize-benchmarks.sh</executable>
+                                    <arguments>
+                                        <argument>${project.build.directory}/benchmark-results.json</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
