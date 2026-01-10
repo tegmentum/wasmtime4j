@@ -453,9 +453,7 @@ public class SimdPerformanceBenchmark {
 
   // ===== MIXED WORKLOAD BENCHMARKS =====
 
-  /**
-   * Benchmark that combines multiple SIMD operations to simulate real-world usage.
-   */
+  /** Benchmark that combines multiple SIMD operations to simulate real-world usage. */
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT / 4)
   public SimdVector simdMixedWorkload() throws Exception {
@@ -470,9 +468,7 @@ public class SimdPerformanceBenchmark {
     return result;
   }
 
-  /**
-   * Scalar equivalent of the mixed workload for comparison.
-   */
+  /** Scalar equivalent of the mixed workload for comparison. */
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT / 4)
   public int[] scalarMixedWorkload() {

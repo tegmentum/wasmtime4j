@@ -20,7 +20,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * 128-bit SIMD vector value with convenient factory methods.
@@ -58,16 +57,13 @@ public final class V128 {
    * @param data the vector data (must be exactly 16 bytes)
    * @throws IllegalArgumentException if data is null or not 16 bytes
    */
-  @SuppressFBWarnings(
-      value = "EI_EXPOSE_REP2",
-      justification = "Defensive copy is made")
+  @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Defensive copy is made")
   public V128(final byte[] data) {
     if (data == null) {
       throw new IllegalArgumentException("Data cannot be null");
     }
     if (data.length != SIZE_BYTES) {
-      throw new IllegalArgumentException(
-          "V128 data must be exactly 16 bytes, got " + data.length);
+      throw new IllegalArgumentException("V128 data must be exactly 16 bytes, got " + data.length);
     }
     this.data = Arrays.copyOf(data, SIZE_BYTES);
   }
@@ -377,8 +373,7 @@ public final class V128 {
   @Override
   public String toString() {
     final int[] ints = getAsInts();
-    return String.format(
-        "V128[i32x4: %d, %d, %d, %d]", ints[0], ints[1], ints[2], ints[3]);
+    return String.format("V128[i32x4: %d, %d, %d, %d]", ints[0], ints[1], ints[2], ints[3]);
   }
 
   /**

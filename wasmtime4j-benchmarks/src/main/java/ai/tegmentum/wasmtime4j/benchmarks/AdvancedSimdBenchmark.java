@@ -43,6 +43,7 @@ import org.openjdk.jmh.infra.Blackhole;
  * JMH benchmarks for advanced SIMD operations.
  *
  * <p>This benchmark suite evaluates the performance of:
+ *
  * <ul>
  *   <li>Advanced arithmetic operations (FMA, reciprocal, sqrt)
  *   <li>Advanced logical operations (popcount, variable shifts)
