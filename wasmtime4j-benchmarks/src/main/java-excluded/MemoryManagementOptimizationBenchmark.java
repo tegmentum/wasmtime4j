@@ -61,7 +61,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(1) // Use single fork to better track memory usage
 @State(Scope.Benchmark)
-public final class MemoryManagementOptimizationBenchmark extends BenchmarkBase {
+public class MemoryManagementOptimizationBenchmark extends BenchmarkBase {
 
   /** Memory-intensive WebAssembly module. */
   private static final byte[] MEMORY_INTENSIVE_WASM =

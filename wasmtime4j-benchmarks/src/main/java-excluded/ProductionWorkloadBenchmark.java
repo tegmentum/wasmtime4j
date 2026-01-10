@@ -57,7 +57,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 10, time = 5, timeUnit = TimeUnit.SECONDS)
 @Fork(2)
 @State(Scope.Benchmark)
-public final class ProductionWorkloadBenchmark extends BenchmarkBase {
+public class ProductionWorkloadBenchmark extends BenchmarkBase {
 
   /** Data processing WebAssembly module. */
   private static final byte[] DATA_PROCESSOR_WASM =

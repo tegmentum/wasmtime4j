@@ -1,10 +1,12 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +42,8 @@ public class SimdOptimizationBenchmark {
   private float[] floatData2;
 
   // WebAssembly instances for different SIMD scenarios
-  private WasmRuntime runtime;
+  private Engine engine;
+  private Store store;
   private Instance simdInstance;
   private Instance scalarInstance;
 
@@ -53,27 +56,26 @@ public class SimdOptimizationBenchmark {
 
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
-    // Initialize runtime based on parameter
+    // Initialize engine based on parameter
     EngineConfig engineConfig =
-        EngineConfig.builder()
-            .withFeature(WasmFeature.SIMD, true)
-            .withFeature(WasmFeature.MULTI_VALUE, true)
-            .withFeature(WasmFeature.BULK_MEMORY, true)
-            .withOptimizationLevel(3)
-            .withRuntimeProperty("wasmtime4j.runtime", runtimeType.toLowerCase())
-            .build();
+        new EngineConfig()
+            .addWasmFeature(WasmFeature.SIMD)
+            .addWasmFeature(WasmFeature.MULTI_VALUE)
+            .addWasmFeature(WasmFeature.BULK_MEMORY)
+            .optimizationLevel(OptimizationLevel.SPEED);
 
-    runtime = WasmRuntime.builder().withEngineConfig(engineConfig).build();
+    engine = Engine.create(engineConfig);
+    store = engine.createStore();
 
     // Load SIMD-optimized WebAssembly module
     byte[] simdWasm = loadSimdTestModule();
-    Module simdModule = Module.fromBinary(runtime, simdWasm);
-    simdInstance = Instance.create(runtime, simdModule);
+    Module simdModule = engine.compileModule(simdWasm);
+    simdInstance = store.createInstance(simdModule);
 
     // Load scalar fallback module for comparison
     byte[] scalarWasm = loadScalarTestModule();
-    Module scalarModule = Module.fromBinary(runtime, scalarWasm);
-    scalarInstance = Instance.create(runtime, scalarModule);
+    Module scalarModule = engine.compileModule(scalarWasm);
+    scalarInstance = store.createInstance(scalarModule);
 
     System.out.println(
         "Initialized SIMD benchmark with runtime: " + runtimeType + ", SIMD level: " + simdLevel);
@@ -103,8 +105,11 @@ public class SimdOptimizationBenchmark {
     if (scalarInstance != null) {
       scalarInstance.close();
     }
-    if (runtime != null) {
-      runtime.close();
+    if (store != null) {
+      store.close();
+    }
+    if (engine != null) {
+      engine.close();
     }
   }
 
@@ -124,7 +129,7 @@ public class SimdOptimizationBenchmark {
       }
 
       // Call SIMD addition function
-      WasmValue[] result = simdInstance.call("simd_add_i32x4", args);
+      WasmValue[] result = callFunction(simdInstance, "simd_add_i32x4", args);
       blackhole.consume(result);
     }
   }
@@ -142,8 +147,8 @@ public class SimdOptimizationBenchmark {
           WasmValue.i32(intData1[offset + j]), WasmValue.i32(intData2[offset + j])
         };
 
-        WasmValue result = scalarInstance.call("scalar_add_i32", args)[0];
-        blackhole.consume(result);
+        WasmValue[] result = callFunction(scalarInstance, "scalar_add_i32", args);
+        blackhole.consume(result[0]);
       }
     }
   }
@@ -162,7 +167,7 @@ public class SimdOptimizationBenchmark {
         args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
       }
 
-      WasmValue[] result = simdInstance.call("simd_mul_f32x4", args);
+      WasmValue[] result = callFunction(simdInstance, "simd_mul_f32x4", args);
       blackhole.consume(result);
     }
   }
@@ -181,8 +186,8 @@ public class SimdOptimizationBenchmark {
         args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
       }
 
-      WasmValue result = simdInstance.call("simd_dot_product", args)[0];
-      blackhole.consume(result);
+      WasmValue[] result = callFunction(simdInstance, "simd_dot_product", args);
+      blackhole.consume(result[0]);
     }
   }
 
@@ -201,7 +206,7 @@ public class SimdOptimizationBenchmark {
         args[j + 2 * VECTOR_SIZE] = WasmValue.f32(floatData1[offset + j] * 0.5f);
       }
 
-      WasmValue[] result = simdInstance.call("simd_fma_f32x4", args);
+      WasmValue[] result = callFunction(simdInstance, "simd_fma_f32x4", args);
       blackhole.consume(result);
     }
   }
@@ -219,8 +224,8 @@ public class SimdOptimizationBenchmark {
         args[j] = WasmValue.i32(intData1[offset + j]);
       }
 
-      WasmValue result = simdInstance.call("simd_reduce_sum", args)[0];
-      blackhole.consume(result);
+      WasmValue[] result = callFunction(simdInstance, "simd_reduce_sum", args);
+      blackhole.consume(result[0]);
     }
   }
 
@@ -238,7 +243,7 @@ public class SimdOptimizationBenchmark {
         args[j + VECTOR_SIZE] = WasmValue.i32(intData2[offset + j]);
       }
 
-      WasmValue[] result = simdInstance.call("simd_shuffle", args);
+      WasmValue[] result = callFunction(simdInstance, "simd_shuffle", args);
       blackhole.consume(result);
     }
   }
@@ -260,7 +265,7 @@ public class SimdOptimizationBenchmark {
         WasmValue.i32(baseOffset + 12)
       };
 
-      WasmValue[] result = simdInstance.call("simd_gather", indices);
+      WasmValue[] result = callFunction(simdInstance, "simd_gather", indices);
       blackhole.consume(result);
     }
   }
@@ -280,7 +285,7 @@ public class SimdOptimizationBenchmark {
         args[j + 4] = WasmValue.f32(floatData2[offset + j]);
       }
 
-      WasmValue[] result = simdInstance.call("simd_complex_multiply", args);
+      WasmValue[] result = callFunction(simdInstance, "simd_complex_multiply", args);
       blackhole.consume(result);
     }
   }
@@ -300,7 +305,7 @@ public class SimdOptimizationBenchmark {
         args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
       }
 
-      WasmValue[] result = simdInstance.call(functionName, args);
+      WasmValue[] result = callFunction(simdInstance, functionName, args);
       blackhole.consume(result);
     }
   }
@@ -313,6 +318,15 @@ public class SimdOptimizationBenchmark {
       case "NEON" -> "simd_optimized_neon";
       default -> "simd_fallback";
     };
+  }
+
+  /** Helper method to call a function on an instance. */
+  private WasmValue[] callFunction(Instance instance, String name, WasmValue[] args)
+      throws Exception {
+    return instance
+        .getFunction(name)
+        .orElseThrow(() -> new RuntimeException("Function not found: " + name))
+        .call(args);
   }
 
   /**

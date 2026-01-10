@@ -59,7 +59,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(
     value = 3,
     jvmArgs = {"-Xms4g", "-Xmx4g"})
-public final class CrossPlatformPerformanceComparison extends BenchmarkBase {
+public class CrossPlatformPerformanceComparison extends BenchmarkBase {
 
   private static final Logger LOGGER =
       Logger.getLogger(CrossPlatformPerformanceComparison.class.getName());

@@ -51,7 +51,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 10, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(2)
 @State(Scope.Benchmark)
-public final class ModuleCachingPerformanceBenchmark extends BenchmarkBase {
+public class ModuleCachingPerformanceBenchmark extends BenchmarkBase {
 
   /** Simple WebAssembly module for basic caching tests. */
   private static final byte[] TEST_WASM_SIMPLE =

@@ -16,8 +16,13 @@
 
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import ai.tegmentum.wasmtime4j.*;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.*;
@@ -46,29 +51,35 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 public class SharedMemoryBenchmark {
 
-  private WasmRuntime runtime;
-  private WasmEngine engine;
-  private WasmStore store;
-  private WasmInstance instance;
+  private Engine engine;
+  private Store store;
+  private Instance instance;
   private WasmMemory sharedMemory;
   private WasmMemory regularMemory;
 
   @Setup(Level.Trial)
-  public void setupTrial() {
-    runtime = WasmRuntimeFactory.getInstance();
-    engine = runtime.createEngine();
+  public void setupTrial() throws Exception {
+    // Create engine with threads support for shared memory
+    EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+    engine = Engine.create(config);
     store = engine.createStore();
 
     // Create instances with shared and regular memory
     byte[] sharedMemoryWasm = createSharedMemoryModule();
-    WasmModule sharedModule = engine.createModule(sharedMemoryWasm);
-    instance = store.instantiate(sharedModule);
-    sharedMemory = instance.getMemory("memory");
+    Module sharedModule = engine.compileModule(sharedMemoryWasm);
+    instance = store.createInstance(sharedModule);
+    sharedMemory =
+        instance
+            .getMemory("memory")
+            .orElseThrow(() -> new RuntimeException("Shared memory not found"));
 
     byte[] regularMemoryWasm = createRegularMemoryModule();
-    WasmModule regularModule = engine.createModule(regularMemoryWasm);
-    WasmInstance regularInstance = store.instantiate(regularModule);
-    regularMemory = regularInstance.getMemory("memory");
+    Module regularModule = engine.compileModule(regularMemoryWasm);
+    Instance regularInstance = store.createInstance(regularModule);
+    regularMemory =
+        regularInstance
+            .getMemory("memory")
+            .orElseThrow(() -> new RuntimeException("Regular memory not found"));
 
     System.out.println("Shared memory benchmark setup complete");
     System.out.println("Shared memory size: " + sharedMemory.getSize() + " pages");

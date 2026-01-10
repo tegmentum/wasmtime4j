@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Memory64Config;
 import ai.tegmentum.wasmtime4j.MemoryAddressingMode;
+import ai.tegmentum.wasmtime4j.MemoryType;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -269,6 +270,33 @@ public class Memory64PerformanceBenchmark {
     @Override
     public int atomicWait64(int offset, long expected, long timeoutNanos) {
       return 0;
+    }
+
+    @Override
+    public MemoryType getMemoryType() {
+      final long memSize = size;
+      final boolean is64 = supports64Bit;
+      return new MemoryType() {
+        @Override
+        public long getMinimum() {
+          return 1;
+        }
+
+        @Override
+        public java.util.Optional<Long> getMaximum() {
+          return java.util.Optional.of(memSize);
+        }
+
+        @Override
+        public boolean is64Bit() {
+          return is64;
+        }
+
+        @Override
+        public boolean isShared() {
+          return false;
+        }
+      };
     }
   }
 
@@ -603,7 +631,7 @@ public class Memory64PerformanceBenchmark {
     Options opt =
         new OptionsBuilder()
             .include(Memory64PerformanceBenchmark.class.getSimpleName())
-            .resultFormat(org.openjdk.jmh.runner.format.OutputFormatType.JSON)
+            .resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON)
             .result("memory64-benchmark-results.json")
             .build();
 

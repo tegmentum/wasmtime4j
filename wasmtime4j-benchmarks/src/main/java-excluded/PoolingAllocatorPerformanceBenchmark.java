@@ -52,7 +52,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 10, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(2)
 @State(Scope.Benchmark)
-public final class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
+public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
   /** Simple WebAssembly module for allocation testing. */
   private static final byte[] TEST_WASM_SIMPLE =

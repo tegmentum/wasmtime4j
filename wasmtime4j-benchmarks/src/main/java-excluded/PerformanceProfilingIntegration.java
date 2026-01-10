@@ -63,7 +63,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(
     value = 2,
     jvmArgs = {"-Xms4g", "-Xmx4g", "-XX:+UseG1GC"})
-public final class PerformanceProfilingIntegration extends BenchmarkBase {
+public class PerformanceProfilingIntegration extends BenchmarkBase {
 
   private static final Logger LOGGER =
       Logger.getLogger(PerformanceProfilingIntegration.class.getName());

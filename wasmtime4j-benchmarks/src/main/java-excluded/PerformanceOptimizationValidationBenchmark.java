@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Function;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Module;
@@ -56,7 +57,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 10, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(2)
 @State(Scope.Benchmark)
-public final class PerformanceOptimizationValidationBenchmark extends BenchmarkBase {
+public class PerformanceOptimizationValidationBenchmark extends BenchmarkBase {
 
   /** Optimized WebAssembly module for function call testing. */
   private static final byte[] FUNCTION_CALL_WASM =

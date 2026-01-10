@@ -56,7 +56,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(
     value = 2,
     jvmArgs = {"-Xms2g", "-Xmx2g"})
-public final class CiCdPerformanceGateEnforcement extends BenchmarkBase {
+public class CiCdPerformanceGateEnforcement extends BenchmarkBase {
 
   private static final Logger LOGGER =
       Logger.getLogger(CiCdPerformanceGateEnforcement.class.getName());
