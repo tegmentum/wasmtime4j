@@ -174,8 +174,7 @@ final class PlatformDetectorParameterizedTest {
     assertEquals(
         expectedArch,
         info.getArchitecture(),
-        String.format(
-            "Architecture should be detected as %s for input %s", expectedArch, osArch));
+        String.format("Architecture should be detected as %s for input %s", expectedArch, osArch));
 
     // Verify platform ID format
     final String expectedPlatformId = expectedOs.getName() + "-" + expectedArch.getName();

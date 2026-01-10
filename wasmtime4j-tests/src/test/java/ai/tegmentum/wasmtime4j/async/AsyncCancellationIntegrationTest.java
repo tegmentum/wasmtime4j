@@ -74,28 +74,49 @@ public final class AsyncCancellationIntegrationTest {
    */
   private static final byte[] ADD_WASM =
       new byte[] {
-        0x00, 0x61, 0x73, 0x6D, // magic number
-        0x01, 0x00, 0x00, 0x00, // version 1
+        0x00,
+        0x61,
+        0x73,
+        0x6D, // magic number
+        0x01,
+        0x00,
+        0x00,
+        0x00, // version 1
         // Type section (id=1)
-        0x01, 0x07, // section id and size
+        0x01,
+        0x07, // section id and size
         0x01, // number of types
-        0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // (i32, i32) -> i32
+        0x60,
+        0x02,
+        0x7F,
+        0x7F,
+        0x01,
+        0x7F, // (i32, i32) -> i32
         // Function section (id=3)
-        0x03, 0x02, // section id and size
+        0x03,
+        0x02, // section id and size
         0x01, // number of functions
         0x00, // function 0: type 0
         // Export section (id=7)
-        0x07, 0x07, // section id and size
+        0x07,
+        0x07, // section id and size
         0x01, // number of exports
-        0x03, 0x61, 0x64, 0x64, // "add"
-        0x00, 0x00, // function export, index 0
+        0x03,
+        0x61,
+        0x64,
+        0x64, // "add"
+        0x00,
+        0x00, // function export, index 0
         // Code section (id=10)
-        0x0A, 0x09, // section id and size
+        0x0A,
+        0x09, // section id and size
         0x01, // number of functions
         0x07, // function body size
         0x00, // local variable count
-        0x20, 0x00, // local.get 0
-        0x20, 0x01, // local.get 1
+        0x20,
+        0x00, // local.get 0
+        0x20,
+        0x01, // local.get 1
         0x6A, // i32.add
         0x0B // end
       };
@@ -235,8 +256,7 @@ public final class AsyncCancellationIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Start operation
-      final long operationId =
-          asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
+      final long operationId = asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
 
       // Attempt multiple rapid cancellations
       int cancelSuccessCount = 0;
@@ -267,8 +287,7 @@ public final class AsyncCancellationIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Start an operation with long execution timeout
-      final long operationId =
-          asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
+      final long operationId = asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
 
       // Wait with very short timeout
       final long startTime = System.currentTimeMillis();
@@ -293,8 +312,7 @@ public final class AsyncCancellationIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Start an operation
-      final long operationId =
-          asyncRuntime.compileAsync(ADD_WASM, 10000L, null, result -> {});
+      final long operationId = asyncRuntime.compileAsync(ADD_WASM, 10000L, null, result -> {});
 
       // Wait with zero timeout
       final OperationStatus status = asyncRuntime.waitForOperation(operationId, 0L);
@@ -355,8 +373,7 @@ public final class AsyncCancellationIntegrationTest {
 
       // Start and cancel multiple operations
       for (int i = 0; i < 5; i++) {
-        final long operationId =
-            asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
+        final long operationId = asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
         asyncRuntime.cancelOperation(operationId);
       }
 
@@ -387,8 +404,7 @@ public final class AsyncCancellationIntegrationTest {
       // Run multiple cancel cycles
       for (int cycle = 0; cycle < cycles; cycle++) {
         // Start operation
-        final long opId =
-            asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
+        final long opId = asyncRuntime.compileAsync(ADD_WASM, 60000L, null, result -> {});
         operationIds.add(opId);
 
         // Cancel after small delay
@@ -511,10 +527,7 @@ public final class AsyncCancellationIntegrationTest {
                         // Start operation
                         final long opId =
                             asyncRuntime.compileAsync(
-                                ADD_WASM,
-                                5000L,
-                                null,
-                                result -> completedOps.incrementAndGet());
+                                ADD_WASM, 5000L, null, result -> completedOps.incrementAndGet());
 
                         // Randomly either wait or cancel
                         if ((threadId + i) % 2 == 0) {
@@ -568,8 +581,7 @@ public final class AsyncCancellationIntegrationTest {
       for (int i = 0; i < cycles; i++) {
         try {
           // Start
-          final long opId =
-              asyncRuntime.compileAsync(ADD_WASM, 10000L, null, result -> {});
+          final long opId = asyncRuntime.compileAsync(ADD_WASM, 10000L, null, result -> {});
 
           // Rapid queries
           asyncRuntime.getOperationStatus(opId);

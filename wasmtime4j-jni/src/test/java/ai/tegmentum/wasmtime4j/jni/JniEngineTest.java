@@ -422,7 +422,8 @@ class JniEngineTest {
 
       // getReferenceCount returns 1 as a placeholder until native implementation is complete.
       // This is the documented behavior for the current version.
-      assertEquals(1, engine.getReferenceCount(), "getReferenceCount should return 1 (placeholder)");
+      assertEquals(
+          1, engine.getReferenceCount(), "getReferenceCount should return 1 (placeholder)");
     }
 
     @Test
