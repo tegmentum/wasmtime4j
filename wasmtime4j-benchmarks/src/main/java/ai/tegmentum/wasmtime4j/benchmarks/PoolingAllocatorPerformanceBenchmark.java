@@ -51,7 +51,9 @@ import org.openjdk.jmh.annotations.Warmup;
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 10, time = 3, timeUnit = TimeUnit.SECONDS)
-@Fork(2)
+@Fork(
+    value = 2,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 @State(Scope.Benchmark)
 public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
@@ -139,10 +141,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
             .setPoolingAllocatorEnabled(true)
             .setInstancePoolSize(1000)
             .setMaxMemoryPerInstance(1024 * 1024 * 1024L); // 1GB
-    enginePooled = Engine.create(pooledConfig);
+    enginePooled = runtime.createEngine(pooledConfig);
 
     final EngineConfig standardConfig = Engine.builder().setPoolingAllocatorEnabled(false);
-    engineStandard = Engine.create(standardConfig);
+    engineStandard = runtime.createEngine(standardConfig);
 
     // Compile test modules
     moduleSimple = enginePooled.compileModule(TEST_WASM_SIMPLE);

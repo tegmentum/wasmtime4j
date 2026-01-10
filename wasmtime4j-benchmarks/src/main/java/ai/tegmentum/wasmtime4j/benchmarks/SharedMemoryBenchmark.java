@@ -20,9 +20,12 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.*;
@@ -46,11 +49,15 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Benchmark)
 @Fork(
     value = 1,
-    jvmArgs = {"-Xmx2g", "-XX:+UseG1GC"})
+    jvmArgs = {"-Xmx2g", "-XX:+UseG1GC", "--enable-native-access=ALL-UNNAMED"})
 @Warmup(iterations = 3, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 public class SharedMemoryBenchmark {
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
   private Instance instance;
@@ -59,9 +66,16 @@ public class SharedMemoryBenchmark {
 
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
+    // Initialize runtime based on parameter
+    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+      throw new RuntimeException("Runtime not available: " + type);
+    }
+    runtime = WasmRuntimeFactory.create(type);
+
     // Create engine with threads support for shared memory
     EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
-    engine = Engine.create(config);
+    engine = runtime.createEngine(config);
     store = engine.createStore();
 
     // Create instances with shared and regular memory
@@ -87,12 +101,15 @@ public class SharedMemoryBenchmark {
   }
 
   @TearDown(Level.Trial)
-  public void tearDownTrial() {
+  public void tearDownTrial() throws Exception {
     if (store != null) {
       store.close();
     }
     if (engine != null) {
       engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
     }
   }
 

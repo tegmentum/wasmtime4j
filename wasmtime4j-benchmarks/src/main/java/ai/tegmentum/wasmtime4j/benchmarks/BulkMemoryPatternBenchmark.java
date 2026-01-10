@@ -2,9 +2,12 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.*;
 
@@ -12,11 +15,17 @@ import org.openjdk.jmh.annotations.*;
 @BenchmarkMode(Mode.SampleTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
-@Fork(1)
 @Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 3, time = 2, timeUnit = TimeUnit.SECONDS)
+@Fork(
+    value = 1,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class BulkMemoryPatternBenchmark {
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
   private WasmMemory memory;
@@ -24,8 +33,13 @@ public class BulkMemoryPatternBenchmark {
   @Setup(Level.Trial)
   public void setupTrial() {
     try {
+      RuntimeType type = RuntimeType.valueOf(runtimeType);
+      if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+        throw new RuntimeException("Runtime not available: " + type);
+      }
+      runtime = WasmRuntimeFactory.create(type);
       EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.BULK_MEMORY);
-      engine = Engine.create(config);
+      engine = runtime.createEngine(config);
       store = engine.createStore();
 
       // Create memory with sufficient size (4 pages = 256KB, max 8 pages)
@@ -41,6 +55,7 @@ public class BulkMemoryPatternBenchmark {
     try {
       if (store != null) store.close();
       if (engine != null) engine.close();
+      if (runtime != null) runtime.close();
     } catch (Exception e) {
       // Log but don't fail
     }

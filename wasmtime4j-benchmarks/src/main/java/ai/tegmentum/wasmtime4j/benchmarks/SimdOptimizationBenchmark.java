@@ -5,9 +5,12 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -26,7 +29,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(Scope.Thread)
 @Fork(
     value = 2,
-    jvmArgs = {"-Xms2g", "-Xmx2g"})
+    jvmArgs = {"-Xms2g", "-Xmx2g", "--enable-native-access=ALL-UNNAMED"})
 @Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 public class SimdOptimizationBenchmark {
@@ -42,6 +45,7 @@ public class SimdOptimizationBenchmark {
   private float[] floatData2;
 
   // WebAssembly instances for different SIMD scenarios
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
   private Instance simdInstance;
@@ -56,7 +60,13 @@ public class SimdOptimizationBenchmark {
 
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
-    // Initialize engine based on parameter
+    // Initialize runtime based on parameter
+    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+      throw new RuntimeException("Runtime not available: " + type);
+    }
+    runtime = WasmRuntimeFactory.create(type);
+
     EngineConfig engineConfig =
         new EngineConfig()
             .addWasmFeature(WasmFeature.SIMD)
@@ -64,7 +74,7 @@ public class SimdOptimizationBenchmark {
             .addWasmFeature(WasmFeature.BULK_MEMORY)
             .optimizationLevel(OptimizationLevel.SPEED);
 
-    engine = Engine.create(engineConfig);
+    engine = runtime.createEngine(engineConfig);
     store = engine.createStore();
 
     // Load SIMD-optimized WebAssembly module
@@ -110,6 +120,9 @@ public class SimdOptimizationBenchmark {
     }
     if (engine != null) {
       engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
     }
   }
 

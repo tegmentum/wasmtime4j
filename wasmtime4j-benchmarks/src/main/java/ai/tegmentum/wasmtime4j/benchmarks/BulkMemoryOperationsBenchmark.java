@@ -2,9 +2,12 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.openjdk.jmh.annotations.*;
@@ -27,14 +30,20 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
-@Fork(1)
 @Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Fork(
+    value = 1,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class BulkMemoryOperationsBenchmark {
 
   private static final Logger LOGGER =
       Logger.getLogger(BulkMemoryOperationsBenchmark.class.getName());
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
   private WasmMemory memory;
@@ -48,9 +57,15 @@ public class BulkMemoryOperationsBenchmark {
     try {
       LOGGER.info("Setting up benchmark environment");
 
+      RuntimeType type = RuntimeType.valueOf(runtimeType);
+      if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+        throw new RuntimeException("Runtime not available: " + type);
+      }
+      runtime = WasmRuntimeFactory.create(type);
+
       // Create engine with bulk memory feature enabled
       EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.BULK_MEMORY);
-      engine = Engine.create(config);
+      engine = runtime.createEngine(config);
       store = engine.createStore();
 
       // Create memory with sufficient size (4 pages = 256KB, max 8 pages)
@@ -68,6 +83,7 @@ public class BulkMemoryOperationsBenchmark {
     try {
       if (store != null) store.close();
       if (engine != null) engine.close();
+      if (runtime != null) runtime.close();
     } catch (Exception e) {
       LOGGER.warning("Error during benchmark cleanup: " + e.getMessage());
     }

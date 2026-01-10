@@ -1,11 +1,14 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -14,6 +17,7 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -38,11 +42,17 @@ import org.openjdk.jmh.annotations.Warmup;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-@Fork(1)
 @Warmup(iterations = 3, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
+@Fork(
+    value = 1,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class GlobalOperationsBenchmark {
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -62,8 +72,13 @@ public class GlobalOperationsBenchmark {
 
   @Setup(Level.Trial)
   public void setupTrial() throws WasmException {
-    engine = Engine.create();
-    store = Store.create(engine);
+    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+      throw new RuntimeException("Runtime not available: " + type);
+    }
+    runtime = WasmRuntimeFactory.create(type);
+    engine = runtime.createEngine();
+    store = engine.createStore();
 
     // Create globals for get/set benchmarks
     i32Global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
@@ -87,12 +102,15 @@ public class GlobalOperationsBenchmark {
   }
 
   @TearDown(Level.Trial)
-  public void tearDownTrial() {
+  public void tearDownTrial() throws Exception {
     if (store != null) {
       store.close();
     }
     if (engine != null) {
       engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
     }
   }
 

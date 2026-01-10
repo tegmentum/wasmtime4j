@@ -2,8 +2,11 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -13,15 +16,23 @@ import org.openjdk.jmh.infra.Blackhole;
  *
  * <p>Measures the overhead of fuel management, epoch interruption, resource quotas, and other
  * execution control mechanisms to ensure minimal performance impact on WebAssembly execution.
+ *
+ * <p>Tests both JNI and Panama implementations via the runtimeType parameter.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 3, time = 2, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
-@Fork(1)
+@Fork(
+    value = 1,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 @State(Scope.Benchmark)
 public class ExecutionControlBenchmark {
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -31,11 +42,21 @@ public class ExecutionControlBenchmark {
 
   @Setup(Level.Trial)
   public void setupTrial() throws WasmException {
+    // Get the runtime based on parameter
+    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+      throw new RuntimeException("Runtime not available: " + type);
+    }
+    runtime = WasmRuntimeFactory.create(type);
+
     // Initialize engine with fuel consumption and epoch interruption enabled
     EngineConfig config =
-        new EngineConfig().consumeFuel(true).setEpochInterruption(true).craneliftDebugVerifier(false);
+        new EngineConfig()
+            .consumeFuel(true)
+            .setEpochInterruption(true)
+            .craneliftDebugVerifier(false);
 
-    engine = Engine.create(config);
+    engine = runtime.createEngine(config);
     store = engine.createStore();
 
     // Pre-allocate initial fuel
@@ -46,12 +67,15 @@ public class ExecutionControlBenchmark {
   }
 
   @TearDown(Level.Trial)
-  public void teardownTrial() throws WasmException {
+  public void teardownTrial() throws Exception {
     if (store != null) {
       store.close();
     }
     if (engine != null) {
       engine.close();
+    }
+    if (runtime != null) {
+      runtime.close();
     }
   }
 

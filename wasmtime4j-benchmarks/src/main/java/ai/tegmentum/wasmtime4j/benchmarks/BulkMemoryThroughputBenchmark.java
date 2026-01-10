@@ -2,9 +2,12 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.openjdk.jmh.annotations.*;
@@ -13,14 +16,20 @@ import org.openjdk.jmh.annotations.*;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
-@Fork(1)
 @Warmup(iterations = 3, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Fork(
+    value = 1,
+    jvmArgs = {"--enable-native-access=ALL-UNNAMED"})
 public class BulkMemoryThroughputBenchmark {
 
   private static final Logger LOGGER =
       Logger.getLogger(BulkMemoryThroughputBenchmark.class.getName());
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeType;
+
+  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
   private WasmMemory memory;
@@ -31,8 +40,13 @@ public class BulkMemoryThroughputBenchmark {
   @Setup(Level.Trial)
   public void setupTrial() {
     try {
+      RuntimeType type = RuntimeType.valueOf(runtimeType);
+      if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
+        throw new RuntimeException("Runtime not available: " + type);
+      }
+      runtime = WasmRuntimeFactory.create(type);
       EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.BULK_MEMORY);
-      engine = Engine.create(config);
+      engine = runtime.createEngine(config);
       store = engine.createStore();
 
       // Create larger memory for throughput testing (8 pages = 512KB, max 16 pages)
@@ -55,6 +69,7 @@ public class BulkMemoryThroughputBenchmark {
     try {
       if (store != null) store.close();
       if (engine != null) engine.close();
+      if (runtime != null) runtime.close();
     } catch (Exception e) {
       LOGGER.warning("Error during throughput benchmark cleanup: " + e.getMessage());
     }
