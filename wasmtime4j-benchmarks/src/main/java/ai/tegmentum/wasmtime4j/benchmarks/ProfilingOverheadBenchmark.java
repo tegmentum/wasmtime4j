@@ -40,7 +40,7 @@ public class ProfilingOverheadBenchmark {
     public void setup() {
       final AdvancedProfiler.ProfilerConfiguration config =
           AdvancedProfiler.ProfilerConfiguration.builder()
-              .samplingInterval(Duration.ofMicroseconds(100)) // High frequency for overhead testing
+              .samplingInterval(Duration.ofNanos(100_000)) // High frequency for overhead testing
               .maxSamples(100000)
               .enableMemoryProfiling(true)
               .enableJfrIntegration(false) // Disable JFR for consistent results
@@ -303,10 +303,11 @@ public class ProfilingOverheadBenchmark {
   public void flameGraphGenerationOverhead(BenchmarkState state, Blackhole blackhole) {
     // Generate a substantial amount of profiling data
     for (int i = 0; i < 1000; i++) {
+      final int iterations = i % 50 + 10;
       state.profiler.profileOperation(
           "flamegraph_test_" + (i % 10),
           () -> {
-            return performSimpleComputation(i % 50 + 10);
+            return performSimpleComputation(iterations);
           },
           "JNI");
     }
