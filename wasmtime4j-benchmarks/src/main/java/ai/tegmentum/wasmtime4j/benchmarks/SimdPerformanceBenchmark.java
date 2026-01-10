@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum Technology, Inc.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,29 @@
 
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import ai.tegmentum.wasmtime4j.SimdOperations;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.simd.SimdLane;
+import ai.tegmentum.wasmtime4j.simd.SimdOperations;
+import ai.tegmentum.wasmtime4j.simd.SimdVector;
+import ai.tegmentum.wasmtime4j.simd.V128;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OperationsPerInvocation;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 
 /**
  * Comprehensive performance benchmarks for SIMD operations.
@@ -32,13 +50,9 @@ import org.openjdk.jmh.annotations.*;
  *   <li>Arithmetic operations (add, subtract, multiply, divide)
  *   <li>Logical operations (and, or, xor, not)
  *   <li>Comparison operations (equals, less than, greater than)
- *   <li>Memory operations (load, store with alignment)
  *   <li>Conversion operations between data types
  *   <li>Lane manipulation operations
  * </ul>
- *
- * <p>Run with: {@code mvn clean compile exec:java -Dexec.mainClass="org.openjdk.jmh.Main"
- * -Dexec.args="SimdPerformanceBenchmark"}
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -48,12 +62,15 @@ import org.openjdk.jmh.annotations.*;
 @State(Scope.Benchmark)
 public class SimdPerformanceBenchmark {
 
+  @Param({"JNI", "PANAMA"})
+  private String runtimeTypeName;
+
   private WasmRuntime runtime;
   private SimdOperations simdOps;
-  private SimdOperations.V128 vectorA;
-  private SimdOperations.V128 vectorB;
-  private SimdOperations.V128 vectorC;
-  private SimdOperations.V128 vectorD;
+  private SimdVector vectorA;
+  private SimdVector vectorB;
+  private SimdVector vectorC;
+  private SimdVector vectorD;
 
   // Scalar equivalents for comparison
   private int[] scalarIntsA;
@@ -61,21 +78,22 @@ public class SimdPerformanceBenchmark {
   private float[] scalarFloatsA;
   private float[] scalarFloatsB;
 
-  private static final int VECTOR_SIZE = 4; // Number of elements in a v128 vector
-  private static final int OPERATION_COUNT = 10000; // Number of operations per benchmark
+  private static final int VECTOR_SIZE = 4;
+  private static final int OPERATION_COUNT = 10000;
 
   @Setup(Level.Trial)
-  public void setupTrial() {
+  public void setupTrial() throws WasmException {
     System.out.println("Setting up SIMD performance benchmark suite...");
 
-    runtime = WasmRuntimeFactory.create();
-    simdOps = SimdOperations.create(runtime);
+    final RuntimeType type = RuntimeType.valueOf(runtimeTypeName);
+    runtime = WasmRuntimeFactory.create(type);
+    simdOps = runtime.getSimdOperations();
 
-    // Initialize test vectors with varied data
-    vectorA = SimdOperations.V128.fromInts(100, 200, 300, 400);
-    vectorB = SimdOperations.V128.fromInts(10, 20, 30, 40);
-    vectorC = SimdOperations.V128.fromFloats(1.5f, 2.5f, 3.5f, 4.5f);
-    vectorD = SimdOperations.V128.fromFloats(0.5f, 1.0f, 1.5f, 2.0f);
+    // Initialize test vectors with varied data using V128 factory methods
+    vectorA = V128.fromInts(100, 200, 300, 400).toSimdVector(SimdLane.I32X4);
+    vectorB = V128.fromInts(10, 20, 30, 40).toSimdVector(SimdLane.I32X4);
+    vectorC = V128.fromFloats(1.5f, 2.5f, 3.5f, 4.5f).toSimdVector(SimdLane.F32X4);
+    vectorD = V128.fromFloats(0.5f, 1.0f, 1.5f, 2.0f).toSimdVector(SimdLane.F32X4);
 
     // Scalar equivalents
     scalarIntsA = new int[] {100, 200, 300, 400};
@@ -83,25 +101,26 @@ public class SimdPerformanceBenchmark {
     scalarFloatsA = new float[] {1.5f, 2.5f, 3.5f, 4.5f};
     scalarFloatsB = new float[] {0.5f, 1.0f, 1.5f, 2.0f};
 
-    System.out.println("✓ SIMD benchmark setup complete");
+    System.out.println("SIMD benchmark setup complete");
+    System.out.println("  - Runtime: " + runtimeTypeName);
     System.out.println("  - SIMD supported: " + simdOps.isSimdSupported());
     System.out.println("  - SIMD capabilities: " + simdOps.getSimdCapabilities());
   }
 
   @TearDown(Level.Trial)
-  public void teardownTrial() {
+  public void teardownTrial() throws Exception {
     if (runtime != null) {
       runtime.close();
     }
-    System.out.println("✓ SIMD benchmark cleanup complete");
+    System.out.println("SIMD benchmark cleanup complete");
   }
 
   // ===== ARITHMETIC OPERATIONS BENCHMARKS =====
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdAddition() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdAddition() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.add(result, vectorB);
     }
@@ -122,8 +141,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdSubtraction() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdSubtraction() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.subtract(result, vectorB);
     }
@@ -144,8 +163,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdMultiplication() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdMultiplication() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.multiply(result, vectorB);
     }
@@ -166,8 +185,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdDivision() throws Exception {
-    SimdOperations.V128 result = vectorC;
+  public SimdVector simdDivision() throws Exception {
+    SimdVector result = vectorC;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.divide(result, vectorD);
     }
@@ -190,8 +209,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdBitwiseAnd() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdBitwiseAnd() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.and(result, vectorB);
     }
@@ -212,8 +231,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdBitwiseOr() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdBitwiseOr() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.or(result, vectorB);
     }
@@ -234,8 +253,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdBitwiseXor() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdBitwiseXor() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.xor(result, vectorB);
     }
@@ -256,8 +275,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdBitwiseNot() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdBitwiseNot() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.not(result);
     }
@@ -280,8 +299,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdEquals() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdEquals() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.equals(vectorA, vectorB);
     }
@@ -302,8 +321,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdLessThan() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdLessThan() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.lessThan(vectorA, vectorB);
     }
@@ -326,8 +345,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdIntToFloatConversion() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdIntToFloatConversion() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.convertI32ToF32(vectorA);
     }
@@ -348,8 +367,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdFloatToIntConversion() throws Exception {
-    SimdOperations.V128 result = vectorC;
+  public SimdVector simdFloatToIntConversion() throws Exception {
+    SimdVector result = vectorC;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.convertF32ToI32(vectorC);
     }
@@ -392,8 +411,8 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdReplaceLane() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdReplaceLane() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
       result = simdOps.replaceLaneI32(result, i % VECTOR_SIZE, i);
     }
@@ -412,10 +431,10 @@ public class SimdPerformanceBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT)
-  public SimdOperations.V128 simdSplat() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdSplat() throws Exception {
+    SimdVector result = vectorA;
     for (int i = 0; i < OPERATION_COUNT; i++) {
-      result = simdOps.splatI32(i);
+      result = SimdVector.splatI32(SimdLane.I32X4, i);
     }
     return result;
   }
@@ -434,80 +453,39 @@ public class SimdPerformanceBenchmark {
 
   // ===== MIXED WORKLOAD BENCHMARKS =====
 
-  /** Benchmark that combines multiple SIMD operations to simulate real-world usage. */
+  /**
+   * Benchmark that combines multiple SIMD operations to simulate real-world usage.
+   */
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT / 4)
-  public SimdOperations.V128 simdMixedWorkload() throws Exception {
-    SimdOperations.V128 result = vectorA;
+  public SimdVector simdMixedWorkload() throws Exception {
+    SimdVector result = vectorA;
 
     for (int i = 0; i < OPERATION_COUNT / 4; i++) {
-      // Perform a series of operations that might occur in real applications
-      result = simdOps.add(result, vectorB); // Vector addition
-      result = simdOps.multiply(result, vectorB); // Vector multiplication
-      result = simdOps.and(result, vectorA); // Bitwise operations
-      result = simdOps.replaceLaneI32(result, 0, i); // Lane manipulation
+      result = simdOps.add(result, vectorB);
+      result = simdOps.multiply(result, vectorB);
+      result = simdOps.and(result, vectorA);
+      result = simdOps.replaceLaneI32(result, 0, i);
     }
     return result;
   }
 
-  /** Scalar equivalent of the mixed workload for comparison. */
+  /**
+   * Scalar equivalent of the mixed workload for comparison.
+   */
   @Benchmark
   @OperationsPerInvocation(OPERATION_COUNT / 4)
   public int[] scalarMixedWorkload() {
     int[] result = scalarIntsA.clone();
 
     for (int i = 0; i < OPERATION_COUNT / 4; i++) {
-      // Perform equivalent scalar operations
       for (int j = 0; j < VECTOR_SIZE; j++) {
-        result[j] += scalarIntsB[j]; // Addition
-        result[j] *= scalarIntsB[j]; // Multiplication
-        result[j] &= scalarIntsA[j]; // Bitwise AND
+        result[j] += scalarIntsB[j];
+        result[j] *= scalarIntsB[j];
+        result[j] &= scalarIntsA[j];
       }
-      result[0] = i; // Element replacement
+      result[0] = i;
     }
     return result;
-  }
-
-  // ===== PERFORMANCE ANALYSIS METHODS =====
-
-  /**
-   * Utility method to analyze and print performance differences. This is not a benchmark itself but
-   * helps with result interpretation.
-   */
-  public void printPerformanceAnalysis() {
-    System.out.println("\n=== SIMD Performance Analysis ===");
-    System.out.println("This benchmark suite compares SIMD vectorized operations");
-    System.out.println("against their scalar equivalents to demonstrate performance gains.");
-    System.out.println("\nKey metrics to look for:");
-    System.out.println("• Lower average time indicates better performance");
-    System.out.println("• SIMD operations should show significant speedup over scalar");
-    System.out.println("• Speedup varies by operation type and platform SIMD support");
-    System.out.println("\nExpected results:");
-    System.out.println("• Arithmetic operations: 2-4x speedup with SIMD");
-    System.out.println("• Logical operations: 3-5x speedup with SIMD");
-    System.out.println("• Conversion operations: 2-3x speedup with SIMD");
-    System.out.println("• Mixed workloads: 2-4x overall speedup with SIMD");
-    System.out.println("\nNote: Actual performance depends on:");
-    System.out.println("• CPU architecture and SIMD instruction support");
-    System.out.println("• JVM optimizations and warmup behavior");
-    System.out.println("• Memory access patterns and cache efficiency");
-    System.out.println("=====================================\n");
-  }
-
-  /** Main method for running benchmarks manually. */
-  public static void main(final String[] args) throws Exception {
-    System.out.println("SIMD Performance Benchmark Suite");
-    System.out.println("=================================");
-
-    final SimdPerformanceBenchmark benchmark = new SimdPerformanceBenchmark();
-    benchmark.setupTrial();
-    benchmark.printPerformanceAnalysis();
-
-    System.out.println("To run full benchmarks, use:");
-    System.out.println(
-        "mvn clean compile exec:java -Dexec.mainClass=\"org.openjdk.jmh.Main\""
-            + " -Dexec.args=\"SimdPerformanceBenchmark\"");
-
-    benchmark.teardownTrial();
   }
 }
