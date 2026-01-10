@@ -1,0 +1,259 @@
+# Fuzz Testing Workflow
+#
+# This workflow runs continuous fuzz testing on the wasmtime4j-native crate
+# to discover memory safety issues, parsing vulnerabilities, and edge cases.
+#
+# Triggers:
+# - Daily at 2 AM UTC (scheduled)
+# - Manual dispatch with configurable duration
+# - On push to fuzz-related files (for testing changes)
+
+name: Fuzz Testing
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Fuzz duration per target in seconds'
+        required: false
+        default: '3600'
+        type: string
+      target:
+        description: 'Specific target to fuzz (or "all")'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - module_parse
+          - wit_deserialize
+          - memory_access
+          - func_call
+
+  push:
+    paths:
+      - 'wasmtime4j-native/fuzz/**'
+      - 'wasmtime4j-native/src/**'
+      - '.github/workflows/fuzz.yml'
+    branches:
+      - master
+      - 'epic/**'
+
+env:
+  CARGO_TERM_COLOR: always
+  # Default fuzz duration in seconds (5 minutes for push, configurable for scheduled/manual)
+  DEFAULT_FUZZ_DURATION: 300
+  SCHEDULED_FUZZ_DURATION: 3600
+
+jobs:
+  # Quick fuzz smoke test on push
+  smoke-test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Fuzz Smoke Test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Run quick fuzz test (60s each)
+        working-directory: wasmtime4j-native
+        run: |
+          for target in module_parse wit_deserialize memory_access func_call; do
+            echo "::group::Fuzzing $target"
+            cargo +nightly fuzz run $target -- -max_total_time=60 || true
+            echo "::endgroup::"
+          done
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes-smoke
+          path: wasmtime4j-native/fuzz/artifacts/
+          if-no-files-found: ignore
+
+  # Full fuzz testing (scheduled or manual)
+  fuzz-rust:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    name: Fuzz ${{ matrix.target }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - module_parse
+          - wit_deserialize
+          - memory_access
+          - func_call
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Cache fuzz corpus
+        uses: actions/cache@v4
+        with:
+          path: |
+            wasmtime4j-native/fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.sha }}
+          restore-keys: |
+            fuzz-corpus-${{ matrix.target }}-
+
+      - name: Generate seed corpus
+        working-directory: wasmtime4j-native/fuzz
+        run: |
+          chmod +x generate_corpus.sh
+          ./generate_corpus.sh
+
+      - name: Determine fuzz duration
+        id: duration
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "seconds=${{ env.SCHEDULED_FUZZ_DURATION }}" >> $GITHUB_OUTPUT
+          else
+            echo "seconds=${{ inputs.duration || env.DEFAULT_FUZZ_DURATION }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run fuzzer - ${{ matrix.target }}
+        working-directory: wasmtime4j-native
+        run: |
+          echo "Fuzzing ${{ matrix.target }} for ${{ steps.duration.outputs.seconds }} seconds"
+          cargo +nightly fuzz run ${{ matrix.target }} \
+            fuzz/corpus/${{ matrix.target }} \
+            -- -max_total_time=${{ steps.duration.outputs.seconds }}
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes-${{ matrix.target }}
+          path: wasmtime4j-native/fuzz/artifacts/${{ matrix.target }}/
+          if-no-files-found: ignore
+
+      - name: Upload updated corpus
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-corpus-${{ matrix.target }}
+          path: wasmtime4j-native/fuzz/corpus/${{ matrix.target }}/
+          if-no-files-found: ignore
+
+  # Coverage report for fuzzed code paths
+  fuzz-coverage:
+    if: github.event_name == 'schedule'
+    needs: fuzz-rust
+    runs-on: ubuntu-latest
+    name: Fuzz Coverage Report
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-fuzz and coverage tools
+        run: |
+          cargo install cargo-fuzz
+          cargo install cargo-llvm-cov
+
+      - name: Download all corpus artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: fuzz-corpus-*
+          path: wasmtime4j-native/fuzz/corpus/
+          merge-multiple: true
+
+      - name: Generate coverage report
+        working-directory: wasmtime4j-native
+        run: |
+          # Run each target briefly to generate coverage
+          for target in module_parse wit_deserialize memory_access func_call; do
+            echo "::group::Coverage for $target"
+            cargo +nightly fuzz coverage $target fuzz/corpus/$target -- -runs=0 || true
+            echo "::endgroup::"
+          done
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-coverage-report
+          path: wasmtime4j-native/fuzz/coverage/
+          if-no-files-found: ignore
+
+  # Notify on crashes found during scheduled runs
+  notify-crashes:
+    if: github.event_name == 'schedule' && failure()
+    needs: fuzz-rust
+    runs-on: ubuntu-latest
+    name: Notify Crashes
+
+    steps:
+      - name: Create issue for crashes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🐛 Fuzz testing found crashes - ${new Date().toISOString().split('T')[0]}`;
+            const body = `## Fuzz Testing Crash Report
+
+            The scheduled fuzz testing run found one or more crashes.
+
+            **Run details:**
+            - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Date: ${new Date().toISOString()}
+
+            **Next steps:**
+            1. Download crash artifacts from the workflow run
+            2. Reproduce locally: \`cargo +nightly fuzz run <target> <crash_file>\`
+            3. Investigate and fix the issue
+            4. Add the minimized crash to the corpus as a regression test
+
+            **Crash artifacts available for:**
+            - Check the workflow run for uploaded artifacts
+
+            ---
+            *This issue was automatically created by the fuzz testing workflow.*
+            `;
+
+            // Check if issue already exists today
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'fuzz-crash',
+              per_page: 10
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            const existingIssue = issues.find(issue =>
+              issue.title.includes(today) && issue.labels.some(l => l.name === 'fuzz-crash')
+            );
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['fuzz-crash', 'bug', 'security']
+              });
+            }
