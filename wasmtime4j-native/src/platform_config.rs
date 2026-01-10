@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::platform_types::*;
 
 /// Platform-specific configuration with runtime detection and optimization
 #[derive(Debug, Clone)]
@@ -758,7 +759,7 @@ pub enum CoolingStrategy {
     Aggressive,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EnergyEfficiencyPreference {
     Performance,
     Balance,
@@ -1351,6 +1352,12 @@ impl Default for OtherArchConfig {
         Self {
             generic_optimizations: true,
             custom_support: false,
+            powerpc_config: None,
+            mips_config: None,
+            sparc_config: None,
+            loongarch_config: None,
+            custom_silicon_config: None,
+            exotic_features: ExoticArchitectureFeatures::default(),
         }
     }
 }
@@ -1599,7 +1606,7 @@ impl PlatformConfig {
 
     /// Get configuration power consumption estimate (0-100, lower is better)
     pub fn power_consumption_estimate(&self) -> u32 {
-        let mut consumption = 50; // Base consumption
+        let mut consumption: i32 = 50; // Base consumption
 
         if self.cpu_optimization.frequency_scaling_awareness { consumption -= 10; }
         if self.cpu_optimization.thermal_throttling_awareness { consumption -= 8; }
@@ -1619,7 +1626,7 @@ impl PlatformConfig {
 
         if self.power_management.energy_aware_scheduling { consumption -= 8; }
 
-        consumption.max(0).min(100)
+        consumption.max(0).min(100) as u32
     }
 }
 

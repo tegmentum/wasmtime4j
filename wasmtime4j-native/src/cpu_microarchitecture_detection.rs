@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::sync::{Arc, RwLock};
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::platform_types::*;
 
 /// CPU microarchitecture detector and feature analyzer
 #[derive(Debug, Clone)]
@@ -467,7 +468,19 @@ impl CpuMicroarchitectureDetector {
         #[cfg(target_arch = "sparc64")]
         return Ok(PrimaryArchitecture::SPARC);
 
-        Ok(PrimaryArchitecture::Other(0))
+        #[cfg(not(any(
+            target_arch = "x86_64",
+            target_arch = "x86",
+            target_arch = "aarch64",
+            target_arch = "arm",
+            target_arch = "riscv64",
+            target_arch = "riscv32",
+            target_arch = "powerpc64",
+            target_arch = "mips",
+            target_arch = "mips64",
+            target_arch = "sparc64"
+        )))]
+        return Ok(PrimaryArchitecture::Other(0));
     }
 
     fn detect_vendor_info(architecture: PrimaryArchitecture) -> WasmtimeResult<VendorInfo> {
@@ -716,7 +729,7 @@ impl CpuMicroarchitectureDetector {
                     6 => {
                         match model {
                             0x9E | 0x9F => Ok("Kaby Lake".to_string()),
-                            0x8E | 0x9E => Ok("Coffee Lake".to_string()),
+                            0x8E => Ok("Coffee Lake".to_string()),
                             0x7E | 0x7D => Ok("Ice Lake".to_string()),
                             0x8C | 0x8D => Ok("Tiger Lake".to_string()),
                             0x97 | 0x9A => Ok("Alder Lake".to_string()),
@@ -1394,7 +1407,7 @@ impl CpuMicroarchitectureDetector {
                 thermal_throttling: true,
                 temperature_sensors: true,
                 fan_control: false,
-                thermal_design_power: arch_info.topology.tdp.base_tdp,
+                thermal_design_power: arch_info.topology.tdp.base_tdp as u32,
             },
             power_monitoring: PowerMonitoringCapabilities {
                 power_measurement: true,
@@ -1492,7 +1505,7 @@ impl CpuMicroarchitectureDetector {
         ];
 
         let branch_units = vec![
-            BranchUnit { unit_id: 0, branch_latency: 1, misprediction_penalty: pipeline.depth, throughput: 1.0 },
+            BranchUnit { unit_id: 0, branch_latency: 1, misprediction_penalty: 15, throughput: 1.0 },
         ];
 
         let scheduler_config = SchedulerConfiguration {
@@ -1572,6 +1585,397 @@ impl CpuMicroarchitectureDetector {
         }
 
         report
+    }
+
+    /// Generate optimization recommendations based on detected capabilities
+    fn generate_optimization_recommendations(
+        arch_info: &ArchitectureInfo,
+        features: &FeatureDetectionResults,
+        _performance: &PerformanceCharacteristics,
+    ) -> WasmtimeResult<Vec<OptimizationRecommendation>> {
+        let mut recommendations = Vec::new();
+        let mut id = 0;
+
+        // Add recommendations based on feature detection
+        if let Some(x86) = &features.x86_features {
+            if x86.basic_features.sse4_2 {
+                recommendations.push(OptimizationRecommendation {
+                    id,
+                    description: "Enable SSE4.2 string operations for improved string processing".to_string(),
+                    expected_improvement: 0.15,
+                    difficulty: 1,
+                    category: "instruction_set".to_string(),
+                    priority: OptimizationPriority::High,
+                });
+                id += 1;
+            }
+
+            if x86.simd_extensions.avx2 {
+                recommendations.push(OptimizationRecommendation {
+                    id,
+                    description: "Enable AVX2 for improved vector operations".to_string(),
+                    expected_improvement: 0.25,
+                    difficulty: 2,
+                    category: "vector".to_string(),
+                    priority: OptimizationPriority::High,
+                });
+                id += 1;
+            }
+        }
+
+        // Add recommendations based on architecture
+        if arch_info.microarchitecture.design_characteristics.superscalar_width >= 4 {
+            recommendations.push(OptimizationRecommendation {
+                id,
+                description: "Leverage wide superscalar execution for instruction-level parallelism".to_string(),
+                expected_improvement: 0.10,
+                difficulty: 3,
+                category: "scheduling".to_string(),
+                priority: OptimizationPriority::Medium,
+            });
+        }
+
+        Ok(recommendations)
+    }
+
+    /// Determine microarchitecture-specific tuning parameters
+    fn determine_tuning_parameters(
+        arch_info: &ArchitectureInfo,
+        performance: &PerformanceCharacteristics,
+    ) -> WasmtimeResult<TuningParameters> {
+        let mut int_params = std::collections::HashMap::new();
+        let mut float_params = std::collections::HashMap::new();
+        let mut bool_params = std::collections::HashMap::new();
+
+        // Set parameters based on architecture
+        int_params.insert("cache_line_size".to_string(), 64);
+        int_params.insert("prefetch_distance".to_string(), 256);
+        int_params.insert("unroll_factor".to_string(), arch_info.microarchitecture.design_characteristics.superscalar_width as i64);
+        int_params.insert("pipeline_depth".to_string(), performance.pipeline.depth as i64);
+
+        float_params.insert("branch_misprediction_cost".to_string(), performance.pipeline.misprediction_penalty as f64);
+        float_params.insert("memory_latency_cycles".to_string(), performance.memory_performance.latency_characteristics.avg_latency as f64);
+
+        bool_params.insert("use_simd".to_string(), true);
+        bool_params.insert("aggressive_inlining".to_string(), true);
+
+        Ok(TuningParameters {
+            name: format!("{}_tuning", arch_info.microarchitecture.name),
+            int_params,
+            float_params,
+            bool_params,
+        })
+    }
+
+    /// Perform advanced feature analysis
+    fn perform_advanced_analysis(
+        _arch_info: &ArchitectureInfo,
+        features: &FeatureDetectionResults,
+    ) -> WasmtimeResult<AdvancedFeatureAnalysis> {
+        let has_aes = features.x86_features.as_ref()
+            .map(|x| x.crypto_extensions.aes)
+            .unwrap_or(false);
+
+        Ok(AdvancedFeatureAnalysis {
+            isa_analysis: IsaAnalysis {
+                instruction_count: 1000,
+                categories: vec!["integer".to_string(), "floating_point".to_string(), "simd".to_string()],
+                extensions: vec!["SSE".to_string(), "AVX".to_string()],
+                optimization_opportunities: vec!["vectorization".to_string(), "loop_unrolling".to_string()],
+            },
+            microcode_capabilities: MicrocodeCapabilities {
+                version: "unknown".to_string(),
+                updateable: true,
+                size: 0,
+                patches: 0,
+            },
+            hardware_acceleration: HardwareAccelerationFeatures {
+                crypto: has_aes,
+                ai_ml: false,
+                compression: false,
+                network: false,
+            },
+            virtualization_features: VirtualizationFeatures {
+                hardware_virtualization: true,
+                nested: true,
+                io_virtualization: true,
+                memory_virtualization: true,
+            },
+            debug_features: DebugAndProfilingFeatures {
+                hardware_breakpoints: 4,
+                watchpoints: 4,
+                performance_counters: 8,
+                branch_tracing: true,
+            },
+            reliability_features: ReliabilityFeatures {
+                ecc: false,
+                parity: false,
+                error_injection: false,
+                machine_check: true,
+            },
+        })
+    }
+
+    /// Analyze pipeline characteristics
+    fn analyze_pipeline_characteristics(arch_info: &ArchitectureInfo) -> WasmtimeResult<PipelineCharacteristics> {
+        // Estimate pipeline characteristics based on microarchitecture
+        let depth = match arch_info.microarchitecture.name.as_str() {
+            n if n.contains("zen") => 19,
+            n if n.contains("skylake") || n.contains("golden") => 14,
+            n if n.contains("ice") || n.contains("alder") => 18,
+            _ => 15,
+        };
+
+        let width = arch_info.microarchitecture.design_characteristics.superscalar_width;
+
+        Ok(PipelineCharacteristics {
+            depth,
+            width,
+            stages: vec![
+                PipelineStage { name: "Fetch".to_string(), number: 0, latency: 1 },
+                PipelineStage { name: "Decode".to_string(), number: 1, latency: 2 },
+                PipelineStage { name: "Rename".to_string(), number: 2, latency: 1 },
+                PipelineStage { name: "Dispatch".to_string(), number: 3, latency: 1 },
+                PipelineStage { name: "Execute".to_string(), number: 4, latency: 4 },
+                PipelineStage { name: "Writeback".to_string(), number: 5, latency: 1 },
+            ],
+            misprediction_penalty: depth,
+            efficiency_metrics: PipelineEfficiencyMetrics {
+                ipc: width as f64 * 0.75,
+                stall_rate: 0.1,
+                bubble_rate: 0.05,
+                utilization: 0.8,
+            },
+            hazard_handling: HazardHandlingCapabilities {
+                data_forwarding: true,
+                branch_prediction: true,
+                speculation: true,
+                flush_cost: depth as u32,
+            },
+        })
+    }
+
+    /// Analyze branch prediction capabilities
+    fn analyze_branch_prediction(arch_info: &ArchitectureInfo) -> WasmtimeResult<BranchPredictionCapabilities> {
+        // Estimate branch prediction capabilities based on microarchitecture
+        let algorithm = match arch_info.microarchitecture.name.as_str() {
+            n if n.contains("zen") || n.contains("skylake") => BranchPredictionAlgorithm {
+                name: "TAGE".to_string(),
+                predictor_type: "Tagged Geometric".to_string(),
+                history_bits: 128,
+            },
+            _ => BranchPredictionAlgorithm {
+                name: "TwoLevel".to_string(),
+                predictor_type: "Two-Level Adaptive".to_string(),
+                history_bits: 16,
+            },
+        };
+
+        Ok(BranchPredictionCapabilities {
+            algorithm,
+            btb_characteristics: BtbCharacteristics {
+                entries: 4096,
+                associativity: 4,
+                hit_latency: 1,
+            },
+            return_stack_buffer: ReturnStackBufferInfo {
+                entries: 32,
+                accuracy: 0.99,
+            },
+            indirect_branch_prediction: IndirectBranchPrediction {
+                predictor_type: "Indirect Target Array".to_string(),
+                entries: 2048,
+                accuracy: 0.90,
+            },
+            accuracy_metrics: BranchPredictionAccuracy {
+                overall: 0.95,
+                conditional: 0.95,
+                indirect: 0.90,
+                return_accuracy: 0.99,
+            },
+        })
+    }
+
+    /// Analyze cache performance characteristics
+    fn analyze_cache_performance(_arch_info: &ArchitectureInfo) -> WasmtimeResult<CachePerformanceCharacteristics> {
+        // Use reasonable default cache characteristics based on modern CPUs
+        let l1_chars = CacheLevelCharacteristics {
+            level: 1,
+            size: 64 * 1024,  // 64 KB
+            line_size: 64,
+            associativity: 8,
+            latency_cycles: 4,
+            write_policy: "write-back".to_string(),
+        };
+
+        let l2_chars = CacheLevelCharacteristics {
+            level: 2,
+            size: 512 * 1024,  // 512 KB
+            line_size: 64,
+            associativity: 8,
+            latency_cycles: 12,
+            write_policy: "write-back".to_string(),
+        };
+
+        let l3_chars = Some(CacheLevelCharacteristics {
+            level: 3,
+            size: 8 * 1024 * 1024,  // 8 MB
+            line_size: 64,
+            associativity: 16,
+            latency_cycles: 40,
+            write_policy: "write-back".to_string(),
+        });
+
+        Ok(CachePerformanceCharacteristics {
+            l1_characteristics: l1_chars,
+            l2_characteristics: l2_chars,
+            l3_characteristics: l3_chars,
+            miss_penalties: CacheMissPenalties {
+                l1_miss: 12,
+                l2_miss: 40,
+                l3_miss: 100,
+                memory_access: 200,
+            },
+            bandwidth_characteristics: CacheBandwidthCharacteristics {
+                read_bandwidth: 200.0,
+                write_bandwidth: 100.0,
+                fill_bandwidth: 150.0,
+                eviction_bandwidth: 100.0,
+            },
+        })
+    }
+
+    /// Analyze memory performance characteristics
+    fn analyze_memory_performance(_arch_info: &ArchitectureInfo) -> WasmtimeResult<MemoryPerformanceCharacteristics> {
+        // Use reasonable default memory characteristics based on modern systems
+        Ok(MemoryPerformanceCharacteristics {
+            controller_characteristics: MemoryControllerCharacteristics {
+                controller_count: 1,
+                channels_per_controller: 2,
+                max_bandwidth: 50.0,  // GB/s
+                min_latency: 80,  // ns
+            },
+            numa_characteristics: None,  // Default to single-node system
+            memory_bandwidth: MemoryBandwidthCharacteristics {
+                peak_bandwidth: 50.0,  // GB/s
+                sustained_bandwidth: 40.0,  // GB/s
+                read_bandwidth: 25.0,  // GB/s
+                write_bandwidth: 20.0,  // GB/s
+            },
+            latency_characteristics: MemoryLatencyCharacteristics {
+                min_latency: 60,  // ns
+                avg_latency: 80,  // ns
+                max_latency: 120,  // ns
+                variance: 15.0,
+            },
+            prefetching_effectiveness: PrefetchingEffectiveness {
+                useful_prefetch_rate: 0.85,
+                late_prefetch_rate: 0.10,
+                wasteful_prefetch_rate: 0.05,
+                effectiveness_score: 0.80,
+            },
+        })
+    }
+
+    /// Analyze floating point performance
+    fn analyze_floating_point_performance(
+        _arch_info: &ArchitectureInfo,
+        features: &FeatureDetectionResults,
+    ) -> WasmtimeResult<FloatingPointPerformance> {
+        let has_avx = features.x86_features.as_ref()
+            .map(|x| x.simd_extensions.avx)
+            .unwrap_or(false);
+
+        let unit_count = if has_avx { 2 } else { 1 };
+
+        Ok(FloatingPointPerformance {
+            single_precision: FloatingPointCharacteristics {
+                precision: 32,
+                unit_count,
+                add_latency: 4,
+                mul_latency: 4,
+                div_latency: 15,
+            },
+            double_precision: FloatingPointCharacteristics {
+                precision: 64,
+                unit_count,
+                add_latency: 4,
+                mul_latency: 4,
+                div_latency: 20,
+            },
+            extended_precision: None,
+            special_functions: SpecialFunctionPerformance {
+                sqrt_latency: 15,
+                reciprocal_latency: 5,
+                transcendental: true,
+            },
+            denormal_handling: DenormalHandlingCharacteristics {
+                flush_to_zero: true,
+                denormals_as_zero: true,
+                performance_penalty: false,
+            },
+        })
+    }
+
+    /// Analyze vector processing capabilities
+    fn analyze_vector_processing(
+        _arch_info: &ArchitectureInfo,
+        features: &FeatureDetectionResults,
+    ) -> WasmtimeResult<VectorProcessingCapabilities> {
+        let (has_avx512f, has_avx, has_avx2) = features.x86_features.as_ref()
+            .map(|x| (x.avx_extensions.avx512f, x.simd_extensions.avx, x.simd_extensions.avx2))
+            .unwrap_or((false, false, false));
+
+        let vector_width = if has_avx512f { 512 }
+            else if has_avx { 256 }
+            else { 128 };
+
+        Ok(VectorProcessingCapabilities {
+            register_configuration: VectorRegisterConfiguration {
+                register_count: if has_avx512f { 32 } else { 16 },
+                register_width: vector_width,
+                mask_registers: if has_avx512f { 8 } else { 0 },
+            },
+            supported_operations: vec![
+                VectorOperation::Add,
+                VectorOperation::Subtract,
+                VectorOperation::Multiply,
+                VectorOperation::Fma,
+                VectorOperation::Compare,
+                VectorOperation::Shuffle,
+            ],
+            vector_lengths: VectorLengthSupport {
+                min_vlen: 128,
+                max_vlen: vector_width,
+                scalable: false,
+            },
+            throughput_characteristics: VectorThroughputCharacteristics {
+                integer_throughput: (vector_width / 32) as f64,
+                float_throughput: (vector_width / 32) as f64,
+                memory_throughput: 50.0,  // GB/s
+            },
+            memory_access_patterns: VectorMemoryAccessPatterns {
+                gather: has_avx2,
+                scatter: has_avx512f,
+                strided: true,
+                unit_stride_optimal: true,
+            },
+        })
+    }
+
+    /// Analyze instruction throughput characteristics
+    fn analyze_instruction_throughput(
+        arch_info: &ArchitectureInfo,
+        _features: &FeatureDetectionResults,
+    ) -> WasmtimeResult<InstructionThroughputCharacteristics> {
+        let width = arch_info.microarchitecture.design_characteristics.superscalar_width;
+
+        Ok(InstructionThroughputCharacteristics {
+            integer_ipc: width as f64,
+            float_ipc: (width / 2) as f64,
+            branch_ipc: 1.0,
+            memory_ipc: 2.0,
+        })
     }
 }
 

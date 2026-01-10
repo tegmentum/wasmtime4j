@@ -185,7 +185,7 @@ pub mod wasi_threads;
 
 // Advanced configuration modules for comprehensive optimization control
 // pub mod config_cranelift;
-// pub mod platform_config;
+// pub mod platform_config; // DISABLED: depends on platform_types
 pub mod engine_config;
 
 // Experimental WebAssembly features (committee-stage proposals)
@@ -245,14 +245,12 @@ pub mod wasi_keyvalue_helpers;
 pub mod networking;
 
 // Platform-specific optimizations for maximum performance
-// DISABLED: These modules require 398 missing type definitions. See Phase 5 plan.
-// Types needed include: BandwidthPriorityScheme, PrefetchAlgorithm, ControllerConfiguration,
-// BandwidthQosPolicy, BandwidthSla, and ~390 more. Estimated 2-3 days effort.
-// pub mod numa_topology;
-// pub mod cpu_cache_management;
-// pub mod memory_bandwidth_optimization;
-// pub mod cpu_microarchitecture_detection;
-// pub mod platform_config;
+pub mod platform_types;
+pub mod numa_topology;
+pub mod cpu_cache_management;
+pub mod memory_bandwidth_optimization;
+pub mod cpu_microarchitecture_detection;
+pub mod platform_config;
 
 // Advanced networking protocols (WebSocket, HTTP/2, gRPC)
 #[cfg(feature = "advanced-networking")]
