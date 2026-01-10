@@ -62,15 +62,29 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class FlameGraphGenerator {
 
+  /** Default maximum number of samples to retain. */
+  private static final int DEFAULT_MAX_SAMPLES = 100_000;
+
   private final AtomicLong sampleIdGenerator;
   private final Map<Long, SampleRecord> samples;
   private final Map<String, FlameFrame> frameCache;
+  private final int maxSamples;
 
-  /** Creates a new flame graph generator. */
+  /** Creates a new flame graph generator with default max samples. */
   public FlameGraphGenerator() {
+    this(DEFAULT_MAX_SAMPLES);
+  }
+
+  /**
+   * Creates a new flame graph generator with specified max samples.
+   *
+   * @param maxSamples maximum number of samples to retain
+   */
+  public FlameGraphGenerator(final int maxSamples) {
     this.sampleIdGenerator = new AtomicLong(0);
     this.samples = new ConcurrentHashMap<>();
     this.frameCache = new ConcurrentHashMap<>();
+    this.maxSamples = maxSamples > 0 ? maxSamples : DEFAULT_MAX_SAMPLES;
   }
 
   /**
@@ -89,6 +103,16 @@ public final class FlameGraphGenerator {
       final Map<String, String> metadata) {
     Objects.requireNonNull(duration, "Duration cannot be null");
     Objects.requireNonNull(stackTrace, "Stack trace cannot be null");
+
+    // Enforce maxSamples limit by removing oldest entries
+    while (samples.size() >= maxSamples) {
+      final Long oldestKey = samples.keySet().stream().min(Long::compareTo).orElse(null);
+      if (oldestKey != null) {
+        samples.remove(oldestKey);
+      } else {
+        break;
+      }
+    }
 
     final long id = sampleIdGenerator.incrementAndGet();
     final SampleRecord record =
