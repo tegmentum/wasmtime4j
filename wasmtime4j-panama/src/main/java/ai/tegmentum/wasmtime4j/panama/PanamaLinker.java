@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -44,6 +45,9 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       new ConcurrentHashMap<>();
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
+
+  /** Counter tracking the number of in-flight host function callbacks. */
+  private static final AtomicInteger IN_FLIGHT_CALLBACKS = new AtomicInteger(0);
 
   private final PanamaEngine engine;
   private final Arena arena;
@@ -416,24 +420,42 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
+    System.err.println("[PANAMA] instantiate() ENTERED");
+    System.err.flush();
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
+    System.err.println("[PANAMA] About to call ensureNotClosed");
+    System.err.flush();
     ensureNotClosed();
+    System.err.println("[PANAMA] ensureNotClosed passed");
+    System.err.flush();
 
     // Ensure we have Panama implementations
+    System.err.println(
+        "[PANAMA] Checking store instanceof PanamaStore: " + (store instanceof PanamaStore));
+    System.err.flush();
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be a PanamaStore");
     }
+    System.err.println(
+        "[PANAMA] Checking module instanceof PanamaModule: " + (module instanceof PanamaModule));
+    System.err.flush();
     if (!(module instanceof PanamaModule)) {
       throw new IllegalArgumentException("Module must be a PanamaModule");
     }
 
+    System.err.println("[PANAMA] About to cast store to PanamaStore");
+    System.err.flush();
     final PanamaStore panamaStore = (PanamaStore) store;
+    System.err.println("[PANAMA] About to cast module to PanamaModule");
+    System.err.flush();
     final PanamaModule panamaModule = (PanamaModule) module;
+    System.err.println("[PANAMA] wasiContext=" + wasiContext);
+    System.err.flush();
 
     // If we have a WASI context, attach it to the store before instantiation
     if (wasiContext != null) {
@@ -452,11 +474,20 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     // Call native function to instantiate module using linker
+    System.err.println("[PANAMA] About to call panamaLinkerInstantiate");
+    System.err.flush();
     final MemorySegment instancePtr =
         NATIVE_BINDINGS.panamaLinkerInstantiate(
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+    System.err.println("[PANAMA] panamaLinkerInstantiate returned: " + instancePtr);
+    System.err.println("[PANAMA] instancePtr == null: " + (instancePtr == null));
+    System.err.println(
+        "[PANAMA] instancePtr.address(): " + (instancePtr != null ? instancePtr.address() : "N/A"));
+    System.err.flush();
 
-    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+    if (instancePtr == null || instancePtr.address() == 0) {
+      System.err.println("[PANAMA] About to throw WasmException for null instance");
+      System.err.flush();
       throw new WasmException("Failed to instantiate module via linker");
     }
 
@@ -967,13 +998,39 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     try {
-      cleanupHostFunctionCallbacks();
-      // Destroy native linker
+      // Mark as closed first to prevent new operations
+      closed = true;
+
+      // Wait for any in-flight callbacks to complete before destroying native resources.
+      // This prevents a race condition where callbacks lookup wrappers that have been removed.
+      final int maxWaitMs = 5000;
+      final int pollIntervalMs = 10;
+      int waited = 0;
+      while (IN_FLIGHT_CALLBACKS.get() > 0 && waited < maxWaitMs) {
+        try {
+          Thread.sleep(pollIntervalMs);
+          waited += pollIntervalMs;
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          LOGGER.warning("Interrupted while waiting for in-flight callbacks");
+          break;
+        }
+      }
+      if (waited >= maxWaitMs) {
+        LOGGER.warning("Timed out waiting for in-flight callbacks, proceeding with cleanup");
+      }
+
+      // CRITICAL: Destroy native linker FIRST, before cleaning up callback map.
+      // This ensures any pending native callbacks complete before we remove their wrappers.
       if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.panamaLinkerDestroy(nativeLinker);
       }
+
+      // Now safe to clean up callbacks - native linker is destroyed
+      cleanupHostFunctionCallbacks();
+
+      // Finally close the arena
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama linker");
     } catch (final Exception e) {
       LOGGER.warning("Error closing linker: " + e.getMessage());
@@ -1146,6 +1203,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final int paramsLen,
       final MemorySegment resultsPtr,
       final int resultsLen) {
+    // Track in-flight callbacks to prevent race conditions during close()
+    IN_FLIGHT_CALLBACKS.incrementAndGet();
     try {
       LOGGER.info(
           "invokeHostFunctionCallback - Called with callbackId="
@@ -1192,6 +1251,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     } catch (final Exception e) {
       LOGGER.log(java.util.logging.Level.SEVERE, "Host function execution failed", e);
       return -2; // Error
+    } finally {
+      IN_FLIGHT_CALLBACKS.decrementAndGet();
     }
   }
 

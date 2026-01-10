@@ -74,28 +74,51 @@ public class PanamaInstanceCallFunctionTest {
     //   local.get 0 local.get 1 i64.add))
     final byte[] wasmBytes =
         new byte[] {
-          0x00, 0x61, 0x73, 0x6d, // magic number
-          0x01, 0x00, 0x00, 0x00, // version 1
+          0x00,
+          0x61,
+          0x73,
+          0x6d, // magic number
+          0x01,
+          0x00,
+          0x00,
+          0x00, // version 1
           // Type section (id=1)
-          0x01, 0x07, // section id and size
+          0x01,
+          0x07, // section id and size
           0x01, // number of types
-          0x60, 0x02, 0x7e, 0x7e, 0x01, 0x7e, // (i64, i64) -> i64
+          0x60,
+          0x02,
+          0x7e,
+          0x7e,
+          0x01,
+          0x7e, // (i64, i64) -> i64
           // Function section (id=3)
-          0x03, 0x02, // section id and size
+          0x03,
+          0x02, // section id and size
           0x01, // number of functions
           0x00, // function 0: type 0
           // Export section (id=7)
-          0x07, 0x09, // section id and size
+          0x07,
+          0x09, // section id and size
           0x01, // number of exports
-          0x05, 0x61, 0x64, 0x64, 0x36, 0x34, // "add64"
-          0x00, 0x00, // function export, index 0
+          0x05,
+          0x61,
+          0x64,
+          0x64,
+          0x36,
+          0x34, // "add64"
+          0x00,
+          0x00, // function export, index 0
           // Code section (id=10)
-          0x0a, 0x09, // section id and size
+          0x0a,
+          0x09, // section id and size
           0x01, // number of function bodies
           0x07, // function body size
           0x00, // local variable count
-          0x20, 0x00, // local.get 0
-          0x20, 0x01, // local.get 1
+          0x20,
+          0x00, // local.get 0
+          0x20,
+          0x01, // local.get 1
           0x7c, // i64.add
           0x0b // end
         };
@@ -110,7 +133,8 @@ public class PanamaInstanceCallFunctionTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should return 1 value");
-    assertEquals(3000000000L, results[0].asI64(), "Should return 1000000000 + 2000000000 = 3000000000");
+    assertEquals(
+        3000000000L, results[0].asI64(), "Should return 1000000000 + 2000000000 = 3000000000");
 
     instance.close();
     store.close();

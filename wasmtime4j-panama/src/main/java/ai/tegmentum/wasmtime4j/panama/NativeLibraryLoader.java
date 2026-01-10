@@ -77,7 +77,12 @@ public final class NativeLibraryLoader {
     // Use libraryLookup() with the path - this sees all symbols unlike loaderLookup()
     try {
       final java.nio.file.Path libraryPath = loadInfo.getExtractedPath();
+      System.err.println("[LOADER] Loading library from path: " + libraryPath);
+      System.err.println("[LOADER] Library exists: " + java.nio.file.Files.exists(libraryPath));
+      System.err.flush();
       this.symbolLookup = SymbolLookup.libraryLookup(libraryPath, libraryArena);
+      System.err.println("[LOADER] SymbolLookup created successfully");
+      System.err.flush();
       LOGGER.info("Successfully loaded native library for Panama: " + loadInfo);
     } catch (Exception e) {
       LOGGER.log(
@@ -167,11 +172,26 @@ public final class NativeLibraryLoader {
 
       if (symbol.isEmpty()) {
         LOGGER.warning("Function symbol not found: " + functionName);
+        System.err.println("[LOADER] Symbol NOT found: " + functionName);
+        System.err.flush();
         return Optional.empty();
       }
 
+      System.err.println(
+          "[LOADER] Symbol found: "
+              + functionName
+              + " at address 0x"
+              + Long.toHexString(symbol.get().address()));
+      System.err.println("[LOADER] Descriptor: " + descriptor);
+      System.err.flush();
+
+      System.err.println("[LOADER] Creating downcall handle...");
+      System.err.flush();
       Linker linker = Linker.nativeLinker();
       MethodHandle handle = linker.downcallHandle(symbol.get(), descriptor);
+
+      System.err.println("[LOADER] Created downcall handle for: " + functionName);
+      System.err.flush();
 
       // Cache the handle for future use
       methodHandleCache.put(cacheKey, handle);
