@@ -3202,6 +3202,67 @@ pub mod jni_linker {
     use jni::JavaVM;
     use wasmtime::ValType;
 
+    /// Extract the message from a pending Java exception and clear it.
+    /// Returns the exception message or a default message if extraction fails.
+    fn extract_and_clear_java_exception(env: &mut jni::JNIEnv) -> String {
+        // Get the pending exception
+        let exception = match env.exception_occurred() {
+            Ok(ex) if !ex.is_null() => ex,
+            _ => {
+                // No exception or failed to get it - clear any pending state and return default
+                let _ = env.exception_clear();
+                return "Unknown Java exception".to_string();
+            }
+        };
+
+        // Clear the exception so we can make JNI calls
+        let _ = env.exception_clear();
+
+        // Try to extract the exception message by calling getMessage()
+        let message = match env.call_method(&exception, "getMessage", "()Ljava/lang/String;", &[]) {
+            Ok(msg_value) => {
+                match msg_value.l() {
+                    Ok(msg_obj) if !msg_obj.is_null() => {
+                        match env.get_string((&msg_obj).into()) {
+                            Ok(java_str) => java_str.to_string_lossy().into_owned(),
+                            Err(_) => "Failed to convert exception message".to_string(),
+                        }
+                    }
+                    _ => "Exception with null message".to_string(),
+                }
+            }
+            Err(_) => {
+                // If getMessage() fails, try to get the class name
+                match env.get_object_class(&exception) {
+                    Ok(cls) => {
+                        match env.call_method(&cls, "getName", "()Ljava/lang/String;", &[]) {
+                            Ok(name_value) => {
+                                match name_value.l() {
+                                    Ok(name_obj) if !name_obj.is_null() => {
+                                        match env.get_string((&name_obj).into()) {
+                                            Ok(java_str) => format!("Exception of type: {}", java_str.to_string_lossy()),
+                                            Err(_) => "Unknown exception type".to_string(),
+                                        }
+                                    }
+                                    _ => "Unknown exception".to_string(),
+                                }
+                            }
+                            Err(_) => "Unknown exception".to_string(),
+                        }
+                    }
+                    Err(_) => "Unknown exception".to_string(),
+                }
+            }
+        };
+
+        // Check if there's another pending exception from our getMessage call and clear it
+        if env.exception_check().unwrap_or(false) {
+            let _ = env.exception_clear();
+        }
+
+        message
+    }
+
     /// JNI callback implementation for host functions
     pub(crate) struct JniHostFunctionCallback {
         pub(crate) jvm: std::sync::Arc<JavaVM>,
@@ -3238,7 +3299,7 @@ pub mod jni_linker {
                         backtrace: None
                     })?;
                 log::debug!("Calling Java invokeFunctionReferenceCallback method");
-                env.call_static_method(
+                let result = env.call_static_method(
                     funcref_class,
                     "invokeFunctionReferenceCallback",
                     "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
@@ -3249,7 +3310,18 @@ pub mod jni_linker {
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to invoke FunctionReference callback: {}", e),
                     backtrace: None
-                })?
+                })?;
+
+                // Check for pending Java exception (thrown by host function)
+                if env.exception_check().unwrap_or(false) {
+                    let exception_message = extract_and_clear_java_exception(&mut env);
+                    log::warn!("Java host function threw exception: {}", exception_message);
+                    return Err(WasmtimeError::Runtime {
+                        message: format!("Host function exception: {}", exception_message),
+                        backtrace: None,
+                    });
+                }
+                result
             } else {
                 // This is a Linker host function - call invokeHostFunctionCallback
                 log::debug!("Finding JniLinker class");
@@ -3259,7 +3331,7 @@ pub mod jni_linker {
                         backtrace: None
                     })?;
                 log::debug!("Calling Java invokeHostFunctionCallback method");
-                env.call_static_method(
+                let result = env.call_static_method(
                     linker_class,
                     "invokeHostFunctionCallback",
                     "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
@@ -3270,7 +3342,18 @@ pub mod jni_linker {
                 ).map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to invoke Linker host function callback: {}", e),
                     backtrace: None
-                })?
+                })?;
+
+                // Check for pending Java exception (thrown by host function)
+                if env.exception_check().unwrap_or(false) {
+                    let exception_message = extract_and_clear_java_exception(&mut env);
+                    log::warn!("Java host function threw exception: {}", exception_message);
+                    return Err(WasmtimeError::Runtime {
+                        message: format!("Host function exception: {}", exception_message),
+                        backtrace: None,
+                    });
+                }
+                result
             };
             log::debug!("Java callback completed");
 
@@ -3536,7 +3619,15 @@ pub mod jni_linker {
         store_handle: jlong,
         module_handle: jlong,
     ) -> jlong {
+        use std::io::Write;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+        let call_num = CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+        eprintln!("[JNI] ========= nativeInstantiate ENTRY (call #{}) =========", call_num);
+        let _ = std::io::stderr().flush();
         jni_utils::jni_try_with_default(&mut env, 0, || {
+            eprintln!("[JNI] nativeInstantiate: inside jni_try_with_default");
+            let _ = std::io::stderr().flush();
             // Extract linker from handle (mutable because we need to call instantiate_host_functions)
             let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
@@ -3557,15 +3648,35 @@ pub mod jni_linker {
 
             // Instantiate the module using the linker
             // First, instantiate any registered host functions
+            use std::io::Write;
+            eprintln!("[JNI] nativeInstantiate: about to lock store");
+            let _ = std::io::stderr().flush();
             let mut store_lock = store.lock_store();
-            linker.instantiate_host_functions(&mut *store_lock)?;
+            eprintln!("[JNI] nativeInstantiate: store locked, calling instantiate_host_functions");
+            let _ = std::io::stderr().flush();
+
+            // Call directly without catch_unwind
+            eprintln!("[JNI] nativeInstantiate: CALLING instantiate_host_functions NOW");
+            let _ = std::io::stderr().flush();
+            let ihf_result = linker.instantiate_host_functions(&mut *store_lock);
+            eprintln!("[JNI] nativeInstantiate: instantiate_host_functions RETURNED: {:?}", ihf_result.is_ok());
+            let _ = std::io::stderr().flush();
+            ihf_result?;
+            eprintln!("[JNI] nativeInstantiate: instantiate_host_functions was Ok");
+            let _ = std::io::stderr().flush();
 
             // Then use wasmtime::Linker::instantiate
+            eprintln!("[JNI] nativeInstantiate: about to get linker.inner()");
+            let _ = std::io::stderr().flush();
             let linker_lock = linker.inner()?;
+            eprintln!("[JNI] nativeInstantiate: linker.inner() returned, about to call wasmtime instantiate");
+            let _ = std::io::stderr().flush();
             let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
                 .map_err(|e| WasmtimeError::Instantiation {
                     message: format!("Failed to instantiate module: {}", e),
                 })?;
+            eprintln!("[JNI] nativeInstantiate: wasmtime instantiate succeeded");
+            let _ = std::io::stderr().flush();
 
             // Drop locks before creating Instance
             drop(linker_lock);

@@ -5875,9 +5875,25 @@ pub mod linker {
     /// Destroy a linker (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
+        use std::io::Write;
+        eprintln!("[RUST] wasmtime4j_panama_linker_destroy CALLED, ptr={:?}", linker_ptr);
+        let _ = std::io::stderr().flush();
+
+        if linker_ptr.is_null() {
+            eprintln!("[RUST] wasmtime4j_panama_linker_destroy: null pointer, returning");
+            let _ = std::io::stderr().flush();
+            return;
+        }
+
+        eprintln!("[RUST] wasmtime4j_panama_linker_destroy: calling destroy_linker");
+        let _ = std::io::stderr().flush();
+
         unsafe {
             linker_core::destroy_linker(linker_ptr);
         }
+
+        eprintln!("[RUST] wasmtime4j_panama_linker_destroy: destroy_linker returned, DONE");
+        let _ = std::io::stderr().flush();
     }
 
     /// Define a global in the linker (Panama FFI version)

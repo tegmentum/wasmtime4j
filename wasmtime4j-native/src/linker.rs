@@ -421,7 +421,11 @@ impl Linker {
     /// # Errors
     /// Returns WasmtimeError if host function instantiation fails
     pub fn instantiate_host_functions(&mut self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<()> {
+        use std::io::Write;
+        eprintln!("[RUST] instantiate_host_functions ENTERED");
+        let _ = std::io::stderr().flush();
         if self.metadata.disposed {
+            eprintln!("[RUST] instantiate_host_functions: linker disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
                 backtrace: None
@@ -430,24 +434,55 @@ impl Linker {
 
         // Check if host functions have already been instantiated
         if self.metadata.host_functions_instantiated {
+            eprintln!("[RUST] instantiate_host_functions: already done, skipping");
             log::debug!("Host functions already instantiated, skipping");
             return Ok(());
         }
 
         // Collect host function definitions first (without holding linker lock)
         // This prevents deadlock with HOST_FUNCTION_REGISTRY lock ordering
+        eprintln!("[RUST] instantiate_host_functions: collecting {} definitions", self.host_functions.len());
         let definitions: Vec<_> = self.host_functions.iter()
             .map(|(key, def)| (key.clone(), def.clone()))
             .collect();
 
         // Create Wasmtime functions WITHOUT holding linker lock
         // This allows HOST_FUNCTION_REGISTRY lock to be acquired safely
+        eprintln!("[RUST] instantiate_host_functions: creating {} wasmtime funcs", definitions.len());
         let mut created_funcs = Vec::with_capacity(definitions.len());
         for (key, definition) in &definitions {
+            eprintln!("[RUST] instantiate_host_functions: creating func {}", key);
             log::debug!("Creating host function: {}", key);
             let wasmtime_func = definition.host_function.create_wasmtime_func(store)?;
+            eprintln!("[RUST] instantiate_host_functions: created func {}", key);
+            let _ = std::io::stderr().flush();
             created_funcs.push((definition.module_name.clone(), definition.function_name.clone(), wasmtime_func));
         }
+
+        let thread_id = std::thread::current().id();
+        eprintln!("[RUST] instantiate_host_functions: about to acquire inner lock (thread {:?})", thread_id);
+        let _ = std::io::stderr().flush();
+
+        // Try to get lock without blocking to diagnose
+        match self.inner.try_lock() {
+            Ok(guard) => {
+                eprintln!("[RUST] instantiate_host_functions: try_lock succeeded (lock was free), releasing guard");
+                let _ = std::io::stderr().flush();
+                drop(guard);  // Explicitly drop
+                eprintln!("[RUST] instantiate_host_functions: guard dropped");
+                let _ = std::io::stderr().flush();
+            }
+            Err(std::sync::TryLockError::WouldBlock) => {
+                eprintln!("[RUST] instantiate_host_functions: try_lock FAILED - lock is held by another thread!");
+                let _ = std::io::stderr().flush();
+            }
+            Err(std::sync::TryLockError::Poisoned(_)) => {
+                eprintln!("[RUST] instantiate_host_functions: try_lock FAILED - lock is POISONED!");
+                let _ = std::io::stderr().flush();
+            }
+        }
+        eprintln!("[RUST] instantiate_host_functions: now calling lock()... (thread {:?})", thread_id);
+        let _ = std::io::stderr().flush();
 
         // Now acquire linker lock and define all functions
         let mut linker = self.inner.lock()
@@ -455,8 +490,14 @@ impl Linker {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
             })?;
+        eprintln!("[RUST] instantiate_host_functions: LOCK ACQUIRED SUCCESSFULLY!");
+        let _ = std::io::stderr().flush();
 
+        eprintln!("[RUST] instantiate_host_functions: about to define {} funcs in linker", created_funcs.len());
+        let _ = std::io::stderr().flush();
         for (module_name, function_name, wasmtime_func) in created_funcs {
+            eprintln!("[RUST] instantiate_host_functions: defining {}::{}", module_name, function_name);
+            let _ = std::io::stderr().flush();
             log::debug!("Defining host function: {}:{}", module_name, function_name);
             linker.define(
                 &mut *store,
@@ -467,12 +508,42 @@ impl Linker {
                 message: format!("Failed to define host function in linker: {}", e),
                 backtrace: None
             })?;
+            eprintln!("[RUST] instantiate_host_functions: defined {}::{}", module_name, function_name);
+            let _ = std::io::stderr().flush();
         }
+        eprintln!("[RUST] instantiate_host_functions: all funcs defined");
+        let _ = std::io::stderr().flush();
+        eprintln!("[RUST] instantiate_host_functions: marking as instantiated");
+        let _ = std::io::stderr().flush();
 
         // Mark host functions as instantiated
         self.metadata.host_functions_instantiated = true;
+        eprintln!("[RUST] instantiate_host_functions: metadata updated");
+        let _ = std::io::stderr().flush();
 
+        eprintln!("[RUST] instantiate_host_functions: about to drop linker (MutexGuard)");
+        let _ = std::io::stderr().flush();
+        drop(linker);
+        eprintln!("[RUST] instantiate_host_functions: linker (MutexGuard) dropped");
+        let _ = std::io::stderr().flush();
+        eprintln!("[RUST] instantiate_host_functions: DONE");
+        let _ = std::io::stderr().flush();
         log::debug!("Successfully instantiated {} host functions", self.host_functions.len());
+        eprintln!("[RUST] instantiate_host_functions: RETURNING Ok(())");
+        let _ = std::io::stderr().flush();
+
+        // RAII guard to detect if function returns normally
+        struct DropGuard;
+        impl Drop for DropGuard {
+            fn drop(&mut self) {
+                eprintln!("[RUST] instantiate_host_functions: DropGuard dropping - function is returning");
+                let _ = std::io::stderr().flush();
+            }
+        }
+        let _guard = DropGuard;
+
+        eprintln!("[RUST] instantiate_host_functions: about to return Ok(())");
+        let _ = std::io::stderr().flush();
         Ok(())
     }
 
@@ -1170,32 +1241,78 @@ pub mod ffi_core {
 
     /// Core function to instantiate module with linker
     pub fn instantiate_module(
-        linker: &Linker,
+        linker: &mut Linker,
         store: &mut Store,
         module: &Module,
     ) -> WasmtimeResult<LinkerInstantiationResult> {
+        use std::io::Write;
+
+        // Helper to log to file for debugging
+        fn log_to_file(msg: &str) {
+            use std::io::Write;
+            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/rust_linker_called.txt") {
+                let _ = writeln!(file, "  instantiate_module: {} at {:?}", msg, std::time::SystemTime::now());
+                let _ = file.flush();
+            }
+        }
+
+        log_to_file("ENTRY");
         let start = std::time::Instant::now();
 
+        // CRITICAL: Instantiate host functions BEFORE trying to link the module
+        log_to_file("about to lock store for host functions");
+        {
+            let mut store_guard = store.lock_store();
+            log_to_file("store locked, calling instantiate_host_functions");
+            let hf_result = linker.instantiate_host_functions(&mut *store_guard);
+            log_to_file(&format!("instantiate_host_functions returned: {:?}", hf_result.is_ok()));
+            hf_result?;
+            log_to_file("host functions instantiated");
+            eprintln!("[RUST] instantiate_module: host functions instantiated");
+            let _ = std::io::stderr().flush();
+        }
+        log_to_file("store lock released");
+        eprintln!("[RUST] instantiate_module: store lock released");
+        let _ = std::io::stderr().flush();
+
         // Get the wasmtime linker
+        log_to_file("about to acquire linker.inner lock");
+        eprintln!("[RUST] instantiate_module: about to acquire linker.inner lock");
+        let _ = std::io::stderr().flush();
         let linker_guard = linker.inner.lock().map_err(|e| WasmtimeError::Linker {
             message: format!("Failed to lock linker: {}", e),
         })?;
+        log_to_file("linker.inner lock acquired");
+        eprintln!("[RUST] instantiate_module: linker.inner lock acquired");
+        let _ = std::io::stderr().flush();
 
         // Get the wasmtime store and call instantiate
+        log_to_file("about to lock store for wasmtime instantiate");
+        eprintln!("[RUST] instantiate_module: about to lock store for wasmtime instantiate");
+        let _ = std::io::stderr().flush();
         let mut store_guard = store.lock_store();
+        log_to_file("store locked, calling wasmtime linker.instantiate");
+        eprintln!("[RUST] instantiate_module: store locked, calling wasmtime linker.instantiate");
+        let _ = std::io::stderr().flush();
         let wasmtime_instance = linker_guard
             .instantiate(&mut *store_guard, module.inner())
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate module via linker: {}", e),
             })?;
+        log_to_file("wasmtime instantiate succeeded");
+        eprintln!("[RUST] instantiate_module: wasmtime instantiate succeeded");
+        let _ = std::io::stderr().flush();
         drop(store_guard);
         drop(linker_guard);
 
         // Wrap the wasmtime instance in our Instance type
+        log_to_file("creating Instance from wasmtime_instance");
         let instance = Instance::from_wasmtime_instance(wasmtime_instance, store, module)?;
+        log_to_file("Instance created");
 
         let instantiation_time = start.elapsed();
 
+        log_to_file("RETURNING Ok");
         Ok(LinkerInstantiationResult {
             instance,
             resolved_imports: module.required_imports().len(),
@@ -1297,26 +1414,68 @@ pub unsafe extern "C" fn wasmtime4j_linker_destroy(linker_ptr: *mut c_void) {
 /// Returns pointer to instance that must be freed with wasmtime4j_instance_destroy
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
-    linker_ptr: *const c_void,
+    linker_ptr: *mut c_void,
     store_ptr: *mut c_void,
     module_ptr: *const c_void,
 ) -> *mut c_void {
+    // Debug: use atomic counter to track call number
+    use std::io::Write;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static CALL_COUNT: AtomicU64 = AtomicU64::new(0);
+    let call_num = CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+
+    // Helper to log to file for debugging
+    fn log_to_file(msg: &str) {
+        use std::io::Write;
+        if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/rust_linker_called.txt") {
+            let _ = writeln!(file, "{} at {:?}", msg, std::time::SystemTime::now());
+            let _ = file.flush();
+        }
+    }
+
+    log_to_file(&format!("wasmtime4j_linker_instantiate ENTRY call #{}", call_num));
+
     if linker_ptr.is_null() || store_ptr.is_null() || module_ptr.is_null() {
+        log_to_file("wasmtime4j_linker_instantiate: null pointer");
         return std::ptr::null_mut();
     }
 
-    match (
-        ffi_core::get_linker_ref(linker_ptr),
-        crate::store::core::get_store_mut(store_ptr),
-        crate::module::core::get_module_ref(module_ptr)
-    ) {
-        (Ok(linker), Ok(store), Ok(module)) => {
-            match ffi_core::instantiate_module(linker, store, module) {
-                Ok(result) => Box::into_raw(Box::new(result.instance)) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
-            }
+    log_to_file("wasmtime4j_linker_instantiate: getting linker_mut");
+    let linker_result = ffi_core::get_linker_mut(linker_ptr);
+    log_to_file("wasmtime4j_linker_instantiate: getting store_mut");
+    let store_result = crate::store::core::get_store_mut(store_ptr);
+    log_to_file("wasmtime4j_linker_instantiate: getting module_ref");
+    let module_result = crate::module::core::get_module_ref(module_ptr);
+    log_to_file("wasmtime4j_linker_instantiate: all refs obtained");
+
+    if linker_result.is_err() {
+        log_to_file(&format!("wasmtime4j_linker_instantiate: get_linker_mut failed: {:?}", linker_result.err()));
+        return std::ptr::null_mut();
+    }
+    if store_result.is_err() {
+        log_to_file(&format!("wasmtime4j_linker_instantiate: get_store_mut failed: {:?}", store_result.err()));
+        return std::ptr::null_mut();
+    }
+    if module_result.is_err() {
+        log_to_file(&format!("wasmtime4j_linker_instantiate: get_module_ref failed: {:?}", module_result.err()));
+        return std::ptr::null_mut();
+    }
+
+    let linker = linker_result.unwrap();
+    let store = store_result.unwrap();
+    let module = module_result.unwrap();
+
+    log_to_file("wasmtime4j_linker_instantiate: calling instantiate_module");
+    match ffi_core::instantiate_module(linker, store, module) {
+        Ok(result) => {
+            let ptr = Box::into_raw(Box::new(result.instance)) as *mut c_void;
+            log_to_file(&format!("wasmtime4j_linker_instantiate: RETURNING ptr={:?}", ptr));
+            ptr
         },
-        _ => std::ptr::null_mut(),
+        Err(e) => {
+            log_to_file(&format!("wasmtime4j_linker_instantiate: instantiate_module failed: {:?}", e));
+            std::ptr::null_mut()
+        },
     }
 }
 
@@ -1920,7 +2079,7 @@ mod tests {
             .expect("Failed to compile WAT module");
 
         println!("Instantiating module with linker...");
-        let result = ffi_core::instantiate_module(&linker, &mut store, &module);
+        let result = ffi_core::instantiate_module(&mut linker, &mut store, &module);
 
         match result {
             Ok(inst_result) => {

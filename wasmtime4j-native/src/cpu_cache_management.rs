@@ -708,6 +708,7 @@ pub enum PrefetchAlgorithm {
     StreamBuffer,
     CorrelationBased,
     MachineLearningBased,
+    Stream,
 }
 
 #[derive(Debug, Clone)]
