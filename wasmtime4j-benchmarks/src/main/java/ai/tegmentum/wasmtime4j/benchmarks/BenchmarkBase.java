@@ -9,6 +9,8 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
@@ -33,6 +35,12 @@ import org.openjdk.jmh.annotations.Warmup;
     value = 2,
     jvmArgs = {"-Xms2g", "-Xmx2g"})
 public abstract class BenchmarkBase {
+
+  /** Logger for benchmark classes. */
+  private static final Logger LOGGER = Logger.getLogger(BenchmarkBase.class.getName());
+
+  /** Runtime instance for benchmark execution. */
+  protected WasmRuntime runtime;
 
   /**
    * Sample WebAssembly module for basic arithmetic operations. This simple module adds two i32
@@ -338,5 +346,82 @@ public abstract class BenchmarkBase {
    */
   protected static int preventOptimization(final byte[] value) {
     return value != null ? value.length : 0;
+  }
+
+  /**
+   * Sets up the WebAssembly runtime based on the runtime type name.
+   *
+   * @param runtimeTypeName the name of the runtime type (JNI or PANAMA)
+   * @throws WasmException if runtime creation fails
+   */
+  protected void setupRuntime(final String runtimeTypeName) throws WasmException {
+    final RuntimeType type = RuntimeType.valueOf(runtimeTypeName);
+    this.runtime = WasmRuntimeFactory.create(type);
+    logInfo("Initialized runtime: " + runtimeTypeName);
+  }
+
+  /**
+   * Tears down the WebAssembly runtime, releasing resources.
+   *
+   * @throws Exception if cleanup fails
+   */
+  protected void tearDownRuntime() throws Exception {
+    if (runtime != null) {
+      runtime.close();
+      runtime = null;
+      logInfo("Runtime teardown completed");
+    }
+  }
+
+  /**
+   * Logs an informational message.
+   *
+   * @param message the message to log
+   */
+  protected void logInfo(final String message) {
+    LOGGER.info(message);
+  }
+
+  /**
+   * Logs a warning message.
+   *
+   * @param message the message to log
+   */
+  protected void logWarn(final String message) {
+    LOGGER.warning(message);
+  }
+
+  /**
+   * Logs an error message.
+   *
+   * @param message the message to log
+   */
+  protected void logError(final String message) {
+    LOGGER.severe(message);
+  }
+
+  /**
+   * Logs an error message with an exception.
+   *
+   * @param message the message to log
+   * @param throwable the exception that caused the error
+   */
+  protected void logError(final String message, final Throwable throwable) {
+    LOGGER.log(Level.SEVERE, message, throwable);
+  }
+
+  /**
+   * Safely closes an AutoCloseable resource without throwing exceptions.
+   *
+   * @param closeable the resource to close
+   */
+  protected static void closeQuietly(final AutoCloseable closeable) {
+    if (closeable != null) {
+      try {
+        closeable.close();
+      } catch (final Exception e) {
+        LOGGER.log(Level.FINE, "Error closing resource", e);
+      }
+    }
   }
 }

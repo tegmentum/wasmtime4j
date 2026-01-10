@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -133,25 +134,26 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
     super.setupRuntime(runtimeTypeName);
 
     // Create engines with different allocation strategies
-    enginePooled =
+    final EngineConfig pooledConfig =
         Engine.builder()
-            .poolingAllocator(true)
-            .poolSize(1000)
-            .maxMemoryPerInstance(1024 * 1024 * 1024L) // 1GB
-            .build();
+            .setPoolingAllocatorEnabled(true)
+            .setInstancePoolSize(1000)
+            .setMaxMemoryPerInstance(1024 * 1024 * 1024L); // 1GB
+    enginePooled = Engine.create(pooledConfig);
 
-    engineStandard = Engine.builder().poolingAllocator(false).build();
+    final EngineConfig standardConfig = Engine.builder().setPoolingAllocatorEnabled(false);
+    engineStandard = Engine.create(standardConfig);
 
     // Compile test modules
-    moduleSimple = Module.fromBinary(enginePooled, TEST_WASM_SIMPLE);
-    moduleMemoryIntensive = Module.fromBinary(enginePooled, TEST_WASM_MEMORY_INTENSIVE);
+    moduleSimple = enginePooled.compileModule(TEST_WASM_SIMPLE);
+    moduleMemoryIntensive = enginePooled.compileModule(TEST_WASM_MEMORY_INTENSIVE);
 
     logInfo(
         "Benchmark setup completed for runtime: " + runtimeTypeName + ", pooling: " + usePooling);
   }
 
   @TearDown(Level.Trial)
-  public void tearDownTrial() {
+  public void tearDownTrial() throws Exception {
     closeQuietly(moduleMemoryIntensive);
     closeQuietly(moduleSimple);
     closeQuietly(engineStandard);
@@ -168,10 +170,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
   @Benchmark
   public Instance benchmarkBasicInstanceAllocation() throws WasmException {
     final Engine engine = usePooling ? enginePooled : engineStandard;
-    final Store store = Store.withoutData(engine);
+    final Store store = engine.createStore();
 
     try {
-      return Instance.create(store, moduleSimple);
+      return moduleSimple.instantiate(store);
     } finally {
       closeQuietly(store);
     }
@@ -184,10 +186,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
   @Benchmark
   public Instance benchmarkMemoryIntensiveAllocation() throws WasmException {
     final Engine engine = usePooling ? enginePooled : engineStandard;
-    final Store store = Store.withoutData(engine);
+    final Store store = engine.createStore();
 
     try {
-      return Instance.create(store, moduleMemoryIntensive);
+      return moduleMemoryIntensive.instantiate(store);
     } finally {
       closeQuietly(store);
     }
@@ -202,9 +204,9 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
     final Engine engine = usePooling ? enginePooled : engineStandard;
 
     for (int i = 0; i < 10; i++) {
-      final Store store = Store.withoutData(engine);
+      final Store store = engine.createStore();
       try {
-        final Instance instance = Instance.create(store, moduleSimple);
+        final Instance instance = moduleSimple.instantiate(store);
         closeQuietly(instance);
       } finally {
         closeQuietly(store);
@@ -220,10 +222,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
   @Threads(4)
   public Instance benchmarkConcurrentAllocation() throws WasmException {
     final Engine engine = usePooling ? enginePooled : engineStandard;
-    final Store store = Store.withoutData(engine);
+    final Store store = engine.createStore();
 
     try {
-      return Instance.create(store, moduleSimple);
+      return moduleSimple.instantiate(store);
     } finally {
       closeQuietly(store);
     }
@@ -237,10 +239,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
   @Threads(16)
   public Instance benchmarkHighConcurrencyAllocation() throws WasmException {
     final Engine engine = usePooling ? enginePooled : engineStandard;
-    final Store store = Store.withoutData(engine);
+    final Store store = engine.createStore();
 
     try {
-      return Instance.create(store, moduleSimple);
+      return moduleSimple.instantiate(store);
     } finally {
       closeQuietly(store);
     }
@@ -258,8 +260,8 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
     try {
       for (int i = 0; i < instances.length; i++) {
-        stores[i] = Store.withoutData(engine);
-        instances[i] = Instance.create(stores[i], moduleSimple);
+        stores[i] = engine.createStore();
+        instances[i] = moduleSimple.instantiate(stores[i]);
       }
     } finally {
       for (int i = 0; i < instances.length; i++) {
@@ -278,18 +280,18 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
     final Engine engine = usePooling ? enginePooled : engineStandard;
 
     // Pattern 1: Single allocation
-    Store store1 = Store.withoutData(engine);
+    Store store1 = engine.createStore();
     try {
-      Instance instance1 = Instance.create(store1, moduleSimple);
+      Instance instance1 = moduleSimple.instantiate(store1);
       closeQuietly(instance1);
     } finally {
       closeQuietly(store1);
     }
 
     // Pattern 2: Memory-intensive allocation
-    Store store2 = Store.withoutData(engine);
+    Store store2 = engine.createStore();
     try {
-      Instance instance2 = Instance.create(store2, moduleMemoryIntensive);
+      Instance instance2 = moduleMemoryIntensive.instantiate(store2);
       closeQuietly(instance2);
     } finally {
       closeQuietly(store2);
@@ -297,46 +299,13 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
     // Pattern 3: Rapid sequence
     for (int i = 0; i < 3; i++) {
-      Store store = Store.withoutData(engine);
+      Store store = engine.createStore();
       try {
-        Instance instance = Instance.create(store, moduleSimple);
+        Instance instance = moduleSimple.instantiate(store);
         closeQuietly(instance);
       } finally {
         closeQuietly(store);
       }
-    }
-  }
-
-  /**
-   * Benchmarks pooling allocator warm-up performance. Tests the effectiveness of pool warming
-   * strategies.
-   */
-  @Benchmark
-  public void benchmarkPoolWarmupEfficiency() throws WasmException {
-    if (!usePooling) {
-      return; // Skip for non-pooling benchmarks
-    }
-
-    // Create new engine with pool warming
-    final Engine warmEngine =
-        Engine.builder()
-            .poolingAllocator(true)
-            .poolSize(100)
-            .enablePoolWarming(true)
-            .poolWarmupPercentage(0.5f)
-            .build();
-
-    try {
-      // Immediate allocation after warm-up should be very fast
-      final Store store = Store.withoutData(warmEngine);
-      try {
-        final Instance instance = Instance.create(store, moduleSimple);
-        closeQuietly(instance);
-      } finally {
-        closeQuietly(store);
-      }
-    } finally {
-      closeQuietly(warmEngine);
     }
   }
 
@@ -355,8 +324,8 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
       try {
         for (int i = 0; i < instances.length; i++) {
-          stores[i] = Store.withoutData(engine);
-          instances[i] = Instance.create(stores[i], moduleSimple);
+          stores[i] = engine.createStore();
+          instances[i] = moduleSimple.instantiate(stores[i]);
         }
 
         // Simulate some work (minimal delay)
@@ -385,10 +354,10 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
     // Create and immediately cleanup resources to test pool efficiency
     for (int i = 0; i < 20; i++) {
-      final Store store = Store.withoutData(engine);
+      final Store store = engine.createStore();
       final Instance instance;
       try {
-        instance = Instance.create(store, moduleSimple);
+        instance = moduleSimple.instantiate(store);
       } finally {
         closeQuietly(store);
       }
@@ -412,23 +381,13 @@ public class PoolingAllocatorPerformanceBenchmark extends BenchmarkBase {
 
     try {
       for (int i = 0; i < targetAllocations; i++) {
-        stores[i] = Store.withoutData(engine);
-        instances[i] = Instance.create(stores[i], moduleMemoryIntensive);
+        stores[i] = engine.createStore();
+        instances[i] = moduleMemoryIntensive.instantiate(stores[i]);
       }
     } finally {
       for (int i = 0; i < targetAllocations; i++) {
         closeQuietly(instances[i]);
         closeQuietly(stores[i]);
-      }
-    }
-  }
-
-  private void closeQuietly(final AutoCloseable resource) {
-    if (resource != null) {
-      try {
-        resource.close();
-      } catch (final Exception e) {
-        logWarn("Error closing resource: " + e.getMessage());
       }
     }
   }
