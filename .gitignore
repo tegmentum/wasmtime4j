@@ -57,4 +57,11 @@ jacoco.xml
 
 # Temporary files
 *.tmp
-*.tempwasmtime4j-native/jni-headers/
+*.temp
+wasmtime4j-native/jni-headers/
+
+# JMH Benchmark results
+**/benchmark-results.json
+**/profiling-results.json
+**/*.jmh.json
+wasmtime4j-benchmarks/scripts/.jmh-visualizer/
