@@ -65,3 +65,8 @@ wasmtime4j-native/jni-headers/
 **/profiling-results.json
 **/*.jmh.json
 wasmtime4j-benchmarks/scripts/.jmh-visualizer/
+wasmtime4j-benchmarks/benchmark-results/jmh-results-*.json
+wasmtime4j-benchmarks/benchmark-results/runtime-comparison-*.txt
+wasmtime4j-benchmarks/benchmark-results/baseline.json
+wasmtime4j-benchmarks/benchmark-results/benchmark-results.csv
+wasmtime4j-benchmarks/benchmark-results/performance-report.html
