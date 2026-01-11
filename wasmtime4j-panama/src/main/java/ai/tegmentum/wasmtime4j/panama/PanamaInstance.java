@@ -1045,6 +1045,236 @@ public final class PanamaInstance implements Instance {
     return results[0].asI32();
   }
 
+  // ===== Optimized Typed Function Call Methods =====
+  // These methods bypass WasmValue boxing/unboxing for maximum performance.
+
+  /**
+   * Fast-path call for functions with two i32 parameters returning i32.
+   * Bypasses WasmValue boxing entirely by writing primitives directly to native memory.
+   *
+   * @param functionName the name of the function to call
+   * @param arg1 the first i32 argument
+   * @param arg2 the second i32 argument
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callI32I32ToI32Fast(final String functionName, final int arg1, final int arg2)
+      throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    // Get or create cached function name segment
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    // Get thread-local call context
+    final CallContext ctx = CALL_CONTEXT.get();
+    final MemorySegment params = ctx.getParamsBuffer(2);
+
+    // Direct primitive writes - no WasmValue objects created
+    // Tag 0 = I32, value at offset+4
+    params.set(ValueLayout.JAVA_INT, 0, 0);      // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 4, arg1);   // Value 1
+    params.set(ValueLayout.JAVA_INT, 20, 0);     // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 24, arg2);  // Value 2
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        params, 2, ctx.resultsBuffer, 1);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+    if (resultCount != 1) {
+      throw new WasmException("Expected 1 result, got " + resultCount);
+    }
+
+    // Direct primitive read - no WasmValue creation
+    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+  }
+
+  /**
+   * Fast-path call for functions with one i32 parameter returning i32.
+   * Bypasses WasmValue boxing entirely by writing primitives directly to native memory.
+   *
+   * @param functionName the name of the function to call
+   * @param arg the i32 argument
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callI32ToI32Fast(final String functionName, final int arg) throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    final CallContext ctx = CALL_CONTEXT.get();
+    final MemorySegment params = ctx.getParamsBuffer(1);
+
+    params.set(ValueLayout.JAVA_INT, 0, 0);     // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 4, arg);   // Value
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        params, 1, ctx.resultsBuffer, 1);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+    if (resultCount != 1) {
+      throw new WasmException("Expected 1 result, got " + resultCount);
+    }
+
+    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+  }
+
+  /**
+   * Fast-path call for functions with no parameters returning i32.
+   * Bypasses WasmValue boxing entirely.
+   *
+   * @param functionName the name of the function to call
+   * @return the i32 result
+   * @throws WasmException if function execution fails
+   */
+  public int callToI32Fast(final String functionName) throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    final CallContext ctx = CALL_CONTEXT.get();
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        MemorySegment.NULL, 0, ctx.resultsBuffer, 1);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+    if (resultCount != 1) {
+      throw new WasmException("Expected 1 result, got " + resultCount);
+    }
+
+    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+  }
+
+  /**
+   * Fast-path call for functions with no parameters and no return value.
+   * Bypasses WasmValue boxing entirely.
+   *
+   * @param functionName the name of the function to call
+   * @throws WasmException if function execution fails
+   */
+  public void callVoidFast(final String functionName) throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    final CallContext ctx = CALL_CONTEXT.get();
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        MemorySegment.NULL, 0, ctx.resultsBuffer, 0);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+  }
+
+  /**
+   * Fast-path call for functions with one i64 parameter returning i64.
+   * Bypasses WasmValue boxing entirely.
+   *
+   * @param functionName the name of the function to call
+   * @param arg the i64 argument
+   * @return the i64 result
+   * @throws WasmException if function execution fails
+   */
+  public long callI64ToI64Fast(final String functionName, final long arg) throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    final CallContext ctx = CALL_CONTEXT.get();
+    final MemorySegment params = ctx.getParamsBuffer(1);
+
+    params.set(ValueLayout.JAVA_INT, 0, 1);                       // Tag: I64
+    params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg);          // Value
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        params, 1, ctx.resultsBuffer, 1);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+    if (resultCount != 1) {
+      throw new WasmException("Expected 1 result, got " + resultCount);
+    }
+
+    return ctx.resultsBuffer.get(ValueLayout.JAVA_LONG_UNALIGNED, 4);
+  }
+
+  /**
+   * Fast-path call for functions with one f64 parameter returning f64.
+   * Bypasses WasmValue boxing entirely.
+   *
+   * @param functionName the name of the function to call
+   * @param arg the f64 argument
+   * @return the f64 result
+   * @throws WasmException if function execution fails
+   */
+  public double callF64ToF64Fast(final String functionName, final double arg) throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+    final CallContext ctx = CALL_CONTEXT.get();
+    final MemorySegment params = ctx.getParamsBuffer(1);
+
+    params.set(ValueLayout.JAVA_INT, 0, 3);                        // Tag: F64
+    params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg);         // Value
+
+    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
+        nativeInstance, store.getNativeStore(), functionNameSegment,
+        params, 1, ctx.resultsBuffer, 1);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+    if (resultCount != 1) {
+      throw new WasmException("Expected 1 result, got " + resultCount);
+    }
+
+    return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
+  }
+
   @Override
   public void close() {
     if (closed) {

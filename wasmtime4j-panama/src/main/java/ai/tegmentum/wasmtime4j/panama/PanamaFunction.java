@@ -92,6 +92,45 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
         });
   }
 
+  // ===== Optimized Typed Fast-Path Methods =====
+  // These override the default implementations to use PanamaInstance's optimized methods.
+
+  @Override
+  public void callVoid() throws WasmException {
+    ensureNotClosed();
+    instance.callVoidFast(name);
+  }
+
+  @Override
+  public int callI32ToI32(final int arg) throws WasmException {
+    ensureNotClosed();
+    return instance.callI32ToI32Fast(name, arg);
+  }
+
+  @Override
+  public int callI32I32ToI32(final int arg1, final int arg2) throws WasmException {
+    ensureNotClosed();
+    return instance.callI32I32ToI32Fast(name, arg1, arg2);
+  }
+
+  @Override
+  public long callI64ToI64(final long arg) throws WasmException {
+    ensureNotClosed();
+    return instance.callI64ToI64Fast(name, arg);
+  }
+
+  @Override
+  public double callF64ToF64(final double arg) throws WasmException {
+    ensureNotClosed();
+    return instance.callF64ToF64Fast(name, arg);
+  }
+
+  @Override
+  public int callToI32() throws WasmException {
+    ensureNotClosed();
+    return instance.callToI32Fast(name);
+  }
+
   /** Closes the function and releases resources. */
   public void close() {
     if (closed) {

@@ -180,6 +180,135 @@ public interface WasmFunction {
     return true;
   }
 
+  // ===== Typed Fast-Path Methods =====
+  // These methods bypass WasmValue boxing/unboxing for maximum performance.
+  // Implementations should override these with optimized native calls.
+
+  /**
+   * Fast-path call for functions with no parameters and no return value.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance on void functions.
+   *
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default void callVoid() throws WasmException {
+    WasmValue[] results = call();
+    if (results != null && results.length > 0) {
+      throw new WasmException("Function returned " + results.length + " values, expected none");
+    }
+  }
+
+  /**
+   * Fast-path call for functions with one i32 parameter returning i32.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance.
+   *
+   * @param arg the i32 argument
+   * @return the i32 result
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default int callI32ToI32(final int arg) throws WasmException {
+    WasmValue[] results = call(WasmValue.i32(arg));
+    if (results == null || results.length != 1) {
+      throw new WasmException(
+          "Function returned " + (results == null ? 0 : results.length) + " values, expected 1");
+    }
+    if (results[0].getType() != WasmValueType.I32) {
+      throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
+    }
+    return results[0].asI32();
+  }
+
+  /**
+   * Fast-path call for functions with two i32 parameters returning i32.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance.
+   *
+   * @param arg1 the first i32 argument
+   * @param arg2 the second i32 argument
+   * @return the i32 result
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default int callI32I32ToI32(final int arg1, final int arg2) throws WasmException {
+    WasmValue[] results = call(WasmValue.i32(arg1), WasmValue.i32(arg2));
+    if (results == null || results.length != 1) {
+      throw new WasmException(
+          "Function returned " + (results == null ? 0 : results.length) + " values, expected 1");
+    }
+    if (results[0].getType() != WasmValueType.I32) {
+      throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
+    }
+    return results[0].asI32();
+  }
+
+  /**
+   * Fast-path call for functions with one i64 parameter returning i64.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance.
+   *
+   * @param arg the i64 argument
+   * @return the i64 result
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default long callI64ToI64(final long arg) throws WasmException {
+    WasmValue[] results = call(WasmValue.i64(arg));
+    if (results == null || results.length != 1) {
+      throw new WasmException(
+          "Function returned " + (results == null ? 0 : results.length) + " values, expected 1");
+    }
+    if (results[0].getType() != WasmValueType.I64) {
+      throw new WasmException("Function returned " + results[0].getType() + ", expected I64");
+    }
+    return results[0].asI64();
+  }
+
+  /**
+   * Fast-path call for functions with one f64 parameter returning f64.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance.
+   *
+   * @param arg the f64 argument
+   * @return the f64 result
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default double callF64ToF64(final double arg) throws WasmException {
+    WasmValue[] results = call(WasmValue.f64(arg));
+    if (results == null || results.length != 1) {
+      throw new WasmException(
+          "Function returned " + (results == null ? 0 : results.length) + " values, expected 1");
+    }
+    if (results[0].getType() != WasmValueType.F64) {
+      throw new WasmException("Function returned " + results[0].getType() + ", expected F64");
+    }
+    return results[0].asF64();
+  }
+
+  /**
+   * Fast-path call for functions with no parameters returning i32.
+   *
+   * <p>This method bypasses WasmValue boxing for maximum performance.
+   *
+   * @return the i32 result
+   * @throws WasmException if function execution fails or the function signature doesn't match
+   * @since 1.1.0
+   */
+  default int callToI32() throws WasmException {
+    WasmValue[] results = call();
+    if (results == null || results.length != 1) {
+      throw new WasmException(
+          "Function returned " + (results == null ? 0 : results.length) + " values, expected 1");
+    }
+    if (results[0].getType() != WasmValueType.I32) {
+      throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
+    }
+    return results[0].asI32();
+  }
+
   // ===== Low-level/Unsafe Methods =====
 
   /**
