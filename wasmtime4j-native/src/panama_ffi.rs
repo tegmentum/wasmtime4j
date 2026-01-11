@@ -2902,6 +2902,47 @@ pub mod memory {
         })
     }
 
+    /// Get raw pointer to WASM linear memory for zero-copy access (Panama FFI version).
+    ///
+    /// Returns the raw pointer and size of the memory buffer.
+    /// The returned pointer is only valid while:
+    /// 1. The memory instance is alive
+    /// 2. The store is alive
+    /// 3. No memory.grow() operations are performed
+    ///
+    /// After memory.grow(), the pointer may be invalidated and must be re-obtained.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_get_data(
+        memory_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        data_ptr_out: *mut *mut u8,
+        size_out: *mut usize,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            // Get raw wasmtime::Memory (not wrapped)
+            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+
+            if data_ptr_out.is_null() || size_out.is_null() {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Output pointers cannot be null".to_string(),
+                });
+            }
+
+            // Get direct buffer access - read-only context is sufficient
+            store.with_context_ro(|ctx| {
+                let data = memory.data(ctx);
+
+                unsafe {
+                    *data_ptr_out = data.as_ptr() as *mut u8;
+                    *size_out = data.len();
+                }
+
+                Ok(())
+            })
+        })
+    }
+
     /// Check if instance has a memory export with the given name
     #[no_mangle]
     pub extern "C" fn wasmtime4j_instance_has_memory_export(
