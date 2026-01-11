@@ -75,6 +75,76 @@ java -cp wasmtime4j-benchmarks/target/wasmtime4j-benchmarks.jar \
   ai.tegmentum.wasmtime4j.benchmarks.BenchmarkRunner [options]
 ```
 
+## JNI vs Panama Comparison
+
+The `run-performance-suite.sh` script provides advanced benchmarking with JNI/Panama separation, load scaling, baseline comparison, and regression detection.
+
+### Quick JNI vs Panama Comparison
+
+```bash
+cd wasmtime4j-benchmarks
+
+# Quick comparison (1 iteration, ~8 minutes)
+./run-performance-suite.sh --quick --compare-runtimes PanamaVsJniBenchmark
+
+# Standard comparison (default parameters)
+./run-performance-suite.sh --compare-runtimes PanamaVsJniBenchmark
+
+# Thorough comparison (10 iterations, 5 warmups, 3 forks)
+./run-performance-suite.sh --thorough --compare-runtimes PanamaVsJniBenchmark
+```
+
+### Results with Load Scaling
+
+The `PanamaVsJniBenchmark` automatically tests with operation counts of 1, 10, 100, and 1000 to show performance scaling:
+
+```
+PanamaVsJniBenchmark.functionCalls    1     JNI:  230973 ops/s  Panama:  113334 ops/s
+PanamaVsJniBenchmark.functionCalls   10     JNI:   22750 ops/s  Panama:   12177 ops/s
+PanamaVsJniBenchmark.functionCalls  100     JNI:    2302 ops/s  Panama:    1178 ops/s
+PanamaVsJniBenchmark.functionCalls 1000     JNI:     227 ops/s  Panama:     117 ops/s
+```
+
+### Baseline Comparison and Regression Detection
+
+```bash
+# Save current results as baseline
+cp benchmark-results/jmh-results-*.json benchmark-results/baseline.json
+
+# Run with baseline comparison
+./run-performance-suite.sh --quick --baseline benchmark-results/baseline.json PanamaVsJniBenchmark
+
+# Fail CI if regression detected (>5% degradation)
+./run-performance-suite.sh --quick --baseline benchmark-results/baseline.json --fail-on-regression PanamaVsJniBenchmark
+```
+
+### Visualization
+
+Open results in the interactive jmh.morethan.io visualizer:
+
+```bash
+# Run with automatic visualization
+./run-performance-suite.sh --quick --compare-runtimes --visualize PanamaVsJniBenchmark
+
+# Or view existing results
+./scripts/view-benchmarks.sh benchmark-results/jmh-results-*.json
+```
+
+### CI/CD Integration
+
+```bash
+# CI mode with machine-readable output
+./run-performance-suite.sh --ci --fail-on-regression --baseline baseline.json PanamaVsJniBenchmark
+```
+
+### Output Files
+
+Results are saved to `benchmark-results/`:
+- `jmh-results-{timestamp}.json` - Full JMH results
+- `runtime-comparison-{timestamp}.txt` - JNI vs Panama summary
+- `performance-report.html` - Interactive HTML report
+- `benchmark-results.csv` - CSV export for analysis
+
 ## Benchmark Categories
 
 ### Runtime Initialization (`runtime`)

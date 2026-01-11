@@ -92,135 +92,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
   private int[] testData;
   private ByteBuffer testBuffer;
 
-  // Simple WebAssembly module that adds two i32 values
-  private static final byte[] SIMPLE_ADD_WASM = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic
-    0x01,
-    0x00,
-    0x00,
-    0x00, // WASM version
-    // Type section
-    0x01,
-    0x07,
-    0x01,
-    0x60,
-    0x02,
-    0x7f,
-    0x7f,
-    0x01,
-    0x7f,
-    // Function section
-    0x03,
-    0x02,
-    0x01,
-    0x00,
-    // Export section
-    0x07,
-    0x07,
-    0x01,
-    0x03,
-    0x61,
-    0x64,
-    0x64,
-    0x00,
-    0x00,
-    // Code section
-    0x0a,
-    0x09,
-    0x01,
-    0x07,
-    0x00,
-    0x20,
-    0x00,
-    0x20,
-    0x01,
-    0x6a,
-    0x0b
-  };
 
-  // WebAssembly module with memory operations
-  private static final byte[] MEMORY_WASM = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic
-    0x01,
-    0x00,
-    0x00,
-    0x00, // WASM version
-    // Type section
-    0x01,
-    0x0a,
-    0x02,
-    0x60,
-    0x02,
-    0x7f,
-    0x7f,
-    0x00, // (i32, i32) -> ()
-    0x60,
-    0x01,
-    0x7f,
-    0x01,
-    0x7f, // (i32) -> i32
-    // Function section
-    0x03,
-    0x03,
-    0x02,
-    0x00,
-    0x01,
-    // Memory section
-    0x05,
-    0x03,
-    0x01,
-    0x00,
-    0x01,
-    // Export section
-    0x07,
-    0x11,
-    0x02,
-    0x06,
-    0x6d,
-    0x65,
-    0x6d,
-    0x6f,
-    0x72,
-    0x79,
-    0x02,
-    0x00,
-    0x05,
-    0x77,
-    0x72,
-    0x69,
-    0x74,
-    0x65,
-    0x00,
-    0x00,
-    // Code section
-    0x0a,
-    0x0e,
-    0x02,
-    0x07,
-    0x00,
-    0x20,
-    0x00,
-    0x20,
-    0x01,
-    0x36,
-    0x02,
-    0x00,
-    0x0b,
-    0x05,
-    0x00,
-    0x20,
-    0x00,
-    0x28,
-    0x02,
-    0x00,
-    0x0b
-  };
 
   /**
    * Sets up the benchmark trial by initializing WebAssembly runtime, modules, and test data.
@@ -242,9 +114,9 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     runtime = WasmRuntimeFactory.create(runtimeType);
     engine = runtime.createEngine();
 
-    // Compile test modules
-    simpleModule = engine.compileModule(SIMPLE_ADD_WASM);
-    memoryModule = engine.compileModule(MEMORY_WASM);
+    // Compile test modules from WAT format
+    simpleModule = engine.compileWat(SIMPLE_WAT_MODULE);
+    memoryModule = engine.compileWat(COMPLEX_WAT_MODULE);
 
     // Create store and instances
     final Store store = engine.createStore();
@@ -408,7 +280,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
   @Benchmark
   public void moduleCompilation(final Blackhole bh) throws Exception {
     for (int i = 0; i < Math.min(operationCount, 100); i++) { // Limit to avoid excessive overhead
-      try (Module module = engine.compileModule(SIMPLE_ADD_WASM)) {
+      try (Module module = engine.compileWat(SIMPLE_WAT_MODULE)) {
         bh.consume(module);
       }
     }
@@ -499,7 +371,7 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
     for (int i = 0; i < iterations; i++) {
       try (Engine testEngine = runtime.createEngine();
           Store testStore = testEngine.createStore();
-          Module testModule = testEngine.compileModule(SIMPLE_ADD_WASM);
+          Module testModule = testEngine.compileWat(SIMPLE_WAT_MODULE);
           Instance testInstance = testModule.instantiate(testStore)) {
 
         final WasmFunction func =

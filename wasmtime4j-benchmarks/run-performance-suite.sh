@@ -28,6 +28,7 @@ FAIL_ON_REGRESSION=false
 PERFORMANCE_BASELINE=""
 COMPARISON_MODE=false
 GENERATE_REPORTS=true
+VISUALIZE=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -99,6 +100,7 @@ OPTIONS:
         -o, --output DIR            Output directory (default: $OUTPUT_DIR)
         --no-reports                Skip HTML/CSV report generation
         --json-only                 Output only JSON results
+        --visualize                 Open results in jmh.morethan.io after completion
         --verbose                   Verbose logging
         --quiet                     Minimal output
 
@@ -262,6 +264,10 @@ parse_arguments() {
                 ;;
             --quiet)
                 quiet=true
+                shift
+                ;;
+            --visualize)
+                VISUALIZE=true
                 shift
                 ;;
             --quick)
@@ -643,6 +649,16 @@ main() {
     # Cleanup
     cleanup
     
+    # Visualization (after reports generated)
+    if [[ "$VISUALIZE" == true && -f "$RESULTS_FILE" ]]; then
+        log_info "Opening results in browser..."
+        if [[ -x "$SCRIPT_DIR/scripts/view-benchmarks.sh" ]]; then
+            "$SCRIPT_DIR/scripts/view-benchmarks.sh" "$RESULTS_FILE" &
+        else
+            log_warning "Visualizer script not found: $SCRIPT_DIR/scripts/view-benchmarks.sh"
+        fi
+    fi
+
     # Final status
     if [[ "$CI_MODE" == true ]]; then
         echo "benchmark_results_file=$RESULTS_FILE"

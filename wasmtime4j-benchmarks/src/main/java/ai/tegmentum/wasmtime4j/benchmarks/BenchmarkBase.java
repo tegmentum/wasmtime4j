@@ -43,153 +43,36 @@ public abstract class BenchmarkBase {
   protected WasmRuntime runtime;
 
   /**
-   * Sample WebAssembly module for basic arithmetic operations. This simple module adds two i32
-   * values and returns the result.
+   * Simple WebAssembly module that adds two i32 values. Exports: add(i32, i32) -> i32.
    */
-  protected static final byte[] SIMPLE_WASM_MODULE = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic number
-    0x01,
-    0x00,
-    0x00,
-    0x00, // WASM version
-    0x01,
-    0x07, // Type section
-    0x01, // 1 type
-    0x60,
-    0x02,
-    0x7f,
-    0x7f,
-    0x01,
-    0x7f, // (i32, i32) -> i32
-    0x03,
-    0x02, // Function section
-    0x01,
-    0x00, // 1 function, type 0
-    0x07,
-    0x07, // Export section
-    0x01,
-    0x03,
-    0x61,
-    0x64,
-    0x64,
-    0x00,
-    0x00, // export "add" as function 0
-    0x0a,
-    0x09, // Code section
-    0x01,
-    0x07,
-    0x00, // 1 function, 7 bytes, 0 locals
-    0x20,
-    0x00, // local.get 0
-    0x20,
-    0x01, // local.get 1
-    0x6a, // i32.add
-    0x0b // end
-  };
+  protected static final String SIMPLE_WAT_MODULE =
+      "(module\n"
+          + "  (func $add (export \"add\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.add))\n";
 
   /**
-   * More complex WebAssembly module for performance testing with loops and memory operations. This
-   * module includes memory allocation and a loop-based computation.
+   * Complex WebAssembly module with memory for performance testing. Exports: fibonacci(i32) ->
+   * i32, memory.
    */
-  protected static final byte[] COMPLEX_WASM_MODULE = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic number
-    0x01,
-    0x00,
-    0x00,
-    0x00, // WASM version
-    0x01,
-    0x0a, // Type section
-    0x02, // 2 types
-    0x60,
-    0x01,
-    0x7f,
-    0x01,
-    0x7f, // Type 0: (i32) -> i32
-    0x60,
-    0x02,
-    0x7f,
-    0x7f,
-    0x01,
-    0x7f, // Type 1: (i32, i32) -> i32
-    0x03,
-    0x03, // Function section
-    0x02,
-    0x00,
-    0x01, // 2 functions, types 0 and 1
-    0x05,
-    0x03, // Memory section
-    0x01,
-    0x00,
-    0x01, // 1 memory, min 1 page
-    0x07,
-    0x15, // Export section
-    0x02, // 2 exports
-    0x08,
-    0x66,
-    0x69,
-    0x62,
-    0x6f,
-    0x6e,
-    0x61,
-    0x63,
-    0x69,
-    0x00,
-    0x00, // "fibonacci" function 0
-    0x06,
-    0x6d,
-    0x65,
-    0x6d,
-    0x6f,
-    0x72,
-    0x79,
-    0x02,
-    0x00, // "memory" memory 0
-    0x0a,
-    0x20, // Code section
-    0x02, // 2 functions
-    // Function 0: fibonacci(n)
-    0x1d,
-    0x00, // 29 bytes, 0 locals
-    0x20,
-    0x00, // local.get 0
-    0x41,
-    0x02, // i32.const 2
-    0x49, // i32.lt_s
-    0x04,
-    0x7f, // if i32
-    0x20,
-    0x00, // local.get 0
-    0x05, // else
-    0x20,
-    0x00, // local.get 0
-    0x41,
-    0x01, // i32.const 1
-    0x6b, // i32.sub
-    0x10,
-    0x00, // call 0 (recursive)
-    0x20,
-    0x00, // local.get 0
-    0x41,
-    0x02, // i32.const 2
-    0x6b, // i32.sub
-    0x10,
-    0x00, // call 0 (recursive)
-    0x6a, // i32.add
-    0x0b, // end if
-    0x0b, // end function
-    // Function 1: sum(start, end)
-    0x02,
-    0x00, // 2 bytes, 0 locals (placeholder)
-    0x41,
-    0x00, // i32.const 0
-    0x0b // end function
-  };
+  protected static final String COMPLEX_WAT_MODULE =
+      "(module\n"
+          + "  (memory (export \"memory\") 1 16)\n"
+          + "  (func $fibonacci (export \"fibonacci\") (param i32) (result i32)\n"
+          + "    (if (result i32) (i32.lt_s (local.get 0) (i32.const 2))\n"
+          + "      (then (local.get 0))\n"
+          + "      (else\n"
+          + "        (i32.add\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 2)))))))\n"
+          + "  (func $sum (export \"sum\") (param i32 i32) (result i32)\n"
+          + "    i32.const 0))\n";
+
+  // Legacy byte array references - kept for backward compatibility with benchmarks that use bytes
+  // These are now lazily compiled from WAT format
+  protected static final byte[] SIMPLE_WASM_MODULE = null;
+  protected static final byte[] COMPLEX_WASM_MODULE = null;
 
   /**
    * Gets the current Java version for runtime selection logic.
@@ -278,6 +161,19 @@ public abstract class BenchmarkBase {
       throws WasmException {
     validateWasmModule(wasmBytes);
     return engine.compileModule(wasmBytes);
+  }
+
+  /**
+   * Compiles a WebAssembly module from WAT (WebAssembly Text) format.
+   *
+   * @param engine the WebAssembly engine
+   * @param wat the WebAssembly module in text format
+   * @return the compiled WebAssembly module
+   * @throws WasmException if module compilation fails
+   */
+  protected static Module compileWatModule(final Engine engine, final String wat)
+      throws WasmException {
+    return engine.compileWat(wat);
   }
 
   /**

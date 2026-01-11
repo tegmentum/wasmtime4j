@@ -79,8 +79,6 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   /** WebAssembly memory instance. */
   private WasmMemory wasmMemory;
 
-  /** Current module bytecode. */
-  private byte[] moduleBytes;
 
   /** Test data for memory operations. */
   private byte[] testData;
@@ -102,11 +100,8 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     engine = createEngine(runtime);
     store = createStore(engine);
 
-    // Use complex module which includes memory
-    moduleBytes = COMPLEX_WASM_MODULE.clone();
-
-    // Compile and instantiate module
-    module = compileModule(engine, moduleBytes);
+    // Use complex module which includes memory - compile from WAT format
+    module = compileWatModule(engine, COMPLEX_WAT_MODULE);
     instance = instantiateModule(store, module);
 
     // Get WebAssembly memory
@@ -141,7 +136,6 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
     cleanup();
     testData = null;
     randomOffsets = null;
-    moduleBytes = null;
   }
 
   /** Helper method to clean up WebAssembly resources. */
