@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -45,6 +46,12 @@ public final class PanamaInstance implements Instance {
   private final long createdAtMicros;
   private final AtomicBoolean disposed = new AtomicBoolean(false);
   private volatile boolean closed = false;
+
+  // Optimization: Shared arena for function calls (lazy initialized to avoid constructor overhead)
+  private volatile Arena callArena;
+  // Optimization: Cache function name MemorySegments to avoid repeated string encoding
+  private final ConcurrentHashMap<String, MemorySegment> functionNameCache =
+      new ConcurrentHashMap<>();
 
   /**
    * Creates a new Panama instance.
@@ -116,6 +123,25 @@ public final class PanamaInstance implements Instance {
    */
   private Arena getArena() {
     return store.getArena();
+  }
+
+  /**
+   * Gets or creates the shared arena for caching function name segments.
+   * Uses double-checked locking for thread-safe lazy initialization.
+   *
+   * @return the shared call arena
+   */
+  private Arena getCallArena() {
+    Arena arena = callArena;
+    if (arena == null) {
+      synchronized (this) {
+        arena = callArena;
+        if (arena == null) {
+          callArena = arena = Arena.ofShared();
+        }
+      }
+    }
+    return arena;
   }
 
   @Override
@@ -589,15 +615,17 @@ public final class PanamaInstance implements Instance {
     // Maximum possible results (conservative estimate)
     final int maxResults = 16;
 
-    try (final Arena callArena = Arena.ofConfined()) {
-      // Allocate native memory for function name (C string)
-      final MemorySegment functionNameSegment =
-          callArena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+    // Get or create cached function name segment (avoids repeated string encoding)
+    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
+        functionName,
+        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
+    // Use temporary arena for per-call params and results
+    try (final Arena tempArena = Arena.ofConfined()) {
       // Allocate and marshal parameters
       final MemorySegment paramsSegment;
       if (params != null && params.length > 0) {
-        paramsSegment = callArena.allocate(params.length * 20L); // 20 bytes per WasmValue
+        paramsSegment = tempArena.allocate(params.length * 20L); // 20 bytes per WasmValue
         for (int i = 0; i < params.length; i++) {
           marshalWasmValue(params[i], paramsSegment, i);
         }
@@ -605,12 +633,8 @@ public final class PanamaInstance implements Instance {
         paramsSegment = MemorySegment.NULL;
       }
 
-      // Allocate results buffer (zeroed)
-      final MemorySegment resultsSegment = callArena.allocate(maxResults * 20L);
-      // Zero out the results buffer
-      for (long i = 0; i < maxResults * 20L; i++) {
-        resultsSegment.set(ValueLayout.JAVA_BYTE, i, (byte) 0);
-      }
+      // Allocate results buffer - Arena.allocate returns zero-initialized memory
+      final MemorySegment resultsSegment = tempArena.allocate(maxResults * 20L);
 
       // Call native function
       final long resultCount =
@@ -987,11 +1011,16 @@ public final class PanamaInstance implements Instance {
 
     try {
       disposed.set(true);
+      // Clear function name cache
+      functionNameCache.clear();
+      // Close call arena (releases cached function name segments)
+      if (callArena != null && callArena.scope().isAlive()) {
+        callArena.close();
+      }
       // Destroy native instance
       if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.instanceDestroy(nativeInstance);
       }
-      // Note: Arena is owned by the store, so we don't close it here
       closed = true;
       LOGGER.fine("Closed Panama instance");
     } catch (final Exception e) {
