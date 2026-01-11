@@ -8145,26 +8145,12 @@ public final class NativeFunctionBindings {
    */
   public MemorySegment panamaLinkerInstantiate(
       final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
-    System.err.println(
-        "[BINDINGS] panamaLinkerInstantiate called with linkerPtr="
-            + linkerPtr.address()
-            + " storePtr="
-            + storePtr.address()
-            + " modulePtr="
-            + modulePtr.address());
-    System.err.flush();
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(modulePtr, "modulePtr");
 
-    System.err.println("[BINDINGS] About to callNativeFunction wasmtime4j_linker_instantiate");
-    System.err.flush();
-    MemorySegment result =
-        callNativeFunction(
-            "wasmtime4j_linker_instantiate", MemorySegment.class, linkerPtr, storePtr, modulePtr);
-    System.err.println("[BINDINGS] callNativeFunction returned: " + result);
-    System.err.flush();
-    return result;
+    return callNativeFunction(
+        "wasmtime4j_linker_instantiate", MemorySegment.class, linkerPtr, storePtr, modulePtr);
   }
 
   /**
@@ -8403,12 +8389,7 @@ public final class NativeFunctionBindings {
     }
 
     try {
-      System.err.println("[BINDINGS] callNativeFunction invoking " + functionName);
-      System.err.println("[BINDINGS] methodHandle = " + methodHandle.get());
-      System.err.flush();
       Object result = methodHandle.get().invokeWithArguments(args);
-      System.err.println("[BINDINGS] invokeWithArguments returned: " + result);
-      System.err.flush();
 
       if (returnType == Void.class) {
         return null;
@@ -8416,7 +8397,6 @@ public final class NativeFunctionBindings {
         return returnType.cast(result);
       }
     } catch (Throwable e) {
-      System.err.println("[BINDINGS] Exception during native call: " + e.getClass().getName());
       LOGGER.warning("Native function call failed: " + functionName + " - " + e.getMessage());
       throw new IllegalStateException("Native function call failed: " + functionName, e);
     }

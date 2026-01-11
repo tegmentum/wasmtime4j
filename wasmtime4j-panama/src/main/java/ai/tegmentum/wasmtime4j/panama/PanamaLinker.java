@@ -420,42 +420,24 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
-    System.err.println("[PANAMA] instantiate() ENTERED");
-    System.err.flush();
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    System.err.println("[PANAMA] About to call ensureNotClosed");
-    System.err.flush();
     ensureNotClosed();
-    System.err.println("[PANAMA] ensureNotClosed passed");
-    System.err.flush();
 
     // Ensure we have Panama implementations
-    System.err.println(
-        "[PANAMA] Checking store instanceof PanamaStore: " + (store instanceof PanamaStore));
-    System.err.flush();
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be a PanamaStore");
     }
-    System.err.println(
-        "[PANAMA] Checking module instanceof PanamaModule: " + (module instanceof PanamaModule));
-    System.err.flush();
     if (!(module instanceof PanamaModule)) {
       throw new IllegalArgumentException("Module must be a PanamaModule");
     }
 
-    System.err.println("[PANAMA] About to cast store to PanamaStore");
-    System.err.flush();
     final PanamaStore panamaStore = (PanamaStore) store;
-    System.err.println("[PANAMA] About to cast module to PanamaModule");
-    System.err.flush();
     final PanamaModule panamaModule = (PanamaModule) module;
-    System.err.println("[PANAMA] wasiContext=" + wasiContext);
-    System.err.flush();
 
     // If we have a WASI context, attach it to the store before instantiation
     if (wasiContext != null) {
@@ -474,20 +456,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     // Call native function to instantiate module using linker
-    System.err.println("[PANAMA] About to call panamaLinkerInstantiate");
-    System.err.flush();
     final MemorySegment instancePtr =
         NATIVE_BINDINGS.panamaLinkerInstantiate(
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
-    System.err.println("[PANAMA] panamaLinkerInstantiate returned: " + instancePtr);
-    System.err.println("[PANAMA] instancePtr == null: " + (instancePtr == null));
-    System.err.println(
-        "[PANAMA] instancePtr.address(): " + (instancePtr != null ? instancePtr.address() : "N/A"));
-    System.err.flush();
 
     if (instancePtr == null || instancePtr.address() == 0) {
-      System.err.println("[PANAMA] About to throw WasmException for null instance");
-      System.err.flush();
       throw new WasmException("Failed to instantiate module via linker");
     }
 

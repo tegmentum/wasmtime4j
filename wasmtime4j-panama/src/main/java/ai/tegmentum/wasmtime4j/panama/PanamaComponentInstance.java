@@ -157,14 +157,6 @@ final class PanamaComponentInstance implements ComponentInstance {
       final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
       final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
 
-      System.err.println(
-          "JAVA: About to call enhancedComponentInvoke: function="
-              + functionName
-              + ", instanceId="
-              + instanceId
-              + ", paramsCount="
-              + paramsCount);
-
       // Call enhanced component invoke with instance ID
       final int errorCode =
           NATIVE_BINDINGS.enhancedComponentInvoke(
@@ -176,10 +168,7 @@ final class PanamaComponentInstance implements ComponentInstance {
               resultsOut,
               resultsCountOut);
 
-      System.err.println("JAVA: enhancedComponentInvoke returned errorCode=" + errorCode);
-
       if (errorCode != 0) {
-        System.err.println("JAVA: Error invoking function, throwing exception");
         throw new WasmException(
             "Failed to invoke component function '"
                 + functionName

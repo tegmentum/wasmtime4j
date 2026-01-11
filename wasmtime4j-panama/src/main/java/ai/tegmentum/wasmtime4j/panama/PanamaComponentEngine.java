@@ -173,16 +173,10 @@ public final class PanamaComponentEngine implements ComponentEngine {
     try (Arena tempArena = Arena.ofConfined()) {
       final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-      System.err.println("JAVA: About to call enhancedComponentInstantiate");
-      System.err.println("JAVA: engineHandle=" + enhancedEngineHandle);
-      System.err.println("JAVA: componentHandle=" + panamaComponent.getNativeHandle());
-
       // Call enhanced instantiation which returns instance ID
       final int errorCode =
           NATIVE_BINDINGS.enhancedComponentInstantiate(
               enhancedEngineHandle, panamaComponent.getNativeHandle(), instanceIdOut);
-
-      System.err.println("JAVA: enhancedComponentInstantiate returned errorCode=" + errorCode);
 
       if (errorCode != 0) {
         throw new WasmException("Failed to instantiate component (error code: " + errorCode + ")");
