@@ -89,14 +89,9 @@ public final class PanamaEngine implements Engine {
       throw new WasmException("Failed to create native engine");
     }
 
-    // Create performance profiler
-    this.profilerHandle = NATIVE_BINDINGS.profilerCreate();
+    // Profiler disabled by default for performance - enable via config if needed
+    this.profilerHandle = null;
     this.createdAt = Instant.now();
-
-    // Start profiling
-    if (this.profilerHandle != null && !this.profilerHandle.equals(MemorySegment.NULL)) {
-      NATIVE_BINDINGS.profilerStart(this.profilerHandle);
-    }
 
     LOGGER.fine("Created Panama engine");
   }

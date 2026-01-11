@@ -41,7 +41,6 @@ public final class PanamaInstance implements Instance {
 
   private final PanamaModule module;
   private final PanamaStore store;
-  private final Arena arena;
   private final MemorySegment nativeInstance;
   private final long createdAtMicros;
   private final AtomicBoolean disposed = new AtomicBoolean(false);
@@ -70,7 +69,6 @@ public final class PanamaInstance implements Instance {
 
     this.module = module;
     this.store = store;
-    this.arena = Arena.ofConfined();
     this.createdAtMicros = System.currentTimeMillis() * 1000L;
 
     // Create native instance via Panama FFI
@@ -78,7 +76,6 @@ public final class PanamaInstance implements Instance {
         NATIVE_BINDINGS.instanceCreate(store.getNativeStore(), module.getNativeModule());
 
     if (this.nativeInstance == null || this.nativeInstance.equals(MemorySegment.NULL)) {
-      arena.close();
       throw new WasmException("Failed to create native instance");
     }
 
@@ -107,10 +104,18 @@ public final class PanamaInstance implements Instance {
     this.nativeInstance = nativeInstance;
     this.module = module;
     this.store = store;
-    this.arena = Arena.ofConfined();
     this.createdAtMicros = System.currentTimeMillis() * 1000L;
 
     LOGGER.fine("Wrapped native instance pointer");
+  }
+
+  /**
+   * Gets the arena from the store for temporary allocations.
+   *
+   * @return the store's arena
+   */
+  private Arena getArena() {
+    return store.getArena();
   }
 
   @Override
@@ -124,7 +129,7 @@ public final class PanamaInstance implements Instance {
     final int exportKind =
         NATIVE_BINDINGS.moduleGetExportKind(
             module.getNativeModule(),
-            arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+            getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
     if (exportKind != 1) {
@@ -170,7 +175,7 @@ public final class PanamaInstance implements Instance {
 
     // Check if the global export exists by calling native
     final MemorySegment nameSegment =
-        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
     final int result =
         NATIVE_BINDINGS.instanceHasGlobalExport(
             nativeInstance, store.getNativeStore(), nameSegment);
@@ -181,8 +186,8 @@ public final class PanamaInstance implements Instance {
     }
 
     // Query the global's type and mutability from the instance
-    final MemorySegment valueTypeOut = arena.allocate(ValueLayout.JAVA_INT);
-    final MemorySegment isMutableOut = arena.allocate(ValueLayout.JAVA_INT);
+    final MemorySegment valueTypeOut = getArena().allocate(ValueLayout.JAVA_INT);
+    final MemorySegment isMutableOut = getArena().allocate(ValueLayout.JAVA_INT);
     final int typeResult =
         NATIVE_BINDINGS.instanceGetGlobalType(
             nativeInstance, store.getNativeStore(), nameSegment, valueTypeOut, isMutableOut);
@@ -231,7 +236,7 @@ public final class PanamaInstance implements Instance {
 
     // Check if the memory export exists by calling native
     final MemorySegment nameSegment =
-        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
     final int result =
         NATIVE_BINDINGS.instanceHasMemoryExport(
             nativeInstance, store.getNativeStore(), nameSegment);
@@ -277,7 +282,7 @@ public final class PanamaInstance implements Instance {
     ensureNotClosed();
 
     final MemorySegment nameSegment =
-        arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
     final MemorySegment tablePtr =
         NATIVE_BINDINGS.instanceGetTableByName(nativeInstance, store.getNativeStore(), nameSegment);
 
@@ -986,7 +991,7 @@ public final class PanamaInstance implements Instance {
       if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.instanceDestroy(nativeInstance);
       }
-      arena.close();
+      // Note: Arena is owned by the store, so we don't close it here
       closed = true;
       LOGGER.fine("Closed Panama instance");
     } catch (final Exception e) {

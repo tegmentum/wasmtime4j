@@ -48,6 +48,7 @@ public final class ArenaResourceManager implements AutoCloseable {
 
   // Resource tracking
   private final Arena arena;
+  private final boolean ownsArena;
   private final ConcurrentHashMap<Long, ManagedResource> resources;
   private final List<ManagedNativeResource> managedResources;
   private final AtomicLong resourceIdGenerator;
@@ -58,7 +59,7 @@ public final class ArenaResourceManager implements AutoCloseable {
 
   /** Creates a new arena resource manager with a shared arena. */
   public ArenaResourceManager() {
-    this(Arena.ofShared(), true);
+    this(Arena.ofShared(), true, true);
   }
 
   /**
@@ -67,17 +68,33 @@ public final class ArenaResourceManager implements AutoCloseable {
    * @return new arena resource manager with global scope
    */
   public static ArenaResourceManager createGlobal() {
-    return new ArenaResourceManager(Arena.ofShared(), true);
+    return new ArenaResourceManager(Arena.ofShared(), true, true);
   }
 
   /**
    * Creates a new arena resource manager with the specified arena.
    *
+   * <p>The arena is NOT owned by this manager and will NOT be closed when the manager is closed.
+   * The caller is responsible for closing the arena.
+   *
    * @param arena the arena to use for resource management
    * @param trackingEnabled whether to enable resource tracking
    */
   public ArenaResourceManager(final Arena arena, final boolean trackingEnabled) {
+    this(arena, trackingEnabled, false);
+  }
+
+  /**
+   * Creates a new arena resource manager with the specified arena and ownership.
+   *
+   * @param arena the arena to use for resource management
+   * @param trackingEnabled whether to enable resource tracking
+   * @param ownsArena whether this manager owns the arena and should close it
+   */
+  private ArenaResourceManager(
+      final Arena arena, final boolean trackingEnabled, final boolean ownsArena) {
     this.arena = Objects.requireNonNull(arena, "Arena cannot be null");
+    this.ownsArena = ownsArena;
     this.trackingEnabled = trackingEnabled;
     this.resources = trackingEnabled ? new ConcurrentHashMap<>() : null;
     this.managedResources = trackingEnabled ? new CopyOnWriteArrayList<>() : null;
@@ -325,8 +342,8 @@ public final class ArenaResourceManager implements AutoCloseable {
                 + getResourceTrackingInfo());
       }
 
-      // Close the arena (this will free all allocated memory)
-      if (arena.scope().isAlive()) {
+      // Close the arena only if we own it (this will free all allocated memory)
+      if (ownsArena && arena.scope().isAlive()) {
         arena.close();
       }
 

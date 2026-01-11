@@ -21,6 +21,18 @@ public final class PanamaErrorHandler {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaErrorHandler.class.getName());
 
+  /** Singleton instance - this class is stateless so one instance is sufficient. */
+  private static final PanamaErrorHandler INSTANCE = new PanamaErrorHandler();
+
+  /**
+   * Gets the singleton instance of the error handler.
+   *
+   * @return the singleton error handler instance
+   */
+  public static PanamaErrorHandler getInstance() {
+    return INSTANCE;
+  }
+
   // Native error code constants (must match the Rust error.rs enum ErrorCode exactly)
   /** No error occurred. */
   private static final int NATIVE_ERROR_NONE = 0;
@@ -79,9 +91,9 @@ public final class PanamaErrorHandler {
   /** Internal system error. */
   private static final int NATIVE_ERROR_INTERNAL = -18;
 
-  /** Default constructor for creating error handler instances. */
-  public PanamaErrorHandler() {
-    // Error handler instances can be created for use with host functions
+  /** Private constructor for singleton pattern. */
+  private PanamaErrorHandler() {
+    // Singleton - use getInstance()
   }
 
   /**

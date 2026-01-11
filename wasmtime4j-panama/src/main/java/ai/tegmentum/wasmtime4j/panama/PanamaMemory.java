@@ -1,10 +1,12 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.logging.Logger;
 
 /**
@@ -18,12 +20,35 @@ public final class PanamaMemory implements WasmMemory {
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
+  // Buffer pool constants for optimized memory operations
+  private static final int SMALL_BUFFER_SIZE = 4096; // 4KB
+  private static final int MEDIUM_BUFFER_SIZE = 65536; // 64KB
+  private static final long BUFFER_CACHE_VALIDITY_MS = 100; // Cache validity in milliseconds
+
   private final Arena arena;
   private final MemorySegment nativeMemory;
   private final String memoryName;
   private final PanamaInstance instance;
   private final PanamaStore store; // For memories created directly by store (instance will be null)
   private volatile boolean closed = false;
+
+  // Performance optimization: cached memory pointer to avoid repeated lookups
+  private volatile MemorySegment cachedMemoryPointer;
+
+  // Performance optimization: reusable buffers to avoid per-operation allocations
+  private final Arena bufferArena;
+  private volatile MemorySegment smallBuffer;
+  private volatile MemorySegment mediumBuffer;
+
+  // Performance optimization: cached ByteBuffer for getBuffer() calls
+  private volatile ByteBuffer cachedByteBuffer;
+  private volatile long cachedByteBufferSize;
+  private volatile long lastByteBufferCheck;
+
+  // Performance optimization: direct zero-copy access to WASM linear memory
+  private volatile MemorySegment directMemorySegment;
+  private volatile long directMemorySize;
+  private volatile ByteBuffer directByteBuffer;
 
   /**
    * Package-private constructor for wrapping an exported memory.
@@ -39,6 +64,7 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Instance cannot be null");
     }
     this.arena = Arena.ofShared();
+    this.bufferArena = Arena.ofShared();
     this.nativeMemory = MemorySegment.NULL; // Not used for instance-exported memories
     this.memoryName = memoryName;
     this.instance = instance;
@@ -60,6 +86,7 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Store cannot be null");
     }
     this.arena = Arena.ofShared();
+    this.bufferArena = Arena.ofShared();
     this.nativeMemory = nativeMemory;
     this.memoryName = null; // Store-created memories don't have a name
     this.instance = null; // Memories created by store don't have an instance
@@ -85,7 +112,14 @@ public final class PanamaMemory implements WasmMemory {
     if (instance == null) {
       throw new IllegalStateException("Cannot grow: memory not associated with an instance");
     }
-    return instance.growMemory(this, pages);
+    final int result = instance.growMemory(this, pages);
+
+    // Invalidate cached direct memory segment since grow may relocate memory
+    if (result >= 0) {
+      invalidateDirectMemoryCache();
+    }
+
+    return result;
   }
 
   @Override
@@ -96,12 +130,41 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_BUF",
+      justification = "Returns duplicate() of buffer, not the internal reference")
   public ByteBuffer getBuffer() {
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot get buffer: memory not associated with an instance");
+
+    final long currentTime = System.currentTimeMillis();
+
+    // Performance optimization: use cached ByteBuffer if still valid
+    if (cachedByteBuffer != null
+        && (currentTime - lastByteBufferCheck) < BUFFER_CACHE_VALIDITY_MS) {
+      // Check if memory size changed (due to grow)
+      final long currentSizeBytes = (long) getSize() * PAGE_SIZE;
+      if (currentSizeBytes == cachedByteBufferSize) {
+        return cachedByteBuffer.duplicate();
+      }
     }
-    return instance.getMemoryBuffer(this);
+
+    // Get current memory size
+    final long sizeBytes = (long) getSize() * PAGE_SIZE;
+    if (sizeBytes > Integer.MAX_VALUE) {
+      throw new IllegalStateException("Memory too large for ByteBuffer: " + sizeBytes + " bytes");
+    }
+
+    // Read entire memory into ByteBuffer
+    final byte[] data = new byte[(int) sizeBytes];
+    if (sizeBytes > 0) {
+      readBytes(0, data, 0, (int) sizeBytes);
+    }
+
+    cachedByteBuffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    cachedByteBufferSize = sizeBytes;
+    lastByteBufferCheck = currentTime;
+
+    return cachedByteBuffer.duplicate();
   }
 
   @Override
@@ -155,10 +218,23 @@ public final class PanamaMemory implements WasmMemory {
               + dest.length);
     }
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot read: memory not associated with an instance");
+
+    // Performance optimization: zero-copy direct memory access
+    final MemorySegment directMem = getDirectMemorySegment();
+
+    // Bounds check against cached size
+    if ((long) offset + length > directMemorySize) {
+      throw new IndexOutOfBoundsException(
+          "Memory access out of bounds: offset="
+              + offset
+              + ", length="
+              + length
+              + ", size="
+              + directMemorySize);
     }
-    instance.readMemoryBytes(this, offset, dest, destOffset, length);
+
+    // Direct copy from native memory to Java array
+    MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
   }
 
   @Override
@@ -186,10 +262,23 @@ public final class PanamaMemory implements WasmMemory {
               + src.length);
     }
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot write: memory not associated with an instance");
+
+    // Performance optimization: zero-copy direct memory access
+    final MemorySegment directMem = getDirectMemorySegment();
+
+    // Bounds check against cached size
+    if ((long) offset + length > directMemorySize) {
+      throw new IndexOutOfBoundsException(
+          "Memory access out of bounds: offset="
+              + offset
+              + ", length="
+              + length
+              + ", size="
+              + directMemorySize);
     }
-    instance.writeMemoryBytes(this, offset, src, srcOffset, length);
+
+    // Direct copy from Java array to native memory
+    MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);
   }
 
   @Override
@@ -386,16 +475,131 @@ public final class PanamaMemory implements WasmMemory {
    * @return memory segment pointer
    */
   private MemorySegment getMemoryPointer() {
+    // Performance optimization: return cached pointer if available
+    if (cachedMemoryPointer != null) {
+      return cachedMemoryPointer;
+    }
+
     if (instance != null && memoryName != null) {
-      // For instance-exported memories, look up by name
+      // For instance-exported memories, look up by name and cache
       final MemorySegment nameSegment = arena.allocateFrom(memoryName);
       final PanamaStore actualStore = getPanamaStore();
-      return NATIVE_BINDINGS.instanceGetMemoryByName(
-          instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
+      cachedMemoryPointer =
+          NATIVE_BINDINGS.instanceGetMemoryByName(
+              instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
+      return cachedMemoryPointer;
     } else {
-      // For store-created memories, use cached pointer
+      // For store-created memories, use the native pointer directly
+      cachedMemoryPointer = nativeMemory;
       return nativeMemory;
     }
+  }
+
+  /**
+   * Gets a reusable buffer from the pool, or allocates a new one for large requests.
+   *
+   * @param size the required buffer size
+   * @return a memory segment buffer of at least the requested size
+   */
+  private MemorySegment getReusableBuffer(final int size) {
+    if (size <= SMALL_BUFFER_SIZE) {
+      if (smallBuffer == null) {
+        smallBuffer = bufferArena.allocate(SMALL_BUFFER_SIZE);
+      }
+      return smallBuffer;
+    } else if (size <= MEDIUM_BUFFER_SIZE) {
+      if (mediumBuffer == null) {
+        mediumBuffer = bufferArena.allocate(MEDIUM_BUFFER_SIZE);
+      }
+      return mediumBuffer;
+    }
+    // Large buffers: allocate fresh (will be collected when no longer referenced)
+    return bufferArena.allocate(size);
+  }
+
+  /**
+   * Gets a direct zero-copy memory segment for the WASM linear memory.
+   *
+   * <p>This method uses the native panamaMemoryGetData function to obtain a raw pointer to the WASM
+   * linear memory, then creates a MemorySegment that directly maps to it. This enables zero-copy
+   * read/write operations.
+   *
+   * <p>The segment is cached and only refreshed when needed (e.g., after memory.grow()).
+   *
+   * @return a MemorySegment directly mapping the WASM linear memory
+   */
+  private MemorySegment getDirectMemorySegment() {
+    // Return cached segment if available
+    if (directMemorySegment != null) {
+      return directMemorySegment;
+    }
+
+    final MemorySegment memPtr = getMemoryPointer();
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment storePtr = getNativeStorePointer();
+
+    // Allocate output pointers for data pointer and size
+    final MemorySegment dataPtrOut = arena.allocate(ValueLayout.ADDRESS);
+    final MemorySegment sizeOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+    final int result = NATIVE_BINDINGS.panamaMemoryGetData(memPtr, storePtr, dataPtrOut, sizeOut);
+
+    if (result != 0) {
+      throw new RuntimeException("Failed to get memory data pointer: error code " + result);
+    }
+
+    final long rawPtr = dataPtrOut.get(ValueLayout.ADDRESS, 0).address();
+    final long size = sizeOut.get(ValueLayout.JAVA_LONG, 0);
+
+    if (rawPtr == 0) {
+      throw new IllegalStateException("Memory data pointer is null");
+    }
+
+    // Create a MemorySegment that directly maps to the WASM linear memory
+    directMemorySegment = MemorySegment.ofAddress(rawPtr).reinterpret(size);
+    directMemorySize = size;
+
+    return directMemorySegment;
+  }
+
+  /**
+   * Gets a direct ByteBuffer that maps to the WASM linear memory.
+   *
+   * <p>This provides zero-copy access to the WASM memory through a DirectByteBuffer, which can be
+   * faster than MemorySegment.copy() for small operations.
+   *
+   * @return a ByteBuffer directly mapping the WASM linear memory
+   */
+  private ByteBuffer getDirectByteBuffer() {
+    // Return cached ByteBuffer if available and valid
+    if (directByteBuffer != null) {
+      return directByteBuffer;
+    }
+
+    // Get the direct memory segment first
+    final MemorySegment directMem = getDirectMemorySegment();
+
+    // Create a ByteBuffer view of the memory segment
+    directByteBuffer = directMem.asByteBuffer().order(ByteOrder.LITTLE_ENDIAN);
+
+    return directByteBuffer;
+  }
+
+  /**
+   * Invalidates the cached direct memory segment.
+   *
+   * <p>This must be called after any operation that may invalidate the memory pointer, such as
+   * memory.grow().
+   */
+  private void invalidateDirectMemoryCache() {
+    directMemorySegment = null;
+    directMemorySize = 0;
+    directByteBuffer = null;
+    cachedByteBuffer = null;
+    cachedByteBufferSize = 0;
   }
 
   @Override
@@ -976,8 +1180,19 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     try {
-      // TODO: Destroy native memory if created by store
+      // Clear cached resources
+      cachedMemoryPointer = null;
+      smallBuffer = null;
+      mediumBuffer = null;
+      cachedByteBuffer = null;
+      directMemorySegment = null;
+      directMemorySize = 0;
+      directByteBuffer = null;
+
+      // Close arenas
+      bufferArena.close();
       arena.close();
+
       closed = true;
       LOGGER.fine("Closed Panama memory");
     } catch (final Exception e) {

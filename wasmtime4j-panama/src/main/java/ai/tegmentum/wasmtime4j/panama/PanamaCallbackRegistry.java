@@ -63,7 +63,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
   private final PanamaErrorHandler errorHandler;
   private final ConcurrentHashMap<Long, CallbackEntry> callbacks = new ConcurrentHashMap<>();
   private final AtomicLong nextCallbackId = new AtomicLong(1L);
-  private final ScheduledExecutorService asyncExecutor;
+  private volatile ScheduledExecutorService asyncExecutor; // Lazy initialized
   private final CallbackMetricsImpl metrics = new CallbackMetricsImpl();
   private volatile boolean closed = false;
 
@@ -104,18 +104,34 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
     this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
-    this.asyncExecutor =
-        Executors.newScheduledThreadPool(
-            4,
-            r -> {
-              final Thread t = new Thread(r, "wasmtime4j-panama-async-callback");
-              t.setDaemon(true);
-              return t;
-            });
+    // asyncExecutor is lazy initialized when first needed
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine("Created Panama callback registry for store");
     }
+  }
+
+  /**
+   * Gets the async executor, creating it lazily if needed.
+   *
+   * @return the scheduled executor service for async callbacks
+   */
+  private ScheduledExecutorService getAsyncExecutor() {
+    if (asyncExecutor == null) {
+      synchronized (this) {
+        if (asyncExecutor == null) {
+          asyncExecutor =
+              Executors.newScheduledThreadPool(
+                  4,
+                  r -> {
+                    final Thread t = new Thread(r, "wasmtime4j-panama-async-callback");
+                    t.setDaemon(true);
+                    return t;
+                  });
+        }
+      }
+    }
+    return asyncExecutor;
   }
 
   @Override
@@ -368,15 +384,9 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
         }
         callbacks.clear();
 
-        // Shutdown async executor
-        asyncExecutor.shutdown();
-        try {
-          if (!asyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-            asyncExecutor.shutdownNow();
-          }
-        } catch (InterruptedException e) {
+        // Shutdown async executor only if it was created
+        if (asyncExecutor != null) {
           asyncExecutor.shutdownNow();
-          Thread.currentThread().interrupt();
         }
 
         if (LOGGER.isLoggable(Level.FINE)) {

@@ -3555,6 +3555,47 @@ public final class NativeFunctionBindings {
         "wasmtime4j_panama_memory_size_bytes", Integer.class, memoryPtr, storePtr, sizeOutPtr);
   }
 
+  /**
+   * Gets raw pointer to WASM linear memory for zero-copy access.
+   *
+   * <p>This provides direct access to the WebAssembly linear memory without copying, enabling
+   * high-performance memory operations.
+   *
+   * <p><strong>WARNING:</strong> The returned pointer is only valid while:
+   *
+   * <ul>
+   *   <li>The memory instance is alive
+   *   <li>The store is alive
+   *   <li>No memory.grow() operations are performed
+   * </ul>
+   *
+   * <p>After memory.grow(), the pointer may be invalidated and must be re-obtained.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param dataPtrOutPtr pointer to store the raw memory data pointer
+   * @param sizeOutPtr pointer to store the memory size in bytes
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGetData(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment dataPtrOutPtr,
+      final MemorySegment sizeOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(dataPtrOutPtr, "dataPtrOutPtr");
+    validatePointer(sizeOutPtr, "sizeOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_get_data",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        dataPtrOutPtr,
+        sizeOutPtr);
+  }
+
   // Error Handling Functions
 
   /**
@@ -4706,6 +4747,15 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // memory_ptr
             ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // size_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_get_data",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // data_ptr_out
             ValueLayout.ADDRESS)); // size_out
 
     // Cross-module global sharing functions
