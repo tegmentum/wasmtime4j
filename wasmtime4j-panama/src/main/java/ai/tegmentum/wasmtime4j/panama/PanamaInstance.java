@@ -636,9 +636,9 @@ public final class PanamaInstance implements Instance {
       // Allocate results buffer - Arena.allocate returns zero-initialized memory
       final MemorySegment resultsSegment = tempArena.allocate(maxResults * 20L);
 
-      // Call native function
+      // Call native function using invokeExact fast path
       final long resultCount =
-          NATIVE_BINDINGS.instanceCallFunction(
+          NATIVE_BINDINGS.instanceCallFunctionFast(
               nativeInstance,
               store.getNativeStore(),
               functionNameSegment,

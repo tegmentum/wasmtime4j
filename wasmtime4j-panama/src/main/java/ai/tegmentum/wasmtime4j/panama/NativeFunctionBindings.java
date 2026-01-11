@@ -52,6 +52,10 @@ public final class NativeFunctionBindings {
   // Status
   private volatile boolean initialized = false;
 
+  // Hot-path typed MethodHandle for invokeExact optimization
+  // Signature: (ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS, JAVA_LONG) -> JAVA_LONG
+  private volatile MethodHandle mhInstanceCallFunction;
+
   /** Private constructor for singleton pattern. */
   private NativeFunctionBindings() {
     try {
@@ -65,6 +69,13 @@ public final class NativeFunctionBindings {
       }
 
       initializeFunctionBindings();
+
+      // Eagerly initialize hot-path MethodHandle for invokeExact optimization
+      FunctionBinding callBinding = functionBindings.get("wasmtime4j_instance_call_function");
+      if (callBinding != null) {
+        this.mhInstanceCallFunction = callBinding.getMethodHandle().orElse(null);
+      }
+
       this.initialized = true;
 
       LOGGER.fine("Initialized NativeFunctionBindings successfully");
@@ -1591,6 +1602,44 @@ public final class NativeFunctionBindings {
         paramCount,
         resultsPtr,
         maxResults);
+  }
+
+  /**
+   * Fast path for instance function calls using invokeExact.
+   *
+   * <p>This method is optimized for performance by using invokeExact instead of invokeWithArguments,
+   * which avoids varargs array creation, primitive boxing, and runtime type checking.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName name of the function to call
+   * @param paramsPtr pointer to array of WasmValue parameters
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to buffer for WasmValue results
+   * @param maxResults maximum number of results to return
+   * @return number of actual results (0 on error)
+   */
+  public long instanceCallFunctionFast(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long maxResults) {
+    final MethodHandle mh = mhInstanceCallFunction;
+    if (mh == null) {
+      // Fall back to slow path if handle not available
+      return instanceCallFunction(
+          instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+    }
+    try {
+      return (long)
+          mh.invokeExact(
+              instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallFunction failed", t);
+    }
   }
 
   /**
