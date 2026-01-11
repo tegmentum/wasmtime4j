@@ -50,6 +50,9 @@ public final class PanamaInstance implements Instance {
   /** Maximum results buffer size (16 results * 20 bytes = 320 bytes). */
   private static final int MAX_RESULTS_BUFFER_SIZE = 320;
 
+  /** Maximum size for pooled result arrays (0-4 results cover most common cases). */
+  private static final int MAX_POOLED_RESULT_SIZE = 5;
+
   /**
    * Thread-local context for function call buffers.
    * Reuses arena and pre-allocated buffers across calls to avoid per-call allocation overhead.
@@ -58,11 +61,18 @@ public final class PanamaInstance implements Instance {
     final Arena arena;
     MemorySegment paramsBuffer;
     final MemorySegment resultsBuffer;
+    // Pre-allocated result arrays for common sizes (0-4 results)
+    final WasmValue[][] resultArrayPool;
 
     CallContext() {
       this.arena = Arena.ofConfined();
       // Pre-allocate results buffer for up to 16 results (most common case)
       this.resultsBuffer = arena.allocate(MAX_RESULTS_BUFFER_SIZE);
+      // Pre-allocate result arrays for sizes 0-4 (covers most functions)
+      this.resultArrayPool = new WasmValue[MAX_POOLED_RESULT_SIZE][];
+      for (int i = 0; i < MAX_POOLED_RESULT_SIZE; i++) {
+        this.resultArrayPool[i] = new WasmValue[i];
+      }
     }
 
     /**
@@ -78,6 +88,26 @@ public final class PanamaInstance implements Instance {
         paramsBuffer = arena.allocate(Math.max(needed, MIN_PARAMS_BUFFER_SIZE));
       }
       return paramsBuffer;
+    }
+
+    /**
+     * Gets a result array of the specified size, using pooled arrays for common sizes.
+     * For pooled arrays, clears previous values to allow GC of old WasmValue objects.
+     *
+     * @param size the number of results
+     * @return a WasmValue array of the requested size
+     */
+    WasmValue[] getResultArray(final int size) {
+      if (size < MAX_POOLED_RESULT_SIZE) {
+        final WasmValue[] pooled = resultArrayPool[size];
+        // Clear previous values to allow GC
+        for (int i = 0; i < size; i++) {
+          pooled[i] = null;
+        }
+        return pooled;
+      }
+      // Large arrays are not pooled - allocate fresh
+      return new WasmValue[size];
     }
   }
 
@@ -694,9 +724,10 @@ public final class PanamaInstance implements Instance {
       throw new WasmException("Failed to call function: " + functionName);
     }
 
-    // Unmarshal results
-    final WasmValue[] results = new WasmValue[(int) resultCount];
-    for (int i = 0; i < resultCount; i++) {
+    // Unmarshal results using pooled array for common sizes (0-4 results)
+    final int count = (int) resultCount;
+    final WasmValue[] results = ctx.getResultArray(count);
+    for (int i = 0; i < count; i++) {
       results[i] = unmarshalWasmValue(resultsSegment, i);
     }
 
