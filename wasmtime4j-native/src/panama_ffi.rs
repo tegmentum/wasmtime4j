@@ -1857,30 +1857,24 @@ pub mod component_enhanced {
         results_count_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            eprintln!("PANAMA FFI: enhanced_component_invoke called");
             let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
             let func_name = unsafe {
                 std::ffi::CStr::from_ptr(function_name)
                     .to_str()
                     .map_err(|e| {
-                        eprintln!("ERROR: Invalid function name: {}", e);
                         crate::error::WasmtimeError::InvalidParameter {
                             message: format!("Invalid function name: {}", e),
                         }
                     })?
             };
 
-            eprintln!("PANAMA FFI: Function name: {}, params_count: {}", func_name, params_count);
-
             // Parse parameters from FFI format to Vec<Val>
             let mut params: Vec<Val> = Vec::with_capacity(params_count as usize);
             if !params_ptr.is_null() && params_count > 0 {
                 unsafe {
                     let params_slice = std::slice::from_raw_parts(params_ptr, params_count as usize);
-                    for (i, param_ffi) in params_slice.iter().enumerate() {
-                        eprintln!("PANAMA FFI: Deserializing param {}: type={}, length={}",
-                                 i, param_ffi.type_discriminator, param_ffi.data_length);
+                    for (_i, param_ffi) in params_slice.iter().enumerate() {
                         let data = std::slice::from_raw_parts(
                             param_ffi.data_ptr,
                             param_ffi.data_length as usize,
@@ -1888,23 +1882,14 @@ pub mod component_enhanced {
                         let val = wit_value_marshal::deserialize_to_val(
                             param_ffi.type_discriminator,
                             data,
-                        ).map_err(|e| {
-                            eprintln!("ERROR: Failed to deserialize param {}: {:?}", i, e);
-                            e
-                        })?;
-                        eprintln!("PANAMA FFI: Param {} deserialized successfully", i);
+                        )?;
                         params.push(val);
                     }
                 }
             }
 
-            eprintln!("PANAMA FFI: About to invoke component function");
             // Invoke the function using EnhancedComponentEngine
-            let results = engine.invoke_component_function(instance_id, func_name, &params).map_err(|e| {
-                eprintln!("ERROR: invoke_component_function failed: {:?}", e);
-                e
-            })?;
-            eprintln!("PANAMA FFI: Function invoked successfully, results.len()={}", results.len());
+            let results = engine.invoke_component_function(instance_id, func_name, &params)?;
 
             // Serialize results to FFI format
             // First, flatten any tuples into their constituent elements
@@ -5916,25 +5901,13 @@ pub mod linker {
     /// Destroy a linker (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_destroy(linker_ptr: *mut c_void) {
-        use std::io::Write;
-        eprintln!("[RUST] wasmtime4j_panama_linker_destroy CALLED, ptr={:?}", linker_ptr);
-        let _ = std::io::stderr().flush();
-
         if linker_ptr.is_null() {
-            eprintln!("[RUST] wasmtime4j_panama_linker_destroy: null pointer, returning");
-            let _ = std::io::stderr().flush();
             return;
         }
-
-        eprintln!("[RUST] wasmtime4j_panama_linker_destroy: calling destroy_linker");
-        let _ = std::io::stderr().flush();
 
         unsafe {
             linker_core::destroy_linker(linker_ptr);
         }
-
-        eprintln!("[RUST] wasmtime4j_panama_linker_destroy: destroy_linker returned, DONE");
-        let _ = std::io::stderr().flush();
     }
 
     /// Define a global in the linker (Panama FFI version)

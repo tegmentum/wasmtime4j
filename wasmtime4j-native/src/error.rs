@@ -1637,63 +1637,36 @@ pub mod ffi_utils {
 
     /// Safely destroy a boxed resource from raw pointer with double-free protection
     pub unsafe fn destroy_resource<T>(ptr: *mut c_void, name: &str) {
-        use std::io::Write;
-        eprintln!("[RUST] destroy_resource<{}> CALLED, ptr={:?}", name, ptr);
-        let _ = std::io::stderr().flush();
-
         if ptr.is_null() {
-            eprintln!("[RUST] destroy_resource<{}>: null pointer, returning", name);
-            let _ = std::io::stderr().flush();
             return;
         }
 
         // Acquire lock and check if this pointer was already destroyed
         let ptr_addr = ptr as usize;
-        eprintln!("[RUST] destroy_resource<{}>: about to acquire DESTROYED_POINTERS lock", name);
-        let _ = std::io::stderr().flush();
         {
             let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-            eprintln!("[RUST] destroy_resource<{}>: acquired lock, checking for double-free", name);
-            let _ = std::io::stderr().flush();
             if destroyed.contains(&ptr_addr) {
                 log::warn!("Attempted double-free of {} resource at {:p} - ignoring", name, ptr);
-                eprintln!("[RUST] destroy_resource<{}>: double-free detected, returning", name);
-                let _ = std::io::stderr().flush();
                 return;
             }
             // Mark this pointer as destroyed before releasing the lock
             destroyed.insert(ptr_addr);
-            eprintln!("[RUST] destroy_resource<{}>: marked as destroyed, releasing lock", name);
-            let _ = std::io::stderr().flush();
         }
-
-        eprintln!("[RUST] destroy_resource<{}>: about to call Box::from_raw (will drop)", name);
-        let _ = std::io::stderr().flush();
 
         // Use panic-safe destruction to prevent JVM crashes
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            eprintln!("[RUST] destroy_resource<{}>: inside catch_unwind, calling Box::from_raw", name);
-            let _ = std::io::stderr().flush();
             let _ = Box::from_raw(ptr as *mut T);
-            eprintln!("[RUST] destroy_resource<{}>: Box::from_raw completed (resource dropped)", name);
-            let _ = std::io::stderr().flush();
         }));
 
         match result {
             Ok(_) => {
-                eprintln!("[RUST] destroy_resource<{}>: destroyed successfully", name);
-                let _ = std::io::stderr().flush();
                 log::debug!("{} at {:p} destroyed successfully", name, ptr);
             }
             Err(e) => {
-                eprintln!("[RUST] destroy_resource<{}>: destruction PANICKED: {:?}", name, e);
-                let _ = std::io::stderr().flush();
                 log::error!("{} at {:p} destruction panicked: {:?} - preventing JVM crash", name, ptr, e);
                 // Don't propagate panic to JVM - just log and continue
             }
         }
-        eprintln!("[RUST] destroy_resource<{}>: DONE", name);
-        let _ = std::io::stderr().flush();
     }
     
     /// Convert C string to Rust string with validation
