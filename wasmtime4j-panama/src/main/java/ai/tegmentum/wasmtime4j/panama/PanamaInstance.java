@@ -40,6 +40,47 @@ public final class PanamaInstance implements Instance {
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
+  // Thread-local arena pool for function calls - eliminates per-call Arena allocation
+  private static final ThreadLocal<CallContext> CALL_CONTEXT =
+      ThreadLocal.withInitial(CallContext::new);
+
+  /** Minimum params buffer size (8 parameters * 20 bytes = 160 bytes). */
+  private static final int MIN_PARAMS_BUFFER_SIZE = 160;
+
+  /** Maximum results buffer size (16 results * 20 bytes = 320 bytes). */
+  private static final int MAX_RESULTS_BUFFER_SIZE = 320;
+
+  /**
+   * Thread-local context for function call buffers.
+   * Reuses arena and pre-allocated buffers across calls to avoid per-call allocation overhead.
+   */
+  private static final class CallContext {
+    final Arena arena;
+    MemorySegment paramsBuffer;
+    final MemorySegment resultsBuffer;
+
+    CallContext() {
+      this.arena = Arena.ofConfined();
+      // Pre-allocate results buffer for up to 16 results (most common case)
+      this.resultsBuffer = arena.allocate(MAX_RESULTS_BUFFER_SIZE);
+    }
+
+    /**
+     * Gets or grows the params buffer to fit the required number of parameters.
+     *
+     * @param paramCount number of parameters needed
+     * @return memory segment for parameters
+     */
+    MemorySegment getParamsBuffer(final int paramCount) {
+      final long needed = paramCount * 20L;
+      if (paramsBuffer == null || paramsBuffer.byteSize() < needed) {
+        // Allocate with minimum size to reduce future reallocations
+        paramsBuffer = arena.allocate(Math.max(needed, MIN_PARAMS_BUFFER_SIZE));
+      }
+      return paramsBuffer;
+    }
+  }
+
   private final PanamaModule module;
   private final PanamaStore store;
   private final MemorySegment nativeInstance;
@@ -620,45 +661,46 @@ public final class PanamaInstance implements Instance {
         functionName,
         name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    // Use temporary arena for per-call params and results
-    try (final Arena tempArena = Arena.ofConfined()) {
-      // Allocate and marshal parameters
-      final MemorySegment paramsSegment;
-      if (params != null && params.length > 0) {
-        paramsSegment = tempArena.allocate(params.length * 20L); // 20 bytes per WasmValue
-        for (int i = 0; i < params.length; i++) {
-          marshalWasmValue(params[i], paramsSegment, i);
-        }
-      } else {
-        paramsSegment = MemorySegment.NULL;
+    // Get thread-local call context (reuses arena and buffers across calls)
+    final CallContext ctx = CALL_CONTEXT.get();
+
+    // Get or allocate params buffer from thread-local context
+    final MemorySegment paramsSegment;
+    final int paramCount = (params != null) ? params.length : 0;
+    if (paramCount > 0) {
+      paramsSegment = ctx.getParamsBuffer(paramCount);
+      for (int i = 0; i < paramCount; i++) {
+        marshalWasmValue(params[i], paramsSegment, i);
       }
-
-      // Allocate results buffer - Arena.allocate returns zero-initialized memory
-      final MemorySegment resultsSegment = tempArena.allocate(maxResults * 20L);
-
-      // Call native function using invokeExact fast path
-      final long resultCount =
-          NATIVE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              paramsSegment,
-              params != null ? params.length : 0,
-              resultsSegment,
-              maxResults);
-
-      if (resultCount < 0) {
-        throw new WasmException("Failed to call function: " + functionName);
-      }
-
-      // Unmarshal results
-      final WasmValue[] results = new WasmValue[(int) resultCount];
-      for (int i = 0; i < resultCount; i++) {
-        results[i] = unmarshalWasmValue(resultsSegment, i);
-      }
-
-      return results;
+    } else {
+      paramsSegment = MemorySegment.NULL;
     }
+
+    // Use pre-allocated results buffer from thread-local context
+    final MemorySegment resultsSegment = ctx.resultsBuffer;
+
+    // Call native function using invokeExact fast path
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            paramsSegment,
+            paramCount,
+            resultsSegment,
+            maxResults);
+
+    if (resultCount < 0) {
+      throw new WasmException("Failed to call function: " + functionName);
+    }
+
+    // Unmarshal results
+    final WasmValue[] results = new WasmValue[(int) resultCount];
+    for (int i = 0; i < resultCount; i++) {
+      results[i] = unmarshalWasmValue(resultsSegment, i);
+    }
+
+    return results;
   }
 
   @Override
