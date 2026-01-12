@@ -111,6 +111,7 @@
         <module>wasmtime4j-benchmarks</module>
         <module>wasmtime4j-comparison-tests</module>
         <module>wasmtime4j-fuzz</module>
+        <module>wasmtime4j-bindgen</module>
     </modules>
 
     <dependencyManagement>
