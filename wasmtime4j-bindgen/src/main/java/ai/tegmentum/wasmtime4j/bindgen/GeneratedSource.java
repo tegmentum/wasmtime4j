@@ -26,8 +26,8 @@ import java.util.Objects;
 /**
  * Represents a generated Java source file.
  *
- * <p>This class encapsulates a generated Java source file and provides methods
- * to write it to disk or access its content.
+ * <p>This class encapsulates a generated Java source file and provides methods to write it to disk
+ * or access its content.
  */
 public final class GeneratedSource {
 
@@ -110,8 +110,8 @@ public final class GeneratedSource {
   /**
    * Writes this generated source to the specified output directory.
    *
-   * <p>The file will be written to the appropriate subdirectory based on the
-   * package name. Parent directories are created if they don't exist.
+   * <p>The file will be written to the appropriate subdirectory based on the package name. Parent
+   * directories are created if they don't exist.
    *
    * @param outputDirectory the base output directory
    * @throws BindgenException if writing fails
@@ -121,8 +121,7 @@ public final class GeneratedSource {
     try {
       javaFile.writeTo(outputDirectory);
     } catch (IOException e) {
-      throw BindgenException.ioError(
-          "writing " + getQualifiedName() + " to " + outputDirectory, e);
+      throw BindgenException.ioError("writing " + getQualifiedName() + " to " + outputDirectory, e);
     }
   }
 

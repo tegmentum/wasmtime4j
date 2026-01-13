@@ -25,8 +25,8 @@ import java.util.Optional;
 /**
  * Represents a type in the bindgen model.
  *
- * <p>This class represents all types that can appear in WIT or WASM,
- * including primitives, records, variants, enums, lists, options, and results.
+ * <p>This class represents all types that can appear in WIT or WASM, including primitives, records,
+ * variants, enums, lists, options, and results.
  */
 public final class BindgenType {
 
@@ -149,8 +149,12 @@ public final class BindgenType {
    * @return the result type
    */
   public static BindgenType result(final BindgenType okType, final BindgenType errorType) {
-    String name = "result<" + (okType != null ? okType.getName() : "_") + ", "
-        + (errorType != null ? errorType.getName() : "_") + ">";
+    String name =
+        "result<"
+            + (okType != null ? okType.getName() : "_")
+            + ", "
+            + (errorType != null ? errorType.getName() : "_")
+            + ">";
     return builder().name(name).kind(Kind.RESULT).okType(okType).errorType(errorType).build();
   }
 
@@ -311,9 +315,7 @@ public final class BindgenType {
     return "BindgenType{name='" + name + "', kind=" + kind + "}";
   }
 
-  /**
-   * Builder for BindgenType.
-   */
+  /** Builder for BindgenType. */
   public static final class Builder {
     private String name;
     private Kind kind = Kind.REFERENCE;

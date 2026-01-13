@@ -32,8 +32,8 @@ import java.util.logging.Logger;
 /**
  * Introspects WASM modules to extract type information for code generation.
  *
- * <p>This class analyzes WASM binaries to extract their exports and imports,
- * creating a bindgen model that can be used for Java code generation.
+ * <p>This class analyzes WASM binaries to extract their exports and imports, creating a bindgen
+ * model that can be used for Java code generation.
  */
 public final class WasmIntrospector {
 
@@ -43,9 +43,7 @@ public final class WasmIntrospector {
   private static final byte[] WASM_MAGIC = {0x00, 0x61, 0x73, 0x6D}; // \0asm
   private static final byte[] WASM_VERSION = {0x01, 0x00, 0x00, 0x00}; // version 1
 
-  /**
-   * Creates a new WasmIntrospector.
-   */
+  /** Creates a new WasmIntrospector. */
   public WasmIntrospector() {
     // Default constructor
   }
@@ -69,22 +67,24 @@ public final class WasmIntrospector {
       List<BindgenFunction> imports = parseImports(wasmBytes);
 
       // Create interface for exports
-      BindgenInterface exportInterface = BindgenInterface.builder()
-          .name(moduleName + "Exports")
-          .functions(exports)
-          .documentation("Exported functions from " + moduleName)
-          .build();
+      BindgenInterface exportInterface =
+          BindgenInterface.builder()
+              .name(moduleName + "Exports")
+              .functions(exports)
+              .documentation("Exported functions from " + moduleName)
+              .build();
 
       // Create interface for imports if any
       List<BindgenInterface> interfaces = new ArrayList<>();
       interfaces.add(exportInterface);
 
       if (!imports.isEmpty()) {
-        BindgenInterface importInterface = BindgenInterface.builder()
-            .name(moduleName + "Imports")
-            .functions(imports)
-            .documentation("Import functions required by " + moduleName)
-            .build();
+        BindgenInterface importInterface =
+            BindgenInterface.builder()
+                .name(moduleName + "Imports")
+                .functions(imports)
+                .documentation("Import functions required by " + moduleName)
+                .build();
         interfaces.add(importInterface);
       }
 
@@ -146,8 +146,8 @@ public final class WasmIntrospector {
   /**
    * Parses the export section of the WASM module.
    *
-   * <p>Note: This is a simplified implementation. A full implementation would
-   * use the wasmtime4j Module API to properly parse the WASM binary.
+   * <p>Note: This is a simplified implementation. A full implementation would use the wasmtime4j
+   * Module API to properly parse the WASM binary.
    *
    * @param wasmBytes the WASM binary bytes
    * @return the list of exported functions

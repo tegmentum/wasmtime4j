@@ -19,9 +19,7 @@ package ai.tegmentum.wasmtime4j.bindgen.model;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Represents a case in a variant type.
- */
+/** Represents a case in a variant type. */
 public final class BindgenVariantCase {
 
   private final String name;

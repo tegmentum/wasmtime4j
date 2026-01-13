@@ -23,18 +23,17 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for BindgenConfig.
- */
+/** Tests for BindgenConfig. */
 class BindgenConfigTest {
 
   @Test
   void shouldCreateConfigWithDefaultValues() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("src/main/wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("src/main/wit"))
+            .build();
 
     assertThat(config.getCodeStyle()).isEqualTo(CodeStyle.MODERN);
     assertThat(config.getPackageName()).isEqualTo("com.example");
@@ -47,12 +46,13 @@ class BindgenConfigTest {
 
   @Test
   void shouldCreateConfigWithLegacyStyle() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .codeStyle(CodeStyle.LEGACY)
-        .addWasmSource(Path.of("module.wasm"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .codeStyle(CodeStyle.LEGACY)
+            .addWasmSource(Path.of("module.wasm"))
+            .build();
 
     assertThat(config.getCodeStyle()).isEqualTo(CodeStyle.LEGACY);
     assertThat(config.hasWasmSources()).isTrue();
@@ -60,10 +60,11 @@ class BindgenConfigTest {
 
   @Test
   void shouldValidateRequiredPackageName() {
-    BindgenConfig config = BindgenConfig.builder()
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("src/main/wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("src/main/wit"))
+            .build();
 
     assertThatThrownBy(config::validate)
         .isInstanceOf(BindgenException.class)
@@ -72,10 +73,11 @@ class BindgenConfigTest {
 
   @Test
   void shouldValidateRequiredOutputDirectory() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .addWitSource(Path.of("src/main/wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .addWitSource(Path.of("src/main/wit"))
+            .build();
 
     assertThatThrownBy(config::validate)
         .isInstanceOf(BindgenException.class)
@@ -84,10 +86,11 @@ class BindgenConfigTest {
 
   @Test
   void shouldValidateAtLeastOneSource() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .build();
 
     assertThatThrownBy(config::validate)
         .isInstanceOf(BindgenException.class)
@@ -96,11 +99,12 @@ class BindgenConfigTest {
 
   @Test
   void shouldPassValidationWithValidConfig() throws BindgenException {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .build();
 
     // Should not throw
     config.validate();
@@ -108,12 +112,13 @@ class BindgenConfigTest {
 
   @Test
   void shouldSupportMultipleSources() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .witSources(List.of(Path.of("api.wit"), Path.of("types.wit")))
-        .wasmSources(List.of(Path.of("module1.wasm"), Path.of("module2.wasm")))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .witSources(List.of(Path.of("api.wit"), Path.of("types.wit")))
+            .wasmSources(List.of(Path.of("module1.wasm"), Path.of("module2.wasm")))
+            .build();
 
     assertThat(config.getWitSources()).hasSize(2);
     assertThat(config.getWasmSources()).hasSize(2);
@@ -121,13 +126,14 @@ class BindgenConfigTest {
 
   @Test
   void shouldSupportInterfacePrefixAndSuffix() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .interfacePrefix("I")
-        .interfaceSuffix("Api")
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .interfacePrefix("I")
+            .interfaceSuffix("Api")
+            .build();
 
     assertThat(config.getInterfacePrefix()).hasValue("I");
     assertThat(config.getInterfaceSuffix()).hasValue("Api");
@@ -135,11 +141,12 @@ class BindgenConfigTest {
 
   @Test
   void shouldReturnEmptyOptionalForMissingPrefixAndSuffix() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .build();
 
     assertThat(config.getInterfacePrefix()).isEmpty();
     assertThat(config.getInterfaceSuffix()).isEmpty();
@@ -147,17 +154,19 @@ class BindgenConfigTest {
 
   @Test
   void shouldImplementEqualsAndHashCode() {
-    BindgenConfig config1 = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .build();
+    BindgenConfig config1 =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .build();
 
-    BindgenConfig config2 = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .build();
+    BindgenConfig config2 =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .build();
 
     assertThat(config1).isEqualTo(config2);
     assertThat(config1.hashCode()).isEqualTo(config2.hashCode());
@@ -165,11 +174,12 @@ class BindgenConfigTest {
 
   @Test
   void shouldImplementToString() {
-    BindgenConfig config = BindgenConfig.builder()
-        .packageName("com.example")
-        .outputDirectory(Path.of("target/generated"))
-        .addWitSource(Path.of("api.wit"))
-        .build();
+    BindgenConfig config =
+        BindgenConfig.builder()
+            .packageName("com.example")
+            .outputDirectory(Path.of("target/generated"))
+            .addWitSource(Path.of("api.wit"))
+            .build();
 
     String toString = config.toString();
     assertThat(toString).contains("com.example");

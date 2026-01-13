@@ -42,6 +42,7 @@ import org.apache.maven.project.MavenProject;
  * Maven Mojo for generating Java bindings from WIT files and WASM modules.
  *
  * <p>Usage example:
+ *
  * <pre>{@code
  * <plugin>
  *   <groupId>ai.tegmentum</groupId>
@@ -108,12 +109,10 @@ public class BindgenMojo extends AbstractMojo {
   private boolean generateBuilders;
 
   /** WIT file include patterns (e.g., "*.wit"). */
-  @Parameter
-  private List<String> witIncludes;
+  @Parameter private List<String> witIncludes;
 
   /** WIT file exclude patterns. */
-  @Parameter
-  private List<String> witExcludes;
+  @Parameter private List<String> witExcludes;
 
   /** Skip execution of this plugin. */
   @Parameter(property = "wasmtime4j.bindgen.skip", defaultValue = "false")
@@ -138,19 +137,25 @@ public class BindgenMojo extends AbstractMojo {
         return;
       }
 
-      getLog().info("Found " + witSources.size() + " WIT sources and "
-          + wasmSources.size() + " WASM sources");
+      getLog()
+          .info(
+              "Found "
+                  + witSources.size()
+                  + " WIT sources and "
+                  + wasmSources.size()
+                  + " WASM sources");
 
       // Build configuration
-      BindgenConfig config = BindgenConfig.builder()
-          .codeStyle(parseCodeStyle())
-          .packageName(packageName)
-          .outputDirectory(outputDirectory.toPath())
-          .witSources(witSources)
-          .wasmSources(wasmSources)
-          .generateJavadoc(generateJavadoc)
-          .generateBuilders(generateBuilders)
-          .build();
+      BindgenConfig config =
+          BindgenConfig.builder()
+              .codeStyle(parseCodeStyle())
+              .packageName(packageName)
+              .outputDirectory(outputDirectory.toPath())
+              .witSources(witSources)
+              .wasmSources(wasmSources)
+              .generateJavadoc(generateJavadoc)
+              .generateBuilders(generateBuilders)
+              .build();
 
       // Generate code
       CodeGenerator generator = new CodeGenerator(config);
@@ -165,8 +170,12 @@ public class BindgenMojo extends AbstractMojo {
       // Add generated sources to compile path
       project.addCompileSourceRoot(outputDirectory.getAbsolutePath());
 
-      getLog().info("Generated " + sources.size() + " Java source files to "
-          + outputDirectory.getAbsolutePath());
+      getLog()
+          .info(
+              "Generated "
+                  + sources.size()
+                  + " Java source files to "
+                  + outputDirectory.getAbsolutePath());
 
     } catch (BindgenException e) {
       throw new MojoExecutionException("Bindgen failed: " + e.getMessage(), e);
@@ -244,10 +253,7 @@ public class BindgenMojo extends AbstractMojo {
 
   private boolean matchesPattern(final String fileName, final String pattern) {
     // Simple glob pattern matching
-    String regex = pattern
-        .replace(".", "\\.")
-        .replace("*", ".*")
-        .replace("?", ".");
+    String regex = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".");
     return fileName.matches(regex);
   }
 }

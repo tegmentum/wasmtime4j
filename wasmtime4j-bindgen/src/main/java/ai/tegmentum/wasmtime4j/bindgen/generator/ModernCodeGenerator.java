@@ -33,11 +33,12 @@ import javax.lang.model.element.Modifier;
  * Code generator for Java 17+ using records and sealed interfaces.
  *
  * <p>This generator produces:
+ *
  * <ul>
- *   <li>Records for WIT record types</li>
- *   <li>Sealed interfaces with record implementations for variants</li>
- *   <li>Java enums for WIT enums</li>
- *   <li>Interfaces with abstract methods for WIT functions</li>
+ *   <li>Records for WIT record types
+ *   <li>Sealed interfaces with record implementations for variants
+ *   <li>Java enums for WIT enums
+ *   <li>Interfaces with abstract methods for WIT functions
  * </ul>
  */
 public final class ModernCodeGenerator extends JavaCodeGenerator {
@@ -57,8 +58,8 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
 
     // Note: JavaPoet doesn't directly support records, so we generate a class
     // that mimics record semantics. Users can manually convert to records.
-    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+    TypeSpec.Builder classBuilder =
+        TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
     // Add documentation
     if (config.isGenerateJavadoc() && type.getDocumentation().isPresent()) {
@@ -74,14 +75,13 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
     }
 
     // Add constructor
-    MethodSpec.Builder constructorBuilder = MethodSpec.constructorBuilder()
-        .addModifiers(Modifier.PUBLIC);
+    MethodSpec.Builder constructorBuilder =
+        MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
     for (BindgenField field : type.getFields()) {
       String fieldName = JavaNaming.toFieldName(field.getName());
       TypeName fieldType = mapType(field.getType());
-      constructorBuilder.addParameter(
-          ParameterSpec.builder(fieldType, fieldName).build());
+      constructorBuilder.addParameter(ParameterSpec.builder(fieldType, fieldName).build());
       constructorBuilder.addStatement("this.$N = $N", fieldName, fieldName);
     }
 
@@ -92,10 +92,11 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
       String fieldName = JavaNaming.toFieldName(field.getName());
       TypeName fieldType = mapType(field.getType());
 
-      MethodSpec.Builder getterBuilder = MethodSpec.methodBuilder(fieldName)
-          .addModifiers(Modifier.PUBLIC)
-          .returns(fieldType)
-          .addStatement("return this.$N", fieldName);
+      MethodSpec.Builder getterBuilder =
+          MethodSpec.methodBuilder(fieldName)
+              .addModifiers(Modifier.PUBLIC)
+              .returns(fieldType)
+              .addStatement("return this.$N", fieldName);
 
       if (config.isGenerateJavadoc() && field.getDocumentation().isPresent()) {
         getterBuilder.addJavadoc(field.getDocumentation().get() + "\n");
@@ -121,8 +122,8 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
     String interfaceName = JavaNaming.toClassName(type.getName());
 
     // Create sealed interface
-    TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(interfaceName)
-        .addModifiers(Modifier.PUBLIC);
+    TypeSpec.Builder interfaceBuilder =
+        TypeSpec.interfaceBuilder(interfaceName).addModifiers(Modifier.PUBLIC);
 
     // Add documentation
     if (config.isGenerateJavadoc() && type.getDocumentation().isPresent()) {
@@ -142,13 +143,15 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
     return interfaceBuilder.build();
   }
 
-  private TypeSpec generateVariantCase(final String parentName, final BindgenVariantCase variantCase) {
+  private TypeSpec generateVariantCase(
+      final String parentName, final BindgenVariantCase variantCase) {
     String caseName = JavaNaming.toClassName(variantCase.getName());
     ClassName parentType = ClassName.get(config.getPackageName(), parentName);
 
-    TypeSpec.Builder caseBuilder = TypeSpec.classBuilder(caseName)
-        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-        .addSuperinterface(parentType);
+    TypeSpec.Builder caseBuilder =
+        TypeSpec.classBuilder(caseName)
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+            .addSuperinterface(parentType);
 
     // Add documentation
     if (config.isGenerateJavadoc() && variantCase.getDocumentation().isPresent()) {
@@ -163,23 +166,23 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
       caseBuilder.addField(javaType, "value", Modifier.PRIVATE, Modifier.FINAL);
 
       // Add constructor
-      caseBuilder.addMethod(MethodSpec.constructorBuilder()
-          .addModifiers(Modifier.PUBLIC)
-          .addParameter(javaType, "value")
-          .addStatement("this.value = value")
-          .build());
+      caseBuilder.addMethod(
+          MethodSpec.constructorBuilder()
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(javaType, "value")
+              .addStatement("this.value = value")
+              .build());
 
       // Add getter
-      caseBuilder.addMethod(MethodSpec.methodBuilder("value")
-          .addModifiers(Modifier.PUBLIC)
-          .returns(javaType)
-          .addStatement("return this.value")
-          .build());
+      caseBuilder.addMethod(
+          MethodSpec.methodBuilder("value")
+              .addModifiers(Modifier.PUBLIC)
+              .returns(javaType)
+              .addStatement("return this.value")
+              .build());
     } else {
       // Add private constructor for singleton-like behavior
-      caseBuilder.addMethod(MethodSpec.constructorBuilder()
-          .addModifiers(Modifier.PUBLIC)
-          .build());
+      caseBuilder.addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build());
     }
 
     return caseBuilder.build();
@@ -189,9 +192,10 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
   protected TypeSpec generateResource(final BindgenType type) {
     String className = JavaNaming.toClassName(type.getName());
 
-    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
-        .addSuperinterface(ClassName.get(AutoCloseable.class));
+    TypeSpec.Builder classBuilder =
+        TypeSpec.classBuilder(className)
+            .addModifiers(Modifier.PUBLIC)
+            .addSuperinterface(ClassName.get(AutoCloseable.class));
 
     // Add documentation
     if (config.isGenerateJavadoc()) {
@@ -203,30 +207,34 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
     classBuilder.addField(TypeName.LONG, "handle", Modifier.PRIVATE, Modifier.FINAL);
 
     // Add constructor
-    classBuilder.addMethod(MethodSpec.constructorBuilder()
-        .addModifiers(Modifier.PUBLIC)
-        .addParameter(TypeName.LONG, "handle")
-        .addStatement("this.handle = handle")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.constructorBuilder()
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(TypeName.LONG, "handle")
+            .addStatement("this.handle = handle")
+            .build());
 
     // Add handle getter
-    classBuilder.addMethod(MethodSpec.methodBuilder("handle")
-        .addModifiers(Modifier.PUBLIC)
-        .returns(TypeName.LONG)
-        .addStatement("return this.handle")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.methodBuilder("handle")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(TypeName.LONG)
+            .addStatement("return this.handle")
+            .build());
 
     // Add close method
-    classBuilder.addMethod(MethodSpec.methodBuilder("close")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .addComment("Resource cleanup - to be implemented by runtime")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.methodBuilder("close")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .addComment("Resource cleanup - to be implemented by runtime")
+            .build());
 
     // Generate methods from functions (if any)
-    for (BindgenFunction function : type.getFields().isEmpty()
-        ? java.util.Collections.<BindgenFunction>emptyList()
-        : java.util.Collections.<BindgenFunction>emptyList()) {
+    for (BindgenFunction function :
+        type.getFields().isEmpty()
+            ? java.util.Collections.<BindgenFunction>emptyList()
+            : java.util.Collections.<BindgenFunction>emptyList()) {
       classBuilder.addMethod(generateFunctionSignature(function));
     }
 
@@ -234,11 +242,12 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateEquals(final BindgenType type, final String className) {
-    MethodSpec.Builder equalsBuilder = MethodSpec.methodBuilder("equals")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.BOOLEAN)
-        .addParameter(Object.class, "obj");
+    MethodSpec.Builder equalsBuilder =
+        MethodSpec.methodBuilder("equals")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(TypeName.BOOLEAN)
+            .addParameter(Object.class, "obj");
 
     equalsBuilder.addStatement("if (this == obj) return true");
     equalsBuilder.addStatement("if (obj == null || getClass() != obj.getClass()) return false");
@@ -260,8 +269,8 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
         if (fieldType.isPrimitive()) {
           comparison.append(String.format("this.%s == that.%s", fieldName, fieldName));
         } else {
-          comparison.append(String.format("java.util.Objects.equals(this.%s, that.%s)",
-              fieldName, fieldName));
+          comparison.append(
+              String.format("java.util.Objects.equals(this.%s, that.%s)", fieldName, fieldName));
         }
       }
       equalsBuilder.addStatement("return " + comparison);
@@ -271,10 +280,11 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateHashCode(final BindgenType type) {
-    MethodSpec.Builder hashCodeBuilder = MethodSpec.methodBuilder("hashCode")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.INT);
+    MethodSpec.Builder hashCodeBuilder =
+        MethodSpec.methodBuilder("hashCode")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(TypeName.INT);
 
     if (type.getFields().isEmpty()) {
       hashCodeBuilder.addStatement("return 0");
@@ -295,10 +305,11 @@ public final class ModernCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateToString(final BindgenType type, final String className) {
-    MethodSpec.Builder toStringBuilder = MethodSpec.methodBuilder("toString")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(String.class);
+    MethodSpec.Builder toStringBuilder =
+        MethodSpec.methodBuilder("toString")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(String.class);
 
     if (type.getFields().isEmpty()) {
       toStringBuilder.addStatement("return \"$L[]\"", className);

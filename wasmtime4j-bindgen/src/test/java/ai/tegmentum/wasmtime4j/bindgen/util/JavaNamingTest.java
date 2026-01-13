@@ -21,9 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for JavaNaming utility.
- */
+/** Tests for JavaNaming utility. */
 class JavaNamingTest {
 
   @Test
@@ -101,8 +99,7 @@ class JavaNamingTest {
 
   @Test
   void shouldThrowOnNullClassName() {
-    assertThatThrownBy(() -> JavaNaming.toClassName(null))
-        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> JavaNaming.toClassName(null)).isInstanceOf(NullPointerException.class);
   }
 
   @Test

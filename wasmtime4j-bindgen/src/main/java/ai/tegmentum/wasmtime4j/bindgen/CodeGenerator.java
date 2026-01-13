@@ -30,10 +30,11 @@ import java.util.logging.Logger;
 /**
  * Main orchestrator for Java binding generation.
  *
- * <p>This class coordinates the parsing of WIT files, introspection of WASM modules,
- * and generation of Java source files based on the provided configuration.
+ * <p>This class coordinates the parsing of WIT files, introspection of WASM modules, and generation
+ * of Java source files based on the provided configuration.
  *
  * <p>Example usage:
+ *
  * <pre>{@code
  * BindgenConfig config = BindgenConfig.builder()
  *     .packageName("com.example.generated")

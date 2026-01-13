@@ -21,12 +21,13 @@ package ai.tegmentum.wasmtime4j.bindgen;
  *
  * <p>This exception is used for all errors that occur during the binding generation process,
  * including:
+ *
  * <ul>
- *   <li>WIT parsing errors</li>
- *   <li>WASM introspection errors</li>
- *   <li>Code generation errors</li>
- *   <li>File I/O errors</li>
- *   <li>Configuration validation errors</li>
+ *   <li>WIT parsing errors
+ *   <li>WASM introspection errors
+ *   <li>Code generation errors
+ *   <li>File I/O errors
+ *   <li>Configuration validation errors
  * </ul>
  */
 public class BindgenException extends Exception {
@@ -91,8 +92,7 @@ public class BindgenException extends Exception {
    * @param cause the underlying generation error
    * @return a new BindgenException
    */
-  public static BindgenException codeGenerationError(
-      final String typeName, final Throwable cause) {
+  public static BindgenException codeGenerationError(final String typeName, final Throwable cause) {
     return new BindgenException("Failed to generate code for type: " + typeName, cause);
   }
 

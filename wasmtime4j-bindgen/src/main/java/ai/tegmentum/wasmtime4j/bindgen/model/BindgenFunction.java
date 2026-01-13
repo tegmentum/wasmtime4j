@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Represents a function in the bindgen model.
- */
+/** Represents a function in the bindgen model. */
 public final class BindgenFunction {
 
   private final String name;
@@ -154,9 +152,7 @@ public final class BindgenFunction {
     return sb.toString();
   }
 
-  /**
-   * Builder for BindgenFunction.
-   */
+  /** Builder for BindgenFunction. */
   public static final class Builder {
     private String name;
     private List<BindgenParameter> parameters = new ArrayList<>();

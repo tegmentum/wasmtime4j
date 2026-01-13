@@ -18,9 +18,7 @@ package ai.tegmentum.wasmtime4j.bindgen.model;
 
 import java.util.Objects;
 
-/**
- * Represents a function parameter.
- */
+/** Represents a function parameter. */
 public final class BindgenParameter {
 
   private final String name;

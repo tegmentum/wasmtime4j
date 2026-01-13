@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 /**
  * Utility class for converting WIT/WASM names to valid Java identifiers.
  *
- * <p>This class handles the conversion of WIT naming conventions (kebab-case)
- * to Java naming conventions (camelCase for methods/fields, PascalCase for classes).
+ * <p>This class handles the conversion of WIT naming conventions (kebab-case) to Java naming
+ * conventions (camelCase for methods/fields, PascalCase for classes).
  */
 public final class JavaNaming {
 
@@ -39,13 +39,64 @@ public final class JavaNaming {
   private static final Set<String> JAVA_KEYWORDS =
       new HashSet<>(
           Arrays.asList(
-              "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
-              "const", "continue", "default", "do", "double", "else", "enum", "extends", "false",
-              "final", "finally", "float", "for", "goto", "if", "implements", "import",
-              "instanceof", "int", "interface", "long", "native", "new", "null", "package",
-              "private", "protected", "public", "return", "short", "static", "strictfp", "super",
-              "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try",
-              "void", "volatile", "while", "var", "yield", "record", "sealed", "permits"));
+              "abstract",
+              "assert",
+              "boolean",
+              "break",
+              "byte",
+              "case",
+              "catch",
+              "char",
+              "class",
+              "const",
+              "continue",
+              "default",
+              "do",
+              "double",
+              "else",
+              "enum",
+              "extends",
+              "false",
+              "final",
+              "finally",
+              "float",
+              "for",
+              "goto",
+              "if",
+              "implements",
+              "import",
+              "instanceof",
+              "int",
+              "interface",
+              "long",
+              "native",
+              "new",
+              "null",
+              "package",
+              "private",
+              "protected",
+              "public",
+              "return",
+              "short",
+              "static",
+              "strictfp",
+              "super",
+              "switch",
+              "synchronized",
+              "this",
+              "throw",
+              "throws",
+              "transient",
+              "true",
+              "try",
+              "void",
+              "volatile",
+              "while",
+              "var",
+              "yield",
+              "record",
+              "sealed",
+              "permits"));
 
   private JavaNaming() {
     // Utility class
@@ -55,10 +106,11 @@ public final class JavaNaming {
    * Converts a WIT type name to a Java class name (PascalCase).
    *
    * <p>Examples:
+   *
    * <ul>
-   *   <li>"http-request" → "HttpRequest"</li>
-   *   <li>"my-custom-type" → "MyCustomType"</li>
-   *   <li>"simple" → "Simple"</li>
+   *   <li>"http-request" → "HttpRequest"
+   *   <li>"my-custom-type" → "MyCustomType"
+   *   <li>"simple" → "Simple"
    * </ul>
    *
    * @param witName the WIT type name
@@ -81,10 +133,11 @@ public final class JavaNaming {
    * Converts a WIT field or function name to a Java method/field name (camelCase).
    *
    * <p>Examples:
+   *
    * <ul>
-   *   <li>"get-value" → "getValue"</li>
-   *   <li>"my-field" → "myField"</li>
-   *   <li>"simple" → "simple"</li>
+   *   <li>"get-value" → "getValue"
+   *   <li>"my-field" → "myField"
+   *   <li>"simple" → "simple"
    * </ul>
    *
    * @param witName the WIT field or function name
@@ -127,9 +180,10 @@ public final class JavaNaming {
    * Converts a WIT enum variant name to a Java enum constant name (UPPER_SNAKE_CASE).
    *
    * <p>Examples:
+   *
    * <ul>
-   *   <li>"my-value" → "MY_VALUE"</li>
-   *   <li>"simple" → "SIMPLE"</li>
+   *   <li>"my-value" → "MY_VALUE"
+   *   <li>"simple" → "SIMPLE"
    * </ul>
    *
    * @param witName the WIT enum variant name
@@ -157,9 +211,10 @@ public final class JavaNaming {
    * Converts a WIT package name to a Java package name.
    *
    * <p>Examples:
+   *
    * <ul>
-   *   <li>"wasi:http" → "wasi.http"</li>
-   *   <li>"my-package:types" → "my_package.types"</li>
+   *   <li>"wasi:http" → "wasi.http"
+   *   <li>"my-package:types" → "my_package.types"
    * </ul>
    *
    * @param witPackage the WIT package name

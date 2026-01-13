@@ -19,8 +19,8 @@ package ai.tegmentum.wasmtime4j.bindgen;
 /**
  * Code generation style options for Java binding generation.
  *
- * <p>This enum determines the Java language features used in generated code,
- * allowing users to target different Java versions and coding preferences.
+ * <p>This enum determines the Java language features used in generated code, allowing users to
+ * target different Java versions and coding preferences.
  */
 public enum CodeStyle {
 
@@ -28,11 +28,12 @@ public enum CodeStyle {
    * Modern Java 17+ style using records, sealed interfaces, and pattern matching.
    *
    * <p>Features used:
+   *
    * <ul>
-   *   <li>Records for WIT record types</li>
-   *   <li>Sealed interfaces with record implementations for variants</li>
-   *   <li>Pattern matching support in switch expressions</li>
-   *   <li>Text blocks for generated documentation</li>
+   *   <li>Records for WIT record types
+   *   <li>Sealed interfaces with record implementations for variants
+   *   <li>Pattern matching support in switch expressions
+   *   <li>Text blocks for generated documentation
    * </ul>
    */
   MODERN("17"),
@@ -41,11 +42,12 @@ public enum CodeStyle {
    * Legacy Java 8+ compatible style using POJOs, interfaces, and builder patterns.
    *
    * <p>Features used:
+   *
    * <ul>
-   *   <li>POJOs with final fields for WIT record types</li>
-   *   <li>Abstract classes with visitor pattern for variants</li>
-   *   <li>Builder pattern for complex types</li>
-   *   <li>Traditional Javadoc formatting</li>
+   *   <li>POJOs with final fields for WIT record types
+   *   <li>Abstract classes with visitor pattern for variants
+   *   <li>Builder pattern for complex types
+   *   <li>Traditional Javadoc formatting
    * </ul>
    */
   LEGACY("8");

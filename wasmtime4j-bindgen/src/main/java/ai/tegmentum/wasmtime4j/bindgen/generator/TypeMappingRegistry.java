@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.bindgen.generator;
 
 import ai.tegmentum.wasmtime4j.bindgen.CodeStyle;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
@@ -27,9 +28,8 @@ import java.util.Optional;
 /**
  * Maps WIT and WASM types to Java types.
  *
- * <p>This registry provides type mapping from WebAssembly Interface Types (WIT)
- * and WASM value types to their corresponding Java types, respecting the
- * configured code style.
+ * <p>This registry provides type mapping from WebAssembly Interface Types (WIT) and WASM value
+ * types to their corresponding Java types, respecting the configured code style.
  */
 public final class TypeMappingRegistry {
 
@@ -63,8 +63,10 @@ public final class TypeMappingRegistry {
       case "s16":
         return TypeName.SHORT;
       case "s32":
+      case "i32": // WASM type alias
         return TypeName.INT;
       case "s64":
+      case "i64": // WASM type alias
         return TypeName.LONG;
       case "u8":
         return TypeName.BYTE; // With @Unsigned annotation in generated code
@@ -107,7 +109,7 @@ public final class TypeMappingRegistry {
       case "f64":
         return TypeName.DOUBLE;
       case "v128":
-        return ClassName.get(byte[].class);
+        return ArrayTypeName.of(TypeName.BYTE);
       case "funcref":
         return ClassName.get("ai.tegmentum.wasmtime4j", "FunctionReference");
       case "externref":
@@ -234,6 +236,8 @@ public final class TypeMappingRegistry {
       case "u16":
       case "u32":
       case "u64":
+      case "i32": // WASM type alias
+      case "i64": // WASM type alias
       case "f32":
       case "f64":
       case "float32":

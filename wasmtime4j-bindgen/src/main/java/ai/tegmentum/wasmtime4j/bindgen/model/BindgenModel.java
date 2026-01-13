@@ -27,8 +27,8 @@ import java.util.Optional;
 /**
  * The unified bindgen model containing all parsed types, interfaces, and functions.
  *
- * <p>This model is built from either WIT files or WASM module introspection
- * and serves as the input for code generation.
+ * <p>This model is built from either WIT files or WASM module introspection and serves as the input
+ * for code generation.
  */
 public final class BindgenModel {
 
@@ -218,13 +218,18 @@ public final class BindgenModel {
 
   @Override
   public String toString() {
-    return "BindgenModel{name='" + name + "', interfaces=" + interfaces.size()
-        + ", types=" + types.size() + ", functions=" + functions.size() + "}";
+    return "BindgenModel{name='"
+        + name
+        + "', interfaces="
+        + interfaces.size()
+        + ", types="
+        + types.size()
+        + ", functions="
+        + functions.size()
+        + "}";
   }
 
-  /**
-   * Builder for BindgenModel.
-   */
+  /** Builder for BindgenModel. */
   public static final class Builder {
     private String name = "";
     private List<BindgenInterface> interfaces = new ArrayList<>();
@@ -240,6 +245,12 @@ public final class BindgenModel {
       return this;
     }
 
+    /**
+     * Sets the list of interfaces and registers their types.
+     *
+     * @param interfaces the list of interfaces
+     * @return this builder
+     */
     public Builder interfaces(final List<BindgenInterface> interfaces) {
       this.interfaces = new ArrayList<>(interfaces);
       // Register types from interfaces
@@ -251,6 +262,12 @@ public final class BindgenModel {
       return this;
     }
 
+    /**
+     * Adds an interface and registers its types.
+     *
+     * @param iface the interface to add
+     * @return this builder
+     */
     public Builder addInterface(final BindgenInterface iface) {
       this.interfaces.add(iface);
       // Register types from interface
@@ -260,6 +277,12 @@ public final class BindgenModel {
       return this;
     }
 
+    /**
+     * Sets the list of standalone types and registers them.
+     *
+     * @param types the list of types
+     * @return this builder
+     */
     public Builder types(final List<BindgenType> types) {
       this.types = new ArrayList<>(types);
       for (BindgenType type : types) {
@@ -268,6 +291,12 @@ public final class BindgenModel {
       return this;
     }
 
+    /**
+     * Adds a standalone type and registers it.
+     *
+     * @param type the type to add
+     * @return this builder
+     */
     public Builder addType(final BindgenType type) {
       this.types.add(type);
       typeRegistry.put(type.getName(), type);

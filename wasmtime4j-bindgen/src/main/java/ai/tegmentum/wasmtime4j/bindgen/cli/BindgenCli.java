@@ -34,6 +34,7 @@ import picocli.CommandLine.Option;
  * CLI entry point for wasmtime4j-bindgen.
  *
  * <p>Usage examples:
+ *
  * <pre>
  * # Generate from WIT files
  * wasmtime4j-bindgen --wit src/main/wit --package com.example --output target/generated
@@ -85,8 +86,9 @@ public final class BindgenCli implements Callable<Integer> {
   @Option(
       names = {"--style", "-s"},
       defaultValue = "MODERN",
-      description = "Code generation style: MODERN (Java 17+) or LEGACY (Java 8+) "
-          + "(default: ${DEFAULT-VALUE})")
+      description =
+          "Code generation style: MODERN (Java 17+) or LEGACY (Java 8+) "
+              + "(default: ${DEFAULT-VALUE})")
   private CodeStyle codeStyle;
 
   @Option(
@@ -130,15 +132,16 @@ public final class BindgenCli implements Callable<Integer> {
       }
 
       // Build configuration
-      BindgenConfig config = BindgenConfig.builder()
-          .codeStyle(codeStyle)
-          .packageName(packageName)
-          .outputDirectory(outputDirectory.toPath())
-          .witSources(validWitSources)
-          .wasmSources(validWasmSources)
-          .generateJavadoc(!noJavadoc)
-          .generateBuilders(!noBuilders)
-          .build();
+      BindgenConfig config =
+          BindgenConfig.builder()
+              .codeStyle(codeStyle)
+              .packageName(packageName)
+              .outputDirectory(outputDirectory.toPath())
+              .witSources(validWitSources)
+              .wasmSources(validWasmSources)
+              .generateJavadoc(!noJavadoc)
+              .generateBuilders(!noBuilders)
+              .build();
 
       if (verbose) {
         printConfiguration(config);
@@ -231,9 +234,8 @@ public final class BindgenCli implements Callable<Integer> {
    * @param args command-line arguments
    */
   public static void main(final String[] args) {
-    int exitCode = new CommandLine(new BindgenCli())
-        .setCaseInsensitiveEnumValuesAllowed(true)
-        .execute(args);
+    int exitCode =
+        new CommandLine(new BindgenCli()).setCaseInsensitiveEnumValuesAllowed(true).execute(args);
     System.exit(exitCode);
   }
 }

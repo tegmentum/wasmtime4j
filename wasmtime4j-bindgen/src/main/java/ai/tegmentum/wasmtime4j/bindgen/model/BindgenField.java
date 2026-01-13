@@ -19,9 +19,7 @@ package ai.tegmentum.wasmtime4j.bindgen.model;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Represents a field in a record type.
- */
+/** Represents a field in a record type. */
 public final class BindgenField {
 
   private final String name;

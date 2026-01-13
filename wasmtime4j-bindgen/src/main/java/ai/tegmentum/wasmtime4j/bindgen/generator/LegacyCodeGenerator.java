@@ -33,11 +33,12 @@ import javax.lang.model.element.Modifier;
  * Code generator for Java 8+ using POJOs and visitor pattern.
  *
  * <p>This generator produces:
+ *
  * <ul>
- *   <li>POJOs with private final fields for WIT record types</li>
- *   <li>Abstract classes with visitor pattern for variants</li>
- *   <li>Builder classes for complex types</li>
- *   <li>Java enums for WIT enums</li>
+ *   <li>POJOs with private final fields for WIT record types
+ *   <li>Abstract classes with visitor pattern for variants
+ *   <li>Builder classes for complex types
+ *   <li>Java enums for WIT enums
  * </ul>
  */
 public final class LegacyCodeGenerator extends JavaCodeGenerator {
@@ -55,8 +56,8 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   protected TypeSpec generateRecord(final BindgenType type) {
     String className = JavaNaming.toClassName(type.getName());
 
-    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+    TypeSpec.Builder classBuilder =
+        TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
     // Add documentation
     if (config.isGenerateJavadoc() && type.getDocumentation().isPresent()) {
@@ -97,8 +98,8 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     String className = JavaNaming.toClassName(type.getName());
 
     // Create abstract base class
-    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
+    TypeSpec.Builder classBuilder =
+        TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
 
     // Add documentation
     if (config.isGenerateJavadoc() && type.getDocumentation().isPresent()) {
@@ -110,12 +111,13 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     classBuilder.addType(visitor);
 
     // Add abstract accept method
-    classBuilder.addMethod(MethodSpec.methodBuilder("accept")
-        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-        .addTypeVariable(TypeVariableName.get("T"))
-        .addParameter(ClassName.get("", "Visitor<T>"), "visitor")
-        .returns(TypeVariableName.get("T"))
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.methodBuilder("accept")
+            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+            .addTypeVariable(TypeVariableName.get("T"))
+            .addParameter(ClassName.get("", "Visitor<T>"), "visitor")
+            .returns(TypeVariableName.get("T"))
+            .build());
 
     // Generate case classes as nested static classes
     for (BindgenVariantCase variantCase : type.getCases()) {
@@ -130,9 +132,10 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   protected TypeSpec generateResource(final BindgenType type) {
     String className = JavaNaming.toClassName(type.getName());
 
-    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
-        .addSuperinterface(ClassName.get(AutoCloseable.class));
+    TypeSpec.Builder classBuilder =
+        TypeSpec.classBuilder(className)
+            .addModifiers(Modifier.PUBLIC)
+            .addSuperinterface(ClassName.get(AutoCloseable.class));
 
     // Add documentation
     if (config.isGenerateJavadoc()) {
@@ -143,32 +146,35 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     classBuilder.addField(TypeName.LONG, "handle", Modifier.PRIVATE, Modifier.FINAL);
 
     // Add constructor
-    classBuilder.addMethod(MethodSpec.constructorBuilder()
-        .addModifiers(Modifier.PUBLIC)
-        .addParameter(TypeName.LONG, "handle")
-        .addStatement("this.handle = handle")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.constructorBuilder()
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(TypeName.LONG, "handle")
+            .addStatement("this.handle = handle")
+            .build());
 
     // Add handle getter
-    classBuilder.addMethod(MethodSpec.methodBuilder("getHandle")
-        .addModifiers(Modifier.PUBLIC)
-        .returns(TypeName.LONG)
-        .addStatement("return this.handle")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.methodBuilder("getHandle")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(TypeName.LONG)
+            .addStatement("return this.handle")
+            .build());
 
     // Add close method
-    classBuilder.addMethod(MethodSpec.methodBuilder("close")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .addComment("Resource cleanup - to be implemented by runtime")
-        .build());
+    classBuilder.addMethod(
+        MethodSpec.methodBuilder("close")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .addComment("Resource cleanup - to be implemented by runtime")
+            .build());
 
     return classBuilder.build();
   }
 
   private MethodSpec generateConstructor(final BindgenType type) {
-    MethodSpec.Builder constructorBuilder = MethodSpec.constructorBuilder()
-        .addModifiers(Modifier.PUBLIC);
+    MethodSpec.Builder constructorBuilder =
+        MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
     for (BindgenField field : type.getFields()) {
       String fieldName = JavaNaming.toFieldName(field.getName());
@@ -186,10 +192,11 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     String methodName = "get" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
     TypeName fieldType = mapType(field.getType());
 
-    MethodSpec.Builder getterBuilder = MethodSpec.methodBuilder(methodName)
-        .addModifiers(Modifier.PUBLIC)
-        .returns(fieldType)
-        .addStatement("return this.$N", fieldName);
+    MethodSpec.Builder getterBuilder =
+        MethodSpec.methodBuilder(methodName)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(fieldType)
+            .addStatement("return this.$N", fieldName);
 
     if (config.isGenerateJavadoc() && field.getDocumentation().isPresent()) {
       getterBuilder.addJavadoc(field.getDocumentation().get() + "\n");
@@ -200,11 +207,12 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateEquals(final BindgenType type, final String className) {
-    MethodSpec.Builder equalsBuilder = MethodSpec.methodBuilder("equals")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.BOOLEAN)
-        .addParameter(Object.class, "obj");
+    MethodSpec.Builder equalsBuilder =
+        MethodSpec.methodBuilder("equals")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(TypeName.BOOLEAN)
+            .addParameter(Object.class, "obj");
 
     equalsBuilder.addStatement("if (this == obj) return true");
     equalsBuilder.addStatement("if (obj == null || getClass() != obj.getClass()) return false");
@@ -226,8 +234,8 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
         if (fieldType.isPrimitive()) {
           comparison.append(String.format("this.%s == that.%s", fieldName, fieldName));
         } else {
-          comparison.append(String.format("java.util.Objects.equals(this.%s, that.%s)",
-              fieldName, fieldName));
+          comparison.append(
+              String.format("java.util.Objects.equals(this.%s, that.%s)", fieldName, fieldName));
         }
       }
       equalsBuilder.addStatement("return " + comparison);
@@ -237,10 +245,11 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateHashCode(final BindgenType type) {
-    MethodSpec.Builder hashCodeBuilder = MethodSpec.methodBuilder("hashCode")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(TypeName.INT);
+    MethodSpec.Builder hashCodeBuilder =
+        MethodSpec.methodBuilder("hashCode")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(TypeName.INT);
 
     if (type.getFields().isEmpty()) {
       hashCodeBuilder.addStatement("return 0");
@@ -261,10 +270,11 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   }
 
   private MethodSpec generateToString(final BindgenType type, final String className) {
-    MethodSpec.Builder toStringBuilder = MethodSpec.methodBuilder("toString")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .returns(String.class);
+    MethodSpec.Builder toStringBuilder =
+        MethodSpec.methodBuilder("toString")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .returns(String.class);
 
     if (type.getFields().isEmpty()) {
       toStringBuilder.addStatement("return \"$L{}\"", className);
@@ -287,8 +297,9 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   }
 
   private TypeSpec generateBuilder(final BindgenType type, final String parentClassName) {
-    TypeSpec.Builder builderBuilder = TypeSpec.classBuilder("Builder")
-        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL);
+    TypeSpec.Builder builderBuilder =
+        TypeSpec.classBuilder("Builder")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL);
 
     // Add fields
     for (BindgenField field : type.getFields()) {
@@ -302,19 +313,22 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
       String fieldName = JavaNaming.toFieldName(field.getName());
       TypeName fieldType = mapType(field.getType());
 
-      builderBuilder.addMethod(MethodSpec.methodBuilder(fieldName)
-          .addModifiers(Modifier.PUBLIC)
-          .addParameter(ParameterSpec.builder(fieldType, fieldName).addModifiers(Modifier.FINAL).build())
-          .returns(ClassName.get("", "Builder"))
-          .addStatement("this.$N = $N", fieldName, fieldName)
-          .addStatement("return this")
-          .build());
+      builderBuilder.addMethod(
+          MethodSpec.methodBuilder(fieldName)
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(
+                  ParameterSpec.builder(fieldType, fieldName).addModifiers(Modifier.FINAL).build())
+              .returns(ClassName.get("", "Builder"))
+              .addStatement("this.$N = $N", fieldName, fieldName)
+              .addStatement("return this")
+              .build());
     }
 
     // Add build method
-    MethodSpec.Builder buildMethod = MethodSpec.methodBuilder("build")
-        .addModifiers(Modifier.PUBLIC)
-        .returns(ClassName.get(config.getPackageName(), parentClassName));
+    MethodSpec.Builder buildMethod =
+        MethodSpec.methodBuilder("build")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(ClassName.get(config.getPackageName(), parentClassName));
 
     StringBuilder args = new StringBuilder();
     for (int i = 0; i < type.getFields().size(); i++) {
@@ -341,18 +355,20 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
   }
 
   private TypeSpec generateVisitor(final BindgenType type) {
-    TypeSpec.Builder visitorBuilder = TypeSpec.interfaceBuilder("Visitor")
-        .addModifiers(Modifier.PUBLIC)
-        .addTypeVariable(TypeVariableName.get("T"));
+    TypeSpec.Builder visitorBuilder =
+        TypeSpec.interfaceBuilder("Visitor")
+            .addModifiers(Modifier.PUBLIC)
+            .addTypeVariable(TypeVariableName.get("T"));
 
     for (BindgenVariantCase variantCase : type.getCases()) {
       String caseName = JavaNaming.toClassName(variantCase.getName());
       String methodName = "visit" + caseName;
 
-      MethodSpec.Builder visitMethod = MethodSpec.methodBuilder(methodName)
-          .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-          .returns(TypeVariableName.get("T"))
-          .addParameter(ClassName.get("", caseName), "value");
+      MethodSpec.Builder visitMethod =
+          MethodSpec.methodBuilder(methodName)
+              .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+              .returns(TypeVariableName.get("T"))
+              .addParameter(ClassName.get("", caseName), "value");
 
       visitorBuilder.addMethod(visitMethod.build());
     }
@@ -360,13 +376,15 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     return visitorBuilder.build();
   }
 
-  private TypeSpec generateVariantCase(final String parentName, final BindgenVariantCase variantCase) {
+  private TypeSpec generateVariantCase(
+      final String parentName, final BindgenVariantCase variantCase) {
     String caseName = JavaNaming.toClassName(variantCase.getName());
     ClassName parentType = ClassName.get(config.getPackageName(), parentName);
 
-    TypeSpec.Builder caseBuilder = TypeSpec.classBuilder(caseName)
-        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-        .superclass(parentType);
+    TypeSpec.Builder caseBuilder =
+        TypeSpec.classBuilder(caseName)
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+            .superclass(parentType);
 
     // Add documentation
     if (config.isGenerateJavadoc() && variantCase.getDocumentation().isPresent()) {
@@ -381,34 +399,36 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
       caseBuilder.addField(javaType, "value", Modifier.PRIVATE, Modifier.FINAL);
 
       // Add constructor
-      caseBuilder.addMethod(MethodSpec.constructorBuilder()
-          .addModifiers(Modifier.PUBLIC)
-          .addParameter(ParameterSpec.builder(javaType, "value").addModifiers(Modifier.FINAL).build())
-          .addStatement("this.value = value")
-          .build());
+      caseBuilder.addMethod(
+          MethodSpec.constructorBuilder()
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(
+                  ParameterSpec.builder(javaType, "value").addModifiers(Modifier.FINAL).build())
+              .addStatement("this.value = value")
+              .build());
 
       // Add getter
-      caseBuilder.addMethod(MethodSpec.methodBuilder("getValue")
-          .addModifiers(Modifier.PUBLIC)
-          .returns(javaType)
-          .addStatement("return this.value")
-          .build());
+      caseBuilder.addMethod(
+          MethodSpec.methodBuilder("getValue")
+              .addModifiers(Modifier.PUBLIC)
+              .returns(javaType)
+              .addStatement("return this.value")
+              .build());
     } else {
       // Add default constructor
-      caseBuilder.addMethod(MethodSpec.constructorBuilder()
-          .addModifiers(Modifier.PUBLIC)
-          .build());
+      caseBuilder.addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build());
     }
 
     // Add accept method
-    caseBuilder.addMethod(MethodSpec.methodBuilder("accept")
-        .addModifiers(Modifier.PUBLIC)
-        .addAnnotation(Override.class)
-        .addTypeVariable(TypeVariableName.get("T"))
-        .addParameter(ClassName.get("", "Visitor<T>"), "visitor")
-        .returns(TypeVariableName.get("T"))
-        .addStatement("return visitor.visit$L(this)", caseName)
-        .build());
+    caseBuilder.addMethod(
+        MethodSpec.methodBuilder("accept")
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class)
+            .addTypeVariable(TypeVariableName.get("T"))
+            .addParameter(ClassName.get("", "Visitor<T>"), "visitor")
+            .returns(TypeVariableName.get("T"))
+            .addStatement("return visitor.visit$L(this)", caseName)
+            .build());
 
     return caseBuilder.build();
   }

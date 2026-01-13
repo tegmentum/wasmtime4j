@@ -38,8 +38,8 @@ import javax.lang.model.element.Modifier;
 /**
  * Abstract base class for Java code generation.
  *
- * <p>Subclasses implement specific code generation strategies for different
- * Java versions and styles (modern records vs legacy POJOs).
+ * <p>Subclasses implement specific code generation strategies for different Java versions and
+ * styles (modern records vs legacy POJOs).
  */
 public abstract class JavaCodeGenerator {
 
@@ -115,10 +115,11 @@ public abstract class JavaCodeGenerator {
         throw new BindgenException("Cannot generate type for kind: " + type.getKind());
     }
 
-    JavaFile javaFile = JavaFile.builder(config.getPackageName(), typeSpec)
-        .skipJavaLangImports(true)
-        .indent("  ")
-        .build();
+    JavaFile javaFile =
+        JavaFile.builder(config.getPackageName(), typeSpec)
+            .skipJavaLangImports(true)
+            .indent("  ")
+            .build();
 
     return new GeneratedSource(javaFile);
   }
@@ -134,8 +135,8 @@ public abstract class JavaCodeGenerator {
     Objects.requireNonNull(iface, "iface");
 
     String className = JavaNaming.toClassName(iface.getName());
-    TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(className)
-        .addModifiers(Modifier.PUBLIC);
+    TypeSpec.Builder interfaceBuilder =
+        TypeSpec.interfaceBuilder(className).addModifiers(Modifier.PUBLIC);
 
     // Add documentation
     if (config.isGenerateJavadoc() && iface.getDocumentation().isPresent()) {
@@ -148,10 +149,11 @@ public abstract class JavaCodeGenerator {
       interfaceBuilder.addMethod(method);
     }
 
-    JavaFile javaFile = JavaFile.builder(config.getPackageName(), interfaceBuilder.build())
-        .skipJavaLangImports(true)
-        .indent("  ")
-        .build();
+    JavaFile javaFile =
+        JavaFile.builder(config.getPackageName(), interfaceBuilder.build())
+            .skipJavaLangImports(true)
+            .indent("  ")
+            .build();
 
     return new GeneratedSource(javaFile);
   }
@@ -180,8 +182,7 @@ public abstract class JavaCodeGenerator {
    */
   protected TypeSpec generateEnum(final BindgenType type) {
     String className = JavaNaming.toClassName(type.getName());
-    TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(className)
-        .addModifiers(Modifier.PUBLIC);
+    TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(className).addModifiers(Modifier.PUBLIC);
 
     // Add documentation
     if (config.isGenerateJavadoc() && type.getDocumentation().isPresent()) {
@@ -223,8 +224,8 @@ public abstract class JavaCodeGenerator {
    */
   protected MethodSpec generateFunctionSignature(final BindgenFunction function) {
     String methodName = JavaNaming.toMethodName(function.getName());
-    MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(methodName)
-        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
+    MethodSpec.Builder methodBuilder =
+        MethodSpec.methodBuilder(methodName).addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
 
     // Add documentation
     if (config.isGenerateJavadoc() && function.getDocumentation().isPresent()) {
@@ -235,8 +236,7 @@ public abstract class JavaCodeGenerator {
     for (BindgenParameter param : function.getParameters()) {
       String paramName = JavaNaming.toParameterName(param.getName());
       TypeName paramType = mapType(param.getType());
-      methodBuilder.addParameter(
-          ParameterSpec.builder(paramType, paramName).build());
+      methodBuilder.addParameter(ParameterSpec.builder(paramType, paramName).build());
     }
 
     // Add return type

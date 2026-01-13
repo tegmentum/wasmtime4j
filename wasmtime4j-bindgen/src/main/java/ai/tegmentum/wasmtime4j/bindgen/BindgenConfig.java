@@ -26,10 +26,11 @@ import java.util.Optional;
 /**
  * Configuration for Java binding generation.
  *
- * <p>This immutable class holds all configuration options for the binding generator,
- * including source files, output settings, and code generation preferences.
+ * <p>This immutable class holds all configuration options for the binding generator, including
+ * source files, output settings, and code generation preferences.
  *
  * <p>Use the {@link Builder} to construct instances:
+ *
  * <pre>{@code
  * BindgenConfig config = BindgenConfig.builder()
  *     .packageName("com.example.generated")
@@ -259,9 +260,7 @@ public final class BindgenConfig {
         + '}';
   }
 
-  /**
-   * Builder for creating BindgenConfig instances.
-   */
+  /** Builder for creating BindgenConfig instances. */
   public static final class Builder {
 
     private CodeStyle codeStyle = CodeStyle.MODERN;

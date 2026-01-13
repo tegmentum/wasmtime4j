@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Represents a WIT interface in the bindgen model.
- */
+/** Represents a WIT interface in the bindgen model. */
 public final class BindgenInterface {
 
   private final String name;
@@ -126,13 +124,16 @@ public final class BindgenInterface {
 
   @Override
   public String toString() {
-    return "BindgenInterface{name='" + getFullyQualifiedName() + "', types=" + types.size()
-        + ", functions=" + functions.size() + "}";
+    return "BindgenInterface{name='"
+        + getFullyQualifiedName()
+        + "', types="
+        + types.size()
+        + ", functions="
+        + functions.size()
+        + "}";
   }
 
-  /**
-   * Builder for BindgenInterface.
-   */
+  /** Builder for BindgenInterface. */
   public static final class Builder {
     private String name;
     private String packageName;
