@@ -604,8 +604,11 @@ public final class ArenaResourceManager implements AutoCloseable {
     ManagedNativeResource resource =
         new ManagedNativeResource(nativeHandle, cleanupAction, owner.getClass().getSimpleName());
 
-    synchronized (managedResources) {
-      managedResources.add(resource);
+    // Only track if tracking is enabled
+    if (trackingEnabled && managedResources != null) {
+      synchronized (managedResources) {
+        managedResources.add(resource);
+      }
     }
 
     LOGGER.fine("Registered managed native resource: " + owner.getClass().getSimpleName());
@@ -619,6 +622,11 @@ public final class ArenaResourceManager implements AutoCloseable {
    */
   public void unregisterManagedResource(final Object owner) {
     if (owner == null) {
+      return;
+    }
+
+    // Only untrack if tracking is enabled
+    if (!trackingEnabled || managedResources == null) {
       return;
     }
 

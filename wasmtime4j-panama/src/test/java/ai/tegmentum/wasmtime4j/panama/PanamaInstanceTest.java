@@ -78,12 +78,12 @@ class PanamaInstanceTest {
     }
 
     @Test
-    @DisplayName("PanamaInstance should have arena field")
-    void panamaInstanceShouldHaveArenaField() throws NoSuchFieldException {
-      final Field arenaField = PanamaInstance.class.getDeclaredField("arena");
-      assertThat(Modifier.isPrivate(arenaField.getModifiers())).isTrue();
-      assertThat(Modifier.isFinal(arenaField.getModifiers())).isTrue();
-      assertThat(arenaField.getType()).isEqualTo(Arena.class);
+    @DisplayName("PanamaInstance should have callArena field")
+    void panamaInstanceShouldHaveCallArenaField() throws NoSuchFieldException {
+      final Field callArenaField = PanamaInstance.class.getDeclaredField("callArena");
+      assertThat(Modifier.isPrivate(callArenaField.getModifiers())).isTrue();
+      assertThat(Modifier.isVolatile(callArenaField.getModifiers())).isTrue();
+      assertThat(callArenaField.getType()).isEqualTo(Arena.class);
     }
 
     @Test

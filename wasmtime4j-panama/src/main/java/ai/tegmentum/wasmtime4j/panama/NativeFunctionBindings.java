@@ -1607,8 +1607,9 @@ public final class NativeFunctionBindings {
   /**
    * Fast path for instance function calls using invokeExact.
    *
-   * <p>This method is optimized for performance by using invokeExact instead of invokeWithArguments,
-   * which avoids varargs array creation, primitive boxing, and runtime type checking.
+   * <p>This method is optimized for performance by using invokeExact instead of
+   * invokeWithArguments, which avoids varargs array creation, primitive boxing, and runtime type
+   * checking.
    *
    * @param instancePtr pointer to the instance
    * @param storePtr pointer to the store

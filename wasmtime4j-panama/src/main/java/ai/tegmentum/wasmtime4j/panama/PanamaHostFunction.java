@@ -681,6 +681,44 @@ public final class PanamaHostFunction implements WasmFunction {
     return convertToDouble(result);
   }
 
+  // (long) -> int (no params, returns int)
+  private static int wrapperForToI(final long hostFunctionId) {
+    final Object result = nativeCallback(hostFunctionId, new Object[0]);
+    return convertToInt(result);
+  }
+
+  // (long) -> long (no params, returns long)
+  private static long wrapperForToL(final long hostFunctionId) {
+    final Object result = nativeCallback(hostFunctionId, new Object[0]);
+    return convertToLong(result);
+  }
+
+  // (long) -> float (no params, returns float)
+  private static float wrapperForToF(final long hostFunctionId) {
+    final Object result = nativeCallback(hostFunctionId, new Object[0]);
+    return convertToFloat(result);
+  }
+
+  // (long) -> double (no params, returns double)
+  private static double wrapperForToD(final long hostFunctionId) {
+    final Object result = nativeCallback(hostFunctionId, new Object[0]);
+    return convertToDouble(result);
+  }
+
+  // (long, int, int) -> int (two int params, returns int)
+  private static int wrapperForIIToI(
+      final long hostFunctionId, final int param1, final int param2) {
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1, param2});
+    return convertToInt(result);
+  }
+
+  // (long, long, long) -> long (two long params, returns long)
+  private static long wrapperForLLToL(
+      final long hostFunctionId, final long param1, final long param2) {
+    final Object result = nativeCallback(hostFunctionId, new Object[] {param1, param2});
+    return convertToLong(result);
+  }
+
   /**
    * Marshals native parameters to WasmValue array.
    *

@@ -54,8 +54,8 @@ public final class PanamaInstance implements Instance {
   private static final int MAX_POOLED_RESULT_SIZE = 5;
 
   /**
-   * Thread-local context for function call buffers.
-   * Reuses arena and pre-allocated buffers across calls to avoid per-call allocation overhead.
+   * Thread-local context for function call buffers. Reuses arena and pre-allocated buffers across
+   * calls to avoid per-call allocation overhead.
    */
   private static final class CallContext {
     final Arena arena;
@@ -91,8 +91,8 @@ public final class PanamaInstance implements Instance {
     }
 
     /**
-     * Gets a result array of the specified size, using pooled arrays for common sizes.
-     * For pooled arrays, clears previous values to allow GC of old WasmValue objects.
+     * Gets a result array of the specified size, using pooled arrays for common sizes. For pooled
+     * arrays, clears previous values to allow GC of old WasmValue objects.
      *
      * @param size the number of results
      * @return a WasmValue array of the requested size
@@ -197,8 +197,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Gets or creates the shared arena for caching function name segments.
-   * Uses double-checked locking for thread-safe lazy initialization.
+   * Gets or creates the shared arena for caching function name segments. Uses double-checked
+   * locking for thread-safe lazy initialization.
    *
    * @return the shared call arena
    */
@@ -687,9 +687,10 @@ public final class PanamaInstance implements Instance {
     final int maxResults = 16;
 
     // Get or create cached function name segment (avoids repeated string encoding)
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     // Get thread-local call context (reuses arena and buffers across calls)
     final CallContext ctx = CALL_CONTEXT.get();
@@ -1080,8 +1081,8 @@ public final class PanamaInstance implements Instance {
   // These methods bypass WasmValue boxing/unboxing for maximum performance.
 
   /**
-   * Fast-path call for functions with two i32 parameters returning i32.
-   * Bypasses WasmValue boxing entirely by writing primitives directly to native memory.
+   * Fast-path call for functions with two i32 parameters returning i32. Bypasses WasmValue boxing
+   * entirely by writing primitives directly to native memory.
    *
    * @param functionName the name of the function to call
    * @param arg1 the first i32 argument
@@ -1097,9 +1098,10 @@ public final class PanamaInstance implements Instance {
     ensureNotClosed();
 
     // Get or create cached function name segment
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     // Get thread-local call context
     final CallContext ctx = CALL_CONTEXT.get();
@@ -1107,14 +1109,20 @@ public final class PanamaInstance implements Instance {
 
     // Direct primitive writes - no WasmValue objects created
     // Tag 0 = I32, value at offset+4
-    params.set(ValueLayout.JAVA_INT, 0, 0);      // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 4, arg1);   // Value 1
-    params.set(ValueLayout.JAVA_INT, 20, 0);     // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 24, arg2);  // Value 2
+    params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 4, arg1); // Value 1
+    params.set(ValueLayout.JAVA_INT, 20, 0); // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 24, arg2); // Value 2
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        params, 2, ctx.resultsBuffer, 1);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            params,
+            2,
+            ctx.resultsBuffer,
+            1);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);
@@ -1128,8 +1136,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Fast-path call for functions with one i32 parameter returning i32.
-   * Bypasses WasmValue boxing entirely by writing primitives directly to native memory.
+   * Fast-path call for functions with one i32 parameter returning i32. Bypasses WasmValue boxing
+   * entirely by writing primitives directly to native memory.
    *
    * @param functionName the name of the function to call
    * @param arg the i32 argument
@@ -1142,19 +1150,26 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     final CallContext ctx = CALL_CONTEXT.get();
     final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 0);     // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 4, arg);   // Value
+    params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
+    params.set(ValueLayout.JAVA_INT, 4, arg); // Value
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        params, 1, ctx.resultsBuffer, 1);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            params,
+            1,
+            ctx.resultsBuffer,
+            1);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);
@@ -1167,8 +1182,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Fast-path call for functions with no parameters returning i32.
-   * Bypasses WasmValue boxing entirely.
+   * Fast-path call for functions with no parameters returning i32. Bypasses WasmValue boxing
+   * entirely.
    *
    * @param functionName the name of the function to call
    * @return the i32 result
@@ -1180,15 +1195,22 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     final CallContext ctx = CALL_CONTEXT.get();
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        MemorySegment.NULL, 0, ctx.resultsBuffer, 1);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            MemorySegment.NULL,
+            0,
+            ctx.resultsBuffer,
+            1);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);
@@ -1201,8 +1223,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Fast-path call for functions with no parameters and no return value.
-   * Bypasses WasmValue boxing entirely.
+   * Fast-path call for functions with no parameters and no return value. Bypasses WasmValue boxing
+   * entirely.
    *
    * @param functionName the name of the function to call
    * @throws WasmException if function execution fails
@@ -1213,15 +1235,22 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     final CallContext ctx = CALL_CONTEXT.get();
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        MemorySegment.NULL, 0, ctx.resultsBuffer, 0);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            MemorySegment.NULL,
+            0,
+            ctx.resultsBuffer,
+            0);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);
@@ -1229,8 +1258,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Fast-path call for functions with one i64 parameter returning i64.
-   * Bypasses WasmValue boxing entirely.
+   * Fast-path call for functions with one i64 parameter returning i64. Bypasses WasmValue boxing
+   * entirely.
    *
    * @param functionName the name of the function to call
    * @param arg the i64 argument
@@ -1243,19 +1272,26 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     final CallContext ctx = CALL_CONTEXT.get();
     final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 1);                       // Tag: I64
-    params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg);          // Value
+    params.set(ValueLayout.JAVA_INT, 0, 1); // Tag: I64
+    params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg); // Value
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        params, 1, ctx.resultsBuffer, 1);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            params,
+            1,
+            ctx.resultsBuffer,
+            1);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);
@@ -1268,8 +1304,8 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Fast-path call for functions with one f64 parameter returning f64.
-   * Bypasses WasmValue boxing entirely.
+   * Fast-path call for functions with one f64 parameter returning f64. Bypasses WasmValue boxing
+   * entirely.
    *
    * @param functionName the name of the function to call
    * @param arg the f64 argument
@@ -1282,19 +1318,26 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    final MemorySegment functionNameSegment = functionNameCache.computeIfAbsent(
-        functionName,
-        name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment functionNameSegment =
+        functionNameCache.computeIfAbsent(
+            functionName,
+            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
     final CallContext ctx = CALL_CONTEXT.get();
     final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 3);                        // Tag: F64
-    params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg);         // Value
+    params.set(ValueLayout.JAVA_INT, 0, 3); // Tag: F64
+    params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg); // Value
 
-    final long resultCount = NATIVE_BINDINGS.instanceCallFunctionFast(
-        nativeInstance, store.getNativeStore(), functionNameSegment,
-        params, 1, ctx.resultsBuffer, 1);
+    final long resultCount =
+        NATIVE_BINDINGS.instanceCallFunctionFast(
+            nativeInstance,
+            store.getNativeStore(),
+            functionNameSegment,
+            params,
+            1,
+            ctx.resultsBuffer,
+            1);
 
     if (resultCount < 0) {
       throw new WasmException("Failed to call function: " + functionName);

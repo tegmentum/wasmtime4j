@@ -91,9 +91,14 @@ public final class PanamaErrorHandler {
   /** Internal system error. */
   private static final int NATIVE_ERROR_INTERNAL = -18;
 
-  /** Private constructor for singleton pattern. */
-  private PanamaErrorHandler() {
-    // Singleton - use getInstance()
+  /**
+   * Default constructor.
+   *
+   * <p>This class is primarily used via static methods, but a public constructor is provided for
+   * flexibility and testing purposes.
+   */
+  public PanamaErrorHandler() {
+    // All methods are static - constructor provided for flexibility
   }
 
   /**

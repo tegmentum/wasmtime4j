@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
@@ -2803,8 +2804,8 @@ public final class JniGcRuntime implements GcRuntime {
     private final long profilerId;
     private volatile boolean active = false;
     private volatile java.time.Instant startTime;
-    private volatile long allocationCount = 0;
-    private volatile long collectionCount = 0;
+    private final AtomicLong allocationCount = new AtomicLong(0);
+    private final AtomicLong collectionCount = new AtomicLong(0);
 
     public JniGcProfiler(final JniGcRuntime runtime, final long profilerId) {
       this.runtime = runtime;
@@ -2820,11 +2821,11 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     void recordAllocation() {
-      allocationCount++;
+      allocationCount.incrementAndGet();
     }
 
     void recordCollection() {
-      collectionCount++;
+      collectionCount.incrementAndGet();
     }
 
     @Override
@@ -2837,15 +2838,16 @@ public final class JniGcRuntime implements GcRuntime {
       try {
         final GcStats stats = runtime.collectGarbage();
         if (stats != null) {
-          collectionCount = Math.max(collectionCount, stats.getMajorCollections());
-          allocationCount = Math.max(allocationCount, stats.getTotalAllocated());
+          collectionCount.updateAndGet(current -> Math.max(current, stats.getMajorCollections()));
+          allocationCount.updateAndGet(current -> Math.max(current, stats.getTotalAllocated()));
         }
-      } catch (Exception e) {
-        // Ignore - use what we have
+      } catch (final Exception e) {
+        // Stats collection failed - use accumulated counts from profiling period
+        LOGGER.fine("GC stats collection failed during profiler stop: " + e.getMessage());
       }
 
-      final long finalAllocCount = Math.max(100, allocationCount);
-      final long finalCollCount = Math.max(1, collectionCount);
+      final long finalAllocCount = Math.max(100, allocationCount.get());
+      final long finalCollCount = Math.max(1, collectionCount.get());
 
       return new JniGcProfilingResults(duration, finalAllocCount, finalCollCount);
     }
@@ -2870,7 +2872,7 @@ public final class JniGcRuntime implements GcRuntime {
         final Map<String, Object> metadata) {
       // Track allocations when relevant events occur
       if (eventName != null && eventName.contains("alloc")) {
-        allocationCount++;
+        allocationCount.incrementAndGet();
       }
     }
   }
