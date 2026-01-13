@@ -1,0 +1,19 @@
+System Information - Generated Sun Jan 11 17:03:21 EST 2026
+================================================
+
+OS Information:
+Darwin Zacharys-MacBook-Pro-2.local 24.5.0 Darwin Kernel Version 24.5.0: Tue Apr 22 19:54:25 PDT 2025; root:xnu-11417.121.6~2/RELEASE_ARM64_T6020 arm64
+
+Java Information:
+
+Memory Information:
+PhysMem: 31G used (3183M wired, 4530M compressor), 382M unused.
+
+CPU Information:
+Apple M2 Max
+12
+
+Environment Variables:
+JAVA_HOME=/Users/zacharywhitley/.sdkman/candidates/java/current
+PATH=/Users/zacharywhitley/.local/share/mise/installs/usage/2.1.1:/Users/zacharywhitley/.sdkman/candidates/maven/current/bin:/Users/zacharywhitley/.sdkman/candidates/java/current/bin:/Users/zacharywhitley/.deno/bin:/Users/zacharywhitley/go/bin:/opt/homebrew/opt/go/libexec/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/Users/zacharywhitley/Library/Application Support/edgedb/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Library/TeX/texbin:/Users/zacharywhitley/.cargo/bin:/Applications/iTerm.app/Contents/Resources/utilities:/Users/zacharywhitley/Library/Application Support/JetBrains/Toolbox/scripts:/Users/zacharywhitley/.local/bin
+

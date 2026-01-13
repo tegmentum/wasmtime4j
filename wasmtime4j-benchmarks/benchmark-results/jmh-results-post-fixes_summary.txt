@@ -1,0 +1,23 @@
+Wasmtime4j Benchmark Summary Report
+Generated: 2026-01-11T17:14:40.387326
+Category: JNI vs Panama Comparison
+Profile: QUICK
+
+baselineCompleteWorkflow                          :    1153.28 ±      NaN ops/s
+baselineConcurrent10Threads                       :    1216.88 ±      NaN ops/s
+baselineConcurrent4Threads                        :    1215.02 ±      NaN ops/s
+baselineManualPlatformDetection                   : 17988678.01 ±      NaN ops/s
+baselineManualResourceLookup                      : 2138241.81 ±      NaN ops/s
+baselineManualResourcePath                        : 4090880.34 ±      NaN ops/s
+baselineRepeatedOperations                        : 33036014.39 ±      NaN ops/s
+baselineSystemLoadLibrary                         :    1162.56 ±      NaN ops/s
+comparisonBaselineVsNativeLoader                  :     540.11 ±      NaN ops/s
+comparisonPlatformDetection                       : 14629712.86 ±      NaN ops/s
+nativeLoaderBuilderPattern                        :    1071.64 ±      NaN ops/s
+nativeLoaderCompleteWorkflow                      :    1040.96 ±      NaN ops/s
+nativeLoaderConcurrent10Threads                   :    1148.03 ±      NaN ops/s
+nativeLoaderConcurrent4Threads                    :    1201.82 ±      NaN ops/s
+nativeLoaderPlatformDetection                     : 1961476668.17 ±      NaN ops/s
+nativeLoaderRepeatedOperations                    : 671482881.67 ±      NaN ops/s
+nativeLoaderResourcePathResolution                : 24598553.44 ±      NaN ops/s
+nativeLoaderSimpleLoad                            :    1060.87 ±      NaN ops/s

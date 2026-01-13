@@ -79,7 +79,6 @@ public class MemoryOperationBenchmark extends BenchmarkBase {
   /** WebAssembly memory instance. */
   private WasmMemory wasmMemory;
 
-
   /** Test data for memory operations. */
   private byte[] testData;
 

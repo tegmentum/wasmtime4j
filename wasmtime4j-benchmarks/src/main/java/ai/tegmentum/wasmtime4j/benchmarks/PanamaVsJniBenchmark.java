@@ -92,8 +92,6 @@ public class PanamaVsJniBenchmark extends BenchmarkBase {
   private int[] testData;
   private ByteBuffer testBuffer;
 
-
-
   /**
    * Sets up the benchmark trial by initializing WebAssembly runtime, modules, and test data.
    *

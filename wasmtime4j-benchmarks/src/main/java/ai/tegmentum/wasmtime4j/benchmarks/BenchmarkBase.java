@@ -42,9 +42,7 @@ public abstract class BenchmarkBase {
   /** Runtime instance for benchmark execution. */
   protected WasmRuntime runtime;
 
-  /**
-   * Simple WebAssembly module that adds two i32 values. Exports: add(i32, i32) -> i32.
-   */
+  /** Simple WebAssembly module that adds two i32 values. Exports: add(i32, i32) -> i32. */
   protected static final String SIMPLE_WAT_MODULE =
       "(module\n"
           + "  (func $add (export \"add\") (param i32 i32) (result i32)\n"
@@ -53,8 +51,8 @@ public abstract class BenchmarkBase {
           + "    i32.add))\n";
 
   /**
-   * Complex WebAssembly module with memory for performance testing. Exports: fibonacci(i32) ->
-   * i32, memory.
+   * Complex WebAssembly module with memory for performance testing. Exports: fibonacci(i32) -> i32,
+   * memory.
    */
   protected static final String COMPLEX_WAT_MODULE =
       "(module\n"
