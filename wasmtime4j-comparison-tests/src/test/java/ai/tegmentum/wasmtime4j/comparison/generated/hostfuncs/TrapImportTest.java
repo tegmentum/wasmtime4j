@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
 import org.junit.jupiter.api.DisplayName;
@@ -48,8 +47,7 @@ public final class TrapImportTest {
 
       // Verify the exception occurred
       assertTrue(
-          exception != null,
-          "Exception should have been thrown from trapping host function");
+          exception != null, "Exception should have been thrown from trapping host function");
     }
   }
 }

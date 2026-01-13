@@ -211,6 +211,7 @@ class ExternTest {
     @Test
     @DisplayName("should have exactly 10 declared methods")
     void shouldHaveTenDeclaredMethods() {
+      // 1 abstract + 8 default methods + 1 synthetic bridge method
       assertEquals(
           10, Extern.class.getDeclaredMethods().length, "Extern should have exactly 10 methods");
     }

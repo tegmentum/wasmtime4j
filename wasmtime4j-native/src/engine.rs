@@ -782,8 +782,11 @@ impl EngineBuilder {
     }
 
     /// Configure WebAssembly threads support
+    /// Also enables shared memory support when threads are enabled
     pub fn wasm_threads(mut self, enable: bool) -> Self {
         self.config.wasm_threads(enable);
+        // Shared memory is required for the threads proposal to work with shared memories
+        self.config.shared_memory(enable);
         self.wasm_threads = enable;
         self
     }

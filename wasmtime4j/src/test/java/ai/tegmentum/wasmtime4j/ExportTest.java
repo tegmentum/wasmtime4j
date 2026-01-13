@@ -286,7 +286,7 @@ class ExportTest {
     @Test
     @DisplayName("should have exactly 12 declared methods")
     void shouldHave12DeclaredMethods() {
-      // 2 abstract + 9 default + 1 synthetic bridge method for generic asFunction<T>()
+      // 2 abstract + 9 default methods + 1 synthetic bridge method for generic asFunction
       assertEquals(
           12, Export.class.getDeclaredMethods().length, "Export should have exactly 12 methods");
     }

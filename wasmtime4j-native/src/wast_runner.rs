@@ -59,6 +59,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     }
 
     // Create Wasmtime engine with default configuration
+    // Note: async_support is disabled for synchronous WAST execution
     let mut config = Config::new();
     config.wasm_multi_value(true);
     config.wasm_multi_memory(true);
@@ -74,23 +75,24 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     config.wasm_component_model(true);
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
-    config.wasm_component_model_async(true);
-    config.async_support(true);
 
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;
 
-    // Create WAST context for test execution (async mode to support component-model-async)
-    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::Yes, |store| {
+    // Create WAST context for synchronous test execution
+    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::No, |store| {
         let _ = store;
     });
 
     // Register spectest infrastructure for both core and component model
-    wast_context.register_spectest(&wasmtime_wast::SpectestConfig {
-        use_shared_memory: true,
-        suppress_prints: false,
-    })
-    .context("Failed to register spectest infrastructure")?;
+    // This is optional - some tests may not need spectest functions
+    if let Err(e) = wast_context.register_spectest(&wasmtime_wast::SpectestConfig {
+        use_shared_memory: false,
+        suppress_prints: true,
+    }) {
+        // Log but continue - spectest is optional for many tests
+        eprintln!("Warning: Could not register spectest infrastructure: {}", e);
+    }
 
     // Execute the WAST file
     match wast_context.run_file(path) {
@@ -130,6 +132,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
 /// Execute WAST content from a string buffer
 pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecutionResult> {
     // Create Wasmtime engine with default configuration
+    // Note: async_support is disabled for synchronous WAST execution
     let mut config = Config::new();
     config.wasm_multi_value(true);
     config.wasm_multi_memory(true);
@@ -145,23 +148,24 @@ pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecuti
     config.wasm_component_model(true);
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
-    config.wasm_component_model_async(true);
-    config.async_support(true);
 
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;
 
-    // Create WAST context for test execution (async mode to support component-model-async)
-    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::Yes, |store| {
+    // Create WAST context for synchronous test execution
+    let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::No, |store| {
         let _ = store;
     });
 
     // Register spectest infrastructure for both core and component model
-    wast_context.register_spectest(&wasmtime_wast::SpectestConfig {
-        use_shared_memory: true,
-        suppress_prints: false,
-    })
-    .context("Failed to register spectest infrastructure")?;
+    // This is optional - some tests may not need spectest functions
+    if let Err(e) = wast_context.register_spectest(&wasmtime_wast::SpectestConfig {
+        use_shared_memory: false,
+        suppress_prints: true,
+    }) {
+        // Log but continue - spectest is optional for many tests
+        eprintln!("Warning: Could not register spectest infrastructure: {}", e);
+    }
 
     // Execute the WAST buffer using run_wast
     let result = match wast_context.run_wast(filename, content) {

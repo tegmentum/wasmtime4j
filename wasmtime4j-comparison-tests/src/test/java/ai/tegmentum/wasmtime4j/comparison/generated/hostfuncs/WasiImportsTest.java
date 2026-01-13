@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
 import java.util.concurrent.atomic.AtomicInteger;

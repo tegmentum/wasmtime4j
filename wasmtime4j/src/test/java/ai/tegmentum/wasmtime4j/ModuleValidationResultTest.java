@@ -332,6 +332,7 @@ class ModuleValidationResultTest {
     @Test
     @DisplayName("should have exactly 12 declared methods")
     void shouldHave12DeclaredMethods() {
+      // 3 static factory + 5 instance + 3 override methods + 1 synthetic bridge method
       assertEquals(
           12,
           ModuleValidationResult.class.getDeclaredMethods().length,
