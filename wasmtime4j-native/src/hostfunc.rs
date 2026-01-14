@@ -50,6 +50,10 @@ pub struct HostFunction {
     pub caller_context_usage: CallerContextUsage,
     /// Whether this function requires caller context at all
     pub requires_caller_context: bool,
+    /// Whether this instance is the registry owner (should remove from registry on drop).
+    /// Only the original instance created by new_with_optimization is the owner.
+    /// Clones are NOT owners and should not try to remove from registry.
+    is_registry_owner: bool,
 }
 
 /// Caller context usage patterns for optimization
@@ -112,6 +116,8 @@ impl Clone for HostFunction {
             callback: self.callback.clone_callback(),
             caller_context_usage: self.caller_context_usage,
             requires_caller_context: self.requires_caller_context,
+            // Clones are NOT registry owners - only the original should remove from registry
+            is_registry_owner: false,
         }
     }
 }
@@ -169,26 +175,7 @@ impl HostFunction {
         caller_context_usage: CallerContextUsage,
         requires_caller_context: bool,
     ) -> WasmtimeResult<Arc<Self>> {
-        use std::io::Write;
-        fn debug_log(msg: &str) {
-            let log_path = std::env::var("HOME")
-                .map(|h| format!("{}/wasmtime4j-debug.log", h))
-                .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&log_path) {
-                let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0), msg);
-                let _ = file.flush();
-            }
-        }
-
-        debug_log(&format!("HostFunction::new_with_optimization: name={}", name));
         let id = NEXT_HOST_FUNCTION_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        debug_log(&format!("HostFunction::new_with_optimization: assigned id={}", id));
 
         let host_func = Arc::new(HostFunction {
             id,
@@ -198,19 +185,17 @@ impl HostFunction {
             callback,
             caller_context_usage,
             requires_caller_context,
+            // Original is the registry owner - it will remove itself from registry on drop
+            is_registry_owner: true,
         });
 
         // Register to prevent GC
-        debug_log("HostFunction: acquiring registry lock...");
         {
             let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock host function registry: {}", e),
             })?;
-            debug_log(&format!("HostFunction: registry lock acquired, inserting id={}", id));
             registry.insert(id, Arc::clone(&host_func));
-            debug_log(&format!("HostFunction: registry now has {} entries", registry.len()));
         }
-        debug_log("HostFunction: registry lock released");
 
         log::debug!("Created host function with ID: {} (caller context: {:?}, required: {})",
                    id, caller_context_usage, requires_caller_context);
@@ -343,10 +328,31 @@ impl HostFunction {
 
 impl Drop for HostFunction {
     fn drop(&mut self) {
-        // Remove from registry when dropping
-        if let Ok(mut registry) = get_host_function_registry().lock() {
-            registry.remove(&self.id);
-            log::debug!("Removed host function from registry: {}", self.id);
+        // Only the registry owner should remove from registry.
+        // Clones should NOT try to remove, as this could cause:
+        // 1. Removing the original while it's still in use
+        // 2. Deadlock if we're holding the registry lock and the removed Arc's
+        //    drop causes another HostFunction drop that tries to lock again
+        if !self.is_registry_owner {
+            log::debug!("HostFunction clone {} dropped (not registry owner)", self.id);
+            return;
+        }
+
+        // Remove from registry when dropping the owner
+        // Note: We need to be careful here to avoid deadlock. The registry contains
+        // Arc<HostFunction>, so removing might cause another drop if we hold the
+        // last reference. We release the lock before that can happen.
+        let removed = {
+            if let Ok(mut registry) = get_host_function_registry().lock() {
+                registry.remove(&self.id)
+            } else {
+                None
+            }
+        };
+        // Lock is released here, so if `removed` Arc drops and triggers another
+        // HostFunction drop, it won't deadlock.
+        if removed.is_some() {
+            log::debug!("Removed host function {} from registry", self.id);
         }
     }
 }

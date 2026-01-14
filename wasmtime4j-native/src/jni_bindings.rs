@@ -3619,15 +3619,7 @@ pub mod jni_linker {
         store_handle: jlong,
         module_handle: jlong,
     ) -> jlong {
-        use std::io::Write;
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        static CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
-        let call_num = CALL_COUNT.fetch_add(1, Ordering::SeqCst);
-        eprintln!("[JNI] ========= nativeInstantiate ENTRY (call #{}) =========", call_num);
-        let _ = std::io::stderr().flush();
         jni_utils::jni_try_with_default(&mut env, 0, || {
-            eprintln!("[JNI] nativeInstantiate: inside jni_try_with_default");
-            let _ = std::io::stderr().flush();
             // Extract linker from handle (mutable because we need to call instantiate_host_functions)
             let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
@@ -3648,35 +3640,15 @@ pub mod jni_linker {
 
             // Instantiate the module using the linker
             // First, instantiate any registered host functions
-            use std::io::Write;
-            eprintln!("[JNI] nativeInstantiate: about to lock store");
-            let _ = std::io::stderr().flush();
             let mut store_lock = store.lock_store();
-            eprintln!("[JNI] nativeInstantiate: store locked, calling instantiate_host_functions");
-            let _ = std::io::stderr().flush();
-
-            // Call directly without catch_unwind
-            eprintln!("[JNI] nativeInstantiate: CALLING instantiate_host_functions NOW");
-            let _ = std::io::stderr().flush();
-            let ihf_result = linker.instantiate_host_functions(&mut *store_lock);
-            eprintln!("[JNI] nativeInstantiate: instantiate_host_functions RETURNED: {:?}", ihf_result.is_ok());
-            let _ = std::io::stderr().flush();
-            ihf_result?;
-            eprintln!("[JNI] nativeInstantiate: instantiate_host_functions was Ok");
-            let _ = std::io::stderr().flush();
+            linker.instantiate_host_functions(&mut *store_lock)?;
 
             // Then use wasmtime::Linker::instantiate
-            eprintln!("[JNI] nativeInstantiate: about to get linker.inner()");
-            let _ = std::io::stderr().flush();
             let linker_lock = linker.inner()?;
-            eprintln!("[JNI] nativeInstantiate: linker.inner() returned, about to call wasmtime instantiate");
-            let _ = std::io::stderr().flush();
             let wasmtime_instance = linker_lock.instantiate(&mut *store_lock, module.inner())
                 .map_err(|e| WasmtimeError::Instantiation {
                     message: format!("Failed to instantiate module: {}", e),
                 })?;
-            eprintln!("[JNI] nativeInstantiate: wasmtime instantiate succeeded");
-            let _ = std::io::stderr().flush();
 
             // Drop locks before creating Instance
             drop(linker_lock);
