@@ -28,6 +28,7 @@ import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.ComponentVal;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import java.io.ByteArrayOutputStream;
@@ -254,7 +255,8 @@ public final class ComponentFuncIntegrationTest {
       final Object result = func.call(param1, param2);
 
       assertNotNull(result, "Result should not be null");
-      assertEquals(12, result, "add(5, 7) should equal 12");
+      assertTrue(result instanceof ComponentVal, "Result should be ComponentVal");
+      assertEquals(12, ((ComponentVal) result).asS32(), "add(5, 7) should equal 12");
 
       LOGGER.info("Function call result: add(5, 7) = " + result);
     }
@@ -291,8 +293,11 @@ public final class ComponentFuncIntegrationTest {
         final int expected = testCase[2];
 
         final Object result = func.call(WitS32.of(a), WitS32.of(b));
+        assertTrue(result instanceof ComponentVal, "Result should be ComponentVal");
         assertEquals(
-            expected, result, String.format("add(%d, %d) should equal %d", a, b, expected));
+            expected,
+            ((ComponentVal) result).asS32(),
+            String.format("add(%d, %d) should equal %d", a, b, expected));
 
         LOGGER.info(String.format("add(%d, %d) = %d ✓", a, b, expected));
       }
@@ -439,8 +444,13 @@ public final class ComponentFuncIntegrationTest {
       assertTrue(func2.isValid(), "Second reference should be valid");
 
       // Both should produce correct results
-      assertEquals(12, func1.call(WitS32.of(5), WitS32.of(7)), "First reference should work");
-      assertEquals(12, func2.call(WitS32.of(5), WitS32.of(7)), "Second reference should work");
+      final Object result1 = func1.call(WitS32.of(5), WitS32.of(7));
+      assertTrue(result1 instanceof ComponentVal, "First result should be ComponentVal");
+      assertEquals(12, ((ComponentVal) result1).asS32(), "First reference should work");
+
+      final Object result2 = func2.call(WitS32.of(5), WitS32.of(7));
+      assertTrue(result2 instanceof ComponentVal, "Second result should be ComponentVal");
+      assertEquals(12, ((ComponentVal) result2).asS32(), "Second reference should work");
 
       LOGGER.info("Multiple function references handled correctly");
     }
