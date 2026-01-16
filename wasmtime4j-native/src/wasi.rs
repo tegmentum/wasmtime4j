@@ -8,7 +8,7 @@
 //! - Network socket support (where available in Wasmtime)
 //! - Proper security sandboxing and permission enforcement
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, DirPerms, FilePerms};
@@ -27,9 +27,9 @@ pub struct WasiContext {
     config: WasiConfig,
     /// Directory mappings for filesystem access
     directory_mappings: HashMap<String, DirectoryMapping>,
-    /// Environment variables
+    /// Environment variables (also accessible via RwLock for CLI bindings)
     environment: HashMap<String, String>,
-    /// Command line arguments
+    /// Command line arguments (also accessible via RwLock for CLI bindings)
     arguments: Vec<String>,
     /// Standard stream configurations
     stdio_config: StdioConfig,
@@ -37,6 +37,24 @@ pub struct WasiContext {
     stdout_pipe: Option<MemoryOutputPipe>,
     /// Captured stderr pipe (when using Buffer mode)
     stderr_pipe: Option<MemoryOutputPipe>,
+    /// Streams registry for CLI bindings
+    pub streams: Arc<RwLock<HashMap<u32, WasiStreamInfo>>>,
+    /// Stdin stream handle
+    pub stdin_handle: Arc<RwLock<Option<u64>>>,
+    /// Stdout stream handle
+    pub stdout_handle: Arc<RwLock<Option<u64>>>,
+    /// Stderr stream handle
+    pub stderr_handle: Arc<RwLock<Option<u64>>>,
+    /// Exit code (if process has exited)
+    pub exit_code: Arc<RwLock<Option<i32>>>,
+    /// Environment variables (RwLock-wrapped for CLI bindings)
+    pub environment_rw: Arc<RwLock<HashMap<String, String>>>,
+    /// Arguments (RwLock-wrapped for CLI bindings)
+    pub arguments_rw: Arc<RwLock<Vec<String>>>,
+    /// Initial working directory (RwLock-wrapped for CLI bindings)
+    pub initial_cwd: Arc<RwLock<Option<String>>>,
+    /// Operation counter for generating unique IDs
+    pub next_operation_id: std::sync::atomic::AtomicU64,
 }
 
 impl Clone for WasiContext {
@@ -50,6 +68,17 @@ impl Clone for WasiContext {
             stdio_config: self.stdio_config.clone(),
             stdout_pipe: self.stdout_pipe.clone(),
             stderr_pipe: self.stderr_pipe.clone(),
+            streams: Arc::clone(&self.streams),
+            stdin_handle: Arc::clone(&self.stdin_handle),
+            stdout_handle: Arc::clone(&self.stdout_handle),
+            stderr_handle: Arc::clone(&self.stderr_handle),
+            exit_code: Arc::clone(&self.exit_code),
+            environment_rw: Arc::clone(&self.environment_rw),
+            arguments_rw: Arc::clone(&self.arguments_rw),
+            initial_cwd: Arc::clone(&self.initial_cwd),
+            next_operation_id: std::sync::atomic::AtomicU64::new(
+                self.next_operation_id.load(std::sync::atomic::Ordering::SeqCst)
+            ),
         }
     }
 }
@@ -64,6 +93,11 @@ impl std::fmt::Debug for WasiContext {
             .field("stdio_config", &self.stdio_config)
             .field("stdout_pipe", &self.stdout_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
             .field("stderr_pipe", &self.stderr_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
+            .field("streams", &"<streams>")
+            .field("stdin_handle", &"<stdin_handle>")
+            .field("stdout_handle", &"<stdout_handle>")
+            .field("stderr_handle", &"<stderr_handle>")
+            .field("exit_code", &"<exit_code>")
             .field("inner", &"<WasiCtx>")
             .finish()
     }
@@ -178,8 +212,45 @@ pub struct WasiExecutionResult {
     pub exit_code: Option<i32>,
     /// Captured stdout data
     pub stdout: Option<Vec<u8>>,
-    /// Captured stderr data  
+    /// Captured stderr data
     pub stderr: Option<Vec<u8>>,
+}
+
+/// WASI stream for CLI bindings (Preview 1 compatible)
+#[derive(Debug, Clone)]
+pub struct WasiStreamInfo {
+    /// Stream ID
+    pub id: u32,
+    /// Stream type
+    pub stream_type: WasiStreamTypeInfo,
+    /// Buffer for buffered operations
+    pub buffer: Vec<u8>,
+    /// Stream status
+    pub status: WasiStreamStatusInfo,
+    /// Associated file descriptor or resource
+    pub resource_id: Option<u64>,
+}
+
+/// WASI stream types for CLI bindings
+#[derive(Debug, Clone, PartialEq)]
+pub enum WasiStreamTypeInfo {
+    /// Input stream for reading
+    InputStream,
+    /// Output stream for writing
+    OutputStream,
+    /// Bidirectional stream
+    BidirectionalStream,
+}
+
+/// WASI stream status for CLI bindings
+#[derive(Debug, Clone, PartialEq)]
+pub enum WasiStreamStatusInfo {
+    /// Stream is ready for operations
+    Ready,
+    /// Stream is closed
+    Closed,
+    /// Stream has an error
+    Error(String),
 }
 
 impl Default for WasiConfig {
@@ -267,15 +338,25 @@ impl WasiContext {
         // Build the WASI Preview 1 context
         let wasi_ctx = builder.build_p1();
         
+        let default_args = vec!["wasmtime4j".to_string()];
         Ok(WasiContext {
             inner: Arc::new(Mutex::new(wasi_ctx)),
             config,
             directory_mappings: HashMap::new(),
             environment: HashMap::new(),
-            arguments: vec!["wasmtime4j".to_string()], // Default program name
+            arguments: default_args.clone(),
             stdio_config: StdioConfig::default(),
             stdout_pipe: None,
             stderr_pipe: None,
+            streams: Arc::new(RwLock::new(HashMap::new())),
+            stdin_handle: Arc::new(RwLock::new(None)),
+            stdout_handle: Arc::new(RwLock::new(None)),
+            stderr_handle: Arc::new(RwLock::new(None)),
+            exit_code: Arc::new(RwLock::new(None)),
+            environment_rw: Arc::new(RwLock::new(HashMap::new())),
+            arguments_rw: Arc::new(RwLock::new(default_args)),
+            initial_cwd: Arc::new(RwLock::new(None)),
+            next_operation_id: std::sync::atomic::AtomicU64::new(100), // Start at 100 to avoid conflicts with stdio handles
         })
     }
 
@@ -748,16 +829,26 @@ impl Default for WasiContext {
                 // Fallback to minimal WASI context that should always work
                 let mut builder = WasiCtxBuilder::new();
                 let wasi_ctx = builder.build_p1();
+                let default_args = vec!["wasmtime4j".to_string()];
 
                 WasiContext {
                     inner: Arc::new(Mutex::new(wasi_ctx)),
                     config: WasiConfig::default(),
                     directory_mappings: HashMap::new(),
                     environment: HashMap::new(),
-                    arguments: vec!["wasmtime4j".to_string()],
+                    arguments: default_args.clone(),
                     stdio_config: StdioConfig::default(),
                     stdout_pipe: None,
                     stderr_pipe: None,
+                    streams: Arc::new(RwLock::new(HashMap::new())),
+                    stdin_handle: Arc::new(RwLock::new(None)),
+                    stdout_handle: Arc::new(RwLock::new(None)),
+                    stderr_handle: Arc::new(RwLock::new(None)),
+                    exit_code: Arc::new(RwLock::new(None)),
+                    environment_rw: Arc::new(RwLock::new(HashMap::new())),
+                    arguments_rw: Arc::new(RwLock::new(default_args)),
+                    initial_cwd: Arc::new(RwLock::new(None)),
+                    next_operation_id: std::sync::atomic::AtomicU64::new(100),
                 }
             }
         }
@@ -3236,7 +3327,7 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
         *buffer_addr.wrapping_add(offset + i) = rand_val;
     }
 
-    length
+    0 // Return 0 on success (Java expects 0, non-zero is error code)
 }
 
 /// Get random bytes using byte array
@@ -3290,7 +3381,7 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
         return -1;
     }
 
-    length as jni::sys::jint
+    0 // Return 0 on success (Java expects 0, non-zero is error code)
 }
 
 /// Get clock resolution

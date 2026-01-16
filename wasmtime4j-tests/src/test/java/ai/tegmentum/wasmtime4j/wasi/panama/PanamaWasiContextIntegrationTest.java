@@ -103,9 +103,11 @@ class PanamaWasiContextIntegrationTest {
   @AfterEach
   void tearDown() {
     LOGGER.info("Cleaning up test resources");
-    for (final AutoCloseable resource : resources) {
+    // Close resources in reverse order to ensure child resources
+    // are closed before parent resources
+    for (int i = resources.size() - 1; i >= 0; i--) {
       try {
-        resource.close();
+        resources.get(i).close();
       } catch (final Exception e) {
         LOGGER.warning("Failed to close resource: " + e.getMessage());
       }

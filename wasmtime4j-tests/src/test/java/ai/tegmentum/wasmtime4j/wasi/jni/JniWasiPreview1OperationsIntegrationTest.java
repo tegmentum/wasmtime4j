@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -403,7 +402,6 @@ class JniWasiPreview1OperationsIntegrationTest {
   class RandomOperationsTests {
 
     @Test
-    @Disabled("Native WASI random_get operation not fully implemented")
     @DisplayName("should generate random bytes")
     void shouldGenerateRandomBytes() {
       LOGGER.info("Testing random_get operation");
@@ -433,7 +431,6 @@ class JniWasiPreview1OperationsIntegrationTest {
     }
 
     @Test
-    @Disabled("Native WASI random_get operation not fully implemented")
     @DisplayName("should generate different random bytes each time")
     void shouldGenerateDifferentRandomBytesEachTime() {
       LOGGER.info("Testing random_get produces different results");
@@ -491,7 +488,6 @@ class JniWasiPreview1OperationsIntegrationTest {
     }
 
     @Test
-    @Disabled("Native WASI random_get operation not fully implemented")
     @DisplayName("should generate large amount of random bytes")
     void shouldGenerateLargeAmountOfRandomBytes() {
       LOGGER.info("Testing random_get with large buffer");
