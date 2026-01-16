@@ -165,30 +165,8 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
     if (!isValid()) {
       throw new WasmException("Component instance is not valid");
     }
-    // Return a component function wrapper that delegates to invoke
-    final JniComponentInstanceImpl instance = this;
-    return Optional.of(
-        new ComponentFunction() {
-          @Override
-          public Object call(final Object... args) throws WasmException {
-            return instance.invoke(functionName, args);
-          }
-
-          @Override
-          public String getName() {
-            return functionName;
-          }
-
-          @Override
-          public boolean isValid() {
-            return instance.isValid();
-          }
-
-          @Override
-          public ComponentInstance getInstance() {
-            return instance;
-          }
-        });
+    // Return a JniComponentFunc that supports both ComponentFunc and TypedComponentFunctionSupport
+    return Optional.of(new JniComponentFunc(functionName, this, component));
   }
 
   @Override

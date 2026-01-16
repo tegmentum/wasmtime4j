@@ -8,11 +8,12 @@ use std::collections::HashMap;
 use std::time::Instant;
 use crate::interop::ReentrantLock;
 use wasmtime::{
-    Instance as WasmtimeInstance, 
-    Extern, 
-    Func, 
-    Global, 
-    Memory, 
+    Instance as WasmtimeInstance,
+    Extern,
+    Func,
+    Global,
+    Memory,
+    SharedMemory,
     Table,
     Val,
     ValType as WasmtimeValType,
@@ -743,6 +744,26 @@ impl Instance {
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::Memory(memory)) => Ok(Some(memory)),
+            _ => Ok(None),
+        }
+    }
+
+    /// Get exported shared memory by name
+    ///
+    /// This method is used to retrieve shared memory exports from modules that use
+    /// the WebAssembly threads proposal. Shared memory is different from regular
+    /// memory in that it can be accessed from multiple threads simultaneously.
+    pub fn get_shared_memory(
+        &self,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<SharedMemory>> {
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.lock_store();
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::SharedMemory(shared_memory)) => Ok(Some(shared_memory)),
             _ => Ok(None),
         }
     }

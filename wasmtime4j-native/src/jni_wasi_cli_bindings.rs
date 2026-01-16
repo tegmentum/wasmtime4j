@@ -1,14 +1,22 @@
-//! JNI bindings for WASI Preview 2 CLI operations
+//! JNI bindings for WASI CLI operations
 //!
 //! This module provides JNI functions for wasi:cli interfaces including
 //! environment variables, command-line arguments, standard I/O streams, and program exit.
+//!
+//! Note: These bindings work with WasiContext (Preview 1) to provide CLI functionality.
 
 use jni::objects::{JClass, JObject, JString};
 use jni::sys::{jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
+
+/// Minimum valid pointer value - pointers below this are almost certainly invalid
+/// as they fall within the first page which is never mapped on most systems.
+/// This helps detect corrupted handles early and fail with a clear error message
+/// instead of crashing the JVM.
+const MIN_VALID_POINTER: u64 = 0x1000; // 4KB page size
 
 /// Get all environment variables
 ///
@@ -28,7 +36,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -37,7 +45,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     };
 
     // Get environment variables from context
-    let env_map = match context.environment.read() {
+    let env_map = match context.environment_rw.read() {
         Ok(env_map) => env_map,
         Err(e) => {
             let _ = env.throw_new(
@@ -121,7 +129,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -142,7 +150,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     };
 
     // Get environment variables from context
-    let env_map = match context.environment.read() {
+    let env_map = match context.environment_rw.read() {
         Ok(env_map) => env_map,
         Err(e) => {
             let _ = env.throw_new(
@@ -189,7 +197,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -198,7 +206,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     };
 
     // Get arguments from context
-    let args = match context.arguments.read() {
+    let args = match context.arguments_rw.read() {
         Ok(args) => args,
         Err(e) => {
             let _ = env.throw_new(
@@ -275,7 +283,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -323,15 +331,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
+
     // Validate parameters
     if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
+        return 0;
+    }
+
+    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    if (context_handle as u64) < MIN_VALID_POINTER {
+        let _ = env.throw_new(
+            "java/lang/IllegalArgumentException",
+            format!("Invalid context handle: suspiciously small value 0x{:x}. This suggests the WasiContext native handle is corrupted or was not properly created.", context_handle),
+        );
         return 0;
     }
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -339,28 +357,41 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // Get or create stdin handle
-    let stdin_handle = match context.stdin_handle.read() {
-        Ok(handle_opt) => {
-            match *handle_opt {
-                Some(handle) => handle as i64,
-                None => {
-                    // For now, use a fixed handle ID for stdin
-                    // In a full implementation, this would be a resource from the component model
-                    1i64
-                }
-            }
-        }
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read stdin handle: {}", e),
-            );
-            return 0;
-        }
-    };
+    // Standard stdin handle ID
+    const STDIN_HANDLE_ID: u32 = 1;
 
-    stdin_handle
+    // Ensure stdin stream is registered in the streams map
+    {
+        let mut streams = match context.streams.write() {
+            Ok(streams) => streams,
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to acquire streams lock: {}", e),
+                );
+                return 0;
+            }
+        };
+
+        // Create stdin stream if not already registered
+        if !streams.contains_key(&STDIN_HANDLE_ID) {
+            let stdin_stream = WasiStreamInfo {
+                id: STDIN_HANDLE_ID,
+                stream_type: WasiStreamTypeInfo::InputStream,
+                buffer: Vec::new(),
+                status: WasiStreamStatusInfo::Ready,
+                resource_id: None,
+            };
+            streams.insert(STDIN_HANDLE_ID, stdin_stream);
+        }
+    }
+
+    // Update stdin_handle in context
+    if let Ok(mut handle_opt) = context.stdin_handle.write() {
+        *handle_opt = Some(STDIN_HANDLE_ID as u64);
+    }
+
+    STDIN_HANDLE_ID as jlong
 }
 
 /// Get stdout stream
@@ -373,15 +404,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
+    // Debug: print received handle value immediately
+    eprintln!("[NATIVE DEBUG] nativeGetStdout called with context_handle=0x{:x} (decimal {})",
+              context_handle as u64, context_handle);
+
     // Validate parameters
     if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
+        return 0;
+    }
+
+    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    if (context_handle as u64) < MIN_VALID_POINTER {
+        let _ = env.throw_new(
+            "java/lang/IllegalArgumentException",
+            format!("Invalid context handle: suspiciously small value 0x{:x}. This suggests the WasiContext native handle is corrupted or was not properly created.", context_handle),
+        );
         return 0;
     }
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -389,28 +433,41 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // Get or create stdout handle
-    let stdout_handle = match context.stdout_handle.read() {
-        Ok(handle_opt) => {
-            match *handle_opt {
-                Some(handle) => handle as i64,
-                None => {
-                    // For now, use a fixed handle ID for stdout
-                    // In a full implementation, this would be a resource from the component model
-                    2i64
-                }
-            }
-        }
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read stdout handle: {}", e),
-            );
-            return 0;
-        }
-    };
+    // Standard stdout handle ID
+    const STDOUT_HANDLE_ID: u32 = 2;
 
-    stdout_handle
+    // Ensure stdout stream is registered in the streams map
+    {
+        let mut streams = match context.streams.write() {
+            Ok(streams) => streams,
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to acquire streams lock: {}", e),
+                );
+                return 0;
+            }
+        };
+
+        // Create stdout stream if not already registered
+        if !streams.contains_key(&STDOUT_HANDLE_ID) {
+            let stdout_stream = WasiStreamInfo {
+                id: STDOUT_HANDLE_ID,
+                stream_type: WasiStreamTypeInfo::OutputStream,
+                buffer: Vec::new(),
+                status: WasiStreamStatusInfo::Ready,
+                resource_id: None,
+            };
+            streams.insert(STDOUT_HANDLE_ID, stdout_stream);
+        }
+    }
+
+    // Update stdout_handle in context
+    if let Ok(mut handle_opt) = context.stdout_handle.write() {
+        *handle_opt = Some(STDOUT_HANDLE_ID as u64);
+    }
+
+    STDOUT_HANDLE_ID as jlong
 }
 
 /// Get stderr stream
@@ -423,15 +480,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
+
     // Validate parameters
     if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
+        return 0;
+    }
+
+    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    if (context_handle as u64) < MIN_VALID_POINTER {
+        let _ = env.throw_new(
+            "java/lang/IllegalArgumentException",
+            format!("Invalid context handle: suspiciously small value 0x{:x}. This suggests the WasiContext native handle is corrupted or was not properly created.", context_handle),
+        );
         return 0;
     }
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -439,28 +506,41 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         &*ptr
     };
 
-    // Get or create stderr handle
-    let stderr_handle = match context.stderr_handle.read() {
-        Ok(handle_opt) => {
-            match *handle_opt {
-                Some(handle) => handle as i64,
-                None => {
-                    // For now, use a fixed handle ID for stderr
-                    // In a full implementation, this would be a resource from the component model
-                    3i64
-                }
-            }
-        }
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read stderr handle: {}", e),
-            );
-            return 0;
-        }
-    };
+    // Standard stderr handle ID
+    const STDERR_HANDLE_ID: u32 = 3;
 
-    stderr_handle
+    // Ensure stderr stream is registered in the streams map
+    {
+        let mut streams = match context.streams.write() {
+            Ok(streams) => streams,
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to acquire streams lock: {}", e),
+                );
+                return 0;
+            }
+        };
+
+        // Create stderr stream if not already registered
+        if !streams.contains_key(&STDERR_HANDLE_ID) {
+            let stderr_stream = WasiStreamInfo {
+                id: STDERR_HANDLE_ID,
+                stream_type: WasiStreamTypeInfo::OutputStream,
+                buffer: Vec::new(),
+                status: WasiStreamStatusInfo::Ready,
+                resource_id: None,
+            };
+            streams.insert(STDERR_HANDLE_ID, stderr_stream);
+        }
+    }
+
+    // Update stderr_handle in context
+    if let Ok(mut handle_opt) = context.stderr_handle.write() {
+        *handle_opt = Some(STDERR_HANDLE_ID as u64);
+    }
+
+    STDERR_HANDLE_ID as jlong
 }
 
 /// Exit with status code
@@ -482,7 +562,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiExit_nat
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return -1;

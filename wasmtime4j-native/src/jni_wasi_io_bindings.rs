@@ -1,7 +1,9 @@
-//! JNI bindings for WASI Preview 2 I/O operations
+//! JNI bindings for WASI I/O operations
 //!
 //! This module provides JNI functions for wasi:io interfaces including
 //! input streams, output streams, and pollable resources.
+//!
+//! Note: These bindings work with WasiContext (Preview 1) to provide I/O functionality.
 
 use jni::objects::{JByteArray, JClass, JObject};
 use jni::sys::{jboolean, jbyteArray, jint, jlong};
@@ -9,7 +11,7 @@ use jni::JNIEnv;
 use std::sync::{Arc, Mutex};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi_preview2::{WasiPreview2Context, WasiStream, WasiStreamType};
+use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
 
 /// Create a WASI input stream
 ///
@@ -42,7 +44,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new(
                 "java/lang/NullPointerException",
@@ -94,7 +96,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -155,7 +157,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return JObject::null().into_raw();
@@ -216,7 +218,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -235,6 +237,52 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
             0
         }
     }
+}
+
+/// Create a pollable for WASI input stream
+///
+/// # Safety
+/// This function is called from Java via JNI and must handle all edge cases safely.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStream_nativeSubscribe(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+    stream_id: jlong,
+) -> jlong {
+    // Validate parameters
+    if context_handle == 0 || stream_id == 0 {
+        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
+        return 0;
+    }
+
+    // Get context from handle
+    let context = unsafe {
+        let ptr = context_handle as *const WasiContext;
+        if ptr.is_null() {
+            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
+            return 0;
+        }
+        &*ptr
+    };
+
+    // Create pollable for input stream
+    match create_input_stream_pollable(context, stream_id as u64) {
+        Ok(pollable_id) => pollable_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("Failed to create pollable: {}", e),
+            );
+            0
+        }
+    }
+}
+
+fn create_input_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
+    // MVP: return a dummy pollable ID
+    // In a full implementation, this would create a proper pollable resource
+    Ok(1)
 }
 
 /// Close WASI input stream
@@ -256,7 +304,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -276,19 +324,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 // Helper functions
 
 fn create_input_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     _descriptor_id: u64,
     _offset: u64,
 ) -> WasmtimeResult<u64> {
-    use crate::wasi_preview2::{WasiStream, WasiStreamType, WasiStreamStatus};
-
+    
     let stream_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
 
-    let stream = WasiStream {
+    let stream = WasiStreamInfo {
         id: stream_id,
-        stream_type: WasiStreamType::InputStream,
+        stream_type: WasiStreamTypeInfo::InputStream,
         buffer: Vec::new(),
-        status: WasiStreamStatus::Ready,
+        status: WasiStreamStatusInfo::Ready,
         resource_id: Some(_descriptor_id),
     };
 
@@ -299,13 +346,12 @@ fn create_input_stream(
 }
 
 fn read_from_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     stream_id: u64,
     length: usize,
     _blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let mut streams = context.streams.write().unwrap();
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -314,7 +360,7 @@ fn read_from_stream(
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -327,13 +373,12 @@ fn read_from_stream(
 }
 
 fn skip_in_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     stream_id: u64,
     length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let mut streams = context.streams.write().unwrap();
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -342,7 +387,7 @@ fn skip_in_stream(
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -354,12 +399,11 @@ fn skip_in_stream(
     Ok(skip_len as u64)
 }
 
-fn close_stream(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<()> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+fn close_stream(context: &WasiContext, stream_id: u64) -> WasmtimeResult<()> {
+    
     let mut streams = context.streams.write().unwrap();
     if let Some(stream) = streams.get_mut(&(stream_id as u32)) {
-        stream.status = WasiStreamStatus::Closed;
+        stream.status = WasiStreamStatusInfo::Closed;
         stream.buffer.clear();
     }
     Ok(())
@@ -384,7 +428,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -425,7 +469,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -474,7 +518,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -522,7 +566,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -558,7 +602,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -603,7 +647,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -648,7 +692,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -694,7 +738,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -744,7 +788,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -784,7 +828,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -824,7 +868,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -843,9 +887,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
 // Helper functions for output stream operations
 
-fn check_write_capacity(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<u64> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+fn check_write_capacity(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
+    
     let streams = context.streams.read().unwrap();
     let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -854,7 +897,7 @@ fn check_write_capacity(context: &WasiPreview2Context, stream_id: u64) -> Wasmti
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -865,13 +908,12 @@ fn check_write_capacity(context: &WasiPreview2Context, stream_id: u64) -> Wasmti
 }
 
 fn write_to_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     stream_id: u64,
     data: &[u8],
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let mut streams = context.streams.write().unwrap();
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -880,7 +922,7 @@ fn write_to_stream(
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -892,12 +934,11 @@ fn write_to_stream(
 }
 
 fn flush_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     stream_id: u64,
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let streams = context.streams.read().unwrap();
     let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -906,7 +947,7 @@ fn flush_stream(
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -917,13 +958,12 @@ fn flush_stream(
 }
 
 fn write_zeroes_to_stream(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     stream_id: u64,
     length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<()> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let mut streams = context.streams.write().unwrap();
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -932,7 +972,7 @@ fn write_zeroes_to_stream(
     })?;
 
     // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatus::Closed) {
+    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Stream is closed".to_string(),
         });
@@ -944,14 +984,13 @@ fn write_zeroes_to_stream(
 }
 
 fn splice_streams(
-    context: &WasiPreview2Context,
+    context: &WasiContext,
     dest_stream_id: u64,
     source_stream_id: u64,
     length: u64,
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
-    use crate::wasi_preview2::WasiStreamStatus;
-
+    
     let mut streams = context.streams.write().unwrap();
 
     // Get source stream data
@@ -962,7 +1001,7 @@ fn splice_streams(
     })?;
 
     // Check if source stream is closed
-    if matches!(source_stream.status, WasiStreamStatus::Closed) {
+    if matches!(source_stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Source stream is closed".to_string(),
         });
@@ -980,7 +1019,7 @@ fn splice_streams(
     })?;
 
     // Check if destination stream is closed
-    if matches!(dest_stream.status, WasiStreamStatus::Closed) {
+    if matches!(dest_stream.status, WasiStreamStatusInfo::Closed) {
         return Err(WasmtimeError::Wasi {
             message: "Destination stream is closed".to_string(),
         });
@@ -991,7 +1030,7 @@ fn splice_streams(
     Ok(data.len() as u64)
 }
 
-fn create_output_stream_pollable(_context: &WasiPreview2Context, _stream_id: u64) -> WasmtimeResult<u64> {
+fn create_output_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
     // MVP: return a dummy pollable ID
     // In a full implementation, this would create a proper pollable resource
     Ok(1)
@@ -1016,7 +1055,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -1052,7 +1091,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return 0;
@@ -1092,7 +1131,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
             return;
@@ -1109,18 +1148,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     }
 }
 
-// Helper functions for pollable operations - delegate to shared wasi_io_helpers
+// Helper functions for pollable operations - MVP stubs for WasiContext
+// TODO: Implement proper pollable support when needed
 
-fn block_on_pollable(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<()> {
-    crate::wasi_io_helpers::block_on_pollable(context, pollable_id, None)
+fn block_on_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
+    // MVP: Return immediately as if pollable is ready
+    Ok(())
 }
 
-fn check_pollable_ready(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<bool> {
-    crate::wasi_io_helpers::check_pollable_ready(context, pollable_id)
+fn check_pollable_ready(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<bool> {
+    // MVP: Return true as if pollable is always ready
+    Ok(true)
 }
 
-fn close_pollable(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<()> {
-    crate::wasi_io_helpers::close_pollable(context, pollable_id)
+fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
+    // MVP: No-op close
+    Ok(())
 }
 
 #[cfg(test)]

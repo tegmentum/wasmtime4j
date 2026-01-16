@@ -19,9 +19,71 @@ use std::ffi::c_void;
 use anyhow::{anyhow, Result};
 use log::{debug, info, error};
 
-use wasmtime::{Memory as WasmtimeMemory, MemoryType};
+use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
+
+/// Memory variant that can hold either a regular memory or a shared memory
+///
+/// This enum allows the Memory wrapper to handle both types of WebAssembly memory
+/// transparently, providing a unified interface for the JNI layer.
+#[derive(Debug)]
+pub enum MemoryVariant {
+    /// Regular WebAssembly memory (requires store context for operations)
+    Regular(WasmtimeMemory),
+    /// Shared WebAssembly memory (can be accessed from multiple threads)
+    Shared(WasmtimeSharedMemory),
+}
+
+impl MemoryVariant {
+    /// Get a raw pointer to memory data for atomic operations.
+    ///
+    /// For atomic operations on shared memory, we need raw pointer access.
+    /// This method returns a pointer and length that can be used for atomic operations.
+    ///
+    /// # Safety
+    /// The caller must ensure proper synchronization when using the returned pointer.
+    pub fn data_ptr_for_atomics<'a, T: 'static>(
+        &self,
+        store: impl Into<wasmtime::StoreContextMut<'a, T>>,
+    ) -> (*mut u8, usize) {
+        match self {
+            MemoryVariant::Regular(mem) => {
+                let data = mem.data_mut(store);
+                (data.as_mut_ptr(), data.len())
+            }
+            MemoryVariant::Shared(mem) => {
+                let data = mem.data();
+                (data.as_ptr() as *mut u8, data.len())
+            }
+        }
+    }
+
+    /// Get read-only data pointer for shared memory operations
+    pub fn data_ptr_readonly<'a, T: 'static>(
+        &self,
+        store: impl Into<wasmtime::StoreContext<'a, T>>,
+    ) -> (*const u8, usize) {
+        match self {
+            MemoryVariant::Regular(mem) => {
+                let data = mem.data(store);
+                (data.as_ptr(), data.len())
+            }
+            MemoryVariant::Shared(mem) => {
+                let data = mem.data();
+                (data.as_ptr() as *const u8, data.len())
+            }
+        }
+    }
+
+    /// Get data size
+    pub fn data_size(&self, store: impl wasmtime::AsContext) -> usize {
+        match self {
+            MemoryVariant::Regular(mem) => mem.data_size(store),
+            MemoryVariant::Shared(mem) => mem.data().len(),
+        }
+    }
+}
 
 // Platform-specific imports
 #[cfg(target_os = "linux")]
@@ -154,10 +216,14 @@ pub struct PlatformMemoryLeak {
 }
 
 /// Thread-safe WebAssembly memory wrapper with comprehensive bounds checking
+///
+/// This struct supports both regular and shared WebAssembly memory, providing
+/// a unified interface for memory operations. The internal variant determines
+/// how operations are performed (with or without store context).
 #[derive(Debug)]
 pub struct Memory {
-    /// Wasmtime memory instance
-    inner: WasmtimeMemory,
+    /// Wasmtime memory instance (can be regular or shared)
+    inner: MemoryVariant,
     /// Memory metadata and statistics
     metadata: Arc<RwLock<MemoryMetadata>>,
     /// Memory configuration and limits
@@ -528,7 +594,7 @@ impl Memory {
         };
 
         Ok(Self {
-            inner,
+            inner: MemoryVariant::Regular(inner),
             metadata: Arc::new(RwLock::new(metadata)),
             config,
             memory_type,
@@ -537,15 +603,35 @@ impl Memory {
     }
 
     /// Get reference to inner Wasmtime memory (internal use)
-    pub(crate) fn inner(&self) -> &WasmtimeMemory {
-        &self.inner
+    /// Returns None if this is a shared memory variant.
+    pub(crate) fn inner(&self) -> Option<&WasmtimeMemory> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => Some(mem),
+            MemoryVariant::Shared(_) => None,
+        }
+    }
+
+    /// Get reference to inner Wasmtime shared memory (internal use)
+    /// Returns None if this is a regular memory variant.
+    #[allow(dead_code)]
+    pub(crate) fn inner_shared(&self) -> Option<&WasmtimeSharedMemory> {
+        match &self.inner {
+            MemoryVariant::Regular(_) => None,
+            MemoryVariant::Shared(mem) => Some(mem),
+        }
     }
 
     /// Get current memory size in pages
     pub fn size_pages(&self, store: &Store) -> WasmtimeResult<u64> {
-        store.with_context_ro(|ctx| {
-            Ok(self.inner.size(ctx))
-        })
+        match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| Ok(mem.size(ctx)))
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory doesn't need store context
+                Ok(mem.size())
+            }
+        }
     }
 
     /// Get current memory size in bytes
@@ -556,9 +642,15 @@ impl Memory {
     /// Get memory data size for bounds checking
     #[allow(dead_code)]
     fn get_data_size(&self, store: &Store) -> WasmtimeResult<usize> {
-        store.with_context_ro(|ctx| {
-            Ok(self.inner.data(ctx).len())
-        })
+        match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| Ok(mem.data(ctx).len()))
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory data returns &[UnsafeCell<u8>]
+                Ok(mem.data().len())
+            }
+        }
     }
 
     /// Grow memory by the specified number of pages with validation
@@ -588,18 +680,35 @@ impl Memory {
             }.into());
         }
 
-        // Perform the growth operation with shared memory considerations
-        let previous_pages = if self.config.is_shared {
-            // For shared memory, we need to coordinate growth across threads
-            self.grow_shared_memory(store, additional_pages, current_pages, requested_pages)?
-        } else {
-            // Regular memory growth
-            store.with_context(|ctx| {
-                self.inner.grow(ctx, additional_pages)
+        // Perform the growth operation based on memory variant
+        let previous_pages = match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                // Regular memory growth requires store context
+                store.with_context(|ctx| {
+                    mem.grow(ctx, additional_pages)
+                        .map_err(|e| WasmtimeError::Memory {
+                            message: format!("Memory growth failed: {}", e),
+                        })
+                })?
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory growth doesn't require store context
+                log::debug!(
+                    "Growing shared memory from {} to {} pages (adding {})",
+                    current_pages, requested_pages, additional_pages
+                );
+
+                let result = mem.grow(additional_pages)
                     .map_err(|e| WasmtimeError::Memory {
-                        message: format!("Memory growth failed: {}", e),
-                    })
-            })?
+                        message: format!("Shared memory growth failed: {}", e),
+                    })?;
+
+                // Memory barrier to ensure growth is visible to all threads
+                std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
+                log::info!("Shared memory successfully grown to {} pages", requested_pages);
+
+                result
+            }
         };
 
         // Update metadata
@@ -622,47 +731,6 @@ impl Memory {
         Ok(previous_pages)
     }
 
-    /// Thread-safe growth for shared memory
-    fn grow_shared_memory(
-        &self,
-        store: &mut Store,
-        additional_pages: u64,
-        current_pages: u64,
-        requested_pages: u64
-    ) -> WasmtimeResult<u64> {
-        // For shared memory, we need to ensure thread-safe growth
-        // This is a simplified implementation - a real implementation would
-        // need more sophisticated synchronization
-
-        store.with_context(|ctx| {
-            // Use atomic operations or locks to ensure only one thread can grow at a time
-            // For now, we'll use the same growth mechanism as regular memory
-            // but with additional logging for shared memory
-            log::debug!(
-                "Growing shared memory from {} to {} pages (adding {})",
-                current_pages, requested_pages, additional_pages
-            );
-
-            let result = self.inner.grow(ctx, additional_pages)
-                .map_err(|e| WasmtimeError::Memory {
-                    message: format!("Shared memory growth failed: {}", e),
-                });
-
-            // In a real implementation, we would:
-            // 1. Notify all threads that memory has grown
-            // 2. Update any cached memory pointers in other threads
-            // 3. Ensure memory barriers are in place
-
-            if result.is_ok() {
-                log::info!("Shared memory successfully grown to {} pages", requested_pages);
-                // Emit memory fence to ensure growth is visible to all threads
-                std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
-            }
-
-            result
-        })
-    }
-
     /// Read data with comprehensive bounds checking
     pub fn read_bytes(&self, store: &Store, offset: usize, length: usize) -> WasmtimeResult<Vec<u8>> {
         // Bounds checking
@@ -674,7 +742,7 @@ impl Memory {
                 }
             })?;
             metadata.bounds_violations_prevented += 1;
-            
+
             return Err(MemoryError::BoundsViolation {
                 offset,
                 length,
@@ -682,11 +750,27 @@ impl Memory {
             }.into());
         }
 
-        // Read memory data within the store lock
-        let result = store.with_context_ro(|ctx| {
-            let data = self.inner.data(ctx);
-            Ok(data[offset..offset + length].to_vec())
-        })?;
+        // Read memory data based on variant
+        let result = match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| {
+                    let data = mem.data(ctx);
+                    Ok(data[offset..offset + length].to_vec())
+                })?
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory returns &[UnsafeCell<u8>]
+                // We need to read the bytes safely
+                let data = mem.data();
+                let mut result = vec![0u8; length];
+                for (i, cell) in data[offset..offset + length].iter().enumerate() {
+                    // SAFETY: We have bounds-checked the access and shared memory is designed
+                    // for concurrent access. The UnsafeCell allows atomic operations.
+                    result[i] = unsafe { *cell.get() };
+                }
+                result
+            }
+        };
 
         // Update statistics
         if let Ok(mut metadata) = self.metadata.write() {
@@ -719,12 +803,26 @@ impl Memory {
             }.into());
         }
 
-        // Write memory data within the store lock
-        store.with_context(|ctx| {
-            let memory_data = self.inner.data_mut(ctx);
-            memory_data[offset..offset + length].copy_from_slice(data);
-            Ok(())
-        })?;
+        // Write memory data based on variant
+        match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context(|ctx| {
+                    let memory_data = mem.data_mut(ctx);
+                    memory_data[offset..offset + length].copy_from_slice(data);
+                    Ok(())
+                })?;
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory returns &[UnsafeCell<u8>]
+                // We need to write the bytes safely
+                let mem_data = mem.data();
+                for (i, byte) in data.iter().enumerate() {
+                    // SAFETY: We have bounds-checked the access and shared memory is designed
+                    // for concurrent access. The UnsafeCell allows atomic operations.
+                    unsafe { *mem_data[offset + i].get() = *byte };
+                }
+            }
+        }
 
         // Update statistics
         if let Ok(mut metadata) = self.metadata.write() {
@@ -826,16 +924,50 @@ impl Memory {
     }
 
     /// Get Wasmtime memory handle for advanced operations
-    pub fn as_wasmtime_memory(&self) -> &WasmtimeMemory {
-        &self.inner
+    /// Returns None if this is a shared memory variant.
+    pub fn as_wasmtime_memory(&self) -> Option<&WasmtimeMemory> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => Some(mem),
+            MemoryVariant::Shared(_) => None,
+        }
+    }
+
+    /// Get Wasmtime shared memory handle for advanced operations
+    /// Returns None if this is a regular memory variant.
+    #[allow(dead_code)]
+    pub fn as_wasmtime_shared_memory(&self) -> Option<&WasmtimeSharedMemory> {
+        match &self.inner {
+            MemoryVariant::Regular(_) => None,
+            MemoryVariant::Shared(mem) => Some(mem),
+        }
     }
 
     /// Get memory type information from the underlying Wasmtime memory
-    /// This requires a Store to access the type information
     pub fn get_type(&self, store: &Store) -> WasmtimeResult<MemoryType> {
-        store.with_context_ro(|ctx| {
-            Ok(self.inner.ty(ctx))
-        })
+        match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| Ok(mem.ty(ctx)))
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory doesn't need store context for type info
+                Ok(mem.ty())
+            }
+        }
+    }
+
+    /// Get the memory variant for internal operations
+    pub(crate) fn variant(&self) -> &MemoryVariant {
+        &self.inner
+    }
+
+    /// Get memory data size
+    pub fn data_size(&self, store: &Store) -> WasmtimeResult<usize> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| Ok(mem.data_size(&ctx)))
+            }
+            MemoryVariant::Shared(mem) => Ok(mem.data().len()),
+        }
     }
 
     /// Create Memory wrapper from existing Wasmtime memory (for memory exports)
@@ -871,12 +1003,61 @@ impl Memory {
         };
 
         Self {
-            inner: wasmtime_memory,
+            inner: MemoryVariant::Regular(wasmtime_memory),
             metadata: Arc::new(RwLock::new(metadata)),
             config,
             memory_type,
             platform_allocator: None,
         }
+    }
+
+    /// Create Memory wrapper from existing Wasmtime shared memory (for shared memory exports)
+    ///
+    /// This constructor handles shared memory exports from modules that use the
+    /// WebAssembly threads proposal.
+    pub fn from_shared_memory(shared_memory: WasmtimeSharedMemory) -> Self {
+        let memory_type = shared_memory.ty();
+
+        // Extract configuration from memory type
+        let initial_pages = memory_type.minimum();
+        let maximum_pages = memory_type.maximum();
+
+        // Create configuration based on memory type
+        let config = MemoryConfig {
+            initial_pages,
+            maximum_pages,
+            is_shared: true, // Shared memory is always shared
+            memory_index: 0, // Default index for exported memory
+            name: Some("exported_shared_memory".to_string()),
+        };
+
+        // Initialize metadata for exported shared memory
+        let metadata = MemoryMetadata {
+            created_at: Instant::now(),
+            current_pages: initial_pages,
+            maximum_pages,
+            read_operations: 0,
+            write_operations: 0,
+            bytes_read: 0,
+            bytes_written: 0,
+            growth_operations: 0,
+            peak_pages: initial_pages,
+            last_access: None,
+            bounds_violations_prevented: 0,
+        };
+
+        Self {
+            inner: MemoryVariant::Shared(shared_memory),
+            metadata: Arc::new(RwLock::new(metadata)),
+            config,
+            memory_type,
+            platform_allocator: None,
+        }
+    }
+
+    /// Check if this memory is a shared memory
+    pub fn is_shared_memory(&self) -> bool {
+        matches!(self.inner, MemoryVariant::Shared(_))
     }
 
     // Helper functions for type conversion
@@ -2076,12 +2257,22 @@ pub mod core {
 
     /// Core function to get direct memory buffer access
     pub fn get_memory_buffer(memory: &Memory, store: &Store) -> WasmtimeResult<(*mut u8, usize)> {
-        store.with_context_ro(|ctx| {
-            let data = memory.inner.data(ctx);
-            let ptr = data.as_ptr() as *mut u8;
-            let len = data.len();
-            Ok((ptr, len))
-        })
+        match memory.variant() {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| {
+                    let data = mem.data(ctx);
+                    let ptr = data.as_ptr() as *mut u8;
+                    let len = data.len();
+                    Ok((ptr, len))
+                })
+            }
+            MemoryVariant::Shared(mem) => {
+                let data = mem.data();
+                let ptr = data.as_ptr() as *mut u8;
+                let len = data.len();
+                Ok((ptr, len))
+            }
+        }
     }
 
     /// Create a validated memory instance with handle registration
@@ -2134,10 +2325,18 @@ pub mod core {
 
     /// Core function to check if memory is shared
     pub fn memory_is_shared(memory: &Memory, store: &Store) -> WasmtimeResult<bool> {
-        store.with_context_ro(|ctx| {
-            let memory_type = memory.inner.ty(ctx);
-            Ok(memory_type.is_shared())
-        })
+        match memory.variant() {
+            MemoryVariant::Regular(mem) => {
+                store.with_context_ro(|ctx| {
+                    let memory_type = mem.ty(ctx);
+                    Ok(memory_type.is_shared())
+                })
+            }
+            MemoryVariant::Shared(_) => {
+                // Shared memory variant is always shared
+                Ok(true)
+            }
+        }
     }
 
     /// Core function for atomic compare-and-swap on 32-bit value
@@ -2168,7 +2367,7 @@ pub mod core {
 
         store.with_context(|ctx| {
             // Use Rust's atomic operations on the memory data
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2216,7 +2415,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 8];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
 
@@ -2264,7 +2463,7 @@ pub mod core {
         }
 
         store.with_context_ro(|ctx| {
-            let memory_data = memory.inner.data(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_readonly(&*ctx); let memory_data = unsafe { std::slice::from_raw_parts(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2302,7 +2501,7 @@ pub mod core {
         }
 
         store.with_context_ro(|ctx| {
-            let memory_data = memory.inner.data(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_readonly(&*ctx); let memory_data = unsafe { std::slice::from_raw_parts(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 8];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
 
@@ -2340,7 +2539,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2379,7 +2578,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 8];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
 
@@ -2418,7 +2617,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2456,7 +2655,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 8];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
 
@@ -2494,7 +2693,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2532,7 +2731,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2570,7 +2769,7 @@ pub mod core {
         }
 
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2658,7 +2857,7 @@ pub mod core {
         }
 
         store.with_context_ro(|ctx| {
-            let memory_data = memory.inner.data(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_readonly(&*ctx); let memory_data = unsafe { std::slice::from_raw_parts(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 4];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI32;
 
@@ -2715,7 +2914,7 @@ pub mod core {
         }
 
         store.with_context_ro(|ctx| {
-            let memory_data = memory.inner.data(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_readonly(&*ctx); let memory_data = unsafe { std::slice::from_raw_parts(data_ptr, data_len) };
             let ptr = &memory_data[offset..offset + 8];
             let atomic_ptr = ptr.as_ptr() as *const std::sync::atomic::AtomicI64;
 
@@ -2758,27 +2957,63 @@ pub mod core {
             }.into());
         }
 
-        // Perform memory copy within the store lock
-        store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+        // Perform memory copy based on variant
+        match &memory.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context(|ctx| {
+                    let memory_data = mem.data_mut(ctx);
 
-            // Handle overlapping memory regions correctly
-            if dest_offset < src_offset && dest_offset + len > src_offset {
-                // Forward overlap - copy from end to beginning
-                for i in (0..len).rev() {
-                    memory_data[dest_offset + i] = memory_data[src_offset + i];
-                }
-            } else if src_offset < dest_offset && src_offset + len > dest_offset {
-                // Backward overlap - copy from beginning to end
-                for i in 0..len {
-                    memory_data[dest_offset + i] = memory_data[src_offset + i];
-                }
-            } else {
-                // No overlap - use efficient copy
-                memory_data.copy_within(src_offset..src_offset + len, dest_offset);
+                    // Handle overlapping memory regions correctly
+                    if dest_offset < src_offset && dest_offset + len > src_offset {
+                        // Forward overlap - copy from end to beginning
+                        for i in (0..len).rev() {
+                            memory_data[dest_offset + i] = memory_data[src_offset + i];
+                        }
+                    } else if src_offset < dest_offset && src_offset + len > dest_offset {
+                        // Backward overlap - copy from beginning to end
+                        for i in 0..len {
+                            memory_data[dest_offset + i] = memory_data[src_offset + i];
+                        }
+                    } else {
+                        // No overlap - use efficient copy
+                        memory_data.copy_within(src_offset..src_offset + len, dest_offset);
+                    }
+                    Ok(())
+                })
             }
-            Ok(())
-        })
+            MemoryVariant::Shared(mem) => {
+                // Shared memory - handle with unsafe cell access
+                let mem_data = mem.data();
+
+                // Handle overlapping memory regions correctly
+                if dest_offset < src_offset && dest_offset + len > src_offset {
+                    // Forward overlap - copy from end to beginning
+                    for i in (0..len).rev() {
+                        unsafe {
+                            let val = *mem_data[src_offset + i].get();
+                            *mem_data[dest_offset + i].get() = val;
+                        }
+                    }
+                } else if src_offset < dest_offset && src_offset + len > dest_offset {
+                    // Backward overlap - copy from beginning to end
+                    for i in 0..len {
+                        unsafe {
+                            let val = *mem_data[src_offset + i].get();
+                            *mem_data[dest_offset + i].get() = val;
+                        }
+                    }
+                } else {
+                    // No overlap - copy directly
+                    for i in 0..len {
+                        unsafe {
+                            let val = *mem_data[src_offset + i].get();
+                            *mem_data[dest_offset + i].get() = val;
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
     }
 
     /// Core function to fill memory with a specific byte value
@@ -2793,12 +3028,24 @@ pub mod core {
             }.into());
         }
 
-        // Perform memory fill within the store lock
-        store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
-            memory_data[offset..offset + len].fill(value);
-            Ok(())
-        })
+        // Perform memory fill based on variant
+        match &memory.inner {
+            MemoryVariant::Regular(mem) => {
+                store.with_context(|ctx| {
+                    let memory_data = mem.data_mut(ctx);
+                    memory_data[offset..offset + len].fill(value);
+                    Ok(())
+                })
+            }
+            MemoryVariant::Shared(mem) => {
+                // Shared memory - handle with unsafe cell access
+                let mem_data = mem.data();
+                for i in 0..len {
+                    unsafe { *mem_data[offset + i].get() = value };
+                }
+                Ok(())
+            }
+        }
     }
 
     /// Initialize memory from a data segment
@@ -2828,7 +3075,7 @@ pub mod core {
 
         // Get memory size for bounds checking
         let memory_size = store.with_context_ro(|ctx| {
-            Ok(memory.inner.data_size(&ctx))
+            Ok(memory.variant().data_size(&ctx))
         })?;
 
         // Bounds check for destination
@@ -2847,7 +3094,7 @@ pub mod core {
 
         // Write data to memory
         store.with_context(|ctx| {
-            let memory_data = memory.inner.data_mut(ctx);
+            let (data_ptr, data_len) = memory.variant().data_ptr_for_atomics(&mut *ctx); let memory_data = unsafe { std::slice::from_raw_parts_mut(data_ptr, data_len) };
             let dest_start = dest_offset as usize;
             let dest_end = dest_start + len as usize;
             memory_data[dest_start..dest_end].copy_from_slice(&data);

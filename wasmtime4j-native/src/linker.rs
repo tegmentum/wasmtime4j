@@ -505,10 +505,20 @@ impl Linker {
                 backtrace: None
             })?;
 
-        let wasmtime_memory = memory.inner();
-
+        // Handle both regular and shared memory
         store.with_context(|ctx| {
-            linker.define(ctx, module_name, memory_name, wasmtime::Extern::Memory(*wasmtime_memory))
+            let extern_memory = if let Some(wasmtime_memory) = memory.inner() {
+                wasmtime::Extern::Memory(*wasmtime_memory)
+            } else if let Some(wasmtime_shared_memory) = memory.inner_shared() {
+                wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
+            } else {
+                return Err(WasmtimeError::Runtime {
+                    message: "Memory has invalid variant".to_string(),
+                    backtrace: None
+                });
+            };
+
+            linker.define(ctx, module_name, memory_name, extern_memory)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to define memory: {}", e),
                     backtrace: None

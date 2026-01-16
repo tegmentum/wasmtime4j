@@ -239,7 +239,7 @@ public final class HostFunctionIntegrationTest {
 
         // Import section (id=2)
         0x02,
-        0x10, // section id and size
+        0x11, // section id and size (17 bytes)
         0x01, // number of imports
         0x03,
         0x65,
@@ -285,9 +285,9 @@ public final class HostFunctionIntegrationTest {
 
         // Code section (id=10)
         0x0A,
-        0x05, // section id and size
+        0x06, // section id and size (6 bytes: 1 num_funcs + 1 body_size + 4 body)
         0x01, // number of functions
-        0x03, // function body size
+        0x04, // function body size (4 bytes: 1 locals + 3 instructions)
         0x00, // local count
         0x10,
         0x00, // call 0
@@ -336,7 +336,7 @@ public final class HostFunctionIntegrationTest {
 
         // Import section (id=2)
         0x02,
-        0x13, // section id and size
+        0x17, // section id and size (23 bytes)
         0x02, // number of imports
         0x04,
         0x6D,
@@ -384,9 +384,9 @@ public final class HostFunctionIntegrationTest {
 
         // Code section (id=10)
         0x0A,
-        0x0B, // section id and size
+        0x0E, // section id and size (14 bytes: 1 num_funcs + 1 body_size + 12 body)
         0x01, // number of functions
-        0x09, // function body size
+        0x0C, // function body size (12 bytes: 1 locals + 11 instructions)
         0x00, // local count
         0x20,
         0x00, // local.get 0

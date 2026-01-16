@@ -570,6 +570,9 @@ pub mod jni_instance {
     }
 
     /// Get a memory export from the instance
+    ///
+    /// This method tries to get regular memory first. If not found, it also tries
+    /// to get shared memory (for modules using the threads proposal).
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMemory(
         mut env: JNIEnv,
@@ -589,20 +592,29 @@ pub mod jni_instance {
             let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
-            // Get the memory export
+            // First, try to get regular memory export
             let memory_opt = instance.get_memory(store, &name_str)?;
 
-            match memory_opt {
-                Some(memory) => {
-                    // Get memory type information from the store
-                    let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
-                    // Create a new Memory wrapper and register the handle
-                    let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
-                    let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
-                    Ok(validated_ptr as jlong)
-                }
-                None => Ok(0), // Return 0 for not found
+            if let Some(memory) = memory_opt {
+                // Found regular memory - wrap it
+                let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
+                let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                return Ok(validated_ptr as jlong);
             }
+
+            // Regular memory not found - try shared memory
+            let shared_memory_opt = instance.get_shared_memory(store, &name_str)?;
+
+            if let Some(shared_memory) = shared_memory_opt {
+                // Found shared memory - wrap it using the shared memory constructor
+                let memory_wrapper = crate::memory::Memory::from_shared_memory(shared_memory);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                return Ok(validated_ptr as jlong);
+            }
+
+            // Neither regular nor shared memory found
+            Ok(0)
         })
     }
 
@@ -2235,12 +2247,12 @@ pub mod jni_store {
         _class: JClass,
         store_ptr: jlong,
         ticks: jlong,
-    ) {
-        let _ = jni_utils::jni_try_void(&mut env, || {
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
             let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
             core::set_epoch_deadline(store, ticks as u64);
-            Ok(())
-        });
+            Ok(true)
+        }) as jboolean
     }
 
     /// Configure store to trap on epoch deadline
@@ -3764,11 +3776,21 @@ pub mod jni_linker {
             let memory = unsafe { crate::memory::core::get_memory_ref(memory_handle as *const c_void)? };
 
             let mut linker_lock = linker.inner()?;
-            let wasmtime_memory = memory.inner();
 
+            // Handle both regular and shared memory
             store.with_context(|ctx| {
+                let extern_memory = if let Some(wasmtime_memory) = memory.inner() {
+                    wasmtime::Extern::Memory(*wasmtime_memory)
+                } else if let Some(wasmtime_shared_memory) = memory.inner_shared() {
+                    wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
+                } else {
+                    return Err(WasmtimeError::Linker {
+                        message: format!("Memory '{}::{}' has invalid variant", module_name_str, name_str),
+                    });
+                };
+
                 linker_lock
-                    .define(ctx, &module_name_str, &name_str, wasmtime::Extern::Memory(*wasmtime_memory))
+                    .define(ctx, &module_name_str, &name_str, extern_memory)
                     .map_err(|e| WasmtimeError::Linker {
                         message: format!("Failed to define memory '{}::{}': {}", module_name_str, name_str, e),
                     })
