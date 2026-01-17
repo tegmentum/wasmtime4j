@@ -700,11 +700,11 @@ fn convert_val_type(val_type: ValType) -> WasmtimeResult<ModuleValueType> {
 }
 
 fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ModuleValueType> {
-    // In wasmtime 36.0.2, RefType doesn't have is_extern_ref/is_func_ref methods
-    // We need to match on the heap type instead
+    // Match on the heap type to determine the reference type
+    // In wasmtime 40.x with GC support, concrete function references use ConcreteFunc
     match ref_type.heap_type() {
         wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
-        wasmtime::HeapType::Func => Ok(ModuleValueType::FuncRef),
+        wasmtime::HeapType::Func | wasmtime::HeapType::ConcreteFunc(_) => Ok(ModuleValueType::FuncRef),
         _ => Err(WasmtimeError::Module {
             message: format!("Unsupported reference type: {:?}", ref_type),
         })

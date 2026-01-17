@@ -259,10 +259,24 @@ public class JniModule implements Module {
     }
 
     try {
-      return nativeGetModuleExports(nativeHandle);
+      final List<ai.tegmentum.wasmtime4j.ModuleExport> result =
+          nativeGetModuleExports(nativeHandle);
+      if (result == null) {
+        java.util.logging.Logger.getLogger(JniModule.class.getName())
+            .warning("nativeGetModuleExports returned null for handle: " + nativeHandle);
+        return java.util.Collections.emptyList();
+      }
+      return result;
     } catch (final Throwable t) {
       // Defensive: Return empty list on native error instead of crashing JVM
-      return java.util.Collections.emptyList();
+      System.err.println(
+          "nativeGetModuleExports failed: " + t.getClass().getName() + ": " + t.getMessage());
+      t.printStackTrace(System.err);
+      // Rethrow to get better diagnostics
+      if (t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      }
+      throw new RuntimeException("Native getModuleExports failed", t);
     }
   }
 

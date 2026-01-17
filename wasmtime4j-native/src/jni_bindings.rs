@@ -5020,16 +5020,34 @@ pub mod jni_module {
     ) -> Option<JObject<'a>> {
         let enum_val = get_wasm_value_type_enum(env, elem_type).ok()?;
         let table_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniTableType").ok()?;
-        let max_val = max.unwrap_or(0) as i32;
-        let has_max = max.is_some();
+
+        // Create boxed Long for maximum using valueOf (null if None)
+        let max_obj: JObject = match max {
+            Some(m) => {
+                let long_class = env.find_class("java/lang/Long").ok()?;
+                // Use Long.valueOf(long) instead of constructor (more compatible)
+                let result = env.call_static_method(
+                    long_class,
+                    "valueOf",
+                    "(J)Ljava/lang/Long;",
+                    &[JValue::Long(m as i64)],
+                ).ok()?;
+                match result {
+                    jni::objects::JValueGen::Object(obj) => obj,
+                    _ => return None,
+                }
+            }
+            None => JObject::null(),
+        };
+
+        // JniTableType constructor: (WasmValueType elementType, long minimum, Long maximum)
         env.new_object(
             table_type_class,
-            "(Lai/tegmentum/wasmtime4j/WasmValueType;IIZ)V",
+            "(Lai/tegmentum/wasmtime4j/WasmValueType;JLjava/lang/Long;)V",
             &[
                 JValue::Object(&enum_val),
-                JValue::Int(initial as i32),
-                JValue::Int(max_val),
-                JValue::Bool(has_max as jboolean),
+                JValue::Long(initial as i64),
+                JValue::Object(&max_obj),
             ],
         ).ok()
     }
