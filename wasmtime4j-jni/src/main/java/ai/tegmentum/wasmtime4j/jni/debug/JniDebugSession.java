@@ -135,6 +135,26 @@ public final class JniDebugSession implements DebugSession {
   }
 
   /**
+   * Creates a new debug session with config only (detached mode, no instance attached yet).
+   *
+   * @param debuggerHandle the debugger handle
+   * @param config the debug configuration
+   */
+  public JniDebugSession(final long debuggerHandle, final DebugConfig config) {
+    this.sessionId = "session-" + UUID.randomUUID().toString();
+    this.nativeHandle = debuggerHandle;
+    this.debuggerHandle = debuggerHandle;
+    this.instanceHandles = new long[0];
+    this.config = config;
+    this.active = new AtomicBoolean(true);
+    this.paused = new AtomicBoolean(false);
+    this.closed = new AtomicBoolean(false);
+    this.breakpoints = new CopyOnWriteArrayList<>();
+    this.callStack = new CopyOnWriteArrayList<>();
+    this.pendingStep = null;
+  }
+
+  /**
    * Creates a new debug session without a native handle (for testing).
    *
    * @return a new debug session

@@ -159,6 +159,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniW
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor_nativeClose
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor
+ * Method:    nativeTransferOwnership
+ * Signature: (JJJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiDescriptor_nativeTransferOwnership
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

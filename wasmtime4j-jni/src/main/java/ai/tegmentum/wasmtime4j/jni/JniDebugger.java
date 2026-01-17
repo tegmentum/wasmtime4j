@@ -49,6 +49,7 @@ public final class JniDebugger implements Debugger {
   private final Map<String, DwarfDebugInfo> dwarfInfoCache;
   private final Map<Long, SourceMapIntegration> sourceMapCache;
   private final Map<Long, JniExecutionTracer> executionTracers;
+  private final Map<String, Instance> instanceRegistry;
   private volatile boolean closed;
   private volatile boolean dwarfEnabled;
   private volatile boolean profilingEnabled;
@@ -67,6 +68,7 @@ public final class JniDebugger implements Debugger {
     this.dwarfInfoCache = new ConcurrentHashMap<>();
     this.sourceMapCache = new ConcurrentHashMap<>();
     this.executionTracers = new ConcurrentHashMap<>();
+    this.instanceRegistry = new ConcurrentHashMap<>();
     this.closed = false;
     this.dwarfEnabled = true;
     this.profilingEnabled = false;
@@ -96,8 +98,12 @@ public final class JniDebugger implements Debugger {
   public DebugSession createSession(final DebugConfig config) {
     Objects.requireNonNull(config, "config cannot be null");
     validateNotClosed();
-    // TODO: Implement config-based session creation
-    throw new UnsupportedOperationException("Config-based session creation not yet implemented");
+
+    final JniDebugSession session = new JniDebugSession(nativeHandle, config);
+    activeSessions.add(session);
+
+    LOGGER.log(Level.FINE, "Created config-based debug session: {0}", session.getSessionId());
+    return session;
   }
 
   /**
@@ -285,8 +291,27 @@ public final class JniDebugger implements Debugger {
   public DebugSession attach(final String instanceId) {
     Objects.requireNonNull(instanceId, "instanceId cannot be null");
     validateNotClosed();
-    // TODO: Implement instance ID-based attachment
-    throw new UnsupportedOperationException("Instance ID-based attachment not yet implemented");
+
+    final Instance instance = instanceRegistry.get(instanceId);
+    if (instance == null) {
+      throw new IllegalArgumentException("Unknown instance ID: " + instanceId);
+    }
+
+    final long instanceHandle = extractInstanceHandle(instance);
+    final long sessionHandle = nativeAttachToInstance(nativeHandle, instanceHandle);
+
+    if (sessionHandle == 0) {
+      throw new IllegalStateException("Failed to attach to instance: " + instanceId);
+    }
+
+    final JniDebugSession session = new JniDebugSession(sessionHandle);
+    activeSessions.add(session);
+
+    LOGGER.log(
+        Level.FINE,
+        "Attached to instance {0}, created session: {1}",
+        new Object[] {instanceId, session.getSessionId()});
+    return session;
   }
 
   /**
@@ -316,6 +341,54 @@ public final class JniDebugger implements Debugger {
     } catch (final Exception e) {
       throw JniExceptionHandler.wrapException(e, "Failed to attach to instance");
     }
+  }
+
+  /**
+   * Registers an instance for debugging by ID.
+   *
+   * <p>Instances must be registered before they can be attached to by ID using {@link
+   * #attach(String)}.
+   *
+   * @param instanceId the unique identifier for the instance
+   * @param instance the instance to register
+   * @throws IllegalArgumentException if instanceId or instance is null
+   */
+  public void registerInstance(final String instanceId, final Instance instance) {
+    Objects.requireNonNull(instanceId, "instanceId cannot be null");
+    Objects.requireNonNull(instance, "instance cannot be null");
+    validateNotClosed();
+
+    instanceRegistry.put(instanceId, instance);
+    LOGGER.log(Level.FINE, "Registered instance for debugging: {0}", instanceId);
+  }
+
+  /**
+   * Unregisters an instance from debugging.
+   *
+   * @param instanceId the instance ID to unregister
+   * @return true if the instance was registered, false otherwise
+   */
+  public boolean unregisterInstance(final String instanceId) {
+    Objects.requireNonNull(instanceId, "instanceId cannot be null");
+    if (closed) {
+      return false;
+    }
+
+    final boolean removed = instanceRegistry.remove(instanceId) != null;
+    if (removed) {
+      LOGGER.log(Level.FINE, "Unregistered instance from debugging: {0}", instanceId);
+    }
+    return removed;
+  }
+
+  /**
+   * Gets the list of registered instance IDs.
+   *
+   * @return unmodifiable list of registered instance IDs
+   */
+  public List<String> getRegisteredInstanceIds() {
+    validateNotClosed();
+    return Collections.unmodifiableList(new ArrayList<>(instanceRegistry.keySet()));
   }
 
   /** Javadoc placeholder. */
@@ -411,6 +484,7 @@ public final class JniDebugger implements Debugger {
       // Clear caches
       dwarfInfoCache.clear();
       sourceMapCache.clear();
+      instanceRegistry.clear();
 
       // Close native debugger
       if (nativeHandle != 0) {

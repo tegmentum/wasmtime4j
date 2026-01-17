@@ -444,15 +444,21 @@ public final class JniWasiDescriptor extends JniResource implements WasiDescript
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
-    throw new UnsupportedOperationException(
-        "Resource handle creation not yet implemented for WASI descriptors");
+    ensureNotClosed();
+    return new ai.tegmentum.wasmtime4j.jni.wasi.JniWasiResourceHandle(this);
   }
 
   @Override
   public void transferOwnership(final ai.tegmentum.wasmtime4j.wasi.WasiInstance targetInstance)
       throws WasmException {
-    throw new UnsupportedOperationException(
-        "Ownership transfer not yet implemented for WASI descriptors");
+    ai.tegmentum.wasmtime4j.jni.util.JniValidation.requireNonNull(targetInstance, "targetInstance");
+    ensureNotClosed();
+
+    final int result = nativeTransferOwnership(contextHandle, nativeHandle, targetInstance.getId());
+    if (result != 0) {
+      throw new WasmException("Failed to transfer descriptor ownership");
+    }
+    LOGGER.fine("Transferred ownership of descriptor " + nativeHandle + " to instance " + targetInstance.getId());
   }
 
   @Override
@@ -582,4 +588,7 @@ public final class JniWasiDescriptor extends JniResource implements WasiDescript
       long contextHandle, long descriptorHandle, long otherDescriptorHandle);
 
   private static native int nativeClose(long contextHandle, long descriptorHandle);
+
+  private static native int nativeTransferOwnership(
+      long contextHandle, long descriptorHandle, long targetInstanceId);
 }
