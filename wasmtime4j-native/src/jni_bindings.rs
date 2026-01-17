@@ -5651,33 +5651,9 @@ pub mod jni_component {
         _class: JClass,
     ) -> jlong {
         // Use EnhancedComponentEngine which supports ComponentInstanceInfo with store field
-        eprintln!("[RUST DEBUG] nativeCreateComponentEngine called");
-        let result = jni_utils::jni_try_ptr(&mut env, || {
-            eprintln!("[RUST DEBUG] About to call create_enhanced_component_engine()");
-            match crate::component_core::core::create_enhanced_component_engine() {
-                Ok(engine) => {
-                    eprintln!("[RUST DEBUG] Component engine created successfully, ptr={:?}", &*engine as *const _);
-                    Ok(engine)
-                }
-                Err(e) => {
-                    eprintln!("[RUST DEBUG] Failed to create component engine: {:?}", e);
-                    Err(e)
-                }
-            }
-        }) as jlong;
-        if result == 0 {
-            eprintln!("[RUST DEBUG] Component engine creation returned null pointer (0)");
-            // Check if there's a pending exception
-            if let Ok(pending) = env.exception_check() {
-                eprintln!("[RUST DEBUG] Pending Java exception: {}", pending);
-                if pending {
-                    let _ = env.exception_describe();
-                }
-            }
-        } else {
-            eprintln!("[RUST DEBUG] Component engine created with handle: 0x{:x}", result);
-        }
-        result
+        jni_utils::jni_try_ptr(&mut env, || {
+            crate::component_core::core::create_enhanced_component_engine()
+        }) as jlong
     }
 
     /// Load component from WebAssembly bytes

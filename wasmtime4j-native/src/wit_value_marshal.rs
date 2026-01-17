@@ -503,10 +503,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_serialize(
     out_data: *mut *mut u8,
     out_len: *mut usize,
 ) -> c_int {
-    eprintln!("RUST DEBUG: wasmtime4j_wit_value_serialize ENTRY - discriminator={}, len={}", type_discriminator, value_len);
-
     if value_ptr.is_null() || out_data.is_null() || out_len.is_null() {
-        eprintln!("RUST DEBUG: NULL POINTER CHECK FAILED");
         return FFI_ERROR;
     }
 
@@ -516,15 +513,12 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_serialize(
     // For records and tuples (discriminators 7-8), skip validation round-trip
     // because field names are not included in serialization format but are required by Wasmtime
     if type_discriminator == 7 || type_discriminator == 8 {
-        eprintln!("DEBUG: wasmtime4j_wit_value_serialize - Bypass activated for discriminator {}", type_discriminator);
         // Just copy the data as-is
         let data_copy = data.to_vec();
         let data_len = data_copy.len();
-        eprintln!("DEBUG: Copying {} bytes as-is", data_len);
         let output_buf = Box::into_raw(data_copy.into_boxed_slice()) as *mut u8;
         *out_data = output_buf;
         *out_len = data_len;
-        eprintln!("DEBUG: Returning FFI_SUCCESS (0)");
         return FFI_SUCCESS;
     }
 

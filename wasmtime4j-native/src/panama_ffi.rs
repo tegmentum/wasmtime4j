@@ -3878,17 +3878,21 @@ pub mod table {
         size: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
+            log::debug!("wasmtime4j_panama_table_size: getting table ref");
             let table = unsafe { core::get_table_ref(table_ptr)? };
+            log::debug!("wasmtime4j_panama_table_size: got table ref, getting store");
             let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
-            
+            log::debug!("wasmtime4j_panama_table_size: got store, getting size");
+
             let table_size = core::get_table_size(table, store)?;
-            
+            log::debug!("wasmtime4j_panama_table_size: got size={}", table_size);
+
             unsafe {
                 if !size.is_null() {
                     *size = table_size;
                 }
             }
-            
+
             Ok(())
         })
     }
@@ -5959,6 +5963,62 @@ pub mod linker {
                     wasmtime::Extern::Global(*wasmtime_global_lock),
                 ).map_err(|e| crate::error::WasmtimeError::Linker {
                     message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
+                })?;
+
+                Ok(())
+            }
+        })
+    }
+
+    /// Define a table in the linker (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_table(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_name: *const c_char,
+        name: *const c_char,
+        table_ptr: *mut c_void,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+        use wasmtime::AsContextMut;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Convert C strings to Rust strings
+                let module_name_str = CStr::from_ptr(module_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let name_str = CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Get table reference
+                let table = crate::table::core::get_table_ref(table_ptr)?;
+
+                // Lock linker and table
+                let mut linker_lock = linker.inner()?;
+                let wasmtime_table_arc = table.wasmtime_table();
+                let wasmtime_table_lock = wasmtime_table_arc.lock()
+                    .map_err(|e| crate::error::WasmtimeError::Concurrency {
+                        message: format!("Failed to lock table: {}", e),
+                    })?;
+
+                // Lock store and define table
+                let mut store_lock = store.lock_store();
+                linker_lock.define(
+                    &mut (*store_lock).as_context_mut(),
+                    module_name_str,
+                    name_str,
+                    wasmtime::Extern::Table(*wasmtime_table_lock),
+                ).map_err(|e| crate::error::WasmtimeError::Linker {
+                    message: format!("Failed to define table '{}::{}': {}", module_name_str, name_str, e),
                 })?;
 
                 Ok(())

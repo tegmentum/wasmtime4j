@@ -163,13 +163,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing readViaStream rejection of negative offset");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.readViaStream(-1),
           "Should reject negative offset for readViaStream");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("readViaStream correctly rejected negative offset");
     }
@@ -180,13 +182,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing writeViaStream rejection of negative offset");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.writeViaStream(-1),
           "Should reject negative offset for writeViaStream");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("writeViaStream correctly rejected negative offset");
     }
@@ -202,13 +206,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing linkAt rejection of null path");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.linkAt(null, null, null, null),
           "Should reject null path for linkAt");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("linkAt correctly rejected null path");
     }
@@ -219,13 +225,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing openAt rejection of null path");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.openAt(null, null, null, null),
           "Should reject null path for openAt");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("openAt correctly rejected null path");
     }
@@ -236,13 +244,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing unlinkFileAt rejection of null path");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.unlinkFileAt(null),
           "Should reject null path for unlinkFileAt");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("unlinkFileAt correctly rejected null path");
     }
@@ -253,13 +263,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing removeDirectoryAt rejection of null path");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.removeDirectoryAt(null),
           "Should reject null path for removeDirectoryAt");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("removeDirectoryAt correctly rejected null path");
     }
@@ -270,13 +282,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing createDirectoryAt rejection of null path");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.createDirectoryAt(null),
           "Should reject null path for createDirectoryAt");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("createDirectoryAt correctly rejected null path");
     }
@@ -292,13 +306,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing readViaStream rejection of negative offset");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.readViaStream(-1),
           "Should reject negative offset for readViaStream");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("readViaStream correctly rejected negative offset");
     }
@@ -309,13 +325,15 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing writeViaStream rejection of negative offset");
 
       // This tests Java-side parameter validation only - exception thrown before native call
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertThrows(
           IllegalArgumentException.class,
           () -> descriptor.writeViaStream(-1),
           "Should reject negative offset for writeViaStream");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("writeViaStream correctly rejected negative offset");
     }
@@ -331,7 +349,6 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing resource type reporting");
 
       // These tests use Java-side only methods (getType, getAvailableOperations)
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       assertNotNull(descriptor.getType(), "Type should not be null");
@@ -339,6 +356,9 @@ class WasiDescriptorIntegrationTest {
           descriptor.getType().contains("descriptor")
               || descriptor.getType().contains("filesystem"),
           "Type should indicate filesystem/descriptor");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("Resource type: " + descriptor.getType());
     }
@@ -349,12 +369,14 @@ class WasiDescriptorIntegrationTest {
       LOGGER.info("Testing available operations list");
 
       // These tests use Java-side only methods (getType, getAvailableOperations)
-      // Don't add to resources since fake handle would crash on close
       final JniWasiDescriptor descriptor = new JniWasiDescriptor(12345L, 67890L);
 
       final var operations = descriptor.getAvailableOperations();
       assertNotNull(operations, "Operations list should not be null");
       assertTrue(operations.size() > 0, "Should have some available operations");
+
+      // Mark as closed to prevent native cleanup with fake handle
+      descriptor.markClosedForTesting();
 
       LOGGER.info("Available operations: " + operations);
     }

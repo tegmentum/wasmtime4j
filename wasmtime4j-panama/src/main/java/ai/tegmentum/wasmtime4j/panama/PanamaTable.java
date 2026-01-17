@@ -119,9 +119,10 @@ public final class PanamaTable implements WasmTable {
       }
 
       final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
       final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment is64Segment = arena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
 
       final int result =
@@ -132,6 +133,7 @@ public final class PanamaTable implements WasmTable {
                   initialSizeSegment,
                   hasMaximumSegment,
                   maximumSizeSegment,
+                  is64Segment,
                   nameSegment);
 
       if (result != 0) {
@@ -140,10 +142,10 @@ public final class PanamaTable implements WasmTable {
 
       final int elementTypeCode = elementTypeSegment.get(ValueLayout.JAVA_INT, 0);
       final WasmValueType element = WasmValueType.fromNativeTypeCode(elementTypeCode);
-      final long minimum = initialSizeSegment.get(ValueLayout.JAVA_INT, 0);
+      final long minimum = initialSizeSegment.get(ValueLayout.JAVA_LONG, 0);
       final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
       final Long maximum =
-          hasMaximum != 0 ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_INT, 0)) : null;
+          hasMaximum != 0 ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0)) : null;
 
       return new ai.tegmentum.wasmtime4j.panama.type.PanamaTableType(
           element, minimum, maximum, arena, nativeTable);
@@ -226,9 +228,10 @@ public final class PanamaTable implements WasmTable {
       }
 
       final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
       final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment is64Segment = arena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
 
       final int result =
@@ -239,6 +242,7 @@ public final class PanamaTable implements WasmTable {
                   initialSizeSegment,
                   hasMaximumSegment,
                   maximumSizeSegment,
+                  is64Segment,
                   nameSegment);
 
       if (result != 0) {
@@ -250,7 +254,7 @@ public final class PanamaTable implements WasmTable {
         return -1; // No maximum
       }
 
-      return maximumSizeSegment.get(ValueLayout.JAVA_INT, 0);
+      return (int) maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0);
     } catch (final Throwable e) {
       throw new IllegalStateException("Error getting table max size: " + e.getMessage(), e);
     }

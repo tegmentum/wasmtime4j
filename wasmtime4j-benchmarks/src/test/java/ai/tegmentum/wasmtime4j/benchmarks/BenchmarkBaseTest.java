@@ -10,23 +10,22 @@ import org.junit.jupiter.api.Test;
 final class BenchmarkBaseTest {
 
   @Test
-  void testSimpleWasmModuleIsValid() {
-    // Test that the simple WASM module has the correct magic number
-    assertThat(BenchmarkBase.SIMPLE_WASM_MODULE).hasSize(41);
-    assertThat(BenchmarkBase.SIMPLE_WASM_MODULE[0]).isEqualTo((byte) 0x00);
-    assertThat(BenchmarkBase.SIMPLE_WASM_MODULE[1]).isEqualTo((byte) 0x61);
-    assertThat(BenchmarkBase.SIMPLE_WASM_MODULE[2]).isEqualTo((byte) 0x73);
-    assertThat(BenchmarkBase.SIMPLE_WASM_MODULE[3]).isEqualTo((byte) 0x6d);
+  void testSimpleWatModuleIsDefined() {
+    // Test that the simple WAT module string is defined and non-empty
+    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).isNotNull();
+    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).isNotEmpty();
+    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).contains("(module");
+    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).contains("add");
   }
 
   @Test
-  void testComplexWasmModuleIsValid() {
-    // Test that the complex WASM module has the correct magic number
-    assertThat(BenchmarkBase.COMPLEX_WASM_MODULE).hasSizeGreaterThan(8);
-    assertThat(BenchmarkBase.COMPLEX_WASM_MODULE[0]).isEqualTo((byte) 0x00);
-    assertThat(BenchmarkBase.COMPLEX_WASM_MODULE[1]).isEqualTo((byte) 0x61);
-    assertThat(BenchmarkBase.COMPLEX_WASM_MODULE[2]).isEqualTo((byte) 0x73);
-    assertThat(BenchmarkBase.COMPLEX_WASM_MODULE[3]).isEqualTo((byte) 0x6d);
+  void testComplexWatModuleIsDefined() {
+    // Test that the complex WAT module string is defined and non-empty
+    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).isNotNull();
+    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).isNotEmpty();
+    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("(module");
+    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("fibonacci");
+    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("memory");
   }
 
   @Test
@@ -44,9 +43,13 @@ final class BenchmarkBaseTest {
 
   @Test
   void testValidateWasmModuleWithValidModule() {
+    // Minimal valid WASM module: magic number + version + empty sections
+    final byte[] validWasmModule = {
+      0x00, 0x61, 0x73, 0x6d, // WASM magic number
+      0x01, 0x00, 0x00, 0x00 // WASM version 1
+    };
     // Should not throw exception
-    BenchmarkBase.validateWasmModule(BenchmarkBase.SIMPLE_WASM_MODULE);
-    BenchmarkBase.validateWasmModule(BenchmarkBase.COMPLEX_WASM_MODULE);
+    BenchmarkBase.validateWasmModule(validWasmModule);
   }
 
   @Test

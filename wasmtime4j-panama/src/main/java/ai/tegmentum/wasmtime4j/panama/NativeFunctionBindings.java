@@ -4563,6 +4563,146 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // maximum_size out param
             ValueLayout.ADDRESS)); // name_ptr out param
 
+    // Panama FFI table functions
+    addFunctionBinding(
+        "wasmtime4j_panama_table_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // initial_size
+            ValueLayout.JAVA_INT, // has_maximum
+            ValueLayout.JAVA_INT, // maximum_size
+            ValueLayout.ADDRESS, // name_ptr
+            ValueLayout.ADDRESS)); // table_ptr out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_create64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_LONG, // initial_size (64-bit)
+            ValueLayout.JAVA_INT, // has_maximum
+            ValueLayout.JAVA_LONG, // maximum_size (64-bit)
+            ValueLayout.ADDRESS, // name_ptr
+            ValueLayout.ADDRESS)); // table_ptr out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // size out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.ADDRESS, // ref_id_present out param
+            ValueLayout.ADDRESS)); // ref_id out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_set",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // index
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_grow",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // delta
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG, // ref_id
+            ValueLayout.ADDRESS)); // old_size out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_fill",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // dst
+            ValueLayout.JAVA_INT, // len
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG)); // ref_id
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_metadata",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // element_type out param
+            ValueLayout.ADDRESS, // initial_size out param (64-bit)
+            ValueLayout.ADDRESS, // has_maximum out param
+            ValueLayout.ADDRESS, // maximum_size out param (64-bit)
+            ValueLayout.ADDRESS, // is_64 out param
+            ValueLayout.ADDRESS)); // name_ptr out param
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_is_64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return value (1=64-bit, 0=32-bit, -1=error)
+            ValueLayout.ADDRESS)); // table_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_init",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.JAVA_INT, // dst
+            ValueLayout.JAVA_INT, // src
+            ValueLayout.JAVA_INT, // len
+            ValueLayout.JAVA_INT)); // segment_index
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_copy",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // dst
+            ValueLayout.JAVA_INT, // src
+            ValueLayout.JAVA_INT)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_table_copy_from",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // dst_table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // dst
+            ValueLayout.ADDRESS, // src_table_ptr
+            ValueLayout.JAVA_INT, // src
+            ValueLayout.JAVA_INT)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_elem_drop",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.JAVA_INT)); // segment_index
+
     // Host function bindings
     addFunctionBinding(
         "wasmtime4j_func_new_host",

@@ -2414,14 +2414,17 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
 }
 
 /// Get exported table by name
-/// Returns table handle or null if not found
+/// Returns wrapped Table handle or null if not found
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_get_table_by_name(
     instance_ptr: *const c_void,
     store_ptr: *mut c_void,
     name: *const c_char,
 ) -> *mut c_void {
+    log::debug!("wasmtime4j_instance_get_table_by_name: instance_ptr={:?}, store_ptr={:?}", instance_ptr, store_ptr);
+
     if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        log::debug!("wasmtime4j_instance_get_table_by_name: null pointer argument");
         return std::ptr::null_mut();
     }
 
@@ -2429,15 +2432,39 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_table_by_name(
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
+    log::debug!("wasmtime4j_instance_get_table_by_name: looking for table '{}'", name_str);
 
     match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
             match core::get_exported_table(instance, store, name_str) {
-                Ok(Some(table)) => Box::into_raw(Box::new(table)) as *mut c_void,
-                _ => std::ptr::null_mut(),
+                Ok(Some(wasmtime_table)) => {
+                    log::debug!("wasmtime4j_instance_get_table_by_name: found wasmtime table");
+                    // Wrap the raw wasmtime::Table in our Table struct
+                    match crate::table::Table::from_wasmtime_table(
+                        wasmtime_table,
+                        store,
+                        Some(name_str.to_string()),
+                    ) {
+                        Ok(wrapped_table) => {
+                            let boxed = Box::new(wrapped_table);
+                            Box::into_raw(boxed) as *mut c_void
+                        }
+                        Err(e) => {
+                            log::error!("Failed to wrap exported table '{}': {}", name_str, e);
+                            std::ptr::null_mut()
+                        }
+                    }
+                }
+                _ => {
+                    log::debug!("wasmtime4j_instance_get_table_by_name: table not found");
+                    std::ptr::null_mut()
+                }
             }
         }
-        _ => std::ptr::null_mut(),
+        _ => {
+            log::debug!("wasmtime4j_instance_get_table_by_name: failed to get instance/store refs");
+            std::ptr::null_mut()
+        }
     }
 }
 

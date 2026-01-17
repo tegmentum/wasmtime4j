@@ -149,44 +149,23 @@ impl EnhancedComponentEngine {
     ///
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created.
     pub fn new() -> WasmtimeResult<Self> {
-        eprintln!("[RUST DEBUG] EnhancedComponentEngine::new() called");
-
-        // Try minimal configuration first to diagnose crashes
         let mut config = Config::new();
-        eprintln!("[RUST DEBUG] Config::new() succeeded");
 
         // Only enable component model - minimal required feature
         config.wasm_component_model(true);
-        eprintln!("[RUST DEBUG] wasm_component_model(true) succeeded");
 
         // Explicitly disable async support to prevent fiber/future initialization
         // that can cause crashes during Store destruction
         config.async_support(false);
-        eprintln!("[RUST DEBUG] async_support(false) succeeded");
 
         // Cranelift is the default, but be explicit
         config.strategy(wasmtime::Strategy::Cranelift);
-        eprintln!("[RUST DEBUG] strategy(Cranelift) succeeded");
 
-        eprintln!("[RUST DEBUG] About to call Engine::new(&config)...");
-        let engine = match Engine::new(&config) {
-            Ok(e) => {
-                eprintln!("[RUST DEBUG] Wasmtime Engine created successfully");
-                e
-            }
-            Err(e) => {
-                eprintln!("[RUST DEBUG] FAILED to create Wasmtime Engine: {}", e);
-                return Err(WasmtimeError::EngineConfig {
-                    message: format!("Failed to create component engine: {}", e),
-                });
-            }
-        };
+        let engine = Engine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to create component engine: {}", e),
+        })?;
 
-        eprintln!("[RUST DEBUG] Creating ComponentLinker...");
         let linker = ComponentLinker::new(&engine);
-        eprintln!("[RUST DEBUG] ComponentLinker created");
-
-        eprintln!("[RUST DEBUG] EnhancedComponentEngine initialization complete");
 
         Ok(EnhancedComponentEngine {
             instances: Arc::new(RwLock::new(HashMap::new())),
