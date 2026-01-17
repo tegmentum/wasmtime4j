@@ -425,12 +425,34 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a null funcref value.
+   *
+   * <p>Alias for {@link #nullFuncref()}.
+   *
+   * @return a new WasmValue representing null funcref
+   */
+  public static WasmValue funcRefNull() {
+    return nullFuncref();
+  }
+
+  /**
    * Creates a null externref value.
    *
    * @return a new WasmValue representing null externref
    */
   public static WasmValue nullExternref() {
     return new WasmValue(WasmValueType.EXTERNREF, null);
+  }
+
+  /**
+   * Creates a null externref value.
+   *
+   * <p>Alias for {@link #nullExternref()}.
+   *
+   * @return a new WasmValue representing null externref
+   */
+  public static WasmValue externRefNull() {
+    return nullExternref();
   }
 
   /**

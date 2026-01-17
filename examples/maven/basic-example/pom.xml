@@ -7,7 +7,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>wasmtime4j-basic-example</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>Wasmtime4j Basic Example</name>
@@ -22,7 +22,7 @@
         <project.reporting.outputEncoding>UTF-8</project.build.outputEncoding>
 
         <!-- Dependency versions -->
-        <wasmtime4j.version>1.0.0-SNAPSHOT</wasmtime4j.version>
+        <wasmtime4j.version>1.0.0</wasmtime4j.version>
         <junit.version>5.10.4</junit.version>
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.11</logback.version>

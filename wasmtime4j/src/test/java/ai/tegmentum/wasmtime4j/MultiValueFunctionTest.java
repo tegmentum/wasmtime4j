@@ -240,7 +240,7 @@ class MultiValueFunctionTest {
       WasmValueType[] params = {WasmValueType.I32, WasmValueType.F64};
       WasmValueType[] returns = {WasmValueType.I32, WasmValueType.I64, WasmValueType.F32};
 
-      FunctionType funcType = FunctionType.multiValue(params, returns);
+      FunctionType funcType = FunctionType.of(params, returns);
       assertNotNull(funcType);
       assertEquals(2, funcType.getParamCount());
       assertEquals(3, funcType.getReturnCount());

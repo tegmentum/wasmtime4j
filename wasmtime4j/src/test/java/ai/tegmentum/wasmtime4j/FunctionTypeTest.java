@@ -170,7 +170,7 @@ class FunctionTypeTest {
     @DisplayName("should create multi-value function type")
     void shouldCreateMultiValueFunctionType() {
       final FunctionType funcType =
-          FunctionType.multiValue(
+          FunctionType.of(
               new WasmValueType[] {WasmValueType.I32},
               new WasmValueType[] {WasmValueType.I32, WasmValueType.F64});
       assertEquals(1, funcType.getParamCount(), "Should have 1 parameter");
