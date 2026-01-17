@@ -152,13 +152,28 @@ public final class FunctionType implements WasmType {
   }
 
   /**
+   * Creates a function type with the specified parameter and return types.
+   *
+   * @param paramTypes the parameter types
+   * @param returnTypes the return types
+   * @return a new FunctionType
+   * @throws IllegalArgumentException if paramTypes or returnTypes is null
+   */
+  public static FunctionType of(
+      final WasmValueType[] paramTypes, final WasmValueType[] returnTypes) {
+    return new FunctionType(paramTypes, returnTypes);
+  }
+
+  /**
    * Creates a multi-value function type with multiple parameters and return values.
    *
    * @param paramTypes the parameter types
    * @param returnTypes the return types (may be multiple)
    * @return a new FunctionType supporting multi-value
    * @throws IllegalArgumentException if paramTypes or returnTypes is null
+   * @deprecated Use {@link #of(WasmValueType[], WasmValueType[])} instead
    */
+  @Deprecated
   public static FunctionType multiValue(
       final WasmValueType[] paramTypes, final WasmValueType[] returnTypes) {
     return new FunctionType(paramTypes, returnTypes);
