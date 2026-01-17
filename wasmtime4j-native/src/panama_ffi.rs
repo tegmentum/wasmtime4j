@@ -6026,6 +6026,55 @@ pub mod linker {
         })
     }
 
+    /// Define an instance in the linker (register all its exports) (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_instance(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_name: *const c_char,
+        instance_ptr: *mut c_void,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Convert C string to Rust string
+                let module_name_str = CStr::from_ptr(module_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Get instance reference
+                let instance = crate::instance::core::get_instance_ref(instance_ptr)?;
+
+                // Get the wasmtime instance from our wrapper
+                let wasmtime_instance = {
+                    let wasmtime_instance_guard = instance.inner().lock();
+                    *wasmtime_instance_guard
+                };
+
+                // Get the linker lock
+                let mut linker_lock = linker.inner()?;
+
+                // Use with_context to let the store manage its own locking
+                store.with_context(|ctx| {
+                    linker_lock.instance(ctx, module_name_str, wasmtime_instance)
+                        .map_err(|e| crate::error::WasmtimeError::Linker {
+                            message: format!("Failed to define instance '{}': {}", module_name_str, e),
+                        })
+                })?;
+
+                Ok(())
+            }
+        })
+    }
+
     // ============================================================================
     // Function Reference FFI (Panama)
     // ============================================================================
