@@ -372,6 +372,8 @@ pub mod engine {
         wasm_component_model: c_int,
         coredump_on_trap: c_int,
         cranelift_nan_canonicalization: c_int,
+        // Experimental features
+        wasm_custom_page_sizes: c_int,
     ) -> *mut c_void {
         use crate::ffi_common::parameter_conversion;
 
@@ -422,6 +424,8 @@ pub mod engine {
             parameter_conversion::convert_int_to_bool(wasm_component_model),
             parameter_conversion::convert_int_to_bool(coredump_on_trap),
             parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization),
+            // Experimental features
+            parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes),
         ) {
             Ok(engine) => Box::into_raw(engine) as *mut c_void,
             Err(e) => {
@@ -1103,6 +1107,53 @@ pub mod instance {
         unsafe {
             crate::instance::wasmtime4j_instance_get_global_by_name(instance_ptr, store_ptr, name)
         }
+    }
+
+    /// Get exported global by name, properly wrapped for linker use (Panama FFI)
+    ///
+    /// Unlike `wasmtime4j_panama_instance_get_global_by_name` which returns a raw wasmtime::Global,
+    /// this function wraps the global in the proper Global struct that can be used with
+    /// `wasmtime4j_panama_linker_define_global`.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_instance_get_global_wrapped(
+        instance_ptr: *const c_void,
+        store_ptr: *mut c_void,
+        name: *const c_char,
+    ) -> *mut c_void {
+        use crate::error::ffi_utils;
+        use crate::global::Global;
+
+        if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        ffi_utils::ffi_try_ptr(|| {
+            let name_str = unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                        message: e.to_string(),
+                    })?
+            };
+
+            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+            // Get the raw wasmtime global from the instance
+            let wasmtime_global = crate::instance::core::get_exported_global(instance, store, name_str)?
+                .ok_or_else(|| crate::error::WasmtimeError::ExportNotFound {
+                    name: name_str.to_string(),
+                })?;
+
+            // Wrap it in our Global struct so it can be used with the linker
+            let wrapped_global = Global::from_wasmtime_global(
+                wasmtime_global,
+                store,
+                Some(name_str.to_string()),
+            )?;
+
+            Ok(Box::new(wrapped_global))
+        })
     }
 }
 
@@ -2596,33 +2647,36 @@ pub mod memory {
         ffi_utils::ffi_try_code(|| {
             // SAFETY IMPROVEMENT: Using new memory utilities with comprehensive validation
             let store = crate::ffi_common::memory_utils::safe_deref_mut(
-                store_ptr as *mut Store, 
+                store_ptr as *mut Store,
                 "store"
             ).map_err(|e| e.to_wasmtime_error())?;
-            
+
             let mut builder = MemoryBuilder::new(initial_pages as u64);
-            
+
             if maximum_pages > 0 {
                 builder = builder.maximum_pages(maximum_pages as u64);
             }
-            
+
             if is_shared != 0 {
                 builder = builder.shared();
             }
-            
+
             builder = builder.memory_index(memory_index);
-            
+
             if !name.is_null() {
                 let name_str = unsafe { ffi_utils::c_str_to_string(name, "memory_name")? };
                 builder = builder.name(name_str);
             }
-            
+
             let memory = builder.build(store)?;
-            
+
+            // Wrap in ValidatedMemory for consistent pointer handling across all memory operations
+            let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+
             unsafe {
-                *memory_ptr = Box::into_raw(Box::new(memory)) as *mut c_void;
+                *memory_ptr = validated_ptr as *mut c_void;
             }
-            
+
             Ok(())
         })
     }
@@ -2635,14 +2689,12 @@ pub mod memory {
         size_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
-            // Call wasmtime::Memory::size directly with store context
-            let size = store.with_context_ro(|ctx| {
-                Ok(memory.size(ctx))
-            })?;
+            // Use Memory's size_pages method
+            let size = memory.size_pages(store)?;
 
             unsafe {
                 *size_out = size as c_uint;
@@ -2660,14 +2712,12 @@ pub mod memory {
         size_out: *mut usize,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
-            // Call wasmtime::Memory::data_size directly with store context
-            let size = store.with_context_ro(|ctx| {
-                Ok(memory.data_size(ctx))
-            })?;
+            // Use Memory's size_bytes method
+            let size = memory.size_bytes(store)?;
 
             unsafe {
                 *size_out = size;
@@ -2686,18 +2736,12 @@ pub mod memory {
         previous_pages_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-            // Call wasmtime::Memory::grow directly with store context
-            let previous_pages = store.with_context(|mut ctx| {
-                memory.grow(&mut ctx, additional_pages as u64)
-                    .map_err(|e| crate::error::WasmtimeError::Runtime {
-                        message: format!("Failed to grow memory: {}", e),
-                        backtrace: None,
-                    })
-            })?;
+            // Use Memory's grow method
+            let previous_pages = memory.grow(store, additional_pages as u64)?;
 
             unsafe {
                 *previous_pages_out = previous_pages as c_uint;
@@ -2717,18 +2761,12 @@ pub mod memory {
         previous_pages_out: *mut u64,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-            // Call wasmtime::Memory::grow directly with store context
-            let previous_pages = store.with_context(|mut ctx| {
-                memory.grow(&mut ctx, additional_pages)
-                    .map_err(|e| crate::error::WasmtimeError::Runtime {
-                        message: format!("Failed to grow memory: {}", e),
-                        backtrace: None,
-                    })
-            })?;
+            // Use Memory's grow method
+            let previous_pages = memory.grow(store, additional_pages)?;
 
             unsafe {
                 *previous_pages_out = previous_pages;
@@ -2742,18 +2780,15 @@ pub mod memory {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_memory_is_64bit(
         memory_ptr: *mut c_void,
-        store_ptr: *mut c_void,
+        _store_ptr: *mut c_void,
         is_64bit_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
-            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
 
-            // Check memory type for 64-bit support
-            let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
-
-            let is_64 = memory_type.is_64();
+            // Use cached memory type from our wrapper (no store access needed)
+            let is_64 = memory.memory_type.is_64();
 
             unsafe {
                 *is_64bit_out = if is_64 { 1 } else { 0 };
@@ -2767,21 +2802,62 @@ pub mod memory {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_memory_is_shared(
         memory_ptr: *mut c_void,
-        store_ptr: *mut c_void,
+        _store_ptr: *mut c_void,
         is_shared_out: *mut c_int,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
-            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
 
-            // Check memory type for shared status
-            let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
-
-            let is_shared = memory_type.is_shared();
+            // Use cached memory type from our wrapper
+            let is_shared = memory.memory_type.is_shared();
 
             unsafe {
                 *is_shared_out = if is_shared { 1 } else { 0 };
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Get memory type minimum pages
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_get_minimum(
+        memory_ptr: *mut c_void,
+        _store_ptr: *mut c_void,
+        minimum_out: *mut u64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+
+            // Use cached memory type from our wrapper
+            let minimum = memory.memory_type.minimum();
+
+            unsafe {
+                *minimum_out = minimum;
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Get memory type maximum pages (-1 if unlimited)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_get_maximum(
+        memory_ptr: *mut c_void,
+        _store_ptr: *mut c_void,
+        maximum_out: *mut i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+
+            // Use cached memory type from our wrapper
+            let maximum = memory.memory_type.maximum().map(|m| m as i64).unwrap_or(-1);
+
+            unsafe {
+                *maximum_out = maximum;
             }
 
             Ok(())
@@ -2796,12 +2872,12 @@ pub mod memory {
         size_out: *mut u64,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
-            // Get memory size in pages
-            let pages = store.with_context_ro(|ctx| Ok(memory.size(ctx)))?;
+            // Use Memory's size_pages method which handles both regular and shared memory
+            let pages = memory.size_pages(store)?;
 
             unsafe {
                 *size_out = pages;
@@ -2821,8 +2897,8 @@ pub mod memory {
         buffer: *mut u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
             if buffer.is_null() {
@@ -2831,21 +2907,14 @@ pub mod memory {
                 });
             }
 
-            // Read bytes directly from wasmtime::Memory
-            store.with_context_ro(|ctx| {
-                let data = memory.data(ctx);
-                if offset + length > data.len() {
-                    return Err(crate::error::WasmtimeError::Memory {
-                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
-                    });
-                }
+            // Use Memory's read_bytes method which handles both regular and shared memory
+            let data = memory.read_bytes(store, offset, length)?;
 
-                unsafe {
-                    std::ptr::copy_nonoverlapping(data.as_ptr().add(offset), buffer, length);
-                }
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), buffer, length);
+            }
 
-                Ok(())
-            })
+            Ok(())
         })
     }
 
@@ -2859,8 +2928,8 @@ pub mod memory {
         buffer: *const u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             if buffer.is_null() {
@@ -2869,21 +2938,11 @@ pub mod memory {
                 });
             }
 
-            // Write bytes directly to wasmtime::Memory
-            store.with_context(|mut ctx| {
-                let data = memory.data_mut(&mut ctx);
-                if offset + length > data.len() {
-                    return Err(crate::error::WasmtimeError::Memory {
-                        message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
-                    });
-                }
+            // Create a slice from the input buffer
+            let data = unsafe { std::slice::from_raw_parts(buffer, length) };
 
-                unsafe {
-                    std::ptr::copy_nonoverlapping(buffer, data.as_mut_ptr().add(offset), length);
-                }
-
-                Ok(())
-            })
+            // Use Memory's write_bytes method which handles both regular and shared memory
+            memory.write_bytes(store, offset, data)
         })
     }
 
@@ -2904,8 +2963,8 @@ pub mod memory {
         size_out: *mut usize,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            // Get raw wasmtime::Memory (not wrapped)
-            let memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+            // Get Memory through ValidatedMemory wrapper
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
             let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
             if data_ptr_out.is_null() || size_out.is_null() {
@@ -2914,17 +2973,34 @@ pub mod memory {
                 });
             }
 
-            // Get direct buffer access - read-only context is sufficient
-            store.with_context_ro(|ctx| {
-                let data = memory.data(ctx);
+            // Get the inner wasmtime::Memory and access its data
+            if let Some(inner_mem) = memory.inner() {
+                store.with_context_ro(|ctx| {
+                    let data = inner_mem.data(ctx);
 
-                unsafe {
-                    *data_ptr_out = data.as_ptr() as *mut u8;
-                    *size_out = data.len();
+                    unsafe {
+                        *data_ptr_out = data.as_ptr() as *mut u8;
+                        *size_out = data.len();
+                    }
+
+                    Ok(())
+                })
+            } else {
+                // Shared memory case
+                if let Some(shared_mem) = memory.inner_shared() {
+                    let data = shared_mem.data();
+                    unsafe {
+                        // Shared memory returns &[UnsafeCell<u8>]
+                        *data_ptr_out = data.as_ptr() as *mut std::cell::UnsafeCell<u8> as *mut u8;
+                        *size_out = data.len();
+                    }
+                    Ok(())
+                } else {
+                    Err(crate::error::WasmtimeError::Memory {
+                        message: "Memory has no inner variant".to_string(),
+                    })
                 }
-
-                Ok(())
-            })
+            }
         })
     }
 
@@ -3369,8 +3445,20 @@ pub mod memory {
         f32_value: f64,
         f64_value: f64,
         ref_id_present: i32,
-        _ref_id: i64,
+        ref_id: i64,
     ) -> c_int {
+        // Write to file at VERY start
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/panama_callback_debug.log")
+        {
+            use std::io::Write;
+            let _ = writeln!(file, "[SET_GLOBAL ENTRY] instance_ptr={:?}, store_ptr={:?}, value_type_code={}, ref_id_present={}, ref_id={}",
+                instance_ptr, store_ptr, value_type_code, ref_id_present, ref_id);
+        }
+        eprintln!("[SET_GLOBAL ENTRY] instance_ptr={:?}, store_ptr={:?}, value_type_code={}, ref_id_present={}, ref_id={}",
+            instance_ptr, store_ptr, value_type_code, ref_id_present, ref_id);
         ffi_utils::ffi_try_code(|| {
             let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
@@ -3388,6 +3476,7 @@ pub mod memory {
                     message: format!("Global '{}' not found", name_str),
                 })?;
 
+            eprintln!("[RUST DEBUG] wasmtime4j_instance_set_global_value: value_type_code={}, ref_id_present={}, ref_id={}", value_type_code, ref_id_present, ref_id);
             let value = match value_type_code {
                 0 => wasmtime::Val::I32(i32_value),
                 1 => wasmtime::Val::I64(i64_value),
@@ -3395,12 +3484,19 @@ pub mod memory {
                 3 => wasmtime::Val::F64(f64_value.to_bits()),
                 5 => {
                     // FuncRef
+                    eprintln!("[RUST DEBUG] Processing FuncRef with ref_id_present={}, ref_id={}", ref_id_present, ref_id);
                     if ref_id_present != 0 {
-                        return Err(crate::error::WasmtimeError::Type {
-                            message: "Setting funcref values not yet supported".to_string(),
-                        });
+                        // Look up the function from the registry using the ref_id
+                        eprintln!("[RUST DEBUG] Looking up function reference with ID: {}", ref_id);
+                        let func = crate::table::core::get_function_reference(ref_id as u64)?
+                            .ok_or_else(|| crate::error::WasmtimeError::InvalidParameter {
+                                message: format!("Function reference not found in registry: {}", ref_id),
+                            })?;
+                        eprintln!("[RUST DEBUG] Found function reference!");
+                        wasmtime::Val::FuncRef(Some(func))
+                    } else {
+                        wasmtime::Val::FuncRef(None)
                     }
-                    wasmtime::Val::FuncRef(None)
                 }
                 6 => {
                     // ExternRef
@@ -3772,21 +3868,26 @@ pub mod global {
             
             unsafe {
                 if !value_type.is_null() {
-                    *value_type = match metadata.value_type {
+                    *value_type = match &metadata.value_type {
                         ValType::I32 => 0,
                         ValType::I64 => 1,
                         ValType::F32 => 2,
                         ValType::F64 => 3,
                         ValType::V128 => 4,
-                        ValType::Ref(_) => {
-                            // Since RefType doesn't implement PartialEq, we need to work around this
-                            // by using the type's Display trait or checking if it's the default types
-                            // For now, assume funcref=5, externref=6 based on wasmtime convention
-                            let type_string = format!("{:?}", metadata.value_type);
-                            if type_string.contains("funcref") {
-                                5
-                            } else {
-                                6
+                        ValType::Ref(ref_type) => {
+                            // Check the heap type to determine funcref vs externref
+                            match ref_type.heap_type() {
+                                wasmtime::HeapType::Func => 5,     // FUNCREF
+                                wasmtime::HeapType::Extern => 6,   // EXTERNREF
+                                wasmtime::HeapType::Any => 7,      // ANYREF
+                                wasmtime::HeapType::Eq => 8,       // EQREF
+                                wasmtime::HeapType::I31 => 9,      // I31REF
+                                wasmtime::HeapType::Struct => 10,  // STRUCTREF
+                                wasmtime::HeapType::Array => 11,   // ARRAYREF
+                                wasmtime::HeapType::None => 12,    // NULLREF
+                                wasmtime::HeapType::NoFunc => 13,  // NULLFUNCREF
+                                wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
+                                _ => 6, // Default to EXTERNREF for other/unknown types
                             }
                         },
                     };
@@ -4045,16 +4146,21 @@ pub mod table {
 
             unsafe {
                 if !element_type.is_null() {
-                    *element_type = match metadata.element_type {
-                        ValType::Ref(_) => {
-                            // Since RefType doesn't implement PartialEq, we need to work around this
-                            // by using the type's Display trait or checking if it's the default types
-                            // For now, assume funcref=5, externref=6 based on wasmtime convention
-                            let type_string = format!("{:?}", metadata.element_type);
-                            if type_string.contains("funcref") {
-                                5
-                            } else {
-                                6
+                    *element_type = match &metadata.element_type {
+                        ValType::Ref(ref_type) => {
+                            // Check the heap type to determine funcref vs externref
+                            match ref_type.heap_type() {
+                                wasmtime::HeapType::Func => 5,     // FUNCREF
+                                wasmtime::HeapType::Extern => 6,   // EXTERNREF
+                                wasmtime::HeapType::Any => 7,      // ANYREF
+                                wasmtime::HeapType::Eq => 8,       // EQREF
+                                wasmtime::HeapType::I31 => 9,      // I31REF
+                                wasmtime::HeapType::Struct => 10,  // STRUCTREF
+                                wasmtime::HeapType::Array => 11,   // ARRAYREF
+                                wasmtime::HeapType::None => 12,    // NULLREF
+                                wasmtime::HeapType::NoFunc => 13,  // NULLFUNCREF
+                                wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
+                                _ => 6, // Default to EXTERNREF for other/unknown types
                             }
                         },
                         _ => -1, // Invalid
@@ -5600,7 +5706,7 @@ pub mod linker {
     use crate::linker::ffi_core as linker_core;
     use crate::error::ffi_utils;
     use crate::hostfunc::{HostFunction, HostFunctionCallback};
-    use crate::instance::WasmValue;
+    use crate::instance::{WasmValue, FfiWasmValue};
     use wasmtime::{ValType, FuncType, RefType};
     use std::sync::Arc;
 
@@ -5610,10 +5716,12 @@ pub mod linker {
     ///
     /// Parameters:
     /// - callback_id: i64 - The unique identifier for this callback
-    /// - params_ptr: *const c_void - Pointer to array of WasmValue parameters
+    /// - params_ptr: *const c_void - Pointer to array of FfiWasmValue parameters
     /// - params_len: c_uint - Number of parameters
-    /// - results_ptr: *mut c_void - Pointer to buffer for WasmValue results
+    /// - results_ptr: *mut c_void - Pointer to buffer for FfiWasmValue results
     /// - results_len: c_uint - Expected number of results
+    /// - error_message_ptr: *mut c_char - Buffer for error message (on failure)
+    /// - error_message_len: c_uint - Size of error message buffer
     ///
     /// Returns: c_int - 0 on success, non-zero on error
     type PanamaHostFunctionCallback = extern "C" fn(
@@ -5622,6 +5730,8 @@ pub mod linker {
         params_len: c_uint,
         results_ptr: *mut c_void,
         results_len: c_uint,
+        error_message_ptr: *mut c_char,
+        error_message_len: c_uint,
     ) -> c_int;
 
     /// Panama-specific host function callback implementation
@@ -5633,26 +5743,86 @@ pub mod linker {
 
     impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
         fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
-            log::debug!("Panama host function callback - callback_id={}, params.len={}", self.callback_id, params.len());
+            fn debug_log(msg: &str) {
+                if let Ok(mut file) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open("/tmp/panama_callback_debug.log")
+                {
+                    use std::io::Write;
+                    let _ = writeln!(file, "{}", msg);
+                    let _ = file.flush();
+                }
+                eprintln!("{}", msg);
+            }
 
-            // Allocate result buffer based on function signature
+            debug_log(&format!("[RUST CALLBACK] Panama host function callback - callback_id={}, params.len={}, expected_results={}",
+                self.callback_id, params.len(), self.result_count));
+
+            debug_log("[RUST CALLBACK] Converting params to FFI-safe format...");
+            // Convert internal WasmValue to FFI-safe format
+            let ffi_params: Vec<FfiWasmValue> = params.iter()
+                .map(FfiWasmValue::from_wasm_value)
+                .collect();
+            debug_log(&format!("[RUST CALLBACK] Converted {} params to FFI format", ffi_params.len()));
+
+            // Allocate result buffer in FFI-safe format
             let expected_results = self.result_count;
-            let mut results = vec![WasmValue::I32(0); expected_results];
+            let mut ffi_results = vec![FfiWasmValue { tag: 0, value: [0u8; 16] }; expected_results];
+            debug_log(&format!("[RUST CALLBACK] Allocated {} FFI result slots", expected_results));
 
-            // Call the Panama function pointer
+            debug_log(&format!("[RUST CALLBACK] Calling Java callback with callback_id={}", self.callback_id));
+
+            // Allocate error message buffer (1024 bytes should be sufficient)
+            const ERROR_BUFFER_SIZE: usize = 1024;
+            let mut error_message_buffer = vec![0u8; ERROR_BUFFER_SIZE];
+
+            // Call the Panama function pointer with FFI-safe structs
             let result_code = (self.callback_fn)(
                 self.callback_id,
-                params.as_ptr() as *const c_void,
-                params.len() as c_uint,
-                results.as_mut_ptr() as *mut c_void,
+                ffi_params.as_ptr() as *const c_void,
+                ffi_params.len() as c_uint,
+                ffi_results.as_mut_ptr() as *mut c_void,
                 expected_results as c_uint,
+                error_message_buffer.as_mut_ptr() as *mut c_char,
+                ERROR_BUFFER_SIZE as c_uint,
             );
 
+            debug_log(&format!("[RUST CALLBACK] Java callback returned result_code={}", result_code));
+
             if result_code != 0 {
+                // Extract error message from buffer
+                let error_message = unsafe {
+                    let len = error_message_buffer.iter()
+                        .position(|&b| b == 0)
+                        .unwrap_or(ERROR_BUFFER_SIZE);
+                    String::from_utf8_lossy(&error_message_buffer[..len]).to_string()
+                };
+                debug_log(&format!("[RUST CALLBACK] Extracted error message (len={}): '{}'", error_message.len(), error_message));
+
+                let final_message = if error_message.is_empty() {
+                    format!("Panama host function callback failed with code: {}", result_code)
+                } else {
+                    error_message
+                };
+
+                debug_log(&format!("[RUST CALLBACK] ERROR: callback failed - {}", final_message));
                 return Err(crate::error::WasmtimeError::Function {
-                    message: format!("Panama host function callback failed with code: {}", result_code),
+                    message: final_message,
                 });
             }
+
+            // Convert FFI results back to internal WasmValue
+            debug_log(&format!("[RUST CALLBACK] Converting {} FFI results to WasmValue", ffi_results.len()));
+            for (i, ffi_val) in ffi_results.iter().enumerate() {
+                debug_log(&format!("[RUST CALLBACK] Result[{}]: tag={}", i, ffi_val.tag));
+            }
+
+            let results: Vec<WasmValue> = ffi_results.iter()
+                .map(FfiWasmValue::to_wasm_value)
+                .collect();
+
+            debug_log(&format!("[RUST CALLBACK] Converted {} results successfully", results.len()));
 
             Ok(results)
         }
@@ -6019,6 +6189,190 @@ pub mod linker {
                     wasmtime::Extern::Table(*wasmtime_table_lock),
                 ).map_err(|e| crate::error::WasmtimeError::Linker {
                     message: format!("Failed to define table '{}::{}': {}", module_name_str, name_str, e),
+                })?;
+
+                Ok(())
+            }
+        })
+    }
+
+    /// Define a memory in the linker (Panama FFI version)
+    ///
+    /// This function defines a memory in the linker so it can be used by other modules
+    /// as an import.
+    ///
+    /// # Arguments
+    /// * `linker_ptr` - Pointer to the linker
+    /// * `store_ptr` - Pointer to the store
+    /// * `module_name` - Module name (C string)
+    /// * `name` - Memory name (C string)
+    /// * `memory_ptr` - Pointer to a raw wasmtime::Memory (as returned by instanceGetMemoryByName)
+    ///
+    /// # Returns
+    /// 0 on success, negative error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_memory(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_name: *const c_char,
+        name: *const c_char,
+        memory_ptr: *mut c_void,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+        use wasmtime::AsContextMut;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Validate pointers
+                if linker_ptr.is_null() || store_ptr.is_null() || memory_ptr.is_null() {
+                    return Err(crate::error::WasmtimeError::InvalidParameter {
+                        message: "Null pointer passed to linker_define_memory".to_string(),
+                    });
+                }
+
+                // Convert C strings to Rust strings
+                let module_name_str = CStr::from_ptr(module_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let name_str = CStr::from_ptr(name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Write debug to file since stderr may be captured
+                {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open("/tmp/wasmtime4j_debug.log")
+                    {
+                        let _ = writeln!(f,
+                            "DEBUG linker_define_memory: store_ptr={:p}, store_id={}, module_name={}, name={}, memory_ptr={:p}",
+                            store_ptr, store.id(), module_name_str, name_str, memory_ptr
+                        );
+                    }
+                }
+
+                // The memory_ptr is a pointer to our Memory wrapper (from instanceGetMemoryByName)
+                let memory = crate::memory::core::get_memory_ref(memory_ptr as *const std::ffi::c_void)?;
+
+                // Lock linker
+                let mut linker_lock = linker.inner()?;
+
+                // Handle both regular and shared memory - exact same pattern as JNI
+                store.with_context(|ctx| {
+                    let extern_memory = if let Some(wasmtime_memory) = memory.inner() {
+                        wasmtime::Extern::Memory(*wasmtime_memory)
+                    } else if let Some(wasmtime_shared_memory) = memory.inner_shared() {
+                        wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
+                    } else {
+                        return Err(crate::error::WasmtimeError::Linker {
+                            message: format!("Memory '{}::{}' has invalid variant", module_name_str, name_str),
+                        });
+                    };
+
+                    linker_lock
+                        .define(ctx, module_name_str, name_str, extern_memory)
+                        .map_err(|e| crate::error::WasmtimeError::Linker {
+                            message: format!("Failed to define memory '{}::{}': {}", module_name_str, name_str, e),
+                        })
+                })?;
+
+                Ok(())
+            }
+        })
+    }
+
+    /// Define a memory from an instance in the linker (Panama FFI version)
+    ///
+    /// This variant takes the instance pointer and memory name, extracting the memory
+    /// and defining it in the linker all within the same store context to avoid
+    /// store mismatch issues.
+    ///
+    /// # Parameters
+    /// * `linker_ptr` - Pointer to Linker wrapper
+    /// * `store_ptr` - Pointer to Store wrapper
+    /// * `module_name` - Module name for the memory definition
+    /// * `memory_name` - Name for the memory definition
+    /// * `instance_ptr` - Pointer to Instance wrapper containing the memory
+    /// * `export_name` - Name of the exported memory in the instance
+    ///
+    /// # Returns
+    /// 0 on success, negative error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_linker_define_memory_from_instance(
+        linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
+        module_name: *const c_char,
+        memory_name: *const c_char,
+        instance_ptr: *mut c_void,
+        export_name: *const c_char,
+    ) -> c_int {
+        use std::ffi::CStr;
+        use crate::error::ffi_utils;
+
+        ffi_utils::ffi_try_code(|| {
+            unsafe {
+                // Validate pointers
+                if linker_ptr.is_null() || store_ptr.is_null() || instance_ptr.is_null() {
+                    return Err(crate::error::WasmtimeError::InvalidParameter {
+                        message: "Null pointer passed to linker_define_memory_from_instance".to_string(),
+                    });
+                }
+
+                // Convert C strings to Rust strings
+                let module_name_str = CStr::from_ptr(module_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let memory_name_str = CStr::from_ptr(memory_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+                let export_name_str = CStr::from_ptr(export_name)
+                    .to_str()
+                    .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+
+                // Get linker reference
+                let linker = linker_core::get_linker_ref(linker_ptr)?;
+
+                // Get store reference
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Get instance reference
+                let instance = crate::instance::core::get_instance_ref(instance_ptr)?;
+
+                // Debug: log store and instance info
+                {
+                    use std::io::Write;
+                    let _ = writeln!(std::io::stderr(),
+                        "DEBUG define_memory_from_instance: store_ptr={:p}, store_id={}, instance_ptr={:p}",
+                        store_ptr, store.id(), instance_ptr
+                    );
+                    let _ = std::io::stderr().flush();
+                }
+
+                // Get the linker lock
+                let mut linker_lock = linker.inner()?;
+
+                // Use the Instance wrapper's get_memory method (same pattern as JNI)
+                // which properly extracts the memory using the store context
+                let memory = instance.get_memory(store, export_name_str)?
+                    .ok_or_else(|| crate::error::WasmtimeError::Linker {
+                        message: format!("Memory '{}' not found in instance", export_name_str),
+                    })?;
+
+                // Use with_context like JNI does for defining
+                store.with_context(|ctx| {
+                    linker_lock.define(ctx, module_name_str, memory_name_str, wasmtime::Extern::Memory(memory))
+                        .map_err(|e| crate::error::WasmtimeError::Linker {
+                            message: format!("Failed to define memory '{}::{}': {}", module_name_str, memory_name_str, e),
+                        })
                 })?;
 
                 Ok(())

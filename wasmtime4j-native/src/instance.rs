@@ -26,6 +26,38 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::element_segment::ElementSegmentManager;
 use crate::data_segment::DataSegmentManager;
 
+/// Extracts the full error chain from an anyhow::Error to capture nested error messages.
+///
+/// When a host function traps, Wasmtime wraps the error in a Trap. The top-level message
+/// is just "error while executing at wasm backtrace", but the actual error message from
+/// the host function is nested in the error chain. This function extracts all messages
+/// to ensure the original error (like "test-panic") is included.
+fn extract_error_chain(e: &anyhow::Error) -> String {
+    use std::fmt::Write;
+
+    let mut message = String::new();
+    let _ = write!(message, "{}", e);
+
+    // Walk the error chain to find nested error messages
+    let mut source = e.source();
+    while let Some(err) = source {
+        let err_msg = err.to_string();
+        // Skip generic messages that don't add value
+        if !err_msg.is_empty()
+            && !err_msg.starts_with("error while executing")
+            && !err_msg.contains("wasm backtrace")
+        {
+            // Check if this message is already included (avoid duplicates)
+            if !message.contains(&err_msg) {
+                let _ = write!(message, ": {}", err_msg);
+            }
+        }
+        source = err.source();
+    }
+
+    message
+}
+
 /// Thread-safe wrapper around Wasmtime instance with comprehensive lifecycle management
 ///
 /// CRITICAL: Uses custom ReentrantLock to allow same-thread reentrant access during WASM execution.
@@ -128,6 +160,104 @@ pub enum WasmValue {
     ExternRef(Option<i64>),
     /// Function reference - stores function reference ID
     FuncRef(Option<i64>),
+}
+
+/// FFI-safe representation of WasmValue for cross-language interop.
+/// Layout: 4-byte tag + 16-byte value (total 20 bytes).
+/// Tags: 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FuncRef, 6=ExternRef
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct FfiWasmValue {
+    /// Type tag
+    pub tag: i32,
+    /// Value bytes (interpretation depends on tag)
+    pub value: [u8; 16],
+}
+
+impl FfiWasmValue {
+    /// Create an FfiWasmValue from a WasmValue
+    pub fn from_wasm_value(wv: &WasmValue) -> Self {
+        let mut value = [0u8; 16];
+        let tag = match wv {
+            WasmValue::I32(v) => {
+                value[..4].copy_from_slice(&v.to_ne_bytes());
+                0
+            }
+            WasmValue::I64(v) => {
+                value[..8].copy_from_slice(&v.to_ne_bytes());
+                1
+            }
+            WasmValue::F32(v) => {
+                value[..4].copy_from_slice(&v.to_ne_bytes());
+                2
+            }
+            WasmValue::F64(v) => {
+                value[..8].copy_from_slice(&v.to_ne_bytes());
+                3
+            }
+            WasmValue::V128(bytes) => {
+                value.copy_from_slice(bytes);
+                4
+            }
+            WasmValue::FuncRef(opt) => {
+                if let Some(id) = opt {
+                    value[..8].copy_from_slice(&id.to_ne_bytes());
+                }
+                5 // FuncRef uses tag 5
+            }
+            WasmValue::ExternRef(opt) => {
+                if let Some(id) = opt {
+                    value[..8].copy_from_slice(&id.to_ne_bytes());
+                }
+                6 // ExternRef uses tag 6
+            }
+        };
+        FfiWasmValue { tag, value }
+    }
+
+    /// Convert to a WasmValue
+    pub fn to_wasm_value(&self) -> WasmValue {
+        match self.tag {
+            0 => { // I32
+                let v = i32::from_ne_bytes(self.value[..4].try_into().unwrap());
+                WasmValue::I32(v)
+            }
+            1 => { // I64
+                let v = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                WasmValue::I64(v)
+            }
+            2 => { // F32
+                let v = f32::from_ne_bytes(self.value[..4].try_into().unwrap());
+                WasmValue::F32(v)
+            }
+            3 => { // F64
+                let v = f64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                WasmValue::F64(v)
+            }
+            4 => { // V128
+                let mut bytes = [0u8; 16];
+                bytes.copy_from_slice(&self.value);
+                WasmValue::V128(bytes)
+            }
+            5 => { // FuncRef
+                let id = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                if id == 0 {
+                    WasmValue::FuncRef(None)
+                } else {
+                    WasmValue::FuncRef(Some(id))
+                }
+            }
+            6 => { // ExternRef
+                let id = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                if id == 0 {
+                    WasmValue::ExternRef(None)
+                } else {
+                    WasmValue::ExternRef(Some(id))
+                }
+            }
+            _ => WasmValue::I32(0), // Default fallback
+        }
+    }
 }
 
 /// Result from WebAssembly function execution
@@ -429,7 +559,7 @@ impl Instance {
 
                     func.call(&mut ctx, &wasm_params_converted, &mut results)
                         .map_err(|e| WasmtimeError::Runtime {
-                            message: e.to_string(),
+                            message: extract_error_chain(&e),
                             backtrace: None
                         })?;
                     Ok(results)
@@ -593,7 +723,7 @@ impl Instance {
                                     },
                                     Err(e) => {
                                         Err(WasmtimeError::Runtime {
-                                            message: e.to_string(),
+                                            message: extract_error_chain(&e),
                                             backtrace: None
                                         })
                                     }
@@ -607,7 +737,7 @@ impl Instance {
                                     },
                                     Err(e) => {
                                         Err(WasmtimeError::Runtime {
-                                            message: e.to_string(),
+                                            message: extract_error_chain(&e),
                                             backtrace: None
                                         })
                                     }
@@ -621,7 +751,7 @@ impl Instance {
                             },
                             Err(e) => {
                                 Err(WasmtimeError::Runtime {
-                                    message: e.to_string(),
+                                    message: extract_error_chain(&e),
                                     backtrace: None
                                 })
                             }
@@ -633,12 +763,13 @@ impl Instance {
                             Ok(results)
                         },
                         Err(e) => {
-
-                            // Note: Cannot extract WasmBacktrace as it doesn't implement Clone
-                            // The backtrace is already included in e.to_string()
+                            // Extract the full error chain to capture host function error messages
+                            // The root cause of a trap is often the host function error which contains
+                            // the actual error message we want to propagate (e.g., "test-panic")
+                            let error_message = extract_error_chain(&e);
 
                             Err(WasmtimeError::Runtime {
-                                message: e.to_string(),
+                                message: error_message,
                                 backtrace: None
                             })
                         }
@@ -1511,27 +1642,26 @@ pub mod core {
             .collect::<Result<Vec<_>, _>>()
     }
 
-    /// Convert parameters from FFI representation
+    /// Convert parameters from FFI representation (FfiWasmValue layout)
     pub unsafe fn convert_params_from_ffi(
         params_ptr: *const c_void,
         param_count: usize,
     ) -> WasmtimeResult<Vec<WasmValue>> {
-        // For now, assume parameters are passed as an array of WasmValue structs
-        // This is a simplified implementation - real implementation would need
-        // proper memory layout handling
-        if params_ptr.is_null() {
+        if params_ptr.is_null() || param_count == 0 {
             return Ok(Vec::new());
         }
 
-        let params_slice = std::slice::from_raw_parts(
-            params_ptr as *const WasmValue,
+        // Read parameters as FfiWasmValue array (20 bytes each)
+        let ffi_params = std::slice::from_raw_parts(
+            params_ptr as *const FfiWasmValue,
             param_count,
         );
 
-        Ok(params_slice.to_vec())
+        // Convert FfiWasmValue to WasmValue
+        Ok(ffi_params.iter().map(|ffi| ffi.to_wasm_value()).collect())
     }
 
-    /// Convert results to FFI representation
+    /// Convert results to FFI representation (FfiWasmValue layout)
     pub unsafe fn convert_results_to_ffi(
         results: &[WasmValue],
         results_ptr: *mut c_void,
@@ -1542,13 +1672,15 @@ pub mod core {
         }
 
         let count = std::cmp::min(results.len(), result_count);
-        let results_slice = std::slice::from_raw_parts_mut(
-            results_ptr as *mut WasmValue,
+
+        // Write results as FfiWasmValue array (20 bytes each)
+        let ffi_results = std::slice::from_raw_parts_mut(
+            results_ptr as *mut FfiWasmValue,
             count,
         );
 
         for (i, result) in results.iter().take(count).enumerate() {
-            results_slice[i] = result.clone();
+            ffi_results[i] = FfiWasmValue::from_wasm_value(result);
         }
 
         Ok(())
@@ -1599,12 +1731,20 @@ pub mod core {
             wasmtime::ValType::F32 => 2,
             wasmtime::ValType::F64 => 3,
             wasmtime::ValType::V128 => 4,
-            wasmtime::ValType::Ref(_) => {
-                // For reference types, we need to check if it's funcref or externref
-                // This is a simplified approach - more detailed inspection would be needed
-                match format!("{:?}", val_type).as_str() {
-                    s if s.contains("funcref") => 5,
-                    _ => 6, // Default to externref
+            wasmtime::ValType::Ref(ref_type) => {
+                // Check the heap type to determine funcref vs externref
+                match ref_type.heap_type() {
+                    wasmtime::HeapType::Func => 5,     // FUNCREF
+                    wasmtime::HeapType::Extern => 6,   // EXTERNREF
+                    wasmtime::HeapType::Any => 7,      // ANYREF
+                    wasmtime::HeapType::Eq => 8,       // EQREF
+                    wasmtime::HeapType::I31 => 9,      // I31REF
+                    wasmtime::HeapType::Struct => 10,  // STRUCTREF
+                    wasmtime::HeapType::Array => 11,   // ARRAYREF
+                    wasmtime::HeapType::None => 12,    // NULLREF
+                    wasmtime::HeapType::NoFunc => 13,  // NULLFUNCREF
+                    wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
+                    _ => 6, // Default to EXTERNREF for other/unknown types
                 }
             }
         }
@@ -1836,9 +1976,23 @@ pub unsafe extern "C" fn wasmtime4j_instance_new_without_imports(
 
     match (crate::store::core::get_store_mut(store_ptr), crate::module::core::get_module_ref(module_ptr)) {
         (Ok(store), Ok(module)) => {
+            eprintln!(
+                "DEBUG instance_new: store_ptr={:p}, store_id={}",
+                store_ptr, store.id()
+            );
             match ffi_core::create_instance_without_imports(store, module) {
-                Ok(instance) => Box::into_raw(instance) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
+                Ok(instance) => {
+                    let instance_ptr = Box::into_raw(instance) as *mut c_void;
+                    eprintln!(
+                        "DEBUG instance_new: created instance_ptr={:p}",
+                        instance_ptr
+                    );
+                    instance_ptr
+                },
+                Err(e) => {
+                    eprintln!("DEBUG instance_new: error creating instance: {:?}", e);
+                    std::ptr::null_mut()
+                },
             }
         },
         _ => std::ptr::null_mut(),
@@ -2056,11 +2210,11 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
         return -1;
     }
 
-    match (
-        ffi_core::get_instance_mut(instance_ptr),
-        crate::store::core::get_store_mut(store_ptr),
-        CStr::from_ptr(function_name).to_str()
-    ) {
+    let instance_result = ffi_core::get_instance_mut(instance_ptr);
+    let store_result = crate::store::core::get_store_mut(store_ptr);
+    let name_result = CStr::from_ptr(function_name).to_str();
+
+    match (instance_result, store_result, name_result) {
         (Ok(instance), Ok(store), Ok(name_str)) => {
             // Convert parameters from FFI WasmValue array
             // Layout: tag (4 bytes) + value (16 bytes max) = 20 bytes per WasmValue
@@ -2159,8 +2313,19 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
                                     // value at offset +4 (16 bytes)
                                     std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest_ptr.add(base_offset + 4), 16);
                                 }
-                                _ => {
-                                    // Unsupported types (ExternRef, FuncRef) - skip
+                                WasmValue::FuncRef(opt_id) => {
+                                    // tag = 5
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 5);
+                                    // value at offset +4 (i64 reference ID or 0 for null)
+                                    let id = opt_id.unwrap_or(0);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, id);
+                                }
+                                WasmValue::ExternRef(opt_id) => {
+                                    // tag = 6
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 6);
+                                    // value at offset +4 (i64 reference ID or 0 for null)
+                                    let id = opt_id.unwrap_or(0);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, id);
                                 }
                             }
                         }
@@ -2168,9 +2333,12 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
 
                     actual_count as isize
                 },
-                Err(_) => -1,
+                Err(e) => {
+                    crate::error::ffi_utils::set_last_error(e);
+                    -1
+                }
             }
-        },
+        }
         _ => -1,
     }
 }
@@ -2350,9 +2518,20 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
                                     let bytes = u128::from(*v).to_le_bytes();
                                     std::ptr::copy_nonoverlapping(bytes.as_ptr(), dest_ptr.add(base_offset + 4), 16);
                                 }
-                                _ => {
-                                    // FuncRef/ExternRef - write tag only
+                                Val::FuncRef(_func_ref) => {
+                                    // tag = 5, value = 0 (null funcref, we don't have ID tracking here)
                                     std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 5);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, 0);
+                                }
+                                Val::ExternRef(_extern_ref) => {
+                                    // tag = 6, value = 0 (null externref, we don't have ID tracking here)
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 6);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, 0);
+                                }
+                                _ => {
+                                    // Other ref types - treat as externref
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 6);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, 0);
                                 }
                             }
                         }
@@ -2382,7 +2561,10 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
 }
 
 /// Get exported memory by name
-/// Returns memory handle or null if not found
+/// Returns wrapped Memory handle or null if not found
+///
+/// IMPORTANT: This function returns a wrapped crate::memory::Memory, NOT a raw wasmtime::Memory.
+/// All callers must treat the returned pointer as a crate::memory::Memory pointer.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
     instance_ptr: *const c_void,
@@ -2398,13 +2580,60 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
         Err(_) => return std::ptr::null_mut(),
     };
 
+    // Write debug to file since stderr may be captured
+    {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_debug.log")
+        {
+            let _ = writeln!(f,
+                "DEBUG get_memory_by_name: instance_ptr={:p}, store_ptr={:p}, name={}",
+                instance_ptr, store_ptr, name_str
+            );
+        }
+    }
+
     match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
+            {
+                use std::io::Write;
+                if let Ok(mut f) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open("/tmp/wasmtime4j_debug.log")
+                {
+                    let _ = writeln!(f,
+                        "DEBUG get_memory_by_name: store_id={}", store.id()
+                    );
+                }
+            }
             match core::get_exported_memory(instance, store, name_str) {
-                Ok(Some(memory)) => {
-                    // Return the raw wasmtime::Memory directly without wrapping
-                    // This avoids store context issues since wasmtime::Memory is just an ID
-                    Box::into_raw(Box::new(memory)) as *mut c_void
+                Ok(Some(wasmtime_memory)) => {
+                    // Get the memory type from the wasmtime::Memory using store context
+                    let memory_type_result = store.with_context_ro(|ctx| {
+                        Ok(wasmtime_memory.ty(&ctx))
+                    });
+
+                    match memory_type_result {
+                        Ok(memory_type) => {
+                            // Wrap the raw wasmtime::Memory in our Memory wrapper
+                            // This ensures type consistency across all memory operations
+                            let wrapped_memory = crate::memory::Memory::from_wasmtime_memory(
+                                wasmtime_memory,
+                                memory_type,
+                            );
+
+                            // Wrap in ValidatedMemory to match JNI's nativeGetMemory behavior
+                            // This is required because get_memory_ref expects ValidatedMemory
+                            match crate::memory::core::create_validated_memory(wrapped_memory) {
+                                Ok(validated_ptr) => validated_ptr as *mut c_void,
+                                Err(_) => std::ptr::null_mut(),
+                            }
+                        }
+                        Err(_) => std::ptr::null_mut(),
+                    }
                 }
                 _ => std::ptr::null_mut(),
             }
