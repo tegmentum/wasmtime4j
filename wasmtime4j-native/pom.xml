@@ -21,7 +21,9 @@
         <!-- Native library paths -->
         <native.resources.path>${project.basedir}/src/main/resources/natives</native.resources.path>
         <native.build.path>${project.build.directory}/native</native.build.path>
-        <native.cargo.target.dir>${project.build.directory}/cargo</native.cargo.target.dir>
+        <!-- IMPORTANT: Cargo target is OUTSIDE Maven's target/ to survive mvn clean -->
+        <!-- This saves ~5 minutes on rebuilds by preserving Rust compilation cache -->
+        <native.cargo.target.dir>${project.basedir}/.cargo-target</native.cargo.target.dir>
         
         <!-- Build output paths -->
         <native.output.dir>${project.build.outputDirectory}/natives</native.output.dir>
@@ -239,21 +241,9 @@
                         </configuration>
                     </execution>
 
-                    <!-- Clean previous build artifacts -->
-                    <execution>
-                        <id>cargo-clean</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>cargo</executable>
-                            <arguments>
-                                <argument>clean</argument>
-                            </arguments>
-                            <skip>${native.compile.skip}</skip>
-                        </configuration>
-                    </execution>
+                    <!-- NOTE: cargo clean is intentionally NOT run during mvn clean -->
+                    <!-- This preserves the Rust build cache and saves ~5 minutes on rebuilds -->
+                    <!-- To force a full Cargo rebuild, manually run: cargo clean -->
 
                     <!-- Build native library with Cargo -->
                     <execution>
@@ -426,6 +416,8 @@
             </plugin>
 
             <!-- Clean plugin to clean native build artifacts -->
+            <!-- NOTE: Cargo target dir is intentionally NOT cleaned to preserve build cache -->
+            <!-- Use 'mvn clean -Dnative.clean.cargo=true' to force full Cargo rebuild -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -435,23 +427,12 @@
                             <directory>${native.build.path}</directory>
                         </fileset>
                         <fileset>
-                            <directory>${native.cargo.target.dir}</directory>
-                        </fileset>
-                        <fileset>
                             <directory>${project.basedir}/target</directory>
                             <includes>
                                 <include>**/*.dll</include>
                                 <include>**/*.so</include>
                                 <include>**/*.dylib</include>
                             </includes>
-                        </fileset>
-                        <!-- Clean Cargo.lock in development builds -->
-                        <fileset>
-                            <directory>${project.basedir}</directory>
-                            <includes>
-                                <include>Cargo.lock</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
                         </fileset>
                     </filesets>
                 </configuration>

@@ -1078,7 +1078,7 @@ public final class PanamaFunctionReference implements FunctionReference {
         // We must reinterpret it with the proper size before writing.
         final long bufferSize = (long) resultsLen * valueSize;
         final MemorySegment reinterpretedResults = resultsPtr.reinterpret(bufferSize);
-        marshalResults(results, reinterpretedResults, resultsLen);
+        marshalResultsToFfi(results, reinterpretedResults, resultsLen);
       } catch (final Exception e) {
         LOGGER.log(Level.SEVERE, "Error marshaling results in callback: " + callbackId, e);
         writeErrorMessage(errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
@@ -1179,7 +1179,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @param resultsPtr pointer to the result buffer
    * @param resultsLen expected number of results
    */
-  private static void marshalResults(
+  private static void marshalResultsToFfi(
       final WasmValue[] results, final MemorySegment resultsPtr, final int resultsLen) {
     if (resultsLen == 0 || results == null || results.length == 0) {
       return;

@@ -165,10 +165,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <!-- Reuse forks to avoid repeated JVM startup and native library loading -->
+                    <!-- Use single fork to ensure consistent REFERENCE_REGISTRY state across tests -->
+                    <!-- Multiple forks each have their own native library with separate static state -->
                     <reuseForks>true</reuseForks>
-                    <!-- Run tests in parallel using multiple CPU cores -->
-                    <forkCount>2C</forkCount>
+                    <forkCount>1</forkCount>
                     <parallel>classes</parallel>
                     <threadCount>4</threadCount>
                     <includes>

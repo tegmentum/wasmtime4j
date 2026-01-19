@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportType;
 import ai.tegmentum.wasmtime4j.ImportType;
 import ai.tegmentum.wasmtime4j.Module;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
 
@@ -251,6 +252,9 @@ public class JniModule implements Module {
   }
 
   @Override
+  @SuppressFBWarnings(
+      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
+      justification = "Error details are logged internally only; exception thrown to caller has sanitized message")
   public List<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExports() {
     ensureNotClosed();
     if (!isNativeHandleReasonable()) {
@@ -268,15 +272,11 @@ public class JniModule implements Module {
       }
       return result;
     } catch (final Throwable t) {
-      // Defensive: Return empty list on native error instead of crashing JVM
-      System.err.println(
-          "nativeGetModuleExports failed: " + t.getClass().getName() + ": " + t.getMessage());
-      t.printStackTrace(System.err);
-      // Rethrow to get better diagnostics
-      if (t instanceof RuntimeException) {
-        throw (RuntimeException) t;
-      }
-      throw new RuntimeException("Native getModuleExports failed", t);
+      // Defensive: Log error details internally, rethrow with sanitized message
+      java.util.logging.Logger.getLogger(JniModule.class.getName())
+          .log(java.util.logging.Level.SEVERE, "nativeGetModuleExports failed", t);
+      // Wrap in new exception with sanitized message to avoid exposing internal details
+      throw new RuntimeException("Failed to get module exports");
     }
   }
 

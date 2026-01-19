@@ -6185,8 +6185,20 @@ pub mod jni_hostfunc {
             }
 
             // Also clean up the function reference from the table registry
-            // (This is optional - the func ref may still be valid if it's in a table)
-            log::debug!("Host function had func_ref_id: {} (not removing from registry to preserve table entries)", func_ref_id);
+            // This is necessary to prevent stale entries from conflicting with new registrations
+            if func_ref_id != 0 {
+                match crate::table::core::remove_function_reference(func_ref_id) {
+                    Ok(Some(_)) => {
+                        log::debug!("Removed function reference {} from table registry", func_ref_id);
+                    }
+                    Ok(None) => {
+                        log::debug!("Function reference {} was not in table registry", func_ref_id);
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to remove function reference {} from table registry: {}", func_ref_id, e);
+                    }
+                }
+            }
 
             // Clean up the boxed handle struct
             unsafe {
