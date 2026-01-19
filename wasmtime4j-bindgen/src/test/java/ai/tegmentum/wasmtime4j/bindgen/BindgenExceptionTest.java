@@ -172,8 +172,8 @@ class BindgenExceptionTest {
     @Test
     @DisplayName("witParseError() message should have consistent format")
     void witParseErrorMessageShouldHaveConsistentFormat() {
-      BindgenException exception = BindgenException.witParseError("test.wit",
-          new RuntimeException("error"));
+      BindgenException exception =
+          BindgenException.witParseError("test.wit", new RuntimeException("error"));
 
       assertThat(exception.getMessage()).startsWith("Failed to parse WIT file: ");
     }
@@ -181,8 +181,8 @@ class BindgenExceptionTest {
     @Test
     @DisplayName("wasmIntrospectionError() message should have consistent format")
     void wasmIntrospectionErrorMessageShouldHaveConsistentFormat() {
-      BindgenException exception = BindgenException.wasmIntrospectionError("test.wasm",
-          new RuntimeException("error"));
+      BindgenException exception =
+          BindgenException.wasmIntrospectionError("test.wasm", new RuntimeException("error"));
 
       assertThat(exception.getMessage()).startsWith("Failed to introspect WASM module: ");
     }
@@ -190,8 +190,8 @@ class BindgenExceptionTest {
     @Test
     @DisplayName("codeGenerationError() message should have consistent format")
     void codeGenerationErrorMessageShouldHaveConsistentFormat() {
-      BindgenException exception = BindgenException.codeGenerationError("TestType",
-          new RuntimeException("error"));
+      BindgenException exception =
+          BindgenException.codeGenerationError("TestType", new RuntimeException("error"));
 
       assertThat(exception.getMessage()).startsWith("Failed to generate code for type: ");
     }
@@ -207,8 +207,8 @@ class BindgenExceptionTest {
     @Test
     @DisplayName("ioError() message should have consistent format")
     void ioErrorMessageShouldHaveConsistentFormat() {
-      BindgenException exception = BindgenException.ioError("writing file",
-          new IOException("error"));
+      BindgenException exception =
+          BindgenException.ioError("writing file", new IOException("error"));
 
       assertThat(exception.getMessage()).startsWith("I/O error during ");
     }

@@ -41,9 +41,7 @@ class BindgenInterfaceTest {
     void shouldCreateInterfaceWithDefaultValues() {
       LOGGER.info("Testing builder with default values");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("my-interface")
-          .build();
+      BindgenInterface iface = BindgenInterface.builder().name("my-interface").build();
 
       assertThat(iface.getName()).isEqualTo("my-interface");
       assertThat(iface.getPackageName()).isEmpty();
@@ -57,10 +55,8 @@ class BindgenInterfaceTest {
     void shouldCreateInterfaceWithPackageName() {
       LOGGER.info("Testing builder with package name");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .packageName("wasi:io")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
       assertThat(iface.getName()).isEqualTo("types");
       assertThat(iface.getPackageName()).hasValue("wasi:io");
@@ -72,13 +68,11 @@ class BindgenInterfaceTest {
       LOGGER.info("Testing builder with addType()");
 
       BindgenType type1 = BindgenType.primitive("i32");
-      BindgenType type2 = BindgenType.builder().name("MyRecord").kind(BindgenType.Kind.RECORD).build();
+      BindgenType type2 =
+          BindgenType.builder().name("MyRecord").kind(BindgenType.Kind.RECORD).build();
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .addType(type1)
-          .addType(type2)
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("types").addType(type1).addType(type2).build();
 
       assertThat(iface.getTypes()).hasSize(2);
       assertThat(iface.getTypes()).containsExactly(type1, type2);
@@ -89,14 +83,10 @@ class BindgenInterfaceTest {
     void shouldCreateInterfaceWithTypesMethod() {
       LOGGER.info("Testing builder with types() list method");
 
-      List<BindgenType> types = Arrays.asList(
-          BindgenType.primitive("string"),
-          BindgenType.primitive("bool"));
+      List<BindgenType> types =
+          Arrays.asList(BindgenType.primitive("string"), BindgenType.primitive("bool"));
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("primitives")
-          .types(types)
-          .build();
+      BindgenInterface iface = BindgenInterface.builder().name("primitives").types(types).build();
 
       assertThat(iface.getTypes()).hasSize(2);
     }
@@ -109,11 +99,8 @@ class BindgenInterfaceTest {
       BindgenFunction func1 = BindgenFunction.builder().name("get").build();
       BindgenFunction func2 = BindgenFunction.builder().name("set").build();
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("api")
-          .addFunction(func1)
-          .addFunction(func2)
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("api").addFunction(func1).addFunction(func2).build();
 
       assertThat(iface.getFunctions()).hasSize(2);
       assertThat(iface.getFunctions()).containsExactly(func1, func2);
@@ -124,14 +111,12 @@ class BindgenInterfaceTest {
     void shouldCreateInterfaceWithFunctionsMethod() {
       LOGGER.info("Testing builder with functions() list method");
 
-      List<BindgenFunction> functions = Arrays.asList(
-          BindgenFunction.builder().name("read").build(),
-          BindgenFunction.builder().name("write").build());
+      List<BindgenFunction> functions =
+          Arrays.asList(
+              BindgenFunction.builder().name("read").build(),
+              BindgenFunction.builder().name("write").build());
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("io")
-          .functions(functions)
-          .build();
+      BindgenInterface iface = BindgenInterface.builder().name("io").functions(functions).build();
 
       assertThat(iface.getFunctions()).hasSize(2);
     }
@@ -141,10 +126,11 @@ class BindgenInterfaceTest {
     void shouldCreateInterfaceWithDocumentation() {
       LOGGER.info("Testing builder with documentation");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("documented")
-          .documentation("This interface provides utility functions")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder()
+              .name("documented")
+              .documentation("This interface provides utility functions")
+              .build();
 
       assertThat(iface.getDocumentation()).hasValue("This interface provides utility functions");
     }
@@ -157,13 +143,14 @@ class BindgenInterfaceTest {
       BindgenType type = BindgenType.primitive("i32");
       BindgenFunction function = BindgenFunction.builder().name("compute").build();
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("calculator")
-          .packageName("math:core")
-          .addType(type)
-          .addFunction(function)
-          .documentation("Calculator interface")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder()
+              .name("calculator")
+              .packageName("math:core")
+              .addType(type)
+              .addFunction(function)
+              .documentation("Calculator interface")
+              .build();
 
       assertThat(iface.getName()).isEqualTo("calculator");
       assertThat(iface.getPackageName()).hasValue("math:core");
@@ -182,9 +169,7 @@ class BindgenInterfaceTest {
     void shouldReturnNameOnlyWhenNoPackageName() {
       LOGGER.info("Testing getFullyQualifiedName() without package");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .build();
+      BindgenInterface iface = BindgenInterface.builder().name("types").build();
 
       assertThat(iface.getFullyQualifiedName()).isEqualTo("types");
     }
@@ -194,10 +179,8 @@ class BindgenInterfaceTest {
     void shouldReturnPackageSlashNameWhenPackageSet() {
       LOGGER.info("Testing getFullyQualifiedName() with package");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .packageName("wasi:io")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
       assertThat(iface.getFullyQualifiedName()).isEqualTo("wasi:io/types");
     }
@@ -207,10 +190,7 @@ class BindgenInterfaceTest {
     void shouldReturnNameOnlyWhenPackageNameIsEmpty() {
       LOGGER.info("Testing getFullyQualifiedName() with empty package");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .packageName("")
-          .build();
+      BindgenInterface iface = BindgenInterface.builder().name("types").packageName("").build();
 
       assertThat(iface.getFullyQualifiedName()).isEqualTo("types");
     }
@@ -239,10 +219,8 @@ class BindgenInterfaceTest {
     @Test
     @DisplayName("getPackageName() should return value when set")
     void getPackageNameShouldReturnValueWhenSet() {
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("test")
-          .packageName("my:pkg")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("test").packageName("my:pkg").build();
 
       assertThat(iface.getPackageName()).hasValue("my:pkg");
     }
@@ -273,15 +251,11 @@ class BindgenInterfaceTest {
     void shouldBeEqualWhenNameAndPackageNameMatch() {
       LOGGER.info("Testing equals() for matching interfaces");
 
-      BindgenInterface iface1 = BindgenInterface.builder()
-          .name("types")
-          .packageName("wasi:io")
-          .build();
+      BindgenInterface iface1 =
+          BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
-      BindgenInterface iface2 = BindgenInterface.builder()
-          .name("types")
-          .packageName("wasi:io")
-          .build();
+      BindgenInterface iface2 =
+          BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
       assertThat(iface1).isEqualTo(iface2);
       assertThat(iface1.hashCode()).isEqualTo(iface2.hashCode());
@@ -292,15 +266,11 @@ class BindgenInterfaceTest {
     void shouldBeEqualEvenWhenTypesDiffer() {
       LOGGER.info("Testing equals() ignores types");
 
-      BindgenInterface iface1 = BindgenInterface.builder()
-          .name("types")
-          .addType(BindgenType.primitive("i32"))
-          .build();
+      BindgenInterface iface1 =
+          BindgenInterface.builder().name("types").addType(BindgenType.primitive("i32")).build();
 
-      BindgenInterface iface2 = BindgenInterface.builder()
-          .name("types")
-          .addType(BindgenType.primitive("i64"))
-          .build();
+      BindgenInterface iface2 =
+          BindgenInterface.builder().name("types").addType(BindgenType.primitive("i64")).build();
 
       assertThat(iface1).isEqualTo(iface2);
     }
@@ -321,15 +291,11 @@ class BindgenInterfaceTest {
     void shouldNotBeEqualWhenPackageNamesDiffer() {
       LOGGER.info("Testing equals() for different package names");
 
-      BindgenInterface iface1 = BindgenInterface.builder()
-          .name("types")
-          .packageName("pkg1")
-          .build();
+      BindgenInterface iface1 =
+          BindgenInterface.builder().name("types").packageName("pkg1").build();
 
-      BindgenInterface iface2 = BindgenInterface.builder()
-          .name("types")
-          .packageName("pkg2")
-          .build();
+      BindgenInterface iface2 =
+          BindgenInterface.builder().name("types").packageName("pkg2").build();
 
       assertThat(iface1).isNotEqualTo(iface2);
     }
@@ -368,11 +334,12 @@ class BindgenInterfaceTest {
     void shouldIncludeNameAndCountsInToString() {
       LOGGER.info("Testing toString() output");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("api")
-          .addType(BindgenType.primitive("i32"))
-          .addFunction(BindgenFunction.builder().name("get").build())
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder()
+              .name("api")
+              .addType(BindgenType.primitive("i32"))
+              .addFunction(BindgenFunction.builder().name("get").build())
+              .build();
 
       String toString = iface.toString();
 
@@ -386,10 +353,8 @@ class BindgenInterfaceTest {
     @Test
     @DisplayName("should include fully qualified name in toString()")
     void shouldIncludeFullyQualifiedNameInToString() {
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("types")
-          .packageName("wasi:io")
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
       String toString = iface.toString();
 
@@ -406,10 +371,8 @@ class BindgenInterfaceTest {
     void typesListShouldBeImmutable() {
       LOGGER.info("Testing that types list is immutable");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("test")
-          .addType(BindgenType.primitive("i32"))
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("test").addType(BindgenType.primitive("i32")).build();
 
       List<BindgenType> types = iface.getTypes();
 
@@ -422,10 +385,11 @@ class BindgenInterfaceTest {
     void functionsListShouldBeImmutable() {
       LOGGER.info("Testing that functions list is immutable");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("test")
-          .addFunction(BindgenFunction.builder().name("get").build())
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder()
+              .name("test")
+              .addFunction(BindgenFunction.builder().name("get").build())
+              .build();
 
       List<BindgenFunction> functions = iface.getFunctions();
 

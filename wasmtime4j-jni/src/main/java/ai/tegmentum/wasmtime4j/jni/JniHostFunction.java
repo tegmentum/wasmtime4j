@@ -198,6 +198,11 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       // Register this host function to prevent GC
       HOST_FUNCTION_REGISTRY.put(hostFunctionId, this);
 
+      // Register with JniLinker's callback map so Rust can invoke this function
+      // via JniLinker.invokeHostFunctionCallback when called from WASM
+      JniLinker.registerHostFunctionCallbackWithId(
+          hostFunctionId, null, functionName, implementation, functionType);
+
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(
             "Created host function '"
@@ -210,6 +215,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
     } catch (Exception e) {
       // Clean up registry on failure
       HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
+      JniLinker.unregisterHostFunctionCallback(hostFunctionId);
       throw new WasmException("Failed to create host function: " + functionName, e);
     }
   }
@@ -275,6 +281,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   protected void doClose() throws Exception {
     // Remove from registry to prevent further callbacks
     HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
+
+    // Remove from JniLinker's callback map
+    JniLinker.unregisterHostFunctionCallback(hostFunctionId);
 
     // Note: Do NOT call nativeDestroyHostFunction here. HostFunctions are Store-owned resources.
     // The Store will clean up all its HostFunctions when it is destroyed.

@@ -458,7 +458,11 @@ public final class JniWasiDescriptor extends JniResource implements WasiDescript
     if (result != 0) {
       throw new WasmException("Failed to transfer descriptor ownership");
     }
-    LOGGER.fine("Transferred ownership of descriptor " + nativeHandle + " to instance " + targetInstance.getId());
+    LOGGER.fine(
+        "Transferred ownership of descriptor "
+            + nativeHandle
+            + " to instance "
+            + targetInstance.getId());
   }
 
   @Override

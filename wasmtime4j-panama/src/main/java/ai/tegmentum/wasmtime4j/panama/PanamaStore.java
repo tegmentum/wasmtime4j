@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.ExternRef;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
@@ -442,10 +444,31 @@ public final class PanamaStore implements Store {
           f64Value = (Double) initialValue.getValue();
           break;
         case FUNCREF:
+          if (initialValue.getValue() != null) {
+            refIdPresent = 1;
+            final Object funcVal = initialValue.getValue();
+            if (funcVal instanceof FunctionReference) {
+              refId = ((FunctionReference) funcVal).getId();
+            } else if (funcVal instanceof Long) {
+              refId = (Long) funcVal;
+            } else {
+              throw new IllegalArgumentException(
+                  "FUNCREF value must be FunctionReference or Long, got: " + funcVal.getClass());
+            }
+          }
+          break;
         case EXTERNREF:
           if (initialValue.getValue() != null) {
             refIdPresent = 1;
-            refId = (Long) initialValue.getValue();
+            final Object externVal = initialValue.getValue();
+            if (externVal instanceof ExternRef) {
+              refId = ((ExternRef<?>) externVal).getId();
+            } else if (externVal instanceof Long) {
+              refId = (Long) externVal;
+            } else {
+              throw new IllegalArgumentException(
+                  "EXTERNREF value must be ExternRef or Long, got: " + externVal.getClass());
+            }
           }
           break;
         default:

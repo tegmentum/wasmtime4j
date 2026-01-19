@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
@@ -67,6 +68,18 @@ public final class PanamaFunctionReference implements FunctionReference {
       FUNCTION_REFERENCE_REGISTRY = new ConcurrentHashMap<>();
   private static final AtomicLong NEXT_FUNCTION_REFERENCE_ID = new AtomicLong(1L);
 
+  private static final NativeFunctionBindings NATIVE_BINDINGS =
+      NativeFunctionBindings.getInstance();
+
+  /** Global arena for the callback stub - lives for the entire JVM lifetime. */
+  private static final Arena GLOBAL_CALLBACK_ARENA = Arena.ofAuto();
+
+  /** Global callback stub address, lazily initialized. */
+  private static volatile MemorySegment GLOBAL_CALLBACK_STUB = null;
+
+  /** Lock for initializing the global callback stub. */
+  private static final Object CALLBACK_STUB_LOCK = new Object();
+
   private final long functionReferenceId;
   private final String functionName;
   private final FunctionType functionType;
@@ -75,6 +88,9 @@ public final class PanamaFunctionReference implements FunctionReference {
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
   private final PanamaErrorHandler errorHandler;
+
+  /** The native registry ID for this function reference, used when setting funcref globals. */
+  private long nativeRegistryId = -1;
 
   private MemorySegment upcallStub;
   private volatile boolean closed = false;
@@ -129,6 +145,9 @@ public final class PanamaFunctionReference implements FunctionReference {
       // Create the upcall stub for native-to-Java callback
       createUpcallStub();
 
+      // Create native function reference so it can be used with funcref globals
+      createNativeFunctionReference(store);
+
       // Register for automatic resource cleanup
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
 
@@ -137,7 +156,9 @@ public final class PanamaFunctionReference implements FunctionReference {
             "Created host function reference '"
                 + functionName
                 + "' with ID: "
-                + functionReferenceId);
+                + functionReferenceId
+                + ", native registry ID: "
+                + nativeRegistryId);
       }
     } catch (Exception e) {
       FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
@@ -240,7 +261,9 @@ public final class PanamaFunctionReference implements FunctionReference {
 
   @Override
   public long getId() {
-    return functionReferenceId;
+    // Return native registry ID if available (for use with funcref globals/tables)
+    // Otherwise return the Java-side ID
+    return nativeRegistryId >= 0 ? nativeRegistryId : functionReferenceId;
   }
 
   /**
@@ -350,6 +373,87 @@ public final class PanamaFunctionReference implements FunctionReference {
       throw new WasmException(
           "Failed to create upcall stub for function reference: " + functionName, e);
     }
+  }
+
+  /**
+   * Creates the native function reference so it can be used with funcref globals.
+   *
+   * <p>This registers the function in the native registry and stores the registry ID, which is
+   * required when setting funcref globals.
+   *
+   * @param store the store to create the function reference in
+   * @throws WasmException if creation fails
+   */
+  private void createNativeFunctionReference(final PanamaStore store) throws WasmException {
+    if (hostFunction == null) {
+      // WebAssembly functions don't need native function references created here
+      // They already have a native Func
+      return;
+    }
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      // Convert function type to native arrays
+      final WasmValueType[] paramTypes = functionType.getParamTypes();
+      final WasmValueType[] returnTypes = functionType.getReturnTypes();
+
+      // Allocate param types array
+      final MemorySegment paramTypesSegment =
+          tempArena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramTypesSegment.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i].toNativeTypeCode());
+      }
+
+      // Allocate return types array
+      final MemorySegment returnTypesSegment =
+          tempArena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+      for (int i = 0; i < returnTypes.length; i++) {
+        returnTypesSegment.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i].toNativeTypeCode());
+      }
+
+      // Allocate result output
+      final MemorySegment resultOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      // Get the global callback function pointer
+      final MemorySegment callbackFn = getGlobalCallbackStub();
+
+      // Call native function to create the function reference
+      final int result =
+          NATIVE_BINDINGS.functionReferenceCreate(
+              store.getNativeStore(),
+              paramTypesSegment,
+              paramTypes.length,
+              returnTypesSegment,
+              returnTypes.length,
+              callbackFn,
+              functionReferenceId,
+              resultOut);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create native function reference: error code " + result);
+      }
+
+      // Store the native registry ID
+      this.nativeRegistryId = resultOut.get(ValueLayout.JAVA_LONG, 0);
+
+      if (LOGGER.isLoggable(Level.FINE)) {
+        LOGGER.fine(
+            "Created native function reference with registry ID: "
+                + nativeRegistryId
+                + " for "
+                + functionName);
+      }
+    }
+  }
+
+  /**
+   * Gets the native registry ID for this function reference.
+   *
+   * <p>This ID is used when setting funcref globals or storing in tables.
+   *
+   * @return the native registry ID, or -1 if not registered
+   */
+  public long getNativeRegistryId() {
+    return nativeRegistryId;
   }
 
   /**
@@ -836,6 +940,283 @@ public final class PanamaFunctionReference implements FunctionReference {
     }
   }
 
+  /**
+   * Gets the global callback stub address for use with native function reference creation.
+   *
+   * <p>This method returns a memory segment pointing to a static callback function that can be
+   * passed to native code. When the native code calls this callback, it dispatches to the
+   * appropriate Java function reference based on the callback ID.
+   *
+   * @return the global callback stub memory segment
+   */
+  public static MemorySegment getGlobalCallbackStub() {
+    if (GLOBAL_CALLBACK_STUB == null) {
+      synchronized (CALLBACK_STUB_LOCK) {
+        if (GLOBAL_CALLBACK_STUB == null) {
+          GLOBAL_CALLBACK_STUB = createGlobalCallbackStub();
+        }
+      }
+    }
+    return GLOBAL_CALLBACK_STUB;
+  }
+
+  /**
+   * Creates the global callback stub for native-to-Java function reference callbacks.
+   *
+   * @return the callback stub memory segment
+   */
+  private static MemorySegment createGlobalCallbackStub() {
+    try {
+      // Define the function descriptor for the callback
+      // int callback(long callbackId, void* paramsPtr, int paramsLen, void* resultsPtr,
+      //              int resultsLen, char* errorMsgPtr, int errorMsgLen)
+      final FunctionDescriptor callbackDescriptor =
+          FunctionDescriptor.of(
+              ValueLayout.JAVA_INT, // return int
+              ValueLayout.JAVA_LONG, // callbackId
+              ValueLayout.ADDRESS, // paramsPtr
+              ValueLayout.JAVA_INT, // paramsLen
+              ValueLayout.ADDRESS, // resultsPtr
+              ValueLayout.JAVA_INT, // resultsLen
+              ValueLayout.ADDRESS, // errorMsgPtr
+              ValueLayout.JAVA_INT); // errorMsgLen
+
+      // Get the method handle for invokeNativeCallback
+      final java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.lookup();
+      final java.lang.invoke.MethodHandle callbackHandle =
+          lookup.findStatic(
+              PanamaFunctionReference.class,
+              "invokeNativeCallback",
+              java.lang.invoke.MethodType.methodType(
+                  int.class,
+                  long.class,
+                  MemorySegment.class,
+                  int.class,
+                  MemorySegment.class,
+                  int.class,
+                  MemorySegment.class,
+                  int.class));
+
+      // Create the upcall stub using the global arena
+      final java.lang.foreign.Linker nativeLinker = java.lang.foreign.Linker.nativeLinker();
+      final MemorySegment stub =
+          nativeLinker.upcallStub(callbackHandle, callbackDescriptor, GLOBAL_CALLBACK_ARENA);
+
+      LOGGER.fine(
+          "Created global function reference callback stub at address: 0x"
+              + Long.toHexString(stub.address()));
+
+      return stub;
+
+    } catch (final Exception e) {
+      throw new IllegalStateException("Failed to create global callback stub", e);
+    }
+  }
+
+  /**
+   * Native callback entry point for function reference invocation.
+   *
+   * <p>This static method is called by native code through the global callback stub. It unmarshals
+   * parameters, invokes the function reference, and marshals results back.
+   *
+   * @param callbackId the function reference ID
+   * @param paramsPtr pointer to the parameter array
+   * @param paramsLen number of parameters
+   * @param resultsPtr pointer to the result buffer
+   * @param resultsLen expected number of results
+   * @param errorMsgPtr pointer to error message buffer (for writing on failure)
+   * @param errorMsgLen size of error message buffer
+   * @return 0 on success, non-zero on error
+   */
+  @SuppressWarnings("unused") // Called by native code through upcall stub
+  public static int invokeNativeCallback(
+      final long callbackId,
+      final MemorySegment paramsPtr,
+      final int paramsLen,
+      final MemorySegment resultsPtr,
+      final int resultsLen,
+      final MemorySegment errorMsgPtr,
+      final int errorMsgLen) {
+    try {
+      // Look up the function reference
+      final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(callbackId);
+      if (funcRef == null) {
+        LOGGER.severe("Function reference not found in registry: " + callbackId);
+        writeErrorMessage(errorMsgPtr, errorMsgLen, "Function reference not found: " + callbackId);
+        return -1;
+      }
+
+      if (funcRef.closed) {
+        LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
+        writeErrorMessage(errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
+        return -2;
+      }
+
+      if (funcRef.hostFunction == null) {
+        LOGGER.severe(
+            "Function reference callback called on non-host function: " + funcRef.functionName);
+        writeErrorMessage(errorMsgPtr, errorMsgLen, "Not a host function: " + funcRef.functionName);
+        return -3;
+      }
+
+      // Reinterpret paramsPtr with proper size (may be zero-length from upcall)
+      final int valueSize = 20; // FFI format: 4 byte tag + 16 byte value
+      final long paramsBufferSize = (long) paramsLen * valueSize;
+      final MemorySegment reinterpretedParams =
+          paramsLen > 0 ? paramsPtr.reinterpret(paramsBufferSize) : paramsPtr;
+
+      // Unmarshal parameters
+      final WasmValue[] params =
+          unmarshalParameters(reinterpretedParams, paramsLen, funcRef.functionType);
+
+      // Invoke the host function
+      final WasmValue[] results = funcRef.hostFunction.execute(params);
+
+      // Marshal results back to native format
+      try {
+        // CRITICAL: The resultsPtr from native code is a zero-length segment by default.
+        // We must reinterpret it with the proper size before writing.
+        final long bufferSize = (long) resultsLen * valueSize;
+        final MemorySegment reinterpretedResults = resultsPtr.reinterpret(bufferSize);
+        marshalResults(results, reinterpretedResults, resultsLen);
+      } catch (final Exception e) {
+        LOGGER.log(Level.SEVERE, "Error marshaling results in callback: " + callbackId, e);
+        writeErrorMessage(errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
+        return -5;
+      }
+
+      return 0;
+    } catch (final Exception e) {
+      LOGGER.log(Level.SEVERE, "Error in function reference callback: " + callbackId, e);
+      // Write the exception message to the error buffer for propagation back to Rust/Wasmtime
+      writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
+      return -4;
+    }
+  }
+
+  /**
+   * Writes an error message to the native error buffer.
+   *
+   * @param errorMsgPtr pointer to the error message buffer
+   * @param errorMsgLen size of the error message buffer
+   * @param message the error message to write
+   */
+  private static void writeErrorMessage(
+      final MemorySegment errorMsgPtr, final int errorMsgLen, final String message) {
+    if (errorMsgPtr == null || errorMsgPtr.equals(MemorySegment.NULL) || errorMsgLen <= 0) {
+      return;
+    }
+    if (message == null || message.isEmpty()) {
+      return;
+    }
+
+    try {
+      // Reinterpret the error buffer with the proper size
+      final MemorySegment buffer = errorMsgPtr.reinterpret(errorMsgLen);
+      final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      // Copy as much as fits, leaving room for null terminator
+      final int copyLen = Math.min(msgBytes.length, errorMsgLen - 1);
+      MemorySegment.copy(msgBytes, 0, buffer, ValueLayout.JAVA_BYTE, 0, copyLen);
+      // Null terminate
+      buffer.set(ValueLayout.JAVA_BYTE, copyLen, (byte) 0);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to write error message to native buffer: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Unmarshals parameters from native FFI format to WasmValue array.
+   *
+   * @param paramsPtr pointer to the parameter array in FFI format
+   * @param paramsLen number of parameters
+   * @param functionType the function type for type information
+   * @return array of WasmValue parameters
+   */
+  private static WasmValue[] unmarshalParameters(
+      final MemorySegment paramsPtr, final int paramsLen, final FunctionType functionType) {
+    if (paramsLen == 0) {
+      return new WasmValue[0];
+    }
+
+    final WasmValue[] params = new WasmValue[paramsLen];
+    final WasmValueType[] paramTypes = functionType.getParamTypes();
+
+    // FFI parameter format: 20 bytes per value (4 byte tag + 16 byte value)
+    final int valueSize = 20;
+
+    for (int i = 0; i < paramsLen; i++) {
+      final long offset = (long) i * valueSize;
+      final int tag = paramsPtr.get(ValueLayout.JAVA_INT, offset);
+      final WasmValueType type = i < paramTypes.length ? paramTypes[i] : WasmValueType.I32;
+
+      switch (type) {
+        case I32:
+          params[i] = WasmValue.i32(paramsPtr.get(ValueLayout.JAVA_INT, offset + 4));
+          break;
+        case I64:
+          params[i] = WasmValue.i64(paramsPtr.get(ValueLayout.JAVA_LONG, offset + 4));
+          break;
+        case F32:
+          params[i] = WasmValue.f32(paramsPtr.get(ValueLayout.JAVA_FLOAT, offset + 4));
+          break;
+        case F64:
+          params[i] = WasmValue.f64(paramsPtr.get(ValueLayout.JAVA_DOUBLE, offset + 4));
+          break;
+        default:
+          // For other types, default to i32
+          params[i] = WasmValue.i32(paramsPtr.get(ValueLayout.JAVA_INT, offset + 4));
+          break;
+      }
+    }
+
+    return params;
+  }
+
+  /**
+   * Marshals WasmValue results back to native FFI format.
+   *
+   * @param results the result values
+   * @param resultsPtr pointer to the result buffer
+   * @param resultsLen expected number of results
+   */
+  private static void marshalResults(
+      final WasmValue[] results, final MemorySegment resultsPtr, final int resultsLen) {
+    if (resultsLen == 0 || results == null || results.length == 0) {
+      return;
+    }
+
+    // FFI result format: 20 bytes per value (4 byte tag + 16 byte value)
+    final int valueSize = 20;
+
+    for (int i = 0; i < Math.min(results.length, resultsLen); i++) {
+      final long offset = (long) i * valueSize;
+      final WasmValue result = results[i];
+
+      // Set type tag
+      resultsPtr.set(ValueLayout.JAVA_INT, offset, result.getType().toNativeTypeCode());
+
+      // Set value
+      switch (result.getType()) {
+        case I32:
+          resultsPtr.set(ValueLayout.JAVA_INT, offset + 4, result.asI32());
+          break;
+        case I64:
+          resultsPtr.set(ValueLayout.JAVA_LONG, offset + 4, result.asI64());
+          break;
+        case F32:
+          resultsPtr.set(ValueLayout.JAVA_FLOAT, offset + 4, result.asF32());
+          break;
+        case F64:
+          resultsPtr.set(ValueLayout.JAVA_DOUBLE, offset + 4, result.asF64());
+          break;
+        default:
+          // For other types, store as i32
+          resultsPtr.set(ValueLayout.JAVA_INT, offset + 4, 0);
+          break;
+      }
+    }
+  }
+
   @Override
   public String toString() {
     if (closed) {
@@ -844,7 +1225,7 @@ public final class PanamaFunctionReference implements FunctionReference {
 
     final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "unknown");
     return String.format(
-        "PanamaFunctionReference{name='%s', type=%s, functionType=%s, id=%d}",
-        functionName, type, functionType, functionReferenceId);
+        "PanamaFunctionReference{name='%s', type=%s, functionType=%s, id=%d, nativeId=%d}",
+        functionName, type, functionType, functionReferenceId, nativeRegistryId);
   }
 }

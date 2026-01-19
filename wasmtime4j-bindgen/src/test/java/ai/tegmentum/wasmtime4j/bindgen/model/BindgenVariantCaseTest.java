@@ -67,7 +67,8 @@ class BindgenVariantCaseTest {
       LOGGER.info("Testing three-arg constructor with documentation");
 
       BindgenType payload = BindgenType.primitive("string");
-      BindgenVariantCase variantCase = new BindgenVariantCase("error", payload, "An error occurred");
+      BindgenVariantCase variantCase =
+          new BindgenVariantCase("error", payload, "An error occurred");
 
       assertThat(variantCase.getName()).isEqualTo("error");
       assertThat(variantCase.getPayload()).hasValue(payload);
@@ -163,8 +164,8 @@ class BindgenVariantCaseTest {
     @Test
     @DisplayName("hasPayload() should return true when payload exists")
     void hasPayloadShouldReturnTrueWhenPayloadExists() {
-      BindgenVariantCase variantCase = new BindgenVariantCase("withPayload",
-          BindgenType.primitive("i32"));
+      BindgenVariantCase variantCase =
+          new BindgenVariantCase("withPayload", BindgenType.primitive("i32"));
 
       assertThat(variantCase.hasPayload()).isTrue();
     }

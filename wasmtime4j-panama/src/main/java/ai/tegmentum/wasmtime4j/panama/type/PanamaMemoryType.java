@@ -28,7 +28,41 @@ public final class PanamaMemoryType implements MemoryType {
   private final MemorySegment nativeHandle;
 
   /**
-   * Creates a new PanamaMemoryType instance.
+   * Creates a new PanamaMemoryType instance with just the type values.
+   *
+   * <p>This constructor is used when the type information is already known and no native handle is
+   * needed for further operations.
+   *
+   * @param minimum the minimum number of memory pages
+   * @param maximum the maximum number of memory pages (null if unlimited)
+   * @param is64Bit true if this is 64-bit addressable memory
+   * @param isShared true if this is shared memory
+   */
+  public PanamaMemoryType(
+      final long minimum, final Long maximum, final boolean is64Bit, final boolean isShared) {
+    if (minimum < 0) {
+      throw new IllegalArgumentException("Minimum page count cannot be negative: " + minimum);
+    }
+    if (maximum != null && maximum < minimum) {
+      throw new IllegalArgumentException(
+          "Maximum page count cannot be less than minimum: " + maximum + " < " + minimum);
+    }
+
+    this.minimum = minimum;
+    this.maximum = Optional.ofNullable(maximum);
+    this.is64Bit = is64Bit;
+    this.isShared = isShared;
+    this.arena = null;
+    this.nativeHandle = null;
+
+    LOGGER.fine(
+        String.format(
+            "Created PanamaMemoryType: min=%d, max=%s, 64bit=%b, shared=%b",
+            minimum, maximum, is64Bit, isShared));
+  }
+
+  /**
+   * Creates a new PanamaMemoryType instance with native handle.
    *
    * @param minimum the minimum number of memory pages
    * @param maximum the maximum number of memory pages (null if unlimited)

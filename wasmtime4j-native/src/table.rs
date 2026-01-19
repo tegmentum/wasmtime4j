@@ -742,21 +742,40 @@ impl Table {
 
     /// Convert TableElement to wasmtime::Ref for table operations
     fn table_element_to_wasmtime_ref(element: TableElement) -> WasmtimeResult<Ref> {
+        // DEBUG: Write to file to prove this function is being called
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_table_element_debug.log")
+        {
+            let _ = writeln!(f, "[RUST table_element_to_wasmtime_ref] element={:?}", element);
+        }
+        eprintln!("[RUST table_element_to_wasmtime_ref] element={:?}", element);
         let wasmtime_ref = match element {
             TableElement::FuncRef(ref_id) => {
                 if let Some(id) = ref_id {
+                    eprintln!("[RUST table_element_to_wasmtime_ref] looking up func_ref_id={}", id);
                     // Look up function reference in the registry
                     let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
                         message: format!("Failed to lock reference registry: {}", e),
                     })?;
 
+                    eprintln!("[RUST table_element_to_wasmtime_ref] registry has {} functions", registry.functions.len());
+
                     if let Some(arc_func) = registry.get_function(id) {
+                        eprintln!("[RUST table_element_to_wasmtime_ref] found function with id {}", id);
                         Ref::from(Clone::clone(&*arc_func))
                     } else {
-                        // Function not found, use null reference
-                        Ref::null(&RefType::FUNCREF.heap_type())
+                        // Function not found - return error instead of silent null
+                        eprintln!("[RUST table_element_to_wasmtime_ref] ERROR: function id {} not found!", id);
+                        return Err(WasmtimeError::Runtime {
+                            message: format!("Function reference with id {} not found in registry (registry has {} functions)", id, registry.functions.len()),
+                            backtrace: None,
+                        });
                     }
                 } else {
+                    eprintln!("[RUST table_element_to_wasmtime_ref] FuncRef is None, using null");
                     Ref::null(&RefType::FUNCREF.heap_type())
                 }
             },

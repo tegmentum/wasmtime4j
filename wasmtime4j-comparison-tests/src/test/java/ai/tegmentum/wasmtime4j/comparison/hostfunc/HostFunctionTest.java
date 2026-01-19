@@ -275,9 +275,10 @@ public class HostFunctionTest {
           (import "env" "counter" (func $counter (result i32)))
           (func (export "test") (result i32)
             call $counter
+            drop          ;; Discard result of first call
             call $counter
-            call $counter
-            ;; Returns the last call result (3)
+            drop          ;; Discard result of second call
+            call $counter ;; Returns result of third call (3)
           )
         )
         """;

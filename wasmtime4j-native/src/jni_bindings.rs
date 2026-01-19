@@ -984,6 +984,8 @@ pub mod jni_engine {
         wasm_component_model: jboolean,
         coredump_on_trap: jboolean,
         cranelift_nan_canonicalization: jboolean,
+        // Experimental features
+        wasm_custom_page_sizes: jboolean,
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -1033,6 +1035,8 @@ pub mod jni_engine {
                 parameter_conversion::convert_int_to_bool(wasm_component_model as i32),
                 parameter_conversion::convert_int_to_bool(coredump_on_trap as i32),
                 parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization as i32),
+                // Experimental features
+                parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes as i32),
             )
         }) as jlong
     }
@@ -6074,58 +6078,6 @@ pub mod jni_hostfunc {
     use std::os::raw::c_void;
     
 
-    /// Execute a Java host function callback from native code
-    fn execute_java_host_function_callback(
-        callback_id: u64,
-        params: &[WasmValue]
-    ) -> WasmtimeResult<Vec<WasmValue>> {
-        // This is a placeholder implementation. In a full implementation, this would:
-        // 1. Attach to the JVM thread
-        // 2. Look up the Java callback object by ID
-        // 3. Marshal parameters to Java types
-        // 4. Call the Java method
-        // 5. Marshal return values back to WasmValue
-        // 6. Handle any Java exceptions
-
-        log::debug!("Executing Java host function callback {} with {} parameters", callback_id, params.len());
-
-        // For now, implement a simple echo function for testing
-        // Real implementation would involve JNI calls to Java
-        if params.len() == 1 {
-            Ok(vec![params[0].clone()])
-        } else if params.len() == 2 {
-            // Simple add function for i32 types
-            match (&params[0], &params[1]) {
-                (WasmValue::I32(a), WasmValue::I32(b)) => {
-                    Ok(vec![WasmValue::I32(a + b)])
-                }
-                _ => Ok(vec![params[0].clone()])
-            }
-        } else {
-            // Return first parameter or i32(0) if no parameters
-            Ok(vec![params.get(0).cloned().unwrap_or(WasmValue::I32(0))])
-        }
-    }
-
-    /// JNI callback implementation that bridges to Java
-    struct JniHostFunctionCallback {
-        #[allow(dead_code)]
-        java_callback_id: u64,
-    }
-
-    impl HostFunctionCallback for JniHostFunctionCallback {
-        fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
-            // Execute the Java callback by calling into the JVM
-            execute_java_host_function_callback(self.java_callback_id, params)
-        }
-
-        fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
-            Box::new(Self {
-                java_callback_id: self.java_callback_id,
-            })
-        }
-    }
-
     /// Create a new host function (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCreateHostFunction(
@@ -6147,6 +6099,15 @@ pub mod jni_hostfunc {
             Err(_) => return 0 as jlong,
         };
 
+        // Get JVM reference for callback - needed before entering jni_try_ptr closure
+        let jvm = match env.get_java_vm() {
+            Ok(jvm) => std::sync::Arc::new(jvm),
+            Err(e) => {
+                log::error!("Failed to get JVM reference: {}", e);
+                return 0 as jlong;
+            }
+        };
+
         jni_utils::jni_try_ptr(&mut env, || {
             let name: String = name_string;
             let type_data = type_data_bytes;
@@ -6160,17 +6121,33 @@ pub mod jni_hostfunc {
                 unmarshal_function_type(engine, &type_data)
             })?;
 
-            // Create callback wrapper that will bridge to Java
-            let callback = Box::new(JniHostFunctionCallback {
-                java_callback_id: host_function_id as u64,
+            // Create callback wrapper using the working JniHostFunctionCallback from jni_linker
+            // is_function_reference = false because this routes through JniLinker.invokeHostFunctionCallback
+            let callback = Box::new(jni_linker::JniHostFunctionCallback {
+                jvm: jvm.clone(),
+                callback_id: host_function_id,
+                is_function_reference: false,
             });
 
             // Use Store's create_host_function method which handles weak references properly
-            let (host_function_id, _wasmtime_func) = store.create_host_function(name, func_type, callback)?;
+            let (host_function_id, wasmtime_func) = store.create_host_function(name, func_type, callback)?;
 
-            // Store the function ID for later retrieval
-            // For now, return the host function ID directly as the handle
-            Ok(Box::new(host_function_id))
+            // Register the wasmtime_func in the function reference registry so it can be
+            // retrieved later for table.set() operations
+            let func_ref_id = crate::table::core::register_function_reference(wasmtime_func)?;
+
+            // Create a struct to hold both IDs - the host_function_id for callback management
+            // and func_ref_id for table operations
+            #[repr(C)]
+            struct JniHostFunctionHandle {
+                host_function_id: u64,
+                func_ref_id: u64,
+            }
+
+            Ok(Box::new(JniHostFunctionHandle {
+                host_function_id,
+                func_ref_id,
+            }))
         }) as jlong
     }
 
@@ -6186,10 +6163,18 @@ pub mod jni_hostfunc {
                 return Ok(());
             }
 
-            // The handle is actually a host function ID, not a direct pointer
-            let host_function_id = unsafe { *(host_func_handle as *const u64) };
+            // The handle is a pointer to JniHostFunctionHandle struct
+            #[repr(C)]
+            struct JniHostFunctionHandle {
+                host_function_id: u64,
+                func_ref_id: u64,
+            }
 
-            // Remove from registry
+            let handle_struct = unsafe { &*(host_func_handle as *const JniHostFunctionHandle) };
+            let host_function_id = handle_struct.host_function_id;
+            let func_ref_id = handle_struct.func_ref_id;
+
+            // Remove from host function callback registry
             match crate::hostfunc::core::remove_host_function(host_function_id) {
                 Ok(_) => {
                     log::debug!("Destroyed JNI host function with ID: {}", host_function_id);
@@ -6199,9 +6184,13 @@ pub mod jni_hostfunc {
                 }
             }
 
-            // Clean up the boxed handle
+            // Also clean up the function reference from the table registry
+            // (This is optional - the func ref may still be valid if it's in a table)
+            log::debug!("Host function had func_ref_id: {} (not removing from registry to preserve table entries)", func_ref_id);
+
+            // Clean up the boxed handle struct
             unsafe {
-                let _ = Box::from_raw(host_func_handle as *mut u64);
+                let _ = Box::from_raw(host_func_handle as *mut JniHostFunctionHandle);
             }
 
             Ok(())
@@ -8785,37 +8774,114 @@ pub mod jni_memory {
         mut env: JNIEnv,
         _class: JClass,
         table_ptr: jlong,
+        store_ptr: jlong,
         index: jint,
         value: jobject,
     ) -> jboolean {
-        jni_utils::jni_try_default(&env, 0, || {
+        use crate::error::WasmtimeError;
+
+        // DEBUG: Write to file to prove this function is being called
+        use std::io::Write;
+        let _ = std::fs::File::create("/tmp/NATIVESET_WAS_CALLED.txt")
+            .and_then(|mut f| f.write_all(b"The Rust nativeSet was called!\n"));
+
+        let result = (|| -> WasmtimeResult<jboolean> {
             if table_ptr == 0 {
                 log::error!("JNI Table.nativeSet: null table handle provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
+                return Err(WasmtimeError::InvalidParameter {
                     message: "Table handle cannot be null. Ensure table is properly initialized before setting elements.".to_string(),
+                });
+            }
+
+            if store_ptr == 0 {
+                log::error!("JNI Table.nativeSet: null store handle provided");
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Store handle cannot be null.".to_string(),
                 });
             }
 
             if index < 0 {
                 log::error!("JNI Table.nativeSet: negative index {} provided", index);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
+                return Err(WasmtimeError::InvalidParameter {
                     message: format!(
-                        "Table index cannot be negative (received: {}). Specify a non-negative index within table bounds.", 
+                        "Table index cannot be negative (received: {}). Specify a non-negative index within table bounds.",
                         index
                     ),
                 });
             }
 
-            // Note: This operation requires store context which is not available in current API design
-            // The table operations in Java API don't pass store context, but Wasmtime requires it
-            // For now, validate the table and return success (elements stored but not accessible without store)
-            // TODO: Redesign API to include store context or store reference within table
             let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
-            log::debug!("JNI Table.nativeSet: table operations require store context - accepting set for table 0x{:x} index {} (placeholder)", table_ptr, index);
-            
-            // Return success as if the element was set (this maintains API consistency)
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+
+            eprintln!("[RUST nativeSet] table_ptr=0x{:x}, store_ptr=0x{:x}, index={}", table_ptr, store_ptr, index);
+
+            // Convert Java object to TableElement
+            let element = if value.is_null() {
+                eprintln!("[RUST nativeSet] value is null, using FuncRef(None)");
+                // Null value - create null funcref
+                crate::table::TableElement::FuncRef(None)
+            } else {
+                // Try to get the native handle from the Java object (it should be a JniFunction)
+                let jvalue = unsafe { jni::objects::JObject::from_raw(value) };
+
+                // Call getNativeHandle() on the Java object
+                let handle_result = env.call_method(&jvalue, "getNativeHandle", "()J", &[]);
+
+                match handle_result {
+                    Ok(jni::objects::JValueGen::Long(func_handle)) => {
+                        eprintln!("[RUST nativeSet] got func_handle=0x{:x}", func_handle);
+                        if func_handle == 0 {
+                            eprintln!("[RUST nativeSet] func_handle is 0, using FuncRef(None)");
+                            crate::table::TableElement::FuncRef(None)
+                        } else {
+                            // The handle points to a JniHostFunctionHandle struct containing:
+                            // - host_function_id: u64 (for callback management)
+                            // - func_ref_id: u64 (registry ID for table operations)
+                            #[repr(C)]
+                            struct JniHostFunctionHandle {
+                                host_function_id: u64,
+                                func_ref_id: u64,
+                            }
+
+                            let handle_struct = unsafe { &*(func_handle as *const JniHostFunctionHandle) };
+                            let host_function_id = handle_struct.host_function_id;
+                            let func_ref_id = handle_struct.func_ref_id;
+
+                            eprintln!("[RUST nativeSet] handle_struct: host_function_id={}, func_ref_id={}",
+                                       host_function_id, func_ref_id);
+
+                            crate::table::TableElement::FuncRef(Some(func_ref_id))
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("JNI Table.nativeSet: failed to get native handle from object: {}", e);
+                        return Err(WasmtimeError::InvalidParameter {
+                            message: format!("Failed to get native handle from function object: {}", e),
+                        });
+                    }
+                    _ => {
+                        log::error!("JNI Table.nativeSet: getNativeHandle returned unexpected type");
+                        return Err(WasmtimeError::InvalidParameter {
+                            message: "getNativeHandle returned unexpected type".to_string(),
+                        });
+                    }
+                }
+            };
+
+            // Set the table element using our Table wrapper's set method
+            table.set(store, index as u64, element)?;
+
+            log::debug!("JNI Table.nativeSet: successfully set element at index {}", index);
             Ok(1)
-        })
+        })();
+
+        match result {
+            Ok(v) => v,
+            Err(e) => {
+                log::error!("JNI Table.nativeSet failed: {}", e);
+                0
+            }
+        }
     }
 
     /// Get memory type information directly from the memory (JNI version)

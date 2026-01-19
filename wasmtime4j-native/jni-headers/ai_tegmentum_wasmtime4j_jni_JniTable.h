@@ -42,10 +42,10 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeSet
- * Signature: (JILjava/lang/Object;)Z
+ * Signature: (JJILjava/lang/Object;)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet
-  (JNIEnv *, jclass, jlong, jint, jobject);
+  (JNIEnv *, jclass, jlong, jlong, jint, jobject);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable

@@ -69,6 +69,54 @@ public final class PanamaTableType implements TableType {
   }
 
   /**
+   * Creates a PanamaTableType from type information without a native handle.
+   *
+   * <p>This factory method is used when type information is parsed from JSON or other sources where
+   * a native handle is not available.
+   *
+   * @param elementType the element type stored in the table
+   * @param minimum the minimum number of elements
+   * @param maximum the maximum number of elements (null if unlimited)
+   * @return the PanamaTableType instance
+   */
+  public static PanamaTableType of(
+      final WasmValueType elementType, final long minimum, final Long maximum) {
+    PanamaValidation.requireNonNull(elementType, "elementType");
+    if (minimum < 0) {
+      throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
+    }
+    if (maximum != null && maximum < minimum) {
+      throw new IllegalArgumentException(
+          "Maximum element count cannot be less than minimum: " + maximum + " < " + minimum);
+    }
+    if (!elementType.isReference()) {
+      throw new IllegalArgumentException(
+          "Table element type must be a reference type: " + elementType);
+    }
+    return new PanamaTableType(elementType, minimum, maximum);
+  }
+
+  /**
+   * Private constructor for creating type descriptors without native handles.
+   *
+   * @param elementType the element type stored in the table
+   * @param minimum the minimum number of elements
+   * @param maximum the maximum number of elements (null if unlimited)
+   */
+  private PanamaTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
+    this.elementType = elementType;
+    this.minimum = minimum;
+    this.maximum = Optional.ofNullable(maximum);
+    this.arena = null;
+    this.nativeHandle = MemorySegment.NULL;
+
+    LOGGER.fine(
+        String.format(
+            "Created PanamaTableType (no native handle): element=%s, min=%d, max=%s",
+            elementType, minimum, maximum));
+  }
+
+  /**
    * Creates a PanamaTableType from native table type information.
    *
    * @param nativeHandle the native handle to the table type

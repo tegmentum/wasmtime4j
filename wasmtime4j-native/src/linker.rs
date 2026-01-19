@@ -18,7 +18,7 @@ use crate::module::Module;
 use crate::instance::Instance;
 use crate::hostfunc::HostFunction;
 use crate::memory::Memory as WasmMemory;
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::{WasmtimeError, WasmtimeResult, ffi_utils};
 
 /// Thread-safe wrapper around Wasmtime linker with comprehensive host binding support
 #[derive(Debug)]
@@ -1316,62 +1316,43 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
     store_ptr: *mut c_void,
     module_ptr: *const c_void,
 ) -> *mut c_void {
-    // Debug: use atomic counter to track call number
-    use std::io::Write;
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static CALL_COUNT: AtomicU64 = AtomicU64::new(0);
-    let call_num = CALL_COUNT.fetch_add(1, Ordering::SeqCst);
-
-    // Helper to log to file for debugging
-    fn log_to_file(msg: &str) {
-        use std::io::Write;
-        if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/rust_linker_called.txt") {
-            let _ = writeln!(file, "{} at {:?}", msg, std::time::SystemTime::now());
-            let _ = file.flush();
-        }
-    }
-
-    log_to_file(&format!("wasmtime4j_linker_instantiate ENTRY call #{}", call_num));
-
     if linker_ptr.is_null() || store_ptr.is_null() || module_ptr.is_null() {
-        log_to_file("wasmtime4j_linker_instantiate: null pointer");
+        ffi_utils::set_last_error(WasmtimeError::InvalidParameter {
+            message: "Null pointer provided for linker, store, or module".to_string(),
+        });
         return std::ptr::null_mut();
     }
 
-    log_to_file("wasmtime4j_linker_instantiate: getting linker_mut");
-    let linker_result = ffi_core::get_linker_mut(linker_ptr);
-    log_to_file("wasmtime4j_linker_instantiate: getting store_mut");
-    let store_result = crate::store::core::get_store_mut(store_ptr);
-    log_to_file("wasmtime4j_linker_instantiate: getting module_ref");
-    let module_result = crate::module::core::get_module_ref(module_ptr);
-    log_to_file("wasmtime4j_linker_instantiate: all refs obtained");
+    let linker = match ffi_core::get_linker_mut(linker_ptr) {
+        Ok(l) => l,
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            return std::ptr::null_mut();
+        }
+    };
 
-    if linker_result.is_err() {
-        log_to_file(&format!("wasmtime4j_linker_instantiate: get_linker_mut failed: {:?}", linker_result.err()));
-        return std::ptr::null_mut();
-    }
-    if store_result.is_err() {
-        log_to_file(&format!("wasmtime4j_linker_instantiate: get_store_mut failed: {:?}", store_result.err()));
-        return std::ptr::null_mut();
-    }
-    if module_result.is_err() {
-        log_to_file(&format!("wasmtime4j_linker_instantiate: get_module_ref failed: {:?}", module_result.err()));
-        return std::ptr::null_mut();
-    }
+    let store = match crate::store::core::get_store_mut(store_ptr) {
+        Ok(s) => s,
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            return std::ptr::null_mut();
+        }
+    };
 
-    let linker = linker_result.unwrap();
-    let store = store_result.unwrap();
-    let module = module_result.unwrap();
+    let module = match crate::module::core::get_module_ref(module_ptr) {
+        Ok(m) => m,
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            return std::ptr::null_mut();
+        }
+    };
 
-    log_to_file("wasmtime4j_linker_instantiate: calling instantiate_module");
     match ffi_core::instantiate_module(linker, store, module) {
         Ok(result) => {
-            let ptr = Box::into_raw(Box::new(result.instance)) as *mut c_void;
-            log_to_file(&format!("wasmtime4j_linker_instantiate: RETURNING ptr={:?}", ptr));
-            ptr
+            Box::into_raw(Box::new(result.instance)) as *mut c_void
         },
         Err(e) => {
-            log_to_file(&format!("wasmtime4j_linker_instantiate: instantiate_module failed: {:?}", e));
+            ffi_utils::set_last_error(e);
             std::ptr::null_mut()
         },
     }

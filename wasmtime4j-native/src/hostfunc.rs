@@ -210,39 +210,65 @@ impl HostFunction {
         let usage = self.caller_context_usage;
 
         let func = Func::new(store, func_type, move |mut caller, params, results| {
+            // Write to file to ensure we see the output
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("/tmp/panama_callback_debug.log")
+            {
+                use std::io::Write;
+                let _ = writeln!(file, "[HOSTFUNC] Host function callback entered, id={}", host_func_id);
+            }
+            eprintln!("[HOSTFUNC] Host function callback entered, id={}", host_func_id);
+
             // Look up the host function in the registry
             let host_function = {
                 let registry = get_host_function_registry().lock().map_err(|e| {
+                    eprintln!("[HOSTFUNC] Failed to lock registry: {}", e);
                     anyhow::anyhow!("Failed to lock host function registry: {}", e)
                 })?;
 
                 registry.get(&host_func_id).cloned().ok_or_else(|| {
+                    eprintln!("[HOSTFUNC] Host function not found in registry: {}", host_func_id);
                     anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
                 })?
             };
 
+            eprintln!("[HOSTFUNC] Found host function in registry, name={}", host_function.name);
+
             // Optimize execution based on caller context requirements
             if !requires_caller {
                 // Zero-overhead path: no caller context needed
+                eprintln!("[HOSTFUNC] Zero-overhead path, marshaling {} params", params.len());
                 let wasm_params = marshal_params_from_wasmtime(params)?;
+                eprintln!("[HOSTFUNC] Calling callback.execute()");
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                    eprintln!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
+                eprintln!("[HOSTFUNC] Callback returned {} results", wasm_results.len());
                 marshal_results_to_wasmtime(&wasm_results, results)?;
+                eprintln!("[HOSTFUNC] Results marshaled to wasmtime");
             } else {
                 // Full caller context path
+                eprintln!("[HOSTFUNC] Full caller context path, marshaling {} params", params.len());
                 let wasm_params = marshal_params_from_wasmtime(params)?;
 
                 // Create minimal caller context based on usage pattern
-                let _context = create_optimized_caller_context(&mut caller, usage)?;
+                let _context = create_optimized_caller_context(&mut caller, usage).map_err(|e| {
+                    eprintln!("[HOSTFUNC] Failed to create caller context: {}", e);
+                    anyhow::anyhow!("Failed to create caller context: {}", e)
+                })?;
 
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                    eprintln!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
 
                 marshal_results_to_wasmtime(&wasm_results, results)?;
             }
 
+            eprintln!("[HOSTFUNC] Host function callback completed successfully");
             Ok(())
         });
 

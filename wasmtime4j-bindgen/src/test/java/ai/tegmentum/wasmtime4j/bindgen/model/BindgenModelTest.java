@@ -56,9 +56,7 @@ class BindgenModelTest {
     void shouldCreateModelWithName() {
       LOGGER.info("Testing builder with name");
 
-      BindgenModel model = BindgenModel.builder()
-          .name("my-module")
-          .build();
+      BindgenModel model = BindgenModel.builder().name("my-module").build();
 
       assertThat(model.getName()).isEqualTo("my-module");
     }
@@ -71,11 +69,8 @@ class BindgenModelTest {
       BindgenInterface iface1 = BindgenInterface.builder().name("types").build();
       BindgenInterface iface2 = BindgenInterface.builder().name("streams").build();
 
-      BindgenModel model = BindgenModel.builder()
-          .name("wasi")
-          .addInterface(iface1)
-          .addInterface(iface2)
-          .build();
+      BindgenModel model =
+          BindgenModel.builder().name("wasi").addInterface(iface1).addInterface(iface2).build();
 
       assertThat(model.getInterfaces()).hasSize(2);
       assertThat(model.getInterfaces()).containsExactly(iface1, iface2);
@@ -86,14 +81,12 @@ class BindgenModelTest {
     void shouldCreateModelWithInterfacesMethod() {
       LOGGER.info("Testing builder with interfaces() list method");
 
-      List<BindgenInterface> interfaces = Arrays.asList(
-          BindgenInterface.builder().name("io").build(),
-          BindgenInterface.builder().name("fs").build());
+      List<BindgenInterface> interfaces =
+          Arrays.asList(
+              BindgenInterface.builder().name("io").build(),
+              BindgenInterface.builder().name("fs").build());
 
-      BindgenModel model = BindgenModel.builder()
-          .name("wasi")
-          .interfaces(interfaces)
-          .build();
+      BindgenModel model = BindgenModel.builder().name("wasi").interfaces(interfaces).build();
 
       assertThat(model.getInterfaces()).hasSize(2);
     }
@@ -104,13 +97,11 @@ class BindgenModelTest {
       LOGGER.info("Testing builder with addType()");
 
       BindgenType type1 = BindgenType.primitive("i32");
-      BindgenType type2 = BindgenType.builder().name("MyRecord").kind(BindgenType.Kind.RECORD).build();
+      BindgenType type2 =
+          BindgenType.builder().name("MyRecord").kind(BindgenType.Kind.RECORD).build();
 
-      BindgenModel model = BindgenModel.builder()
-          .name("module")
-          .addType(type1)
-          .addType(type2)
-          .build();
+      BindgenModel model =
+          BindgenModel.builder().name("module").addType(type1).addType(type2).build();
 
       assertThat(model.getTypes()).hasSize(2);
       assertThat(model.getTypes()).containsExactly(type1, type2);
@@ -121,14 +112,10 @@ class BindgenModelTest {
     void shouldCreateModelWithTypesMethod() {
       LOGGER.info("Testing builder with types() list method");
 
-      List<BindgenType> types = Arrays.asList(
-          BindgenType.primitive("string"),
-          BindgenType.primitive("bool"));
+      List<BindgenType> types =
+          Arrays.asList(BindgenType.primitive("string"), BindgenType.primitive("bool"));
 
-      BindgenModel model = BindgenModel.builder()
-          .name("module")
-          .types(types)
-          .build();
+      BindgenModel model = BindgenModel.builder().name("module").types(types).build();
 
       assertThat(model.getTypes()).hasSize(2);
     }
@@ -141,11 +128,8 @@ class BindgenModelTest {
       BindgenFunction func1 = BindgenFunction.builder().name("init").build();
       BindgenFunction func2 = BindgenFunction.builder().name("cleanup").build();
 
-      BindgenModel model = BindgenModel.builder()
-          .name("module")
-          .addFunction(func1)
-          .addFunction(func2)
-          .build();
+      BindgenModel model =
+          BindgenModel.builder().name("module").addFunction(func1).addFunction(func2).build();
 
       assertThat(model.getFunctions()).hasSize(2);
       assertThat(model.getFunctions()).containsExactly(func1, func2);
@@ -156,14 +140,12 @@ class BindgenModelTest {
     void shouldCreateModelWithFunctionsMethod() {
       LOGGER.info("Testing builder with functions() list method");
 
-      List<BindgenFunction> functions = Arrays.asList(
-          BindgenFunction.builder().name("start").build(),
-          BindgenFunction.builder().name("stop").build());
+      List<BindgenFunction> functions =
+          Arrays.asList(
+              BindgenFunction.builder().name("start").build(),
+              BindgenFunction.builder().name("stop").build());
 
-      BindgenModel model = BindgenModel.builder()
-          .name("module")
-          .functions(functions)
-          .build();
+      BindgenModel model = BindgenModel.builder().name("module").functions(functions).build();
 
       assertThat(model.getFunctions()).hasSize(2);
     }
@@ -173,10 +155,8 @@ class BindgenModelTest {
     void shouldCreateModelWithSourceFile() {
       LOGGER.info("Testing builder with source file");
 
-      BindgenModel model = BindgenModel.builder()
-          .name("module")
-          .sourceFile("/path/to/module.wasm")
-          .build();
+      BindgenModel model =
+          BindgenModel.builder().name("module").sourceFile("/path/to/module.wasm").build();
 
       assertThat(model.getSourceFile()).hasValue("/path/to/module.wasm");
     }
@@ -193,9 +173,7 @@ class BindgenModelTest {
 
       BindgenType type = BindgenType.builder().name("MyType").kind(BindgenType.Kind.RECORD).build();
 
-      BindgenModel model = BindgenModel.builder()
-          .addType(type)
-          .build();
+      BindgenModel model = BindgenModel.builder().addType(type).build();
 
       assertThat(model.hasType("MyType")).isTrue();
       assertThat(model.lookupType("MyType")).hasValue(type);
@@ -206,13 +184,12 @@ class BindgenModelTest {
     void shouldRegisterTypesAddedViaTypesMethod() {
       LOGGER.info("Testing type registration via types()");
 
-      List<BindgenType> types = Arrays.asList(
-          BindgenType.builder().name("Type1").kind(BindgenType.Kind.RECORD).build(),
-          BindgenType.builder().name("Type2").kind(BindgenType.Kind.ENUM).build());
+      List<BindgenType> types =
+          Arrays.asList(
+              BindgenType.builder().name("Type1").kind(BindgenType.Kind.RECORD).build(),
+              BindgenType.builder().name("Type2").kind(BindgenType.Kind.ENUM).build());
 
-      BindgenModel model = BindgenModel.builder()
-          .types(types)
-          .build();
+      BindgenModel model = BindgenModel.builder().types(types).build();
 
       assertThat(model.hasType("Type1")).isTrue();
       assertThat(model.hasType("Type2")).isTrue();
@@ -223,19 +200,13 @@ class BindgenModelTest {
     void shouldRegisterTypesFromInterfaces() {
       LOGGER.info("Testing type registration from interfaces");
 
-      BindgenType typeInInterface = BindgenType.builder()
-          .name("InterfaceType")
-          .kind(BindgenType.Kind.RECORD)
-          .build();
+      BindgenType typeInInterface =
+          BindgenType.builder().name("InterfaceType").kind(BindgenType.Kind.RECORD).build();
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("my-interface")
-          .addType(typeInInterface)
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder().name("my-interface").addType(typeInInterface).build();
 
-      BindgenModel model = BindgenModel.builder()
-          .addInterface(iface)
-          .build();
+      BindgenModel model = BindgenModel.builder().addInterface(iface).build();
 
       assertThat(model.hasType("InterfaceType")).isTrue();
       assertThat(model.lookupType("InterfaceType")).hasValue(typeInInterface);
@@ -264,10 +235,11 @@ class BindgenModelTest {
     void getTypeNamesShouldReturnAllRegisteredTypeNames() {
       LOGGER.info("Testing getTypeNames()");
 
-      BindgenModel model = BindgenModel.builder()
-          .addType(BindgenType.builder().name("Type1").kind(BindgenType.Kind.RECORD).build())
-          .addType(BindgenType.builder().name("Type2").kind(BindgenType.Kind.ENUM).build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addType(BindgenType.builder().name("Type1").kind(BindgenType.Kind.RECORD).build())
+              .addType(BindgenType.builder().name("Type2").kind(BindgenType.Kind.ENUM).build())
+              .build();
 
       assertThat(model.getTypeNames()).containsExactlyInAnyOrder("Type1", "Type2");
     }
@@ -277,11 +249,12 @@ class BindgenModelTest {
     void getTypeCountShouldReturnCorrectCount() {
       LOGGER.info("Testing getTypeCount()");
 
-      BindgenModel model = BindgenModel.builder()
-          .addType(BindgenType.builder().name("Type1").build())
-          .addType(BindgenType.builder().name("Type2").build())
-          .addType(BindgenType.builder().name("Type3").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addType(BindgenType.builder().name("Type1").build())
+              .addType(BindgenType.builder().name("Type2").build())
+              .addType(BindgenType.builder().name("Type3").build())
+              .build();
 
       assertThat(model.getTypeCount()).isEqualTo(3);
     }
@@ -296,10 +269,11 @@ class BindgenModelTest {
     void getTotalFunctionCountShouldCountTopLevelFunctions() {
       LOGGER.info("Testing getTotalFunctionCount() for top-level functions");
 
-      BindgenModel model = BindgenModel.builder()
-          .addFunction(BindgenFunction.builder().name("func1").build())
-          .addFunction(BindgenFunction.builder().name("func2").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addFunction(BindgenFunction.builder().name("func1").build())
+              .addFunction(BindgenFunction.builder().name("func2").build())
+              .build();
 
       assertThat(model.getTotalFunctionCount()).isEqualTo(2);
     }
@@ -309,16 +283,18 @@ class BindgenModelTest {
     void getTotalFunctionCountShouldIncludeFunctionsFromInterfaces() {
       LOGGER.info("Testing getTotalFunctionCount() including interface functions");
 
-      BindgenInterface iface = BindgenInterface.builder()
-          .name("api")
-          .addFunction(BindgenFunction.builder().name("ifaceFunc1").build())
-          .addFunction(BindgenFunction.builder().name("ifaceFunc2").build())
-          .build();
+      BindgenInterface iface =
+          BindgenInterface.builder()
+              .name("api")
+              .addFunction(BindgenFunction.builder().name("ifaceFunc1").build())
+              .addFunction(BindgenFunction.builder().name("ifaceFunc2").build())
+              .build();
 
-      BindgenModel model = BindgenModel.builder()
-          .addInterface(iface)
-          .addFunction(BindgenFunction.builder().name("topLevelFunc").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addInterface(iface)
+              .addFunction(BindgenFunction.builder().name("topLevelFunc").build())
+              .build();
 
       assertThat(model.getTotalFunctionCount()).isEqualTo(3);
     }
@@ -339,9 +315,10 @@ class BindgenModelTest {
     @Test
     @DisplayName("isEmpty() should return false when interfaces exist")
     void isEmptyShouldReturnFalseWhenInterfacesExist() {
-      BindgenModel model = BindgenModel.builder()
-          .addInterface(BindgenInterface.builder().name("test").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addInterface(BindgenInterface.builder().name("test").build())
+              .build();
 
       assertThat(model.isEmpty()).isFalse();
     }
@@ -349,9 +326,7 @@ class BindgenModelTest {
     @Test
     @DisplayName("isEmpty() should return false when types exist")
     void isEmptyShouldReturnFalseWhenTypesExist() {
-      BindgenModel model = BindgenModel.builder()
-          .addType(BindgenType.primitive("i32"))
-          .build();
+      BindgenModel model = BindgenModel.builder().addType(BindgenType.primitive("i32")).build();
 
       assertThat(model.isEmpty()).isFalse();
     }
@@ -359,9 +334,10 @@ class BindgenModelTest {
     @Test
     @DisplayName("isEmpty() should return false when functions exist")
     void isEmptyShouldReturnFalseWhenFunctionsExist() {
-      BindgenModel model = BindgenModel.builder()
-          .addFunction(BindgenFunction.builder().name("func").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addFunction(BindgenFunction.builder().name("func").build())
+              .build();
 
       assertThat(model.isEmpty()).isFalse();
     }
@@ -379,15 +355,9 @@ class BindgenModelTest {
       BindgenInterface iface1 = BindgenInterface.builder().name("iface1").build();
       BindgenInterface iface2 = BindgenInterface.builder().name("iface2").build();
 
-      BindgenModel model1 = BindgenModel.builder()
-          .name("model1")
-          .addInterface(iface1)
-          .build();
+      BindgenModel model1 = BindgenModel.builder().name("model1").addInterface(iface1).build();
 
-      BindgenModel model2 = BindgenModel.builder()
-          .name("model2")
-          .addInterface(iface2)
-          .build();
+      BindgenModel model2 = BindgenModel.builder().name("model2").addInterface(iface2).build();
 
       BindgenModel merged = model1.merge(model2);
 
@@ -441,17 +411,11 @@ class BindgenModelTest {
       BindgenType type = BindgenType.primitive("i32");
       BindgenFunction func = BindgenFunction.builder().name("func").build();
 
-      BindgenModel model1 = BindgenModel.builder()
-          .name("module")
-          .addType(type)
-          .addFunction(func)
-          .build();
+      BindgenModel model1 =
+          BindgenModel.builder().name("module").addType(type).addFunction(func).build();
 
-      BindgenModel model2 = BindgenModel.builder()
-          .name("module")
-          .addType(type)
-          .addFunction(func)
-          .build();
+      BindgenModel model2 =
+          BindgenModel.builder().name("module").addType(type).addFunction(func).build();
 
       assertThat(model1).isEqualTo(model2);
       assertThat(model1.hashCode()).isEqualTo(model2.hashCode());
@@ -471,15 +435,11 @@ class BindgenModelTest {
     @Test
     @DisplayName("should not be equal when types differ")
     void shouldNotBeEqualWhenTypesDiffer() {
-      BindgenModel model1 = BindgenModel.builder()
-          .name("module")
-          .addType(BindgenType.primitive("i32"))
-          .build();
+      BindgenModel model1 =
+          BindgenModel.builder().name("module").addType(BindgenType.primitive("i32")).build();
 
-      BindgenModel model2 = BindgenModel.builder()
-          .name("module")
-          .addType(BindgenType.primitive("i64"))
-          .build();
+      BindgenModel model2 =
+          BindgenModel.builder().name("module").addType(BindgenType.primitive("i64")).build();
 
       assertThat(model1).isNotEqualTo(model2);
     }
@@ -518,12 +478,13 @@ class BindgenModelTest {
     void shouldIncludeNameAndCountsInToString() {
       LOGGER.info("Testing toString() output");
 
-      BindgenModel model = BindgenModel.builder()
-          .name("my-module")
-          .addInterface(BindgenInterface.builder().name("api").build())
-          .addType(BindgenType.primitive("i32"))
-          .addFunction(BindgenFunction.builder().name("init").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .name("my-module")
+              .addInterface(BindgenInterface.builder().name("api").build())
+              .addType(BindgenType.primitive("i32"))
+              .addFunction(BindgenFunction.builder().name("init").build())
+              .build();
 
       String toString = model.toString();
 
@@ -545,9 +506,10 @@ class BindgenModelTest {
     void interfacesListShouldBeImmutable() {
       LOGGER.info("Testing that interfaces list is immutable");
 
-      BindgenModel model = BindgenModel.builder()
-          .addInterface(BindgenInterface.builder().name("test").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addInterface(BindgenInterface.builder().name("test").build())
+              .build();
 
       List<BindgenInterface> interfaces = model.getInterfaces();
 
@@ -560,9 +522,7 @@ class BindgenModelTest {
     void typesListShouldBeImmutable() {
       LOGGER.info("Testing that types list is immutable");
 
-      BindgenModel model = BindgenModel.builder()
-          .addType(BindgenType.primitive("i32"))
-          .build();
+      BindgenModel model = BindgenModel.builder().addType(BindgenType.primitive("i32")).build();
 
       List<BindgenType> types = model.getTypes();
 
@@ -575,9 +535,10 @@ class BindgenModelTest {
     void functionsListShouldBeImmutable() {
       LOGGER.info("Testing that functions list is immutable");
 
-      BindgenModel model = BindgenModel.builder()
-          .addFunction(BindgenFunction.builder().name("func").build())
-          .build();
+      BindgenModel model =
+          BindgenModel.builder()
+              .addFunction(BindgenFunction.builder().name("func").build())
+              .build();
 
       List<BindgenFunction> functions = model.getFunctions();
 

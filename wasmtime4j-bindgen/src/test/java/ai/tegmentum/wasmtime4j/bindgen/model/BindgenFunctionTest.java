@@ -41,9 +41,7 @@ class BindgenFunctionTest {
     void shouldCreateFunctionWithDefaultValues() {
       LOGGER.info("Testing builder with default values");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("doSomething")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("doSomething").build();
 
       assertThat(function.getName()).isEqualTo("doSomething");
       assertThat(function.getParameters()).isEmpty();
@@ -65,11 +63,8 @@ class BindgenFunctionTest {
       BindgenParameter param1 = new BindgenParameter("count", i32Type);
       BindgenParameter param2 = new BindgenParameter("name", stringType);
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("greet")
-          .addParameter(param1)
-          .addParameter(param2)
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder().name("greet").addParameter(param1).addParameter(param2).build();
 
       assertThat(function.getParameters()).hasSize(2);
       assertThat(function.getParameters()).containsExactly(param1, param2);
@@ -82,10 +77,8 @@ class BindgenFunctionTest {
 
       BindgenType i32Type = BindgenType.primitive("i32");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("increment")
-          .addParameter("value", i32Type)
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder().name("increment").addParameter("value", i32Type).build();
 
       assertThat(function.getParameters()).hasSize(1);
       assertThat(function.getParameters().get(0).getName()).isEqualTo("value");
@@ -97,14 +90,12 @@ class BindgenFunctionTest {
     void shouldCreateFunctionWithParametersMethod() {
       LOGGER.info("Testing builder with parameters() list method");
 
-      List<BindgenParameter> params = Arrays.asList(
-          new BindgenParameter("a", BindgenType.primitive("i32")),
-          new BindgenParameter("b", BindgenType.primitive("i32")));
+      List<BindgenParameter> params =
+          Arrays.asList(
+              new BindgenParameter("a", BindgenType.primitive("i32")),
+              new BindgenParameter("b", BindgenType.primitive("i32")));
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("add")
-          .parameters(params)
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("add").parameters(params).build();
 
       assertThat(function.getParameters()).hasSize(2);
     }
@@ -116,10 +107,8 @@ class BindgenFunctionTest {
 
       BindgenType returnType = BindgenType.primitive("string");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("getName")
-          .returnType(returnType)
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder().name("getName").returnType(returnType).build();
 
       assertThat(function.getReturnType()).hasValue(returnType);
       assertThat(function.hasReturnType()).isTrue();
@@ -130,10 +119,11 @@ class BindgenFunctionTest {
     void shouldCreateFunctionWithDocumentation() {
       LOGGER.info("Testing builder with documentation");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("calculate")
-          .documentation("Calculates the result based on input")
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("calculate")
+              .documentation("Calculates the result based on input")
+              .build();
 
       assertThat(function.getDocumentation()).hasValue("Calculates the result based on input");
     }
@@ -143,10 +133,7 @@ class BindgenFunctionTest {
     void shouldCreateAsyncFunction() {
       LOGGER.info("Testing builder with async flag");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("fetchData")
-          .async(true)
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("fetchData").async(true).build();
 
       assertThat(function.isAsync()).isTrue();
     }
@@ -156,10 +143,7 @@ class BindgenFunctionTest {
     void shouldCreateConstructorFunction() {
       LOGGER.info("Testing builder with constructor flag");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("new")
-          .constructor(true)
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("new").constructor(true).build();
 
       assertThat(function.isConstructor()).isTrue();
     }
@@ -169,10 +153,8 @@ class BindgenFunctionTest {
     void shouldCreateStaticFunction() {
       LOGGER.info("Testing builder with static flag");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("getInstance")
-          .staticMethod(true)
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder().name("getInstance").staticMethod(true).build();
 
       assertThat(function.isStatic()).isTrue();
     }
@@ -185,15 +167,16 @@ class BindgenFunctionTest {
       BindgenType i32Type = BindgenType.primitive("i32");
       BindgenType stringType = BindgenType.primitive("string");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("process")
-          .addParameter("input", i32Type)
-          .returnType(stringType)
-          .documentation("Processes the input and returns a string")
-          .async(true)
-          .constructor(false)
-          .staticMethod(true)
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("process")
+              .addParameter("input", i32Type)
+              .returnType(stringType)
+              .documentation("Processes the input and returns a string")
+              .async(true)
+              .constructor(false)
+              .staticMethod(true)
+              .build();
 
       assertThat(function.getName()).isEqualTo("process");
       assertThat(function.getParameters()).hasSize(1);
@@ -212,9 +195,7 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("getName() should return function name")
     void getNameShouldReturnFunctionName() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("testFunction")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("testFunction").build();
 
       assertThat(function.getName()).isEqualTo("testFunction");
     }
@@ -222,9 +203,7 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("getParameters() should return empty list when no parameters")
     void getParametersShouldReturnEmptyListWhenNoParameters() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("noParams")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("noParams").build();
 
       assertThat(function.getParameters()).isEmpty();
     }
@@ -232,9 +211,7 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("getReturnType() should return empty when no return type")
     void getReturnTypeShouldReturnEmptyWhenNoReturnType() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("voidFunction")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("voidFunction").build();
 
       assertThat(function.getReturnType()).isEmpty();
     }
@@ -242,9 +219,7 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("hasReturnType() should return false for void functions")
     void hasReturnTypeShouldReturnFalseForVoidFunctions() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("voidFunction")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("voidFunction").build();
 
       assertThat(function.hasReturnType()).isFalse();
     }
@@ -252,10 +227,11 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("hasReturnType() should return true when return type is set")
     void hasReturnTypeShouldReturnTrueWhenReturnTypeIsSet() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("returningFunction")
-          .returnType(BindgenType.primitive("i32"))
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("returningFunction")
+              .returnType(BindgenType.primitive("i32"))
+              .build();
 
       assertThat(function.hasReturnType()).isTrue();
     }
@@ -272,17 +248,19 @@ class BindgenFunctionTest {
 
       BindgenType i32Type = BindgenType.primitive("i32");
 
-      BindgenFunction function1 = BindgenFunction.builder()
-          .name("add")
-          .addParameter("a", i32Type)
-          .addParameter("b", i32Type)
-          .build();
+      BindgenFunction function1 =
+          BindgenFunction.builder()
+              .name("add")
+              .addParameter("a", i32Type)
+              .addParameter("b", i32Type)
+              .build();
 
-      BindgenFunction function2 = BindgenFunction.builder()
-          .name("add")
-          .addParameter("a", i32Type)
-          .addParameter("b", i32Type)
-          .build();
+      BindgenFunction function2 =
+          BindgenFunction.builder()
+              .name("add")
+              .addParameter("a", i32Type)
+              .addParameter("b", i32Type)
+              .build();
 
       assertThat(function1).isEqualTo(function2);
       assertThat(function1.hashCode()).isEqualTo(function2.hashCode());
@@ -304,15 +282,17 @@ class BindgenFunctionTest {
     void shouldNotBeEqualWhenParametersDiffer() {
       LOGGER.info("Testing equals() for different parameters");
 
-      BindgenFunction function1 = BindgenFunction.builder()
-          .name("func")
-          .addParameter("a", BindgenType.primitive("i32"))
-          .build();
+      BindgenFunction function1 =
+          BindgenFunction.builder()
+              .name("func")
+              .addParameter("a", BindgenType.primitive("i32"))
+              .build();
 
-      BindgenFunction function2 = BindgenFunction.builder()
-          .name("func")
-          .addParameter("b", BindgenType.primitive("i64"))
-          .build();
+      BindgenFunction function2 =
+          BindgenFunction.builder()
+              .name("func")
+              .addParameter("b", BindgenType.primitive("i64"))
+              .build();
 
       assertThat(function1).isNotEqualTo(function2);
     }
@@ -351,9 +331,7 @@ class BindgenFunctionTest {
     void shouldIncludeNameInToString() {
       LOGGER.info("Testing toString() output");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("myFunction")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("myFunction").build();
 
       String toString = function.toString();
 
@@ -364,11 +342,12 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("should include parameter count in toString()")
     void shouldIncludeParameterCountInToString() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("func")
-          .addParameter("a", BindgenType.primitive("i32"))
-          .addParameter("b", BindgenType.primitive("i32"))
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("func")
+              .addParameter("a", BindgenType.primitive("i32"))
+              .addParameter("b", BindgenType.primitive("i32"))
+              .build();
 
       String toString = function.toString();
 
@@ -378,10 +357,11 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("should include return type in toString() when present")
     void shouldIncludeReturnTypeInToStringWhenPresent() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("func")
-          .returnType(BindgenType.primitive("string"))
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("func")
+              .returnType(BindgenType.primitive("string"))
+              .build();
 
       String toString = function.toString();
 
@@ -391,9 +371,7 @@ class BindgenFunctionTest {
     @Test
     @DisplayName("should not include returns when no return type")
     void shouldNotIncludeReturnsWhenNoReturnType() {
-      BindgenFunction function = BindgenFunction.builder()
-          .name("func")
-          .build();
+      BindgenFunction function = BindgenFunction.builder().name("func").build();
 
       String toString = function.toString();
 
@@ -410,15 +388,15 @@ class BindgenFunctionTest {
     void parametersListShouldBeImmutable() {
       LOGGER.info("Testing that parameters list is immutable");
 
-      BindgenFunction function = BindgenFunction.builder()
-          .name("func")
-          .addParameter("a", BindgenType.primitive("i32"))
-          .build();
+      BindgenFunction function =
+          BindgenFunction.builder()
+              .name("func")
+              .addParameter("a", BindgenType.primitive("i32"))
+              .build();
 
       List<BindgenParameter> params = function.getParameters();
 
-      assertThatThrownBy(() -> params.add(
-          new BindgenParameter("b", BindgenType.primitive("i32"))))
+      assertThatThrownBy(() -> params.add(new BindgenParameter("b", BindgenType.primitive("i32"))))
           .isInstanceOf(UnsupportedOperationException.class);
     }
   }

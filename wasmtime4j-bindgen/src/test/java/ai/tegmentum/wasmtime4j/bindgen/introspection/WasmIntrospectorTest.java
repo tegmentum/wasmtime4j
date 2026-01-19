@@ -39,8 +39,8 @@ class WasmIntrospectorTest {
 
   // Minimal valid WASM module (magic number + version + empty sections)
   private static final byte[] VALID_WASM_HEADER = {
-      0x00, 0x61, 0x73, 0x6D, // \0asm magic
-      0x01, 0x00, 0x00, 0x00  // version 1
+    0x00, 0x61, 0x73, 0x6D, // \0asm magic
+    0x01, 0x00, 0x00, 0x00 // version 1
   };
 
   private WasmIntrospector introspector;
@@ -129,8 +129,7 @@ class WasmIntrospectorTest {
 
       BindgenModel model = introspector.introspect(wasmFile);
 
-      assertThat(model.getInterfaces())
-          .anyMatch(iface -> iface.getName().equals("ExampleExports"));
+      assertThat(model.getInterfaces()).anyMatch(iface -> iface.getName().equals("ExampleExports"));
     }
 
     @Test
@@ -170,8 +169,8 @@ class WasmIntrospectorTest {
 
       Path wasmFile = tempDir.resolve("invalid.wasm");
       byte[] invalidWasm = {
-          0x01, 0x02, 0x03, 0x04, // Wrong magic
-          0x01, 0x00, 0x00, 0x00  // version
+        0x01, 0x02, 0x03, 0x04, // Wrong magic
+        0x01, 0x00, 0x00, 0x00 // version
       };
       Files.write(wasmFile, invalidWasm);
 

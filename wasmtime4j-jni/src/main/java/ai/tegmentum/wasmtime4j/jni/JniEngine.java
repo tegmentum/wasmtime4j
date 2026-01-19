@@ -435,7 +435,7 @@ public class JniEngine implements Engine {
     final int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
 
     final long handle =
-        nativeCreateEngineWithConfig(
+        nativeCreateEngineWithExtendedConfig(
             0, // strategy (0 = auto/cranelift)
             optLevel,
             config.isDebugInfo(),
@@ -449,7 +449,26 @@ public class JniEngine implements Engine {
             (int) config.getMaxWasmStack(),
             config.isEpochInterruption(),
             config.getInstancePoolSize(),
-            config.isAsyncSupport());
+            config.isAsyncSupport(),
+            // GC configuration
+            config.isWasmGc(),
+            config.isWasmFunctionReferences(),
+            config.isWasmExceptions(),
+            // Memory configuration
+            config.getMemoryReservation(),
+            config.getMemoryGuardSize(),
+            config.getMemoryReservationForGrowth(),
+            // Additional features
+            config.isWasmTailCall(),
+            config.isWasmRelaxedSimd(),
+            config.isWasmMultiMemory(),
+            config.isWasmMemory64(),
+            config.isWasmExtendedConstExpressions(),
+            false, // wasmComponentModel - handled separately
+            config.isCoredumpOnTrap(),
+            config.isCraneliftNanCanonicalization(),
+            // Experimental features
+            config.isWasmCustomPageSizes());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -473,4 +492,35 @@ public class JniEngine implements Engine {
       boolean epochInterruption,
       int maxInstances,
       boolean asyncSupport);
+
+  private static native long nativeCreateEngineWithExtendedConfig(
+      int strategy,
+      int optLevel,
+      boolean debugInfo,
+      boolean wasmThreads,
+      boolean wasmSimd,
+      boolean wasmReferenceTypes,
+      boolean wasmBulkMemory,
+      boolean wasmMultiValue,
+      boolean fuelEnabled,
+      int maxMemoryPages,
+      int maxStackSize,
+      boolean epochInterruption,
+      int maxInstances,
+      boolean asyncSupport,
+      boolean wasmGc,
+      boolean wasmFunctionReferences,
+      boolean wasmExceptions,
+      long memoryReservation,
+      long memoryGuardSize,
+      long memoryReservationForGrowth,
+      boolean wasmTailCall,
+      boolean wasmRelaxedSimd,
+      boolean wasmMultiMemory,
+      boolean wasmMemory64,
+      boolean wasmExtendedConst,
+      boolean wasmComponentModel,
+      boolean coredumpOnTrap,
+      boolean craneliftNanCanonicalization,
+      boolean wasmCustomPageSizes);
 }

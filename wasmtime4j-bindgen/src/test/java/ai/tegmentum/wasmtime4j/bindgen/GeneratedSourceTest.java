@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
@@ -47,9 +46,7 @@ class GeneratedSourceTest {
    * @return a JavaFile instance
    */
   private static JavaFile createTestJavaFile(final String packageName, final String className) {
-    TypeSpec typeSpec = TypeSpec.classBuilder(className)
-        .addModifiers(Modifier.PUBLIC)
-        .build();
+    TypeSpec typeSpec = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC).build();
     return JavaFile.builder(packageName, typeSpec).build();
   }
 

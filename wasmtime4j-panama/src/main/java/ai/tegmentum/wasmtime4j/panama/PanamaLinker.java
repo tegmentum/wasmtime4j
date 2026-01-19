@@ -3,6 +3,8 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.ExternRef;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.ImportInfo;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -209,14 +212,31 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
     final MemorySegment namePtr = arena.allocateFrom(name);
 
-    // Call native function to define memory
-    final int result =
-        NATIVE_BINDINGS.panamaLinkerDefineMemory(
-            nativeLinker,
-            panamaStore.getNativeStore(),
-            moduleNamePtr,
-            namePtr,
-            panamaMemory.getNativeMemory());
+    final int result;
+
+    // For instance-exported memories, use panamaLinkerDefineMemoryFromInstance to avoid
+    // store mismatch issues. This keeps memory extraction and definition in the same
+    // native call, ensuring consistent store context.
+    if (panamaMemory.isInstanceExported()) {
+      final PanamaInstance owningInstance = panamaMemory.getOwningInstance();
+      final String exportName = panamaMemory.getExportName();
+      final MemorySegment exportNamePtr = arena.allocateFrom(exportName);
+
+      result =
+          NATIVE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
+              nativeLinker,
+              panamaStore.getNativeStore(),
+              moduleNamePtr,
+              namePtr,
+              owningInstance.getNativeInstance(),
+              exportNamePtr);
+    } else {
+      // For store-created memories, use the standard path with the memory pointer
+      final MemorySegment memoryPtr = panamaMemory.getNativeMemory();
+      result =
+          NATIVE_BINDINGS.panamaLinkerDefineMemory(
+              nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, memoryPtr);
+    }
 
     if (result != 0) {
       throw new WasmException(
@@ -298,12 +318,25 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be a PanamaStore");
     }
-    if (!(global instanceof PanamaGlobal)) {
-      throw new IllegalArgumentException("Global must be a PanamaGlobal");
-    }
 
     final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaGlobal panamaGlobal = (PanamaGlobal) global;
+
+    // Get the native global pointer based on the global type
+    final MemorySegment globalPtr;
+    if (global instanceof PanamaGlobal) {
+      globalPtr = ((PanamaGlobal) global).getNativeGlobal();
+    } else if (global instanceof PanamaInstanceGlobal) {
+      globalPtr = ((PanamaInstanceGlobal) global).getGlobalPointer();
+    } else {
+      throw new IllegalArgumentException(
+          "Global must be a PanamaGlobal or PanamaInstanceGlobal, got: "
+              + global.getClass().getName());
+    }
+
+    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+      throw new WasmException(
+          "Failed to get native global pointer for: " + moduleName + "::" + name);
+    }
 
     // Allocate C strings for module name and global name
     final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
@@ -312,11 +345,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     // Call native function to define global
     final int result =
         NATIVE_BINDINGS.panamaLinkerDefineGlobal(
-            nativeLinker,
-            panamaStore.getNativeStore(),
-            moduleNamePtr,
-            namePtr,
-            panamaGlobal.getNativeGlobal());
+            nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, globalPtr);
 
     if (result != 0) {
       throw new WasmException(
@@ -461,7 +490,10 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (instancePtr == null || instancePtr.address() == 0) {
-      throw new WasmException("Failed to instantiate module via linker");
+      // Retrieve detailed error message from native side
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to instantiate module via linker");
     }
 
     // Wrap the native instance pointer
@@ -1035,8 +1067,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private MemorySegment createCallbackStub() {
     try {
       // Define the function descriptor for the callback
-      // int callback(long callbackId, void* paramsPtr, int paramsLen, void* resultsPtr, int
-      // resultsLen)
+      // int callback(long callbackId, void* paramsPtr, int paramsLen, void* resultsPtr,
+      //              int resultsLen, char* errorMsgPtr, int errorMsgLen)
       final FunctionDescriptor callbackDescriptor =
           FunctionDescriptor.of(
               ValueLayout.JAVA_INT, // return int
@@ -1044,7 +1076,9 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
               ValueLayout.ADDRESS, // paramsPtr
               ValueLayout.JAVA_INT, // paramsLen
               ValueLayout.ADDRESS, // resultsPtr
-              ValueLayout.JAVA_INT); // resultsLen
+              ValueLayout.JAVA_INT, // resultsLen
+              ValueLayout.ADDRESS, // errorMsgPtr
+              ValueLayout.JAVA_INT); // errorMsgLen
 
       // Get the method handle for invokeHostFunctionCallback
       final java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.lookup();
@@ -1058,11 +1092,16 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
                   MemorySegment.class,
                   int.class,
                   MemorySegment.class,
+                  int.class,
+                  MemorySegment.class,
                   int.class));
 
       // Create the upcall stub
       final java.lang.foreign.Linker nativeLinker = java.lang.foreign.Linker.nativeLinker();
-      return nativeLinker.upcallStub(callbackHandle, callbackDescriptor, arena);
+      final MemorySegment stub = nativeLinker.upcallStub(callbackHandle, callbackDescriptor, arena);
+      LOGGER.fine("Created upcall stub at address: 0x" + Long.toHexString(stub.address()));
+
+      return stub;
 
     } catch (final Exception e) {
       throw new IllegalStateException("Failed to create callback upcall stub", e);
@@ -1118,6 +1157,28 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   /**
+   * Retrieves the last error message from the native library and clears it.
+   *
+   * @return the error message, or null if no error
+   */
+  private static String retrieveNativeErrorMessage() {
+    try {
+      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+      try {
+        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      } finally {
+        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+      }
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
+      return null;
+    }
+  }
+
+  /**
    * Converts WasmValueTypes to native type codes.
    *
    * @param types the value types
@@ -1167,19 +1228,23 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param paramsLen number of parameters
    * @param resultsPtr pointer to results buffer
    * @param resultsLen expected number of results
+   * @param errorMsgPtr pointer to error message buffer (for writing on failure)
+   * @param errorMsgLen size of error message buffer
    * @return 0 on success, non-zero on error
    */
   @SuppressWarnings("unused") // Called from native code via function pointer
-  private static int invokeHostFunctionCallback(
+  public static int invokeHostFunctionCallback(
       final long callbackId,
       final MemorySegment paramsPtr,
       final int paramsLen,
       final MemorySegment resultsPtr,
-      final int resultsLen) {
+      final int resultsLen,
+      final MemorySegment errorMsgPtr,
+      final int errorMsgLen) {
     // Track in-flight callbacks to prevent race conditions during close()
     IN_FLIGHT_CALLBACKS.incrementAndGet();
     try {
-      LOGGER.info(
+      LOGGER.fine(
           "invokeHostFunctionCallback - Called with callbackId="
               + callbackId
               + ", paramsLen="
@@ -1188,16 +1253,20 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
       if (wrapper == null) {
         LOGGER.severe("Host function callback not found for callbackId=" + callbackId);
-        return -1; // Error
+        writeErrorMessage(errorMsgPtr, errorMsgLen, "Callback not found: " + callbackId);
+        return -1; // Error: callback not found
       }
+
+      // Reinterpret memory segments with correct sizes
+      // Each WasmValue in native memory is 20 bytes (4-byte tag + 16-byte value)
+      final long paramsBytes = paramsLen * 20L;
+      final MemorySegment paramsSegment =
+          paramsLen > 0 ? paramsPtr.reinterpret(paramsBytes) : paramsPtr;
 
       // Unmarshal parameters from native memory
       final WasmValue[] params = new WasmValue[paramsLen];
       for (int i = 0; i < paramsLen; i++) {
-        // Each WasmValue in native memory is represented as a tagged union
-        // For now, we'll need to read the structure from native memory
-        // TODO: This requires understanding the WasmValue native layout
-        params[i] = unmarshalWasmValue(paramsPtr, i);
+        params[i] = unmarshalWasmValue(paramsSegment, i);
       }
 
       // Call the host function
@@ -1208,24 +1277,65 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       if (results.length != resultsLen) {
         LOGGER.severe(
             "Host function returned " + results.length + " values but expected " + resultsLen);
+        writeErrorMessage(
+            errorMsgPtr,
+            errorMsgLen,
+            "Wrong result count: expected " + resultsLen + ", got " + results.length);
         return -3; // Error: wrong number of results
       }
 
+      // Reinterpret results segment with correct size
+      final long resultsBytes = resultsLen * 20L;
+      final MemorySegment resultsSegment =
+          resultsLen > 0 ? resultsPtr.reinterpret(resultsBytes) : resultsPtr;
+
       // Marshal results to native memory
       for (int i = 0; i < results.length; i++) {
-        marshalWasmValue(results[i], resultsPtr, i);
+        marshalWasmValue(results[i], resultsSegment, i);
       }
 
-      LOGGER.info(
+      LOGGER.fine(
           "invokeHostFunctionCallback - Completed successfully with "
               + results.length
               + " results");
       return 0; // Success
     } catch (final Exception e) {
       LOGGER.log(java.util.logging.Level.SEVERE, "Host function execution failed", e);
-      return -2; // Error
+      // Write the exception message to the error buffer for propagation back to Rust/Wasmtime
+      writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
+      return -2; // Error: exception during execution
     } finally {
       IN_FLIGHT_CALLBACKS.decrementAndGet();
+    }
+  }
+
+  /**
+   * Writes an error message to the native error buffer.
+   *
+   * @param errorMsgPtr pointer to the error message buffer
+   * @param errorMsgLen size of the error message buffer
+   * @param message the error message to write
+   */
+  private static void writeErrorMessage(
+      final MemorySegment errorMsgPtr, final int errorMsgLen, final String message) {
+    if (errorMsgPtr == null || errorMsgPtr.equals(MemorySegment.NULL) || errorMsgLen <= 0) {
+      return;
+    }
+    if (message == null || message.isEmpty()) {
+      return;
+    }
+
+    try {
+      // Reinterpret the error buffer with the proper size
+      final MemorySegment buffer = errorMsgPtr.reinterpret(errorMsgLen);
+      final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      // Copy as much as fits, leaving room for null terminator
+      final int copyLen = Math.min(msgBytes.length, errorMsgLen - 1);
+      MemorySegment.copy(msgBytes, 0, buffer, ValueLayout.JAVA_BYTE, 0, copyLen);
+      // Null terminate
+      buffer.set(ValueLayout.JAVA_BYTE, copyLen, (byte) 0);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to write error message to native buffer: " + e.getMessage());
     }
   }
 
@@ -1236,11 +1346,19 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param index index in the array
    * @return the unmarshaled WasmValue
    */
+  // Unaligned value layouts for reading/writing WasmValue data at non-aligned offsets
+  private static final ValueLayout.OfLong UNALIGNED_JAVA_LONG =
+      ValueLayout.JAVA_LONG.withByteAlignment(1);
+
+  private static final ValueLayout.OfDouble UNALIGNED_JAVA_DOUBLE =
+      ValueLayout.JAVA_DOUBLE.withByteAlignment(1);
+
   private static WasmValue unmarshalWasmValue(final MemorySegment ptr, final int index) {
     // WasmValue native layout (from Rust):
     // - tag (int): 0=I32, 1=I64, 2=F32, 3=F64, 4=V128
     // - value (union of i32, i64, f32, f64, or 16 bytes for v128)
     // Total size: 4 (tag) + 16 (largest value) = 20 bytes per WasmValue
+    // Note: value at offset+4 may not be naturally aligned, so we use unaligned layouts
 
     final long offset = index * 20L;
     final int tag = ptr.get(ValueLayout.JAVA_INT, offset);
@@ -1251,7 +1369,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         return WasmValue.i32(i32Val);
 
       case 1: // I64
-        final long i64Val = ptr.get(ValueLayout.JAVA_LONG, offset + 4);
+        final long i64Val = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
         return WasmValue.i64(i64Val);
 
       case 2: // F32
@@ -1259,7 +1377,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         return WasmValue.f32(f32Val);
 
       case 3: // F64
-        final double f64Val = ptr.get(ValueLayout.JAVA_DOUBLE, offset + 4);
+        final double f64Val = ptr.get(UNALIGNED_JAVA_DOUBLE, offset + 4);
         return WasmValue.f64(f64Val);
 
       case 4: // V128
@@ -1268,6 +1386,25 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
           v128Bytes[i] = ptr.get(ValueLayout.JAVA_BYTE, offset + 4 + i);
         }
         return WasmValue.v128(v128Bytes);
+
+      case 5: // FUNCREF
+        final long funcId = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
+        if (funcId == 0L) {
+          return WasmValue.funcref((Object) null);
+        }
+        // Look up in function reference registry
+        final FunctionReference funcRef = PanamaFunctionReference.getFunctionReferenceById(funcId);
+        if (funcRef != null) {
+          return WasmValue.funcref(funcRef);
+        }
+        return WasmValue.funcref(funcId);
+
+      case 6: // EXTERNREF
+        final long externId = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
+        if (externId == 0L) {
+          return WasmValue.externref((Object) null);
+        }
+        return WasmValue.externref(externId);
 
       default:
         throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);
@@ -1293,7 +1430,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
       case I64:
         ptr.set(ValueLayout.JAVA_INT, offset, 1); // tag
-        ptr.set(ValueLayout.JAVA_LONG, offset + 4, value.asI64());
+        ptr.set(UNALIGNED_JAVA_LONG, offset + 4, value.asI64());
         break;
 
       case F32:
@@ -1303,7 +1440,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
       case F64:
         ptr.set(ValueLayout.JAVA_INT, offset, 3); // tag
-        ptr.set(ValueLayout.JAVA_DOUBLE, offset + 4, value.asF64());
+        ptr.set(UNALIGNED_JAVA_DOUBLE, offset + 4, value.asF64());
         break;
 
       case V128:
@@ -1311,6 +1448,37 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         final byte[] v128Bytes = value.asV128();
         for (int i = 0; i < 16; i++) {
           ptr.set(ValueLayout.JAVA_BYTE, offset + 4 + i, v128Bytes[i]);
+        }
+        break;
+
+      case FUNCREF:
+        ptr.set(ValueLayout.JAVA_INT, offset, 5); // tag - FuncRef uses tag 5
+        final Object funcVal = value.getValue();
+        if (funcVal == null) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, 0L);
+        } else if (funcVal instanceof FunctionReference) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, ((FunctionReference) funcVal).getId());
+        } else if (funcVal instanceof Long) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, (Long) funcVal);
+        } else {
+          throw new IllegalArgumentException(
+              "FUNCREF value must be FunctionReference or Long, got: " + funcVal.getClass());
+        }
+        break;
+
+      case EXTERNREF:
+        ptr.set(ValueLayout.JAVA_INT, offset, 6); // tag - ExternRef uses tag 6
+        final Object externVal = value.getValue();
+        if (externVal == null) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, 0L);
+        } else if (externVal instanceof Long) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, (Long) externVal);
+        } else if (externVal instanceof ExternRef) {
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, ((ExternRef<?>) externVal).getId());
+        } else {
+          // Wrap raw object in ExternRef and use its ID
+          final ExternRef<Object> newRef = ExternRef.of(externVal);
+          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, newRef.getId());
         }
         break;
 

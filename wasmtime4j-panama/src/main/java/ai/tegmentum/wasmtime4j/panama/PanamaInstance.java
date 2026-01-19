@@ -1,7 +1,9 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
+import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.FuncType;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.GlobalType;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -47,11 +50,15 @@ public final class PanamaInstance implements Instance {
   /** Minimum params buffer size (8 parameters * 20 bytes = 160 bytes). */
   private static final int MIN_PARAMS_BUFFER_SIZE = 160;
 
-  /** Maximum results buffer size (16 results * 20 bytes = 320 bytes). */
-  private static final int MAX_RESULTS_BUFFER_SIZE = 320;
+  /** Maximum results buffer size (32 results * 20 bytes = 640 bytes). */
+  private static final int MAX_RESULTS_BUFFER_SIZE = 640;
 
-  /** Maximum size for pooled result arrays (0-4 results cover most common cases). */
-  private static final int MAX_POOLED_RESULT_SIZE = 5;
+  /**
+   * Global registry for ExternRef objects to track them by ID for native interop. ExternRef objects
+   * are stored here when marshalled to native and looked up when unmarshalled.
+   */
+  private static final ConcurrentHashMap<Long, ExternRef<?>> EXTERN_REF_REGISTRY =
+      new ConcurrentHashMap<>();
 
   /**
    * Thread-local context for function call buffers. Reuses arena and pre-allocated buffers across
@@ -61,18 +68,11 @@ public final class PanamaInstance implements Instance {
     final Arena arena;
     MemorySegment paramsBuffer;
     final MemorySegment resultsBuffer;
-    // Pre-allocated result arrays for common sizes (0-4 results)
-    final WasmValue[][] resultArrayPool;
 
     CallContext() {
       this.arena = Arena.ofConfined();
       // Pre-allocate results buffer for up to 16 results (most common case)
       this.resultsBuffer = arena.allocate(MAX_RESULTS_BUFFER_SIZE);
-      // Pre-allocate result arrays for sizes 0-4 (covers most functions)
-      this.resultArrayPool = new WasmValue[MAX_POOLED_RESULT_SIZE][];
-      for (int i = 0; i < MAX_POOLED_RESULT_SIZE; i++) {
-        this.resultArrayPool[i] = new WasmValue[i];
-      }
     }
 
     /**
@@ -88,26 +88,6 @@ public final class PanamaInstance implements Instance {
         paramsBuffer = arena.allocate(Math.max(needed, MIN_PARAMS_BUFFER_SIZE));
       }
       return paramsBuffer;
-    }
-
-    /**
-     * Gets a result array of the specified size, using pooled arrays for common sizes. For pooled
-     * arrays, clears previous values to allow GC of old WasmValue objects.
-     *
-     * @param size the number of results
-     * @return a WasmValue array of the requested size
-     */
-    WasmValue[] getResultArray(final int size) {
-      if (size < MAX_POOLED_RESULT_SIZE) {
-        final WasmValue[] pooled = resultArrayPool[size];
-        // Clear previous values to allow GC
-        for (int i = 0; i < size; i++) {
-          pooled[i] = null;
-        }
-        return pooled;
-      }
-      // Large arrays are not pooled - allocate fresh
-      return new WasmValue[size];
     }
   }
 
@@ -683,8 +663,8 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    // Maximum possible results (conservative estimate)
-    final int maxResults = 16;
+    // Maximum possible results (matches MAX_RESULTS_BUFFER_SIZE / 20)
+    final int maxResults = 32;
 
     // Get or create cached function name segment (avoids repeated string encoding)
     final MemorySegment functionNameSegment =
@@ -722,12 +702,15 @@ public final class PanamaInstance implements Instance {
             maxResults);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
 
-    // Unmarshal results using pooled array for common sizes (0-4 results)
+    // Unmarshal results - allocate new array each time to avoid aliasing bugs
+    // (returning pooled arrays caused results to be overwritten by subsequent calls)
     final int count = (int) resultCount;
-    final WasmValue[] results = ctx.getResultArray(count);
+    final WasmValue[] results = new WasmValue[count];
     for (int i = 0; i < count; i++) {
       results[i] = unmarshalWasmValue(resultsSegment, i);
     }
@@ -1125,7 +1108,9 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
     if (resultCount != 1) {
       throw new WasmException("Expected 1 result, got " + resultCount);
@@ -1172,7 +1157,9 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
     if (resultCount != 1) {
       throw new WasmException("Expected 1 result, got " + resultCount);
@@ -1213,7 +1200,9 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
     if (resultCount != 1) {
       throw new WasmException("Expected 1 result, got " + resultCount);
@@ -1253,7 +1242,9 @@ public final class PanamaInstance implements Instance {
             0);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
   }
 
@@ -1294,7 +1285,9 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
     if (resultCount != 1) {
       throw new WasmException("Expected 1 result, got " + resultCount);
@@ -1340,13 +1333,37 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      throw new WasmException("Failed to call function: " + functionName);
+      final String errorMsg = retrieveNativeErrorMessage();
+      throw new WasmException(
+          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
     if (resultCount != 1) {
       throw new WasmException("Expected 1 result, got " + resultCount);
     }
 
     return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
+  }
+
+  /**
+   * Retrieves the last error message from the native library and clears it.
+   *
+   * @return the error message, or null if no error
+   */
+  private static String retrieveNativeErrorMessage() {
+    try {
+      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+      try {
+        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      } finally {
+        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+      }
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
+      return null;
+    }
   }
 
   @Override
@@ -1414,6 +1431,45 @@ public final class PanamaInstance implements Instance {
         }
         break;
 
+      case FUNCREF:
+        ptr.set(ValueLayout.JAVA_INT, offset, 5); // tag - FuncRef uses tag 5
+        final Object funcValue = value.getValue();
+        if (funcValue == null) {
+          // Null funcref - use 0 as null sentinel
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, 0L);
+        } else if (funcValue instanceof FunctionReference) {
+          final FunctionReference funcRef = (FunctionReference) funcValue;
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, funcRef.getId());
+        } else if (funcValue instanceof Long) {
+          // Already an ID
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, (Long) funcValue);
+        } else {
+          throw new IllegalArgumentException(
+              "FUNCREF value must be FunctionReference or Long, got: " + funcValue.getClass());
+        }
+        break;
+
+      case EXTERNREF:
+        ptr.set(ValueLayout.JAVA_INT, offset, 6); // tag - ExternRef uses tag 6
+        final Object externValue = value.getValue();
+        if (externValue == null) {
+          // Null externref - use 0 as null sentinel
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, 0L);
+        } else if (externValue instanceof ExternRef) {
+          final ExternRef<?> externRef = (ExternRef<?>) externValue;
+          final long externId = externRef.getId();
+          // Register in global registry for later lookup
+          EXTERN_REF_REGISTRY.put(externId, externRef);
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
+        } else {
+          // Wrap raw object in ExternRef
+          final ExternRef<Object> newRef = ExternRef.of(externValue);
+          final long externId = newRef.getId();
+          EXTERN_REF_REGISTRY.put(externId, newRef);
+          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
+        }
+        break;
+
       default:
         throw new IllegalArgumentException("Unsupported WasmValue type: " + value.getType());
     }
@@ -1453,6 +1509,36 @@ public final class PanamaInstance implements Instance {
           v128Bytes[i] = ptr.get(ValueLayout.JAVA_BYTE, offset + 4 + i);
         }
         return WasmValue.v128(v128Bytes);
+
+      case 5: // FUNCREF
+        final long funcId = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
+        if (funcId == 0L) {
+          // Null funcref
+          return WasmValue.funcref((Object) null);
+        }
+        // Look up in PanamaFunctionReference registry
+        final FunctionReference funcRef = PanamaFunctionReference.getFunctionReferenceById(funcId);
+        if (funcRef != null) {
+          return WasmValue.funcref(funcRef);
+        }
+        // Return ID if not found in registry (may be a table index from native)
+        return WasmValue.funcref(funcId);
+
+      case 6: // EXTERNREF
+        final long externId = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
+        if (externId == 0L) {
+          // Null externref
+          return WasmValue.externref((Object) null);
+        }
+        // Look up in registry
+        final ExternRef<?> externRef = EXTERN_REF_REGISTRY.get(externId);
+        if (externRef != null) {
+          // Return the wrapped value, not the ExternRef wrapper itself
+          // This ensures round-trip consistency for comparison
+          return WasmValue.externref(externRef.get());
+        }
+        // Return ID if not found in registry (may be from native side)
+        return WasmValue.externref(externId);
 
       default:
         throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);

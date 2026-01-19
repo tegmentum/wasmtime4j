@@ -43,19 +43,20 @@ class BindgenTypeTest {
 
       Kind[] kinds = Kind.values();
 
-      assertThat(kinds).containsExactlyInAnyOrder(
-          Kind.PRIMITIVE,
-          Kind.RECORD,
-          Kind.VARIANT,
-          Kind.ENUM,
-          Kind.FLAGS,
-          Kind.LIST,
-          Kind.OPTION,
-          Kind.RESULT,
-          Kind.TUPLE,
-          Kind.RESOURCE,
-          Kind.REFERENCE,
-          Kind.FUNCTION);
+      assertThat(kinds)
+          .containsExactlyInAnyOrder(
+              Kind.PRIMITIVE,
+              Kind.RECORD,
+              Kind.VARIANT,
+              Kind.ENUM,
+              Kind.FLAGS,
+              Kind.LIST,
+              Kind.OPTION,
+              Kind.RESULT,
+              Kind.TUPLE,
+              Kind.RESOURCE,
+              Kind.REFERENCE,
+              Kind.FUNCTION);
     }
 
     @Test
@@ -183,9 +184,7 @@ class BindgenTypeTest {
     void shouldCreateTypeWithDefaultValues() {
       LOGGER.info("Testing builder with default values");
 
-      BindgenType type = BindgenType.builder()
-          .name("test")
-          .build();
+      BindgenType type = BindgenType.builder().name("test").build();
 
       assertThat(type.getName()).isEqualTo("test");
       assertThat(type.getKind()).isEqualTo(Kind.REFERENCE);
@@ -204,13 +203,14 @@ class BindgenTypeTest {
       BindgenField field1 = new BindgenField("name", BindgenType.primitive("string"));
       BindgenField field2 = new BindgenField("age", BindgenType.primitive("u32"));
 
-      BindgenType recordType = BindgenType.builder()
-          .name("Person")
-          .kind(Kind.RECORD)
-          .addField(field1)
-          .addField(field2)
-          .documentation("A person record")
-          .build();
+      BindgenType recordType =
+          BindgenType.builder()
+              .name("Person")
+              .kind(Kind.RECORD)
+              .addField(field1)
+              .addField(field2)
+              .documentation("A person record")
+              .build();
 
       assertThat(recordType.getName()).isEqualTo("Person");
       assertThat(recordType.getKind()).isEqualTo(Kind.RECORD);
@@ -225,15 +225,13 @@ class BindgenTypeTest {
     void shouldCreateRecordTypeWithFieldsMethod() {
       LOGGER.info("Testing builder with fields() list method");
 
-      List<BindgenField> fields = Arrays.asList(
-          new BindgenField("x", BindgenType.primitive("i32")),
-          new BindgenField("y", BindgenType.primitive("i32")));
+      List<BindgenField> fields =
+          Arrays.asList(
+              new BindgenField("x", BindgenType.primitive("i32")),
+              new BindgenField("y", BindgenType.primitive("i32")));
 
-      BindgenType recordType = BindgenType.builder()
-          .name("Point")
-          .kind(Kind.RECORD)
-          .fields(fields)
-          .build();
+      BindgenType recordType =
+          BindgenType.builder().name("Point").kind(Kind.RECORD).fields(fields).build();
 
       assertThat(recordType.getFields()).hasSize(2);
     }
@@ -246,12 +244,13 @@ class BindgenTypeTest {
       BindgenVariantCase case1 = new BindgenVariantCase("none");
       BindgenVariantCase case2 = new BindgenVariantCase("some", BindgenType.primitive("i32"));
 
-      BindgenType variantType = BindgenType.builder()
-          .name("MyOption")
-          .kind(Kind.VARIANT)
-          .addCase(case1)
-          .addCase(case2)
-          .build();
+      BindgenType variantType =
+          BindgenType.builder()
+              .name("MyOption")
+              .kind(Kind.VARIANT)
+              .addCase(case1)
+              .addCase(case2)
+              .build();
 
       assertThat(variantType.getName()).isEqualTo("MyOption");
       assertThat(variantType.getKind()).isEqualTo(Kind.VARIANT);
@@ -265,15 +264,13 @@ class BindgenTypeTest {
     void shouldCreateVariantTypeWithCasesMethod() {
       LOGGER.info("Testing builder with cases() list method");
 
-      List<BindgenVariantCase> cases = Arrays.asList(
-          new BindgenVariantCase("left", BindgenType.primitive("i32")),
-          new BindgenVariantCase("right", BindgenType.primitive("string")));
+      List<BindgenVariantCase> cases =
+          Arrays.asList(
+              new BindgenVariantCase("left", BindgenType.primitive("i32")),
+              new BindgenVariantCase("right", BindgenType.primitive("string")));
 
-      BindgenType variantType = BindgenType.builder()
-          .name("Either")
-          .kind(Kind.VARIANT)
-          .cases(cases)
-          .build();
+      BindgenType variantType =
+          BindgenType.builder().name("Either").kind(Kind.VARIANT).cases(cases).build();
 
       assertThat(variantType.getCases()).hasSize(2);
     }
@@ -283,13 +280,14 @@ class BindgenTypeTest {
     void shouldCreateEnumTypeWithValues() {
       LOGGER.info("Testing builder for enum type");
 
-      BindgenType enumType = BindgenType.builder()
-          .name("Color")
-          .kind(Kind.ENUM)
-          .addEnumValue("red")
-          .addEnumValue("green")
-          .addEnumValue("blue")
-          .build();
+      BindgenType enumType =
+          BindgenType.builder()
+              .name("Color")
+              .kind(Kind.ENUM)
+              .addEnumValue("red")
+              .addEnumValue("green")
+              .addEnumValue("blue")
+              .build();
 
       assertThat(enumType.getName()).isEqualTo("Color");
       assertThat(enumType.getKind()).isEqualTo(Kind.ENUM);
@@ -305,11 +303,8 @@ class BindgenTypeTest {
 
       List<String> values = Arrays.asList("monday", "tuesday", "wednesday");
 
-      BindgenType enumType = BindgenType.builder()
-          .name("Day")
-          .kind(Kind.ENUM)
-          .enumValues(values)
-          .build();
+      BindgenType enumType =
+          BindgenType.builder().name("Day").kind(Kind.ENUM).enumValues(values).build();
 
       assertThat(enumType.getEnumValues()).hasSize(3);
       assertThat(enumType.getEnumValues()).containsExactly("monday", "tuesday", "wednesday");
@@ -320,13 +315,13 @@ class BindgenTypeTest {
     void shouldCreateTupleTypeWithElements() {
       LOGGER.info("Testing builder for tuple type");
 
-      BindgenType tupleType = BindgenType.builder()
-          .name("tuple<i32, string>")
-          .kind(Kind.TUPLE)
-          .tupleElements(Arrays.asList(
-              BindgenType.primitive("i32"),
-              BindgenType.primitive("string")))
-          .build();
+      BindgenType tupleType =
+          BindgenType.builder()
+              .name("tuple<i32, string>")
+              .kind(Kind.TUPLE)
+              .tupleElements(
+                  Arrays.asList(BindgenType.primitive("i32"), BindgenType.primitive("string")))
+              .build();
 
       assertThat(tupleType.getKind()).isEqualTo(Kind.TUPLE);
       assertThat(tupleType.getTupleElements()).hasSize(2);
@@ -338,11 +333,8 @@ class BindgenTypeTest {
       LOGGER.info("Testing builder with elementType()");
 
       BindgenType elementType = BindgenType.primitive("u8");
-      BindgenType listType = BindgenType.builder()
-          .name("list<u8>")
-          .kind(Kind.LIST)
-          .elementType(elementType)
-          .build();
+      BindgenType listType =
+          BindgenType.builder().name("list<u8>").kind(Kind.LIST).elementType(elementType).build();
 
       assertThat(listType.getElementType()).hasValue(elementType);
     }
@@ -355,12 +347,13 @@ class BindgenTypeTest {
       BindgenType okType = BindgenType.primitive("string");
       BindgenType errorType = BindgenType.primitive("i32");
 
-      BindgenType resultType = BindgenType.builder()
-          .name("result<string, i32>")
-          .kind(Kind.RESULT)
-          .okType(okType)
-          .errorType(errorType)
-          .build();
+      BindgenType resultType =
+          BindgenType.builder()
+              .name("result<string, i32>")
+              .kind(Kind.RESULT)
+              .okType(okType)
+              .errorType(errorType)
+              .build();
 
       assertThat(resultType.getOkType()).hasValue(okType);
       assertThat(resultType.getErrorType()).hasValue(errorType);
@@ -371,11 +364,12 @@ class BindgenTypeTest {
     void shouldSetReferencedTypeName() {
       LOGGER.info("Testing builder with referencedTypeName()");
 
-      BindgenType refType = BindgenType.builder()
-          .name("MyType")
-          .kind(Kind.REFERENCE)
-          .referencedTypeName("MyType")
-          .build();
+      BindgenType refType =
+          BindgenType.builder()
+              .name("MyType")
+              .kind(Kind.REFERENCE)
+              .referencedTypeName("MyType")
+              .build();
 
       assertThat(refType.getReferencedTypeName()).hasValue("MyType");
     }
@@ -517,16 +511,17 @@ class BindgenTypeTest {
     void fieldsListShouldBeImmutable() {
       LOGGER.info("Testing that fields list is immutable");
 
-      BindgenType recordType = BindgenType.builder()
-          .name("Record")
-          .kind(Kind.RECORD)
-          .addField(new BindgenField("f", BindgenType.primitive("i32")))
-          .build();
+      BindgenType recordType =
+          BindgenType.builder()
+              .name("Record")
+              .kind(Kind.RECORD)
+              .addField(new BindgenField("f", BindgenType.primitive("i32")))
+              .build();
 
       List<BindgenField> fields = recordType.getFields();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(() -> fields.add(
-          new BindgenField("f2", BindgenType.primitive("i32"))))
+      org.assertj.core.api.Assertions.assertThatThrownBy(
+              () -> fields.add(new BindgenField("f2", BindgenType.primitive("i32"))))
           .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -535,16 +530,17 @@ class BindgenTypeTest {
     void casesListShouldBeImmutable() {
       LOGGER.info("Testing that cases list is immutable");
 
-      BindgenType variantType = BindgenType.builder()
-          .name("Variant")
-          .kind(Kind.VARIANT)
-          .addCase(new BindgenVariantCase("a"))
-          .build();
+      BindgenType variantType =
+          BindgenType.builder()
+              .name("Variant")
+              .kind(Kind.VARIANT)
+              .addCase(new BindgenVariantCase("a"))
+              .build();
 
       List<BindgenVariantCase> cases = variantType.getCases();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(() -> cases.add(
-          new BindgenVariantCase("b")))
+      org.assertj.core.api.Assertions.assertThatThrownBy(
+              () -> cases.add(new BindgenVariantCase("b")))
           .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -553,11 +549,8 @@ class BindgenTypeTest {
     void enumValuesListShouldBeImmutable() {
       LOGGER.info("Testing that enumValues list is immutable");
 
-      BindgenType enumType = BindgenType.builder()
-          .name("Enum")
-          .kind(Kind.ENUM)
-          .addEnumValue("a")
-          .build();
+      BindgenType enumType =
+          BindgenType.builder().name("Enum").kind(Kind.ENUM).addEnumValue("a").build();
 
       List<String> values = enumType.getEnumValues();
 
@@ -570,16 +563,17 @@ class BindgenTypeTest {
     void tupleElementsListShouldBeImmutable() {
       LOGGER.info("Testing that tupleElements list is immutable");
 
-      BindgenType tupleType = BindgenType.builder()
-          .name("Tuple")
-          .kind(Kind.TUPLE)
-          .tupleElements(Arrays.asList(BindgenType.primitive("i32")))
-          .build();
+      BindgenType tupleType =
+          BindgenType.builder()
+              .name("Tuple")
+              .kind(Kind.TUPLE)
+              .tupleElements(Arrays.asList(BindgenType.primitive("i32")))
+              .build();
 
       List<BindgenType> elements = tupleType.getTupleElements();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(() -> elements.add(
-          BindgenType.primitive("i64")))
+      org.assertj.core.api.Assertions.assertThatThrownBy(
+              () -> elements.add(BindgenType.primitive("i64")))
           .isInstanceOf(UnsupportedOperationException.class);
     }
   }

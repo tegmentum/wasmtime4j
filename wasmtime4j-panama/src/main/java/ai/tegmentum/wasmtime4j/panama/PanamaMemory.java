@@ -444,14 +444,34 @@ public final class PanamaMemory implements WasmMemory {
   public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
     ensureNotClosed();
 
-    // Get actual memory type information from native calls
-    final long minimum = 1L;
-    final Long maximum = null; // unlimited - would need MemoryType limits API
+    // Get type characteristics from native calls
     final boolean is64Bit = supports64BitAddressing();
     final boolean sharedFlag = isShared();
 
+    // Get memory pointer and store pointer
+    final MemorySegment memPtr = getMemoryPointer();
+    final PanamaStore panamaStore = getPanamaStore();
+    final MemorySegment storePtr = panamaStore.getNativeStore();
+
+    // Get minimum from native
+    final MemorySegment minimumOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
+    if (minResult != 0) {
+      throw new IllegalStateException("Failed to get memory minimum: error code " + minResult);
+    }
+    final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
+
+    // Get maximum from native (-1 means unlimited)
+    final MemorySegment maximumOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
+    if (maxResult != 0) {
+      throw new IllegalStateException("Failed to get memory maximum: error code " + maxResult);
+    }
+    final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
+    final Long maximum = maxValue == -1 ? null : maxValue;
+
     return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-        minimum, maximum, is64Bit, sharedFlag, arena, nativeMemory);
+        minimum, maximum, is64Bit, sharedFlag);
   }
 
   /**
@@ -477,6 +497,7 @@ public final class PanamaMemory implements WasmMemory {
   private MemorySegment getMemoryPointer() {
     // Performance optimization: return cached pointer if available
     if (cachedMemoryPointer != null) {
+      System.err.println("DEBUG getMemoryPointer: returning cached pointer");
       return cachedMemoryPointer;
     }
 
@@ -484,12 +505,17 @@ public final class PanamaMemory implements WasmMemory {
       // For instance-exported memories, look up by name and cache
       final MemorySegment nameSegment = arena.allocateFrom(memoryName);
       final PanamaStore actualStore = getPanamaStore();
+      System.err.println(
+          "DEBUG getMemoryPointer: calling instanceGetMemoryByName, store="
+              + actualStore.getNativeStore());
       cachedMemoryPointer =
           NATIVE_BINDINGS.instanceGetMemoryByName(
               instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
+      System.err.println("DEBUG getMemoryPointer: got memory pointer=" + cachedMemoryPointer);
       return cachedMemoryPointer;
     } else {
       // For store-created memories, use the native pointer directly
+      System.err.println("DEBUG getMemoryPointer: using nativeMemory directly");
       cachedMemoryPointer = nativeMemory;
       return nativeMemory;
     }
@@ -1210,12 +1236,55 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   /**
+   * Gets the instance this memory was exported from, if any.
+   *
+   * @return the instance, or null if this memory was created directly by a store
+   */
+  PanamaInstance getSourceInstance() {
+    return instance;
+  }
+
+  /**
    * Gets the native memory pointer.
    *
-   * @return native memory segment
+   * <p>For instance-exported memories, this method looks up the memory pointer by name. For
+   * store-created memories, it returns the stored native pointer.
+   *
+   * @return native memory segment, or NULL if the memory pointer cannot be obtained
    */
   public MemorySegment getNativeMemory() {
-    return nativeMemory;
+    // Use getMemoryPointer to properly resolve instance-exported memories
+    return getMemoryPointer();
+  }
+
+  /**
+   * Checks if this memory is an instance-exported memory.
+   *
+   * <p>Instance-exported memories are created by calling getMemory() on an Instance. Store-created
+   * memories are created directly by the Store.
+   *
+   * @return true if this memory was exported from an instance, false if store-created
+   */
+  boolean isInstanceExported() {
+    return instance != null && memoryName != null;
+  }
+
+  /**
+   * Gets the instance that owns this memory (for instance-exported memories).
+   *
+   * @return the owning instance, or null if this is a store-created memory
+   */
+  PanamaInstance getOwningInstance() {
+    return instance;
+  }
+
+  /**
+   * Gets the export name of this memory (for instance-exported memories).
+   *
+   * @return the export name, or null if this is a store-created memory
+   */
+  String getExportName() {
+    return memoryName;
   }
 
   /**

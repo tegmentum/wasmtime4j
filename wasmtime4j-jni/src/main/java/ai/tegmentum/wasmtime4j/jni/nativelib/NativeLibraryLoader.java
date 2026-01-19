@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.jni.nativelib;
 
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils;
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
+import ai.tegmentum.wasmtime4j.nativeloader.PathConvention;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -52,7 +53,11 @@ public final class NativeLibraryLoader {
       }
 
       try {
-        loadInfo = NativeLoader.loadLibrary("wasmtime4j");
+        loadInfo =
+            NativeLoader.builder()
+                .libraryName("wasmtime4j")
+                .pathConvention(PathConvention.MAVEN_NATIVE)
+                .load();
         if (loadInfo.isSuccessful()) {
           LIBRARY_LOADED.set(true);
           LOGGER.info("Successfully loaded native library for JNI: " + loadInfo);

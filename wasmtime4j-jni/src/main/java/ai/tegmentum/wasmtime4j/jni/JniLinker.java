@@ -1093,6 +1093,36 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   /**
+   * Register a host function callback with a specific callback ID. This is used by JniHostFunction
+   * to register callbacks created via store.createHostFunction().
+   *
+   * @param callbackId the callback ID to use
+   * @param moduleName the module name (for debugging)
+   * @param name the function name
+   * @param implementation the implementation
+   * @param functionType the function type
+   */
+  static void registerHostFunctionCallbackWithId(
+      final long callbackId,
+      final String moduleName,
+      final String name,
+      final HostFunction implementation,
+      final FunctionType functionType) {
+    final HostFunctionWrapper wrapper =
+        new HostFunctionWrapper(callbackId, moduleName, name, implementation, functionType);
+    HOST_FUNCTION_CALLBACKS.put(callbackId, wrapper);
+  }
+
+  /**
+   * Unregister a host function callback. This is used by JniHostFunction when it is closed.
+   *
+   * @param callbackId the callback ID to unregister
+   */
+  static void unregisterHostFunctionCallback(final long callbackId) {
+    HOST_FUNCTION_CALLBACKS.remove(callbackId);
+  }
+
+  /**
    * Invokes a host function callback from native code. This method is called by the native layer
    * when a WASM module calls a host function.
    *
@@ -1487,6 +1517,23 @@ public class JniLinker<T> implements Linker<T> {
         final HostFunction implementation,
         final FunctionType functionType) {
       this.id = nextId.getAndIncrement();
+      this.moduleName = moduleName;
+      this.name = name;
+      this.implementation = implementation;
+      this.functionType = functionType;
+    }
+
+    /**
+     * Creates a wrapper with a specific callback ID. Used by JniHostFunction to register callbacks
+     * with a pre-assigned ID.
+     */
+    HostFunctionWrapper(
+        final long callbackId,
+        final String moduleName,
+        final String name,
+        final HostFunction implementation,
+        final FunctionType functionType) {
+      this.id = callbackId;
       this.moduleName = moduleName;
       this.name = name;
       this.implementation = implementation;

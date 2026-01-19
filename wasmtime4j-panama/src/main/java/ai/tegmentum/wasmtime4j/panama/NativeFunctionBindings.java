@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.ExternRef;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -143,6 +145,98 @@ public final class NativeFunctionBindings {
       return result;
     } catch (Exception e) {
       LOGGER.severe("Exception during engine creation: " + e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Creates a new Wasmtime engine with extended configuration.
+   *
+   * @param config the engine configuration
+   * @return memory segment pointer to the engine, or null on failure
+   */
+  public MemorySegment engineCreateWithConfig(final ai.tegmentum.wasmtime4j.EngineConfig config) {
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeFunctionBindings not initialized, cannot create engine");
+        return null;
+      }
+
+      // Extract configuration values using EngineConfig getter methods
+      int strategy = 0; // default Cranelift
+      int optLevel = 2; // default Speed
+      int debugInfo = config.isDebugInfo() ? 1 : 0;
+      int wasmThreads = config.isWasmThreads() ? 1 : 0;
+      int wasmSimd = config.isWasmSimd() ? 1 : 0;
+      int wasmReferenceTypes = config.isWasmReferenceTypes() ? 1 : 0;
+      int wasmBulkMemory = config.isWasmBulkMemory() ? 1 : 0;
+      int wasmMultiValue = config.isWasmMultiValue() ? 1 : 0;
+      int fuelEnabled = config.isConsumeFuel() ? 1 : 0;
+      int maxMemoryPages = 0; // use default
+      int maxStackSize = 0; // use default
+      int epochInterruption = config.isEpochInterruption() ? 1 : 0;
+      int maxInstances = 0; // use default
+      int asyncSupport = config.isAsyncSupport() ? 1 : 0;
+      int wasmGc = config.isWasmGc() ? 1 : 0;
+      int wasmFunctionReferences = config.isWasmFunctionReferences() ? 1 : 0;
+      int wasmExceptions = config.isWasmExceptions() ? 1 : 0;
+      long memoryReservation = config.getMemoryReservation();
+      long memoryGuardSize = config.getMemoryGuardSize();
+      long memoryReservationForGrowth = config.getMemoryReservationForGrowth();
+      int wasmTailCall = config.isWasmTailCall() ? 1 : 0;
+      int wasmRelaxedSimd = config.isWasmRelaxedSimd() ? 1 : 0;
+      int wasmMultiMemory = config.isWasmMultiMemory() ? 1 : 0;
+      int wasmMemory64 = config.isWasmMemory64() ? 1 : 0;
+      int wasmExtendedConst = config.isWasmExtendedConstExpressions() ? 1 : 0;
+      int wasmComponentModel = 0; // Component model handled separately
+      int coredumpOnTrap = config.isCoredumpOnTrap() ? 1 : 0;
+      int craneliftNanCanonicalization = config.isCraneliftNanCanonicalization() ? 1 : 0;
+      // Experimental features
+      int wasmCustomPageSizes = config.isWasmCustomPageSizes() ? 1 : 0;
+
+      MemorySegment result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_create_with_extended_config",
+              MemorySegment.class,
+              strategy,
+              optLevel,
+              debugInfo,
+              wasmThreads,
+              wasmSimd,
+              wasmReferenceTypes,
+              wasmBulkMemory,
+              wasmMultiValue,
+              fuelEnabled,
+              maxMemoryPages,
+              maxStackSize,
+              epochInterruption,
+              maxInstances,
+              asyncSupport,
+              wasmGc,
+              wasmFunctionReferences,
+              wasmExceptions,
+              memoryReservation,
+              memoryGuardSize,
+              memoryReservationForGrowth,
+              wasmTailCall,
+              wasmRelaxedSimd,
+              wasmMultiMemory,
+              wasmMemory64,
+              wasmExtendedConst,
+              wasmComponentModel,
+              coredumpOnTrap,
+              craneliftNanCanonicalization,
+              wasmCustomPageSizes);
+
+      if (result == null || result.equals(MemorySegment.NULL)) {
+        LOGGER.warning(
+            "Engine creation with config returned null - this may indicate symbol lookup failure");
+      } else {
+        LOGGER.fine("Engine created with config successfully: " + result);
+      }
+      return result;
+    } catch (Exception e) {
+      LOGGER.severe("Exception during engine creation with config: " + e.getMessage());
       return null;
     }
   }
@@ -847,7 +941,10 @@ public final class NativeFunctionBindings {
    */
   public long moduleImportsLen(final MemorySegment modulePtr) {
     validatePointer(modulePtr, "modulePtr");
-    return callNativeFunction("wasmtime4j_module_imports_len", Long.class, modulePtr);
+    // Use the existing Panama FFI function
+    final int count =
+        callNativeFunction("wasmtime4j_panama_module_get_import_count", Integer.class, modulePtr);
+    return count;
   }
 
   /**
@@ -879,7 +976,10 @@ public final class NativeFunctionBindings {
    */
   public long moduleExportsLen(final MemorySegment modulePtr) {
     validatePointer(modulePtr, "modulePtr");
-    return callNativeFunction("wasmtime4j_module_exports_len", Long.class, modulePtr);
+    // Use the existing Panama FFI function
+    final int count =
+        callNativeFunction("wasmtime4j_panama_module_get_export_count", Integer.class, modulePtr);
+    return count;
   }
 
   /**
@@ -2030,6 +2130,30 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets a global export by name from an instance, wrapped for linker use.
+   *
+   * <p>Unlike {@link #instanceGetGlobalByName}, this returns a properly wrapped Global struct that
+   * can be used with {@link #panamaLinkerDefineGlobal}.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return wrapped global segment pointer or null if not found
+   */
+  public MemorySegment instanceGetGlobalWrapped(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_get_global_wrapped",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        name);
+  }
+
+  /**
    * Gets a cached method handle for a native function.
    *
    * @param functionName the name of the function
@@ -3174,15 +3298,31 @@ public final class NativeFunctionBindings {
         f64Value = value.asF64();
         break;
       case FUNCREF:
-        if (value.asFuncref() != null) {
+        final Object funcRef = value.asFuncref();
+        if (funcRef != null) {
           refIdPresent = 1;
-          refId = ((Long) value.asFuncref()).longValue();
+          if (funcRef instanceof FunctionReference) {
+            refId = ((FunctionReference) funcRef).getId();
+          } else if (funcRef instanceof Long) {
+            refId = (Long) funcRef;
+          } else {
+            throw new IllegalArgumentException(
+                "FUNCREF value must be FunctionReference or Long, got: " + funcRef.getClass());
+          }
         }
         break;
       case EXTERNREF:
-        if (value.asExternref() != null) {
+        final Object externRef = value.asExternref();
+        if (externRef != null) {
           refIdPresent = 1;
-          refId = ((Long) value.asExternref()).longValue();
+          if (externRef instanceof ExternRef) {
+            refId = ((ExternRef<?>) externRef).getId();
+          } else if (externRef instanceof Long) {
+            refId = (Long) externRef;
+          } else {
+            throw new IllegalArgumentException(
+                "EXTERNREF value must be ExternRef or Long, got: " + externRef.getClass());
+          }
         }
         break;
       default:
@@ -3268,15 +3408,31 @@ public final class NativeFunctionBindings {
         f64Value = value.asF64();
         break;
       case FUNCREF:
-        if (value.asFuncref() != null) {
+        final Object funcRef2 = value.asFuncref();
+        if (funcRef2 != null) {
           refIdPresent = 1;
-          refId = ((Long) value.asFuncref()).longValue();
+          if (funcRef2 instanceof FunctionReference) {
+            refId = ((FunctionReference) funcRef2).getId();
+          } else if (funcRef2 instanceof Long) {
+            refId = (Long) funcRef2;
+          } else {
+            throw new IllegalArgumentException(
+                "FUNCREF value must be FunctionReference or Long, got: " + funcRef2.getClass());
+          }
         }
         break;
       case EXTERNREF:
-        if (value.asExternref() != null) {
+        final Object externRef2 = value.asExternref();
+        if (externRef2 != null) {
           refIdPresent = 1;
-          refId = ((Long) value.asExternref()).longValue();
+          if (externRef2 instanceof ExternRef) {
+            refId = ((ExternRef<?>) externRef2).getId();
+          } else if (externRef2 instanceof Long) {
+            refId = (Long) externRef2;
+          } else {
+            throw new IllegalArgumentException(
+                "EXTERNREF value must be ExternRef or Long, got: " + externRef2.getClass());
+          }
         }
         break;
       default:
@@ -3510,6 +3666,46 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets memory type minimum pages (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param minimumOutPtr pointer to store the minimum pages (64-bit unsigned)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGetMinimum(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment minimumOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(minimumOutPtr, "minimumOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_get_minimum", Integer.class, memoryPtr, storePtr, minimumOutPtr);
+  }
+
+  /**
+   * Gets memory type maximum pages (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param maximumOutPtr pointer to store the maximum pages (64-bit signed, -1 if unlimited)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGetMaximum(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment maximumOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(maximumOutPtr, "maximumOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_get_maximum", Integer.class, memoryPtr, storePtr, maximumOutPtr);
+  }
+
+  /**
    * Gets memory size in pages using 64-bit return value (Panama FFI version).
    *
    * @param memoryPtr pointer to the memory
@@ -3654,7 +3850,7 @@ public final class NativeFunctionBindings {
    * @return pointer to error message string, or null if no error
    */
   public MemorySegment getLastErrorMessage() {
-    return callNativeFunction("wasmtime4j_get_last_error_message", MemorySegment.class);
+    return callNativeFunction("wasmtime4j_panama_get_last_error_message", MemorySegment.class);
   }
 
   /**
@@ -3664,7 +3860,7 @@ public final class NativeFunctionBindings {
    */
   public void freeErrorMessage(final MemorySegment messagePtr) {
     if (messagePtr != null && !messagePtr.equals(MemorySegment.NULL)) {
-      callNativeFunction("wasmtime4j_free_error_message", Void.class, messagePtr);
+      callNativeFunction("wasmtime4j_panama_free_error_message", Void.class, messagePtr);
     }
   }
 
@@ -4070,8 +4266,50 @@ public final class NativeFunctionBindings {
 
   /** Initializes all function bindings. */
   private void initializeFunctionBindings() {
+    // Error handling functions
+    addFunctionBinding(
+        "wasmtime4j_panama_get_last_error_message", FunctionDescriptor.of(ValueLayout.ADDRESS));
+    addFunctionBinding(
+        "wasmtime4j_panama_free_error_message",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // message_ptr
+
     // Engine functions
     addFunctionBinding("wasmtime4j_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    // Engine creation with extended configuration
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_with_extended_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return engine_ptr
+            ValueLayout.JAVA_INT, // strategy
+            ValueLayout.JAVA_INT, // opt_level
+            ValueLayout.JAVA_INT, // debug_info
+            ValueLayout.JAVA_INT, // wasm_threads
+            ValueLayout.JAVA_INT, // wasm_simd
+            ValueLayout.JAVA_INT, // wasm_reference_types
+            ValueLayout.JAVA_INT, // wasm_bulk_memory
+            ValueLayout.JAVA_INT, // wasm_multi_value
+            ValueLayout.JAVA_INT, // fuel_enabled
+            ValueLayout.JAVA_INT, // max_memory_pages
+            ValueLayout.JAVA_INT, // max_stack_size
+            ValueLayout.JAVA_INT, // epoch_interruption
+            ValueLayout.JAVA_INT, // max_instances
+            ValueLayout.JAVA_INT, // async_support
+            ValueLayout.JAVA_INT, // wasm_gc
+            ValueLayout.JAVA_INT, // wasm_function_references
+            ValueLayout.JAVA_INT, // wasm_exceptions
+            ValueLayout.JAVA_LONG, // memory_reservation
+            ValueLayout.JAVA_LONG, // memory_guard_size
+            ValueLayout.JAVA_LONG, // memory_reservation_for_growth
+            ValueLayout.JAVA_INT, // wasm_tail_call
+            ValueLayout.JAVA_INT, // wasm_relaxed_simd
+            ValueLayout.JAVA_INT, // wasm_multi_memory
+            ValueLayout.JAVA_INT, // wasm_memory64
+            ValueLayout.JAVA_INT, // wasm_extended_const
+            ValueLayout.JAVA_INT, // wasm_component_model
+            ValueLayout.JAVA_INT, // coredump_on_trap
+            ValueLayout.JAVA_INT, // cranelift_nan_canonicalization
+            ValueLayout.JAVA_INT)); // wasm_custom_page_sizes
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -4207,27 +4445,34 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // wat_text (null-terminated string)
             ValueLayout.ADDRESS)); // module_ptr (output)
 
-    // Module introspection functions
+    // Module introspection functions - using existing Panama FFI functions
     addFunctionBinding(
-        "wasmtime4j_module_imports_len",
+        "wasmtime4j_panama_module_get_import_count",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return import count
+            ValueLayout.JAVA_INT, // return import count
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
-        "wasmtime4j_module_import_nth",
+        "wasmtime4j_panama_module_get_export_count",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return found
-            ValueLayout.ADDRESS, // module_ptr
-            ValueLayout.JAVA_LONG, // index
-            ValueLayout.ADDRESS, // name_out_ptr
-            ValueLayout.ADDRESS)); // type_out_ptr
+            ValueLayout.JAVA_INT, // return export count
+            ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
-        "wasmtime4j_module_exports_len",
+        "wasmtime4j_panama_module_get_imports_json",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return export count
+            ValueLayout.ADDRESS, // return JSON string pointer
             ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_get_exports_json",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return JSON string pointer
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_free_string",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
 
     addFunctionBinding(
         "wasmtime4j_module_export_nth",
@@ -4506,6 +4751,15 @@ public final class NativeFunctionBindings {
         "wasmtime4j_instance_get_global_by_name",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return global* or null
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // name (C string)
+
+    // Wrapped global for linker use
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_get_global_wrapped",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return wrapped Global* or null
             ValueLayout.ADDRESS, // instance_ptr
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS)); // name (C string)
@@ -4895,6 +5149,18 @@ public final class NativeFunctionBindings {
 
     // Panama FFI memory functions
     addFunctionBinding(
+        "wasmtime4j_panama_memory_create_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // initial_pages
+            ValueLayout.JAVA_INT, // maximum_pages
+            ValueLayout.JAVA_INT, // is_shared
+            ValueLayout.JAVA_INT, // memory_index
+            ValueLayout.ADDRESS, // name
+            ValueLayout.ADDRESS)); // memory_ptr_out
+
+    addFunctionBinding(
         "wasmtime4j_panama_memory_size_pages",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -4947,6 +5213,55 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS, // data_ptr_out
             ValueLayout.ADDRESS)); // size_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_is_64bit",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // is_64bit_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_is_shared",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // is_shared_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_size_pages64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // size_out (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_grow64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // additional_pages
+            ValueLayout.ADDRESS)); // previous_pages_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_get_minimum",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // minimum_out (u64)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_get_maximum",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // maximum_out (i64, -1 if unlimited)
 
     // Cross-module global sharing functions
     addFunctionBinding(
@@ -5172,6 +5487,17 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS)); // memory_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_linker_define_memory_from_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.ADDRESS, // memory_name (C string)
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS)); // export_name (C string)
+
+    addFunctionBinding(
         "wasmtime4j_panama_linker_define_table",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return result code
@@ -5189,6 +5515,16 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS, // module_name (C string)
             ValueLayout.ADDRESS)); // instance_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_alias",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // from_module_name (C string)
+            ValueLayout.ADDRESS, // from_name (C string)
+            ValueLayout.ADDRESS, // to_module_name (C string)
+            ValueLayout.ADDRESS)); // to_name (C string)
 
     addFunctionBinding(
         "wasmtime4j_linker_instantiate",
@@ -8263,6 +8599,45 @@ public final class NativeFunctionBindings {
         moduleNamePtr,
         namePtr,
         memoryPtr);
+  }
+
+  /**
+   * Defines a memory from an instance in the linker (Panama FFI version).
+   *
+   * <p>This variant extracts the memory from the instance and defines it in the linker all within
+   * the same store context to avoid store mismatch issues.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param memoryNamePtr pointer to the memory name string
+   * @param instancePtr pointer to the instance containing the memory
+   * @param exportNamePtr pointer to the export name of the memory in the instance
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineMemoryFromInstance(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment memoryNamePtr,
+      final MemorySegment instancePtr,
+      final MemorySegment exportNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(memoryNamePtr, "memoryNamePtr");
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(exportNamePtr, "exportNamePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_memory_from_instance",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        memoryNamePtr,
+        instancePtr,
+        exportNamePtr);
   }
 
   /**

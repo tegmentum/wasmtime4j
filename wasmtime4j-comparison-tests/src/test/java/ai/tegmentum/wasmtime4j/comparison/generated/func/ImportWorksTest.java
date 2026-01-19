@@ -60,13 +60,13 @@ public final class ImportWorksTest {
             i32.const 1
             i32.add
 
-            ;; Call func2 (consumes params, no result, drops previous result)
+            ;; Call func2 with separate values (doesn't affect stack result)
             i32.const 3
             i64.const 4
             call 2
 
-            ;; Return 2 (the result from func1 + 1)
-            i32.const 2
+            ;; The stack still has the result from func1 + 1 = 2
+            ;; which is what we return
           )
         )
         """;

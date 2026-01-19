@@ -40,7 +40,8 @@ public final class PanamaGlobalType implements GlobalType {
       final MemorySegment nativeHandle) {
     PanamaValidation.requireNonNull(valueType, "valueType");
     PanamaValidation.requireNonNull(arena, "arena");
-    PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    // Allow NULL native handle for type descriptors parsed from JSON
+    PanamaValidation.requireNonNull(nativeHandle, "nativeHandle");
 
     this.valueType = valueType;
     this.isMutable = isMutable;
@@ -49,6 +50,39 @@ public final class PanamaGlobalType implements GlobalType {
 
     LOGGER.fine(
         String.format("Created PanamaGlobalType: valueType=%s, mutable=%b", valueType, isMutable));
+  }
+
+  /**
+   * Creates a PanamaGlobalType from type information without a native handle.
+   *
+   * <p>This factory method is used when type information is parsed from JSON or other sources where
+   * a native handle is not available.
+   *
+   * @param valueType the value type of the global
+   * @param isMutable true if the global is mutable, false if immutable
+   * @return the PanamaGlobalType instance
+   */
+  public static PanamaGlobalType of(final WasmValueType valueType, final boolean isMutable) {
+    PanamaValidation.requireNonNull(valueType, "valueType");
+    return new PanamaGlobalType(valueType, isMutable);
+  }
+
+  /**
+   * Private constructor for creating type descriptors without native handles.
+   *
+   * @param valueType the value type of the global
+   * @param isMutable true if the global is mutable
+   */
+  private PanamaGlobalType(final WasmValueType valueType, final boolean isMutable) {
+    this.valueType = valueType;
+    this.isMutable = isMutable;
+    this.arena = null;
+    this.nativeHandle = MemorySegment.NULL;
+
+    LOGGER.fine(
+        String.format(
+            "Created PanamaGlobalType (no native handle): valueType=%s, mutable=%b",
+            valueType, isMutable));
   }
 
   /**

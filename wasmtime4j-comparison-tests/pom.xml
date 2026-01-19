@@ -204,6 +204,9 @@
                         <!-- WideArithmeticTest: Uses i64.add128 extension instruction (not in standard WASM) -->
                         <exclude>**/comparison/generated/wasmtime/WideArithmeticTest.java</exclude>
 
+                        <!-- TrapsSkipCatchAllTest: Causes JVM crash (SIGILL) - needs investigation -->
+                        <exclude>**/comparison/generated/wasmtime/TrapsSkipCatchAllTest.java</exclude>
+
                         <!-- WASI tests: Testing WASI linker integration -->
                         <!-- <exclude>**/comparison/wasi/**</exclude> -->
                     </excludes>

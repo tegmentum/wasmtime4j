@@ -1530,35 +1530,65 @@ pub mod ffi_utils {
     }
 
     /// Execute operation with FFI error handling
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn ffi_try<F, T>(operation: F) -> (ErrorCode, T)
     where
-        F: FnOnce() -> WasmtimeResult<T>,
+        F: FnOnce() -> WasmtimeResult<T> + std::panic::UnwindSafe,
         T: Default,
     {
-        match operation() {
-            Ok(result) => {
+        let result = std::panic::catch_unwind(operation);
+        match result {
+            Ok(Ok(value)) => {
                 clear_last_error();
-                (ErrorCode::Success, result)
+                (ErrorCode::Success, value)
             }
-            Err(error) => {
+            Ok(Err(error)) => {
                 let code = error.to_error_code();
                 set_last_error(error);
                 (code, T::default())
             }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+                set_last_error(error);
+                (ErrorCode::RuntimeError, T::default())
+            }
         }
     }
-    
+
     /// Execute operation with FFI error handling, returning pointer for success
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn ffi_try_ptr<F, T>(operation: F) -> *mut c_void
     where
-        F: FnOnce() -> WasmtimeResult<Box<T>>,
+        F: FnOnce() -> WasmtimeResult<Box<T>> + std::panic::UnwindSafe,
     {
-        match operation() {
-            Ok(result) => {
+        let result = std::panic::catch_unwind(operation);
+        match result {
+            Ok(Ok(boxed)) => {
                 clear_last_error();
-                Box::into_raw(result) as *mut c_void
+                Box::into_raw(boxed) as *mut c_void
             }
-            Err(error) => {
+            Ok(Err(error)) => {
+                set_last_error(error);
+                std::ptr::null_mut()
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
                 set_last_error(error);
                 std::ptr::null_mut()
             }
@@ -1574,19 +1604,35 @@ pub mod ffi_utils {
     }
     
     /// Execute operation with FFI error handling, returning error code
+    /// Uses catch_unwind to prevent panics from crashing the JVM
     pub fn ffi_try_code<F>(operation: F) -> i32
     where
-        F: FnOnce() -> WasmtimeResult<()>,
+        F: FnOnce() -> WasmtimeResult<()> + std::panic::UnwindSafe,
     {
-        match operation() {
-            Ok(()) => {
+        let result = std::panic::catch_unwind(operation);
+        match result {
+            Ok(Ok(())) => {
                 clear_last_error();
                 ErrorCode::Success as i32
             }
-            Err(error) => {
+            Ok(Err(error)) => {
                 let code = error.to_error_code();
                 set_last_error(error);
                 code as i32
+            }
+            Err(panic_info) => {
+                // Convert panic to a WasmtimeError and store it
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+                set_last_error(error);
+                ErrorCode::RuntimeError as i32
             }
         }
     }

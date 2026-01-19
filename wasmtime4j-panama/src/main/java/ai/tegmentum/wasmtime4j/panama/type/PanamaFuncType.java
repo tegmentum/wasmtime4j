@@ -67,6 +67,53 @@ public final class PanamaFuncType implements FuncType {
   }
 
   /**
+   * Creates a PanamaFuncType from type information without a native handle.
+   *
+   * <p>This factory method is used when type information is parsed from JSON or other sources where
+   * a native handle is not available.
+   *
+   * @param params the parameter types
+   * @param results the result types
+   * @return the PanamaFuncType instance
+   */
+  public static PanamaFuncType of(
+      final List<WasmValueType> params, final List<WasmValueType> results) {
+    PanamaValidation.requireNonNull(params, "params");
+    PanamaValidation.requireNonNull(results, "results");
+
+    // Validate that all parameter and result types are non-null
+    for (int i = 0; i < params.size(); i++) {
+      if (params.get(i) == null) {
+        throw new IllegalArgumentException("Parameter type at index " + i + " is null");
+      }
+    }
+    for (int i = 0; i < results.size(); i++) {
+      if (results.get(i) == null) {
+        throw new IllegalArgumentException("Result type at index " + i + " is null");
+      }
+    }
+
+    return new PanamaFuncType(params, results);
+  }
+
+  /**
+   * Private constructor for creating type descriptors without native handles.
+   *
+   * @param params the parameter types
+   * @param results the result types
+   */
+  private PanamaFuncType(final List<WasmValueType> params, final List<WasmValueType> results) {
+    this.params = Collections.unmodifiableList(List.copyOf(params));
+    this.results = Collections.unmodifiableList(List.copyOf(results));
+    this.arena = null;
+    this.nativeHandle = MemorySegment.NULL;
+
+    LOGGER.fine(
+        String.format(
+            "Created PanamaFuncType (no native handle): params=%s, results=%s", params, results));
+  }
+
+  /**
    * Creates a PanamaFuncType from parameter and result arrays.
    *
    * @param params the parameter types array

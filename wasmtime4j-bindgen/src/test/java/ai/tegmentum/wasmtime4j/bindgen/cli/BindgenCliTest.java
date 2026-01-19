@@ -18,9 +18,7 @@ package ai.tegmentum.wasmtime4j.bindgen.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.tegmentum.wasmtime4j.bindgen.CodeStyle;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,8 +39,8 @@ class BindgenCliTest {
 
   // Minimal valid WASM module
   private static final byte[] VALID_WASM = {
-      0x00, 0x61, 0x73, 0x6D, // \0asm magic
-      0x01, 0x00, 0x00, 0x00  // version 1
+    0x00, 0x61, 0x73, 0x6D, // \0asm magic
+    0x01, 0x00, 0x00, 0x00 // version 1
   };
 
   private ByteArrayOutputStream outContent;
@@ -113,8 +111,7 @@ class BindgenCliTest {
       Path wasmFile = tempDir.resolve("test.wasm");
       Files.write(wasmFile, VALID_WASM);
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute("--wasm", wasmFile.toString());
+      int exitCode = new CommandLine(new BindgenCli()).execute("--wasm", wasmFile.toString());
 
       assertThat(exitCode).isNotEqualTo(0);
       String errOutput = errContent.toString();
@@ -126,8 +123,7 @@ class BindgenCliTest {
     void shouldRequireAtLeastOneSource(@TempDir Path tempDir) {
       LOGGER.info("Testing missing source");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute("--package", "com.example");
+      int exitCode = new CommandLine(new BindgenCli()).execute("--package", "com.example");
 
       assertThat(exitCode).isEqualTo(1);
       String errOutput = errContent.toString();
@@ -148,13 +144,18 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .setCaseInsensitiveEnumValuesAllowed(true)
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--style", "MODERN");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .setCaseInsensitiveEnumValuesAllowed(true)
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--style",
+                  "MODERN");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -168,13 +169,18 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .setCaseInsensitiveEnumValuesAllowed(true)
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--style", "LEGACY");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .setCaseInsensitiveEnumValuesAllowed(true)
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--style",
+                  "LEGACY");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -186,13 +192,18 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .setCaseInsensitiveEnumValuesAllowed(true)
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--style", "modern");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .setCaseInsensitiveEnumValuesAllowed(true)
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--style",
+                  "modern");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -206,11 +217,12 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", wasmFile.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(0);
       // No error about style means default was used
@@ -234,10 +246,9 @@ class BindgenCliTest {
       try {
         System.setProperty("user.dir", tempDir.toString());
 
-        int exitCode = new CommandLine(new BindgenCli())
-            .execute(
-                "--wasm", wasmFile.toString(),
-                "--package", "com.example");
+        int exitCode =
+            new CommandLine(new BindgenCli())
+                .execute("--wasm", wasmFile.toString(), "--package", "com.example");
 
         assertThat(exitCode).isEqualTo(0);
       } finally {
@@ -254,11 +265,12 @@ class BindgenCliTest {
 
       assertThat(outputDir).doesNotExist();
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", wasmFile.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -276,11 +288,12 @@ class BindgenCliTest {
       Path nonExistentFile = tempDir.resolve("does-not-exist.wasm");
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", nonExistentFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", nonExistentFile.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(1);
       String errOutput = errContent.toString();
@@ -294,11 +307,12 @@ class BindgenCliTest {
       Files.writeString(textFile, "not wasm content");
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", textFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", textFile.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       String errOutput = errContent.toString();
       assertThat(errOutput).containsIgnoringCase("unexpected extension");
@@ -315,11 +329,12 @@ class BindgenCliTest {
       Files.write(wasmDir.resolve("module2.wasm"), VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmDir.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", wasmDir.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -338,12 +353,16 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--no-javadoc");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--no-javadoc");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -357,12 +376,16 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--no-builders");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--no-builders");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -376,12 +399,16 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--verbose");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--verbose");
 
       assertThat(exitCode).isEqualTo(0);
       String output = outContent.toString();
@@ -397,12 +424,16 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--dry-run");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm",
+                  wasmFile.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--dry-run");
 
       assertThat(exitCode).isEqualTo(0);
       String output = outContent.toString();
@@ -438,11 +469,12 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "-m", wasmFile.toString(),
-              "-p", "com.example",
-              "-o", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "-m", wasmFile.toString(),
+                  "-p", "com.example",
+                  "-o", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -454,13 +486,18 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .setCaseInsensitiveEnumValuesAllowed(true)
-          .execute(
-              "-m", wasmFile.toString(),
-              "-p", "com.example",
-              "-o", outputDir.toString(),
-              "-s", "LEGACY");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .setCaseInsensitiveEnumValuesAllowed(true)
+              .execute(
+                  "-m",
+                  wasmFile.toString(),
+                  "-p",
+                  "com.example",
+                  "-o",
+                  outputDir.toString(),
+                  "-s",
+                  "LEGACY");
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -472,12 +509,10 @@ class BindgenCliTest {
       Files.write(wasmFile, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "-m", wasmFile.toString(),
-              "-p", "com.example",
-              "-o", outputDir.toString(),
-              "-v");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "-m", wasmFile.toString(), "-p", "com.example", "-o", outputDir.toString(), "-v");
 
       assertThat(exitCode).isEqualTo(0);
       assertThat(outContent.toString()).contains("Configuration:");
@@ -499,12 +534,13 @@ class BindgenCliTest {
       Files.write(wasmFile2, VALID_WASM);
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", wasmFile1.toString(),
-              "--wasm", wasmFile2.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", wasmFile1.toString(),
+                  "--wasm", wasmFile2.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(0);
     }
@@ -523,11 +559,12 @@ class BindgenCliTest {
       Files.write(invalidWasm, new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", invalidWasm.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString());
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm", invalidWasm.toString(),
+                  "--package", "com.example",
+                  "--output", outputDir.toString());
 
       assertThat(exitCode).isEqualTo(1);
       assertThat(errContent.toString()).contains("Error:");
@@ -540,12 +577,16 @@ class BindgenCliTest {
       Files.write(invalidWasm, new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       Path outputDir = tempDir.resolve("output");
 
-      int exitCode = new CommandLine(new BindgenCli())
-          .execute(
-              "--wasm", invalidWasm.toString(),
-              "--package", "com.example",
-              "--output", outputDir.toString(),
-              "--verbose");
+      int exitCode =
+          new CommandLine(new BindgenCli())
+              .execute(
+                  "--wasm",
+                  invalidWasm.toString(),
+                  "--package",
+                  "com.example",
+                  "--output",
+                  outputDir.toString(),
+                  "--verbose");
 
       assertThat(exitCode).isEqualTo(1);
       // Verbose mode shows more details

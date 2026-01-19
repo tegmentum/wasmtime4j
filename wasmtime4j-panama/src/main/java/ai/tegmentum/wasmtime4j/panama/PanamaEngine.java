@@ -81,8 +81,8 @@ public final class PanamaEngine implements Engine {
     this.runtime = runtime;
     this.arena = Arena.ofShared();
 
-    // Create native engine via Panama FFI
-    this.nativeEngine = NATIVE_BINDINGS.engineCreate();
+    // Create native engine via Panama FFI with config
+    this.nativeEngine = NATIVE_BINDINGS.engineCreateWithConfig(config);
 
     if (this.nativeEngine == null || this.nativeEngine.equals(MemorySegment.NULL)) {
       arena.close();
@@ -143,6 +143,10 @@ public final class PanamaEngine implements Engine {
     final int result = NATIVE_BINDINGS.moduleCompileWat(nativeEngine, watSegment, modulePtr);
 
     if (result != 0) {
+      final String nativeError = retrieveNativeErrorMessage();
+      if (nativeError != null && !nativeError.isEmpty()) {
+        throw new WasmException("Failed to compile WAT: " + nativeError);
+      }
       throw new WasmException("Failed to compile WAT (error code: " + result + ")");
     }
 
@@ -561,6 +565,28 @@ public final class PanamaEngine implements Engine {
   private void ensureNotClosed() {
     if (closed) {
       throw new IllegalStateException("Engine has been closed");
+    }
+  }
+
+  /**
+   * Retrieves the last error message from the native library and clears it.
+   *
+   * @return the error message, or null if no error
+   */
+  private static String retrieveNativeErrorMessage() {
+    try {
+      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+      try {
+        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      } finally {
+        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+      }
+    } catch (final Exception e) {
+      LOGGER.log(java.util.logging.Level.WARNING, "Failed to retrieve native error message", e);
+      return null;
     }
   }
 

@@ -26,7 +26,6 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -92,20 +91,20 @@ class TypeMappingRegistryTest {
 
     @ParameterizedTest
     @CsvSource({
-        "bool, boolean",
-        "s8, byte",
-        "s16, short",
-        "s32, int",
-        "s64, long",
-        "u8, byte",
-        "u16, short",
-        "u32, int",
-        "u64, long",
-        "f32, float",
-        "f64, double",
-        "float32, float",
-        "float64, double",
-        "char, int"
+      "bool, boolean",
+      "s8, byte",
+      "s16, short",
+      "s32, int",
+      "s64, long",
+      "u8, byte",
+      "u16, short",
+      "u32, int",
+      "u64, long",
+      "f32, float",
+      "f64, double",
+      "float32, float",
+      "float64, double",
+      "char, int"
     })
     @DisplayName("should map WIT primitive types to Java primitives")
     void shouldMapWitPrimitivesToJavaPrimitives(final String witType, final String expected) {
@@ -158,12 +157,7 @@ class TypeMappingRegistryTest {
   class WasmTypeMappingTests {
 
     @ParameterizedTest
-    @CsvSource({
-        "i32, int",
-        "i64, long",
-        "f32, float",
-        "f64, double"
-    })
+    @CsvSource({"i32, int", "i64, long", "f32, float", "f64, double"})
     @DisplayName("should map WASM numeric types to Java primitives")
     void shouldMapWasmNumericTypes(final String wasmType, final String expected) {
       LOGGER.info("Testing WASM type mapping: " + wasmType + " -> " + expected);
@@ -371,8 +365,9 @@ class TypeMappingRegistryTest {
     @Test
     @DisplayName("should return TupleN for N-element tuple")
     void shouldReturnTupleNForNElements() {
-      TypeName result = registry.mapTuple(
-          Arrays.asList(TypeName.INT, TypeName.LONG, TypeName.FLOAT, TypeName.DOUBLE));
+      TypeName result =
+          registry.mapTuple(
+              Arrays.asList(TypeName.INT, TypeName.LONG, TypeName.FLOAT, TypeName.DOUBLE));
 
       assertThat(result.toString()).isEqualTo(TEST_PACKAGE + ".tuple.Tuple4");
     }
@@ -463,12 +458,11 @@ class TypeMappingRegistryTest {
   class PrimitiveCheckTests {
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "bool", "s8", "s16", "s32", "s64",
-        "u8", "u16", "u32", "u64",
-        "f32", "f64", "float32", "float64",
-        "char", "string"
-    })
+    @ValueSource(
+        strings = {
+          "bool", "s8", "s16", "s32", "s64", "u8", "u16", "u32", "u64", "f32", "f64", "float32",
+          "float64", "char", "string"
+        })
     @DisplayName("should return true for primitive types")
     void shouldReturnTrueForPrimitives(final String typeName) {
       assertThat(registry.isPrimitive(typeName)).isTrue();

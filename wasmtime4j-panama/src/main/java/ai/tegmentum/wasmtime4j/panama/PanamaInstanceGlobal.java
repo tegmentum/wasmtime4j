@@ -172,10 +172,17 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
           final Object refValue = value.getValue();
           if (refValue != null) {
             refIdPresent = 1;
-            if (refValue instanceof Long) {
+            if (refValue instanceof ai.tegmentum.wasmtime4j.FunctionReference funcReference) {
+              refId = funcReference.getId();
+            } else if (refValue instanceof Long) {
               refId = (Long) refValue;
             } else if (refValue instanceof Integer) {
               refId = ((Integer) refValue).longValue();
+            } else {
+              throw new IllegalArgumentException(
+                  "Unsupported reference value type: "
+                      + refValue.getClass().getName()
+                      + ". Expected FunctionReference, Long, or Integer.");
             }
           }
           break;
@@ -233,6 +240,37 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
         return ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL;
       }
     };
+  }
+
+  /**
+   * Gets the native global pointer by looking up the global export from the instance.
+   *
+   * <p>This method allows instance globals to be used with the linker's defineGlobal method. It
+   * returns a properly wrapped Global struct that is compatible with the linker's define
+   * operations.
+   *
+   * @return the native global pointer, or NULL if the global cannot be found
+   */
+  MemorySegment getGlobalPointer() {
+    ensureNotClosed();
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+
+      // Use the wrapped version that returns a properly wrapped Global struct
+      // compatible with panamaLinkerDefineGlobal
+      final MemorySegment globalPtr =
+          NATIVE_BINDINGS.instanceGetGlobalWrapped(
+              instance.getNativeInstance(), store.getNativeStore(), nameSegment);
+
+      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+        LOGGER.warning("Failed to get native global pointer for: " + name);
+        return MemorySegment.NULL;
+      }
+
+      return globalPtr;
+    }
   }
 
   @Override

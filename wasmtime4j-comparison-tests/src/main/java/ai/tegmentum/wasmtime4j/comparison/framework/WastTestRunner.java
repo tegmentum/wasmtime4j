@@ -17,12 +17,14 @@
 package ai.tegmentum.wasmtime4j.comparison.framework;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +51,11 @@ public final class WastTestRunner implements AutoCloseable {
   /**
    * Creates a new WAST test runner with a default engine and store.
    *
-   * <p>Uses the currently configured runtime (JNI or Panama) based on system properties.
+   * <p>Uses the currently configured runtime (JNI or Panama) based on system properties. The engine
+   * is configured with all Wasm proposals enabled for maximum compatibility.
    */
   public WastTestRunner() throws Exception {
-    this.engine = Engine.create();
+    this.engine = Engine.create(createDefaultConfig());
     this.store = engine.createStore();
     this.linker = Linker.create(engine);
     this.namedInstances = new HashMap<>();
@@ -63,13 +66,15 @@ public final class WastTestRunner implements AutoCloseable {
   /**
    * Creates a new WAST test runner with a specific runtime type.
    *
+   * <p>The engine is configured with all Wasm proposals enabled for maximum compatibility.
+   *
    * @param runtime the runtime type to use (JNI or Panama)
    * @throws Exception if the runner cannot be created
    */
   public WastTestRunner(final ai.tegmentum.wasmtime4j.RuntimeType runtime) throws Exception {
     // Set the runtime before creating the engine
     DualRuntimeTest.setRuntime(runtime);
-    this.engine = Engine.create();
+    this.engine = Engine.create(createDefaultConfig());
     this.store = engine.createStore();
     this.linker = Linker.create(engine);
     System.err.println("[RUNNER] Linker type: " + this.linker.getClass().getName());
@@ -78,6 +83,25 @@ public final class WastTestRunner implements AutoCloseable {
     this.namedInstances = new HashMap<>();
     this.currentInstance = null;
     this.hasHostFunctions = false;
+  }
+
+  /**
+   * Creates an EngineConfig with all Wasm proposals enabled for maximum test compatibility.
+   *
+   * @return configured EngineConfig with proposals enabled
+   */
+  private static EngineConfig createDefaultConfig() {
+    return new EngineConfig()
+        .wasmExceptions(true)
+        .addWasmFeature(WasmFeature.MEMORY64)
+        .addWasmFeature(WasmFeature.MULTI_VALUE)
+        .addWasmFeature(WasmFeature.BULK_MEMORY)
+        .addWasmFeature(WasmFeature.REFERENCE_TYPES)
+        .addWasmFeature(WasmFeature.SIMD)
+        .addWasmFeature(WasmFeature.TAIL_CALL)
+        .addWasmFeature(WasmFeature.MULTI_MEMORY)
+        .addWasmFeature(WasmFeature.THREADS)
+        .addWasmFeature(WasmFeature.CUSTOM_PAGE_SIZES);
   }
 
   /**
@@ -202,6 +226,8 @@ public final class WastTestRunner implements AutoCloseable {
 
     // Use Linker.defineInstance() to register all exports at once
     linker.defineInstance(moduleName, currentInstance);
+    // Also track the instance for later lookup by name
+    namedInstances.put(moduleName, currentInstance);
     hasHostFunctions = true; // Mark as using linker
   }
 
