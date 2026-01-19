@@ -192,7 +192,8 @@
                         <!-- Analyzer utilities: Not actual tests -->
                         <exclude>**/comparison/analyzers/**</exclude>
 
-                        <!-- WideArithmeticTest: Uses i64.add128 extension instruction (not in standard WASM) -->
+                        <!-- WideArithmeticTest: Uses Wide Arithmetic proposal (i64.add128, etc.) which requires
+                             additional engine configuration not yet exposed through Java API -->
                         <exclude>**/comparison/generated/wasmtime/WideArithmeticTest.java</exclude>
 
                         <!-- TrapsSkipCatchAllTest: Causes JVM crash (SIGILL) due to WASM exception handling
