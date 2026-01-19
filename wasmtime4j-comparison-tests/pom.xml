@@ -186,11 +186,9 @@
                         <include>**/comparison/generated/func/**/*Test.java</include>
                         <include>**/comparison/generated/wasmtime/**/*Test.java</include>
                         <include>**/comparison/generated/traps/**/*Test.java</include>
+                        <include>**/comparison/generated/hostfuncs/**/*Test.java</include>
                     </includes>
                     <excludes>
-
-                        <!-- Host function tests (7 tests): Require host function callback implementation -->
-                        <exclude>**/comparison/generated/hostfuncs/**</exclude>
 
                         <!-- Component model tests (1 test): Require component model support (WASM proposal) -->
                         <exclude>**/comparison/generated/componentmodel/**</exclude>
@@ -204,7 +202,8 @@
                         <!-- WideArithmeticTest: Uses i64.add128 extension instruction (not in standard WASM) -->
                         <exclude>**/comparison/generated/wasmtime/WideArithmeticTest.java</exclude>
 
-                        <!-- TrapsSkipCatchAllTest: Causes JVM crash (SIGILL) - needs investigation -->
+                        <!-- TrapsSkipCatchAllTest: Causes JVM crash (SIGILL) due to WASM exception handling
+                             (try_table/catch_all) codegen issue on ARM64 macOS -->
                         <exclude>**/comparison/generated/wasmtime/TrapsSkipCatchAllTest.java</exclude>
 
                         <!-- WASI tests: Testing WASI linker integration -->

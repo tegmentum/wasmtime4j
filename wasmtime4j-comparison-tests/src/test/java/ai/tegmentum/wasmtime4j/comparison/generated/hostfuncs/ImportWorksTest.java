@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.comparison.generated.hostfuncs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.comparison.framework.WastTestRunner;
@@ -23,6 +24,9 @@ public final class ImportWorksTest {
   @Test
   @DisplayName("host_funcs::import_works")
   public void testImportWorks() throws Exception {
+    // This test requires EXTERNREF and FUNCREF support in host function definitions,
+    // which is only available in the Panama implementation. We explicitly use Panama runtime.
+
     // Atomic counter to track host function calls
     final AtomicInteger hits = new AtomicInteger(0);
 
@@ -32,7 +36,8 @@ public final class ImportWorksTest {
     final float[] lastF32 = new float[1];
     final double[] lastF64 = new double[1];
 
-    try (final WastTestRunner runner = new WastTestRunner()) {
+    // Use Panama runtime explicitly since JNI doesn't support EXTERNREF/FUNCREF in host functions
+    try (final WastTestRunner runner = new WastTestRunner(RuntimeType.PANAMA)) {
       // Define f1: () -> void
       runner.defineHostFunction(
           "",

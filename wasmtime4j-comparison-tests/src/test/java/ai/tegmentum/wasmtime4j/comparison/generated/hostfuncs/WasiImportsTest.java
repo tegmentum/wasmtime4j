@@ -1,7 +1,8 @@
 package ai.tegmentum.wasmtime4j.comparison.generated.hostfuncs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -67,14 +68,20 @@ public final class WasiImportsTest {
       runner.compileAndInstantiate(wat);
 
       // Calling _start should result in proc_exit being called
-      final ProcExitException exception =
-          assertThrows(
-              ProcExitException.class,
-              () -> runner.invoke("_start"),
-              "_start should call proc_exit which throws ProcExitException");
+      // The host function exception gets wrapped in a WasmException by the runtime,
+      // so we need to catch the generic Exception and verify the error message
+      try {
+        runner.invoke("_start");
+        fail("_start should call proc_exit which throws an exception");
+      } catch (final Exception e) {
+        // Verify the exit code was captured
+        assertEquals(123, exitCode.get(), "proc_exit should be called with exit code 123");
 
-      // Verify the exit code
-      assertEquals(123, exception.getExitCode(), "proc_exit should be called with exit code 123");
+        // Verify the exception message contains the expected text
+        assertTrue(
+            e.getMessage().contains("proc_exit called with code: 123"),
+            "Exception message should contain proc_exit message, got: " + e.getMessage());
+      }
     }
   }
 }
