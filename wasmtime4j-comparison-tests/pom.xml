@@ -189,13 +189,6 @@
                         <include>**/comparison/generated/hostfuncs/**/*Test.java</include>
                     </includes>
                     <excludes>
-
-                        <!-- Component model tests (1 test): Require component model support (WASM proposal) -->
-                        <exclude>**/comparison/generated/componentmodel/**</exclude>
-
-                        <!-- Misc test suite (103 tests): Mixed bag - needs individual triage -->
-                        <exclude>**/comparison/generated/misctestsuite/**</exclude>
-
                         <!-- Analyzer utilities: Not actual tests -->
                         <exclude>**/comparison/analyzers/**</exclude>
 
@@ -205,9 +198,6 @@
                         <!-- TrapsSkipCatchAllTest: Causes JVM crash (SIGILL) due to WASM exception handling
                              (try_table/catch_all) codegen issue on ARM64 macOS -->
                         <exclude>**/comparison/generated/wasmtime/TrapsSkipCatchAllTest.java</exclude>
-
-                        <!-- WASI tests: Testing WASI linker integration -->
-                        <!-- <exclude>**/comparison/wasi/**</exclude> -->
                     </excludes>
                 </configuration>
             </plugin>
