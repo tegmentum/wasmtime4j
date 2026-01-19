@@ -193,6 +193,7 @@ public final class NativeFunctionBindings {
       int craneliftNanCanonicalization = config.isCraneliftNanCanonicalization() ? 1 : 0;
       // Experimental features
       int wasmCustomPageSizes = config.isWasmCustomPageSizes() ? 1 : 0;
+      int wasmWideArithmetic = config.isWasmWideArithmetic() ? 1 : 0;
 
       MemorySegment result =
           callNativeFunction(
@@ -226,7 +227,8 @@ public final class NativeFunctionBindings {
               wasmComponentModel,
               coredumpOnTrap,
               craneliftNanCanonicalization,
-              wasmCustomPageSizes);
+              wasmCustomPageSizes,
+              wasmWideArithmetic);
 
       if (result == null || result.equals(MemorySegment.NULL)) {
         LOGGER.warning(
@@ -4309,7 +4311,8 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT, // wasm_component_model
             ValueLayout.JAVA_INT, // coredump_on_trap
             ValueLayout.JAVA_INT, // cranelift_nan_canonicalization
-            ValueLayout.JAVA_INT)); // wasm_custom_page_sizes
+            ValueLayout.JAVA_INT, // wasm_custom_page_sizes
+            ValueLayout.JAVA_INT)); // wasm_wide_arithmetic
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 

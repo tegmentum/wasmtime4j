@@ -101,7 +101,8 @@ public final class WastTestRunner implements AutoCloseable {
         .addWasmFeature(WasmFeature.TAIL_CALL)
         .addWasmFeature(WasmFeature.MULTI_MEMORY)
         .addWasmFeature(WasmFeature.THREADS)
-        .addWasmFeature(WasmFeature.CUSTOM_PAGE_SIZES);
+        .addWasmFeature(WasmFeature.CUSTOM_PAGE_SIZES)
+        .addWasmFeature(WasmFeature.WIDE_ARITHMETIC);
   }
 
   /**

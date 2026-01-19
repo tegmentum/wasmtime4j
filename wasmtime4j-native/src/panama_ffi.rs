@@ -374,6 +374,7 @@ pub mod engine {
         cranelift_nan_canonicalization: c_int,
         // Experimental features
         wasm_custom_page_sizes: c_int,
+        wasm_wide_arithmetic: c_int,
     ) -> *mut c_void {
         use crate::ffi_common::parameter_conversion;
 
@@ -426,6 +427,7 @@ pub mod engine {
             parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization),
             // Experimental features
             parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes),
+            parameter_conversion::convert_int_to_bool(wasm_wide_arithmetic),
         ) {
             Ok(engine) => Box::into_raw(engine) as *mut c_void,
             Err(e) => {

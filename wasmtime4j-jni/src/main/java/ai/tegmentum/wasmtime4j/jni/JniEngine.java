@@ -468,7 +468,8 @@ public class JniEngine implements Engine {
             config.isCoredumpOnTrap(),
             config.isCraneliftNanCanonicalization(),
             // Experimental features
-            config.isWasmCustomPageSizes());
+            config.isWasmCustomPageSizes(),
+            config.isWasmWideArithmetic());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -522,5 +523,6 @@ public class JniEngine implements Engine {
       boolean wasmComponentModel,
       boolean coredumpOnTrap,
       boolean craneliftNanCanonicalization,
-      boolean wasmCustomPageSizes);
+      boolean wasmCustomPageSizes,
+      boolean wasmWideArithmetic);
 }

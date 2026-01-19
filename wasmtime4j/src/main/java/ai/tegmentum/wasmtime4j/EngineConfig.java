@@ -444,6 +444,9 @@ public final class EngineConfig {
       case FLEXIBLE_VECTORS:
         this.wasmFlexibleVectors = true;
         break;
+      case WIDE_ARITHMETIC:
+        this.wasmWideArithmetic = true;
+        break;
       default:
         // Unknown feature, just add to the set
         break;

@@ -986,6 +986,7 @@ pub mod jni_engine {
         cranelift_nan_canonicalization: jboolean,
         // Experimental features
         wasm_custom_page_sizes: jboolean,
+        wasm_wide_arithmetic: jboolean,
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
             let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -1037,6 +1038,7 @@ pub mod jni_engine {
                 parameter_conversion::convert_int_to_bool(cranelift_nan_canonicalization as i32),
                 // Experimental features
                 parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes as i32),
+                parameter_conversion::convert_int_to_bool(wasm_wide_arithmetic as i32),
             )
         }) as jlong
     }

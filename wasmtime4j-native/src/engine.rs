@@ -465,6 +465,7 @@ pub mod core {
         cranelift_nan_canonicalization: bool,
         // Experimental features
         wasm_custom_page_sizes: bool,
+        wasm_wide_arithmetic: bool,
     ) -> WasmtimeResult<Box<Engine>> {
         let mut builder = Engine::builder();
 
@@ -500,7 +501,8 @@ pub mod core {
             .coredump_on_trap(coredump_on_trap)
             .cranelift_nan_canonicalization(cranelift_nan_canonicalization)
             // Experimental features
-            .wasm_custom_page_sizes(wasm_custom_page_sizes);
+            .wasm_custom_page_sizes(wasm_custom_page_sizes)
+            .wasm_wide_arithmetic(wasm_wide_arithmetic);
 
         if let Some(pages) = max_memory_pages {
             builder = builder.max_memory_pages(pages);
