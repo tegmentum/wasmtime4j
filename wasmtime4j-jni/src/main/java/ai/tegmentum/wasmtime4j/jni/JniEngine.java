@@ -84,18 +84,9 @@ public class JniEngine implements Engine {
 
   @Override
   public Store createStore(final Object data) throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
-
-    // TODO: Call native method to create store with user data
-    // long storeHandle = nativeCreateStoreWithData(nativeHandle, data);
-    // return new JniStore(storeHandle, this, data);
-    throw new UnsupportedOperationException(
-        "Store creation with data not yet implemented - native library required");
+    final Store store = createStore();
+    store.setData(data);
+    return store;
   }
 
   @Override
@@ -525,4 +516,22 @@ public class JniEngine implements Engine {
       boolean craneliftNanCanonicalization,
       boolean wasmCustomPageSizes,
       boolean wasmWideArithmetic);
+
+  /**
+   * Clears the native handle registries used for memory and store validation.
+   *
+   * <p>This method should be called during test cleanup to prevent stale handles from causing
+   * validation failures in subsequent tests. It clears the global registries that track valid
+   * memory and store handles.
+   *
+   * <p>Warning: This should only be used in test contexts. Calling this while handles are still in
+   * use will cause subsequent operations on those handles to fail.
+   *
+   * @return 0 on success, -1 on failure
+   */
+  public static int clearHandleRegistries() {
+    return nativeClearHandleRegistries();
+  }
+
+  private static native int nativeClearHandleRegistries();
 }

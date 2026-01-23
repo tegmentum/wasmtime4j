@@ -159,6 +159,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateE
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithExtendedConfig
   (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint, jboolean, jboolean, jboolean, jboolean, jlong, jlong, jlong, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeClearHandleRegistries
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeClearHandleRegistries
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

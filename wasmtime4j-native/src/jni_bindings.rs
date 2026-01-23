@@ -1074,6 +1074,24 @@ pub mod jni_engine {
         }
     }
 
+    /// Clear the global handle registries for memory and store validation (JNI version)
+    ///
+    /// This is intended for test cleanup to prevent stale handles from causing
+    /// validation failures in subsequent tests.
+    ///
+    /// # Returns
+    /// 0 on success, -1 on failure
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeClearHandleRegistries(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jint {
+        match crate::memory::core::clear_handle_registries() {
+            Ok(()) => 0,
+            Err(_) => -1,
+        }
+    }
+
     /// Query if epoch interruption is enabled
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsEpochInterruptionEnabled(
