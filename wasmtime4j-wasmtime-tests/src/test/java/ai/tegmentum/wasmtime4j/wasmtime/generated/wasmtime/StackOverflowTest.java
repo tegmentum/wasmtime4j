@@ -16,13 +16,17 @@
 
 package ai.tegmentum.wasmtime4j.wasmtime.generated.wasmtime;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.junit.jupiter.api.Disabled;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -33,17 +37,28 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>This test validates stack overflow detection - verifying that deep recursion is properly
  * detected and trapped with a "call stack exhausted" error.
  *
- * <p>Note: Disabled because stack overflow handling causes JVM crash (SIGILL) on aarch64. The
- * native library's stack overflow signal handler is not properly configured on this platform.
+ * <p>Note: This test is skipped on aarch64 because stack overflow handling causes JVM crash
+ * (SIGILL). The native library's stack overflow signal handler conflicts with JVM signal handlers
+ * on ARM64 Darwin. The test runs on x86_64 where the signal handling works correctly.
  *
  * <p>Source:
  * https://github.com/bytecodealliance/wasmtime/blob/main/tests/misc_testsuite/stack_overflow.wast
  */
-@Disabled(
-    "Stack overflow detection causes JVM crash (SIGILL) on aarch64. "
-        + "The signals_based_traps(false) config helps with memory traps but stack overflow "
-        + "detection still conflicts with JVM signal handlers on ARM64 Darwin.")
 public final class StackOverflowTest extends DualRuntimeTest {
+
+  private static final Logger LOGGER = Logger.getLogger(StackOverflowTest.class.getName());
+
+  @BeforeAll
+  static void checkPlatformSupport() {
+    final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
+    LOGGER.info("Running on architecture: " + arch.getName());
+
+    assumeTrue(
+        arch == PlatformDetector.Architecture.X86_64,
+        "Stack overflow tests are skipped on aarch64 due to JVM signal handler conflicts. "
+            + "Wasmtime's trap instructions for stack overflow detection cause SIGILL on ARM64.");
+  }
+
   private static String loadResource(final String path) throws IOException {
     try (final InputStream is = StackOverflowTest.class.getResourceAsStream(path)) {
       if (is == null) {

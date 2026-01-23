@@ -1,13 +1,17 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.wasmtime;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.junit.jupiter.api.Disabled;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -18,11 +22,10 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>This test validates that wasmtime4j produces the same results as the upstream Wasmtime
  * implementation for this test case.
  *
- * <p>DISABLED: This test causes a JVM crash (exit code 132 = SIGILL - illegal instruction) when
- * executing WebAssembly code that uses try_table with catch_all to handle traps (unreachable,
- * div-by-zero, stack overflow). The crash appears to occur in Wasmtime's JIT-compiled code when
- * handling trap unwinding in combination with the exception handling proposal's try_table
- * construct.
+ * <p>Note: This test is skipped on aarch64 because trap handling causes JVM crash (SIGILL). The
+ * crash occurs when executing WebAssembly code that uses try_table with catch_all to handle traps
+ * (unreachable, div-by-zero, stack overflow). Wasmtime's trap instructions conflict with JVM signal
+ * handlers on ARM64 Darwin.
  *
  * <p>Root cause analysis:
  *
@@ -30,14 +33,24 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  *   <li>The module uses try_table (catch_all $h) to catch exceptions
  *   <li>Functions cause various traps: unreachable, div-by-zero, stack-overflow
  *   <li>WebAssembly specification says traps should NOT be catchable
- *   <li>The SIGILL suggests JIT code generation or execution issue in Wasmtime
+ *   <li>The SIGILL suggests Wasmtime trap instructions conflict with JVM on aarch64
  * </ul>
- *
- * <p>This is likely a Wasmtime internal issue with trap handling in combination with the exception
- * handling proposal. Requires further investigation at the Wasmtime level.
  */
-@Disabled("Causes JVM crash - SIGILL (exit code 132) when handling traps with try_table/catch_all")
 public final class TrapsSkipCatchAllTest extends DualRuntimeTest {
+
+  private static final Logger LOGGER = Logger.getLogger(TrapsSkipCatchAllTest.class.getName());
+
+  @BeforeAll
+  static void checkPlatformSupport() {
+    final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
+    LOGGER.info("Running on architecture: " + arch.getName());
+
+    assumeTrue(
+        arch == PlatformDetector.Architecture.X86_64,
+        "Trap handling tests are skipped on aarch64 due to JVM signal handler conflicts. "
+            + "Wasmtime's trap instructions cause SIGILL on ARM64.");
+  }
+
   private static String loadResource(final String path) throws IOException {
     try (final InputStream is = TrapsSkipCatchAllTest.class.getResourceAsStream(path)) {
       if (is == null) {
